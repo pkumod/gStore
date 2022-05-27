@@ -118,6 +118,7 @@ class GeneralEvaluation
 		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 
 		void kleeneClosure(TempResultSet *temp, TempResult *tr, const string &subject, const string &predicate, const string &object, int dep);
+		void BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol=2);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

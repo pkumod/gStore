@@ -525,7 +525,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			}
 
 			if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
-				(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type && group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Union_type))
+				(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+				|| group_pattern.sub_group_pattern[i + 1].pattern.kleene))
 			{
 				// Start merging (may be multiple BGPs here)
 				SPARQLquery sparql_query;
@@ -3927,41 +3928,42 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 	}
 	
 	temp->results.push_back(TempResult());
-	// TODO: May invoke BFS multiple times for the same subject when no DISTINCT
 	if (subject[0] != '?')
 	{
-		prepPathQuery();
+		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, object));
 		for (size_t i = 0; i < tr->result.size(); i++)
 		{
 			unsigned tid = tr->result[i].id[0];
-			vector<int> reach = pqHandler->BFS(tid, true, \
-				vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
-			for (int sid : reach)
-			{
-				temp->results[0].result.emplace_back();
-				temp->results[0].result.back().id = new unsigned[1];
-				temp->results[0].result.back().id[0] = sid;
-				temp->results[0].result.back().sz = 1;
-			}
+			BFS(temp, tid, kvstore->getIDByPredicate(predicate), true, 1);
+			// vector<int> reach = pqHandler->BFS(tid, true, \
+			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
+			// for (int sid : reach)
+			// {
+			// 	temp->results[0].result.emplace_back();
+			// 	temp->results[0].result.back().id = new unsigned[1];
+			// 	temp->results[0].result.back().id[0] = sid;
+			// 	temp->results[0].result.back().sz = 1;
+			// }
 		}
 	}
 	else if (object[0] != '?')
 	{
-		prepPathQuery();
+		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, subject));
 		for (size_t i = 0; i < tr->result.size(); i++)
 		{
 			unsigned sid = tr->result[i].id[0];
-			vector<int> reach = pqHandler->BFS(sid, true, \
-				vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
-			for (int tid : reach)
-			{
-				temp->results[0].result.emplace_back();
-				temp->results[0].result.back().id = new unsigned[1];
-				temp->results[0].result.back().id[0] = tid;
-				temp->results[0].result.back().sz = 1;
-			}
+			BFS(temp, sid, kvstore->getIDByPredicate(predicate), false, 1);
+			// vector<int> reach = pqHandler->BFS(sid, true, \
+			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
+			// for (int tid : reach)
+			// {
+			// 	temp->results[0].result.emplace_back();
+			// 	temp->results[0].result.back().id = new unsigned[1];
+			// 	temp->results[0].result.back().id[0] = tid;
+			// 	temp->results[0].result.back().sz = 1;
+			// }
 		}
 	}
 	else
@@ -3981,7 +3983,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
 			return;
 		}
-		prepPathQuery();
+		// prepPathQuery();
 		set<unsigned> sid_set, tid_set;
 		if (subjectIdx < tr->id_varset.vars.size())
 		{
@@ -3993,41 +3995,136 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			for (size_t i = 0; i < tr->result.size(); i++)
 				tid_set.insert(tr->result[i].id[objectIdx]);
 		}
-		if (sid_set.size() > 0 && sid_set.size() < tid_set.size())
+		if (sid_set.size() > 0 && (sid_set.size() < tid_set.size() || tid_set.size() == 0))
 		{
-			for (size_t i = 0; i < tr->result.size(); i++)
-			{
-				unsigned sid = tr->result[i].id[subjectIdx];
-				// cout << "sid = " << sid << endl;
-				vector<int> reach = pqHandler->BFS(sid, true, \
-					vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
-				for (int tid : reach)
-				{
-					temp->results[0].result.emplace_back();
-					temp->results[0].result.back().id = new unsigned[2];
-					temp->results[0].result.back().id[0] = sid;
-					temp->results[0].result.back().id[1] = tid;
-					temp->results[0].result.back().sz = 2;
-				}
-			}
+			for (auto sid : sid_set)
+				BFS(temp, sid, kvstore->getIDByPredicate(predicate), true, 2);
+			// for (size_t i = 0; i < tr->result.size(); i++)
+			// {
+			// 	unsigned sid = tr->result[i].id[subjectIdx];
+			// 	// cout << "sid = " << sid << endl;
+			// 	vector<int> reach = pqHandler->BFS(sid, true, \
+			// 		vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
+			// 	for (int tid : reach)
+			// 	{
+			// 		temp->results[0].result.emplace_back();
+			// 		temp->results[0].result.back().id = new unsigned[2];
+			// 		temp->results[0].result.back().id[0] = sid;
+			// 		temp->results[0].result.back().id[1] = tid;
+			// 		temp->results[0].result.back().sz = 2;
+			// 	}
+			// }
 		}
-		else if (tid_set.size() > 0 && tid_set.size() < sid_set.size())
+		else if (tid_set.size() > 0 && (tid_set.size() < sid_set.size() || sid_set.size() == 0))
 		{
 			for (auto tid : tid_set)
+				BFS(temp, tid, kvstore->getIDByPredicate(predicate), false, 2);
+			// {
+			// 	vector<int> reach = pqHandler->BFS(tid, true, \
+			// 		vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
+			// 	for (int sid : reach)
+			// 	{
+			// 		temp->results[0].result.emplace_back();
+			// 		temp->results[0].result.back().id = new unsigned[2];
+			// 		temp->results[0].result.back().id[0] = sid;
+			// 		temp->results[0].result.back().id[1] = tid;
+			// 		temp->results[0].result.back().sz = 2;
+			// 	}
+			// }
+		}
+		else
+			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
+	}
+}
+
+void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol)
+{
+	queue<unsigned> ret;
+	unordered_set<int> ret_set;
+	ret.push(sid);
+	ret_set.insert(sid);
+	unsigned curr;
+	temp->results[0].result.emplace_back();
+	if (numCol == 1)
+	{
+		temp->results[0].result.back().id = new unsigned[1];
+		temp->results[0].result.back().id[0] = sid;
+		temp->results[0].result.back().sz = 1;
+	}
+	else if (numCol == 2)
+	{
+		temp->results[0].result.back().id = new unsigned[2];
+		temp->results[0].result.back().id[0] = sid;
+		temp->results[0].result.back().id[1] = sid;
+		temp->results[0].result.back().sz = 2;
+	}
+	while (!ret.empty())
+	{
+		curr = ret.front();
+		ret.pop();
+		if (forward)
+		{
+			unsigned* outList = NULL;
+			unsigned outSz = 0, outNei;
+			kvstore->getobjIDlistBysubIDpreID(curr, pred, outList, outSz); 
+			for(unsigned i = 0; i < outSz; i++)
 			{
-				vector<int> reach = pqHandler->BFS(tid, true, \
-					vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
-				for (int sid : reach)
+				if(outList[i] >= Util::LITERAL_FIRST_ID)
+					continue;
+				outNei = outList[i];
+				cout << "outNei = " << outNei << endl;
+				if (ret_set.find(outNei) == ret_set.end())
 				{
+					ret.push(outNei);
+					ret_set.insert(outNei);
 					temp->results[0].result.emplace_back();
-					temp->results[0].result.back().id = new unsigned[2];
-					temp->results[0].result.back().id[0] = sid;
-					temp->results[0].result.back().id[1] = tid;
-					temp->results[0].result.back().sz = 2;
+					if (numCol == 1)
+					{
+						temp->results[0].result.back().id = new unsigned[1];
+						temp->results[0].result.back().id[0] = outNei;
+						temp->results[0].result.back().sz = 1;
+					}
+					else if (numCol == 2)
+					{
+						temp->results[0].result.back().id = new unsigned[2];
+						temp->results[0].result.back().id[0] = sid;
+						temp->results[0].result.back().id[1] = outNei;
+						temp->results[0].result.back().sz = 2;
+					}
 				}
 			}
 		}
 		else
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
+		{
+			unsigned *inList = NULL;
+			unsigned inSz = 0, inNei;
+			kvstore->getsubIDlistByobjIDpreID(curr, pred, inList, inSz);
+			for(unsigned i = 0; i < inSz; i++)
+			{
+				if (inList[i] >= Util::LITERAL_FIRST_ID)
+					continue;
+				inNei = inList[i];
+				if (ret_set.find(inNei) == ret_set.end())
+				{
+					ret.push(inNei);
+					ret_set.insert(inNei);
+					temp->results[0].result.emplace_back();
+					temp->results[0].result.back().sz = 2;
+					if (numCol == 1)
+					{
+						temp->results[0].result.back().id = new unsigned[1];
+						temp->results[0].result.back().id[0] = inNei;
+						temp->results[0].result.back().sz = 1;
+					}
+					else if (numCol == 2)
+					{
+						temp->results[0].result.back().id = new unsigned[2];
+						temp->results[0].result.back().id[0] = inNei;
+						temp->results[0].result.back().id[1] = sid;
+						temp->results[0].result.back().sz = 2;
+					}
+				}
+			}
+		}
 	}
 }
