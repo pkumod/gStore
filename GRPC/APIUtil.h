@@ -1,8 +1,8 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-04-20 17:31:15
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-05-25 18:18:54
+ * @LastEditors: wangjian
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
  */
@@ -20,7 +20,7 @@ using namespace rapidjson;
 
 #define ROOT_USERNAME "root"
 #define SYSTEM_DB_NAME "system"
-#define PFN_HEADER "#include <iostream>\n#include \"../../Query/PathQueryHandler.h\"\n\nusing namespace std;\n"
+#define PFN_HEADER "#include \"../../Query/PathQueryHandler.h\"\n\nusing namespace std;\n\n"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 
