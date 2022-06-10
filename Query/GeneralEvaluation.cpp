@@ -3995,7 +3995,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			for (size_t i = 0; i < tr->result.size(); i++)
 				tid_set.insert(tr->result[i].id[objectIdx]);
 		}
-		if (sid_set.size() > 0 && (sid_set.size() < tid_set.size() || tid_set.size() == 0))
+		if (sid_set.size() > 0 && (sid_set.size() <= tid_set.size() || tid_set.size() == 0))
 		{
 			for (auto sid : sid_set)
 				BFS(temp, sid, kvstore->getIDByPredicate(predicate), true, 2);
@@ -4015,7 +4015,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			// 	}
 			// }
 		}
-		else if (tid_set.size() > 0 && (tid_set.size() < sid_set.size() || sid_set.size() == 0))
+		else if (tid_set.size() > 0 && (tid_set.size() <= sid_set.size() || sid_set.size() == 0))
 		{
 			for (auto tid : tid_set)
 				BFS(temp, tid, kvstore->getIDByPredicate(predicate), false, 2);
