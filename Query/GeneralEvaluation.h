@@ -117,7 +117,7 @@ class GeneralEvaluation
 		void getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp);
 		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 
-		void kleeneClosure(TempResultSet *temp, TempResult *tr, const string &subject, const string &predicate, const string &object, int dep);
+		void kleeneClosure(TempResultSet *temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
 		void BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol=2);
 };
 

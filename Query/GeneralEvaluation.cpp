@@ -3882,34 +3882,36 @@ void GeneralEvaluation::addAllTriples(const QueryTree::GroupPattern &group_patte
 // Therefore, ?s <p>* ?o should never be the first to execute (unconstrained materialization)
 // Assume it is not the first in the following (does not handle the case where ?s <p>* ?o 
 // is the only triple pattern in the WHERE clause)
-void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
+void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr, \
 	const string &subject, const string &predicate, const string &object, int dep)
 {
 	cout << "kleeneClosure, subject = " << subject << ", predicate = " << predicate << ", object = " << object << endl;
 	// TempResult *tr = NULL;	// Use `tr` to store BFS starting vertices
 	// <s> <p>* ?o
-	if (!tr || tr->result.size() == 0)
+	TempResult *cand = NULL;
+	if (subject[0] != '?')
 	{
-		if (subject[0] != '?')
-		{
-			tr = new TempResult();
-			tr->id_varset = Varset(vector<string>(1, subject));
-			tr->result.emplace_back();
-			tr->result.back().id = new unsigned[1];
-			tr->result.back().id[0] = kvstore->getIDByString(subject);
-			tr->result.back().sz = 1;
-		}
-		// ?s <p>* <o>
-		else if (object[0] != '?')
-		{
-			tr = new TempResult();
-			tr->id_varset = Varset(vector<string>(1, object));
-			tr->result.emplace_back();
-			tr->result.back().id = new unsigned[1];
-			tr->result.back().id[0] = kvstore->getIDByString(object);
-			tr->result.back().sz = 1;
-		}
-		// ?s <p>* ?o
+		// if (tr) delete tr;
+		cand = new TempResult();
+		cand->id_varset = Varset(vector<string>(1, subject));
+		cand->result.emplace_back();
+		cand->result.back().id = new unsigned[1];
+		cand->result.back().id[0] = kvstore->getIDByString(subject);
+		cand->result.back().sz = 1;
+	}
+	else if (object[0] != '?')
+	{
+		// if (tr) delete tr;
+		cand = new TempResult();
+		cand->id_varset = Varset(vector<string>(1, object));
+		cand->result.emplace_back();
+		cand->result.back().id = new unsigned[1];
+		cand->result.back().id[0] = kvstore->getIDByString(object);
+		cand->result.back().sz = 1;
+	}
+	else
+	{
+		if (tr) cand = tr;
 		else if (dep > 0)
 		{
 			int curDep = dep - 1;
@@ -3917,11 +3919,11 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 				this->rewriting_evaluation_stack[curDep].result->results[0].result.size() == 0))
 				curDep--;
 			if (curDep >= 0)
-				tr = &(this->rewriting_evaluation_stack[curDep].result->results[0]);
+				cand = &(this->rewriting_evaluation_stack[curDep].result->results[0]);
 		}
 	}
 	
-	if (!tr || tr->result.size() == 0)
+	if (!cand || cand->result.size() == 0)
 	{
 		cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
 		return;
@@ -3932,9 +3934,9 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 	{
 		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, object));
-		for (size_t i = 0; i < tr->result.size(); i++)
+		for (size_t i = 0; i < cand->result.size(); i++)
 		{
-			unsigned tid = tr->result[i].id[0];
+			unsigned tid = cand->result[i].id[0];
 			BFS(temp, tid, kvstore->getIDByPredicate(predicate), true, 1);
 			// vector<int> reach = pqHandler->BFS(tid, true, \
 			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
@@ -3951,9 +3953,9 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 	{
 		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, subject));
-		for (size_t i = 0; i < tr->result.size(); i++)
+		for (size_t i = 0; i < cand->result.size(); i++)
 		{
-			unsigned sid = tr->result[i].id[0];
+			unsigned sid = cand->result[i].id[0];
 			BFS(temp, sid, kvstore->getIDByPredicate(predicate), false, 1);
 			// vector<int> reach = pqHandler->BFS(sid, true, \
 			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
@@ -3974,26 +3976,26 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 		temp->results[0].id_varset = Varset(vars);
 
 		int subjectIdx = 0, objectIdx = 0;
-		while (subjectIdx < tr->id_varset.vars.size() && tr->id_varset.vars[subjectIdx] != subject)
+		while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
 			subjectIdx++;
-		while (objectIdx < tr->id_varset.vars.size() && tr->id_varset.vars[objectIdx] != object)
+		while (objectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[objectIdx] != object)
 			objectIdx++;
-		if (subjectIdx == tr->id_varset.vars.size() && objectIdx == tr->id_varset.vars.size())
+		if (subjectIdx == cand->id_varset.vars.size() && objectIdx == cand->id_varset.vars.size())
 		{
 			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
 			return;
 		}
 		// prepPathQuery();
 		set<unsigned> sid_set, tid_set;
-		if (subjectIdx < tr->id_varset.vars.size())
+		if (subjectIdx < cand->id_varset.vars.size())
 		{
-			for (size_t i = 0; i < tr->result.size(); i++)
-				sid_set.insert(tr->result[i].id[subjectIdx]);
+			for (size_t i = 0; i < cand->result.size(); i++)
+				sid_set.insert(cand->result[i].id[subjectIdx]);
 		}
-		if (objectIdx < tr->id_varset.vars.size())
+		if (objectIdx < cand->id_varset.vars.size())
 		{
-			for (size_t i = 0; i < tr->result.size(); i++)
-				tid_set.insert(tr->result[i].id[objectIdx]);
+			for (size_t i = 0; i < cand->result.size(); i++)
+				tid_set.insert(cand->result[i].id[objectIdx]);
 		}
 		if (sid_set.size() > 0 && (sid_set.size() <= tid_set.size() || tid_set.size() == 0))
 		{
@@ -4072,7 +4074,7 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 				if(outList[i] >= Util::LITERAL_FIRST_ID)
 					continue;
 				outNei = outList[i];
-				cout << "outNei = " << outNei << endl;
+				// cout << "outNei = " << outNei << endl;
 				if (ret_set.find(outNei) == ret_set.end())
 				{
 					ret.push(outNei);
