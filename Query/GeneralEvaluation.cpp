@@ -3923,7 +3923,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 	
 	if (!tr || tr->result.size() == 0)
 	{
-		cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
+		cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
 		return;
 	}
 	
@@ -3980,7 +3980,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			objectIdx++;
 		if (subjectIdx == tr->id_varset.vars.size() && objectIdx == tr->id_varset.vars.size())
 		{
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
+			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
 			return;
 		}
 		// prepPathQuery();
@@ -4033,7 +4033,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult *tr, \
 			// }
 		}
 		else
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause." << endl;
+			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (3)" << endl;
 	}
 }
 
