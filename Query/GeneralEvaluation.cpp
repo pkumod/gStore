@@ -614,14 +614,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					long tv_encode = Util::get_cur_time();
 					printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
 
-					if (dep > 0)
-					{
+					// TODO: refine the fillcand strategy regarding the same layer
+					// Now only consider dep == 0
+					if (dep == 0)
+						this->rewriting_evaluation_stack[dep].result = result;
+					// if (dep > 0)
+					// {
 						#ifndef TEST_BGPQUERY
 						fillCandList(sparql_query, dep, encode_varset);
 						#else
 						fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
-					}
+					// }
 					long tv_fillcand = Util::get_cur_time();
 					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
@@ -3573,7 +3577,8 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pat
 
 void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset)
 {
-	TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
+	TempResultSet *&last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
+	if (!last_result || (dep == 0 && last_result->results.size() > 1000000)) return;
 
 	for (int j = 0; j < bgp_query_vec.size(); j++)
 	{
