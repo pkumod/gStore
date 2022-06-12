@@ -493,219 +493,253 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				result->initial = false;
 			}
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
-			&& !group_pattern.sub_group_pattern[i].pattern.kleene)
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			TempResultSet *sub_result = new TempResultSet();
-			
-			QueryInfo query_info;
-			query_info.limit_ = false;
-			if(this->query_tree.getLimit()!=-1) {
-				query_info.limit_ = true;
-				query_info.limit_num_ = this->query_tree.getLimit();
-			}
-			query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
-			query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
-			for(auto order_item:this->query_tree.getOrderVarVector())
-				query_info.ordered_by_expressions_->push_back(order_item);
-			
-			int st = i;
-			while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Union_type))
-				st--;
-
-			for (int j = st; j < i; j++)
+			if (!group_pattern.sub_group_pattern[i].pattern.kleene)
 			{
-				if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-				{
-					// Does not merge triples with predicate as iri*
-					if (group_pattern.sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(group_pattern.sub_group_pattern[j].pattern.subject_object_varset) \
-						&& !group_pattern.sub_group_pattern[j].pattern.kleene)
-						group_pattern.mergePatternBlockID(i, j);
+				TempResultSet *sub_result = new TempResultSet();
+				
+				QueryInfo query_info;
+				query_info.limit_ = false;
+				if(this->query_tree.getLimit()!=-1) {
+					query_info.limit_ = true;
+					query_info.limit_num_ = this->query_tree.getLimit();
 				}
-			}
+				query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
+				query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
+				for(auto order_item:this->query_tree.getOrderVarVector())
+					query_info.ordered_by_expressions_->push_back(order_item);
+				
+				int st = i;
+				while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Union_type))
+					st--;
 
-			if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
-				(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
-				|| group_pattern.sub_group_pattern[i + 1].pattern.kleene))
-			{
-				// Start merging (may be multiple BGPs here)
-				SPARQLquery sparql_query;
-				#ifdef TEST_BGPQUERY
-				vector<shared_ptr<BGPQuery>> bgp_query_vec;
-				#endif
-				vector<vector<string> > encode_varset;
-				vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
-
-				auto limit_num = query_tree.getLimit();
-				auto order_var_vec = query_tree.getOrderVarVector();
-
-				for (int j = st; j <= i; j++)
-					if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
-						&& !group_pattern.sub_group_pattern[j].pattern.kleene)
+				for (int j = st; j < i; j++)
+				{
+					if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
 					{
-						if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
+						// Does not merge triples with predicate as iri*
+						if (group_pattern.sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(group_pattern.sub_group_pattern[j].pattern.subject_object_varset) \
+							&& !group_pattern.sub_group_pattern[j].pattern.kleene)
+							group_pattern.mergePatternBlockID(i, j);
+					}
+				}
+
+				if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
+					(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+					|| group_pattern.sub_group_pattern[i + 1].pattern.kleene))
+				{
+					// Start merging (may be multiple BGPs here)
+					SPARQLquery sparql_query;
+					#ifdef TEST_BGPQUERY
+					vector<shared_ptr<BGPQuery>> bgp_query_vec;
+					#endif
+					vector<vector<string> > encode_varset;
+					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
+
+					auto limit_num = query_tree.getLimit();
+					auto order_var_vec = query_tree.getOrderVarVector();
+
+					for (int j = st; j <= i; j++)
+						if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+							&& !group_pattern.sub_group_pattern[j].pattern.kleene)
 						{
-							if (group_pattern.getRootPatternBlockID(j) == j)		//root node, coming from mergePatternBlockID
+							if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
 							{
-								Varset occur;
-								vector<QueryTree::GroupPattern::Pattern> basic_query;
-
-								for (int k = st; k <= i; k++)
-									if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
-										if (group_pattern.getRootPatternBlockID(k) == j)
-										{
-											occur += group_pattern.sub_group_pattern[k].pattern.varset;
-											basic_query.push_back(group_pattern.sub_group_pattern[k].pattern);
-										}
-
-								printf("select vars: ");
-								occur.print();
-
-								printf("triple patterns: \n");
-								for (int k = 0; k < (int)basic_query.size(); k++)
-									printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
-										basic_query[k].predicate.value.c_str(),
-										basic_query[k].object.value.c_str()
-									);
-
-								bool success = false;
-								// if (this->query_cache != NULL)
-								// 	success = checkBasicQueryCache(basic_query, result, occur);
-								//// If query cache not hit, save the current BGP to sparql_query for later processing ////
-								//// QUESTION: Is basic_query_handle a redundant variable? ////
-								if (!success)
+								if (group_pattern.getRootPatternBlockID(j) == j)		//root node, coming from mergePatternBlockID
 								{
-									#ifndef TEST_BGPQUERY
-									sparql_query.addBasicQuery();
+									Varset occur;
+									vector<QueryTree::GroupPattern::Pattern> basic_query;
+
+									for (int k = st; k <= i; k++)
+										if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+											if (group_pattern.getRootPatternBlockID(k) == j)
+											{
+												occur += group_pattern.sub_group_pattern[k].pattern.varset;
+												basic_query.push_back(group_pattern.sub_group_pattern[k].pattern);
+											}
+
+									printf("select vars: ");
+									occur.print();
+
+									printf("triple patterns: \n");
 									for (int k = 0; k < (int)basic_query.size(); k++)
-										sparql_query.addTriple(Triple(basic_query[k].subject.value,
-											basic_query[k].predicate.value,
-											basic_query[k].object.value));
-									#else
-									bgp_query_vec.push_back(make_shared<BGPQuery>());
-									for (int k = 0; k < (int)basic_query.size(); k++)
+										printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+											basic_query[k].predicate.value.c_str(),
+											basic_query[k].object.value.c_str()
+										);
+
+									bool success = false;
+									// if (this->query_cache != NULL)
+									// 	success = checkBasicQueryCache(basic_query, result, occur);
+									//// If query cache not hit, save the current BGP to sparql_query for later processing ////
+									//// QUESTION: Is basic_query_handle a redundant variable? ////
+									if (!success)
 									{
-										bgp_query_vec[bgp_query_vec.size() - 1]->AddTriple(Triple(basic_query[k].subject.value,
+										#ifndef TEST_BGPQUERY
+										sparql_query.addBasicQuery();
+										for (int k = 0; k < (int)basic_query.size(); k++)
+											sparql_query.addTriple(Triple(basic_query[k].subject.value,
 												basic_query[k].predicate.value,
 												basic_query[k].object.value));
-									}
-									#endif
+										#else
+										bgp_query_vec.push_back(make_shared<BGPQuery>());
+										for (int k = 0; k < (int)basic_query.size(); k++)
+										{
+											bgp_query_vec[bgp_query_vec.size() - 1]->AddTriple(Triple(basic_query[k].subject.value,
+													basic_query[k].predicate.value,
+													basic_query[k].object.value));
+										}
+										#endif
 
-									encode_varset.push_back(occur.vars);
-									basic_query_handle.push_back(basic_query);
+										encode_varset.push_back(occur.vars);
+										basic_query_handle.push_back(basic_query);
+									}
 								}
 							}
 						}
-					}
 
-				long tv_begin = Util::get_cur_time();
-				#ifndef TEST_BGPQUERY
-				sparql_query.encodeQuery(this->kvstore, encode_varset);
-				#else
-				vector<bool> encode_constant_exist(bgp_query_vec.size(), true);
-				bool curr_exist;
-				for (size_t k = 0; k < bgp_query_vec.size(); k++)
-				{
-					curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset[k], this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
-					encode_constant_exist[k] = curr_exist;
-				}
-				#endif
-				long tv_encode = Util::get_cur_time();
-				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
-
-				if (dep > 0)
-				{
+					long tv_begin = Util::get_cur_time();
 					#ifndef TEST_BGPQUERY
-					fillCandList(sparql_query, dep, encode_varset);
+					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
-					fillCandList(bgp_query_vec, dep, encode_varset);
+					vector<bool> encode_constant_exist(bgp_query_vec.size(), true);
+					bool curr_exist;
+					for (size_t k = 0; k < bgp_query_vec.size(); k++)
+					{
+						curr_exist = bgp_query_vec[k]->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset[k], this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
+						encode_constant_exist[k] = curr_exist;
+					}
 					#endif
-				}
-				long tv_fillcand = Util::get_cur_time();
-				printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+					long tv_encode = Util::get_cur_time();
+					printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
 
-				#ifndef TEST_BGPQUERY
-				this->optimizer_->DoQuery(sparql_query,query_info);
-				#else
-				for (size_t j = 0; j < bgp_query_vec.size(); j++)
-				{
-					unique_ptr<unsigned[]>& p2id = bgp_query_vec[j]->resultPositionToId();
-					p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
-					for (size_t k = 0; k < encode_varset[j].size(); k++)
-						p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
-					bgp_query_vec[j]->print(kvstore);
-					if (!encode_constant_exist[j])
-						continue;	// If any constant in this BGP does not exist, do not need to DoQuery
-					ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[j],query_info));
-				}
-				#endif
+					if (dep > 0)
+					{
+						#ifndef TEST_BGPQUERY
+						fillCandList(sparql_query, dep, encode_varset);
+						#else
+						fillCandList(bgp_query_vec, dep, encode_varset);
+						#endif
+					}
+					long tv_fillcand = Util::get_cur_time();
+					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
 
-				long tv_handle = Util::get_cur_time();
-				printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+					#ifndef TEST_BGPQUERY
+					this->optimizer_->DoQuery(sparql_query,query_info);
+					#else
+					for (size_t j = 0; j < bgp_query_vec.size(); j++)
+					{
+						unique_ptr<unsigned[]>& p2id = bgp_query_vec[j]->resultPositionToId();
+						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
+						for (size_t k = 0; k < encode_varset[j].size(); k++)
+							p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
+						bgp_query_vec[j]->print(kvstore);
+						if (!encode_constant_exist[j])
+							continue;	// If any constant in this BGP does not exist, do not need to DoQuery
+						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[j],query_info));
+					}
+					#endif
 
-				//collect and join the result of each BGP
-				// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
-				for (size_t j = 0; j < bgp_query_vec.size(); j++)
-				{
-					TempResultSet *temp = new TempResultSet();
+					long tv_handle = Util::get_cur_time();
+					printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+
+					//collect and join the result of each BGP
+					// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
+					for (size_t j = 0; j < bgp_query_vec.size(); j++)
+					{
+						TempResultSet *temp = new TempResultSet();
+						
+						temp->results.push_back(TempResult());
+
+						temp->results[0].id_varset = Varset(encode_varset[j]);
+						int varnum = (int)encode_varset[j].size();
+
+						#ifndef TEST_BGPQUERY
+						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
+						#else
+						vector<unsigned*> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer());
+						#endif
+						int basicquery_result_num = (int)basicquery_result.size();
+
+						temp->results[0].result.reserve(basicquery_result_num);
+						for (int k = 0; k < basicquery_result_num; k++)
+						{
+							temp->results[0].result.emplace_back();
+							temp->results[0].result.back().id = new unsigned[varnum];
+							memcpy(temp->results[0].result.back().id, basicquery_result[k], sizeof(int) * varnum);
+							temp->results[0].result.back().sz = varnum;
+						}
+
+						if (this->query_cache != NULL)
+						{
+							//if unconnected, time is incorrect
+							int time = tv_handle - tv_begin;
+
+							long tv_bftry = Util::get_cur_time();
+							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
+							bool success = false;
+							if (success)	printf("QueryCache cached\n");
+							else			printf("QueryCache didn't cache\n");
+							long tv_aftry = Util::get_cur_time();
+							printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+						}
+
+						if (sub_result->results.empty())
+						{
+							delete sub_result;
+							sub_result = temp;
+						}
+						else
+						{
+							TempResultSet *new_result = new TempResultSet();
+							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+							temp->release();
+							sub_result->release();
+							delete temp;
+							delete sub_result;
+
+							sub_result = new_result;
+						}
+					}
 					
-					temp->results.push_back(TempResult());
+					// printf("Pattern_type result: \n");
+					// result->print();
 
-					temp->results[0].id_varset = Varset(encode_varset[j]);
-					int varnum = (int)encode_varset[j].size();
-
-					#ifndef TEST_BGPQUERY
-					vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
-					#else
-					vector<unsigned*> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer());
-					#endif
-					int basicquery_result_num = (int)basicquery_result.size();
-
-					temp->results[0].result.reserve(basicquery_result_num);
-					for (int k = 0; k < basicquery_result_num; k++)
+					if (result->results.empty())
 					{
-						temp->results[0].result.emplace_back();
-						temp->results[0].result.back().id = new unsigned[varnum];
-						memcpy(temp->results[0].result.back().id, basicquery_result[k], sizeof(int) * varnum);
-						temp->results[0].result.back().sz = varnum;
-					}
-
-					if (this->query_cache != NULL)
-					{
-						//if unconnected, time is incorrect
-						int time = tv_handle - tv_begin;
-
-						long tv_bftry = Util::get_cur_time();
-						// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
-						bool success = false;
-						if (success)	printf("QueryCache cached\n");
-						else			printf("QueryCache didn't cache\n");
-						long tv_aftry = Util::get_cur_time();
-						printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
-					}
-
-					if (sub_result->results.empty())
-					{
-						delete sub_result;
-						sub_result = temp;
+						delete result;
+						result = sub_result;
 					}
 					else
 					{
 						TempResultSet *new_result = new TempResultSet();
-						sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-						temp->release();
 						sub_result->release();
-						delete temp;
+						result->release();
 						delete sub_result;
+						delete result;
 
-						sub_result = new_result;
+						result = new_result;
 					}
 				}
-				
-				// printf("Pattern_type result: \n");
-				// result->print();
+			}
+			else
+			{
+				// PathQueryHandler function arguments are vertex IDs
+				// Use `tr` to store BFS starting vertices
+				TempResultSet *sub_result = new TempResultSet();
+				TempResult *tr = NULL;
+				if (result->results.size() > 0 && result->results[0].result.size() > 0)
+					tr = &(result->results[0]);
 
+				// BFS from the subjects / objects to find results
+				kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
+					group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value, dep);
+				
+				// TODO: cache result
 				if (result->results.empty())
 				{
 					delete result;
@@ -1224,42 +1258,42 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 	}
 
-	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
-	{
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
-			&& group_pattern.sub_group_pattern[i].pattern.kleene)
-		{
-			// PathQueryHandler function arguments are vertex IDs
-			// Use `tr` to store BFS starting vertices
-			TempResultSet *sub_result = new TempResultSet();
-			TempResult *tr = NULL;
-			if (result->results.size() > 0 && result->results[0].result.size() > 0)
-				tr = &(result->results[0]);
+	// for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
+	// {
+	// 	if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+	// 		&& group_pattern.sub_group_pattern[i].pattern.kleene)
+	// 	{
+	// 		// PathQueryHandler function arguments are vertex IDs
+	// 		// Use `tr` to store BFS starting vertices
+	// 		TempResultSet *sub_result = new TempResultSet();
+	// 		TempResult *tr = NULL;
+	// 		if (result->results.size() > 0 && result->results[0].result.size() > 0)
+	// 			tr = &(result->results[0]);
 
-			// BFS from the subjects / objects to find results
-			kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
-				group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value, dep);
+	// 		// BFS from the subjects / objects to find results
+	// 		kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
+	// 			group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value, dep);
 			
-			// TODO: cache result
-			if (result->results.empty())
-			{
-				delete result;
-				result = sub_result;
-			}
-			else
-			{
-				TempResultSet *new_result = new TempResultSet();
-				result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+	// 		// TODO: cache result
+	// 		if (result->results.empty())
+	// 		{
+	// 			delete result;
+	// 			result = sub_result;
+	// 		}
+	// 		else
+	// 		{
+	// 			TempResultSet *new_result = new TempResultSet();
+	// 			result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-				sub_result->release();
-				result->release();
-				delete sub_result;
-				delete result;
+	// 			sub_result->release();
+	// 			result->release();
+	// 			delete sub_result;
+	// 			delete result;
 
-				result = new_result;
-			}
-		}
-	}
+	// 			result = new_result;
+	// 		}
+	// 	}
+	// }
 
 	// result->print();
 
