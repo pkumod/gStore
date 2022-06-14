@@ -2160,7 +2160,10 @@ Database::build(const string& _rdf_file)
 	//system(cmd.c_str());
 	//cout << "signature file removed" << endl;
 
-	this->if_loaded = true;
+	// this->if_loaded = true;
+	this->saveDBInfoFile();
+	this->writeIDinfo();
+	this->initIDinfo();
 	return true;
 }
 
