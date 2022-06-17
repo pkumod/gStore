@@ -86,6 +86,7 @@ message QueryLogInfo {
     optional string FileName = 5;
     optional int32 QueryTime = 6;
     optional int32 AnsNum = 7;
+    optional string DbName = 8;
 };
 
 message AccessLogInfo {

@@ -1,8 +1,8 @@
 /*
  * @Author: your name
  * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-04-19 17:15:57
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-06-17 13:21:29
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: /gStore/GRPC/grpcImpl.cpp
  */
@@ -152,6 +152,11 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
     {
         task = WFTaskFactory::create_go_task("txn_log_task", &GrpcImpl::txn_log_task, this, request, response, ctx);
     }
+    // TODO
+    // else if ( operation == "querylogdate")
+    // {
+    //     task = WFTaskFactory::create_go_task("query_log_date_task", &GrpcImpl::query_log_date_task, this, request, response, ctx);
+    // }
     else if ( operation == "querylog")
     {
         task = WFTaskFactory::create_go_task("query_log_task", &GrpcImpl::query_log_task, this, request, response, ctx);
@@ -1221,7 +1226,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
                 {
                     file_name = string(filename.c_str());
                 }
-                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time);
+                struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time, db_name);
                 apiUtil->write_query_log(&queryLogInfo);
             }
         }
@@ -2766,6 +2771,56 @@ void GrpcImpl::txn_log_task(CommonRequest *&request, CommonResponse *&response, 
         response->set_statusmsg(content);
     }
 }
+// TODO
+// void GrpcImpl::query_log_date_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
+// {
+//     try
+//     {
+//         string ipCheckResult = apiUtil->check_access_ip(ctx->get_remote_ip());
+//         if(ipCheckResult != "")
+//         {
+//             response->set_statuscode(1101);
+//             response->set_statusmsg(ipCheckResult);
+//             return;
+//         }
+//         string username = request->username();
+//         string password = request->password();
+//         string encryption = request->encryption();
+//         string check_result = apiUtil->check_indentity(username, password, encryption);
+//         if (check_result.empty() == false)
+//         {
+//             response->set_statuscode(1001);
+//             response->set_statusmsg(check_result);
+//             return;
+//         }
+//         if (apiUtil->check_privilege(username, request->operation(), request->db_name()) == 0)
+//         {
+//             check_result = "You have no " + request->operation() + " privilege, operation failed";
+//             response->set_statuscode(1002);
+//             response->set_statusmsg(check_result);
+//             return;
+//         }
+//         vector<string> logfiles;
+// 		apiUtil->get_query_log_files(logfiles);
+//         response->set_statuscode(0);
+//         response->set_statusmsg("Get query log date success");
+//         size_t count = logfiles.size();
+//         for (size_t i = 0; i < count; i++)
+//         {
+//             string log_file = logfiles[i];
+//             google::protobuf::Any *any = response->add_list();
+//             // any->AppendToString(&log_file);
+//             any->set_type_url("type.googleapis.com/string");
+//             any->set_value(log_file);
+//         }
+//     }
+//     catch (std::exception &e) 
+//     {
+//         string msg = "Get query log fail:" + string(e.what());
+//         response->set_statuscode(1005);
+//         response->set_statusmsg(msg);
+//     }
+// }
 
 void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
@@ -2819,6 +2874,7 @@ void GrpcImpl::query_log_task(CommonRequest *&request, CommonResponse *&response
             queryLogInfo->set_format(item.getFormat());
             queryLogInfo->set_filename(item.getFileName());
             queryLogInfo->set_querytime(item.getQueryTime());
+            queryLogInfo->set_dbname(item.getDbName());
             google::protobuf::Any *any = response->add_list();
             any->PackFrom(*queryLogInfo);
         }

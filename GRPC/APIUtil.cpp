@@ -1,8 +1,8 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-04-21 15:20:03
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-05-31 15:29:03
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
  */
@@ -1581,6 +1581,28 @@ void APIUtil::get_user_info(vector<struct DBUserInfo *> *_users)
     pthread_rwlock_unlock(&users_map_lock);
 }
 
+void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
+{
+    DIR *dirp = opendir(APIUtil::access_log_path.c_str());
+    if (dirp == NULL)
+    {
+        Util::formatPrint("access log dir is not exist.", "WARN");
+        return;
+    }
+    struct dirent *dir_entry = NULL;
+    string file_name;
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        file_name = dir_entry->d_name;
+        if (file_name.find(".log") != string::npos)
+        {
+            file_list.push_back(dir_entry->d_name);
+        }
+        
+    }
+    closedir(dirp);
+}
+
 void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs)
 {
     pthread_rwlock_rdlock(&access_log_lock);
@@ -1693,6 +1715,28 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     // std::cout << "logSize:" << logSize << endl;
     delete dbAccessLogInfo;
     pthread_rwlock_unlock(&access_log_lock);
+}
+
+void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
+{
+    DIR *dirp = opendir(APIUtil::query_log_path.c_str());
+    if (dirp == NULL)
+    {
+        Util::formatPrint("query log dir is not exist.", "WARN");
+        return;
+    }
+    struct dirent *dir_entry = NULL;
+    string file_name;
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        file_name = dir_entry->d_name;
+        if (file_name.find(".log") != string::npos)
+        {
+            file_list.push_back(dir_entry->d_name);
+        }
+        
+    }
+    closedir(dirp);
 }
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)

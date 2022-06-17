@@ -135,6 +135,7 @@ constexpr QueryLogInfo::QueryLogInfo(
   , format_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , remoteip_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , filename_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , dbname_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , querytime_(0)
   , ansnum_(0){}
 struct QueryLogInfoDefaultTypeInternal {
@@ -198,6 +199,7 @@ constexpr CommonResponse::CommonResponse(
   ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
   : responsebody_()
   , list_()
+  , predicateset_()
   , statusmsg_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , threadid_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
   , querytime_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
@@ -382,13 +384,15 @@ const uint32_t TableStruct_grpc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::QueryLogInfo, filename_),
   PROTOBUF_FIELD_OFFSET(::QueryLogInfo, querytime_),
   PROTOBUF_FIELD_OFFSET(::QueryLogInfo, ansnum_),
+  PROTOBUF_FIELD_OFFSET(::QueryLogInfo, dbname_),
   0,
   1,
   2,
   3,
   4,
-  5,
   6,
+  7,
+  5,
   PROTOBUF_FIELD_OFFSET(::AccessLogInfo, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::AccessLogInfo, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -475,6 +479,7 @@ const uint32_t TableStruct_grpc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::CommonResponse, subjectnum_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, predicatenum_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, connectionnum_),
+  PROTOBUF_FIELD_OFFSET(::CommonResponse, predicateset_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, type_),
   PROTOBUF_FIELD_OFFSET(::CommonResponse, csr_),
   20,
@@ -509,6 +514,7 @@ const uint32_t TableStruct_grpc_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   29,
   30,
   31,
+  ~0u,
   16,
   17,
 };
@@ -519,11 +525,11 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 92, -1, -1, sizeof(::QueryHeadInfo)},
   { 100, -1, -1, sizeof(::QueryResultInfo)},
   { 107, 119, -1, sizeof(::TxnLogInfo)},
-  { 125, 138, -1, sizeof(::QueryLogInfo)},
-  { 145, 156, -1, sizeof(::AccessLogInfo)},
-  { 161, 169, -1, sizeof(::IPManageInfo)},
-  { 171, 185, -1, sizeof(::FunInfo)},
-  { 193, 233, -1, sizeof(::CommonResponse)},
+  { 125, 139, -1, sizeof(::QueryLogInfo)},
+  { 147, 158, -1, sizeof(::AccessLogInfo)},
+  { 163, 171, -1, sizeof(::IPManageInfo)},
+  { 173, 187, -1, sizeof(::FunInfo)},
+  { 195, 236, -1, sizeof(::CommonResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -565,45 +571,46 @@ const char descriptor_table_protodef_grpc_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "sultInfo\022\020\n\010bindings\030\001 \003(\t\"j\n\nTxnLogInfo"
   "\022\016\n\006dbName\030\001 \001(\t\022\013\n\003TID\030\002 \001(\t\022\014\n\004user\030\003 "
   "\001(\t\022\021\n\tbeginTime\030\004 \001(\t\022\r\n\005state\030\005 \001(\t\022\017\n"
-  "\007endTime\030\006 \001(\t\"\214\001\n\014QueryLogInfo\022\025\n\rQuery"
+  "\007endTime\030\006 \001(\t\"\234\001\n\014QueryLogInfo\022\025\n\rQuery"
   "DateTime\030\001 \001(\t\022\016\n\006Sparql\030\002 \001(\t\022\016\n\006Format"
   "\030\003 \001(\t\022\020\n\010RemoteIP\030\004 \001(\t\022\020\n\010FileName\030\005 \001"
-  "(\t\022\021\n\tQueryTime\030\006 \001(\005\022\016\n\006AnsNum\030\007 \001(\005\"]\n"
-  "\rAccessLogInfo\022\n\n\002ip\030\001 \001(\t\022\021\n\toperation\030"
-  "\002 \001(\t\022\022\n\ncreatetime\030\003 \001(\t\022\014\n\004code\030\004 \001(\005\022"
-  "\013\n\003msg\030\005 \001(\t\"+\n\014IPManageInfo\022\016\n\006ipType\030\001"
-  " \001(\t\022\013\n\003ips\030\002 \003(\t\"\226\001\n\007FunInfo\022\017\n\007funName"
-  "\030\001 \001(\t\022\017\n\007funDesc\030\002 \001(\t\022\017\n\007funArgs\030\003 \001(\t"
-  "\022\017\n\007funBody\030\004 \001(\t\022\017\n\007funSubs\030\005 \001(\t\022\021\n\tfu"
-  "nStatus\030\006 \001(\t\022\021\n\tfunReturn\030\007 \001(\t\022\020\n\010last"
-  "Time\030\010 \001(\t\"\317\005\n\016CommonResponse\022\022\n\nStatusC"
-  "ode\030\001 \001(\005\022\021\n\tStatusMsg\030\002 \001(\t\022*\n\014Response"
-  "Body\030\003 \003(\0132\024.google.protobuf.Any\022\034\n\004head"
-  "\030\004 \001(\0132\016.QueryHeadInfo\022!\n\007results\030\005 \001(\0132"
-  "\020.QueryResultInfo\022\016\n\006AnsNum\030\006 \001(\005\022\023\n\013Out"
-  "putLimit\030\007 \001(\005\022\020\n\010ThreadId\030\010 \001(\t\022\021\n\tQuer"
-  "yTime\030\t \001(\t\022\020\n\010FileName\030\n \001(\t\022\020\n\010filepat"
-  "h\030\013 \001(\t\022\013\n\003TID\030\014 \001(\t\022\"\n\004list\030\r \003(\0132\024.goo"
-  "gle.protobuf.Any\022\023\n\013CoreVersion\030\016 \001(\t\022\023\n"
-  "\013licensetype\030\017 \001(\t\022\020\n\010RootPath\030\020 \001(\t\022\022\n\n"
-  "successNum\030\021 \001(\t\022\021\n\ttotalSize\030\022 \001(\005\022\021\n\tt"
-  "otalPage\030\023 \001(\005\022\016\n\006pageNo\030\024 \001(\005\022\020\n\010pageSi"
-  "ze\030\025 \001(\005\022\026\n\016backupfilepath\030\026 \001(\t\022\016\n\006Resu"
-  "lt\030\027 \001(\t\022\020\n\010database\030\030 \001(\t\022\017\n\007creator\030\031 "
-  "\001(\t\022\021\n\tbuiltTime\030\032 \001(\t\022\021\n\ttripleNum\030\033 \001("
-  "\t\022\021\n\tentityNum\030\034 \001(\005\022\022\n\nliteralNum\030\035 \001(\005"
-  "\022\022\n\nsubjectNum\030\036 \001(\005\022\024\n\014predicateNum\030\037 \001"
-  "(\005\022\025\n\rconnectionNum\030  \001(\005\022\014\n\004type\030! \001(\t\022"
-  "\013\n\003csr\030\" \001(\t2[\n\004grpc\022&\n\003api\022\016.CommonRequ"
-  "est\032\017.CommonResponse\022+\n\010shutdown\022\016.Commo"
-  "nRequest\032\017.CommonResponse"
+  "(\t\022\021\n\tQueryTime\030\006 \001(\005\022\016\n\006AnsNum\030\007 \001(\005\022\016\n"
+  "\006DbName\030\010 \001(\t\"]\n\rAccessLogInfo\022\n\n\002ip\030\001 \001"
+  "(\t\022\021\n\toperation\030\002 \001(\t\022\022\n\ncreatetime\030\003 \001("
+  "\t\022\014\n\004code\030\004 \001(\005\022\013\n\003msg\030\005 \001(\t\"+\n\014IPManage"
+  "Info\022\016\n\006ipType\030\001 \001(\t\022\013\n\003ips\030\002 \003(\t\"\226\001\n\007Fu"
+  "nInfo\022\017\n\007funName\030\001 \001(\t\022\017\n\007funDesc\030\002 \001(\t\022"
+  "\017\n\007funArgs\030\003 \001(\t\022\017\n\007funBody\030\004 \001(\t\022\017\n\007fun"
+  "Subs\030\005 \001(\t\022\021\n\tfunStatus\030\006 \001(\t\022\021\n\tfunRetu"
+  "rn\030\007 \001(\t\022\020\n\010lastTime\030\010 \001(\t\"\345\005\n\016CommonRes"
+  "ponse\022\022\n\nStatusCode\030\001 \001(\005\022\021\n\tStatusMsg\030\002"
+  " \001(\t\022*\n\014ResponseBody\030\003 \003(\0132\024.google.prot"
+  "obuf.Any\022\034\n\004head\030\004 \001(\0132\016.QueryHeadInfo\022!"
+  "\n\007results\030\005 \001(\0132\020.QueryResultInfo\022\016\n\006Ans"
+  "Num\030\006 \001(\005\022\023\n\013OutputLimit\030\007 \001(\005\022\020\n\010Thread"
+  "Id\030\010 \001(\t\022\021\n\tQueryTime\030\t \001(\t\022\020\n\010FileName\030"
+  "\n \001(\t\022\020\n\010filepath\030\013 \001(\t\022\013\n\003TID\030\014 \001(\t\022\"\n\004"
+  "list\030\r \003(\0132\024.google.protobuf.Any\022\023\n\013Core"
+  "Version\030\016 \001(\t\022\023\n\013licensetype\030\017 \001(\t\022\020\n\010Ro"
+  "otPath\030\020 \001(\t\022\022\n\nsuccessNum\030\021 \001(\t\022\021\n\ttota"
+  "lSize\030\022 \001(\005\022\021\n\ttotalPage\030\023 \001(\005\022\016\n\006pageNo"
+  "\030\024 \001(\005\022\020\n\010pageSize\030\025 \001(\005\022\026\n\016backupfilepa"
+  "th\030\026 \001(\t\022\016\n\006Result\030\027 \001(\t\022\020\n\010database\030\030 \001"
+  "(\t\022\017\n\007creator\030\031 \001(\t\022\021\n\tbuiltTime\030\032 \001(\t\022\021"
+  "\n\ttripleNum\030\033 \001(\t\022\021\n\tentityNum\030\034 \001(\005\022\022\n\n"
+  "literalNum\030\035 \001(\005\022\022\n\nsubjectNum\030\036 \001(\005\022\024\n\014"
+  "predicateNum\030\037 \001(\005\022\025\n\rconnectionNum\030  \001("
+  "\005\022\024\n\014predicateSet\030! \003(\t\022\014\n\004type\030\" \001(\t\022\013\n"
+  "\003csr\030# \001(\t2[\n\004grpc\022&\n\003api\022\016.CommonReques"
+  "t\032\017.CommonResponse\022+\n\010shutdown\022\016.CommonR"
+  "equest\032\017.CommonResponse"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_grpc_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fany_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_grpc_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_grpc_2eproto = {
-  false, false, 2225, descriptor_table_protodef_grpc_2eproto, "grpc.proto", 
+  false, false, 2263, descriptor_table_protodef_grpc_2eproto, "grpc.proto", 
   &descriptor_table_grpc_2eproto_once, descriptor_table_grpc_2eproto_deps, 1, 11,
   schemas, file_default_instances, TableStruct_grpc_2eproto::offsets,
   file_level_metadata_grpc_2eproto, file_level_enum_descriptors_grpc_2eproto, file_level_service_descriptors_grpc_2eproto,
@@ -4135,10 +4142,13 @@ class QueryLogInfo::_Internal {
     (*has_bits)[0] |= 16u;
   }
   static void set_has_querytime(HasBits* has_bits) {
-    (*has_bits)[0] |= 32u;
+    (*has_bits)[0] |= 64u;
   }
   static void set_has_ansnum(HasBits* has_bits) {
-    (*has_bits)[0] |= 64u;
+    (*has_bits)[0] |= 128u;
+  }
+  static void set_has_dbname(HasBits* has_bits) {
+    (*has_bits)[0] |= 32u;
   }
 };
 
@@ -4195,6 +4205,14 @@ QueryLogInfo::QueryLogInfo(const QueryLogInfo& from)
     filename_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_filename(), 
       GetArenaForAllocation());
   }
+  dbname_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    dbname_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (from._internal_has_dbname()) {
+    dbname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_dbname(), 
+      GetArenaForAllocation());
+  }
   ::memcpy(&querytime_, &from.querytime_,
     static_cast<size_t>(reinterpret_cast<char*>(&ansnum_) -
     reinterpret_cast<char*>(&querytime_)) + sizeof(ansnum_));
@@ -4222,6 +4240,10 @@ filename_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlr
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
   filename_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+dbname_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  dbname_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
     reinterpret_cast<char*>(&querytime_) - reinterpret_cast<char*>(this)),
     0, static_cast<size_t>(reinterpret_cast<char*>(&ansnum_) -
@@ -4242,6 +4264,7 @@ inline void QueryLogInfo::SharedDtor() {
   format_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   remoteip_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   filename_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  dbname_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void QueryLogInfo::ArenaDtor(void* object) {
@@ -4261,7 +4284,7 @@ void QueryLogInfo::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _has_bits_[0];
-  if (cached_has_bits & 0x0000001fu) {
+  if (cached_has_bits & 0x0000003fu) {
     if (cached_has_bits & 0x00000001u) {
       querydatetime_.ClearNonDefaultToEmpty();
     }
@@ -4277,8 +4300,11 @@ void QueryLogInfo::Clear() {
     if (cached_has_bits & 0x00000010u) {
       filename_.ClearNonDefaultToEmpty();
     }
+    if (cached_has_bits & 0x00000020u) {
+      dbname_.ClearNonDefaultToEmpty();
+    }
   }
-  if (cached_has_bits & 0x00000060u) {
+  if (cached_has_bits & 0x000000c0u) {
     ::memset(&querytime_, 0, static_cast<size_t>(
         reinterpret_cast<char*>(&ansnum_) -
         reinterpret_cast<char*>(&querytime_)) + sizeof(ansnum_));
@@ -4372,6 +4398,18 @@ const char* QueryLogInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
         } else
           goto handle_unusual;
         continue;
+      // optional string DbName = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+          auto str = _internal_mutable_dbname();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          #ifndef NDEBUG
+          ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "QueryLogInfo.DbName");
+          #endif  // !NDEBUG
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -4454,15 +4492,25 @@ uint8_t* QueryLogInfo::_InternalSerialize(
   }
 
   // optional int32 QueryTime = 6;
-  if (cached_has_bits & 0x00000020u) {
+  if (cached_has_bits & 0x00000040u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(6, this->_internal_querytime(), target);
   }
 
   // optional int32 AnsNum = 7;
-  if (cached_has_bits & 0x00000040u) {
+  if (cached_has_bits & 0x00000080u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(7, this->_internal_ansnum(), target);
+  }
+
+  // optional string DbName = 8;
+  if (cached_has_bits & 0x00000020u) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
+      this->_internal_dbname().data(), static_cast<int>(this->_internal_dbname().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
+      "QueryLogInfo.DbName");
+    target = stream->WriteStringMaybeAliased(
+        8, this->_internal_dbname(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -4482,7 +4530,7 @@ size_t QueryLogInfo::ByteSizeLong() const {
   (void) cached_has_bits;
 
   cached_has_bits = _has_bits_[0];
-  if (cached_has_bits & 0x0000007fu) {
+  if (cached_has_bits & 0x000000ffu) {
     // optional string QueryDateTime = 1;
     if (cached_has_bits & 0x00000001u) {
       total_size += 1 +
@@ -4518,13 +4566,20 @@ size_t QueryLogInfo::ByteSizeLong() const {
           this->_internal_filename());
     }
 
-    // optional int32 QueryTime = 6;
+    // optional string DbName = 8;
     if (cached_has_bits & 0x00000020u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+          this->_internal_dbname());
+    }
+
+    // optional int32 QueryTime = 6;
+    if (cached_has_bits & 0x00000040u) {
       total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_querytime());
     }
 
     // optional int32 AnsNum = 7;
-    if (cached_has_bits & 0x00000040u) {
+    if (cached_has_bits & 0x00000080u) {
       total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_ansnum());
     }
 
@@ -4552,7 +4607,7 @@ void QueryLogInfo::MergeFrom(const QueryLogInfo& from) {
   (void) cached_has_bits;
 
   cached_has_bits = from._has_bits_[0];
-  if (cached_has_bits & 0x0000007fu) {
+  if (cached_has_bits & 0x000000ffu) {
     if (cached_has_bits & 0x00000001u) {
       _internal_set_querydatetime(from._internal_querydatetime());
     }
@@ -4569,9 +4624,12 @@ void QueryLogInfo::MergeFrom(const QueryLogInfo& from) {
       _internal_set_filename(from._internal_filename());
     }
     if (cached_has_bits & 0x00000020u) {
-      querytime_ = from.querytime_;
+      _internal_set_dbname(from._internal_dbname());
     }
     if (cached_has_bits & 0x00000040u) {
+      querytime_ = from.querytime_;
+    }
+    if (cached_has_bits & 0x00000080u) {
       ansnum_ = from.ansnum_;
     }
     _has_bits_[0] |= cached_has_bits;
@@ -4620,6 +4678,11 @@ void QueryLogInfo::InternalSwap(QueryLogInfo* other) {
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       &filename_, lhs_arena,
       &other->filename_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &dbname_, lhs_arena,
+      &other->dbname_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(QueryLogInfo, ansnum_)
@@ -6060,7 +6123,8 @@ CommonResponse::CommonResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
   responsebody_(arena),
-  list_(arena) {
+  list_(arena),
+  predicateset_(arena) {
   SharedCtor();
   if (!is_message_owned) {
     RegisterArenaDtor(arena);
@@ -6071,7 +6135,8 @@ CommonResponse::CommonResponse(const CommonResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _has_bits_(from._has_bits_),
       responsebody_(from.responsebody_),
-      list_(from.list_) {
+      list_(from.list_),
+      predicateset_(from.predicateset_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   statusmsg_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -6361,6 +6426,7 @@ void CommonResponse::Clear() {
 
   responsebody_.Clear();
   list_.Clear();
+  predicateset_.Clear();
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x000000ffu) {
     if (cached_has_bits & 0x00000001u) {
@@ -6793,9 +6859,26 @@ const char* CommonResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
         } else
           goto handle_unusual;
         continue;
-      // optional string type = 33;
+      // repeated string predicateSet = 33;
       case 33:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr -= 2;
+          do {
+            ptr += 2;
+            auto str = _internal_add_predicateset();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            #ifndef NDEBUG
+            ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "CommonResponse.predicateSet");
+            #endif  // !NDEBUG
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<266>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // optional string type = 34;
+      case 34:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           auto str = _internal_mutable_type();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           #ifndef NDEBUG
@@ -6805,9 +6888,9 @@ const char* CommonResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
         } else
           goto handle_unusual;
         continue;
-      // optional string csr = 34;
-      case 34:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+      // optional string csr = 35;
+      case 35:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           auto str = _internal_mutable_csr();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           #ifndef NDEBUG
@@ -7112,24 +7195,34 @@ uint8_t* CommonResponse::_InternalSerialize(
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(32, this->_internal_connectionnum(), target);
   }
 
-  // optional string type = 33;
+  // repeated string predicateSet = 33;
+  for (int i = 0, n = this->_internal_predicateset_size(); i < n; i++) {
+    const auto& s = this->_internal_predicateset(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
+      "CommonResponse.predicateSet");
+    target = stream->WriteString(33, s, target);
+  }
+
+  // optional string type = 34;
   if (cached_has_bits & 0x00010000u) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
       this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
       "CommonResponse.type");
     target = stream->WriteStringMaybeAliased(
-        33, this->_internal_type(), target);
+        34, this->_internal_type(), target);
   }
 
-  // optional string csr = 34;
+  // optional string csr = 35;
   if (cached_has_bits & 0x00020000u) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
       this->_internal_csr().data(), static_cast<int>(this->_internal_csr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
       "CommonResponse.csr");
     target = stream->WriteStringMaybeAliased(
-        34, this->_internal_csr(), target);
+        35, this->_internal_csr(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -7160,6 +7253,14 @@ size_t CommonResponse::ByteSizeLong() const {
   for (const auto& msg : this->list_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // repeated string predicateSet = 33;
+  total_size += 2 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(predicateset_.size());
+  for (int i = 0, n = predicateset_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      predicateset_.Get(i));
   }
 
   cached_has_bits = _has_bits_[0];
@@ -7280,14 +7381,14 @@ size_t CommonResponse::ByteSizeLong() const {
 
   }
   if (cached_has_bits & 0x00ff0000u) {
-    // optional string type = 33;
+    // optional string type = 34;
     if (cached_has_bits & 0x00010000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
           this->_internal_type());
     }
 
-    // optional string csr = 34;
+    // optional string csr = 35;
     if (cached_has_bits & 0x00020000u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
@@ -7413,6 +7514,7 @@ void CommonResponse::MergeFrom(const CommonResponse& from) {
 
   responsebody_.MergeFrom(from.responsebody_);
   list_.MergeFrom(from.list_);
+  predicateset_.MergeFrom(from.predicateset_);
   cached_has_bits = from._has_bits_[0];
   if (cached_has_bits & 0x000000ffu) {
     if (cached_has_bits & 0x00000001u) {
@@ -7542,6 +7644,7 @@ void CommonResponse::InternalSwap(CommonResponse* other) {
   swap(_has_bits_[0], other->_has_bits_[0]);
   responsebody_.InternalSwap(&other->responsebody_);
   list_.InternalSwap(&other->list_);
+  predicateset_.InternalSwap(&other->predicateset_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       &statusmsg_, lhs_arena,
