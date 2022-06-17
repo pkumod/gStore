@@ -130,6 +130,7 @@ int main(int argc, char* argv[])
 		if (!stopServer()) {
 			return -1;
 		}
+		sleep(10);
 		if (startServer(false)) {
 			sleep(1);
 			if (isOnlyProcess(argv[0])) {
