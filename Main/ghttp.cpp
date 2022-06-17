@@ -1,8 +1,8 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-04-22 11:40:36
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-06-17 13:03:54
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
  */
@@ -1827,7 +1827,7 @@ string update_flag,string log_prefix,string username)
 				{
 					file_name = string(filename.c_str());
 				}
-				struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time);
+				struct DBQueryLogInfo queryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time, db_name);
 				apiUtil->write_query_log(&queryLogInfo);
 			}
 

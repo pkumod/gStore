@@ -2024,6 +2024,7 @@ class QueryLogInfo final :
     kFormatFieldNumber = 3,
     kRemoteIPFieldNumber = 4,
     kFileNameFieldNumber = 5,
+    kDbNameFieldNumber = 8,
     kQueryTimeFieldNumber = 6,
     kAnsNumFieldNumber = 7,
   };
@@ -2117,6 +2118,24 @@ class QueryLogInfo final :
   std::string* _internal_mutable_filename();
   public:
 
+  // optional string DbName = 8;
+  bool has_dbname() const;
+  private:
+  bool _internal_has_dbname() const;
+  public:
+  void clear_dbname();
+  const std::string& dbname() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_dbname(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_dbname();
+  PROTOBUF_NODISCARD std::string* release_dbname();
+  void set_allocated_dbname(std::string* dbname);
+  private:
+  const std::string& _internal_dbname() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_dbname(const std::string& value);
+  std::string* _internal_mutable_dbname();
+  public:
+
   // optional int32 QueryTime = 6;
   bool has_querytime() const;
   private:
@@ -2157,6 +2176,7 @@ class QueryLogInfo final :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr format_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr remoteip_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr filename_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr dbname_;
   int32_t querytime_;
   int32_t ansnum_;
   friend struct ::TableStruct_grpc_2eproto;
@@ -3024,6 +3044,7 @@ class CommonResponse final :
   enum : int {
     kResponseBodyFieldNumber = 3,
     kListFieldNumber = 13,
+    kPredicateSetFieldNumber = 33,
     kStatusMsgFieldNumber = 2,
     kThreadIdFieldNumber = 8,
     kQueryTimeFieldNumber = 9,
@@ -3040,8 +3061,8 @@ class CommonResponse final :
     kCreatorFieldNumber = 25,
     kBuiltTimeFieldNumber = 26,
     kTripleNumFieldNumber = 27,
-    kTypeFieldNumber = 33,
-    kCsrFieldNumber = 34,
+    kTypeFieldNumber = 34,
+    kCsrFieldNumber = 35,
     kHeadFieldNumber = 4,
     kResultsFieldNumber = 5,
     kStatusCodeFieldNumber = 1,
@@ -3092,6 +3113,30 @@ class CommonResponse final :
   ::PROTOBUF_NAMESPACE_ID::Any* add_list();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::PROTOBUF_NAMESPACE_ID::Any >&
       list() const;
+
+  // repeated string predicateSet = 33;
+  int predicateset_size() const;
+  private:
+  int _internal_predicateset_size() const;
+  public:
+  void clear_predicateset();
+  const std::string& predicateset(int index) const;
+  std::string* mutable_predicateset(int index);
+  void set_predicateset(int index, const std::string& value);
+  void set_predicateset(int index, std::string&& value);
+  void set_predicateset(int index, const char* value);
+  void set_predicateset(int index, const char* value, size_t size);
+  std::string* add_predicateset();
+  void add_predicateset(const std::string& value);
+  void add_predicateset(std::string&& value);
+  void add_predicateset(const char* value);
+  void add_predicateset(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& predicateset() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_predicateset();
+  private:
+  const std::string& _internal_predicateset(int index) const;
+  std::string* _internal_add_predicateset();
+  public:
 
   // optional string StatusMsg = 2;
   bool has_statusmsg() const;
@@ -3381,7 +3426,7 @@ class CommonResponse final :
   std::string* _internal_mutable_triplenum();
   public:
 
-  // optional string type = 33;
+  // optional string type = 34;
   bool has_type() const;
   private:
   bool _internal_has_type() const;
@@ -3399,7 +3444,7 @@ class CommonResponse final :
   std::string* _internal_mutable_type();
   public:
 
-  // optional string csr = 34;
+  // optional string csr = 35;
   bool has_csr() const;
   private:
   bool _internal_has_csr() const;
@@ -3620,6 +3665,7 @@ class CommonResponse final :
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::PROTOBUF_NAMESPACE_ID::Any > responsebody_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::PROTOBUF_NAMESPACE_ID::Any > list_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> predicateset_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr statusmsg_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr threadid_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr querytime_;
@@ -7167,7 +7213,7 @@ inline void QueryLogInfo::set_allocated_filename(std::string* filename) {
 
 // optional int32 QueryTime = 6;
 inline bool QueryLogInfo::_internal_has_querytime() const {
-  bool value = (_has_bits_[0] & 0x00000020u) != 0;
+  bool value = (_has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool QueryLogInfo::has_querytime() const {
@@ -7175,7 +7221,7 @@ inline bool QueryLogInfo::has_querytime() const {
 }
 inline void QueryLogInfo::clear_querytime() {
   querytime_ = 0;
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline int32_t QueryLogInfo::_internal_querytime() const {
   return querytime_;
@@ -7185,7 +7231,7 @@ inline int32_t QueryLogInfo::querytime() const {
   return _internal_querytime();
 }
 inline void QueryLogInfo::_internal_set_querytime(int32_t value) {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000040u;
   querytime_ = value;
 }
 inline void QueryLogInfo::set_querytime(int32_t value) {
@@ -7195,7 +7241,7 @@ inline void QueryLogInfo::set_querytime(int32_t value) {
 
 // optional int32 AnsNum = 7;
 inline bool QueryLogInfo::_internal_has_ansnum() const {
-  bool value = (_has_bits_[0] & 0x00000040u) != 0;
+  bool value = (_has_bits_[0] & 0x00000080u) != 0;
   return value;
 }
 inline bool QueryLogInfo::has_ansnum() const {
@@ -7203,7 +7249,7 @@ inline bool QueryLogInfo::has_ansnum() const {
 }
 inline void QueryLogInfo::clear_ansnum() {
   ansnum_ = 0;
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline int32_t QueryLogInfo::_internal_ansnum() const {
   return ansnum_;
@@ -7213,12 +7259,81 @@ inline int32_t QueryLogInfo::ansnum() const {
   return _internal_ansnum();
 }
 inline void QueryLogInfo::_internal_set_ansnum(int32_t value) {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000080u;
   ansnum_ = value;
 }
 inline void QueryLogInfo::set_ansnum(int32_t value) {
   _internal_set_ansnum(value);
   // @@protoc_insertion_point(field_set:QueryLogInfo.AnsNum)
+}
+
+// optional string DbName = 8;
+inline bool QueryLogInfo::_internal_has_dbname() const {
+  bool value = (_has_bits_[0] & 0x00000020u) != 0;
+  return value;
+}
+inline bool QueryLogInfo::has_dbname() const {
+  return _internal_has_dbname();
+}
+inline void QueryLogInfo::clear_dbname() {
+  dbname_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000020u;
+}
+inline const std::string& QueryLogInfo::dbname() const {
+  // @@protoc_insertion_point(field_get:QueryLogInfo.DbName)
+  return _internal_dbname();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void QueryLogInfo::set_dbname(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000020u;
+ dbname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:QueryLogInfo.DbName)
+}
+inline std::string* QueryLogInfo::mutable_dbname() {
+  std::string* _s = _internal_mutable_dbname();
+  // @@protoc_insertion_point(field_mutable:QueryLogInfo.DbName)
+  return _s;
+}
+inline const std::string& QueryLogInfo::_internal_dbname() const {
+  return dbname_.Get();
+}
+inline void QueryLogInfo::_internal_set_dbname(const std::string& value) {
+  _has_bits_[0] |= 0x00000020u;
+  dbname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArenaForAllocation());
+}
+inline std::string* QueryLogInfo::_internal_mutable_dbname() {
+  _has_bits_[0] |= 0x00000020u;
+  return dbname_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArenaForAllocation());
+}
+inline std::string* QueryLogInfo::release_dbname() {
+  // @@protoc_insertion_point(field_release:QueryLogInfo.DbName)
+  if (!_internal_has_dbname()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000020u;
+  auto* p = dbname_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (dbname_.IsDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited())) {
+    dbname_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void QueryLogInfo::set_allocated_dbname(std::string* dbname) {
+  if (dbname != nullptr) {
+    _has_bits_[0] |= 0x00000020u;
+  } else {
+    _has_bits_[0] &= ~0x00000020u;
+  }
+  dbname_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), dbname,
+      GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (dbname_.IsDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited())) {
+    dbname_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), "", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:QueryLogInfo.DbName)
 }
 
 // -------------------------------------------------------------------
@@ -9931,7 +10046,82 @@ inline void CommonResponse::set_connectionnum(int32_t value) {
   // @@protoc_insertion_point(field_set:CommonResponse.connectionNum)
 }
 
-// optional string type = 33;
+// repeated string predicateSet = 33;
+inline int CommonResponse::_internal_predicateset_size() const {
+  return predicateset_.size();
+}
+inline int CommonResponse::predicateset_size() const {
+  return _internal_predicateset_size();
+}
+inline void CommonResponse::clear_predicateset() {
+  predicateset_.Clear();
+}
+inline std::string* CommonResponse::add_predicateset() {
+  std::string* _s = _internal_add_predicateset();
+  // @@protoc_insertion_point(field_add_mutable:CommonResponse.predicateSet)
+  return _s;
+}
+inline const std::string& CommonResponse::_internal_predicateset(int index) const {
+  return predicateset_.Get(index);
+}
+inline const std::string& CommonResponse::predicateset(int index) const {
+  // @@protoc_insertion_point(field_get:CommonResponse.predicateSet)
+  return _internal_predicateset(index);
+}
+inline std::string* CommonResponse::mutable_predicateset(int index) {
+  // @@protoc_insertion_point(field_mutable:CommonResponse.predicateSet)
+  return predicateset_.Mutable(index);
+}
+inline void CommonResponse::set_predicateset(int index, const std::string& value) {
+  predicateset_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:CommonResponse.predicateSet)
+}
+inline void CommonResponse::set_predicateset(int index, std::string&& value) {
+  predicateset_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:CommonResponse.predicateSet)
+}
+inline void CommonResponse::set_predicateset(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  predicateset_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:CommonResponse.predicateSet)
+}
+inline void CommonResponse::set_predicateset(int index, const char* value, size_t size) {
+  predicateset_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:CommonResponse.predicateSet)
+}
+inline std::string* CommonResponse::_internal_add_predicateset() {
+  return predicateset_.Add();
+}
+inline void CommonResponse::add_predicateset(const std::string& value) {
+  predicateset_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:CommonResponse.predicateSet)
+}
+inline void CommonResponse::add_predicateset(std::string&& value) {
+  predicateset_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:CommonResponse.predicateSet)
+}
+inline void CommonResponse::add_predicateset(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  predicateset_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:CommonResponse.predicateSet)
+}
+inline void CommonResponse::add_predicateset(const char* value, size_t size) {
+  predicateset_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:CommonResponse.predicateSet)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+CommonResponse::predicateset() const {
+  // @@protoc_insertion_point(field_list:CommonResponse.predicateSet)
+  return predicateset_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+CommonResponse::mutable_predicateset() {
+  // @@protoc_insertion_point(field_mutable_list:CommonResponse.predicateSet)
+  return &predicateset_;
+}
+
+// optional string type = 34;
 inline bool CommonResponse::_internal_has_type() const {
   bool value = (_has_bits_[0] & 0x00010000u) != 0;
   return value;
@@ -10000,7 +10190,7 @@ inline void CommonResponse::set_allocated_type(std::string* type) {
   // @@protoc_insertion_point(field_set_allocated:CommonResponse.type)
 }
 
-// optional string csr = 34;
+// optional string csr = 35;
 inline bool CommonResponse::_internal_has_csr() const {
   bool value = (_has_bits_[0] & 0x00020000u) != 0;
   return value;

@@ -1,8 +1,8 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-05-25 18:18:54
- * @LastEditors: wangjian
+ * @LastEditTime: 2022-05-31 11:24:40
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
  */
@@ -349,9 +349,10 @@ private:
     std::string fileName;
     int statusCode;
     size_t queryTime;
+    std::string dbName;
 public:
     DBQueryLogInfo () {}
-    DBQueryLogInfo (string _queryDateTime, string _remoteIP, string _sparql, long _ansNum, string _format, string _fileName, int _statusCode, size_t _queryTime)
+    DBQueryLogInfo (string _queryDateTime, string _remoteIP, string _sparql, long _ansNum, string _format, string _fileName, int _statusCode, size_t _queryTime, string _dbName)
     {
         queryDateTime = _queryDateTime;
         remoteIP = _remoteIP;
@@ -361,6 +362,7 @@ public:
         fileName = _fileName;
         statusCode = _statusCode;
         queryTime = _queryTime;
+        dbName = _dbName;
     }
     DBQueryLogInfo(string json_str)
     {
@@ -399,6 +401,10 @@ public:
             if (doc.HasMember("QueryTime") && doc["QueryTime"].IsUint64())
             {
                 queryTime = doc["QueryTime"].GetUint64();
+            }               
+            if (doc.HasMember("DbName") && doc["DbName"].IsString())
+            {
+                dbName = doc["DbName"].GetString();
             }
         }
     }
@@ -410,6 +416,7 @@ public:
     void setFileName(string _fileName) {fileName = _fileName;}
     void setStatusCode(int _statusCode) {statusCode = _statusCode;}
     void setQueryTime(int _queryTime) {queryTime = _queryTime;}
+    void setDbName(string _dbName) {dbName = _dbName;}
 
     std::string getQueryDateTime(){return queryDateTime;}
     std::string getRemoteIP() {return remoteIP;}
@@ -419,6 +426,7 @@ public:
     std::string getFileName() {return fileName;}
     int getStatusCode() {return statusCode;}
     int getQueryTime() {return queryTime;}
+    std::string getDbName() {return dbName;}
     std::string toJSON()
     {
         rapidjson::Document doc;
@@ -431,6 +439,7 @@ public:
         doc.AddMember("FileName", rapidjson::StringRef(fileName.c_str()), doc.GetAllocator());
         doc.AddMember("StatusCode", statusCode, doc.GetAllocator());
         doc.AddMember("QueryTime", queryTime, doc.GetAllocator());
+        doc.AddMember("DbName", rapidjson::StringRef(dbName.c_str()), doc.GetAllocator());
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
         doc.Accept(writer);
@@ -853,8 +862,8 @@ private:
     string backup_path = "./backups";
     string DB_path = ".";
     unsigned int max_output_size = 10000000;
-    string query_log_path = "querylog_path";
-    string access_log_path = "accesslog_path";
+    string query_log_path = "logs/ipaccess/";
+    string access_log_path = "logs/endpoint/";
     std::string pfn_file_path = "fun/";
     std::string pfn_lib_path = "lib/";
     std::string pfn_include_header = "";
@@ -954,9 +963,11 @@ public:
     vector<string> ip_list(string type);
     string ip_enabled_type();
     // for access log
+    void get_access_log_files(std::vector<std::string> &file_list);
     void get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs);
     void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg);
     // for query log
+    void get_query_log_files(std::vector<std::string> &file_list);
     void get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs);
     void write_query_log(struct DBQueryLogInfo *queryLogInfo);
     // for transaction log
