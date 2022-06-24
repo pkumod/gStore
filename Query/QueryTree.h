@@ -88,9 +88,32 @@ class QueryTree
 				Varset varset, subject_object_varset;
 				int blockid;
 
-				Pattern():blockid(-1){}
+				Pattern():kleene(false), blockid(-1){}
 				Pattern(const Element _subject, const Element _predicate, const Element _object, bool _kleene=false):
 					subject(_subject), predicate(_predicate), object(_object), kleene(_kleene), blockid(-1){}
+				Pattern(const Pattern& _pattern)
+				{
+					subject.value = _pattern.subject.value;
+					predicate.value = _pattern.predicate.value;
+					object.value = _pattern.object.value;
+					varset = _pattern.varset;
+					subject_object_varset = _pattern.subject_object_varset;
+					blockid = _pattern.blockid;
+					kleene = _pattern.kleene;
+				}
+
+				Pattern& operator = (const Pattern &_pattern)
+				{
+					subject.value = _pattern.subject.value;
+					predicate.value = _pattern.predicate.value;
+					object.value = _pattern.object.value;
+					varset = _pattern.varset;
+					subject_object_varset = _pattern.subject_object_varset;
+					blockid = _pattern.blockid;
+					kleene = _pattern.kleene;
+					
+					return *this;
+				}
 
 				bool operator < (const Pattern &x) const
 				{
@@ -99,6 +122,15 @@ class QueryTree
 					if (this->predicate.value != x.predicate.value)
 						return this->predicate.value < x.predicate.value;
 					return (this->object.value < x.object.value);
+				}
+
+				bool operator == (const Pattern &x) const
+				{
+					if (this->subject.value == x.subject.value \
+						&& this->predicate.value == x.predicate.value \
+						&& this->object.value == x.object.value && this->kleene == x.kleene)
+						return true;
+					return false;
 				}
 		};
 
@@ -132,6 +164,26 @@ class QueryTree
 			// ~CompTreeNode();
 			void print(int dep);	// Print subtree rooted at this node
 			Varset getVarset();
+			CompTreeNode(const CompTreeNode& that)
+			{
+				oprt = that.oprt;
+				children = that.children;
+				val = that.val;
+				path_args = that.path_args;
+				varset = that.varset;
+				done = that.done;
+			}
+			CompTreeNode& operator = (const CompTreeNode& that)
+			{
+				oprt = that.oprt;
+				children = that.children;
+				val = that.val;
+				path_args = that.path_args;
+				varset = that.varset;
+				done = that.done;
+
+				return *this;
+			}
 		};
 
 		class GroupPattern::FilterTree
@@ -219,10 +271,23 @@ class QueryTree
 				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type)
 				{
 					pattern = _sgp.pattern;
+					group_pattern = _sgp.group_pattern;
 					unions = _sgp.unions;
 					optional = _sgp.optional;
 					filter = _sgp.filter;
 					bind = _sgp.bind;
+				}
+				SubGroupPattern& operator =(const SubGroupPattern& _sgp)
+				{
+					type = _sgp.type;
+					pattern = _sgp.pattern;
+					group_pattern = _sgp.group_pattern;
+					unions = _sgp.unions;
+					optional = _sgp.optional;
+					filter = _sgp.filter;
+					bind = _sgp.bind;
+
+					return *this;
 				}
 		};
 

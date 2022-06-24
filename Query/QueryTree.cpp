@@ -264,7 +264,7 @@ void QueryTree::GroupPattern::addOnePattern(Pattern _pattern)
 */
 void QueryTree::GroupPattern::addOneGroup()
 {
-	sub_group_pattern.push_back(SubGroupPattern(SubGroupPattern::Group_type));
+	this->sub_group_pattern.emplace_back(SubGroupPattern(SubGroupPattern::Group_type));
 }
 
 /**
@@ -648,6 +648,8 @@ void QueryTree::GroupPattern::print(int dep)
 			// printf("BIND(%s\tAS\t%s)", this->sub_group_pattern[i].bind.str.c_str(), this->sub_group_pattern[i].bind.var.c_str());
 			printf("\n");
 		}
+		else
+			printf("ERROR in QueryTree::GroupPattern sub_group_pattern element type\n");
 
 	for (int t = 0; t < dep; t++)	printf("\t");	printf("}\n");
 }
