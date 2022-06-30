@@ -79,7 +79,7 @@ api_cpp = api/http/cpp/lib/libgstoreconnector.a
 
 api_socket = api/socket/cpp/lib/libclient.a
 
-api_java = api/http/java/lib/GstoreJavaAPI.jar
+# api_java = api/http/java/lib/GstoreJavaAPI.jar
 
 # objects
 
@@ -134,7 +134,7 @@ inc_rpc = -I./tools/srpc/_include -I./tools/srpc/workflow/_include -I/usr/local/
 
 #gtest
 
-TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery $(api_java) $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc
+TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler $(exedir)gquery  $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc
 # TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
 
 all: $(TARGET)
@@ -729,8 +729,6 @@ $(api_cpp):
 $(api_socket):
 	$(MAKE) -C api/socket/cpp/src
 
-$(api_java):
-	$(MAKE) -C api/http/java/src
 
 .PHONY: clean dist tarball api_example gtest sumlines contribution test
 
@@ -772,10 +770,9 @@ tarball:
 		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini NOTES.md StringIndex COVERAGE \
 		Dockerfile LICENSE makefile Trie
 
-APIexample: $(api_cpp) $(api_socket) $(api_java)
+APIexample: $(api_cpp) $(api_socket) 
 	$(MAKE) -C api/http/cpp/example
 	$(MAKE) -C api/socket/cpp/example
-	$(MAKE) -C api/http/java/example
 
 gtest: $(objdir)gtest.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
