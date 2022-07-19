@@ -616,8 +616,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// TODO: refine the fillcand strategy regarding the same layer
 					// Now only consider dep == 0
-					if (dep == 0)
-						this->rewriting_evaluation_stack[dep].result = result;
+					// The following is problematic for deeper layers, disable for now
+					// if (dep == 0 && !(result->results.empty()))
+					// 	this->rewriting_evaluation_stack[dep].result = result;
 					// if (dep > 0)
 					// {
 						#ifndef TEST_BGPQUERY
@@ -1204,7 +1205,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
-			this->rewriting_evaluation_stack[dep].result = result;	// For FillCand
+			if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+				this->rewriting_evaluation_stack[dep].result = result;	// For OPTIONAL FillCand (MINUS cannot do this)
 			TempResultSet *temp = queryEvaluation(dep + 1);
 			{
 				TempResultSet *new_result = new TempResultSet();
@@ -3578,7 +3580,7 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pat
 void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset)
 {
 	TempResultSet *&last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
-	if (!last_result || (dep == 0 && last_result->results.size() > 1000000)) return;
+	if (!last_result || last_result->results.empty() || (dep == 0 && last_result->results.size() > 1000000)) return;
 
 	for (int j = 0; j < bgp_query_vec.size(); j++)
 	{
