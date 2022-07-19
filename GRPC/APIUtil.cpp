@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-05-31 15:29:03
+ * @LastEditTime: 2022-07-19 11:39:08
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -2098,15 +2098,10 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     string file_name;
     file_name = pfn_info->getFunName();
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
-    string file_dir = APIUtil::pfn_file_path + username;
-    if (!Util::dir_exist(file_dir))
-    {
-        //Util::create_dir(file_dir);
-        string mkdir_cmd = "mkdir "+ APIUtil::pfn_file_path;
-        system(mkdir_cmd.c_str());
-        mkdir_cmd = "mkdir " + file_dir;
-        system(mkdir_cmd.c_str());
-    }
+    string file_dir = APIUtil::pfn_file_path;
+    Util::create_dir(file_dir);
+    file_dir = file_dir + username;
+    Util::create_dir(file_dir);
     string file_path = file_dir + "/" + file_name + ".cpp";
     std::cout << "file_path: " << file_path << endl;
     if (Util::file_exist(file_path))
@@ -2203,16 +2198,12 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     //create a temp file
     string last_time = Util::get_timestamp();
     string md5str = Util::md5(last_time);
-    string targetDir = APIUtil::pfn_lib_path + username;
-    if (!Util::dir_exist(targetDir))
-    {
-        Util::create_dir(targetDir);
-    }
-    targetDir = APIUtil::pfn_lib_path + username + "/.temp";
-    if (!Util::dir_exist(targetDir))
-    {
-        Util::create_dir(targetDir);
-    }
+    string targetDir = APIUtil::pfn_lib_path;
+    Util::create_dir(targetDir);
+    targetDir = targetDir + username;
+    Util::create_dir(targetDir);
+    targetDir = targetDir + "/.temp";
+    Util::create_dir(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
     string cmd = "rm -f " + targetFile;
