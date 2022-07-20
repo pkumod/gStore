@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-07-19 11:39:08
+ * @LastEditTime: 2022-07-20 18:26:19
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -2114,16 +2114,18 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     // cppcheck end
     
     // save fun in file
-    if(report_detail.size() == 0){
+    if (report_detail.size() == 0)
+    {
         ofstream fout(file_path.c_str());
-        cout << "fout ok" <<endl;
         if (fout)
         {
-            cout << "begin get source data " <<endl;
             content = APIUtil::fun_build_source_data(pfn_info, true);
+            cout << "fun_build_source_data success"<<endl;
             fout << content;
             fout.close();
-        } else {
+        } 
+        else 
+        {
             cout << "open file error "<<endl;
             throw new runtime_error("cannot write to file " + file_path);
         }
@@ -2149,26 +2151,30 @@ void APIUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
     {
         throw runtime_error("function name " + pfn_infos->getFunName() + " not exists");
     }
-    
     // cpp check start
     string report_detail = "";
     // report_detail = fun_cppcheck(username, pfn_infos);
     // cpp check end
     
     // save fun in file
-    if(report_detail.size() == 0){
-        content = APIUtil::fun_build_source_data(pfn_infos, true);
-        cout << "fun_build_source_data success "<<endl;
+    if (report_detail.size() == 0)
+    {
         ofstream fout(file_path.c_str());
-        if (fout.is_open())
+        if (fout) 
         {
+            content = APIUtil::fun_build_source_data(pfn_infos, true);
+            cout << "fun_build_source_data success"<<endl;
             fout << content;
             fout.close();
+        } 
+        else 
+        {
+            cout << "open file error "<<endl;
+            throw new runtime_error("cannot write to file " + file_path);
         }
         // save method info to json file
         pfn_infos->setFunStatus("1");
         APIUtil::fun_write_json_file(username, pfn_infos, "2");
-        cout << "APIUtil::fun_write_json_file success "<<endl;
     }
     else
     {
