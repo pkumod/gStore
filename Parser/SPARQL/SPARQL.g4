@@ -400,6 +400,7 @@ PLX : PERCENT | PN_LOCAL_ESC ;
 PERCENT : '%' HEX HEX ;
 HEX : [0-9] | [A-F] | [a-f] ;
 PN_LOCAL_ESC : '\\' ( '_' | '~' | '.' | '-' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '=' | '/' | '?' | '#' | '@' | '%' ) ;
+COMMENT : '#' ~[\n\r]* -> channel(HIDDEN);
 
 fragment A : [aA];
 fragment B : [bB];
