@@ -1502,8 +1502,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
 					vector<int> pred_id_set;
-					uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
-					if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					if (!proj[0].path_args.src.empty())
+						uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
+					else
+						uid_ls.push_back(-1);	// Dummy for loop
+					// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					if (!proj[0].path_args.dst.empty())
 						vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
 					else
 						vid_ls.push_back(-1);	// Dummy for loop
@@ -1675,6 +1679,49 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									   << it->second << "}";
 								}
 								ss << "]}";
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+							{
+								auto ret = pqHandler->triangleCounting(pred_id_set);
+								ss << to_string(ret);
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+							{
+								auto ret = pqHandler->closenessCentrality(uid, proj[0].path_args.directed, pred_id_set);
+								ss << to_string(ret);
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+							{
+								auto ret = pqHandler->bfsCount(uid, proj[0].path_args.directed, pred_id_set);
+								size_t retSz = ret.size();
+								ss << "{";
+								for (size_t i = 0; i < retSz; i++)
+								{
+									ss << "{\"depth\":" << i << ", \"count\":" << ret[i] << "}";
+									if (i != retSz - 1)
+										ss << ", ";
+								}
+								ss << "}";
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::pr_type)
+							{
+
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+							{
+
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+							{
+
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+							{
+
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+							{
+
 							}
 						}
 						if (earlyBreak)
@@ -2770,22 +2817,25 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						vector<int> pred_id_set;
 
 						// uid
-						if (proj[i].path_args.src[0] == '?')	// src is a variable
+						if (!proj[0].path_args.src.empty())
 						{
-							int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
-							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
-							else
+							if (proj[i].path_args.src[0] == '?')	// src is a variable
 							{
-								for (int j = begin; j <= end; j++)
+								int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
+								if (var2temp >= result0_id_cols)
+									cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+								else
 								{
-									if (result0.result[j].id[var2temp] != INVALID)
-										uid_ls.push_back(result0.result[j].id[var2temp]);
+									for (int j = begin; j <= end; j++)
+									{
+										if (result0.result[j].id[var2temp] != INVALID)
+											uid_ls.push_back(result0.result[j].id[var2temp]);
+									}
 								}
 							}
+							else	// src is an IRI
+								uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
 						}
-						else	// src is an IRI
-							uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
 
 						// cout << "uid: ";
 						// for (int uid : uid_ls)
@@ -2793,7 +2843,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						// cout << endl;
 
 						// vid
-						if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						if (!proj[0].path_args.dst.empty())
 						{
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 							{
@@ -2949,7 +3000,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 								{
 									cout << "begin run kHopReachablePath " << endl;
 									if (uid == vid)
@@ -2975,7 +3026,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 									}
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
 									pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
@@ -2988,6 +3039,49 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											<< it->second << "}";
 									}
 									ss << "]}";
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+								{
+									auto ret = pqHandler->triangleCounting(pred_id_set);
+									ss << to_string(ret);
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+								{
+									auto ret = pqHandler->closenessCentrality(uid, proj[0].path_args.directed, pred_id_set);
+									ss << to_string(ret);
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+								{
+									auto ret = pqHandler->bfsCount(uid, proj[0].path_args.directed, pred_id_set);
+									size_t retSz = ret.size();
+									ss << "{";
+									for (size_t i = 0; i < retSz; i++)
+									{
+										ss << "{\"depth\":" << i << ", \"count\":" << ret[i] << "}";
+										if (i != retSz - 1)
+											ss << ", ";
+									}
+									ss << "}";
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::pr_type)
+								{
+
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+								{
+
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+								{
+
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+								{
+
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+								{
+
 								}
 							}
 							if (earlyBreak)
