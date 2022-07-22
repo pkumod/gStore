@@ -593,7 +593,6 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 	use the map route_u[q] to store the route from u to q.
 	use the map route_v[q] to store the route from v to q.
 **/
-
 vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, const vector<int> &pred_set)//cost more space and more time?
 {
 	//cout << "BFS1" << endl;
@@ -1483,6 +1482,52 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 	if ((ret.size() - 1) / 2 > k)
 		ret.clear();
 	return ret;
+}
+
+/**
+	Compute and return the number of triangles in the graph, only considering the
+	edges in the path with labels in pred_set.
+
+	@param pred_set the set of edge labels allowed.
+	@return the number of triangles in the graph.
+**/
+int PathQueryHandler::triangleCounting(const std::vector<int> &pred_set)
+{
+	return 0;
+}
+
+/**
+	Compute and return the closeness centrality of a vertex, only 
+	considering the edges in the path with labels in pred_set.
+	closenessCentrality(u) = n' / \\Sigma_{v \\neq u}d_{uv},
+	where n' = the number of reachable vertices from u,
+	d_{uv} = the distance from u to v (only consider v reachable from u)
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return the closeness centrality of vertex u.
+**/
+double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	return 0;
+}
+
+/**
+	Compute and return the closeness centrality of a vertex, only 
+	considering the edges in the path with labels in pred_set.
+	closenessCentrality(u) = n' / \\Sigma_{v \\neq u}d_{uv},
+	where n' = the number of reachable vertices from u,
+	d_{uv} = the distance from u to v (only consider v reachable from u)
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return the closeness centrality of vertex u.
+**/
+vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	return vector<int>(1, 1);
 }
 
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!

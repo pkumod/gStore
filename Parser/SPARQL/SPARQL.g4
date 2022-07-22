@@ -200,6 +200,14 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_PPR '(' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' num_integer ')'
+|   K_TRIANGLECOUNTING '(' predSet ')'
+|   K_CLOSENESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_BFSCOUNT '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_PR '(' varOrIri ',' predSet ',' num_integer ')'
+|   K_SSSP '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_LABELPROP '(' booleanLiteral ',' predSet ')'
+|   K_WCC '(' predSet ')'
+|   K_CLUSTERCOEFF '(' predSet ')'
 |   K_PFN '(' varOrIriSet ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' string ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
@@ -351,6 +359,14 @@ K_KHOPREACHABLE : K H O P R E A C H A B L E ;
 K_KHOPENUMERATE : K H O P E N U M E R A T E ;
 K_KHOPREACHABLEPATH : K H O P R E A C H A B L E P A T H ;
 K_PPR : P P R ;
+K_TRIANGLECOUNTING : T R I A N G L E C O U N T I N G ;
+K_CLOSENESSCENTRALITY : C L O S E N E S S C E N T R A L I T Y ;
+K_BFSCOUNT : B F S C O U N T ;
+K_PR : P R ;
+K_SSSP : S S S P ;
+K_LABELPROP : L A B E L P R O P ;
+K_WCC : W C C ;
+K_CLUSTERCOEFF : C L U S T E R C O E F F ;
 K_PFN : P F N ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
