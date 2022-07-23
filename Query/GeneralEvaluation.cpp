@@ -1685,7 +1685,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneTriangle)
 								{
-									auto ret = pqHandler->triangleCounting(pred_id_set);
+									auto ret = pqHandler->triangleCounting(proj[0].path_args.directed, pred_id_set);
 									ss << to_string(ret);
 									doneTriangle = true;
 								}
@@ -3057,7 +3057,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneTriangle)
 									{
-										auto ret = pqHandler->triangleCounting(pred_id_set);
+										auto ret = pqHandler->triangleCounting(proj[i].path_args.directed, pred_id_set);
 										ss << to_string(ret);
 										doneTriangle = true;
 									}

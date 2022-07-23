@@ -1491,7 +1491,7 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 	@param pred_set the set of edge labels allowed.
 	@return the number of triangles in the graph.
 **/
-int PathQueryHandler::triangleCounting(const std::vector<int> &pred_set)
+int PathQueryHandler::triangleCounting(bool directed, const std::vector<int> &pred_set)
 {
 	return 0;
 }
