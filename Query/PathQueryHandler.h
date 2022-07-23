@@ -371,7 +371,7 @@ public:
 	bool kHopReachableTest(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	std::vector<int> kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	void SSPPR(int uid, int retNum, int k, const std::vector<int> &pred_set, std::vector< std::pair<int ,double> > &topkV2ppr);
-    int triangleCounting(const std::vector<int> &pred_set);
+    int triangleCounting(bool directed, const std::vector<int> &pred_set);
     double closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set);
     std::vector<int> bfsCount(int uid, bool directed, const std::vector<int> &pred_set);
 
