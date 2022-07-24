@@ -1510,7 +1510,45 @@ int PathQueryHandler::triangleCounting(bool directed, const std::vector<int> &pr
 **/
 double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set)
 {
-	return 0;
+	map<int, int> dis;
+	dis[uid] = 0;
+	queue<int> Q;
+	Q.push(uid);
+	int sum = 0;
+	int cnt = 0;
+	int predNum = pred_set.size();
+	while (Q.size())
+	{
+		int ele = Q.front();
+		Q.pop();
+		cnt++;
+		for (int pred : pred_set)
+		{
+			int outNum = getOutSize(ele, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(ele, pred, i); // get the node
+				if (dis.find(to) != dis.end())
+					continue;
+				dis[to] = dis[ele] + 1;
+				sum += dis[to];
+				Q.push(to);
+			}
+			if (directed)
+				continue;
+			int inNum = getInSize(ele, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(ele, pred, i); // get the node
+				if (dis.find(to) != dis.end())
+					continue;
+				dis[to] = dis[ele] + 1;
+				sum += dis[to];
+				Q.push(to);
+			}
+		}
+	}
+	return 1.0 * (cnt - 1) / sum;
 }
 
 /**
@@ -1528,6 +1566,99 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector<int> &pred_set)
 {
 	return vector<int>(1, 1);
+}
+
+/**
+	Compute and return the PageRank of all vertices in the graph.
+
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@param alpha the damping parameter.
+	@param maxIter the maximum number of iterations in power method eigenvalue solver.
+	@param tol the error tolerance used to check convergence in power method solver.
+	@return a map from each vertex's ID to its PageRank value.
+**/
+unordered_map<int, double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol)
+{
+	return unordered_map<int, double>();
+}
+
+/**
+	Compute and return the single-source shortest paths from vertex u.
+	Note: edges are unweighted; do not return unreachable vertices.
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return a map from each vertex's ID to one of u's shortest path to it.
+**/
+unordered_map<int, vector<int>> PathQueryHandler::SSSP(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	return unordered_map<int, vector<int>>();
+}
+
+/**
+	Compute and return the single-source shortest path lengths from vertex u.
+	Note: edges are unweighted; do not return unreachable vertices.
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return a map from each vertex's ID to the length of u's shortest path to it.
+**/
+unordered_map<int, int> PathQueryHandler::SSSPLen(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	return unordered_map<int, int>();
+}
+
+/**
+	The label detection community detection algorithm.
+
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return a vector of vectors, each containing the IDs of the vertices in a community.
+**/
+vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector<int> &pred_set)
+{
+	return vector<vector<int>>();
+}
+
+/**
+	Compute and return the weakly connected components of the graph (when undirected,
+	equivalent to the connected components).
+
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return a vector of vectors, each containing the IDs of the vertices in a WCC.
+**/
+vector<vector<int>> PathQueryHandler::WCC(bool directed, const std::vector<int> &pred_set)
+{
+	return vector<vector<int>>();
+}
+
+/**
+	Compute and return the (local) clustering coefficient of vertex u.
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return the (local) clustering coefficient of vertex u.
+**/
+double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	return 0;
+}
+
+/**
+	Compute and return the (global) clustering coefficient of the graph.
+
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return the (global) clustering coefficient of the graph.
+**/
+double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &pred_set)
+{
+	return 0;
 }
 
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
