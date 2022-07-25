@@ -1552,16 +1552,14 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 }
 
 /**
-	Compute and return the closeness centrality of a vertex, only 
-	considering the edges in the path with labels in pred_set.
-	closenessCentrality(u) = n' / \\Sigma_{v \\neq u}d_{uv},
-	where n' = the number of reachable vertices from u,
-	d_{uv} = the distance from u to v (only consider v reachable from u)
+	Compute and return the number of vertices reachable from vertex u by BFS
+	at different distances.
 
 	@param uid vertex u's ID.
 	@param directed if false, treat all edges in the graph as bidirectional.
 	@param pred_set the set of edge labels allowed.
-	@return the closeness centrality of vertex u.
+	@return a vertex whose v[i] is the number of vertices reachable from u
+	with i steps.
 **/
 vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector<int> &pred_set)
 {
