@@ -110,6 +110,8 @@ public:
 	// bool get_edge_type(int edge_id);
 	// int get_edge_nei(int edge_id);
 	// int get_edge_index(int edge_id);
+	bool IsIthEdgeLinkedVarSO(unsigned i_th_edge);
+	bool IsIthEdgePreVar(unsigned i_th_edge);
 
 	void update_so_var_edge_info(unsigned edge_nei_id, TYPE_PREDICATE_ID pre_id, char edge_type,
 								 unsigned edge_index, bool pre_is_var, bool edge_nei_is_var);
@@ -262,6 +264,7 @@ public:
 
 
 	bool is_var_satellite_by_index(unsigned index);
+	bool is_var_satellite_by_id(unsigned id);
 
 	void print(KVstore * kvstore);
 
