@@ -412,8 +412,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN" \
 				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
-				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "LABELPROP" \
-				|| tmp == "WCC" || tmp == "CLUSTERCOEFF")	// Path calls
+				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
+				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -448,6 +448,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::pr_type;
 				else if (tmp == "SSSP")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::sssp_type;
+				else if (tmp == "SSSPLEN")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::sssplen_type;
 				else if (tmp == "LABELPROP")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::labelProp_type;
 				else if (tmp == "WCC")
@@ -505,10 +507,16 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
 					}
 
-					if (bicCtx->numericLiteral())
-						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+					if (!(bicCtx->numericLiteral()).empty())
+						proj_var.path_args.confidence = stof(bicCtx->numericLiteral(0)->getText());
 					else
 						proj_var.path_args.confidence = 1;
+				}
+				else if (tmp == "PR")
+				{
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
+					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol
 				}
 
 				// if (tmp != "PPR")
@@ -807,7 +815,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 					(curr_node.path_args).k = \
 						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					(curr_node.path_args).confidence = \
-						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
+						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral(0)->getText());
 				}
 				if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
 					(curr_node.path_args).directed = true;
