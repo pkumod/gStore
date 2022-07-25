@@ -200,6 +200,15 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet (',' numericLiteral)? ')'
 |   K_PPR '(' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' num_integer ')'
+|   K_TRIANGLECOUNTING '(' booleanLiteral ',' predSet ')'
+|   K_CLOSENESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_BFSCOUNT '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_PR '(' booleanLiteral ',' predSet ',' K_ALPHA '=' numericLiteral ',' K_MAXITER '=' num_integer ',' K_TOL '=' numericLiteral ')'
+|   K_SSSP '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_SSSPLEN '(' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_LABELPROP '(' booleanLiteral ',' predSet ')'
+|   K_WCC '(' booleanLiteral ',' predSet ')'
+|   K_CLUSTERCOEFF '(' (varOrIri ',')? booleanLiteral ',' predSet ')'
 |   K_PFN '(' varOrIriSet ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' string ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
@@ -351,6 +360,18 @@ K_KHOPREACHABLE : K H O P R E A C H A B L E ;
 K_KHOPENUMERATE : K H O P E N U M E R A T E ;
 K_KHOPREACHABLEPATH : K H O P R E A C H A B L E P A T H ;
 K_PPR : P P R ;
+K_TRIANGLECOUNTING : T R I A N G L E C O U N T I N G ;
+K_CLOSENESSCENTRALITY : C L O S E N E S S C E N T R A L I T Y ;
+K_BFSCOUNT : B F S C O U N T ;
+K_PR : P R ;
+K_ALPHA : A L P H A ;
+K_MAXITER : M A X I T E R ;
+K_TOL : T O L ;
+K_SSSP : S S S P ;
+K_SSSPLEN : S S S P L E N ;
+K_LABELPROP : L A B E L P R O P ;
+K_WCC : W C C ;
+K_CLUSTERCOEFF : C L U S T E R C O E F F ;
 K_PFN : P F N ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
@@ -400,6 +421,7 @@ PLX : PERCENT | PN_LOCAL_ESC ;
 PERCENT : '%' HEX HEX ;
 HEX : [0-9] | [A-F] | [a-f] ;
 PN_LOCAL_ESC : '\\' ( '_' | '~' | '.' | '-' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '=' | '/' | '?' | '#' | '@' | '%' ) ;
+COMMENT : '#' ~[\n\r]* -> channel(HIDDEN);
 
 fragment A : [aA];
 fragment B : [bB];

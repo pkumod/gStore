@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.9
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -39,18 +39,21 @@ public:
     K_SIMPLECYCLEPATH = 131, K_SIMPLECYCLEBOOLEAN = 132, K_CYCLEPATH = 133, 
     K_CYCLEBOOLEAN = 134, K_SHORTESTPATH = 135, K_SHORTESTPATHLEN = 136, 
     K_KHOPREACHABLE = 137, K_KHOPENUMERATE = 138, K_KHOPREACHABLEPATH = 139, 
-    K_PPR = 140, K_PFN = 141, KK_INSERTDATA = 142, KK_DELETEDATA = 143, 
-    KK_DELETEWHERE = 144, KK_ENCODE_FOR_URI = 145, KK_MD5 = 146, KK_SHA1 = 147, 
-    KK_SHA256 = 148, KK_SHA384 = 149, KK_SHA512 = 150, KK_GROUP_CONCAT = 151, 
-    IRIREF = 152, PNAME_NS = 153, PNAME_LN = 154, BLANK_NODE_LABEL = 155, 
-    VAR1 = 156, VAR2 = 157, LANGTAG = 158, INTEGER = 159, DECIMAL = 160, 
-    DOUBLE = 161, INTEGER_POSITIVE = 162, DECIMAL_POSITIVE = 163, DOUBLE_POSITIVE = 164, 
-    INTEGER_NEGATIVE = 165, DECIMAL_NEGATIVE = 166, DOUBLE_NEGATIVE = 167, 
-    EXPONENT = 168, STRING_LITERAL1 = 169, STRING_LITERAL2 = 170, STRING_LITERAL_LONG1 = 171, 
-    STRING_LITERAL_LONG2 = 172, ECHAR = 173, NIL = 174, WS = 175, ANON = 176, 
-    PN_CHARS_BASE = 177, PN_CHARS_U = 178, VARNAME = 179, PN_CHARS = 180, 
-    PN_PREFIX = 181, PN_LOCAL = 182, PLX = 183, PERCENT = 184, HEX = 185, 
-    PN_LOCAL_ESC = 186
+    K_PPR = 140, K_TRIANGLECOUNTING = 141, K_CLOSENESSCENTRALITY = 142, 
+    K_BFSCOUNT = 143, K_PR = 144, K_ALPHA = 145, K_MAXITER = 146, K_TOL = 147, 
+    K_SSSP = 148, K_SSSPLEN = 149, K_LABELPROP = 150, K_WCC = 151, K_CLUSTERCOEFF = 152, 
+    K_PFN = 153, KK_INSERTDATA = 154, KK_DELETEDATA = 155, KK_DELETEWHERE = 156, 
+    KK_ENCODE_FOR_URI = 157, KK_MD5 = 158, KK_SHA1 = 159, KK_SHA256 = 160, 
+    KK_SHA384 = 161, KK_SHA512 = 162, KK_GROUP_CONCAT = 163, IRIREF = 164, 
+    PNAME_NS = 165, PNAME_LN = 166, BLANK_NODE_LABEL = 167, VAR1 = 168, 
+    VAR2 = 169, LANGTAG = 170, INTEGER = 171, DECIMAL = 172, DOUBLE = 173, 
+    INTEGER_POSITIVE = 174, DECIMAL_POSITIVE = 175, DOUBLE_POSITIVE = 176, 
+    INTEGER_NEGATIVE = 177, DECIMAL_NEGATIVE = 178, DOUBLE_NEGATIVE = 179, 
+    EXPONENT = 180, STRING_LITERAL1 = 181, STRING_LITERAL2 = 182, STRING_LITERAL_LONG1 = 183, 
+    STRING_LITERAL_LONG2 = 184, ECHAR = 185, NIL = 186, WS = 187, ANON = 188, 
+    PN_CHARS_BASE = 189, PN_CHARS_U = 190, VARNAME = 191, PN_CHARS = 192, 
+    PN_PREFIX = 193, PN_LOCAL = 194, PLX = 195, PERCENT = 196, HEX = 197, 
+    PN_LOCAL_ESC = 198, COMMENT = 199
   };
 
   enum {
@@ -101,7 +104,7 @@ public:
     RuleBlankNode = 151
   };
 
-  explicit SPARQLParser(antlr4::TokenStream *input);
+  SPARQLParser(antlr4::TokenStream *input);
   ~SPARQLParser();
 
   virtual std::string getGrammarFileName() const override;
@@ -2455,10 +2458,23 @@ public:
     Num_integerContext* num_integer(size_t i);
     Integer_positiveContext *integer_positive();
     Integer_negativeContext *integer_negative();
-    NumericLiteralContext *numericLiteral();
+    std::vector<NumericLiteralContext *> numericLiteral();
+    NumericLiteralContext* numericLiteral(size_t i);
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
     antlr4::tree::TerminalNode *K_KHOPREACHABLEPATH();
     antlr4::tree::TerminalNode *K_PPR();
+    antlr4::tree::TerminalNode *K_TRIANGLECOUNTING();
+    antlr4::tree::TerminalNode *K_CLOSENESSCENTRALITY();
+    antlr4::tree::TerminalNode *K_BFSCOUNT();
+    antlr4::tree::TerminalNode *K_PR();
+    antlr4::tree::TerminalNode *K_ALPHA();
+    antlr4::tree::TerminalNode *K_MAXITER();
+    antlr4::tree::TerminalNode *K_TOL();
+    antlr4::tree::TerminalNode *K_SSSP();
+    antlr4::tree::TerminalNode *K_SSSPLEN();
+    antlr4::tree::TerminalNode *K_LABELPROP();
+    antlr4::tree::TerminalNode *K_WCC();
+    antlr4::tree::TerminalNode *K_CLUSTERCOEFF();
     antlr4::tree::TerminalNode *K_PFN();
     VarOrIriSetContext *varOrIriSet();
     StringContext *string();
