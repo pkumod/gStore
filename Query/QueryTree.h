@@ -144,6 +144,7 @@ class QueryTree
 			int k;
 			float confidence;
 			int retNum;
+			std::vector<double> misc;	// Miscellaneous args (first introduced for PageRank)
 		};
 
 		class CompTreeNode
@@ -297,7 +298,8 @@ class QueryTree
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, Groupconcat_type,
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
 					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
-					kHopReachablePath_type, ppr_type,
+					kHopReachablePath_type, ppr_type, triangleCounting_type, closenessCentrality_type,
+					bfsCount_type, pr_type, sssp_type, sssplen_type, labelProp_type, wcc_type, clusterCoeff_type,
 					CompTree_type, Contains_type, Custom_type,
 					PFN_type};
 				AggregateType aggregate_type;
