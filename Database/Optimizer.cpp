@@ -287,12 +287,15 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
     long t1 =Util::get_cur_time();
 
-    if(bgp_query->get_triple_num()==1)
-      best_plan_tree = plan_generator.get_special_one_triple_plan();
-    else{
-      auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
-      for (auto &constant_generating_step: *const_candidates)
-        executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+    if(bgp_query->get_triple_num()==1) {
+	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  best_plan_tree->print(bgp_query.get());
+	  this->SpecialOneTuplePlanExecution(best_plan_tree, bgp_query, var_candidates_cache, distinct);
+	}
+	else {
+      auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+      for (auto &constant_generating_step : *const_candidates)
+      	executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
       long t2 = Util::get_cur_time();
       cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
@@ -309,33 +312,34 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
         executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
 	  long t4_ = Util::get_cur_time();
-      best_plan_tree = plan_generator.get_plan(true);
-      long t4 = Util::get_cur_time();
-      cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
-    }
+	  best_plan_tree = plan_generator.GetPlan(true);
+	  long t4 = Util::get_cur_time();
+	  cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
+		// }
 
-    best_plan_tree->print(bgp_query.get());
-    cout << "plan print done" << endl;
+      best_plan_tree->print(bgp_query.get());
+      cout << "plan print done" << endl;
 
-    long t_ = Util::get_cur_time();
-    auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
+      long t_ = Util::get_cur_time();
+      auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
 
-    // todo: Destructor of PlanGenerator here
-    long t5 = Util::get_cur_time();
-    cout << "execution, used " << (t5 - t_) << "ms." << endl;
+      // todo: Destructor of PlanGenerator here
+      long t5 = Util::get_cur_time();
+      cout << "execution, used " << (t5 - t_) << "ms." << endl;
 
-    auto bfs_table = get<1>(bfs_result);
-    auto pos_var_mapping = bfs_table.pos_id_map;
-    auto var_pos_mapping = bfs_table.id_pos_map;
+      auto bfs_table = get<1>(bfs_result);
+      auto pos_var_mapping = bfs_table.pos_id_map;
+      auto var_pos_mapping = bfs_table.id_pos_map;
 
-    long t6 = Util::get_cur_time();
-    CopyToResult(bgp_query, bfs_table);
+      long t6 = Util::get_cur_time();
+      CopyToResult(bgp_query, bfs_table);
 #ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
+      cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
 #endif
-    long t7 = Util::get_cur_time();
-    cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
-    cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
+      long t7 = Util::get_cur_time();
+      cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
+      cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
+    }
   }
   else if(strategy ==BasicQueryStrategy::Special){
     printf("BasicQueryStrategy::Special not supported yet\n");
@@ -406,7 +410,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
 	  long t4_ = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_plan(false);
+	  best_plan_tree = plan_generator.GetPlan(false);
 	  long t4 = Util::get_cur_time();
 	  cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
 	}
@@ -492,6 +496,295 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
 
   delete[] position_map;
   return false;
+}
+
+// Note: one triple query, do not need edge_constant_info
+void Optimizer::GetResultListByEdgeInfo(const EdgeInfo &edge_info,
+										unsigned int *&result_list_pointer,
+										unsigned int &result_list_len,
+										bool distinct) {
+
+	switch (edge_info.join_method_) {
+		case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
+			unsigned const_s_id = edge_info.s_;
+			this->kv_store_->getpreIDlistBysubID(const_s_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::s2o: {
+			unsigned const_s_id = edge_info.s_;
+			this->kv_store_->getobjIDlistBysubID(const_s_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::p2s: {
+			unsigned const_p_id = edge_info.p_;
+			this->kv_store_->getsubIDlistBypreID(const_p_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::p2o: {
+			unsigned const_p_id = edge_info.p_;
+			this->kv_store_->getobjIDlistBypreID(const_p_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::o2s: {
+			unsigned const_o_id = edge_info.o_;
+			this->kv_store_->getsubIDlistByobjID(const_o_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::o2p: {
+			unsigned const_o_id = edge_info.o_;
+			this->kv_store_->getpreIDlistByobjID(const_o_id,
+												 result_list_pointer,
+												 result_list_len,
+												 distinct,
+												 this->txn_);
+			break;
+		}
+		case JoinMethod::so2p: {
+			unsigned const_s_id = edge_info.s_;
+			unsigned const_o_id = edge_info.o_;
+			this->kv_store_->getpreIDlistBysubIDobjID(const_s_id,
+													  const_o_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		case JoinMethod::sp2o: {
+			unsigned const_s_id = edge_info.s_;
+			unsigned const_p_id = edge_info.p_;
+			this->kv_store_->getobjIDlistBysubIDpreID(const_s_id,
+													  const_p_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		case JoinMethod::po2s: {
+			unsigned const_o_id = edge_info.o_;
+			unsigned const_p_id = edge_info.p_;
+			this->kv_store_->getsubIDlistByobjIDpreID(const_o_id,
+													  const_p_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		case JoinMethod::s2po: {
+			unsigned const_s_id = edge_info.s_;
+			this->kv_store_->getpreIDobjIDlistBysubID(const_s_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		case JoinMethod::p2so: {
+			unsigned const_p_id = edge_info.p_;
+			this->kv_store_->getsubIDobjIDlistBypreID(const_p_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		case JoinMethod::o2ps: {
+			unsigned const_o_id = edge_info.o_;
+			this->kv_store_->getpreIDsubIDlistByobjID(const_o_id,
+													  result_list_pointer,
+													  result_list_len,
+													  distinct,
+													  this->txn_);
+			break;
+		}
+		default:
+			throw "ExtendRecordOneNode only support add 1 node each time";
+	}
+}
+
+// todo: consider candidate
+bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGPQuery> bgp_query, IDCachesSharePtr &id_caches, bool distinct) {
+	auto target = bgp_query->get_result_list_pointer();
+	assert(target->empty());
+	shared_ptr<StepOperation> node_operation = plan_tree->root_node->node;
+	auto record_len = bgp_query->total_selected_var_num;
+	// auto id_position_map_ptr = result.id_pos_map;
+
+	unsigned* result_list_pointer = nullptr;
+	unsigned result_list_len;
+	switch (node_operation->join_type_) {
+		case StepOperation::JoinType::JoinNode: {
+			GetResultListByEdgeInfo((*node_operation->join_node_->edges_)[0],
+									result_list_pointer, result_list_len, distinct);
+			if (id_caches->find(node_operation->join_node_->node_to_join_) != id_caches->end()) {
+				auto record_candidate_list = make_shared<IDList>();
+				record_candidate_list->reserve(result_list_len);
+				for (unsigned i = 0; i < result_list_len; ++i)
+					record_candidate_list->addID(result_list_pointer[i]);
+				auto caches_ptr = (*(id_caches->find(node_operation->join_node_->node_to_join_))).second;
+				record_candidate_list->intersectList(caches_ptr->getList()->data(), caches_ptr->size(), distinct);
+				target->reserve(record_candidate_list->size());
+				for (unsigned index = 0; index < record_candidate_list->size(); ++index) {
+					unsigned *new_record = new unsigned[1];
+					new_record[0] = record_candidate_list->getID(index);
+					target->emplace_back(new_record);
+				}
+			} else {
+				target->reserve(result_list_len);
+				for (unsigned index = 0; index < result_list_len; ++index) {
+					unsigned *new_record = new unsigned[1];
+					new_record[0] = result_list_pointer[index];
+					target->emplace_back(new_record);
+				}
+			}
+			delete[] result_list_pointer;
+			result_list_pointer = nullptr;
+			break;
+		}
+		case StepOperation::JoinType::GetAllTriples: {
+			// select distinct ?p where { ?s ?p ?o. }
+			if (distinct && bgp_query->total_selected_var_num == 1 &&
+				bgp_query->selected_var_id[0] == bgp_query->p_id_[0]) {
+				unsigned pre_var_id = bgp_query->p_id_[0];
+				target->reserve(limitID_predicate_);
+				if (id_caches->find(pre_var_id) == id_caches->end()) {
+					for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
+						unsigned* record = new unsigned[1];
+						record[0] = (unsigned)i;
+						target->emplace_back(record);
+					}
+				} else {
+					for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
+						if ((*id_caches)[pre_var_id]->bsearch_uporder(i) != INVALID) {
+							unsigned *record = new unsigned[1];
+							record[0] = (unsigned)i;
+							target->emplace_back(record);
+						}
+					}
+				}
+				return true;
+			}
+
+			unsigned select_var_num = bgp_query->total_selected_var_num;
+			unsigned s_var_id = bgp_query->s_id_[0];
+			unsigned p_var_id = bgp_query->p_id_[0];
+			unsigned o_var_id = bgp_query->o_id_[0];
+
+			vector<int> position_map(3, -1);
+			const auto &position_2_id = bgp_query->resultPositionToId();
+			for (unsigned i = 0; i < select_var_num; ++i) {
+				if (position_2_id[i] == s_var_id) {
+					position_map[0] = i;
+					break;
+				}
+			}
+			for (unsigned i = 0; i < select_var_num; ++i) {
+				if (position_2_id[i] == p_var_id) {
+					position_map[1] = i;
+					break;
+				}
+			}
+			for (unsigned i = 0; i < select_var_num; ++i) {
+				if (position_2_id[i] == o_var_id) {
+					position_map[2] = i;
+					break;
+				}
+			}
+
+			bool s_selected = bgp_query->get_vardescrip_by_id(s_var_id)->selected_;
+			bool p_selected = bgp_query->get_vardescrip_by_id(p_var_id)->selected_;
+			bool o_selected = bgp_query->get_vardescrip_by_id(o_var_id)->selected_;
+
+			bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
+			bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
+			bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
+
+			bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
+
+			target->reserve(triples_num_);
+			for(TYPE_PREDICATE_ID pid = 0; pid < this->limitID_predicate_; ++pid)
+			{
+				this->kv_store_->getsubIDobjIDlistBypreID(pid, result_list_pointer, result_list_len, distinct, txn_);
+
+				// todo: enable `if (var_not_pred)` and write codes for !var_not_pred
+				{
+				// if (var_not_pred) {
+					for (unsigned index = 0; index < result_list_len; index+=2) {
+						unsigned *new_record = new unsigned[select_var_num];
+						if (s_selected)
+							new_record[position_map[0]] = result_list_pointer[index];
+						if (p_selected)
+							new_record[position_map[1]] = pid;
+						if (o_selected)
+							new_record[position_map[2]] = result_list_pointer[index+1];
+						target->emplace_back(new_record);
+					}
+				}
+				delete[] result_list_pointer;
+			}
+			break;
+		}
+		case StepOperation::JoinType::JoinTwoNodes: {
+			GetResultListByEdgeInfo(node_operation->join_two_node_->edges_,
+									result_list_pointer, result_list_len, distinct);
+			unsigned var_1_id = node_operation->join_two_node_->node_to_join_1_;
+			unsigned var_2_id = node_operation->join_two_node_->node_to_join_2_;
+			const auto &position_2_id = bgp_query->resultPositionToId();
+			unsigned result_var_1_position = (position_2_id[0] == var_1_id ? (unsigned) 0 : (unsigned) 1);
+			unsigned result_var_2_position = (unsigned) 1 - result_var_1_position;
+			bool var_1_candidate_not_pred = id_caches->find(var_1_id) == id_caches->end();
+			bool var_2_candidate_not_pred = id_caches->find(var_2_id) == id_caches->end();
+			target->reserve(result_list_len);
+			if (var_1_candidate_not_pred && var_2_candidate_not_pred) {
+				for (unsigned index = 0; index < result_list_len; index+=2) {
+					unsigned *new_record = new unsigned[2];
+					new_record[0] = result_list_pointer[index + result_var_1_position];
+					new_record[1] = result_list_pointer[index + result_var_2_position];
+					target->emplace_back(new_record);
+				}
+			} else {
+				for (unsigned index = 0; index < result_list_len; index+=2) {
+					if ((var_1_candidate_not_pred ||
+						(*id_caches)[var_1_id]->bsearch_uporder(result_list_pointer[index]) != INVALID) &&
+						(var_2_candidate_not_pred ||
+							(*id_caches)[var_2_id]->bsearch_uporder(result_list_pointer[index + 1]) != INVALID)) {
+						unsigned *new_record = new unsigned[2];
+						new_record[0] = result_list_pointer[index + result_var_1_position];
+						new_record[1] = result_list_pointer[index + result_var_2_position];
+						target->emplace_back(new_record);
+					}
+				}
+			}
+			break;
+		}
+		default: {
+			cout << "Error in Optimizer::SpecialOneTuplePlanExecution, illegal join_type!" << endl;
+			assert(false);
+		}
+	}
+	return true;
 }
 
 /**

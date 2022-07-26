@@ -44,7 +44,7 @@ public:
 	void copy(const IDList* _new_idlist);
     void reserve(size_t size);
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
-	unsigned intersectList(const unsigned* _id_list, unsigned _list_len);
+	unsigned intersectList(const unsigned* _id_list, unsigned _list_len, bool distinct = true);
 	unsigned intersectList(const IDList&);
 	unsigned unionList(const unsigned* _id_list, unsigned _list_len, bool only_literal=false);
 	unsigned unionList(const IDList&, bool only_literal=false);
