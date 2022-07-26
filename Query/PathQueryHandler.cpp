@@ -1488,13 +1488,108 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 	Compute and return the number of triangles in the graph, only considering the
 	edges in the path with labels in pred_set.
 
+	@param directed if false, treat all edges in the graph as bidirectional.
+					if true, only count cycle type triangle (eg: a->b->c->a)
 	@param pred_set the set of edge labels allowed.
 	@return the number of triangles in the graph.
 **/
-int PathQueryHandler::triangleCounting(bool directed, const std::vector<int> &pred_set)
+long long PathQueryHandler::triangleCounting(bool directed, const std::vector<int> &pred_set)
 {
-	return 0;
+	if (pred_set.empty())
+		return -1;
+	int n = getVertNum();
+	long long numTriangle = 0;
+	for (size_t i = 0; i < n; i++)
+	{
+		// directed: get the in-neighbor set of the current node
+		// directed: neighbor
+		unordered_set<int> inSet;
+		for (int pred : pred_set)
+		{
+			int inSize = getInSize(i, pred);
+			for (int j = 0; j < inSize; j++)
+				inSet.insert(getInVertID(i, pred, j));
+			if (directed == 0)
+			{
+				int outSize = getOutSize(i, pred);
+				for (int j = 0; j < outSize; j++)
+					inSet.insert(getOutVertID(i, pred, j));
+			}
+		}
+
+		// directed:
+		// for each out-neighbor, intersect its out-neighbors with the current node's in-neighbors
+		// the size of the intersection is the # of triangles
+		if (directed)
+		{
+			for (int pred : pred_set)
+			{
+				int outSize = getOutSize(i, pred);
+				for (int j = 0; j < outSize; j++)
+				{
+					int outNode = getOutVertID(i, pred, j);
+					for (int pred : pred_set)
+					{
+						int outOutSize = getOutSize(outNode, pred);
+						for (int k = 0; k < outOutSize; k++)
+						{
+							int outOutNode = getOutVertID(outNode, pred, k);
+							if (inSet.find(outOutNode) != inSet.end())
+								numTriangle++;
+						}
+					}
+				}
+			}
+		}
+		// undirected:
+		// for each neighbor, intersect its neighbors(except current node) with the current node's neighbors
+		else
+		{
+			for (int outNode : inSet)
+			{
+				unordered_set<int> nbrs;
+				for (int pred : pred_set)
+				{
+					int outOutSize = getOutSize(outNode, pred);
+					for (int k = 0; k < outOutSize; k++)
+					{
+						nbrs.insert(getOutVertID(outNode, pred, k));
+					}
+					int outInSize = getInSize(outNode, pred);
+					for (int k = 0; k < outInSize; k++)
+					{
+						nbrs.insert(getInVertID(outNode, pred, k));
+					}
+				}
+				for (int outOutNode : nbrs)
+				{
+					if (inSet.find(outOutNode) != inSet.end())
+						numTriangle++;
+				}
+			}
+		}
+	}
+
+	if (directed)
+	{
+		// divide by 3 (duplicates)
+		if (numTriangle % 3 != 0)
+		{
+			cout << "ERROR!!!" << numTriangle << " is not triple of 3!" << endl;
+			return -1;
+		}
+		cout << numTriangle / 3 << endl;
+		return numTriangle / 3;
+	}
+	if (numTriangle % 6 != 0)
+	{
+		cout << "ERROR!!!" << numTriangle << " is not triple of 6!" << endl;
+		return -1;
+	}
+	cout << numTriangle / 6 << endl;
+	return numTriangle / 6;
 }
+
 
 /**
 	Compute and return the closeness centrality of a vertex, only 
