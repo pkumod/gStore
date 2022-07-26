@@ -639,7 +639,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
 						for (size_t k = 0; k < encode_varset[j].size(); k++)
 							p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
-						bgp_query_vec[j]->print(kvstore);
+						// bgp_query_vec[j]->print(kvstore);
 						if (!encode_constant_exist[j])
 							continue;	// If any constant in this BGP does not exist, do not need to DoQuery
 						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[j],query_info));
@@ -946,7 +946,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[l].size()]);
 						for (size_t k = 0; k < encode_varset[l].size(); k++)
 							p2id[k] = bgp_query_vec[l]->get_var_id_by_name(Varset(encode_varset[l]).vars[k]);
-						bgp_query_vec[l]->print(kvstore);
+						// bgp_query_vec[l]->print(kvstore);
 						if (!encode_constant_exist[l])
 							continue;
 						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[l],query_info));
