@@ -15,6 +15,7 @@ bool IDTriple::operator < (const IDTriple& a) const
 			else if(this->object > a.get_object()) return false;
 		}
 	}
+	assert(false);
 }
 
 

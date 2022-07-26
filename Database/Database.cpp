@@ -1706,11 +1706,11 @@ Database::getlimitID_predicate()
 	return this->limitID_predicate;
 }
 
-mutex&
-Database::get_query_parse_lock()
-{
-	//return this->query_parse_lock;
-}
+// mutex&
+// Database::get_query_parse_lock()
+// {
+// 	//return this->query_parse_lock;
+// }
 
 void
 Database::export_db(FILE* fp)
