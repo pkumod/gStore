@@ -288,9 +288,14 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     long t1 =Util::get_cur_time();
 
     if(bgp_query->get_triple_num()==1) {
+	  long t2 = Util::get_cur_time();
 	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  long t3 = Util::get_cur_time();
+	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	  best_plan_tree->print(bgp_query.get());
 	  this->SpecialOneTuplePlanExecution(best_plan_tree, bgp_query, var_candidates_cache, distinct);
+	  long t4 = Util::get_cur_time();
+	  cout << "execution, used " << (t4 - t3) << "ms." << endl;
 	}
 	else {
       auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
@@ -390,8 +395,12 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
 	long t1 =Util::get_cur_time();
 
-	if(bgp_query->get_triple_num()==1)
+	if(bgp_query->get_triple_num()==1) {
+	  long t2 = Util::get_cur_time();
 	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  long t3 = Util::get_cur_time();
+	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
+	}
 	else{
 	  auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
 	  for (auto &constant_generating_step: *const_candidates)
