@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-07-20 18:26:19
+ * @LastEditTime: 2022-07-26 16:06:34
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -834,14 +834,16 @@ bool APIUtil::commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
     string Time_TID = begin_time + "_" + to_string(TID);
-    update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    int ret = update_transactionlog(Time_TID, "COMMITED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    return ret == 0;
 }
 
 bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 {
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
     string Time_TID = begin_time + "_" + to_string(TID);
-    update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    int ret = update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    return ret == 0;
 }
 
 txn_id_t APIUtil::check_txn_id(string TID_s)
@@ -1871,6 +1873,7 @@ int APIUtil::add_transactionlog(std::string db_name, std::string user, std::stri
     fclose(fp);
     delete logInfo;
     pthread_rwlock_unlock(&transactionlog_lock);
+    return 0;
 }
 
 int APIUtil::update_transactionlog(std::string TID, std::string state, std::string end_time)
