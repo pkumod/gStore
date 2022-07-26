@@ -26,6 +26,13 @@
 #include <cmath>
 #include <random>
 
+
+
+enum class BGPQueryStrategy{
+	Heuristic,
+	DP,
+};
+
 class PlanGenerator {
 
 public:
@@ -53,15 +60,19 @@ public:
 	// map var id to some thing
 	map<unsigned, unsigned > var_to_num_map;
 	map<unsigned, vector<unsigned>> var_to_sample_cache;
-	map<unsigned, map<unsigned, double >> s_o_list_average_size;
-
 	map<unsigned, bool> var_sampled_from_candidate;
+
+	map<unsigned, map<unsigned, double >> s_o_list_average_size;
 
 	// store var id, not var index, only contains s_o var
 	vector<unsigned> join_nodes;
 
 	vector<unsigned> satellite_nodes;
 	set<unsigned> already_done_satellite;
+
+	// use these two vector to represent a PlanTree containing VarScan, WCOJoin and BinaryJoin.
+	vector<unsigned> plan_var_vec;
+	vector<unsigned> plan_var_degree;
 
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
@@ -73,10 +84,17 @@ public:
 	//  You can change this, initialized in PlanGenerator.cpp
 	//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
 	static const unsigned SAMPLE_CACHE_MAX;
-	const double SAMPLE_PRO = 0.05;
+	static const double SAMPLE_PRO;
+	static const unsigned SMALL_QUERY_VAR_NUM;
+	static const double CANDIDATE_RATIO_MAX;
+	static const unsigned PARAM_SIZE;
+	static const unsigned PARAM_PRE;
+  	static const unsigned HEURISTIC_CANDIDATE_MAX;
 
 	JoinMethod get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num);
 
+	unsigned GetCandidateSizeFromWholeDB(unsigned var_id);
+	unsigned GetCandidateSizeById(unsigned var_id);
 	static unsigned get_sample_size(unsigned id_cache_size);
 	bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
 
@@ -117,7 +135,21 @@ public:
 	void considerbinaryjoin(unsigned var_num);
 	void addsatellitenode(PlanTree* best_plan);
 
+
+	BGPQueryStrategy PlanStrategy(bool use_binary_join = true);
+
+	double NodeScore(unsigned var_id);
+	void InsertVarScanToCache(unsigned var_id, PlanTree* var_scan_plan);
+	void InsertVarNumToCache(unsigned var_id);
+	void InsertVarNumAndSampleToCache(unsigned var_id);
+	void ConsiderVarScan(BGPQueryStrategy strategy);
+	unsigned HeuristicFirstNode();
+	unsigned HeuristicNextNode(unsigned last_node_id);
+
+	PlanTree* HeuristicPlan(bool use_binary_join = true);
+	PlanTree* DPPlan(bool use_binary_join = true);
 	PlanTree* get_plan(bool use_binary_join = true);
+	PlanTree* GetPlan(bool use_binary_join);
 
 
 	unsigned choose_first_var_id_random();

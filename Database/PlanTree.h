@@ -111,9 +111,10 @@ public:
 
     JoinMethod get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescriptor> var_descrip, unsigned edge_index, bool join_two_node = true );
 
-    PlanTree(unsigned first_node, BGPQuery *bgpquery, vector<unsigned> satellite_index,
+    PlanTree(unsigned first_node, BGPQuery *bgpquery);
+  	PlanTree(unsigned first_node, BGPQuery *bgpquery, vector<unsigned> satellite_index,
 			 shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant_info,
-			 vector<unsigned> &nei_id_vec);
+		     vector<unsigned> &nei_id_vec);
     PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node);
     void add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
     PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery);

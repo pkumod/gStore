@@ -639,7 +639,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[j].size()]);
 						for (size_t k = 0; k < encode_varset[j].size(); k++)
 							p2id[k] = bgp_query_vec[j]->get_var_id_by_name(Varset(encode_varset[j]).vars[k]);
-						bgp_query_vec[j]->print(kvstore);
+						// bgp_query_vec[j]->print(kvstore);
 						if (!encode_constant_exist[j])
 							continue;	// If any constant in this BGP does not exist, do not need to DoQuery
 						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[j],query_info));
@@ -946,7 +946,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						p2id = unique_ptr<unsigned[]>(new unsigned [encode_varset[l].size()]);
 						for (size_t k = 0; k < encode_varset[l].size(); k++)
 							p2id[k] = bgp_query_vec[l]->get_var_id_by_name(Varset(encode_varset[l]).vars[k]);
-						bgp_query_vec[l]->print(kvstore);
+						// bgp_query_vec[l]->print(kvstore);
 						if (!encode_constant_exist[l])
 							continue;
 						ranked = get<1>(this->optimizer_->DoQuery(bgp_query_vec[l],query_info));
@@ -1502,8 +1502,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
 					vector<int> pred_id_set;
-					uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
-					if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					if (!proj[0].path_args.src.empty())
+						uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
+					else
+						uid_ls.push_back(-1);	// Dummy for loop
+					// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					if (!proj[0].path_args.dst.empty())
 						vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
 					else
 						vid_ls.push_back(-1);	// Dummy for loop
@@ -1531,6 +1535,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 					stringstream ss;
 					bool notFirstOutput = 0;	// For outputting commas
+					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 					ss << "\"{\"paths\":[";
 					cout<<"proj[0].aggregate_type :"<<proj[0].aggregate_type <<endl;
 					for (int uid : uid_ls)
@@ -1675,6 +1680,144 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									   << it->second << "}";
 								}
 								ss << "]}";
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+							{
+								if (!doneOnceOp)
+								{
+									auto ret = pqHandler->triangleCounting(proj[0].path_args.directed, pred_id_set);
+									ss << to_string(ret);
+									doneOnceOp = true;
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+							{
+								auto ret = pqHandler->closenessCentrality(uid, proj[0].path_args.directed, pred_id_set);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
+								ss << to_string(ret) << "}";
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+							{
+								auto ret = pqHandler->bfsCount(uid, proj[0].path_args.directed, pred_id_set);
+								size_t retSz = ret.size();
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+								for (size_t j = 0; j < retSz; j++)
+								{
+									ss << "{\"depth\":" << j << ", \"count\":" << ret[j] << "}";
+									if (j != retSz - 1)
+										ss << ", ";
+								}
+								ss << "]}";
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::pr_type)
+							{
+								if (!doneOnceOp)
+								{
+									auto ret = pqHandler->PR(proj[0].path_args.directed, pred_id_set, proj[0].path_args.misc[0], \
+										proj[0].path_args.misc[1], proj[0].path_args.misc[2]);
+									bool localFirstOutput = true;
+									for (auto mp : ret)
+									{
+										if (localFirstOutput)
+											localFirstOutput = false;
+										else
+											ss << ",";
+										ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
+									}
+									doneOnceOp = true;
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								auto paths = pqHandler->SSSP(uid, proj[0].path_args.directed, pred_id_set);
+								bool localFirstOutput = true;
+								for (auto mp : paths)
+								{
+									if (mp.second.size() != 0)
+									{
+										if (localFirstOutput)
+											localFirstOutput = false;
+										else
+											ss << ",";
+										pathVec2JSON(uid, mp.second.back(), mp.second, ss);
+									}
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::sssplen_type)
+							{
+								if (notFirstOutput)
+									ss << ",";
+								else
+									notFirstOutput = 1;
+								auto paths = pqHandler->SSSPLen(uid, proj[0].path_args.directed, pred_id_set);
+								bool localFirstOutput = true;
+								for (auto mp : paths)
+								{
+									if (localFirstOutput)
+										localFirstOutput = false;
+									else
+										ss << ",";
+									
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid)
+									   << "\",\"dst\":\"" << kvstore->getStringByID(mp.first) \
+									   << "\",\"length\":" << mp.second << "}";
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+							{
+								if (!doneOnceOp)
+								{
+									auto ret = pqHandler->labelProp(proj[0].path_args.directed, pred_id_set);
+									bool localFirstOutput = true;
+									for (auto mp : ret)
+									{
+										if (localFirstOutput)
+											localFirstOutput = false;
+										else
+											ss << ",";
+										vertVec2JSON(mp, ss);
+									}
+									doneOnceOp = true;
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+							{
+								if (!doneOnceOp)
+								{
+									auto ret = pqHandler->WCC(proj[0].path_args.directed, pred_id_set);
+									bool localFirstOutput = true;
+									for (auto mp : ret)
+									{
+										if (localFirstOutput)
+											localFirstOutput = false;
+										else
+											ss << ",";
+										vertVec2JSON(mp, ss);
+									}
+									doneOnceOp = true;
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+							{
+								if (uid == -1)	// Source not given, compute once globally
+								{
+									if (!doneOnceOp)
+									{
+										auto ret = pqHandler->clusteringCoeff(proj[0].path_args.directed, pred_id_set);
+										ss << to_string(ret);
+										doneOnceOp = true;
+									}
+								}
+								else
+								{
+									auto ret = pqHandler->clusteringCoeff(uid, proj[0].path_args.directed, pred_id_set);
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
+									ss << to_string(ret) << "}";
+								}
 							}
 						}
 						if (earlyBreak)
@@ -2770,22 +2913,27 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						vector<int> pred_id_set;
 
 						// uid
-						if (proj[i].path_args.src[0] == '?')	// src is a variable
+						if (!proj[i].path_args.src.empty())
 						{
-							int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
-							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
-							else
+							if (proj[i].path_args.src[0] == '?')	// src is a variable
 							{
-								for (int j = begin; j <= end; j++)
+								int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
+								if (var2temp >= result0_id_cols)
+									cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+								else
 								{
-									if (result0.result[j].id[var2temp] != INVALID)
-										uid_ls.push_back(result0.result[j].id[var2temp]);
+									for (int j = begin; j <= end; j++)
+									{
+										if (result0.result[j].id[var2temp] != INVALID)
+											uid_ls.push_back(result0.result[j].id[var2temp]);
+									}
 								}
 							}
+							else	// src is an IRI
+								uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
 						}
-						else	// src is an IRI
-							uid_ls.push_back(kvstore->getIDByString(proj[i].path_args.src));
+						else
+							uid_ls.push_back(-1);	// Dummy for loop
 
 						// cout << "uid: ";
 						// for (int uid : uid_ls)
@@ -2793,7 +2941,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						// cout << endl;
 
 						// vid
-						if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						if (!proj[i].path_args.dst.empty())
 						{
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 							{
@@ -2846,6 +2995,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
+						bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 						ss << "\"{\"paths\":[";
 						for (int uid : uid_ls)
 						{
@@ -2949,7 +3099,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 								{
 									cout << "begin run kHopReachablePath " << endl;
 									if (uid == vid)
@@ -2975,10 +3125,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 									}
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
 									pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
 									for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
 									{
@@ -2988,6 +3142,152 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											<< it->second << "}";
 									}
 									ss << "]}";
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+								{
+									if (!doneOnceOp)
+									{
+										auto ret = pqHandler->triangleCounting(proj[i].path_args.directed, pred_id_set);
+										ss << to_string(ret);
+										doneOnceOp = true;
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+								{
+									auto ret = pqHandler->closenessCentrality(uid, proj[i].path_args.directed, pred_id_set);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
+									ss << to_string(ret) << "}";
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+								{
+									auto ret = pqHandler->bfsCount(uid, proj[i].path_args.directed, pred_id_set);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									size_t retSz = ret.size();
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
+									for (size_t j = 0; j < retSz; j++)
+									{
+										ss << "{\"depth\":" << j << ", \"count\":" << ret[j] << "}";
+										if (j != retSz - 1)
+											ss << ", ";
+									}
+									ss << "]}";
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::pr_type)
+								{
+									if (!doneOnceOp)
+									{
+										auto ret = pqHandler->PR(proj[i].path_args.directed, pred_id_set, proj[i].path_args.misc[0], \
+											proj[i].path_args.misc[1], proj[i].path_args.misc[2]);
+										bool localFirstOutput = true;
+										for (auto mp : ret)
+										{
+											if (localFirstOutput)
+												localFirstOutput = false;
+											else
+												ss << ",";
+											ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
+										}
+										doneOnceOp = true;
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									auto paths = pqHandler->SSSP(uid, proj[i].path_args.directed, pred_id_set);
+									bool localFirstOutput = true;
+									for (auto mp : paths)
+									{
+										if (mp.second.size() != 0)
+										{
+											if (localFirstOutput)
+												localFirstOutput = false;
+											else
+												ss << ",";
+											pathVec2JSON(uid, mp.second.back(), mp.second, ss);
+										}
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::sssplen_type)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									auto paths = pqHandler->SSSPLen(uid, proj[i].path_args.directed, pred_id_set);
+									bool localFirstOutput = true;
+									for (auto mp : paths)
+									{
+										if (localFirstOutput)
+											localFirstOutput = false;
+										else
+											ss << ",";
+										
+										ss << "{\"src\":\"" << kvstore->getStringByID(uid)
+										<< "\",\"dst\":\"" << kvstore->getStringByID(mp.first) \
+										<< "\",\"length\":" << mp.second << "}";
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+								{
+									if (!doneOnceOp)
+									{
+										auto ret = pqHandler->labelProp(proj[i].path_args.directed, pred_id_set);
+										bool localFirstOutput = true;
+										for (auto mp : ret)
+										{
+											if (localFirstOutput)
+												localFirstOutput = false;
+											else
+												ss << ",";
+											vertVec2JSON(mp, ss);
+										}
+										doneOnceOp = true;
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+								{
+									if (!doneOnceOp)
+									{
+										auto ret = pqHandler->WCC(proj[i].path_args.directed, pred_id_set);
+										bool localFirstOutput = true;
+										for (auto mp : ret)
+										{
+											if (localFirstOutput)
+												localFirstOutput = false;
+											else
+												ss << ",";
+											vertVec2JSON(mp, ss);
+										}
+										doneOnceOp = true;
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+								{
+									if (uid == -1)	// Source not given, compute once globally
+									{
+										if (!doneOnceOp)
+										{
+											auto ret = pqHandler->clusteringCoeff(proj[i].path_args.directed, pred_id_set);
+											ss << to_string(ret);
+											doneOnceOp = true;
+										}
+									}
+									else
+									{
+										auto ret = pqHandler->clusteringCoeff(uid, proj[i].path_args.directed, pred_id_set);
+										ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
+										ss << to_string(ret) << "}";
+									}
 								}
 							}
 							if (earlyBreak)
@@ -3413,6 +3713,20 @@ GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringst
 			ss << ",";
 	}
 	ss << "]}";
+}
+
+void
+GeneralEvaluation::vertVec2JSON(const std::vector<int> &v, std::stringstream &ss)
+{
+	ss << "[";
+	int vLen = v.size();
+	for (int i = 0; i < vLen; i++)
+	{
+		ss << kvstore->getStringByID(v[i]);
+		if (i != vLen - 1)
+			ss << ",";
+	}
+	ss << "]";
 }
 
 int GeneralEvaluation::constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep)

@@ -12,6 +12,14 @@ using namespace std;
 VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name):
 	id_(id), var_type_(var_type), var_name_(var_name), selected_(false), link_with_const(false), degree_(0){};
 
+bool VarDescriptor::IsIthEdgeLinkedVarSO(unsigned int i_th_edge) {
+	if(i_th_edge < degree_ && so_edge_nei_type_[i_th_edge] == EntiType::VarEntiType) return true;
+	else return false;
+}
+
+bool VarDescriptor::IsIthEdgePreVar(unsigned int i_th_edge) {
+	return so_edge_pre_type_[i_th_edge] == PreType::VarPreType;
+}
 
 void VarDescriptor::update_so_var_edge_info(unsigned int edge_nei_id, TYPE_PREDICATE_ID pre_id, char edge_type,
 											unsigned int edge_index, bool pre_is_var, bool edge_nei_is_var) {
@@ -655,7 +663,13 @@ const Triple &BGPQuery::get_triple_by_index(unsigned int index) {
 bool BGPQuery::is_var_satellite_by_index(unsigned index) {
 	auto var_descrip = var_vector[index];
 	return (var_descrip->var_type_ == VarDescriptor::VarType::Entity and
-				var_descrip->degree_ == 1 and var_descrip->selected_ == false);// && var_descrip->selected_ == false);
+				var_descrip->degree_ == 1 and !var_descrip->selected_);// && var_descrip->selected_ == false);
+}
+
+bool BGPQuery::is_var_satellite_by_id(unsigned int id) {
+	auto var_descrip = get_vardescrip_by_id(id);
+	return (var_descrip->var_type_ == VarDescriptor::VarType::Entity and
+			var_descrip->degree_ == 1 and !var_descrip->selected_);
 }
 
 /**
