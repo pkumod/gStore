@@ -104,7 +104,7 @@ public:
 	TYPE_ENTITY_LITERAL_ID& getlimitID_literal();
 	TYPE_ENTITY_LITERAL_ID& getlimitID_entity();
 	TYPE_PREDICATE_ID& getlimitID_predicate();
-	mutex& get_query_parse_lock();
+	// mutex& get_query_parse_lock();
 	
 	//MVCC
 	void TransactionRollback(shared_ptr<Transaction> txn);

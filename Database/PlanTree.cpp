@@ -29,6 +29,7 @@ JoinMethod Tree_node::get_join_method(bool s_is_var, bool p_is_var, bool o_is_va
 		cout << "error: var_num not equal to 1 or 2" << endl;
 		exit(-1);
 	}
+	assert(false);
 }
 
 Tree_node::Tree_node(unsigned int node_id, BGPQuery *bgpquery, bool is_first_node) {
