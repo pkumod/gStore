@@ -106,6 +106,7 @@ class GeneralEvaluation
 		void loadCSR();
 		void prepPathQuery();
 		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss);
+		void vertVec2JSON(const std::vector<int> &v, std::stringstream &ss);
 
 		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
 		void getUsefulVarset(Varset& useful, int dep);
