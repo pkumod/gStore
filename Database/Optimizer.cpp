@@ -211,6 +211,10 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
       step_table = get<1>(step_result).values_;
       break;
     }
+	default: {
+		cout << "Error in Optimizer::DepthSearchOneLayer, unknown join type" << endl;
+		assert(false);
+	}
   }
 
 
@@ -638,8 +642,6 @@ bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGP
 	auto target = bgp_query->get_result_list_pointer();
 	assert(target->empty());
 	shared_ptr<StepOperation> node_operation = plan_tree->root_node->node;
-	auto record_len = bgp_query->total_selected_var_num;
-	// auto id_position_map_ptr = result.id_pos_map;
 
 	unsigned* result_list_pointer = nullptr;
 	unsigned result_list_len;
@@ -726,11 +728,11 @@ bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGP
 			bool p_selected = bgp_query->get_vardescrip_by_id(p_var_id)->selected_;
 			bool o_selected = bgp_query->get_vardescrip_by_id(o_var_id)->selected_;
 
-			bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
-			bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
-			bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
+			// bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
+			// bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
+			// bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
 
-			bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
+			// bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
 
 			target->reserve(triples_num_);
 			for(TYPE_PREDICATE_ID pid = 0; pid < this->limitID_predicate_; ++pid)
@@ -1010,7 +1012,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     long t2 = Util::get_cur_time();
     cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
-    return std::move(join_result);
+    return join_result;
   }
   else
     throw string("unexpected JoinType");

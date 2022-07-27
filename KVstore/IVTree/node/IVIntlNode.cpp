@@ -147,7 +147,7 @@ IVIntlNode::coalesce(IVNode* _father, int _index)
 {
 	//int num = this->getNum();
 	int i, j = _father->getNum(), k;	//BETTER: unsigned?
-	IVNode* p;
+	IVNode* p = nullptr;
 	int ccase = 0;
 	//const Bstr* bstr;
 	if (_index < j)	//the right neighbor

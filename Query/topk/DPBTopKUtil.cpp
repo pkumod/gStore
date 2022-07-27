@@ -361,13 +361,13 @@ DPBUtil::GetAllSubObjId(KVstore *kv_store_,
                         bool need_literal)
 {
   auto result = make_shared<IDList>();
-  for (TYPE_PREDICATE_ID i = 0; i < limitID_entity_; ++i) {
+  for (unsigned i = 0; i < limitID_entity_; ++i) {
     auto entity_str = kv_store_->getEntityByID(i);
     if(entity_str!="")
       result->addID(i);
   }
   if(need_literal) {
-    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < limitID_literal_; ++i) {
+    for (unsigned i = Util::LITERAL_FIRST_ID; i < limitID_literal_; ++i) {
       auto entity_str = kv_store_->getLiteralByID(i);
       if (entity_str != "")
         result->addID(i);

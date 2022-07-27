@@ -53,7 +53,7 @@ Join::init(BasicQuery* _basic_query, bool * d_triple)
 	this->id_pos = 0;
 
 	this->start_id = -1;
-	int triple_num = this->basic_query->getTripleNum();
+	// int triple_num = this->basic_query->getTripleNum();
 	//calloc set all to false intially
 	this->dealed_triple = d_triple;
 	this->result_list = _basic_query->getResultListPointer();
@@ -317,7 +317,7 @@ Join::pre_var_handler()
 		cout << "current pre var id: " << i << endl;
 #endif
 		const PreVar& pre_var = this->basic_query->getPreVarByID(i);
-		bool is_selected = pre_var.selected;
+		// bool is_selected = pre_var.selected;
 
 #ifdef DEBUG_JOIN
 		cout << "current table size: " << this->current_table.size() << endl;
@@ -1021,7 +1021,7 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 		else
 		{
 			valid_ans_list = new IDList();
-			for(int i = 0; i < id_list_len; i++)
+			for(unsigned i = 0; i < id_list_len; i++)
 				valid_ans_list->addID(id_list[i]);
 		}
 

@@ -446,20 +446,21 @@ bool VNode::retrieveEntry(vector<SigEntry>& _entry_vec, const EntitySig _filter_
     return false;
 }
 
-bool VNode::checkState()
-{
-    if (this->getFileLine() < 0)
-        return false;
+// bool VNode::checkState()
+// {
+//     if (this->getFileLine() < 0)
+//         return false;
+//
+// 	int child_num = this->getChildNum();
+//     for (int i = 0; i < child_num; i++)
+//         if (!this->isLeaf() && this->getChildFileLine(i) < 0)
+//         {
+//             return false;
+//         }
+//
+//     return true;
+// }
 
-	int child_num = this->getChildNum();
-    for (int i = 0; i < child_num; i++)
-        if (!this->isLeaf() && this->getChildFileLine(i) < 0)
-        {
-            return false;
-        }
-
-    return true;
-}
 std::string VNode::to_str()
 {
 	std::stringstream _ss;

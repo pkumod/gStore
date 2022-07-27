@@ -30,7 +30,7 @@ private:
 
 public:
 	QueryParser(): firstVisitGroupGraphPatternSub(true) {}
-	QueryParser(QueryTree *qtp): firstVisitGroupGraphPatternSub(true), query_tree_ptr(qtp) {}
+	QueryParser(QueryTree *qtp): query_tree_ptr(qtp), firstVisitGroupGraphPatternSub(true) {}
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
 

@@ -359,8 +359,8 @@ class QueryTree
 		public:
 			QueryTree():
 				query_form(Select_Query), projection_modifier(Modifier_None), \
-				projection_asterisk(false), offset(0), limit(-1), update_type(Not_Update), \
-				singleBGP(false) {}
+				projection_asterisk(false), offset(0), limit(-1),  \
+				singleBGP(false), update_type(Not_Update) {}
 
 			void setQueryForm(QueryForm _queryform);
 			QueryForm getQueryForm();

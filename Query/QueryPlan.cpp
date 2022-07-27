@@ -39,7 +39,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
 
   auto graph_var_num = basic_query->getVarNum();
   auto pre_var_num = basic_query->getPreVarNum();
-  auto selected_var_num = basic_query->getSelectVarNum();
+  // auto selected_var_num = basic_query->getSelectVarNum();
 
   this->join_order_ = make_shared<vector<StepOperation>>();
   this->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
@@ -50,7 +50,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
   int max_degree = -1;
 
   // select the first node to be the max degree
-  for(int i = 0;i<this->var_descriptors_->size(); i++)
+  for(unsigned i = 0; i < this->var_descriptors_->size(); i++)
   {
     // need_retrieve = degree > 1
     // so this line check so-called satellites nodes
@@ -73,7 +73,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
 
 
   // Loop for this->var_descriptors_->size()-1 times
-  for(int _ = 1; _ < this->var_descriptors_->size(); _++) {
+  for(unsigned _ = 1; _ < this->var_descriptors_->size(); _++) {
     TYPE_ENTITY_LITERAL_ID max_j_basicqueryID = -1;
     int max_score = -1;
     for (int j = 0; j < total_var_num; j++) {
@@ -118,7 +118,7 @@ double QueryPlan::ScoreNode(BasicQuery *basic_query, int var){
 	unsigned size = basic_query->getCandidateSize(var);
 	double wt = 1;
 	for(unsigned i = 0; i < degree; i++) {
-		int edge_id = basic_query->getEdgeID(var, i);
+		// int edge_id = basic_query->getEdgeID(var, i);
 		int nei_id = basic_query->getEdgeNeighborID(var, i);
 		if(nei_id < 0 || nei_id >= basic_query->getVarNum() || basic_query->isSatelliteInJoin(nei_id)) {
 		  continue;
@@ -194,7 +194,7 @@ shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_
 
   auto graph_var_num = basic_query->getVarNum();
   auto pre_var_num = basic_query->getPreVarNum();
-  auto selected_var_num = basic_query->getSelectVarNum();
+  // auto selected_var_num = basic_query->getSelectVarNum();
 
   r->join_order_ = make_shared<vector<StepOperation>>();
   r->ids_after_join_ = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
@@ -213,7 +213,7 @@ shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_
 
 
   // Loop for r->var_descriptors_->size()-1 times
-  for(int _ = 1; _ < r->var_descriptors_->size(); _++) {
+  for(unsigned _ = 1; _ < r->var_descriptors_->size(); _++) {
     TYPE_ENTITY_LITERAL_ID node_to_add = SelectANode(basic_query, r->ids_after_join_);
 
     // add the max to selected vars
@@ -257,7 +257,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
 
   // now we deal with nodes which 1. no selected 2. only one degree
   // also called satellite var
-  for(TYPE_ENTITY_LITERAL_ID satellite_id = 0; satellite_id <graph_var_num;satellite_id++)
+  for (TYPE_ENTITY_LITERAL_ID satellite_id = 0; satellite_id < static_cast<unsigned>(graph_var_num); satellite_id++)
   {
     if(!basic_query->isSatelliteInJoin(satellite_id))
       continue;
@@ -374,7 +374,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
         auto s_var_id = basic_query->getIDByVarName(triple_string_type.getSubject());
         bool s_left = false;
         for(auto left_id:leave_behind_satellite_vec)
-          if(left_id==s_var_id)
+          if (left_id == static_cast<unsigned>(s_var_id))
             s_left = true;
         if(s_left)
           join_method = JoinMethod::o2p;
@@ -388,7 +388,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
         auto o_var_id = basic_query->getIDByVarName(triple_string_type.getObject());
         bool o_left = false;
         for(auto left_id:leave_behind_satellite_vec)
-          if(left_id==o_var_id)
+          if (left_id == static_cast<unsigned>(o_var_id))
             o_left = true;
         if(o_left)
           join_method = JoinMethod::s2p;
@@ -400,19 +400,19 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
       else // ?s ?p ?o
       {
         s_id = basic_query->getIDByVarName(triple_string_type.getSubject());
-        bool s_left = false;
+        // bool s_left = false;
         o_id = basic_query->getIDByVarName(triple_string_type.getObject());
-        bool o_left = false;
+        // bool o_left = false;
 
         // ?s ?p ?o and ?p links to other part
         if( (!basic_query->if_need_retrieve(s_id)) && (!basic_query->if_need_retrieve(o_id)))
           continue;
-        for(auto left_id:leave_behind_satellite_vec) {
-          if (left_id == s_id)
-            s_left = true;
-          if(left_id == o_id)
-            o_left = true;
-        }
+        // for(auto left_id:leave_behind_satellite_vec) {
+        //   if (left_id == s_id)
+        //     s_left = true;
+        //   if(left_id == o_id)
+        //     o_left = true;
+        // }
       }
 
       if(pre_var_id_mappings->find(pre_var.name)!=pre_var_id_mappings->end())
@@ -587,8 +587,8 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_qu
     TYPE_ENTITY_LITERAL_ID sid, oid, pid;
     JoinMethod join_method;
     auto edge_id = basic_query->getEdgeID(target_node, i_th_edge);
-    auto nei_id = basic_query->getEdgeNeighborID(target_node, i_th_edge);
-    auto predicate_id = basic_query->getEdgePreID(target_node, i_th_edge);
+    // auto nei_id = basic_query->getEdgeNeighborID(target_node, i_th_edge);
+    // auto predicate_id = basic_query->getEdgePreID(target_node, i_th_edge);
     auto triple_string_type = basic_query->getTriple(edge_id);
 
     bool s_constant = triple_string_type.getSubject().at(0) != '?';
@@ -909,7 +909,7 @@ std::string QueryPlan::toString(KVstore* kv_store) {
   stringstream ss;
   ss<<"QueryPlan:\n";
   ss<<"join order size "<<this->join_order_->size()<<endl;
-  for(int i=0;i<this->join_order_->size();i++)
+  for(unsigned i = 0; i < this->join_order_->size(); i++)
   {
     auto step_n = (*this->join_order_)[i];
 
@@ -923,12 +923,16 @@ std::string QueryPlan::toString(KVstore* kv_store) {
       case StepOperation::JoinType::EdgeCheck:
         step_descriptor = step_n.edge_filter_;
         break;
+	  default: 	{
+		cout << "Error in QueryPlan::toString, unknown join type" << endl;
+		assert(false);
+	  }
     }
     ss<<" node["<<step_descriptor->node_to_join_<<"]\n";
 
     // describe edge info
-    for(int i =0;i<step_descriptor->edges_->size();i++)
-      ss<< "\t \t "<<EdgeToString(kv_store,(*step_descriptor->edges_)[i],(*step_descriptor->edges_constant_info_)[i])<<"\n";
+    for(unsigned j = 0; j < step_descriptor->edges_->size(); j++)
+      ss<< "\t \t "<<EdgeToString(kv_store,(*step_descriptor->edges_)[j],(*step_descriptor->edges_constant_info_)[j])<<"\n";
   }
   return ss.str();
 }
@@ -953,6 +957,10 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
         break;
       case  StepOperation::JoinType::JoinTable: break;
       case  StepOperation::JoinType::EdgeCheck : break;
+	  default: 	{
+		cout << "Error in QueryPlan::toString, unknown join type" << endl;
+		assert(false);
+	  }
     }
     if(node_added)
     {

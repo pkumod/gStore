@@ -493,7 +493,7 @@ Database::allocPredicateID()
 	if (this->freelist_predicate == NULL)
 	{
 		t = this->limitID_predicate++;
-		if (this->limitID_predicate >= Util::LITERAL_FIRST_ID)
+		if (this->limitID_predicate >= static_cast<int>(Util::LITERAL_FIRST_ID))
 		{
 			cout << "fail to alloc id for predicate" << endl;
 			//WARN:if pid is changed to unsigned type, this must be changed
@@ -588,11 +588,11 @@ Database::setPreMap()
 		if (t > 0)
 		{
 			valid++;
-			if (t > max)
+			if (static_cast<unsigned>(t) > max)
 			{
 				this->maxNumPID = i;
 			}
-			if (t < min)
+			if (static_cast<unsigned>(t) < min)
 			{
 				this->minNumPID = i;
 			}
@@ -702,7 +702,7 @@ Database::load(bool loadCSR)
 
 	//TODO: acquire this arg from memory manager
 	//BETTER: get return value from subthread(using ref or file as hub)
-	unsigned vstree_cache = gstore::LRUCache::DEFAULT_CAPACITY;
+	// unsigned vstree_cache = gstore::LRUCache::DEFAULT_CAPACITY;
 	bool flag;
 
 #ifndef THREAD_ON
@@ -859,7 +859,9 @@ Database::load(bool loadCSR)
 			cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
 			unsigned* sublist = NULL;
 			unsigned sublist_len = 0;
-			bool ret = (this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
+			// todo: check return value
+			(this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
+			// bool ret = (this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
 			//cout<<"    sub_num: "<<sublist_len<<endl;
 			unsigned offset = 0;
 			unsigned index = 0;
@@ -869,7 +871,9 @@ Database::load(bool loadCSR)
 				//cout<<"    sid: "<<sublist[j]<<"    sub: "<<sub<<endl;
 				unsigned* objlist = NULL;
 				unsigned objlist_len = 0;
-				bool ret = (this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len); 
+				// todo: check return value
+				(this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len);
+				// bool ret = (this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len);
 				unsigned len = objlist_len;	// the real object list length
 				for(unsigned k=0;k<objlist_len;k++)
 				{
@@ -913,7 +917,9 @@ Database::load(bool loadCSR)
 			cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
 			unsigned* objlist = NULL;
 			unsigned objlist_len = 0;
-			bool ret = (this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
+			// todo: check return value
+			(this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
+			// bool ret = (this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
 			//cout<<"    obj_num: "<<objlist_len<<endl;
 			unsigned offset = 0;
 			unsigned index = 0;
@@ -925,7 +931,9 @@ Database::load(bool loadCSR)
 				//cout<<"    oid: "<<objlist[j]<<"    obj: "<<obj<<endl;
 				unsigned* sublist = NULL;
 				unsigned sublist_len = 0;
-				bool ret = (this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len); 
+				// todo: check return value
+				(this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len);
+				// bool ret = (this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len);
 				unsigned len = sublist_len;
 				for(unsigned k=0;k<sublist_len;k++)
 				{
@@ -972,7 +980,7 @@ Database::load_cache()
 	this->get_important_preID();
 	cout << "total preID num is " << pre_num << endl;
 	cout << "important pre ID is: ";
-	for(int i = 0; i < important_preID.size(); ++i)
+	for(unsigned i = 0; i < important_preID.size(); ++i)
 		cout << important_preID[i] << ' ';
 	cout << endl;
 	this->load_candidate_pre2values();
@@ -992,39 +1000,39 @@ Database::load_cache()
 
 	struct stat statbuf;
 	int fd;
-	char tmp;
-	long end;
+	// char tmp;
+	// long end;
 	
 	stat((entity->get_loc() + "value").c_str(), &statbuf);
 	fd = open((entity->get_loc() + "value").c_str(), O_RDONLY);
 	entity->mmapLength = (statbuf.st_size/4096 + 1)*4096;
 	entity->Mmap = (char*)mmap(NULL, entity->mmapLength, PROT_READ, MAP_POPULATE|MAP_SHARED, fd, 0);
 	close(fd);
-	end = entity->mmapLength - 4096;
-	for (long off = 0; off < end; off += 4096)
-	{	
-		tmp = entity->Mmap[off];
-	}
+	// end = entity->mmapLength - 4096;
+	// for (long off = 0; off < end; off += 4096)
+	// {
+	// 	tmp = entity->Mmap[off];
+	// }
 	stat((literal->get_loc() + "value").c_str(), &statbuf);
 	fd = open((literal->get_loc() + "value").c_str(), O_RDONLY);
 	literal->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
 	literal->Mmap = (char*)mmap(NULL, literal->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED , fd, 0);
 	close(fd);
-	end = literal->mmapLength - 4096;
-	for (long off = 0; off < end; off += 4096)
-	{
-		tmp = literal->Mmap[off];
-	}
+	// end = literal->mmapLength - 4096;
+	// for (long off = 0; off < end; off += 4096)
+	// {
+	// 	tmp = literal->Mmap[off];
+	// }
 	stat((predicate->get_loc() + "value").c_str(), &statbuf);
 	fd = open((predicate->get_loc() + "value").c_str(), O_RDONLY);
 	predicate->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
 	predicate->Mmap = (char*)mmap(NULL, predicate->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
 	close(fd);
-	end = predicate->mmapLength - 4096;
-	for (long off = 0; off < end; off += 4096)
-	{
-		tmp = predicate->Mmap[off];
-	}
+	// end = predicate->mmapLength - 4096;
+	// for (long off = 0; off < end; off += 4096)
+	// {
+	// 	tmp = predicate->Mmap[off];
+	// }
 	cout << "Value File Preload used " << Util::get_cur_time() - t0 << " ms" << endl;
 	/*
 	cerr << "Get in" << endl;
@@ -1116,7 +1124,7 @@ Database::get_candidate_preID()
 		unsigned _size;
 		unsigned long _tmp_size;
 		_tmp_size = this->kvstore->getPreListSize(i);
-		if (_tmp_size > (1 << 31)) continue;
+		if (_tmp_size > ((unsigned long)1 << 31)) continue;
 		_size = (unsigned)_tmp_size;
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
@@ -1209,7 +1217,7 @@ Database::get_important_subID()
 		unsigned long _tmp_size = 0;
 		if (this->kvstore->getEntityByID(i) == invalid) continue;	
 		_tmp_size = this->kvstore->getSubListSize(i);
-		if (_tmp_size >= (1 << 31)) continue;
+		if (_tmp_size >= ((unsigned long)1 << 31)) continue;
 		unsigned _size = (unsigned)_tmp_size;
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
 
@@ -1277,7 +1285,7 @@ Database::get_important_objID()
 		_tmp_size = this->kvstore->getSubListSize(i);
 		
 		_tmp_size = this->kvstore->getObjListSize(i);
-		if (_tmp_size >= (1 << 31)) continue;
+		if (_tmp_size >= ((unsigned long)1 << 31)) continue;
 		_size = (unsigned)_tmp_size;
 
 		if (!VList::isLongList(_size) || _size >= max_total_size) continue; // only long list need to be stored in cache
@@ -1747,9 +1755,9 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->kvstore, this->statistics, this->stringindex, this->query_cache, \
-		this->pre2num, this->pre2sub, this->pre2obj, this->triples_num, this->limitID_predicate, this->limitID_literal, \
-		this->limitID_entity, this->csr, txn);
+	GeneralEvaluation general_evaluation(this->kvstore, this->stringindex, this->query_cache, this->csr,
+										 this->statistics, this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
+										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn);
 	if(txn != nullptr)
 	cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();
@@ -2456,7 +2464,7 @@ Database::encodeRDF_new(const string _rdf_file)
 
 	//TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
 	ID_TUPLE* _p_id_tuples = NULL;
-	TYPE_TRIPLE_NUM _id_tuples_max = 0;
+	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	long t1 = Util::get_cur_time();
 
@@ -2577,7 +2585,7 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
 	//TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
 	ID_TUPLE* _p_id_tuples = NULL;
-	TYPE_TRIPLE_NUM _id_tuples_max = 0;
+	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	long t1 = Util::get_cur_time();
 
@@ -3018,7 +3026,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	//size_t means long unsigned int in 64-bit machine
 	//fread(_p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID), total_num, fp);
 
-	TYPE_TRIPLE_NUM _id_tuples_size;
+	// TYPE_TRIPLE_NUM _id_tuples_size;
 	{
 		//initial
 		//_id_tuples_max = 10 * 1000 * 1000;
@@ -3358,7 +3366,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	//size_t means long unsigned int in 64-bit machine
 	//fread(_p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID), total_num, fp);
 
-	TYPE_TRIPLE_NUM _id_tuples_size;
+	// TYPE_TRIPLE_NUM _id_tuples_size;
 	{
 		//initial
 		//_id_tuples_max = 10 * 1000 * 1000;
@@ -3696,7 +3704,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	//int oid2 = this->kvstore->getIDByEntity("<UndergraduateStudent394@Department7.University0.edu>");
 	//cout<<sid1<<" "<<sid2<<" "<<oid1<<" "<<oid2<<endl;
 
-	long tv_kv_store_begin = Util::get_cur_time();
+	// long tv_kv_store_begin = Util::get_cur_time();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 	// if(txn != nullptr)
@@ -3863,7 +3871,7 @@ Database::insertTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 bool
 Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vertices, vector<unsigned>* _predicates, shared_ptr<Transaction> txn)
 {
-	long tv_kv_store_begin = Util::get_cur_time();
+	// long tv_kv_store_begin = Util::get_cur_time();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 	TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
@@ -3928,7 +3936,7 @@ Database::removeTriple(const TripleWithObjType& _triple, vector<unsigned>* _vert
 	}
 	//cout << "11 trees updated" << endl;
 
-	long tv_kv_store_end = Util::get_cur_time();
+	// long tv_kv_store_end = Util::get_cur_time();
 	if(txn == nullptr)
 	{
 		int sub_degree = (this->kvstore)->getEntityDegree(_sub_id);
@@ -4039,7 +4047,7 @@ Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction
 	//parse a file
 	RDFParser _parser(_fin);
 
-	TYPE_TRIPLE_NUM triple_num = 0;
+	// TYPE_TRIPLE_NUM triple_num = 0;
 #ifdef DEBUG
 	Util::logging("==> while(true)");
 #endif
@@ -5177,7 +5185,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	//parse a file
 	RDFParser _parser(_fin);
 
-	TYPE_TRIPLE_NUM triple_num = 0;
+	// TYPE_TRIPLE_NUM triple_num = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -5273,9 +5281,9 @@ Database::batch_insert(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	if (!_is_restore) {
 		write_update_log(_triples, _triple_num, 1, txn);
 	}
-	bool is_obj_entity;
+	// bool is_obj_entity;
 	vector<ID_TUPLE> id_tuples(_triple_num);
-	for (int i = 0; i < _triple_num; ++i)
+	for (unsigned i = 0; i < _triple_num; ++i)
 	{
 		TripleWithObjType _triple = _triples[i];
 		TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
@@ -5398,7 +5406,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_s = 0;
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
-    unsigned update_num_subject=0;
+    // unsigned update_num_subject=0;
 	unsigned update_num_triple=0;
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	set<unsigned> sub_ids, pre_ids, obj_ids;
@@ -5407,7 +5415,7 @@ Database::batch_remove(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _tripl
 	}
 
 	vector<ID_TUPLE> id_tuples(_triple_num);
-	for (int i = 0; i < _triple_num; ++i)
+	for (unsigned i = 0; i < _triple_num; ++i)
 	{
 		TripleWithObjType _triple = _triples[i];
 		TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
@@ -5545,7 +5553,7 @@ Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_n
 	if(type == UPDATE_TYPE::SUBJECT_INSERT || type == UPDATE_TYPE::SUBJECT_REMOVE)
 	{
 		TYPE_ENTITY_LITERAL_ID sub_id = id_tuples[0].subid;
-		for(int i = 0; i < _triple_num; i++)
+		for(unsigned i = 0; i < _triple_num; i++)
 		{
 			if(id_tuples[i].subid == sub_id){
 				data.push_back(id_tuples[i].preid);
@@ -5582,7 +5590,7 @@ Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_n
 	{
 		sort(id_tuples.begin(), id_tuples.end(), Util::pso_cmp_idtuple);
 		TYPE_PREDICATE_ID pre_id = id_tuples[0].preid;
-		for(int i = 0; i < _triple_num; i++)
+		for(unsigned i = 0; i < _triple_num; i++)
 		{
 			if(id_tuples[i].preid == pre_id){
 				data.push_back(id_tuples[i].subid);
@@ -5619,7 +5627,7 @@ Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_n
 	{
 		sort(id_tuples.begin(), id_tuples.end(), Util::ops_cmp_idtuple);
 		TYPE_ENTITY_LITERAL_ID obj_id = id_tuples[0].objid;
-		for(int i = 0; i < _triple_num; i++)
+		for(unsigned i = 0; i < _triple_num; i++)
 		{
 			if(id_tuples[i].objid == obj_id){
 				data.push_back(id_tuples[i].preid);
@@ -5634,7 +5642,9 @@ Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_n
 						update_num += this->kvstore->updateRemove_o2values(obj_id, data);
 				}
 				else{
-
+					// todo: complete this, please read DevelopDoc for instruction
+					cout << "Uncomplete function in Database::sub_batch_update" << endl;
+					exit(-1);
 				}
 				data.clear();
 				obj_id = id_tuples[i].objid;
@@ -5879,7 +5889,7 @@ Database::write_update_log(const TripleWithObjType* _triples, TYPE_TRIPLE_NUM _t
 		return false;
 	}
 
-	for (int i = 0; i < _triple_num; i++) {
+	for (unsigned i = 0; i < _triple_num; i++) {
 		// if (type == 1 && exist_triple(_triples[i], txn)) {
 		//	continue;
 		// }

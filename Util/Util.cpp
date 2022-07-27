@@ -209,37 +209,37 @@ Util::configure()
 	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
 }
 
-bool
-Util::config_debug()
-{
-    const unsigned len1 = 100;
-    const unsigned len2 = 505;
-	char AppName[] = "setting";
-    char KeyName[] = "mode";
-	char appname[len1], keyname[len1];
-    char KeyVal[len1];
-    char *buf, *c;
-    char buf_i[len1], buf_o[len1];
-    FILE *fp = NULL;
-    int status = 0; // 1 AppName 2 KeyName
-	return true;
-}
+// bool
+// Util::config_debug()
+// {
+//     const unsigned len1 = 100;
+    // const unsigned len2 = 505;
+	// char AppName[] = "setting";
+    // char KeyName[] = "mode";
+	// char appname[len1], keyname[len1];
+    // char KeyVal[len1];
+    // char *buf, *c;
+    // char buf_i[len1], buf_o[len1];
+    // FILE *fp = NULL;
+    // int status = 0; // 1 AppName 2 KeyName
+// 	return true;
+// }
 
-bool
-Util::config_advanced()
-{
-    const unsigned len1 = 100;
-    const unsigned len2 = 505;
-	char AppName[] = "setting";
-    char KeyName[] = "mode";
-	char appname[len1], keyname[len1];
-    char KeyVal[len1];
-    char *buf, *c;
-    char buf_i[len1], buf_o[len1];
-    FILE *fp = NULL;
-    int status = 0; // 1 AppName 2 KeyName
-	return true;
-}
+// bool
+// Util::config_advanced()
+// {
+//     const unsigned len1 = 100;
+    // const unsigned len2 = 505;
+	// char AppName[] = "setting";
+    // char KeyName[] = "mode";
+	// char appname[len1], keyname[len1];
+    // char KeyVal[len1];
+    // char *buf, *c;
+    // char buf_i[len1], buf_o[len1];
+    // FILE *fp = NULL;
+    // int status = 0; // 1 AppName 2 KeyName
+// 	return true;
+// }
 
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
@@ -683,53 +683,53 @@ Util::bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array
 	return INVALID;
 }
 
-bool
-Util::bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len)
-{
-    if(_list_len == 0)
-    {
-        return false;
-    }
-	//NOTICE: if list len > 0, then it must >= 2, so pair num >= 1
-    unsigned pair_num = _list_len / 2;
-    unsigned _first = _pair_idlist[2*0 + 0];
-    unsigned _last = _pair_idlist[2*(pair_num-1) + 0];
-
-    if(_preid == _last)
-    {
-        return true;
-    }
-
-    bool not_find = (_last < _preid || _first > _preid);
-    if(not_find)
-    {
-        return false;
-    }
-
-    unsigned low = 0;
-    unsigned high = pair_num - 1;
-    unsigned mid;
-
-    while(low <= high)
-    {
-        mid = (high - low) / 2 + low;
-        if(_pair_idlist[2*mid + 0] == _preid)
-        {
-            return true;
-        }
-
-        if(_pair_idlist[2*mid + 0] > _preid)
-        {
-            high = mid - 1;
-        } 
-		else
-        {
-            low = mid + 1;
-        }
-    }
-
-    return false;
-}
+// bool
+// Util::bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len)
+// {
+//     if(_list_len == 0)
+//     {
+//         return false;
+//     }
+// 	//NOTICE: if list len > 0, then it must >= 2, so pair num >= 1
+//     unsigned pair_num = _list_len / 2;
+//     unsigned _first = _pair_idlist[2*0 + 0];
+//     unsigned _last = _pair_idlist[2*(pair_num-1) + 0];
+//
+//     if(_preid == _last)
+//     {
+//         return true;
+//     }
+//
+//     bool not_find = (_last < _preid || _first > _preid);
+//     if(not_find)
+//     {
+//         return false;
+//     }
+//
+//     unsigned low = 0;
+//     unsigned high = pair_num - 1;
+//     unsigned mid;
+//
+//     while(low <= high)
+//     {
+//         mid = (high - low) / 2 + low;
+//         if(_pair_idlist[2*mid + 0] == _preid)
+//         {
+//             return true;
+//         }
+//
+//         if(_pair_idlist[2*mid + 0] > _preid)
+//         {
+//             high = mid - 1;
+//         }
+// 		else
+//         {
+//             low = mid + 1;
+//         }
+//     }
+//
+//     return false;
+// }
 
 unsigned
 Util::bsearch_vec_uporder(unsigned _key, const vector<unsigned>* _vec)
@@ -1708,7 +1708,7 @@ Util::getTimeName()
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	string tempTime = asctime(timeinfo);
-	for(int i = 0; i < tempTime.length(); i++)
+	for(unsigned i = 0; i < tempTime.length(); i++)
 	{
 		if(tempTime[i] == ' ')
 			tempTime[i] = '_';
@@ -2163,7 +2163,7 @@ void
 Util::split(string str, string pattern, vector<string> &res){
     string::size_type pos = 0;
     str += pattern;
-    for(int i = 0; i < str.size(); i++)
+    for(int i = 0; i < static_cast<int>(str.size()); i++)
     {
         pos = str.find(pattern, i);
         if(pos < str.size()){

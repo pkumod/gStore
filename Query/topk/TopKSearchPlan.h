@@ -64,7 +64,7 @@ class TopKSearchPlan {
   std::size_t total_vars_num_;
   static std::size_t CountDepth(map<TYPE_ENTITY_LITERAL_ID,vector<TYPE_ENTITY_LITERAL_ID>> &neighbours, TYPE_ENTITY_LITERAL_ID root_id, std::size_t total_vars_num);
   void AdjustOrder();
-  bool walk(set<int> &possible_vars,set<int> &walk_pass_vars,vector<int> &result_cycle);
+  bool walk(set<unsigned> &possible_vars, set<unsigned> &walk_pass_vars, vector<unsigned> &result_cycle);
 
   void DeleteEdge(TYPE_ENTITY_LITERAL_ID a,TYPE_ENTITY_LITERAL_ID b);
   bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
@@ -80,7 +80,7 @@ class TopKSearchPlan {
   // Recursive delete
   ~TopKSearchPlan();
   StepOperation& GetNonTreeEdges(){return this->non_tree_edges_;};
-  std::vector<int> FindCycle();
+  std::vector<unsigned> FindCycle();
   bool SuggestTopK();
   void DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store);
   bool HasCycle() {return this->is_cycle_graph_;};

@@ -56,7 +56,7 @@ DPB::DynamicTrie::~DynamicTrie() {
  */
 DPB::TrieEntry* DPB::DynamicTrie::insert(const DPB::sequence &seq) {
   TrieEntry* p = this->root;
-  TrieEntry* p_next;
+  TrieEntry* p_next = nullptr;
   bool new_created = false;
   for(int i=0;i<depth_;i++)
   {

@@ -86,6 +86,7 @@ in the sparql query can point to the same node in data graph)
 //Below are for boost
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 //#include <boost/spirit.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -373,7 +374,7 @@ public:
 	static bool parallel_cmp_unsigned(unsigned _i1, unsigned _i2);
 	static void sort(unsigned*& _id_list, unsigned _list_len);
 	static unsigned bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array_num);
-	static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
+	// static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 	static bool dir_exist(const std::string _dir);
@@ -459,8 +460,8 @@ public:
 	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
 	static string getConfigureValue(string keyname);
 	static bool config_setting();
-	static bool config_advanced();
-	static bool config_debug();
+	// static bool config_advanced();
+	// static bool config_debug();
 
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;

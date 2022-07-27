@@ -216,11 +216,12 @@ unsigned
 KVstore::getEntityInDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const 
 {
 	//cout << "In getEntityInDegree " << _entity_id << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _entity_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->objID2values, _entity_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
+	unsigned ret = 0;
 	if (_get) 
 	{
 		ret = _tmp[0];
@@ -238,11 +239,12 @@ unsigned
 KVstore::getEntityOutDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const 
 {
 	//cout << "In getEntityOutDegree " << _entity_id << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _entity_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->subID2values, _entity_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
+	unsigned ret = 0;
 	if (_get) 
 	{
 		ret = _tmp[0];
@@ -260,11 +262,12 @@ unsigned
 KVstore::getLiteralDegree(TYPE_ENTITY_LITERAL_ID _literal_id) const 
 {
 	//cout << "In getLiteralDegree " << _literal_id << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _literal_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->objID2values, _literal_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
+	unsigned ret = 0;
 	if (_get) 
 	{
 		ret = _tmp[0];
@@ -280,12 +283,13 @@ unsigned
 KVstore::getPredicateDegree(TYPE_PREDICATE_ID _predicate_id) const 
 {
 	//cout << "In getPredicate Degree " << _predicate_id << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->preID2values, _predicate_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->preID2values, _predicate_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
-	if (_get) 
+	unsigned ret = 0;
+	if (_get)
 	{
 		ret = _tmp[0];
 	}
@@ -302,11 +306,12 @@ unsigned
 KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid) const 
 {
 	//cout << "In getSubjectPredicateDegree " << _subid << ' ' << _preid << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
+	unsigned ret = 0;
 	if(_get)
 	{
 		unsigned _result = KVstore::binarySearch(_preid, _tmp + 3, _tmp[1], 2);
@@ -338,11 +343,12 @@ unsigned
 KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid) const 
 {
 	//cout << "In getObjectPredicateDegree " << _objid << _preid << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
-	int ret = 0;
+	unsigned ret = 0;
 	if (_get) 
 	{
 		unsigned _result = KVstore::binarySearch(_preid, _tmp + 2, _tmp[1], 2);
@@ -483,9 +489,10 @@ KVstore::updateTupleslist_remove(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_
 bool 
 KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->subID2values, _sub_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 	bool _is_entity = Util::is_entity_ele(_obj_id);
 
 	//subID doesn't exist
@@ -520,7 +527,7 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 			_values[1] = _tmp[1] + 1;
 			_values[2] = _tmp[2] + (_is_entity ? 1 : 0);
 			unsigned i, j;
-			for (i = 0, j = 3; i < _tmp[1] && _tmp[3 + 2 * i] < _pre_id; i++, j += 2) {
+			for (i = 0, j = 3; i < _tmp[1] && _tmp[3 + 2 * i] < static_cast<unsigned>(_pre_id); i++, j += 2) {
 				_values[j] = _tmp[3 + 2 * i];
 				_values[j + 1] = _tmp[4 + 2 * i] + 2;
 			}
@@ -590,9 +597,10 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 bool 
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _sub_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->subID2values, _sub_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 	bool _is_entity = Util::is_entity_ele(_obj_id);
 
 	if (!_get) 
@@ -684,9 +692,12 @@ unsigned
 KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _subid, const std::vector<unsigned>& _pidoidlist) 
 {
 	if(_pidoidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	_len = _len/sizeof(unsigned);
 	//cout << "_len：          " << _len << endl;
 	unsigned* values = NULL;
@@ -709,9 +720,12 @@ unsigned
 KVstore::updateRemove_s2values(TYPE_ENTITY_LITERAL_ID _subid, const std::vector<unsigned>& _pidoidlist) 
 {
 	if(_pidoidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
 	_len = _len/sizeof(unsigned);
 	if(_len == 0) return 0;
 	unsigned* values = NULL;
@@ -741,7 +755,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 	unsigned update_num = 0;
     int n = 0;
     int entity_num = 0;
-	for(int i = 0; i < _pidoidlist.size(); i += 2)
+	for(unsigned i = 0; i < _pidoidlist.size(); i += 2)
     {
         mp[_pidoidlist[i]].push_back(_pidoidlist[i+1]);
 		pair<int, bool> res = {0, true};
@@ -759,7 +773,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		_values[1] = mp.size();
 		_values[2] = entity_num;
 		//cout << "mp.size()" << _values[1] << endl;
-		int j = 3, len;
+		unsigned j = 3, len;
 		for(auto &it: mp)
 		{
 			_values[j] = it.first;
@@ -999,9 +1013,9 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 	} 
 	map<unsigned, set<unsigned>> mp;
 
-	for(int i = 0; i < _pidoidlist.size(); i += 2)
+	for(unsigned i = 0; i < _pidoidlist.size(); i += 2)
     {
-        auto res = mp[_pidoidlist[i]].insert(_pidoidlist[i+1]);
+        mp[_pidoidlist[i]].insert(_pidoidlist[i+1]);
 	}
 
 	int update_num = 0;
@@ -1153,8 +1167,8 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
         values[i] = _values[i];
         values[i+1] = _values[i+1] - deleted_pre_num*2;
     }
-    for(int i = 2*pre_num + 3, j = _tmp[1] * 2 + 3; i < len && j < _len; i++, j++)
-        values[i] = _values[j];
+    for (int i = 2*pre_num + 3, j = _tmp[1] * 2 + 3; i < len && static_cast<unsigned long>(j) < _len; i++, j++)
+		values[i] = _values[j];
 	values_len = len;
 	delete [] _values;
 	update_num =  _tmp[0] - values[0];
@@ -1170,9 +1184,10 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 bool 
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->objID2values, _obj_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
 	//objID doesn't exist
 	if (!_get) {
@@ -1200,7 +1215,7 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 			_values[0] = _tmp[0] + 1;
 			_values[1] = _tmp[1] + 1;
 			unsigned i, j;
-			for (i = 0, j = 2; i < _tmp[1] && _tmp[2 + 2 * i] < _pre_id; i++, j += 2) {
+			for (i = 0, j = 2; i < _tmp[1] && _tmp[2 + 2 * i] < static_cast<unsigned>(_pre_id); i++, j += 2) {
 				_values[j] = _tmp[2 + 2 * i];
 				_values[j + 1] = _tmp[3 + 2 * i] + 2;
 			}
@@ -1268,9 +1283,10 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 bool 
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->objID2values, _obj_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
 	if (!_get) {
 		return false;
@@ -1350,9 +1366,12 @@ unsigned
 KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<unsigned>& _pidsidlist) 
 {
 	if(_pidsidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	_len = _len/sizeof(unsigned);
 
 	unsigned* values = NULL;
@@ -1374,10 +1393,13 @@ unsigned
 KVstore::updateRemove_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<unsigned>& _pidsidlist) 
 {
 	if(_pidsidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	unsigned update_num = 0;
-	bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
 	_len = _len / sizeof(unsigned);
 	if (!_len) {
 		return 0;
@@ -1411,7 +1433,7 @@ KVstore::Insert_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
 
     int n = 0;
 	unsigned update_num = 0;
-    for(int i = 0; i < _pidsidlist.size(); i += 2)
+    for(unsigned i = 0; i < _pidsidlist.size(); i += 2)
     {
 		pair<int, bool> res{0, true};
         mp[_pidsidlist[i]].push_back(_pidsidlist[i+1]);
@@ -1443,7 +1465,7 @@ KVstore::Insert_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
 			}
 			j += 2; //_values[j] = offset
 		}
-		assert(len == _values[0] + 2*_values[1] + 2);
+		assert(static_cast<unsigned>(len) == _values[0] + 2*_values[1] + 2);
 		values = new unsigned[len];
 		memcpy(values, _values, sizeof(unsigned) * len);
 		values_len = len;
@@ -1648,9 +1670,9 @@ KVstore::Remove_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
 
 	map<unsigned, set<unsigned>> mp;
 
-    for(int i = 0; i < _pidsidlist.size(); i += 2)
+    for(unsigned i = 0; i < _pidsidlist.size(); i += 2)
     {
-       auto res = mp[_pidsidlist[i]].insert(_pidsidlist[i+1]);
+       mp[_pidsidlist[i]].insert(_pidsidlist[i+1]);
     }
 
     unsigned* _values = new unsigned[_len];
@@ -1786,8 +1808,8 @@ KVstore::Remove_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
         values[i] = _values[i];
         values[i+1] = _values[i+1] - deleted_pre_num*2;
     }
-    for(int i = 2*pre_num + 2, j = _tmp[1] * 2 + 2; i < len && j < _len; i++, j++)
-        values[i] = _values[j];
+    for (int i = 2*pre_num + 2, j = _tmp[1] * 2 + 2; i < len && static_cast<unsigned long>(j) < _len; i++, j++)
+		values[i] = _values[j];
 	delete [] _values;
 	values_len = len;
 	update_num = _tmp[0] - values[0];
@@ -1804,10 +1826,10 @@ KVstore::Remove_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
 bool 
 KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
-	
+	bool _get = this->getValueByKey(this->preID2values, _pre_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 	//preid doesn't exist
 	if (!_get) {
 		//unsigned _values[3];
@@ -1847,9 +1869,10 @@ KVstore::updateInsert_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 bool 
 KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) 
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len);
+	bool _get = this->getValueByKey(this->preID2values, _pre_id, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
 
 	if (!_get) {
 		return false;
@@ -1888,9 +1911,12 @@ unsigned
 KVstore::updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
 	if(_sidoidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
 	_len = _len / sizeof(unsigned);
 	//cout << "updateInsert_p2values........" << endl;
 	unsigned* values = NULL;
@@ -1912,9 +1938,12 @@ unsigned
 KVstore::updateRemove_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsigned>& _sidoidlist) 
 {
 	if(_sidoidlist.size() == 0) return 0;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
-	bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+	// todo: check this return value
+	this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
+	unsigned* _tmp = (unsigned*)char_tmp;
+	// bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
 	_len = _len / sizeof(unsigned);
 
 	unsigned* values = NULL;
@@ -1946,7 +1975,7 @@ KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 
     int n = 0;
 	unsigned update_num = 0;
-    for(int i = 0; i < _sidoidlist.size(); i += 2)
+    for(unsigned i = 0; i < _sidoidlist.size(); i += 2)
     {
        pair<int, bool> res = {0, true};
 	   mp[_sidoidlist[i]].push_back(_sidoidlist[i+1]);
@@ -1985,7 +2014,7 @@ KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 		int old_len = _tmp[0];
 		int tmp_len = (_values_len - 1) / 2;
 		assert(tmp_len == n + old_len);
-		int old_s_offset = 1, s_offset = 1;
+		unsigned old_s_offset = 1, s_offset = 1;
 		while(old_s_offset <= _tmp[0] && it != mp.end())
 		{
 			if(_tmp[old_s_offset] == it->first)
@@ -2082,7 +2111,7 @@ KVstore::Insert_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 		_values[0] = s_offset - 1;
 		values = new unsigned[1 + 2*_values[0]];
 		values[0] = _values[0];
-		for(int i = 1; i < s_offset; i++)
+		for(unsigned i = 1; i < s_offset; i++)
 		{
 			values[i] = _values[i];
 			values[i+values[0]] = _values[i+tmp_len];
@@ -2109,7 +2138,7 @@ KVstore::Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
 
     int n = 0;
 	unsigned update_num = 0;
-    for(int i = 0; i < _sidoidlist.size(); i += 2)
+    for(unsigned i = 0; i < _sidoidlist.size(); i += 2)
     {
        auto res = mp[_sidoidlist[i]].insert(_sidoidlist[i+1]);
        if(res.second == true) n++;
@@ -2126,7 +2155,7 @@ KVstore::Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
     auto it = mp.begin();
     int old_len = _tmp[0];
     int tmp_len = old_len;
-    int old_s_offset = 1, s_offset = 1;
+    unsigned old_s_offset = 1, s_offset = 1;
     while(old_s_offset <= _tmp[0] && it != mp.end())
     {
         if(_tmp[old_s_offset] == it->first)
@@ -2201,7 +2230,7 @@ KVstore::Remove_p2values(const std::vector<unsigned>& _sidoidlist, unsigned* _tm
     _values[0] = s_offset - 1;
     values = new unsigned[1 + 2*_values[0]];
     values[0] = _values[0];
-    for(int i = 1; i < s_offset; i++)
+    for(unsigned i = 1; i < s_offset; i++)
     {
         values[i] = _values[i];
         values[i+values[0]] = _values[i+tmp_len];
@@ -2860,11 +2889,12 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if (!_get) 
 		{
@@ -2897,7 +2927,8 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT) && !txn->WriteSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(IS_SI && latched && FirstRead)
 			txn->ReadSetInsert(_subid, Transaction::IDType::SUBJECT);
@@ -2966,11 +2997,12 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) 
 		{
 
@@ -3006,7 +3038,8 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT) && !txn->WriteSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::SUB_S);
@@ -3078,12 +3111,14 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if (!_get) {
 			_objidlist = NULL;
 			_list_len = 0;
@@ -3129,8 +3164,9 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 			FirstRead = !txn->ReadSetFind(_subid, Transaction::IDType::SUBJECT);
 		
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
-		
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::SUB_S);
 
@@ -3224,12 +3260,14 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if (!_get) {
 			_preid_objidlist = NULL;
 			_list_len = 0;
@@ -3273,8 +3311,9 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 		
 		VDataSet addset, delset;
 
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
-		
+		bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::SUB_S);
 
@@ -3476,12 +3515,14 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
 		//cerr << "In getpreIDlistByobjID no transaction! " << endl;
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if (!_get) {
 			
 			_preidlist = NULL;
@@ -3514,7 +3555,8 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
@@ -3582,11 +3624,13 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
@@ -3621,8 +3665,9 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
-		
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
@@ -3690,11 +3735,12 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
@@ -3738,7 +3784,8 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
@@ -3836,11 +3883,12 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		_list_len = 0;
 		return false;
 	}
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
 			_preid_subidlist = NULL;
 			_list_len = 0;
@@ -3884,8 +3932,8 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->objID2values, _objid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
-		
+		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
@@ -4043,11 +4091,12 @@ bool
 KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
 	//cout << "In getsubIDlistBypreID " << _preid << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
 			_subidlist = NULL;
 			_list_len = 0;
@@ -4081,7 +4130,8 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::PRE_S);
@@ -4148,11 +4198,12 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 bool 
 KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const {
 	//cout << "In getobjIDlistBypreID " << _preid << endl;
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
 			_objidlist = NULL;
 			_list_len = 0;
@@ -4187,7 +4238,8 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched, FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len, addset, delset, txn, latched, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::PRE_S);
@@ -4258,11 +4310,12 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 #ifdef DEBUG_KVSTORE
 	cout << "In getsubIDobjIDlistBypreID " << _preid << endl;
 #endif
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	if(txn == nullptr)
 	{
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 #ifdef DEBUG_KVSTORE
 	cout<<"the length of list: "<<_len<<endl;
 #endif
@@ -4306,7 +4359,8 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 		
 		VDataSet addset, delset;
 		
-		bool _get = this->getValueByKey(this->preID2values, _preid, (char*&)_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len, addset, delset, txn, latched,  FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if(txn->GetState() == TransactionState::ABORTED)
 			txn->SetErrorType(TransactionErrorType::PRE_S);
@@ -4401,13 +4455,14 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 			_list_len = 0;
 			return false;
 		}
-		unsigned* _tmp = NULL;
+		char* char_tmp = nullptr;
 		unsigned long _len = 0;
-		this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len);
+		this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
+		unsigned* _tmp = (unsigned*)char_tmp;
 		_list_len = len;
 		unsigned _result = 0;
 		for (unsigned i = 0; i < len; i++) {
-			TYPE_PREDICATE_ID _preid = list[i];
+			unsigned _preid = list[i];
 			for (; _result < _tmp[1]; _result++) {
 				if (_tmp[3 + 2 * _result] == _preid) {
 					break;
@@ -4486,11 +4541,14 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 			return false;
 		}
 		
-		unsigned* _tmp = NULL;
+		char* char_tmp = nullptr;
 		unsigned long _len = 0;
 		VDataSet addset, delset;
-		bool latched = false; 
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched,  false);		
+		bool latched = false;
+		// todo: check this return value
+		this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, latched,  false);
+		unsigned* _tmp = (unsigned*)char_tmp;
+		// bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, latched,  false);
 		
 		vector<unsigned> add_pidoidlist, del_pidoidlist;
 		for(auto po: addset)
@@ -4528,7 +4586,7 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 		_list_len = len;
 		unsigned _result = 0;
 		for (unsigned i = 0; i < len; i++) {
-			TYPE_PREDICATE_ID _preid = list[i];
+			unsigned _preid = list[i];
 			for (; _result < _tmp[1]; _result++) {
 				if (_tmp[3 + 2 * _result] == _preid) {
 					break;
@@ -4858,7 +4916,7 @@ KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _
 }*/
 
 bool
-KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen) const
+KVstore::getValueByKey(IVArray* _array, unsigned _key, char* &_val, unsigned long & _vlen) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5002,30 +5060,30 @@ KVstore::AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id)
 unsigned long
 KVstore::getSubListSize(TYPE_ENTITY_LITERAL_ID _sub_id)
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _ret;
-	this->getValueByKey(this->subID2values, _sub_id, (char*&) _tmp, _ret);
-	delete [] _tmp;
+	this->getValueByKey(this->subID2values, _sub_id, char_tmp, _ret);
+	delete [] char_tmp;
 	return _ret;
 }
 
 unsigned long
 KVstore::getObjListSize(TYPE_ENTITY_LITERAL_ID _obj_id)
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _ret;
-	this->getValueByKey(this->objID2values, _obj_id, (char*&) _tmp, _ret);
-	delete [] _tmp;
+	this->getValueByKey(this->objID2values, _obj_id, char_tmp, _ret);
+	delete [] char_tmp;
 	return _ret;
 }
 
 unsigned long
 KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 {
-	unsigned* _tmp = NULL;
+	char* char_tmp = nullptr;
 	unsigned long _ret;
-	this->getValueByKey(this->preID2values, _pre_id, (char*&) _tmp, _ret);
-	delete [] _tmp;
+	this->getValueByKey(this->preID2values, _pre_id, char_tmp, _ret);
+	delete [] char_tmp;
 	return _ret;
 }
 
@@ -5167,8 +5225,9 @@ KVstore::remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_
 bool 
 KVstore::GetExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn)
 {
-	int base_timer = txn->get_wait_lock_time();
-	int times = txn->get_retry_times();
+	// todo: add time check
+	// int base_timer = txn->get_wait_lock_time();
+	// int times = txn->get_retry_times();
 	// for(int i = 0; i < times; i++)
 	// {
 		if(try_exclusive_lock(_sub_id, _pre_id, _obj_id, txn)) return true;
@@ -5182,8 +5241,9 @@ KVstore::GetExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre
 bool 
 KVstore::GetExclusiveLocks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn)
 {
-	int base_timer = txn->get_wait_lock_time();
-	int times = txn->get_retry_times();
+	// todo: add time check
+	// int base_timer = txn->get_wait_lock_time();
+	// int times = txn->get_retry_times();
 	// for(int i = 0; i < times; i++)
 	// {
 		if(try_exclusive_locks(sids, oids, pids, txn)) return true;
@@ -5276,7 +5336,7 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 		obj_has_write[i] = txn->WriteSetFind(oids[i],Transaction::IDType::OBJECT);
 	}
 	int sub_ret, obj_ret, pre_ret;
-	bool sub_invalid = true, obj_invalid = true, pre_invalid = true;
+	// bool sub_invalid = true, obj_invalid = true, pre_invalid = true;
 	int k = 0;
 	for(; k < s_num; k++)
 	{
@@ -5290,9 +5350,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				if(!sub_has_write[i]){
 					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
-				if(invalid == false){
-					sub_invalid = false;
-				}
+				// if(invalid == false){
+				// 	sub_invalid = false;
+				// }
 			}
 			return false;
 		}
@@ -5312,9 +5372,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				if(!obj_has_write[i]){
 					invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
-				if(invalid == false){
-					obj_invalid = false;
-				}
+				// if(invalid == false){
+				// 	obj_invalid = false;
+				// }
 			}
 
 			for(int i = 0; i < s_num; i++)
@@ -5323,9 +5383,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 				if(!sub_has_write[i]){
 					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
-				if(invalid == false){
-					sub_invalid = false;
-				}
+				// if(invalid == false){
+				// 	sub_invalid = false;
+				// }
 			}
 			return false;
 		}
@@ -5345,9 +5405,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 			if(!pre_has_write[i]){
 	 				invalid = invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
 	 			}
-	 			if(invalid == false){
-	 				obj_invalid = false;
-	 			}
+	 			// if(invalid == false){
+	 			// 	obj_invalid = false;
+	 			// }
 	 		}
 
 	 		for(int i = 0; i < s_num; i++)
@@ -5356,9 +5416,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 			if(!sub_has_write[i]){
 	 				invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 	 			}
-	 			if(invalid == false){
-	 				sub_invalid = false;
-	 			}
+	 			// if(invalid == false){
+	 			// 	sub_invalid = false;
+	 			// }
 	 		}
 
 	 		for(int i = 0; i < o_num; i++)
@@ -5367,9 +5427,9 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 			if(!obj_has_write[i]){
 	 				invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
-				if(invalid == false){
-	 				obj_invalid = false;
-	 			}
+				// if(invalid == false){
+	 			// 	obj_invalid = false;
+	 			// }
 	 		}
 
 	 	}
@@ -5590,12 +5650,12 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 	return ret1 && ret2;
 }
 
-void print_merge_tmp(unsigned* _tmp, unsigned long _len)
-{
-	for(int i = 0; i < (_len / sizeof(unsigned)); i++)
-		cout << _tmp[i] << "  ";
-	cout << endl;
-}
+// void print_merge_tmp(unsigned* _tmp, unsigned long _len)
+// {
+// 	for(int i = 0; i < (_len / sizeof(unsigned)); i++)
+// 		cout << _tmp[i] << "  ";
+// 	cout << endl;
+// }
 
 void 
 KVstore::IVArrayVacuum(vector<unsigned>& sub_ids , vector<unsigned>& obj_ids, vector<unsigned>& obj_literal_ids, vector<unsigned>& pre_ids) 
@@ -5620,14 +5680,17 @@ KVstore::s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 	//cerr << "KVstore::s2values_Vacuum................................." << endl;
 	//getDirtyKeys(this->subID2values, sub_ids);
 	bool FirstRead = false;
-	unsigned* _tmp = NULL;
-	unsigned long _len = 0, base_len;
+	char* char_tmp = nullptr;
+	unsigned long _len = 0;
 	bool base_empty = false;
 	//cout << "sub_ids.size():" << sub_ids.size() << endl;
 	for(auto _subid:  sub_ids)
 	{
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		// todo: check this return value
+		this->getValueByKey(this->subID2values, _subid, char_tmp, _len, addset, delset, txn, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+		// bool _get = this->getValueByKey(this->subID2values, _subid, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
 		
 		base_empty = (_tmp == nullptr);
 		vector<unsigned> add_pidoidlist, del_pidoidlist;
@@ -5695,14 +5758,17 @@ KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 	//cerr << "KVstore::o2values_Vacuum..............................................." << endl;
 	//getDirtyKeys(this->objID2values, obj_ids);
 	bool FirstRead = false;
-	unsigned* _tmp = NULL;
-	unsigned long _len = 0, base_len;
+	char* char_tmp = nullptr;
+	unsigned long _len = 0;
 	bool base_empty = false;
 	//cerr << "obj_ids.size()" << obj_ids.size() << endl;
 	for(auto _obj_id:  obj_ids)
 	{
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		// todo: check this return value
+		this->getValueByKey(this->objID2values, _obj_id, char_tmp, _len, addset, delset, txn, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+		// bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
 		base_empty = (_tmp == nullptr);
 		vector<unsigned> add_pidsidlist, del_pidsidlist;
 		for(auto ps: addset){
@@ -5760,14 +5826,17 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 	//cerr << "KVstore::o2values_literal_Vacuum.............................................." << endl;
 	//getDirtyKeys(this->objID2values_literal, obj_literal_ids);
 	bool FirstRead = false;
-	unsigned* _tmp = NULL;
-	unsigned long _len = 0, base_len;
+	char* char_tmp = nullptr;
+	unsigned long _len = 0;
 	bool base_empty = false;
 	//cerr << "o2values_literal.size()" << obj_literal_ids.size() << endl;
 	for(auto _obj_id:  obj_literal_ids)
 	{
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		// todo: check this return value
+		this->getValueByKey(this->objID2values, _obj_id, char_tmp, _len, addset, delset, txn, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+		// bool _get = this->getValueByKey(this->objID2values, _obj_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
 		base_empty = (_tmp == nullptr);
 		vector<unsigned> add_pidsidlist, del_pidsidlist;
 		for(auto ps: addset){
@@ -5832,14 +5901,17 @@ KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 	//cerr << "KVstore::p2values_Vacuum....................................................." << endl;
 	//getDirtyKeys(this->preID2values, pre_ids);
 	bool FirstRead = false;
-	unsigned* _tmp = NULL;
-	unsigned long _len = 0, base_len;
+	char* char_tmp = nullptr;
+	unsigned long _len = 0;
 	bool base_empty = false;
 	//cerr << "pre_ids.size():" << pre_ids.size() << endl;
 	for(auto _pre_id:  pre_ids)
 	{
 		VDataSet addset, delset;
-		bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
+		// todo: check this return value
+		this->getValueByKey(this->preID2values, _pre_id, char_tmp, _len, addset, delset, txn, FirstRead);
+		unsigned* _tmp = (unsigned*)char_tmp;
+		// bool _get = this->getValueByKey(this->preID2values, _pre_id, (char*&)_tmp, _len, addset, delset, txn, FirstRead);
 		base_empty = (_tmp == nullptr) ;
 		vector<unsigned> add_sidoidlist, del_sidoidlist;
 		for(auto so: addset)
