@@ -78,8 +78,8 @@ Strategy::handle(SPARQLquery& _query)
 		//all variables(not including pre vars)
 		int total_num = (*iter)->getTotalVarNum();
 		int pre_varNum = (*iter)->getPreVarNum();
-		int selected_pre_var_num = (*iter)->getSelectedPreVarNum();
-		int selected_var_num = (*iter)->getSelectVarNum();
+		// int selected_pre_var_num = (*iter)->getSelectedPreVarNum();
+		// int selected_var_num = (*iter)->getSelectVarNum();
 
 		//NOTICE: special case - query vertices only connected via same variables
 		//all constant triples will be viewed as unconnected, if a triple has no variable, 
@@ -189,7 +189,7 @@ bool
 Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, 
 	TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool * dealed_triple)
 {
-	int triple_num = basic_query->getTripleNum();
+	// int triple_num = basic_query->getTripleNum();
 
 	int var_num = basic_query->getVarNum();
 	// use constant filter to estimate now many ffits exist
@@ -454,7 +454,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				}
 			}
 			else{
-				int can_size = cans.size();
+				// int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
 					kvstore->getpreIDlistByobjID(*i, list, len, true, txn);
@@ -463,12 +463,12 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 					int mid = (s + e)/2;
 					while (s <= e)
 					{
-						if(list[mid] == *it)
+						if(list[mid] == static_cast<unsigned>(*it))
 						{
 							can_matched = true;
 							break;
 						}
-						else if(list[mid] < *it)
+						else if(list[mid] < static_cast<unsigned>(*it))
 						{
 							s = mid + 1;
 						}
@@ -513,7 +513,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				}
 			}
 			else{
-				int can_size = cans.size();
+				// int can_size = cans.size();
 				for(std::vector<unsigned>::iterator i = cans.begin(); i != cans.end();)
 				{
 					kvstore->getpreIDlistBysubID(*i, list, len, true, txn);
@@ -522,12 +522,12 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 					int mid = (s + e)/2;
 					while (s <= e)
 					{
-						if(list[mid] == *it)
+						if(list[mid] == static_cast<unsigned>(*it))
 						{
 							can_matched = true;
 							break;
 						}
-						else if(list[mid] < *it)
+						else if(list[mid] < static_cast<unsigned>(*it))
 						{
 							s = mid + 1;
 						}
@@ -578,7 +578,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	//and retrieved (for example, ?s ?p o   or    s ?p ?o, generally no core vertex in these cases)
 
 	long tv_handle = Util::get_cur_time();
-	int varNum = _bq->getVarNum();  //the num of vars needing to be joined
+	// int varNum = _bq->getVarNum();  //the num of vars needing to be joined
 	//TODO:parallel by pthread, requiring that index is parallelable
 	//for (int i = 0; i < varNum; ++i)
 	//{
@@ -765,7 +765,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	int varNum = _bq->getVarNum();  
 	//all variables(not including pre vars)
 	int total_num = _bq->getTotalVarNum();
-	int pre_varNum = _bq->getPreVarNum();
+	// int pre_varNum = _bq->getPreVarNum();
 	int selected_pre_var_num = _bq->getSelectedPreVarNum();
 	int selected_var_num = _bq->getSelectVarNum();
 	Triple triple = _bq->getTriple(0);
@@ -881,7 +881,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		//just use so2p
 		unsigned sid = (this->kvstore)->getIDByEntity(triple.subject);
 		unsigned oid = (this->kvstore)->getIDByEntity(triple.object);
-		if (oid == -1)
+		if (oid == INVALID)
 		{
 			oid = (this->kvstore)->getIDByLiteral(triple.object);
 		}
@@ -950,12 +950,12 @@ void
 Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
   cout << "Special Case:select * and write to stream" << endl;
-  int varNum = _bq->getVarNum();
+  // int varNum = _bq->getVarNum();
   //all variables(not including pre vars)
-  int total_num = _bq->getTotalVarNum();
-  int pre_varNum = _bq->getPreVarNum();
-  int selected_pre_var_num = _bq->getSelectedPreVarNum();
-  int selected_var_num = _bq->getSelectVarNum();
+  // int total_num = _bq->getTotalVarNum();
+  // int pre_varNum = _bq->getPreVarNum();
+  // int selected_pre_var_num = _bq->getSelectedPreVarNum();
+  // int selected_var_num = _bq->getSelectVarNum();
   Triple triple = _bq->getTriple(0);
   int pvpos = _bq->getSelectedPreVarPosition(triple.predicate);  
 

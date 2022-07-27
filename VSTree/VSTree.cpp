@@ -785,7 +785,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 		cout<<"to insert id "<<_insert_entry.getEntityId()<<endl;
 		cout<<"height: "<<this->height<<endl;
 #endif
-	int oldnode_fileline = _p_node_being_split->getFileLine();
+	// int oldnode_fileline = _p_node_being_split->getFileLine();
     // first, add the new child node(if not leaf) or child entry(if leaf) to the full node.
 	bool just_insert_entry = (_p_insert_node == NULL);
     if(just_insert_entry)
@@ -1251,7 +1251,7 @@ VSTree::coalesce(VNode*& _child, int _entry_index)
 
 	VNode* tmp = NULL;
 	int child_no = _child->getFileLine();
-	int father_no = _father->getFileLine();
+	// int father_no = _father->getFileLine();
 
 #ifdef DEBUG
 	if(ccase == 1 || ccase == 3)
@@ -1674,7 +1674,7 @@ VSTree::loadEntityID2FileLineMap()
         return false;
     }
 
-    size_t vNodeSize = sizeof(VNode);
+    // size_t vNodeSize = sizeof(VNode);
     int flag = 0;
 
     flag = fseek(filePtr, 0, SEEK_SET);

@@ -1733,7 +1733,7 @@ TempResult::doComp(const QueryTree::CompTreeNode &root, ResultPair &row, int id_
 		EvalMultitypeValue x, y, z;
 
 		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
-		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value \
+		if ((x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
 			|| x.datatype != EvalMultitypeValue::xsd_boolean)
 			return ret_femv;
 		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)

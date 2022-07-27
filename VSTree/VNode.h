@@ -98,7 +98,7 @@ public:
 	bool retrieveEntry(std::vector<SigEntry>& _entry_vec, const EntitySig _filter_sig, gstore::LRUCache& _nodeBuffer);
 
 	 //for debug 
-	bool checkState();
+	// bool checkState();
 
 	std::string to_str();
 

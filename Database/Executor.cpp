@@ -239,7 +239,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   IntermediateResult result_table;
 
-  long t1 = Util::get_cur_time();
+  // long t1 = Util::get_cur_time();
   auto new_position_id_mapping = make_shared<PositionValue>();
 
   auto join_nodes = join_plan->public_variables_;
@@ -429,7 +429,7 @@ gstore::Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned
   else
   {
     valid_id_list->reserve(id_list_len);
-    for(int i = 0; i < id_list_len; i++)
+    for(unsigned i = 0; i < id_list_len; i++)
       valid_id_list->addID(id_list[i]);
   }
 }
@@ -574,6 +574,9 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
                                                   this->txn_);
         break;
       }
+	  default: {
+		  cout << "Error in Executor::OneEdgeConstraintFilter, unknown join method" << endl;
+	  }
     }
     auto validate_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(edge_candidate_list,edge_candidate_list+this_edge_list_len);
     delete [] edge_candidate_list;
@@ -900,6 +903,10 @@ bool gstore::Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITE
                                                 this->txn_);
       break;
     }
+	default: {
+		cout << "Error in Executor::AddConstantCandidates, unknown join method" << endl;
+		assert(false);
+	}
   }
   auto validate_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(edge_candidate_list,edge_candidate_list+this_edge_list_len);
   if(id_caches->find(targetID) == id_caches->end())
@@ -921,13 +928,13 @@ bool gstore::Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITE
 tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_literal)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
-  for (TYPE_PREDICATE_ID i = 0; i < this->limitID_entity_; ++i) {
+  for (TYPE_ENTITY_LITERAL_ID i = 0; i < this->limitID_entity_; ++i) {
     auto entity_str = this->kv_store_->getEntityByID(i);
     if(entity_str!="")
       ids.insert(i);
   }
   if(need_literal) {
-    for (TYPE_PREDICATE_ID i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_ + Util::LITERAL_FIRST_ID; ++i) {
+    for (unsigned i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_ + Util::LITERAL_FIRST_ID; ++i) {
       auto entity_str = this->kv_store_->getLiteralByID(i);
       if (entity_str != "")
         ids.insert(i);
@@ -974,7 +981,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordFirstNode(shared_ptr<FeedO
 	auto edges_info = one_step_join_node_->edges_;
 	auto edge_constant_info_vec = one_step_join_node_->edges_constant_info_;
 	/* for each edge */
-	for (int edge_i = 0;edge_i<edges_info->size();edge_i++) {
+	for (unsigned edge_i = 0;edge_i<edges_info->size();edge_i++) {
 		auto edge_info = (*edges_info)[edge_i];
 		auto edge_constant_info = (*edge_constant_info_vec)[edge_i];
 		if (record_candidate_prepared && record_candidate_list->empty())
@@ -1182,7 +1189,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<FeedOne
   auto edges_info = one_step_join_node_->edges_;
   auto edge_constant_info_vec = one_step_join_node_->edges_constant_info_;
   /* for each edge */
-  for (int edge_i = 0;edge_i<edges_info->size();edge_i++) {
+  for (unsigned edge_i = 0;edge_i<edges_info->size();edge_i++) {
     auto edge_info = (*edges_info)[edge_i];
     auto edge_constant_info = (*edge_constant_info_vec)[edge_i];
     if (record_candidate_prepared && record_candidate_list->empty())
@@ -1505,7 +1512,7 @@ gstore::Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node
  */
 shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector,bool distinct) const {
   auto id_candidate = make_shared<IDList>();
-  for(int i = 0; i<edge_info_vector->size(); i++)
+  for(unsigned i = 0; i<edge_info_vector->size(); i++)
   {
     auto edge_info = (*edge_info_vector)[i];
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
@@ -1599,6 +1606,10 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
                                                   this->txn_);
         break;
       }
+	  default: {
+		  cout << "Error in Executor::CandidatesWithConstantEdge, unknown join method" << endl;
+		  assert(false);
+	  }
     }
     cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
     UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);

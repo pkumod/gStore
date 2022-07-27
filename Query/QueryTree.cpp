@@ -195,10 +195,10 @@ void QueryTree::GroupPattern::FilterTree::FilterTreeNode::print(int dep)
 		if (this->oper_type == Builtin_khop_type)
 			printf("%d, ", this->child[0].path_args.k);
 		printf("{");
-		for (int i = 0; i < this->child[0].path_args.pred_set.size(); i++)
+		for (int i = 0; i < static_cast<int>(this->child[0].path_args.pred_set.size()); i++)
 		{
 			printf("%s", this->child[0].path_args.pred_set[i].c_str());
-			if (i != this->child[0].path_args.pred_set.size() - 1)
+			if (i != static_cast<int>(this->child[0].path_args.pred_set.size()) - 1)
 				printf(", ");
 		}
 		printf("}");
@@ -603,7 +603,8 @@ void QueryTree::GroupPattern::mergePatternBlockID(int x, int y)
 */
 void QueryTree::GroupPattern::print(int dep)
 {
-	for (int t = 0; t < dep; t++)	printf("\t");	printf("{\n");
+	for (int t = 0; t < dep; t++)	printf("\t");
+	printf("{\n");
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
@@ -621,7 +622,8 @@ void QueryTree::GroupPattern::print(int dep)
 			{
 				if (j != 0)
 				{
-					for (int t = 0; t <= dep; t++)	printf("\t");	printf("UNION\n");
+					for (int t = 0; t <= dep; t++)	printf("\t");
+					printf("UNION\n");
 				}
 				this->sub_group_pattern[i].unions[j].print(dep + 1);
 			}
@@ -635,7 +637,8 @@ void QueryTree::GroupPattern::print(int dep)
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");	printf("FILTER\t");
+			for (int t = 0; t <= dep; t++)	printf("\t");
+			printf("FILTER\t");
 			this->sub_group_pattern[i].filter.print(dep + 1);
 			printf("\n");
 		}
@@ -651,7 +654,8 @@ void QueryTree::GroupPattern::print(int dep)
 		else
 			printf("ERROR in QueryTree::GroupPattern sub_group_pattern element type\n");
 
-	for (int t = 0; t < dep; t++)	printf("\t");	printf("}\n");
+	for (int t = 0; t < dep; t++)	printf("\t");
+	printf("}\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1063,7 +1067,8 @@ bool QueryTree::checkSelectAggregateFunctionGroupByValid()
 */
 void QueryTree::print()
 {
-	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+	for (int j = 0; j < 80; j++)			printf("=");
+	printf("\n");
 
 	if (this->update_type == Not_Update)
 	{
@@ -1143,7 +1148,7 @@ void QueryTree::print()
 							|| this->projection[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
 							printf("%d, ", this->projection[i].path_args.k);
 						printf("{");
-						for (int j = 0; j < this->projection[i].path_args.pred_set.size(); j++)
+						for (unsigned j = 0; j < this->projection[i].path_args.pred_set.size(); j++)
 						{
 							printf("%s", this->projection[i].path_args.pred_set[j].c_str());
 							if (j != this->projection[i].path_args.pred_set.size() - 1)
@@ -1221,7 +1226,8 @@ void QueryTree::print()
 		}
 	}
 
-	for (int j = 0; j < 80; j++)			printf("=");	printf("\n");
+	for (int j = 0; j < 80; j++)			printf("=");
+	printf("\n");
 }
 
 /**
@@ -1309,18 +1315,18 @@ void QueryTree::CompTreeNode::print(int dep)
 {
 	if (children.empty())
 	{
-		for (size_t i = 0; i < dep; i++)
+		for (int i = 0; i < dep; i++)
 			cout << '\t';
 		cout << "Value: " << val << endl;
 	}
 	else
 	{
-		for (size_t i = 0; i < dep; i++)
+		for (int i = 0; i < dep; i++)
 			cout << '\t';
 		cout << "Operator " << oprt << endl;
 		for (size_t i = 0; i < children.size(); i++)
 		{
-			for (size_t i = 0; i < dep; i++)
+			for (int j = 0; j < dep; j++)
 				cout << '\t';
 			cout << "child[" << i << "]:" << endl;
 			children[i].print(dep + 1);

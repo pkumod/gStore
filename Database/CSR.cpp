@@ -89,7 +89,7 @@ void CSR::init(unsigned pnum)
 
 void CSR::print()
 {
-	int i, j;
+	unsigned i, j;
 	for (i = 0; i < pre_num; i++)
 	{
 		cout << "Predicate ID = " << i << endl;
@@ -117,7 +117,7 @@ void CSR::print()
 long long CSR::sizeInBytes()
 {
 	long long sz = 0;
-	for (int i = 0; i < pre_num; i++)
+	for (unsigned i = 0; i < pre_num; i++)
 		sz += 2 * id2vid[i].size() + offset_list[i].size() + adjacency_list[i].size();
 	sz *= 8;
 	return sz;

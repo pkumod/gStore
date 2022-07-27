@@ -737,7 +737,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			int rightmostOprtPos = root->children.size() - 2;
 			if (oper_pos < rightmostOprtPos)
 			{
-				int new_oper_pos = oper_pos + 2;
+				// int new_oper_pos = oper_pos + 2;
 				curr_node.oprt = root->children[oper_pos + 2]->getText();
 				curr_node.val = "";
 				// curr_node.lchild = new QueryTree::CompTreeNode;
@@ -1030,12 +1030,12 @@ antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	group_pattern.addOneFilter();
 
 	if (ctx->constraint()->brackettedexpression())
-		// buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+		// buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(),
 		// 	NULL, group_pattern.getLastFilter().root, "conditionalOrexpression");
 		buildCompTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
 			-1, group_pattern.getLastFilter());
 	else if (ctx->constraint()->builtInCall())
-		// buildFilterTree(ctx->constraint()->builtInCall(), NULL, \
+		// buildFilterTree(ctx->constraint()->builtInCall(), NULL,
 		// 	group_pattern.getLastFilter().root, "builtInCall");
 		buildCompTree(ctx->constraint()->builtInCall(), -1, group_pattern.getLastFilter());
 
@@ -1122,7 +1122,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				predicate = pathPrimary->getText();
 				// cout << "kleene true, predicate = " << predicate << endl;
 			}
-			else if (pathMod && pathMod->getText() != "*" || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
+			else if ((pathMod && pathMod->getText() != "*") || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
 				throw runtime_error("[ERROR]	Only support iri* as property path.");
 			else
 				predicate = verbpathOrSimple->getText();

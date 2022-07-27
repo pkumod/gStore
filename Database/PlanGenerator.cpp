@@ -2170,7 +2170,7 @@ double PlanGenerator::estimate_one_edge_selectivity(TYPE_PREDICATE_ID pre_id, bo
 					if (binary_search(s_cache->begin(), s_cache->end(), s_list[j]))
 						pass_num += 1;
 
-					delete[] s_list;
+				delete[] s_list;
 
 			}
 		}
@@ -2188,7 +2188,7 @@ double PlanGenerator::estimate_one_edge_selectivity(TYPE_PREDICATE_ID pre_id, bo
 					if (binary_search(o_cache->begin(), o_cache->end(), o_list[j]))
 						pass_num += 1;
 
-					delete[] o_list;
+				delete[] o_list;
 
 			}
 		} else{
@@ -2203,7 +2203,7 @@ double PlanGenerator::estimate_one_edge_selectivity(TYPE_PREDICATE_ID pre_id, bo
 					if (binary_search(s_cache->begin(), s_cache->end(), s_list[j]))
 						pass_num += 1;
 
-					delete[] s_list;
+				delete[] s_list;
 
 			}
 		}

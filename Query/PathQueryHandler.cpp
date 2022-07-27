@@ -26,7 +26,7 @@ int PathQueryHandler::getVertNum()
 	set<int> vertices;
 	for (int j = 0; j < 2; j++)
 	{
-		for (int i = 0; i < csr[j].pre_num; i++)
+		for (unsigned i = 0; i < csr[j].pre_num; i++)
 			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
 	}
 	n = vertices.size();
@@ -38,7 +38,7 @@ int PathQueryHandler::getEdgeNum()
 	if (m != -1)
 		return m;	// Only consider static graphs for now
 	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+	for (unsigned i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
 		ret += csr[1].adjacency_list[i].size();
 	m = ret;
 	return m;
@@ -65,7 +65,7 @@ int PathQueryHandler::getInSize(int vid, int pred)
 	int vIndex = getInIndexByID(vid, pred);
 	if (vIndex == -1)	// This vertex does not participate in this pred's relations
 		return 0;
-	else if (vIndex == csr[1].offset_list[pred].size() - 1)
+	else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1)
 		return csr[1].adjacency_list[pred].size() - csr[1].offset_list[pred][vIndex];
 	else
 		return csr[1].offset_list[pred][vIndex + 1] - csr[1].offset_list[pred][vIndex];
@@ -84,7 +84,7 @@ int PathQueryHandler::getInVertID(int vid, int pos)
 	if (distinctInEdges.find(vid) == distinctInEdges.end())
 		getTotalInSize(vid, true);	// Load into cache
 
-	if (pos < distinctInEdges[vid].size())
+	if (pos < static_cast<int>(distinctInEdges[vid].size()))
 		return *next(distinctInEdges[vid].begin(), pos);
 	else
 		return -1;
@@ -103,14 +103,14 @@ int PathQueryHandler::getTotalInSize(int vid, bool distinct)
 	int ret = 0;
 	if (!distinct)
 	{
-		for (int i = 0; i < csr[1].pre_num; i++)
+		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
 			ret += getInSize(vid, i);
 	}
 	else
 	{
 		if (distinctInEdges.find(vid) == distinctInEdges.end())
 		{
-			if (distinctInEdges.size() == cacheMaxSize)
+			if (static_cast<int>(distinctInEdges.size()) == cacheMaxSize)
 			{
 				int replacement = rand() % cacheMaxSize;
 				distinctInEdges.erase(next(distinctInEdges.begin(), replacement));
@@ -118,12 +118,12 @@ int PathQueryHandler::getTotalInSize(int vid, bool distinct)
 			}
 
 			distinctInEdges[vid] = set<int>();
-			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
 			{
 				int vIndex = getInIndexByID(vid, pred);
 				if (vIndex == -1)	// This vertex does not participate in this pred's relations
 					continue;
-				else if (vIndex == csr[1].offset_list[pred].size() - 1 \
+				else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1 \
 					&& csr[1].adjacency_list[pred].size() > csr[1].offset_list[pred][vIndex])
 					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]), \
 						csr[1].adjacency_list[pred].end());
@@ -150,7 +150,7 @@ int PathQueryHandler::getOutSize(int vid, int pred)
 	int vIndex = getOutIndexByID(vid, pred);
 	if (vIndex == -1)	// This vertex does not participate in this pred's relations
 		return 0;
-	else if (vIndex == csr[0].offset_list[pred].size() - 1)
+	else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1)
 		return csr[0].adjacency_list[pred].size() - csr[0].offset_list[pred][vIndex];
 	else
 		return csr[0].offset_list[pred][vIndex + 1] - csr[0].offset_list[pred][vIndex];
@@ -169,7 +169,7 @@ int PathQueryHandler::getOutVertID(int vid, int pos)
 	if (distinctOutEdges.find(vid) == distinctOutEdges.end())
 		getTotalOutSize(vid, true);	// Load into cache
 
-	if (pos < distinctOutEdges[vid].size())
+	if (pos < static_cast<int>(distinctOutEdges[vid].size()))
 		return *next(distinctOutEdges[vid].begin(), pos);
 	else
 		return -1;
@@ -188,14 +188,14 @@ int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
 	int ret = 0;
 	if (!distinct)
 	{
-		for (int i = 0; i < csr[1].pre_num; i++)
+		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
 			ret += getOutSize(vid, i);
 	}
 	else
 	{
 		if (distinctOutEdges.find(vid) == distinctOutEdges.end())
 		{
-			if (distinctOutEdges.size() == cacheMaxSize)
+			if (static_cast<int>(distinctOutEdges.size()) == cacheMaxSize)
 			{
 				int replacement = rand() % cacheMaxSize;
 				distinctOutEdges.erase(next(distinctOutEdges.begin(), replacement));
@@ -203,12 +203,12 @@ int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
 			}
 
 			distinctOutEdges[vid] = set<int>();
-			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
 			{
 				int vIndex = getOutIndexByID(vid, pred);
 				if (vIndex == -1)	// This vertex does not participate in this pred's relations
 					continue;
-				else if (vIndex == csr[0].offset_list[pred].size() - 1 \
+				else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1 \
 					&& csr[0].adjacency_list[pred].size() > csr[0].offset_list[pred][vIndex])
 					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]), \
 						csr[0].adjacency_list[pred].end());
@@ -471,7 +471,7 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		if(ans1.size() == 0 || ans2.size() == 0) return ans;
 		else
 		{
-			for(int i = 1; i < ans2.size() - 1; ++i)
+			for(int i = 1; i < static_cast<int>(ans2.size()) - 1; ++i)
 				ans1.push_back(ans2[i]);
 			ans1.push_back(uid);
 			return ans1;
@@ -1479,7 +1479,7 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 {
 	vector<int> ret = shortestPath(uid, vid, directed, pred_set);
 	cout<<"ret.size:"<<ret.size()<<",k:"<<k<<endl;
-	if ((ret.size() - 1) / 2 > k)
+	if ((static_cast<int>(ret.size()) - 1) / 2 > k)
 		ret.clear();
 	return ret;
 }
@@ -1611,7 +1611,6 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 	Q.push(uid);
 	int sum = 0;
 	int cnt = 0;
-	int predNum = pred_set.size();
 	while (Q.size())
 	{
 		int ele = Q.front();
@@ -1811,7 +1810,6 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 
     // fora_query_topk_with_bound
     // for delta: try value from 1/4 to 1/n
-    int iteration = 0;
     while( delta >= min_delta ){
         rmax = epsilon * sqrt(delta / 3 / numPredEdges / log(2 / pfail));
         rmax *= rmax_scale;
@@ -2168,7 +2166,7 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
     temp_bounds.clear();
     temp_bounds.resize(lower_bounds.occur.m_num);
     int nodeid;
-    for(int i=0; i<lower_bounds.occur.m_num; i++){
+    for(unsigned i = 0; i<lower_bounds.occur.m_num; i++){
         nodeid = lower_bounds.occur[i];
         temp_bounds[i] = make_pair( nodeid, lower_bounds[nodeid] );
     }
@@ -2195,7 +2193,7 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
     if(low_bound_k <= delta)
         return false;
 
-    for(int i=0; i<upper_bounds.occur.m_num; i++)
+    for(unsigned i = 0; i<upper_bounds.occur.m_num; i++)
     {
         nodeid = upper_bounds.occur[i];
         if(topk_filter.exist(nodeid) || v2ppr[nodeid] <= 0)
