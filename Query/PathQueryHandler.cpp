@@ -1669,11 +1669,11 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 	@param alpha the damping parameter.
 	@param maxIter the maximum number of iterations in power method eigenvalue solver.
 	@param tol the error tolerance used to check convergence in power method solver.
-	@return a map from each vertex's ID to its PageRank value.
+	@return a vector that maps each vertex's ID to its PageRank value.
 **/
-unordered_map<int, double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol)
+vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol)
 {
-	return unordered_map<int, double>();
+	return vector<double>();
 }
 
 /**
