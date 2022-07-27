@@ -1716,13 +1716,15 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									auto ret = pqHandler->PR(proj[0].path_args.directed, pred_id_set, proj[0].path_args.misc[0], \
 										proj[0].path_args.misc[1], proj[0].path_args.misc[2]);
 									bool localFirstOutput = true;
-									for (auto mp : ret)
+									// for (auto mp : ret)
+									for (size_t i = 0; i < ret.size(); i++)
 									{
 										if (localFirstOutput)
 											localFirstOutput = false;
 										else
 											ss << ",";
-										ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
+										// ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
+										ss << "{\"src\":\"" << kvstore->getStringByID(i) << "\",\"result\":" << ret[i] << "}";
 									}
 									doneOnceOp = true;
 								}
@@ -3186,13 +3188,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										auto ret = pqHandler->PR(proj[i].path_args.directed, pred_id_set, proj[i].path_args.misc[0], \
 											proj[i].path_args.misc[1], proj[i].path_args.misc[2]);
 										bool localFirstOutput = true;
-										for (auto mp : ret)
+										// for (auto mp : ret)
+										for (size_t i = 0; i < ret.size(); i++)
 										{
 											if (localFirstOutput)
 												localFirstOutput = false;
 											else
 												ss << ",";
-											ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
+											ss << "{\"src\":\"" << kvstore->getStringByID(i) << "\",\"result\":" << ret[i] << "}";
 										}
 										doneOnceOp = true;
 									}
