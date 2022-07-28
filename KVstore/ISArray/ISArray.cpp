@@ -348,7 +348,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
 		CurEntryNum = max(OldEntryNum << 1, temp);
-		CurEntryNum = ISMIN(CurEntryNum, ISMAXKEYNUM);
+		CurEntryNum = ISMIN(CurEntryNum, static_cast<unsigned>(ISMAXKEYNUM));
 		ISEntry* newp = new ISEntry[CurEntryNum];
 		//maybe using realloc and then initialize manually
 		if (newp == NULL)

@@ -2170,7 +2170,7 @@ inline double PathQueryHandler::calculate_lambda(double rsum, double pfail, doub
 inline int PathQueryHandler::random_walk(int start, double alpha, const vector<int> &pred_set)
 {
     int cur = start;
-    unsigned long k;
+    int k;
     if(getSetOutSize(start, pred_set) == 0)
         return start;
     while (true)
@@ -2180,7 +2180,7 @@ inline int PathQueryHandler::random_walk(int start, double alpha, const vector<i
         if (getSetOutSize(cur, pred_set))
         {
             k = rand() % getSetOutSize(cur, pred_set);	// lrand
-        	unsigned long curr_idx = k;
+        	int curr_idx = k;
         	for (int pred : pred_set)
         	{
         		int curr_out = getOutSize(cur, pred);

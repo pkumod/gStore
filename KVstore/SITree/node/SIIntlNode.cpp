@@ -176,7 +176,7 @@ SINode*
 SIIntlNode::Coalesce(SINode* _father, int _index)
 {
 	int i, j = _father->GetKeyNum(), k;	//BETTER: unsigned?
-	SINode* p;
+	SINode* p = nullptr;
 
   // 1:union right to this
   // 2:move one from right

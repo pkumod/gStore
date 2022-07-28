@@ -353,7 +353,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		// unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
 //		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
-		CurEntryNum = IVMIN(OldEntryNum << 1, IVMAXKEYNUM);
+		CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
 
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
@@ -692,7 +692,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			CurEntryNumChange = true;
 			//assuming one expand is enough
 			unsigned OldEntryNum = CurEntryNum;
-			CurEntryNum = IVMIN(OldEntryNum << 1, IVMAXKEYNUM);
+			CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
 
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)

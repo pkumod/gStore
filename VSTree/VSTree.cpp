@@ -301,7 +301,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
 
-        if (entry.getEntityId() == _entity_id)
+        if (entry.getEntityId() == static_cast<unsigned>(_entity_id))
         {
             SigEntry newEntry = entry;
             newEntry |= SigEntry(EntitySig(_bitset), _entity_id);
@@ -370,7 +370,7 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     for (int i = 0; i < childNum; i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
-        if (entry.getEntityId() == _entity_id)
+        if (entry.getEntityId() == static_cast<unsigned>(_entity_id))
         {
 			//cout<<"find the entityid in pos "<<i<<endl;
             SigEntry newEntry(EntitySig(_bitset), _entity_id);
@@ -535,7 +535,7 @@ VSTree::removeEntry(int _entity_id)
 
     for(int i = 0; i < childNum; i++)
     {
-        if(leafNodePtr->getChildEntry(i).getEntityId() == _entity_id)
+        if(leafNodePtr->getChildEntry(i).getEntityId() == static_cast<unsigned>(_entity_id))
         {
             entryIndex = i;
             break;
@@ -1617,8 +1617,8 @@ VSTree::loadTreeInfo()
     fread(&tmp, sizeof(int), 1, filePtr);
     fread(&tmp,sizeof(int), 1, filePtr);
 
-    int sigLength = Signature::ENTITY_SIG_LENGTH;
-    fread(&sigLength, sizeof(int), 1, filePtr);
+    unsigned sigLength = Signature::ENTITY_SIG_LENGTH;
+    fread(&sigLength, sizeof(unsigned), 1, filePtr);
 
     if (sigLength > Signature::ENTITY_SIG_LENGTH)
     {

@@ -48,17 +48,21 @@ int main(int argc, char * argv[])
         string sparql = "select ?s where{?s <database_status> \"already_built\".}";
         ResultSet _rs;
         FILE* ofp = stdout;
-        int ret = system_db.query(sparql, _rs, ofp);
+		// todo: check this return value
+		system_db.query(sparql, _rs, ofp);
+        // int ret = system_db.query(sparql, _rs, ofp);
         DBInfo* databases = new DBInfo[_rs.ansNum+1];
         databases[0].db_name = "<system>";
-        for (int i = 0; i < _rs.ansNum; i++)
+        for (unsigned i = 0; i < _rs.ansNum; i++)
         {
                 databases[i+1].db_name = _rs.answer[i][0];
                 string sparql1 = "select ?p ?o where{" + _rs.answer[i][0] + " ?p ?o.}";
                 ResultSet _rs1;
                 FILE* ofp1 = stdout;
-                int ret1 = system_db.query(sparql1, _rs1, ofp1);
-                for (int j = 0; j < _rs1.ansNum; j++)
+				// todo: check this return value
+				system_db.query(sparql1, _rs1, ofp1);
+                // int ret1 = system_db.query(sparql1, _rs1, ofp1);
+                for (unsigned j = 0; j < _rs1.ansNum; j++)
                 {
                         string p = _rs1.answer[j][0];
                         string o = _rs1.answer[j][1];
@@ -71,8 +75,10 @@ int main(int argc, char * argv[])
         string sparql1 = "select ?p ?o where{<system> ?p ?o.}";
         ResultSet _rs1;
         FILE* ofp1 = stdout;
-        int ret1 = system_db.query(sparql1, _rs1, ofp1);
-        for (int j = 0; j < _rs1.ansNum; j++)
+		// todo: check this return value
+		system_db.query(sparql1, _rs1, ofp1);
+        // int ret1 = system_db.query(sparql1, _rs1, ofp1);
+        for (unsigned j = 0; j < _rs1.ansNum; j++)
         {
                 string p = _rs1.answer[j][0];
                 string o = _rs1.answer[j][1];
@@ -82,7 +88,7 @@ int main(int argc, char * argv[])
                         databases[0].built_time = o;
         }
         cout<<"\n========================================\n";
-        for (int i = 0; i < _rs.ansNum+1; i++)
+        for (unsigned i = 0; i < _rs.ansNum+1; i++)
         {      
                 string output = "database: " + Getstr(databases[i].db_name) + "\ncreator: " + Getstr(databases[i].creator) + 
                                 "\nbuilt_time: " + databases[i].built_time + "\n========================================\n"; 

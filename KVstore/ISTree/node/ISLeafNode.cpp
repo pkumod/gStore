@@ -237,7 +237,7 @@ ISLeafNode::split(ISNode* _father, int _index)
 ISNode*
 ISLeafNode::coalesce(ISNode* _father, int _index)
 {		//add a key or coalesce a neighbor to this
-	int i, j = _father->getNum(), k;	//BETTER: unsigned?
+	int i, j = _father->getNum(), k = 0;	//BETTER: unsigned?
 	ISNode* p = NULL;
 	int ccase = 0;
 	//const Bstr* bstr;

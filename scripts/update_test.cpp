@@ -13,7 +13,7 @@ using namespace std;
 
 bool isNum(char *str)
 {
-	for (int i = 0; i < strlen(str); i++)
+	for (size_t i = 0; i < strlen(str); i++)
 	{
 		int tmp = (int)(str[i]);
 		if (tmp < 48 || tmp > 57)
@@ -228,7 +228,8 @@ int main(int argc, char * argv[])
 				string query = "INSERT DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
 				ResultSet _rs;
 				FILE* ofp = stdout;
-				int ret = db->query(query, _rs, ofp);
+				db->query(query, _rs, ofp);
+				// int ret = db->query(query, _rs, ofp);
 			}
 			// print(true, false);
 			for (int j = 0; j < b; j++)
@@ -243,19 +244,21 @@ int main(int argc, char * argv[])
 				string query = "DELETE DATA{" + t.subject + " " + t.predicate + " " + t.object + ".}";
 				ResultSet _rs;
 				FILE* ofp = stdout;
-				int ret = db->query(query, _rs, ofp);
+				db->query(query, _rs, ofp);
+				// int ret = db->query(query, _rs, ofp);
 			}
 			// print(true, false);
 			db_triples.clear();
 			string query = "select ?s ?p ?o where{?s ?p ?o.}";
 			ResultSet _rs;
 			FILE* ofp = NULL;
-			int ret = db->query(query, _rs, ofp);
-			for (int i = 0; i < _rs.ansNum; i++)
+			db->query(query, _rs, ofp);
+			// int ret = db->query(query, _rs, ofp);
+			for (unsigned k = 0; k < _rs.ansNum; k++)
 			{
-				string s = _rs.answer[i][0];
-				string p = _rs.answer[i][1];
-				string o = _rs.answer[i][2];
+				string s = _rs.answer[k][0];
+				string p = _rs.answer[k][1];
+				string o = _rs.answer[k][2];
 				triple t(s, p, o);
 				db_triples.insert(t);
 			}
@@ -330,7 +333,8 @@ int main(int argc, char * argv[])
 			query = query + "}";
 			ResultSet delete_rs;
 			FILE* delete_ofp = stdout;
-			int ret = db->query(query, delete_rs, delete_ofp);
+			db->query(query, delete_rs, delete_ofp);
+			// int ret = db->query(query, delete_rs, delete_ofp);
 			if (triple_num != (update_num + db->getTripleNum()))
 			{
 				cerr << "Delete triples exist errors." << endl;
@@ -348,7 +352,8 @@ int main(int argc, char * argv[])
 				query = "ASK WHERE{" + update[j] + "}";
 				ResultSet ask_rs;
 				FILE* ask_ofp = stdout;
-				int ret = db->query(query, ask_rs, ask_ofp);
+				db->query(query, ask_rs, ask_ofp);
+				// int ret = db->query(query, ask_rs, ask_ofp);
 				if (ask_rs.answer[0][0] == "true")
 				{
 					cerr << "Delete triples exist errors." << endl;
@@ -367,7 +372,8 @@ int main(int argc, char * argv[])
 			query = query + "}";
 			ResultSet insert_rs;
 			FILE* insert_ofp = stdout;
-			ret = db->query(query, insert_rs, insert_ofp);
+			db->query(query, insert_rs, insert_ofp);
+			// ret = db->query(query, insert_rs, insert_ofp);
 			if (temp_num != (db->getTripleNum() - update_num))
 			{
 				cerr << "Insert triples exist errors." << endl;
@@ -385,7 +391,8 @@ int main(int argc, char * argv[])
 			query = query + "}";
 			ResultSet ask_rs;
 			FILE* ask_ofp = stdout;
-			ret = db->query(query, ask_rs, ask_ofp);
+			db->query(query, ask_rs, ask_ofp);
+			// ret = db->query(query, ask_rs, ask_ofp);
 			if (ask_rs.answer[0][0] == "false")
 			{
 				cerr << "Insert triples exist errors." << endl;

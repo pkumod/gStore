@@ -186,7 +186,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                 rapidjson::Value &p1 = doc["results"];
                 rapidjson::Value &p2 = p1["bindings"];
                 pthread_rwlock_wrlock(&already_build_map_lock);
-                for (int i = 0; i < p2.Size(); i++)
+                for (unsigned i = 0; i < p2.Size(); i++)
                 {
                     rapidjson::Value &p21 = p2[i];
                     rapidjson::Value &p22 = p21["x"];
@@ -203,7 +203,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                         {
                             p21 = doc["results"];
                             p22 = p21["bindings"];
-                            for (int j = 0; j < p22.Size(); j++)
+                            for (unsigned j = 0; j < p22.Size(); j++)
                             {
                                 rapidjson::Value &p31 = p22[j];
                                 rapidjson::Value &p32 = p31["x"];
@@ -252,7 +252,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                 rapidjson::Value &p1 = doc["results"];
                 rapidjson::Value &p2 = p1["bindings"];
                 pthread_rwlock_wrlock(&users_map_lock);
-                for (int i = 0; i < p2.Size(); i++)
+                for (unsigned i = 0; i < p2.Size(); i++)
                 {
                     rapidjson::Value &pp = p2[i];
                     rapidjson::Value &pp1 = pp["x"];
@@ -272,7 +272,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                         doc.Parse(json_str2.c_str());
                         rapidjson::Value &p12 = doc["results"];
                         rapidjson::Value &p22 = p12["bindings"];
-                        for(int j = 0; j < p22.Size(); j++)
+                        for(unsigned j = 0; j < p22.Size(); j++)
                         {
                             rapidjson::Value &ppj = p22[j];
                             rapidjson::Value &pp12 = ppj["x"];
@@ -848,7 +848,7 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 
 txn_id_t APIUtil::check_txn_id(string TID_s)
 {
-    txn_id_t TID = NULL;
+    txn_id_t TID = (unsigned long long)0;
     if(Util::is_number(TID_s))
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
@@ -1256,12 +1256,13 @@ std::string APIUtil::query_sys_db(const std::string& sparql)
 	else
 	{
 		string error = "";
-		int error_code;
+		// todo: return this error code
+		// int error_code;
 		if(!update)
 		{
 			cout << "search query returned error." << endl;
 			error = "search query returns false.";
-			error_code = 403;
+			// error_code = 403;
 		}
 		
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
@@ -1998,7 +1999,6 @@ void APIUtil::abort_transactionlog(long end_time)
     FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
     FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
     char readBuffer[0xffff];
-    int ret = 0;
     struct TransactionLogInfo *logInfo = nullptr;
     while (fgets(readBuffer, 1024, fp)) {
         string rec = readBuffer;
@@ -2057,7 +2057,7 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
         string data = "";
         while(getline(cppcheck_fin,data)){
             report_detail += data;
-            report_detail +='\r\n';
+            report_detail += "\r\n";
         }
     }
     cppcheck_fin.close();
@@ -2456,7 +2456,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
     string line;
     bool isMatch;
     string temp_name;
-    PFNInfo* temp_ptr;
+    PFNInfo* temp_ptr = nullptr;
     isMatch = false;
     while (getline(in, line))
     {
