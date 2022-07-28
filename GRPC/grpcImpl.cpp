@@ -1535,7 +1535,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(error);
         }
         auto TID = apiUtil->check_txn_id(request->tid());
-        if(TID == NULL)
+        if(TID == (unsigned long long)0)
         {
             error = "TID is not a pure number. TID: " + request->tid();
             response->set_statuscode(1003);
@@ -1601,7 +1601,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
                     if (resHead.HasMember("vars") && resHead["vars"].IsArray())
                     {
                         Value& vars = resHead["vars"];
-                        for(int i = 0; i<vars.Size(); i++)
+                        for (unsigned i = 0; i < vars.Size(); i++)
                         {
                             head->add_vars(vars[i].GetString());
                         }
@@ -1621,7 +1621,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
                     Value& bindings = resDoc["results"]["bindings"];
                     if (bindings.IsArray())
                     {
-                        for(int i = 0; i<bindings.Size(); i++)
+                        for(unsigned i = 0; i < bindings.Size(); i++)
                         {
                             Value& obj = bindings[i];
                             if (obj.IsObject())
@@ -1738,7 +1738,7 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
         }
         string TID_s = request->tid();
         auto TID = apiUtil->check_txn_id(TID_s);
-        if( TID == NULL)
+        if (TID == (unsigned long long)0)
         {
             error = "TID is not a pure number. TID: " + TID_s;
             response->set_statuscode(1003);
@@ -1858,7 +1858,7 @@ void GrpcImpl::rollback_task(CommonRequest *&request, CommonResponse *&response,
         }
         string TID_s = request->tid();
         auto TID = apiUtil->check_txn_id(TID_s);
-        if(TID == NULL)
+        if (TID == (unsigned long long)0)
         {
             error = "TID is not a pure number. TID: " + TID_s;
             response->set_statuscode(1003);
@@ -2580,7 +2580,7 @@ void GrpcImpl::user_privilege_task(CommonRequest *&request, CommonResponse *&res
                 privilege = privilege + ",";
             }
             Util::split(privilege, ",", privileges);
-            for (int i = 0; i < privileges.size(); i++)
+            for (unsigned i = 0; i < privileges.size(); i++)
             {
                 string temp_privilege_int = privileges[i];
                 string temp_privilege = "";
@@ -2989,7 +2989,7 @@ void GrpcImpl::ip_manage_task(CommonRequest *&request, CommonResponse *&response
             IPManageInfo* ipManageInfo = new IPManageInfo();
             ipManageInfo->set_iptype(IPtype);
             vector<string>ip_list = apiUtil->ip_list(IPtype);
-            for(int i = 0 ; i<ip_list.size(); i++)
+            for(unsigned i = 0 ; i<ip_list.size(); i++)
             {
                 ipManageInfo->add_ips(ip_list[i]);
             }

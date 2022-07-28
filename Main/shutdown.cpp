@@ -157,12 +157,14 @@ int main(int argc, char *argv[])
 		ofp.close();
 		
 		string res;
-		int ret;
+		// int ret;
 		string postdata = "{\"username\":\""+SYSTEM_USERNAME+"\",\"password\":\"" + system_password + "\"}";
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
 		// cout << "post url:" << strUrl << '\n' << postdata << endl;
-		ret = gc.Post(strUrl, postdata, res);
+		// todo: chech this return value
+		gc.Post(strUrl, postdata, res);
+		// ret = gc.Post(strUrl, postdata, res);
 		// cout << "post result:" << ret << endl;
 		if (Util::file_exist("system.db/port.txt"))
 		{

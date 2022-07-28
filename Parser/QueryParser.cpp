@@ -612,7 +612,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}
-		SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
+		// SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
 		query_tree_ptr->addProjectionVar();
 		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 		proj_var.aggregate_type = QueryTree::ProjectionVar::Custom_type;
@@ -1506,11 +1506,10 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 	{
 		case 0:
 		{
-			long long ll;
 			bool succ = 1;
 			try
 			{
-				ll = stoll(baseText);
+				stoll(baseText);
 			}
 			catch (invalid_argument &e)
 			{
@@ -1646,8 +1645,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		if (succ && (ll < (long long)SCHAR_MIN || ll > (long long)SCHAR_MAX))	// signed char
 			throw "[ERROR] xsd:byte out of range.";
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos
-		|| baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
+	else if ((baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
+		|| (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos))
 	{
 		if (baseText.substr(1, 3) == "NaN")
 			throw "[ERROR] NaN for xsd:float or xsd:double.";

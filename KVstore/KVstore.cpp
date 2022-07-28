@@ -5346,9 +5346,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 		if(sub_ret == 0){
 			for(int i = 0; i < k; i++)
 			{
-				bool invalid = true;
+				// bool invalid = true;
 				if(!sub_has_write[i]){
-					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					// invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
 				// if(invalid == false){
 				// 	sub_invalid = false;
@@ -5368,9 +5369,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 		{
 			for(int i = 0; i < k; i++)
 			{
-				bool invalid = true;
+				// bool invalid = true;
 				if(!obj_has_write[i]){
-					invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+					invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+					// invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
 				// if(invalid == false){
 				// 	obj_invalid = false;
@@ -5379,9 +5381,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 
 			for(int i = 0; i < s_num; i++)
 			{
-				bool invalid = true;
+				// bool invalid = true;
 				if(!sub_has_write[i]){
-					invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					// invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 				}
 				// if(invalid == false){
 				// 	sub_invalid = false;
@@ -5401,9 +5404,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 	 	{
 	 		for(int i = 0; i < k; i++)
 	 		{
-	 			bool invalid = true;
+	 			// bool invalid = true;
 	 			if(!pre_has_write[i]){
-	 				invalid = invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
+					invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
+	 				// invalid = invalid_values(this->preID2values, pids[i], txn, pre_has_read[i]);
 	 			}
 	 			// if(invalid == false){
 	 			// 	obj_invalid = false;
@@ -5412,9 +5416,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 
 	 		for(int i = 0; i < s_num; i++)
 	 		{
-	 			bool invalid = true;
+	 			// bool invalid = true;
 	 			if(!sub_has_write[i]){
-	 				invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+					invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
+	 				// invalid = invalid_values(this->subID2values, sids[i], txn, sub_has_read[i]);
 	 			}
 	 			// if(invalid == false){
 	 			// 	sub_invalid = false;
@@ -5423,9 +5428,10 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 
 	 		for(int i = 0; i < o_num; i++)
 			{
-	 			bool invalid = true;
+	 			// bool invalid = true;
 	 			if(!obj_has_write[i]){
-	 				invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+					invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
+	 				// invalid = invalid_values(this->objID2values, oids[i], txn, obj_has_read[i]);
 				}
 				// if(invalid == false){
 	 			// 	obj_invalid = false;

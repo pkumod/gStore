@@ -205,7 +205,7 @@ VList::readValue(unsigned _block_num, char*& _str, unsigned& _len, unsigned _key
 		_len = strlen(_str);
 		return true;
 	}*/
-		unsigned node = _key % 2000, i;
+		int node = _key % 2000, i;
 		for(i = node; longlist[i].key % 2000 <= node; ++i)
 		{
 			if (longlist[i].key == (int)_key || longlist[i].key == -1 || i == node - 1) break;

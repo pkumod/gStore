@@ -107,8 +107,7 @@ void read_triples()
     ifstream insert_if;
     insert_if.open(updates_path.c_str());
     string line;
-    int len = line.length();
-    
+
     while(!insert_if.eof()){
         if(is_wat){
         int idx = 0;
@@ -140,7 +139,6 @@ void read_triples()
         line_num++;
         }
         else{
-            int idx = 0;
             getline(insert_if, line);
             cout << line << endl;
             stringstream ss(line);
@@ -354,7 +352,6 @@ void run_transaction_1(int isolevel, Txn_manager& txn_m, int idx)
     string res, sparql;
     int base_time = 1000;
     txn_id_t TID;
-    int num = 0;
     bool prev_succ = true;
     task tsk;
     long start_tv =  Util::get_cur_time();
@@ -372,7 +369,7 @@ void run_transaction_1(int isolevel, Txn_manager& txn_m, int idx)
         int ret = 0;
         TID = txn_m.Begin(static_cast<IsolationLevelType>(isolevel));
         
-        for(int i = 0; i < query.size(); i++){
+        for(unsigned i = 0; i < query.size(); i++){
            // cout << "query " << i << " "  << query[i] << endl;
             ret = txn_m.Query(TID, query[i], res);
             if(ret != -100) {
@@ -386,7 +383,7 @@ void run_transaction_1(int isolevel, Txn_manager& txn_m, int idx)
         }
         if(prev_succ == false) continue;
         
-        for(int i  = 0; i < updates.size(); i++){
+        for(unsigned i  = 0; i < updates.size(); i++){
             //cout << "update " << i << " " << updates[i] << endl;
             ret = txn_m.Query(TID, updates[i], res);
             if(ret < 0) {
@@ -420,7 +417,7 @@ void OLTP_workload(int isolevel, Txn_manager& txn_m, int idx)
 {
     const int max_time = 250000;
     const int base = 1000;
-    const int wait_time = 1000;
+    // const int wait_time = 1000;
     int update_lines = (line_num+1) / threads_num;
     int k = update_lines * idx;
     //cerr << "oltp thread " << idx << "    k: " << k << endl;
@@ -428,7 +425,7 @@ void OLTP_workload(int isolevel, Txn_manager& txn_m, int idx)
     string res, sparql;
     int base_time = base;
     txn_id_t TID;
-    int num = 0;
+    // int num = 0;
     bool prev_succ = true;
     task tsk;
     int cnt = 0;
@@ -452,8 +449,8 @@ void OLTP_workload(int isolevel, Txn_manager& txn_m, int idx)
         
         //int qsize = min(query.size(), oltp_query_num);
         int j = 0;
-        for(int i  = 0; i < updates.size(); i++){
-            for(int t = 0; t < 2 && j < oltp_query_num; t++, j++){
+        for (unsigned i  = 0; i < updates.size(); i++) {
+            for (int tt = 0; tt < 2 && j < oltp_query_num; tt++, j++) {
             // cout << "query " << i << " "  << query[i] << endl;
                 ret = txn_m.Query(TID, query[j], res);
                 if(ret != -100) {
@@ -550,12 +547,10 @@ void run_transaction(int isolevel, Txn_manager& txn_m)
     //cerr << "run_transaction thread  "<< endl;
     task t;
     string res, sparql;
-    int cnt = 0;
     const int base = 1000;
     const int max_time = 250000;
     int base_time = base;
     txn_id_t TID;
-    int num = 0;
     bool prev_succ = true;
     task tsk;
     int k = 0;
@@ -574,7 +569,7 @@ void run_transaction(int isolevel, Txn_manager& txn_m)
         int ret = 0;
         TID = txn_m.Begin(static_cast<IsolationLevelType>(isolevel));
         
-        for(int i = 0; i < query.size(); i++){
+        for(unsigned i = 0; i < query.size(); i++){
            // cout << "query " << i << " "  << query[i] << endl;
             ret = txn_m.Query(TID, query[i], res);
             if(ret != -100) {
@@ -589,7 +584,7 @@ void run_transaction(int isolevel, Txn_manager& txn_m)
         }
         if(prev_succ == false) continue;
         
-        for(int i  = 0; i < updates.size(); i++){
+        for(unsigned i  = 0; i < updates.size(); i++){
             //cout << "update " << i << " " << updates[i] << endl;
             ret = txn_m.Query(TID, updates[i], res);
             if(ret < 0) {
@@ -759,11 +754,13 @@ void check_results(int threads_num, Txn_manager& txn_m)
         string line, sparql, res;
         getline(in, line);
         sparql = "ask where {" + line + "}";
-        int ret = txn_m.Query(TID, sparql, res);
+		txn_m.Query(TID, sparql, res);
+        // int ret = txn_m.Query(TID, sparql, res);
         cout << res << endl;
         getline(in, line);
         sparql = "ask where {" + line + "}";
-        ret = txn_m.Query(TID, sparql, res);
+		txn_m.Query(TID, sparql, res);
+        // ret = txn_m.Query(TID, sparql, res);
         cout << res << endl;
     }
     in.close();
@@ -788,8 +785,8 @@ int main(int argc, char* argv[])
     auto tk = get_oltp_task_wat();
     auto qs = tk.get_query();
     auto us = tk.get_updates();
-    for(int i = 0; i < qs.size(); i++) cerr << qs[i] << endl;
-    for(int i = 0; i < us.size(); i++) cerr << us[i] << endl;
+    for(unsigned i = 0; i < qs.size(); i++) cerr << qs[i] << endl;
+    for(unsigned i = 0; i < us.size(); i++) cerr << us[i] << endl;
     }
     else{
         open_file();
