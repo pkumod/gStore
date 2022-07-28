@@ -1497,23 +1497,27 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 {
 	if (pred_set.empty())
 		return -1;
-	int n = getVertNum();
+
 	long long numTriangle = 0;
-	for (size_t i = 0; i < n; i++)
+	// loop each vertex and count triangle
+	int vertex_num = getVertNum();
+	for(int vid=0; vid<vertex_num; ++vid)
 	{
+		// count triangle for vid
+
 		// directed: get the in-neighbor set of the current node
 		// directed: neighbor
 		unordered_set<int> inSet;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(i, pred);
+			int inSize = getInSize(vid, pred);
 			for (int j = 0; j < inSize; j++)
-				inSet.insert(getInVertID(i, pred, j));
+				inSet.insert(getInVertID(vid, pred, j));
 			if (directed == 0)
 			{
-				int outSize = getOutSize(i, pred);
+				int outSize = getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
-					inSet.insert(getOutVertID(i, pred, j));
+					inSet.insert(getOutVertID(vid, pred, j));
 			}
 		}
 
@@ -1524,16 +1528,16 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 		{
 			for (int pred : pred_set)
 			{
-				int outSize = getOutSize(i, pred);
+				int outSize = getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
 				{
-					int outNode = getOutVertID(i, pred, j);
-					for (int pred : pred_set)
+					int outNode = getOutVertID(vid, pred, j);
+					for (int pd : pred_set)
 					{
-						int outOutSize = getOutSize(outNode, pred);
+						int outOutSize = getOutSize(outNode, pd);
 						for (int k = 0; k < outOutSize; k++)
 						{
-							int outOutNode = getOutVertID(outNode, pred, k);
+							int outOutNode = getOutVertID(outNode, pd, k);
 							if (inSet.find(outOutNode) != inSet.end())
 								numTriangle++;
 						}
@@ -1569,25 +1573,18 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 			}
 		}
 	}
+	//}
 
-	if (directed)
+    int dup_num = 6;
+    if (directed) 
+        dup_num = 3;
+	if (numTriangle % dup_num != 0)
 	{
-		// divide by 3 (duplicates)
-		if (numTriangle % 3 != 0)
-		{
-			cout << "ERROR!!!" << numTriangle << " is not triple of 3!" << endl;
-			return -1;
-		}
-		cout << numTriangle / 3 << endl;
-		return numTriangle / 3;
-	}
-	if (numTriangle % 6 != 0)
-	{
-		cout << "ERROR!!!" << numTriangle << " is not triple of 6!" << endl;
+		cout << "ERROR!!!" << numTriangle << " is not triple of " << dup_num << "!" << endl;
 		return -1;
 	}
-	cout << numTriangle / 6 << endl;
-	return numTriangle / 6;
+	cout << numTriangle / dup_num << endl;
+	return numTriangle / dup_num;
 }
 
 
@@ -1725,8 +1722,84 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 **/
 vector<vector<int>> PathQueryHandler::WCC(bool directed, const std::vector<int> &pred_set)
 {
-	return vector<vector<int>>();
+	/*mark wcc*/
+	unordered_map<int,int> vid2wccid;
+	int wccid = 0;
+	vector<int> wccsz;
+
+	// loop each vertex for bfs start vertex
+
+	// vector<unsigned> *id2vid = csr->id2vid;
+	// unsigned pdnum = csr->pre_num;
+	// for(unsigned pd=0; pd<pdnum; ++pd){
+	//	for(int vertexid : id2vid[pd]){
+	int vertex_num = getVertNum();
+	for(int vertexid=0; vertexid<vertex_num; ++vertexid){
+		if(vid2wccid.count(vertexid)==0){
+			cout<<"start vertexid: "<<vertexid<<endl;
+
+			unordered_set<int> visited; // visited in current wcc
+			// mark when pushing into queue: to avoid one same vertex being added twice in the same level
+			queue<int> q;
+			int uid = vertexid; // current vertex
+			q.push(uid);
+			visited.insert(uid);
+			vid2wccid[uid] = wccid;
+			while(q.empty()==0){					
+				uid = q.front(); q.pop();
+
+				//directed or not, all neighbors
+				for (int pred : pred_set)
+				{
+					int sz = getInSize(uid, pred), vid;
+					for (int j = 0; j < sz; j++){
+						vid = getInVertID(uid, pred, j);
+						if(visited.count(vid)==0){
+							q.push(vid);
+							visited.insert(vid);
+							vid2wccid[vid] = wccid;
+						}
+					}
+					sz = getOutSize(uid, pred);
+					for (int j = 0; j < sz; j++){
+						vid = getOutVertID(uid, pred, j);
+						if(visited.count(vid)==0){
+							q.push(vid);
+							visited.insert(vid);
+							vid2wccid[vid] = wccid;
+						}
+					}
+				}
+			}
+			++wccid;
+			cout<<"current found WCC count: "<<wccid<<endl;
+
+			cout<<"new wcc (sz:"<<visited.size()<<"): ";
+			for(auto v : visited){
+				cout<<v<<" ";
+			}
+			cout<<endl;
+
+			wccsz.push_back(visited.size());
+		}
+	}
+	//}
+
+	/*vid2wccid to result*/
+	// already know the exact size of each wcc: utilize this to skip the "double alloc and copy" growing stage of STL vector
+	vector<vector<int>> result(wccid); // call default constructor for each wcc vector, each 3 pointer, no further memory alloc
+	for(int i=0; i<wccid; ++i){
+		// reserve: Increase the capacity of the vector (the total number of elements that the vector can hold WITHOUT requiring reallocation)
+		result[i].reserve(wccsz[i]);
+	}
+	for(auto pr : vid2wccid){
+		result[pr.second].push_back(pr.first);
+	}
+	
+	// will call move constructor when construction return val
+	return move(result);
 }
+
 
 /**
 	Compute and return the (local) clustering coefficient of vertex u.
