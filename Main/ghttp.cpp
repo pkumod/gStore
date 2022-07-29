@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-06-17 13:03:54
+ * @LastEditTime: 2022-07-29 17:25:16
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -796,10 +796,18 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 	if (doc.HasMember("StatusCode") && doc["StatusCode"].IsInt())
 	{
 		code = doc["StatusCode"].GetInt();
+	} 
+	else 
+	{
+		code = 1005;
 	}
 	if (doc.HasMember("StatusMsg") && doc["StatusMsg"].IsString())
 	{
 		msg = doc["StatusMsg"].GetString();
+	}
+	else
+	{
+		msg = "";
 	}
 	string remote_ip = getRemoteIp(request);
 	apiUtil->write_access_log(operation, remote_ip, code, msg);
