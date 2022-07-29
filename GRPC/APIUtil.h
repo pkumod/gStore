@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-05-31 11:24:40
+ * @LastEditTime: 2022-07-29 17:26:56
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -895,6 +895,7 @@ private:
     pthread_rwlock_t query_log_lock;
     pthread_rwlock_t access_log_lock;
     pthread_rwlock_t transactionlog_lock;
+    pthread_rwlock_t fun_data_lock;
 
     bool ip_check(string ip);
     bool ip_error_num_check(string ip);
