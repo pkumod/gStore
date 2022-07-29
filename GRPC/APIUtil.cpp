@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-07-26 16:25:47
+ * @LastEditTime: 2022-07-29 17:30:00
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -20,6 +20,7 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&query_log_lock, NULL);
     pthread_rwlock_init(&access_log_lock, NULL);
     pthread_rwlock_init(&transactionlog_lock, NULL);
+    pthread_rwlock_init(&fun_data_lock, NULL);
     ipWhiteList = new IPWhiteList();
     ipBlackList = new IPBlackList();
 }
@@ -69,6 +70,7 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&query_log_lock);
     pthread_rwlock_destroy(&access_log_lock);
     pthread_rwlock_destroy(&transactionlog_lock);
+    pthread_rwlock_destroy(&fun_data_lock);
     delete ipWhiteList;
     delete ipBlackList;
 
@@ -2076,6 +2078,7 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
     ifstream in;
     string line;
     string temp_str;
+    pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);
     PFNInfo *temp_ptr;
     while (getline(in, line))
@@ -2093,6 +2096,7 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
         delete temp_ptr;
     }
     in.close();
+    pthread_rwlock_unlock(&fun_data_lock);
 }
 
 void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
@@ -2336,7 +2340,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
     std::string json_str = fun_info->toJSON();
     if (operation == "1") // create
     {
-
+        pthread_rwlock_wrlock(&fun_data_lock);
         if (!Util::file_exist(json_file_path))
         {
             string json_file_dir = APIUtil::pfn_file_path + username;
@@ -2349,11 +2353,13 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         FILE *fp = fopen(json_file_path.c_str(), "a");
         if (fp == NULL)
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json file error.");
         }
         json_str.push_back('\n');
         fprintf(fp, "%s", json_str.c_str());
         fclose(fp);
+        pthread_rwlock_unlock(&fun_data_lock);
     }
     else if (operation == "2" || operation == "3") // update or remove
     {
@@ -2362,9 +2368,11 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         string line;
         string cmd;
         string temp_name;
+        pthread_rwlock_wrlock(&fun_data_lock);
         in.open(json_file_path.c_str(), ios::in);
         if (!in.is_open())
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json file error.");
         }
         PFNInfo *fun_info_tmp;
@@ -2405,6 +2413,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         ofstream out(temp_path.c_str());
         if (!out.is_open())
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json temp file error.");
         }
         out << line;
@@ -2424,17 +2433,20 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 // remove old json file
                 cmd = "rm -f " + back_path;
                 system(cmd.c_str());
+                pthread_rwlock_unlock(&fun_data_lock);
                 cout << cmd <<endl;
             }
             else // recover back.json to data.json
             {
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
+                pthread_rwlock_unlock(&fun_data_lock);
                 throw runtime_error("save function info to json file error, status code:" + status);
             }
         }
         else
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("save function info to json file error, status code:" + status);
         }
     }
@@ -2448,9 +2460,11 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
 {
     string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     ifstream in;
+    pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);
     if (!in.is_open())
     {
+        pthread_rwlock_unlock(&fun_data_lock);
         throw runtime_error("open function json file error.");
     }
     string line;
@@ -2470,6 +2484,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
         delete temp_ptr;
     }
     in.close();
+    pthread_rwlock_unlock(&fun_data_lock);
     if (isMatch)
     {
         fun_info->copyFrom(*temp_ptr);
