@@ -506,6 +506,9 @@ public:
     static std::string urlEncode(const std::string& str);
     static std::string urlDecode(const std::string& str);
     static std::string get_cur_path();
+
+    //the function of string
+    static bool iscontain(const string& _parent,const string& _child);
  private:
 	
 private:

@@ -16,10 +16,9 @@
 
 using namespace std;
 
-//WARN:cannot support soft links!
+// WARN:cannot support soft links!
 
-void
-help()
+void help()
 {
 	printf("\
 			/*=============================================================================\n\
@@ -35,14 +34,13 @@ help()
 =============================================================================*/\n");
 }
 
-int
-main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
-	//chdir(dirname(argv[0]));
+	// chdir(dirname(argv[0]));
 	//#ifdef DEBUG
 	Util util;
 	//#endif
-	//Log.init("slog.properties");
+	// Log.init("slog.properties");
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
@@ -70,7 +68,7 @@ main(int argc, char * argv[])
 		}
 		else
 		{
-			//cout << "the command is not complete." << endl;
+			// cout << "the command is not complete." << endl;
 			cout << "Invalid arguments! Input \"bin/gquery -h\" for help." << endl;
 			return 0;
 		}
@@ -89,8 +87,13 @@ main(int argc, char * argv[])
 			cout << "The database name can not end with .db" << endl;
 			return 0;
 		}
+		if (Util::dir_exist(db_folder) == false)
+		{
+			cout << "The database is not exist!" << endl;
+			return 0;
+		}
 		Database _db(db_folder);
-		//test 
+		// test
 		if (argc > 3)
 		{
 			string queryfile = Util::getArgValue(argc, argv, "q", "queryfile");
@@ -107,7 +110,7 @@ main(int argc, char * argv[])
 			else
 			{
 				long tv_begin = Util::get_cur_time();
-				
+
 				_db.load();
 				cout << "finish loading" << endl;
 
@@ -130,40 +133,40 @@ main(int argc, char * argv[])
 				}
 				string msg;
 				shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
-				//cout << ptxn << endl;
+				// cout << ptxn << endl;
 				int ret = _db.query(query, _rs, ofp, true, export_flag, nullptr);
 				if (resultfile.empty() == false)
 				{
 					fclose(ofp);
 					ofp = NULL;
 				}
-				if (ret <= -100) //select query
+				if (ret <= -100) // select query
 				{
 					if (ret == -100)
 					{
 						msg = _rs.to_str();
 					}
-					else //query error
+					else // query error
 					{
 						msg = "query failed.";
 					}
 				}
-				else //update query
+				else // update query
 				{
 					if (ret >= 0)
 					{
 						msg = "update num: " + Util::int2string(ret);
 					}
-					else //update error
+					else // update error
 					{
 						msg = "update failed.";
 					}
 				}
 
 				long tv_end = Util::get_cur_time();
-				//stringstream ss;
+				// stringstream ss;
 				cout << "query database successfully, Used " << (tv_end - tv_begin) << " ms" << endl;
-				//Log.Info(ss.str().c_str());
+				// Log.Info(ss.str().c_str());
 				return 0;
 			}
 		}
@@ -176,11 +179,11 @@ main(int argc, char * argv[])
 			string query;
 			_db.load();
 			cout << "finish loading" << endl;
-			//char resolved_path[PATH_MAX+1];
+			// char resolved_path[PATH_MAX+1];
 #ifdef READLINE_ON
 			char *buf, prompt[] = "gsql>";
-			//const int commands_num = 3;
-			//char commands[][20] = {"help", "quit", "sparql"};
+			// const int commands_num = 3;
+			// char commands[][20] = {"help", "quit", "sparql"};
 			printf("Type `help` for information of all commands\n");
 			printf("Type `help command_t` for detail of command_t\n");
 			rl_bind_key('\t', rl_complete);
@@ -195,14 +198,14 @@ main(int argc, char * argv[])
 				{
 					if (strcmp(buf, "help") == 0)
 					{
-						//print commands message
+						// print commands message
 						printf("help - print commands message\n");
 						printf("quit - quit the console normally\n");
 						printf("sparql - load query from the second argument\n");
 					}
 					else
 					{
-						//TODO: help for a given command
+						// TODO: help for a given command
 					}
 					continue;
 				}
@@ -213,9 +216,9 @@ main(int argc, char * argv[])
 					printf("unknown commands\n");
 					continue;
 				}
-				//TODO: sparql + string, not only path
+				// TODO: sparql + string, not only path
 				string query_file;
-				//BETTER:build a parser for this console
+				// BETTER:build a parser for this console
 				bool ifredirect = false;
 
 				char *rp = buf;
@@ -232,7 +235,7 @@ main(int argc, char * argv[])
 				rp += pos;
 
 				char *p = buf + strlen(buf) - 1;
-				FILE *fp = stdout; ///default to output on screen
+				FILE *fp = stdout; /// default to output on screen
 				if (ifredirect)
 				{
 					char *tp = p;
@@ -242,73 +245,73 @@ main(int argc, char * argv[])
 					tp = rp + 1;
 					while (*tp == ' ' || *tp == '\t')
 						tp++;
-					fp = fopen(tp, "w"); //NOTICE:not judge here!
-					p = rp - 1;			 //NOTICE: all separated with ' ' or '\t'
+					fp = fopen(tp, "w"); // NOTICE:not judge here!
+					p = rp - 1;			 // NOTICE: all separated with ' ' or '\t'
 				}
-				while (*p == ' ' || *p == '\t') //set the end of path
+				while (*p == ' ' || *p == '\t') // set the end of path
 					p--;
 				*(p + 1) = '\0';
 				p = buf + 6;
-				while (*p == ' ' || *p == '\t') //acquire the start of path
+				while (*p == ' ' || *p == '\t') // acquire the start of path
 					p++;
-				//TODO: support the soft links(or hard links)
-				//there are also readlink and getcwd functions for help
-				//http://linux.die.net/man/2/readlink
-				//NOTICE:getcwd and realpath cannot acquire the real path of file
-				//in the same directory and the program is executing when the
-				//system starts running
-				//NOTICE: use realpath(p, NULL) is ok, but need to free the memory
-				char *q = realpath(p, NULL); //QUERY:still not work for soft links
+				// TODO: support the soft links(or hard links)
+				// there are also readlink and getcwd functions for help
+				// http://linux.die.net/man/2/readlink
+				// NOTICE:getcwd and realpath cannot acquire the real path of file
+				// in the same directory and the program is executing when the
+				// system starts running
+				// NOTICE: use realpath(p, NULL) is ok, but need to free the memory
+				char *q = realpath(p, NULL); // QUERY:still not work for soft links
 #ifdef DEBUG_PRECISE
 				printf("%s\n", p);
 #endif
-		if (q == NULL)
-		{
-			printf("invalid path!\n");
-			free(q);
-			free(buf);
-			continue;
-		}
-		else
-			printf("%s\n", q);
-		//query = getQueryFromFile(p);
-		query = Util::getQueryFromFile(q);
-		if (query.empty())
-		{
-			free(q);
-			//free(resolved_path);
-			free(buf);
-			if (ifredirect)
-				fclose(fp);
-			continue;
-		}
-		printf("query is:\n");
-		printf("%s\n\n", query.c_str());
-		ResultSet _rs;
-		//shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
-		int ret = _db.query(query, _rs, fp, true, false, nullptr);
-		//int ret = _db.query(query, _rs, NULL);
-		string msg;
+				if (q == NULL)
+				{
+					printf("invalid path!\n");
+					free(q);
+					free(buf);
+					continue;
+				}
+				else
+					printf("%s\n", q);
+				// query = getQueryFromFile(p);
+				query = Util::getQueryFromFile(q);
+				if (query.empty())
+				{
+					free(q);
+					// free(resolved_path);
+					free(buf);
+					if (ifredirect)
+						fclose(fp);
+					continue;
+				}
+				printf("query is:\n");
+				printf("%s\n\n", query.c_str());
+				ResultSet _rs;
+				// shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
+				int ret = _db.query(query, _rs, fp, true, false, nullptr);
+				// int ret = _db.query(query, _rs, NULL);
+				string msg;
 
-				//cout<<"gquery ret: "<<ret<<endl;
-				if (ret <= -100) //select query
+				// cout<<"gquery ret: "<<ret<<endl;
+				if (ret <= -100) // select query
 				{
 					if (ret == -100)
 					{
 						msg = "";
 					}
-					else //query error
+					else // query error
 					{
 						msg = "query failed.";
 					}
 				}
-				else //update query
+				else // update query
 				{
 					if (ret >= 0)
 					{
 						msg = "update num: " + Util::int2string(ret);
 					}
-					else //update error
+					else // update error
 					{
 						msg = "update failed.";
 					}
@@ -319,11 +322,11 @@ main(int argc, char * argv[])
 					cout << msg << endl;
 				}
 
-				//test...
-				//string answer_file = query_file+".out";
-				//Util::save_to_file(answer_file.c_str(), _rs.to_str());
+				// test...
+				// string answer_file = query_file+".out";
+				// Util::save_to_file(answer_file.c_str(), _rs.to_str());
 				free(q);
-				//free(resolved_path);
+				// free(resolved_path);
 				free(buf);
 				if (ifredirect)
 					fclose(fp);
