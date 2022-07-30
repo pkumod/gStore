@@ -293,7 +293,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
     if(bgp_query->get_triple_num()==1) {
 	  long t2 = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  best_plan_tree = plan_generator.GetSpecialOneTriplePlan();
 	  long t3 = Util::get_cur_time();
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	  best_plan_tree->print(bgp_query.get());
@@ -313,7 +313,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
 	  cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
-	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  auto second_run_candidates_plan = plan_generator.CompleteCandidate();
 	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
@@ -401,7 +401,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
 	if(bgp_query->get_triple_num()==1) {
 	  long t2 = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  best_plan_tree = plan_generator.GetSpecialOneTriplePlan();
 	  long t3 = Util::get_cur_time();
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	}
@@ -415,7 +415,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	  long t3 = Util::get_cur_time();
 	  cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
-	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  auto second_run_candidates_plan = plan_generator.CompleteCandidate();
 	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
@@ -1029,7 +1029,7 @@ tuple<bool,bool,bool>
 Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
                           shared_ptr<FeedOneNode> join_a_node_plan) const {
   auto target_var_id = join_a_node_plan->node_to_join_;
-  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "],  ";
+  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "]" << endl;
   return bgp_query->GetOccurPosition(target_var_id);
 }
 

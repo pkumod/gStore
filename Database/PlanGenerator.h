@@ -26,8 +26,6 @@
 #include <cmath>
 #include <random>
 
-
-
 enum class BGPQueryStrategy{
 	Heuristic,
 	DP,
@@ -35,7 +33,7 @@ enum class BGPQueryStrategy{
 
 class PlanGenerator {
 
-public:
+private:
 	KVstore *kvstore;
 	BGPQuery *bgpquery;
 	Statistics *statistics;
@@ -68,72 +66,66 @@ public:
 	vector<unsigned> join_nodes;
 
 	vector<unsigned> satellite_nodes;
-	set<unsigned> already_done_satellite;
+	// set<unsigned> already_done_satellite;
 
 	// use these two vector to represent a PlanTree containing VarScan, WCOJoin and BinaryJoin.
 	vector<unsigned> plan_var_vec;
 	vector<unsigned> plan_var_degree;
 
+  //  You can change this, initialized in PlanGenerator.cpp
+  //  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
+  static const unsigned SAMPLE_CACHE_MAX;
+  static const double SAMPLE_PRO;
+  static const unsigned SMALL_QUERY_VAR_NUM;
+  static const double CANDIDATE_RATIO_MAX;
+  static const unsigned PARAM_SIZE;
+  static const unsigned PARAM_PRE;
+  static const unsigned HEURISTIC_CANDIDATE_MAX;
+
+public:
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
 
 	~PlanGenerator();
 
+	JoinMethod GetJoinStrategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num) const;
 
-	//  You can change this, initialized in PlanGenerator.cpp
-	//  but to make sure SAMPLE_CACHE_MAX <= SAMPLE_NUM_UPBOUND (in Statistics.h)
-	static const unsigned SAMPLE_CACHE_MAX;
-	static const double SAMPLE_PRO;
-	static const unsigned SMALL_QUERY_VAR_NUM;
-	static const double CANDIDATE_RATIO_MAX;
-	static const unsigned PARAM_SIZE;
-	static const unsigned PARAM_PRE;
-  	static const unsigned HEURISTIC_CANDIDATE_MAX;
-
-	JoinMethod get_join_strategy(bool s_is_var, bool p_is_var, bool o_is_var, unsigned var_num);
-
-	unsigned GetCandidateSizeFromWholeDB(unsigned var_id);
+	unsigned GetCandidateSizeFromWholeDB(unsigned var_id) const;
 	unsigned GetCandidateSizeById(unsigned var_id);
-	static unsigned get_sample_size(unsigned id_cache_size);
-	bool check_exist_this_triple(TYPE_ENTITY_LITERAL_ID s_id, TYPE_PREDICATE_ID p_id, TYPE_ENTITY_LITERAL_ID o_id);
+	static unsigned GetSampleSize(unsigned id_cache_size);
 
-	long long card_estimator_two_nodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
-	long long card_estimator_more_than_three_nodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long CardEstimatorTwoNodes(unsigned last_node, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long CardEstimatorMoreThanTwoNodes(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 	// using sample method
-	long long card_estimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
+	long long CardEstimator(const vector<unsigned> &last_plan_nodes, unsigned next_join_node, const vector<unsigned> &now_plan_nodes);
 
-	long long get_card(const vector<unsigned> &nodes);
+	long long GetCard(const vector<unsigned> &nodes);
 
-	void insert_edge_selectivity_to_cache(unsigned from_id, unsigned to_id, unsigned linked_num);
+	void InsertEdgeSelectivityToCache(unsigned from_id, unsigned to_id, unsigned linked_num);
 
-	void insert_card_estimation_to_cache(const vector<unsigned> &now_plan_nodes,
+	void InsertCardEstimationToCache(const vector<unsigned> &now_plan_nodes,
 										 long long card_estimation, vector<vector<unsigned>> &result_sample);
 
-	long long cost_model_for_p2so_optimization(unsigned node_1_id, unsigned node_2_id);
-	long long cost_model_for_wco(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
+	long long CostModelForp2soOptimization(unsigned node_1_id, unsigned node_2_id);
+	long long CostModelForWCOJoin(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
 												 unsigned next_node, const vector<unsigned> &now_plan_node);
 
-	long long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
+	long long CostModelForBinaryJoin(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 										PlanTree* plan_a, PlanTree* plan_b);
 
-	void insert_this_plan_to_cache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
-	PlanTree* get_best_plan(const vector<unsigned> &nodes);
-	PlanTree* get_best_plan_by_num(int total_var_num);
+	void InsertThisPlanToCache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
+	PlanTree* GetBestPlanByNodes(const vector<unsigned> &nodes);
+	PlanTree* GetBestPlanByNum(int total_var_num);
 
+	void GetJoinNodes(const vector<unsigned> &plan_a_nodes, vector<unsigned> &other_nodes, set<unsigned> &join_nodes_set) const;
 
-	JoinMethod get_join_method(bool s_const, bool p_const, bool o_const, VarDescriptor::ItemType item_type);
-	void get_candidate_generate_plan();
-	void get_join_nodes(const vector<unsigned> &plan_a_nodes,
-									vector<unsigned> &other_nodes, set<unsigned> &join_nodes);
-
-	unsigned get_sample_from_whole_database(unsigned var_id, vector<unsigned> &so_sample_cache);
-	vector<shared_ptr<FeedOneNode>> completecandidate();
-	void considervarscan();
-	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
-	void considerwcojoin(unsigned var_num);
-	void considerbinaryjoin(unsigned var_num);
-	void addsatellitenode(PlanTree* best_plan);
+	unsigned GetSampleFromWholeDatabase(unsigned var_id, vector<unsigned> &so_sample_cache) const;
+	vector<shared_ptr<FeedOneNode>> CompleteCandidate();
+	void GetNeighborBySubPlanNodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
+	void ConsiderWCOJoin(unsigned var_num);
+	void ConsiderBinaryJoin(unsigned var_num);
+	void AddSatelliteNode(PlanTree* best_plan);
 
 
 	BGPQueryStrategy PlanStrategy(bool use_binary_join = true);
@@ -148,28 +140,19 @@ public:
 
 	PlanTree* HeuristicPlan(bool use_binary_join = true);
 	PlanTree* DPPlan(bool use_binary_join = true);
-	PlanTree* get_plan(bool use_binary_join = true);
 	PlanTree* GetPlan(bool use_binary_join);
 
 
-	unsigned choose_first_var_id_random();
-	unsigned choose_next_nei_id(set<unsigned> nei_id_set);
-
-	void update_nei_id_set(set<unsigned> &nei_id_vec, set<unsigned> &already_id, unsigned next_id);
-
-	PlanTree* get_random_plan();
-	PlanTree* get_special_one_triple_plan();
+	PlanTree* GetSpecialOneTriplePlan();
 
 
-	static double estimate_one_edge_selectivity(TYPE_PREDICATE_ID  pre_id,
-										 		bool pre_constant, KVstore *kvstore,
-										 		shared_ptr<IDList> &s_cache,
-										 		shared_ptr<IDList> &o_cache);
+	static double EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID  pre_id, bool pre_constant, KVstore *kvstore,
+											 shared_ptr<IDList> &s_cache, shared_ptr<IDList> &o_cache);
 
-	static void get_idcache_sample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache);
+	static void GetIdCacheSample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache);
 
 
-	void print_plan_generator_info();
+	void print_plan_generator_info() const;
 	void print_sample_info();
 };
 
