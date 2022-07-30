@@ -528,13 +528,11 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
 
       double sel;
       if(s_string==b_string) {
-        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
-                                                     b_cache,a_cache);
+        sel = PlanGenerator::EstimateOneEdgeSelectivity(predicate_id, predicate_constant, kv_store, b_cache, a_cache);
       }
       else // s_string==a_string
       {
-        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
-                                                     a_cache,b_cache);
+        sel = PlanGenerator::EstimateOneEdgeSelectivity(predicate_id, predicate_constant, kv_store, a_cache, b_cache);
       }
       min_sel = std::min(min_sel,sel);
     }

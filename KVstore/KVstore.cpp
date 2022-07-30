@@ -5087,13 +5087,18 @@ KVstore::getPreListSize(TYPE_PREDICATE_ID _pre_id)
 	return _ret;
 }
 
-// check by sp2o, maybe there is other better method.
-// same as Database::exist_triple
+// Check whether <s, p, o> triple exists in database.
+// Method: sp2o or s2o. Todo: Maybe compare pre2sub with pre2obj would be better.
+// Parameter: If _pre_id = -1, it means to check whether <s, ?p, o> exists or not.
+// Note: quite similar to Database::exist_triple
 bool
 KVstore::existThisTriple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id) {
 	unsigned* _objidlist = nullptr;
 	unsigned _list_len = 0;
-	this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len, true);
+	if (_pre_id == -1)
+		this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len, true);
+	else
+		this->getobjIDlistBysubIDpreID(_sub_id, _pre_id, _objidlist, _list_len, true);
 
 	bool is_exist = false;
 	if (Util::bsearch_int_uporder(_obj_id, _objidlist, _list_len) != INVALID) {
