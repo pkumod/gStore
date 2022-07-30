@@ -199,7 +199,7 @@ int main(int argc, char * argv[])
 			Util::split(db_namestr, ",", db_names);
 			string sparql = "insert data {";
 			string time = Util::get_date_time();
-			for (int i = 0; i < db_names.size(); i++)
+			for (unsigned i = 0; i < db_names.size(); i++)
 			{
 				string db_name =db_names[i];
 				if (db_name.empty())

@@ -159,7 +159,7 @@ void
 Signature::encodeStr2Entity(EntityBitSet& _entity_bs, TYPE_ENTITY_LITERAL_ID _neighbor_id, const char _type)
 {
 	//NOTICE: we assume the parameter is always valid(invalid args should not be passed here)
-	long long id = _neighbor_id;
+	// long long id = _neighbor_id;
 	//NOTICE: in * maybe the unsigned will overflow
 	//long long seed = id * 5003 % 49957;
 	//seed = seed % Signature::STR_SIG_INTERVAL_BASE;

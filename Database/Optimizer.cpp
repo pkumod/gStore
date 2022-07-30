@@ -211,6 +211,10 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
       step_table = get<1>(step_result).values_;
       break;
     }
+	default: {
+		cout << "Error in Optimizer::DepthSearchOneLayer, unknown join type" << endl;
+		assert(false);
+	}
   }
 
 
@@ -289,7 +293,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
     if(bgp_query->get_triple_num()==1) {
 	  long t2 = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  best_plan_tree = plan_generator.GetSpecialOneTriplePlan();
 	  long t3 = Util::get_cur_time();
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	  best_plan_tree->print(bgp_query.get());
@@ -309,7 +313,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
 	  cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
-	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  auto second_run_candidates_plan = plan_generator.CompleteCandidate();
 	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
@@ -397,7 +401,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 
 	if(bgp_query->get_triple_num()==1) {
 	  long t2 = Util::get_cur_time();
-	  best_plan_tree = plan_generator.get_special_one_triple_plan();
+	  best_plan_tree = plan_generator.GetSpecialOneTriplePlan();
 	  long t3 = Util::get_cur_time();
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	}
@@ -411,7 +415,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	  long t3 = Util::get_cur_time();
 	  cout << "id_list.size = " << var_candidates_cache->size() << endl;
 
-	  auto second_run_candidates_plan = plan_generator.completecandidate();
+	  auto second_run_candidates_plan = plan_generator.CompleteCandidate();
 	  long t3_ = Util::get_cur_time();
 	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
 
@@ -638,8 +642,6 @@ bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGP
 	auto target = bgp_query->get_result_list_pointer();
 	assert(target->empty());
 	shared_ptr<StepOperation> node_operation = plan_tree->root_node->node;
-	auto record_len = bgp_query->total_selected_var_num;
-	// auto id_position_map_ptr = result.id_pos_map;
 
 	unsigned* result_list_pointer = nullptr;
 	unsigned result_list_len;
@@ -726,11 +728,11 @@ bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGP
 			bool p_selected = bgp_query->get_vardescrip_by_id(p_var_id)->selected_;
 			bool o_selected = bgp_query->get_vardescrip_by_id(o_var_id)->selected_;
 
-			bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
-			bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
-			bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
+			// bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
+			// bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
+			// bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
 
-			bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
+			// bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
 
 			target->reserve(triples_num_);
 			for(TYPE_PREDICATE_ID pid = 0; pid < this->limitID_predicate_; ++pid)
@@ -1010,7 +1012,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     long t2 = Util::get_cur_time();
     cout<< ",  used " << (t2 - t1) << "ms." <<endl;
 #endif
-    return std::move(join_result);
+    return join_result;
   }
   else
     throw string("unexpected JoinType");
@@ -1027,7 +1029,7 @@ tuple<bool,bool,bool>
 Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
                           shared_ptr<FeedOneNode> join_a_node_plan) const {
   auto target_var_id = join_a_node_plan->node_to_join_;
-  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "],  ";
+  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "]" << endl;
   return bgp_query->GetOccurPosition(target_var_id);
 }
 

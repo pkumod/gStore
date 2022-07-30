@@ -1075,8 +1075,8 @@ bool EvalMultitypeValue::argCompatible(EvalMultitypeValue &x)
 {
 	if (datatype == EvalMultitypeValue::xsd_string)
 	{
-		if (x.datatype == EvalMultitypeValue::xsd_string \
-			|| x.datatype == EvalMultitypeValue::literal && x.isSimpleLiteral())
+		if ((x.datatype == EvalMultitypeValue::xsd_string)
+			|| (x.datatype == EvalMultitypeValue::literal && x.isSimpleLiteral()))
 			return true;
 	}
 	else if (datatype == EvalMultitypeValue::literal)

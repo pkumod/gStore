@@ -58,7 +58,7 @@ bool IPWhiteList::Check(std::string ip){
     for(std::set<string>::iterator it=this->ipList.begin(); it!=this->ipList.end(); ++it){
         // cout << "case for xxx.xxx.xxx.xxx-xxx.xxx.xxx.xxx" << endl;
         string test = *it;
-        if(test.find("-") != -1){
+        if(test.find("-") != std::string::npos){
             std::vector<std::string> fields;
             std::vector<std::string> start;
             std::vector<std::string> end;

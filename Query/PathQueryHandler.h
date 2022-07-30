@@ -241,7 +241,7 @@ struct iMap
     }
     void clean()
     {
-        for ( int i = 0 ; i < occur.m_num ; ++i )
+        for (unsigned i = 0; i < occur.m_num; ++i)
         {
             m_data[occur[i]] = nil;
         }

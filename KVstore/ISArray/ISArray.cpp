@@ -338,17 +338,17 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		return false;
 	}
 
-	bool Alloc = false;
+	// bool Alloc = false;
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
-		Alloc = true;
+		// Alloc = true;
 		CurEntryNumChange = true;
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
 		CurEntryNum = max(OldEntryNum << 1, temp);
-		CurEntryNum = ISMIN(CurEntryNum, ISMAXKEYNUM);
+		CurEntryNum = ISMIN(CurEntryNum, static_cast<unsigned>(ISMAXKEYNUM));
 		ISEntry* newp = new ISEntry[CurEntryNum];
 		//maybe using realloc and then initialize manually
 		if (newp == NULL)
@@ -362,7 +362,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 			cout << "Alloc new array size " << CurEntryNum << endl;
 		}
 
-		for(int i = 0; i < OldEntryNum; i++)
+		for(unsigned i = 0; i < OldEntryNum; i++)
 			newp[i].Copy(array[i]);
 
 		delete [] array;

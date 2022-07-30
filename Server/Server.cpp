@@ -326,7 +326,8 @@ Server::listen()
 		/**
 		* @brief Create a thread for a client socket.
 		*/
-		memcpy(&soc[i], &new_server_socket, sizeof(Socket));
+		soc[i] = new_server_socket;
+		// memcpy(&soc[i], &new_server_socket, sizeof(Socket));
 		sockThread* tid = new sockThread(soc[i++]);
 		tid->server = this;
 		tid->start();
@@ -444,7 +445,7 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	if (para_vec.size() % 2 == 1)
 		return false;
 	std::string cmd = "";
-	for (int i = 0; i < para_vec.size(); i += 2)
+	for (unsigned i = 0; i < para_vec.size(); i += 2)
 	{
 		if (para_vec[i] == "op")
 			cmd = para_vec[i + 1];
@@ -1117,7 +1118,7 @@ void Server::importSys()
 	Value& p1 = document["results"];
 	Value& p2 = p1["bindings"];
 
-	for (int i = 0; i < p2.Size(); i++)
+	for (unsigned i = 0; i < p2.Size(); i++)
 	{
 		Value& pp = p2[i];
 		Value& pp1 = pp["x"];
@@ -1136,7 +1137,7 @@ void Server::importSys()
 	p1 = document["results"];
 	p2 = p1["bindings"];
 
-	for (int i = 0; i < p2.Size(); i++)
+	for (unsigned i = 0; i < p2.Size(); i++)
 	{
 		Value& pp = p2[i];
 		Value& pp1 = pp["x"];
@@ -1153,7 +1154,7 @@ void Server::importSys()
 	document.Parse(strJson.c_str());
 	p1 = document["results"];
 	p2 = p1["bindings"];
-	for (int i = 0; i < p2.Size(); i++)
+	for (unsigned i = 0; i < p2.Size(); i++)
 	{
 		Value& pp = p2[i];
 		Value& pp1 = pp["x"];
@@ -1168,7 +1169,7 @@ void Server::importSys()
 	document.Parse(strJson.c_str());
 	p1 = document["results"];
 	p2 = p1["bindings"];
-	for (int i = 0; i < p2.Size(); i++)
+	for (unsigned i = 0; i < p2.Size(); i++)
 	{
 		Value& pp = p2[i];
 		Value& pp1 = pp["x"];

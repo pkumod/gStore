@@ -33,7 +33,7 @@ void Version::expand(int num)
 	//cout << "expand " << endl;
 	if(4 + 2*(data[1] + data[2] + num)  > data[0]){
         //cout << "expanding...." << endl;
-		int size = data[0] * 2;
+		unsigned size = data[0] * 2;
         while(size < 4 + 2*(data[1] + data[2] + num))
         {
             size = size*2;
@@ -41,11 +41,11 @@ void Version::expand(int num)
         //cout << size << endl;
 		TYPE_ENTITY_LITERAL_ID * tmp = (TYPE_ENTITY_LITERAL_ID *)malloc(sizeof(TYPE_ENTITY_LITERAL_ID) * size);
         tmp[0] = size;
-		for(int i = 1; i < 4+2*data[1]; i++)
+		for(unsigned i = 1; i < 4+2*data[1]; i++)
 		{
 			tmp[i] = data[i];
 		}
-		for(int i = data[0]-1, j = size - 1; i >= data[0]-1-2*data[2]; i--, j--)
+		for(unsigned i = data[0]-1, j = size - 1; i >= data[0]-1-2*data[2]; i--, j--)
 		{
 			tmp[j] = data[i];
 		}
@@ -94,7 +94,7 @@ void Version::batch_remove(VDataArray& values)
 
 void Version::get_add_set(VDataSet& add_set) const
 {
-	for(int i = 4; i < 2*data[1] + 4; i+=2)
+	for(unsigned i = 4; i < 2*data[1] + 4; i+=2)
 	{
 		add_set.insert({data[i], data[i+1]});
 	}
@@ -102,7 +102,7 @@ void Version::get_add_set(VDataSet& add_set) const
 
 void Version::get_del_set(VDataSet& del_set) const
 {
-	for(int i = data[0]-1; i > data[0] - 1- 2*data[2]; i-=2)
+	for(int i = static_cast<int>(data[0])-1; i > static_cast<int>(data[0])-1-2*static_cast<int>(data[2]); i-=2)
 	{
 		del_set.insert({data[i], data[i+1]});
 	}
@@ -111,7 +111,7 @@ void Version::get_del_set(VDataSet& del_set) const
 void Version::get_version(VDataSet& add_set, VDataSet& del_set) const
 {
 	//print_data();
-	for(int i = 4; i < 2*data[1] + 4; i+=2)
+	for(unsigned i = 4; i < 2*data[1] + 4; i+=2)
 	{
 		VData p = {data[i], data[i+1]};
 		auto del_it = del_set.find(p);
@@ -122,7 +122,7 @@ void Version::get_version(VDataSet& add_set, VDataSet& del_set) const
 	}
 
 
-	for(int i = data[0]-1; i > data[0] - 1- 2*data[2]; i-=2)
+	for(int i = static_cast<int>(data[0])-1; i > static_cast<int>(data[0])-1-2*static_cast<int>(data[2]); i-=2)
 	{
 		VData p = {data[i], data[i-1]};
 		auto add_it = add_set.find(p);

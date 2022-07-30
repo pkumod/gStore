@@ -350,10 +350,10 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 	{
 		CurEntryNumChange = true;
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
-		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
+		// unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
 //		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
-		CurEntryNum = IVMIN(OldEntryNum << 1, IVMAXKEYNUM);
+		CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
 
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
@@ -365,7 +365,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 			return false;
 		}
 
-		for(int i = 0; i < OldEntryNum; i++)
+		for(unsigned i = 0; i < OldEntryNum; i++)
 			newp[i].Copy(array[i]);
 
 		delete [] array;
@@ -560,7 +560,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	// try to read in main memory
 	bool ret = array[_key].ReadVersion(AddSet, DelSet, txn, latched, is_firstread);
-	bool is_empty = AddSet.size() == 0 && DelSet.size() == 0;
+	// bool is_empty = AddSet.size() == 0 && DelSet.size() == 0;
 	
 	if(ret == false) {
 		//cerr << "read version failed, query abort" << endl;
@@ -692,7 +692,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			CurEntryNumChange = true;
 			//assuming one expand is enough
 			unsigned OldEntryNum = CurEntryNum;
-			CurEntryNum = IVMIN(OldEntryNum << 1, IVMAXKEYNUM);
+			CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
 
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)
@@ -704,7 +704,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 				return 0;
 			}
 
-			for(int i = 0; i < OldEntryNum; i++)
+			for(unsigned i = 0; i < OldEntryNum; i++)
 				newp[i].Copy(array[i]);
 
 			delete [] array;

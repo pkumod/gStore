@@ -67,7 +67,9 @@ int main(int argc, char * argv[])
 			string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
 			ResultSet ask_rs;
 			FILE* ask_ofp = stdout;
-			int ret = system_db.query(sparql, ask_rs, ask_ofp);
+			// todo: check this return value
+			system_db.query(sparql, ask_rs, ask_ofp);
+			// int ret = system_db.query(sparql, ask_rs, ask_ofp);
 			if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 			{
 				cout<<"The database does not exist."<<endl;
@@ -82,10 +84,12 @@ int main(int argc, char * argv[])
 			sparql = "select ?p ?o where{<" + db_name + "> ?p ?o.}";
 			ResultSet _rs;
 			FILE* ofp = stdout;
-			ret = system_db.query(sparql, _rs, ofp);
+			// todo: check this return value
+			system_db.query(sparql, _rs, ofp);
+			// ret = system_db.query(sparql, _rs, ofp);
 			string creator;
 			string built_time;
-			for (int i = 0; i < _rs.ansNum; i++)
+			for (unsigned i = 0; i < _rs.ansNum; i++)
 			{
 				string p = _rs.answer[i][0];
 				string o = _rs.answer[i][1];

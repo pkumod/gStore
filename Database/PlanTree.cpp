@@ -578,12 +578,16 @@ PlanTree::PlanTree(unsigned int first_node, BGPQuery *bgpquery, vector<unsigned>
 // case4 ?s ?p ?o. ?p is degree_one pre_var(only exists in this triple), then we only need s2o on s.
 // 	      If ?p is not degree one, then join two_node(?p not already) by s2po, or join one_node(?p already) by sp2o.
 // First sp2o, then join other pre_var by join_a_node
-PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node) {
+PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan) {
 	// cout << endl << endl << "next node id : " << next_node << endl;
 
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
 	// todo: 这个构造函数用得对吗？
-	root_node = new Tree_node(last_plantree->root_node);
+	if (used_in_heuristic_plan)
+		root_node = last_plantree->root_node;
+	else
+		root_node = new Tree_node(last_plantree->root_node);
+
 	already_so_var = last_plantree->already_so_var;
 	already_joined_pre_var = last_plantree->already_joined_pre_var;
 

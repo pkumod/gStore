@@ -59,7 +59,7 @@ Trie::Addstring(string& _str)
 		start = 12;
 		(this->treeMap.find(string("<http://www."))->second)++;
 	}
-	for (int i = start; i < _str.length(); i++)
+	for (int i = start; i < static_cast<int>(_str.length()); i++)
 	{
 		if (_str[i] == '.' || _str[i] == '/' || _str[i] == '<' || _str[i] == '>' || _str[i] == '#'|| _str[i] == '\n')
 		{
@@ -82,7 +82,7 @@ Trie::Addstring(string& _str)
 			start = i + 1;
 		}
 	}
-	if (start != _str.length())
+	if (start != static_cast<int>(_str.length()))
 	{
 		tmp = _str.substr(start, _str.length() - start);
 		if (tmp.size() == 1)
@@ -212,7 +212,7 @@ Trie::Compress(string &_str)
 		vint.push_back(0);
 		start = 12;
 	}
-	for (int i = start; i < _str.length(); i++)
+	for (int i = start; i < static_cast<int>(_str.length()); i++)
 	{
 		if (_str[i] == '.' || _str[i] == '/' || _str[i] == '<' || _str[i] == '>' || _str[i] == '#' || _str[i] == '\n')
 		{
@@ -234,7 +234,7 @@ Trie::Compress(string &_str)
 			start = i + 1;
 		}
 	}
-	if (start != _str.length())
+	if (start != static_cast<int>(_str.length()))
 	{
 		vstring.push_back(_str.substr(start, _str.length() - start));
 		it = this->s2int.find(_str.substr(start, _str.length() - start));
@@ -245,7 +245,7 @@ Trie::Compress(string &_str)
 	}
 	int j;
 	string tmp;
-	for (int i = 0; i < vstring.size(); i++)
+	for (int i = 0; i < static_cast<int>(vstring.size()); i++)
 	{
 		if (vint[i] >= 0)
 			append(ret, vstring[i]);
@@ -253,7 +253,7 @@ Trie::Compress(string &_str)
 		{
 			tmp = vstring[i];
 			j = i + 1;
-			while (j < vstring.size() && vint[j] < 0)
+			while (j < static_cast<int>(vstring.size()) && vint[j] < 0)
 			{
 				tmp += vstring[j];
 				j++;
