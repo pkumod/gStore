@@ -329,7 +329,7 @@ void Txn_manager::restore()
 					redo_set.push_back(line);
 				}
 			}
-			for (int i = 0; i < redo_set.size(); i++)
+			for (unsigned i = 0; i < redo_set.size(); i++)
 			{
 				redo(redo_set[i], TID);
 			}

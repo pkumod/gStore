@@ -45,81 +45,82 @@ GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
 	// 	delete result;
 }
 
-void *preread_from_index(void *argv)
-{
-	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
-	ResultSet *ret_result = (ResultSet*)*((long*)argv + 1);
-	vector<int>* proj2temp = (vector<int>*)*((long*)argv + 2);
-	int id_cols = *((long*)argv + 3);
-	TempResult* result0 = (TempResult*)*((long*)argv + 4);
-	vector<bool>* isel = (vector<bool>*)*((long*)argv + 5);
-	StringIndexFile* 	entity = (*indexfile)[0];
-	StringIndexFile* 	literal = (*indexfile)[1];
-	StringIndexFile* 	predicate = (*indexfile)[2];
-	unsigned total = ret_result->ansNum;
-	int var_num = ret_result->select_var_num;
-	unsigned thelta = total / 4096;
-	char tmp;
-	char *entityc = entity->Mmap;
-	char *literalc = literal->Mmap;
-	char *prec = predicate->Mmap;
-	for (unsigned i = 0; i < total; i ++)
-	{
-		for (int j = 0; j < var_num; j++)
-		{
-			int k = (*proj2temp)[j];
-			long offset = -1;
-			if (k != -1)
-			{
-				if (k < id_cols)
-				{
-					unsigned ans_id = result0->result[i].id[k];
-					if (ans_id != INVALID)
-					{
-						if ((*isel)[k])
-						{
-							if (ans_id < Util::LITERAL_FIRST_ID)
-							{
-								offset = entity->GetOffsetbyID(ans_id);
-								if (offset != -1)
-								{
-									tmp = entityc[offset];
-								}
-							}
-							else
-							{
-								offset = literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID);
-								if (offset != -1)
-								{
-									tmp = literalc[offset];
-								}
-							}
-						}
-						else
-						{
-							offset = predicate->GetOffsetbyID(ans_id);	
-							if (offset != -1)
-							{
-								tmp = prec[offset];
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	return NULL;
-}
+// void *preread_from_index(void *argv)
+// {
+// 	vector<StringIndexFile*> * indexfile = (vector<StringIndexFile*> *)*(long*)argv;
+// 	ResultSet *ret_result = (ResultSet*)*((long*)argv + 1);
+// 	vector<int>* proj2temp = (vector<int>*)*((long*)argv + 2);
+// 	int id_cols = *((long*)argv + 3);
+// 	TempResult* result0 = (TempResult*)*((long*)argv + 4);
+// 	vector<bool>* isel = (vector<bool>*)*((long*)argv + 5);
+// 	StringIndexFile* 	entity = (*indexfile)[0];
+// 	StringIndexFile* 	literal = (*indexfile)[1];
+// 	StringIndexFile* 	predicate = (*indexfile)[2];
+// 	unsigned total = ret_result->ansNum;
+// 	int var_num = ret_result->select_var_num;
+// 	// unsigned thelta = total / 4096;
+// 	char tmp;
+// 	char *entityc = entity->Mmap;
+// 	char *literalc = literal->Mmap;
+// 	char *prec = predicate->Mmap;
+// 	for (unsigned i = 0; i < total; i ++)
+// 	{
+// 		for (int j = 0; j < var_num; j++)
+// 		{
+// 			int k = (*proj2temp)[j];
+// 			long offset = -1;
+// 			if (k != -1)
+// 			{
+// 				if (k < id_cols)
+// 				{
+// 					unsigned ans_id = result0->result[i].id[k];
+// 					if (ans_id != INVALID)
+// 					{
+// 						if ((*isel)[k])
+// 						{
+// 							if (ans_id < Util::LITERAL_FIRST_ID)
+// 							{
+// 								offset = entity->GetOffsetbyID(ans_id);
+// 								if (offset != -1)
+// 								{
+// 									tmp = entityc[offset];
+// 								}
+// 							}
+// 							else
+// 							{
+// 								offset = literal->GetOffsetbyID(ans_id - Util::LITERAL_FIRST_ID);
+// 								if (offset != -1)
+// 								{
+// 									tmp = literalc[offset];
+// 								}
+// 							}
+// 						}
+// 						else
+// 						{
+// 							offset = predicate->GetOffsetbyID(ans_id);
+// 							if (offset != -1)
+// 							{
+// 								tmp = prec[offset];
+// 							}
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+//
+// 	return NULL;
+// }
 
 
-GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
-	TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
-	TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
-	TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> _txn):
-	kvstore(_kvstore), statistics(_statistics), stringindex(_stringindex), query_cache(_query_cache), pre2num(_pre2num), \
-	pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate), limitID_literal(_limitID_literal), \
-	limitID_entity(_limitID_entity), temp_result(NULL), fp(NULL), export_flag(false), csr(_csr), txn(_txn), ranked(false)
+GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
+									 Statistics *_statistics, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
+									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
+									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
+									 shared_ptr<Transaction> _txn):
+	kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), statistics(_statistics), ranked(false),
+	pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate),
+	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), fp(NULL), export_flag(false), temp_result(NULL)
 {
 	if (csr)
 		pqHandler = new PathQueryHandler(csr);
@@ -385,7 +386,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	{
 		bool singleBGP = true, allConstants = true;
 		vector<Triple> triple_vt;
-		for (int i = 0; i < this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); i++)
+		for (unsigned i = 0; i < this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); i++)
 		{
 			// TODO: this is problematic. Even if all are Pattern_type, could still have multiple BGPs (not coalescable)
 			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].type \
@@ -501,6 +502,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				
 				QueryInfo query_info;
 				query_info.limit_ = false;
+				query_info.limit_num_ = 0;
 				if(this->query_tree.getLimit()!=-1) {
 					query_info.limit_ = true;
 					query_info.limit_num_ = this->query_tree.getLimit();
@@ -537,7 +539,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					vector<vector<string> > encode_varset;
 					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
 
-					auto limit_num = query_tree.getLimit();
+					// auto limit_num = query_tree.getLimit();
 					auto order_var_vec = query_tree.getOrderVarVector();
 
 					for (int j = st; j <= i; j++)
@@ -679,7 +681,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						if (this->query_cache != NULL)
 						{
 							//if unconnected, time is incorrect
-							int time = tv_handle - tv_begin;
+							// int time = tv_handle - tv_begin;
 
 							long tv_bftry = Util::get_cur_time();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
@@ -783,9 +785,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// Prepare and print //
 					this->rewriting_evaluation_stack[dep].group_pattern = group_pattern.sub_group_pattern[i].unions[j];
 
-					for (int k = 0; k < 80; k++)			printf("=");	printf("\n");
+					for (int k = 0; k < 80; k++)			printf("=");
+					printf("\n");
 					rewriting_evaluation_stack[dep].group_pattern.print(dep);
-					for (int k = 0; k < 80; k++)			printf("=");	printf("\n");
+					for (int k = 0; k < 80; k++)			printf("=");
+					printf("\n");
 
 					sub_result = new TempResultSet();
 
@@ -926,6 +930,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					QueryInfo query_info;
 
 					query_info.limit_ = false;
+					query_info.limit_num_ = -1;
 					if(this->query_tree.getLimit()!=-1) {
 						query_info.limit_ = true;
 						query_info.limit_num_ = this->query_tree.getLimit();
@@ -989,7 +994,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						if (this->query_cache != NULL && dep == 0)
 						{
 							//if unconnected, time is incorrect
-							int time = tv_handle - tv_begin;
+							// int time = tv_handle - tv_begin;
 
 							long tv_bftry = Util::get_cur_time();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
@@ -1266,7 +1271,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 	// for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 	// {
-	// 	if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+	// 	if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type
 	// 		&& group_pattern.sub_group_pattern[i].pattern.kleene)
 	// 	{
 	// 		// PathQueryHandler function arguments are vertex IDs
@@ -1277,7 +1282,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	// 			tr = &(result->results[0]);
 
 	// 		// BFS from the subjects / objects to find results
-	// 		kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
+	// 		kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value,
 	// 			group_pattern.sub_group_pattern[i].pattern.predicate.value, group_pattern.sub_group_pattern[i].pattern.object.value, dep);
 			
 	// 		// TODO: cache result
@@ -1359,7 +1364,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
-		long t0 = Util::get_cur_time();
+		// long t0 = Util::get_cur_time();
 
 		if (this->temp_result->results.empty())
 		{
@@ -1517,7 +1522,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
-							if (pred_id != INVALID)
+							if (pred_id != static_cast<int>(INVALID))
 							{
 								pred_id_set.push_back(pred_id);
 							}
@@ -1863,7 +1868,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
-							if (pred_id != INVALID)
+							if (pred_id != static_cast<int>(INVALID))
 							{
 								pred_id_set.push_back(pred_id);
 							}
@@ -2789,7 +2794,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
-								if (pred_id != INVALID)
+								if (pred_id != static_cast<int>(INVALID))
 								{
 									pred_id_set.push_back(pred_id);
 								}
@@ -2979,7 +2984,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
-								if (pred_id != INVALID)
+								if (pred_id != static_cast<int>(INVALID))
 								{
 									pred_id_set.push_back(pred_id);
 								}
@@ -3899,7 +3904,7 @@ void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec
 	TempResultSet *&last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
 	if (!last_result || last_result->results.empty() || (dep == 0 && last_result->results.size() > 1000000)) return;
 
-	for (int j = 0; j < bgp_query_vec.size(); j++)
+	for (unsigned j = 0; j < bgp_query_vec.size(); j++)
 	{
 		vector<string> &basic_query_encode_varset = encode_varset[j];
 
@@ -4022,7 +4027,7 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 		if (this->query_cache != NULL && dep == 0)
 		{
 			//if unconnected, time is incorrect
-			int time = tv_handle - tv_begin;
+			// int time = tv_handle - tv_begin;
 
 			long tv_bftry = Util::get_cur_time();
 			// bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
@@ -4296,7 +4301,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		{
 			unsigned tid = cand->result[i].id[0];
 			BFS(temp, tid, kvstore->getIDByPredicate(predicate), true, 1);
-			// vector<int> reach = pqHandler->BFS(tid, true, \
+			// vector<int> reach = pqHandler->BFS(tid, true,
 			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
 			// for (int sid : reach)
 			// {
@@ -4315,7 +4320,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		{
 			unsigned sid = cand->result[i].id[0];
 			BFS(temp, sid, kvstore->getIDByPredicate(predicate), false, 1);
-			// vector<int> reach = pqHandler->BFS(sid, true, \
+			// vector<int> reach = pqHandler->BFS(sid, true,
 			// 	vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
 			// for (int tid : reach)
 			// {
@@ -4333,7 +4338,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		vars.push_back(object);
 		temp->results[0].id_varset = Varset(vars);
 
-		int subjectIdx = 0, objectIdx = 0;
+		unsigned subjectIdx = 0, objectIdx = 0;
 		while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
 			subjectIdx++;
 		while (objectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[objectIdx] != object)
@@ -4363,7 +4368,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 			// {
 			// 	unsigned sid = tr->result[i].id[subjectIdx];
 			// 	// cout << "sid = " << sid << endl;
-			// 	vector<int> reach = pqHandler->BFS(sid, true, \
+			// 	vector<int> reach = pqHandler->BFS(sid, true,
 			// 		vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
 			// 	for (int tid : reach)
 			// 	{
@@ -4380,7 +4385,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 			for (auto tid : tid_set)
 				BFS(temp, tid, kvstore->getIDByPredicate(predicate), false, 2);
 			// {
-			// 	vector<int> reach = pqHandler->BFS(tid, true, \
+			// 	vector<int> reach = pqHandler->BFS(tid, true,
 			// 		vector<int>(1, kvstore->getIDByPredicate(predicate)), false);
 			// 	for (int sid : reach)
 			// 	{

@@ -81,7 +81,9 @@ int main(int argc, char * argv[])
 		query = Util::getQueryFromFile(query.c_str());
 		ResultSet _rs;
 		FILE* ofp = fopen("ans.txt", "w");
-		int ret = db->query(query, _rs, ofp);
+		// todo: check this return value
+		db->query(query, _rs, ofp);
+		// int ret = db->query(query, _rs, ofp);
 		fclose(ofp);
 		string cmd = "cat ans.txt |sort -u > ans_sorted.txt";
 		system(cmd.c_str());
@@ -91,7 +93,6 @@ int main(int argc, char * argv[])
 		system(cmd.c_str());
 		fstream file;
 		file.open("diff.txt", ios::in);
-		int ch = file.get();
 		if (!file.eof())
 		{
 			string msg = "query " + sparql.top() + " in " + db_name + ".db exists errors";

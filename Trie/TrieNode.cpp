@@ -109,7 +109,7 @@ TrieNode::compress(string& _str, const int& lowbound)
 		return "";
 	}
 
-	char buf[10];
+	char buf[12];
 	sprintf(buf, "%d", this->ID);
 	
 	string retval = buf;

@@ -154,7 +154,7 @@ bool Statistics::build_Statistics_for_twe_edges_type1(KVstore *kv_store) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
         unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
-            int now_num = 0;
+            unsigned now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
             unordered_set<unsigned> index;
             while (now_num < up_bound) {
@@ -343,7 +343,7 @@ bool Statistics::build_Statistics_for_twe_edges_type2(KVstore *kv_store) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
         unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
-            int now_num = 0;
+            unsigned now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
             unordered_set<unsigned> index;
             while (now_num < up_bound) {
@@ -532,7 +532,7 @@ bool Statistics::build_Statistics_for_twe_edges_type3(KVstore *kv_store) {
         kv_store->getsubIDobjIDlistBypreID(pre_id, p1_so_id_list, p1_so_id_list_len, true);
         unsigned up_bound = (p1_so_id_list_len > 4000 ? (p1_so_id_list_len/25) : p1_so_id_list_len);
         if (up_bound < p1_so_id_list_len) {
-            int now_num = 0;
+            unsigned now_num = 0;
             int increase_num = p1_so_id_list_len/(2*up_bound);
             unordered_set<unsigned> index;
             while (now_num < up_bound) {
@@ -948,7 +948,7 @@ bool Statistics::save_two_edges_type2_statistics() {
             int sample_size = two_edges_type2id_sample[x.first][y.first].size();
             fwrite(&sample_size, sizeof(int), 1, num_file);
 
-            for(int i = 0; i < two_edges_type2id_sample[x.first][y.first].size(); ++i){
+            for (unsigned i = 0; i < two_edges_type2id_sample[x.first][y.first].size(); ++i){
                 fwrite(&(two_edges_type2id_sample[x.first][y.first][i].s1_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
                 fwrite(&(two_edges_type2id_sample[x.first][y.first][i].s2_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
                 fwrite(&(two_edges_type2id_sample[x.first][y.first][i].s3_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
@@ -1010,7 +1010,7 @@ bool Statistics::save_two_edges_type3_statistics() {
             int sample_size = two_edges_type3id_sample[x.first][y.first].size();
             fwrite(&sample_size, sizeof(int), 1, num_file);
 
-            for(int i = 0; i < two_edges_type3id_sample[x.first][y.first].size(); ++i){
+            for (unsigned i = 0; i < two_edges_type3id_sample[x.first][y.first].size(); ++i){
                 fwrite(&(two_edges_type3id_sample[x.first][y.first][i].s1_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
                 fwrite(&(two_edges_type3id_sample[x.first][y.first][i].s2_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);
                 fwrite(&(two_edges_type3id_sample[x.first][y.first][i].s3_type_id), sizeof(TYPE_ENTITY_LITERAL_ID), 1, sample_file);

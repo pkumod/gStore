@@ -115,7 +115,7 @@ public:
   	PlanTree(unsigned first_node, BGPQuery *bgpquery, vector<unsigned> satellite_index,
 			 shared_ptr<vector<EdgeInfo>> edge_info, shared_ptr<vector<EdgeConstantInfo>> edge_constant_info,
 		     vector<unsigned> &nei_id_vec);
-    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node);
+    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan = false);
     void add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
     PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery);
     PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);

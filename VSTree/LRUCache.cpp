@@ -103,7 +103,7 @@ bool gstore::LRUCache::loadCache(string _filePath)
 	//NOTICE:here we set it to the maxium, to ensure all VNODE in memory
 	int defaultLoadSize = this->capacity;
 	//int defaultLoadSize = this->capacity / 2;
-	size_t vNodeSize = VNode::VNODE_SIZE;
+	// size_t vNodeSize = VNode::VNODE_SIZE;
 	//size_t vNodeSize = sizeof(VNode);
 	int flag = 0;
 

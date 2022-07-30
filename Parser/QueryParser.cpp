@@ -612,7 +612,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}
-		SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
+		// SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
 		query_tree_ptr->addProjectionVar();
 		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 		proj_var.aggregate_type = QueryTree::ProjectionVar::Custom_type;
@@ -737,7 +737,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			int rightmostOprtPos = root->children.size() - 2;
 			if (oper_pos < rightmostOprtPos)
 			{
-				int new_oper_pos = oper_pos + 2;
+				// int new_oper_pos = oper_pos + 2;
 				curr_node.oprt = root->children[oper_pos + 2]->getText();
 				curr_node.val = "";
 				// curr_node.lchild = new QueryTree::CompTreeNode;
@@ -1030,12 +1030,12 @@ antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	group_pattern.addOneFilter();
 
 	if (ctx->constraint()->brackettedexpression())
-		// buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+		// buildFilterTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(),
 		// 	NULL, group_pattern.getLastFilter().root, "conditionalOrexpression");
 		buildCompTree(ctx->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
 			-1, group_pattern.getLastFilter());
 	else if (ctx->constraint()->builtInCall())
-		// buildFilterTree(ctx->constraint()->builtInCall(), NULL, \
+		// buildFilterTree(ctx->constraint()->builtInCall(), NULL,
 		// 	group_pattern.getLastFilter().root, "builtInCall");
 		buildCompTree(ctx->constraint()->builtInCall(), -1, group_pattern.getLastFilter());
 
@@ -1122,7 +1122,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				predicate = pathPrimary->getText();
 				// cout << "kleene true, predicate = " << predicate << endl;
 			}
-			else if (pathMod && pathMod->getText() != "*" || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
+			else if ((pathMod && pathMod->getText() != "*") || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
 				throw runtime_error("[ERROR]	Only support iri* as property path.");
 			else
 				predicate = verbpathOrSimple->getText();
@@ -1506,11 +1506,10 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 	{
 		case 0:
 		{
-			long long ll;
 			bool succ = 1;
 			try
 			{
-				ll = stoll(baseText);
+				stoll(baseText);
 			}
 			catch (invalid_argument &e)
 			{
@@ -1646,8 +1645,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		if (succ && (ll < (long long)SCHAR_MIN || ll > (long long)SCHAR_MAX))	// signed char
 			throw "[ERROR] xsd:byte out of range.";
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos
-		|| baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
+	else if ((baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
+		|| (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos))
 	{
 		if (baseText.substr(1, 3) == "NaN")
 			throw "[ERROR] NaN for xsd:float or xsd:double.";

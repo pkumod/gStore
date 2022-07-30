@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-07-26 16:25:47
+ * @LastEditTime: 2022-07-29 17:30:00
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -20,6 +20,7 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&query_log_lock, NULL);
     pthread_rwlock_init(&access_log_lock, NULL);
     pthread_rwlock_init(&transactionlog_lock, NULL);
+    pthread_rwlock_init(&fun_data_lock, NULL);
     ipWhiteList = new IPWhiteList();
     ipBlackList = new IPBlackList();
 }
@@ -69,6 +70,7 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&query_log_lock);
     pthread_rwlock_destroy(&access_log_lock);
     pthread_rwlock_destroy(&transactionlog_lock);
+    pthread_rwlock_destroy(&fun_data_lock);
     delete ipWhiteList;
     delete ipBlackList;
 
@@ -186,7 +188,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                 rapidjson::Value &p1 = doc["results"];
                 rapidjson::Value &p2 = p1["bindings"];
                 pthread_rwlock_wrlock(&already_build_map_lock);
-                for (int i = 0; i < p2.Size(); i++)
+                for (unsigned i = 0; i < p2.Size(); i++)
                 {
                     rapidjson::Value &p21 = p2[i];
                     rapidjson::Value &p22 = p21["x"];
@@ -203,7 +205,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                         {
                             p21 = doc["results"];
                             p22 = p21["bindings"];
-                            for (int j = 0; j < p22.Size(); j++)
+                            for (unsigned j = 0; j < p22.Size(); j++)
                             {
                                 rapidjson::Value &p31 = p22[j];
                                 rapidjson::Value &p32 = p31["x"];
@@ -252,7 +254,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                 rapidjson::Value &p1 = doc["results"];
                 rapidjson::Value &p2 = p1["bindings"];
                 pthread_rwlock_wrlock(&users_map_lock);
-                for (int i = 0; i < p2.Size(); i++)
+                for (unsigned i = 0; i < p2.Size(); i++)
                 {
                     rapidjson::Value &pp = p2[i];
                     rapidjson::Value &pp1 = pp["x"];
@@ -272,7 +274,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                         doc.Parse(json_str2.c_str());
                         rapidjson::Value &p12 = doc["results"];
                         rapidjson::Value &p22 = p12["bindings"];
-                        for(int j = 0; j < p22.Size(); j++)
+                        for(unsigned j = 0; j < p22.Size(); j++)
                         {
                             rapidjson::Value &ppj = p22[j];
                             rapidjson::Value &pp12 = ppj["x"];
@@ -848,7 +850,7 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 
 txn_id_t APIUtil::check_txn_id(string TID_s)
 {
-    txn_id_t TID = NULL;
+    txn_id_t TID = (unsigned long long)0;
     if(Util::is_number(TID_s))
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
@@ -1256,12 +1258,13 @@ std::string APIUtil::query_sys_db(const std::string& sparql)
 	else
 	{
 		string error = "";
-		int error_code;
+		// todo: return this error code
+		// int error_code;
 		if(!update)
 		{
 			cout << "search query returned error." << endl;
 			error = "search query returns false.";
-			error_code = 403;
+			// error_code = 403;
 		}
 		
 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
@@ -1998,7 +2001,6 @@ void APIUtil::abort_transactionlog(long end_time)
     FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
     FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
     char readBuffer[0xffff];
-    int ret = 0;
     struct TransactionLogInfo *logInfo = nullptr;
     while (fgets(readBuffer, 1024, fp)) {
         string rec = readBuffer;
@@ -2057,7 +2059,7 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
         string data = "";
         while(getline(cppcheck_fin,data)){
             report_detail += data;
-            report_detail +='\r\n';
+            report_detail += "\r\n";
         }
     }
     cppcheck_fin.close();
@@ -2076,6 +2078,7 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
     ifstream in;
     string line;
     string temp_str;
+    pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);
     PFNInfo *temp_ptr;
     while (getline(in, line))
@@ -2093,6 +2096,7 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
         delete temp_ptr;
     }
     in.close();
+    pthread_rwlock_unlock(&fun_data_lock);
 }
 
 void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
@@ -2336,7 +2340,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
     std::string json_str = fun_info->toJSON();
     if (operation == "1") // create
     {
-
+        pthread_rwlock_wrlock(&fun_data_lock);
         if (!Util::file_exist(json_file_path))
         {
             string json_file_dir = APIUtil::pfn_file_path + username;
@@ -2349,11 +2353,13 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         FILE *fp = fopen(json_file_path.c_str(), "a");
         if (fp == NULL)
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json file error.");
         }
         json_str.push_back('\n');
         fprintf(fp, "%s", json_str.c_str());
         fclose(fp);
+        pthread_rwlock_unlock(&fun_data_lock);
     }
     else if (operation == "2" || operation == "3") // update or remove
     {
@@ -2362,9 +2368,11 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         string line;
         string cmd;
         string temp_name;
+        pthread_rwlock_wrlock(&fun_data_lock);
         in.open(json_file_path.c_str(), ios::in);
         if (!in.is_open())
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json file error.");
         }
         PFNInfo *fun_info_tmp;
@@ -2405,6 +2413,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         ofstream out(temp_path.c_str());
         if (!out.is_open())
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("open function json temp file error.");
         }
         out << line;
@@ -2424,17 +2433,20 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 // remove old json file
                 cmd = "rm -f " + back_path;
                 system(cmd.c_str());
+                pthread_rwlock_unlock(&fun_data_lock);
                 cout << cmd <<endl;
             }
             else // recover back.json to data.json
             {
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
+                pthread_rwlock_unlock(&fun_data_lock);
                 throw runtime_error("save function info to json file error, status code:" + status);
             }
         }
         else
         {
+            pthread_rwlock_unlock(&fun_data_lock);
             throw runtime_error("save function info to json file error, status code:" + status);
         }
     }
@@ -2448,15 +2460,17 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
 {
     string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     ifstream in;
+    pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);
     if (!in.is_open())
     {
+        pthread_rwlock_unlock(&fun_data_lock);
         throw runtime_error("open function json file error.");
     }
     string line;
     bool isMatch;
     string temp_name;
-    PFNInfo* temp_ptr;
+    PFNInfo* temp_ptr = nullptr;
     isMatch = false;
     while (getline(in, line))
     {
@@ -2470,6 +2484,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
         delete temp_ptr;
     }
     in.close();
+    pthread_rwlock_unlock(&fun_data_lock);
     if (isMatch)
     {
         fun_info->copyFrom(*temp_ptr);

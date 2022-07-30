@@ -230,7 +230,7 @@ main(int argc, char * argv[])
     sort(folders.begin(), folders.end());
     int inx = lower_bound(folders.begin(), folders.end(), backup_name) - folders.begin();
     cout << "match folder is: " << folders[inx] << endl;
-    if(inx >= folders.size() || folders[inx].find(db_name + ".db_") == string::npos){
+    if(inx >= static_cast<int>(folders.size()) || folders[inx].find(db_name + ".db_") == string::npos){
         cout << "No Backups for Database " + db_name << "!" << endl;
         return 0;
     }

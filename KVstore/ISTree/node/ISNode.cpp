@@ -278,7 +278,7 @@ ISNode::searchKey_less(unsigned _key) const
 	while (low <= high)
 	{
 		mid = (low + high) / 2;
-		if (this->keys[mid] > _key)
+		if (static_cast<unsigned>(this->keys[mid]) > _key)
 		{
 			if (low == mid)
 				break;
@@ -301,7 +301,7 @@ ISNode::searchKey_equal(unsigned _key) const
 	//	{
 
 	int ret = this->searchKey_less(_key);
-	if (ret > 0 && this->keys[ret - 1] == _key)
+	if (ret > 0 && static_cast<unsigned>(this->keys[ret - 1]) == _key)
 		return ret - 1;
 	else
 		return num;
@@ -316,7 +316,7 @@ ISNode::searchKey_lessEqual(unsigned _key) const
 	//break;
 
 	int ret = this->searchKey_less(_key);
-	if (ret > 0 && this->keys[ret - 1] == _key)
+	if (ret > 0 && static_cast<unsigned>(this->keys[ret - 1]) == _key)
 		return ret - 1;
 	else
 		return ret;

@@ -399,8 +399,8 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 			continue;
 		}
 
-        string& sub = this->triple_vt[i].subject;
-        string& obj = this->triple_vt[i].object;
+        // string& sub = this->triple_vt[i].subject;
+        // string& obj = this->triple_vt[i].object;
 		int pid = this->getPreVarID(pre);
 		if(pid == -1)
 		{
@@ -415,14 +415,6 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//NOTICE: we append the candidates for selected pre_var to original select_var_num columns
     this->select_var_num = this->selected_pre_var_num = 0;
 	cout<<"now to check the query var list order:"<<endl;
-
-
-
-//	I want to see what is _query_var
-	for(int i = 0; i < _query_var.size(); ++i){
-		cout << "_query_var[" << i << "] = " << _query_var[i] << endl;
-	}
-
 
 	for(unsigned i = 0; i < _query_var.size(); ++i)
 	{
@@ -529,7 +521,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         if(sub_is_var)
         {
 			//int obj_id = -1;
-			TYPE_ENTITY_LITERAL_ID obj_id = INVALID_ENTITY_LITERAL_ID;
+			// TYPE_ENTITY_LITERAL_ID obj_id = INVALID_ENTITY_LITERAL_ID;
 			if(obj.at(0) != '?')
 			{
 				this->link_with_constant[sub_var_id] = true;
@@ -543,7 +535,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
         if(obj_is_var)
         {
 			//int sub_id = -1;
-			TYPE_ENTITY_LITERAL_ID sub_id = INVALID_ENTITY_LITERAL_ID;
+			// TYPE_ENTITY_LITERAL_ID sub_id = INVALID_ENTITY_LITERAL_ID;
 			if(sub.at(0) != '?')
 			{
 				this->link_with_constant[obj_var_id] = true;
@@ -571,7 +563,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     cout << "OUT encodeBasicQuery" << endl;
     this->encode_result = true;
 
-    for(int i = 0; i < var_str2id.size(); ++i) {
+    for(unsigned i = 0; i < var_str2id.size(); ++i) {
     	if(this->link_with_constant[i]){
     		cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true" << endl;
     	} else{
@@ -915,7 +907,7 @@ int
 BasicQuery::getVarID_FirstProcessWhenJoin()
 {
     int min_var = -1;
-    unsigned min_size = Util::TRIPLE_NUM_MAX;
+    unsigned min_size = static_cast<unsigned int>(Util::TRIPLE_NUM_MAX);
     //int min_var2 = -1;
     //int min_size2 = Util::TRIPLE_NUM_MAX;
     for(int i = 0; i < this->graph_var_num; ++i)
@@ -996,7 +988,7 @@ string BasicQuery::triple_str()
 
     _ss<<"Triple num:"<<this->getTripleNum()<<endl;
 
-    for (int i = 0; i < getTripleNum(); i++)
+    for (unsigned i = 0; i < getTripleNum(); i++)
     {
         _ss<<(this->getTriple(i).toString())<<endl;
     }

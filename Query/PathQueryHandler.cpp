@@ -26,7 +26,7 @@ int PathQueryHandler::getVertNum()
 	set<int> vertices;
 	for (int j = 0; j < 2; j++)
 	{
-		for (int i = 0; i < csr[j].pre_num; i++)
+		for (unsigned i = 0; i < csr[j].pre_num; i++)
 			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
 	}
 	n = vertices.size();
@@ -38,7 +38,7 @@ int PathQueryHandler::getEdgeNum()
 	if (m != -1)
 		return m;	// Only consider static graphs for now
 	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+	for (unsigned i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
 		ret += csr[1].adjacency_list[i].size();
 	m = ret;
 	return m;
@@ -65,7 +65,7 @@ int PathQueryHandler::getInSize(int vid, int pred)
 	int vIndex = getInIndexByID(vid, pred);
 	if (vIndex == -1)	// This vertex does not participate in this pred's relations
 		return 0;
-	else if (vIndex == csr[1].offset_list[pred].size() - 1)
+	else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1)
 		return csr[1].adjacency_list[pred].size() - csr[1].offset_list[pred][vIndex];
 	else
 		return csr[1].offset_list[pred][vIndex + 1] - csr[1].offset_list[pred][vIndex];
@@ -84,7 +84,7 @@ int PathQueryHandler::getInVertID(int vid, int pos)
 	if (distinctInEdges.find(vid) == distinctInEdges.end())
 		getTotalInSize(vid, true);	// Load into cache
 
-	if (pos < distinctInEdges[vid].size())
+	if (pos < static_cast<int>(distinctInEdges[vid].size()))
 		return *next(distinctInEdges[vid].begin(), pos);
 	else
 		return -1;
@@ -103,14 +103,14 @@ int PathQueryHandler::getTotalInSize(int vid, bool distinct)
 	int ret = 0;
 	if (!distinct)
 	{
-		for (int i = 0; i < csr[1].pre_num; i++)
+		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
 			ret += getInSize(vid, i);
 	}
 	else
 	{
 		if (distinctInEdges.find(vid) == distinctInEdges.end())
 		{
-			if (distinctInEdges.size() == cacheMaxSize)
+			if (static_cast<int>(distinctInEdges.size()) == cacheMaxSize)
 			{
 				int replacement = rand() % cacheMaxSize;
 				distinctInEdges.erase(next(distinctInEdges.begin(), replacement));
@@ -118,12 +118,12 @@ int PathQueryHandler::getTotalInSize(int vid, bool distinct)
 			}
 
 			distinctInEdges[vid] = set<int>();
-			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
 			{
 				int vIndex = getInIndexByID(vid, pred);
 				if (vIndex == -1)	// This vertex does not participate in this pred's relations
 					continue;
-				else if (vIndex == csr[1].offset_list[pred].size() - 1 \
+				else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1 \
 					&& csr[1].adjacency_list[pred].size() > csr[1].offset_list[pred][vIndex])
 					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]), \
 						csr[1].adjacency_list[pred].end());
@@ -150,7 +150,7 @@ int PathQueryHandler::getOutSize(int vid, int pred)
 	int vIndex = getOutIndexByID(vid, pred);
 	if (vIndex == -1)	// This vertex does not participate in this pred's relations
 		return 0;
-	else if (vIndex == csr[0].offset_list[pred].size() - 1)
+	else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1)
 		return csr[0].adjacency_list[pred].size() - csr[0].offset_list[pred][vIndex];
 	else
 		return csr[0].offset_list[pred][vIndex + 1] - csr[0].offset_list[pred][vIndex];
@@ -169,7 +169,7 @@ int PathQueryHandler::getOutVertID(int vid, int pos)
 	if (distinctOutEdges.find(vid) == distinctOutEdges.end())
 		getTotalOutSize(vid, true);	// Load into cache
 
-	if (pos < distinctOutEdges[vid].size())
+	if (pos < static_cast<int>(distinctOutEdges[vid].size()))
 		return *next(distinctOutEdges[vid].begin(), pos);
 	else
 		return -1;
@@ -188,14 +188,14 @@ int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
 	int ret = 0;
 	if (!distinct)
 	{
-		for (int i = 0; i < csr[1].pre_num; i++)
+		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
 			ret += getOutSize(vid, i);
 	}
 	else
 	{
 		if (distinctOutEdges.find(vid) == distinctOutEdges.end())
 		{
-			if (distinctOutEdges.size() == cacheMaxSize)
+			if (static_cast<int>(distinctOutEdges.size()) == cacheMaxSize)
 			{
 				int replacement = rand() % cacheMaxSize;
 				distinctOutEdges.erase(next(distinctOutEdges.begin(), replacement));
@@ -203,12 +203,12 @@ int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
 			}
 
 			distinctOutEdges[vid] = set<int>();
-			for (int pred = 0; pred < csr[1].pre_num; pred++)
+			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
 			{
 				int vIndex = getOutIndexByID(vid, pred);
 				if (vIndex == -1)	// This vertex does not participate in this pred's relations
 					continue;
-				else if (vIndex == csr[0].offset_list[pred].size() - 1 \
+				else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1 \
 					&& csr[0].adjacency_list[pred].size() > csr[0].offset_list[pred][vIndex])
 					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]), \
 						csr[0].adjacency_list[pred].end());
@@ -471,7 +471,7 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		if(ans1.size() == 0 || ans2.size() == 0) return ans;
 		else
 		{
-			for(int i = 1; i < ans2.size() - 1; ++i)
+			for(int i = 1; i < static_cast<int>(ans2.size()) - 1; ++i)
 				ans1.push_back(ans2[i]);
 			ans1.push_back(uid);
 			return ans1;
@@ -1479,7 +1479,7 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 {
 	vector<int> ret = shortestPath(uid, vid, directed, pred_set);
 	cout<<"ret.size:"<<ret.size()<<",k:"<<k<<endl;
-	if ((ret.size() - 1) / 2 > k)
+	if ((static_cast<int>(ret.size()) - 1) / 2 > k)
 		ret.clear();
 	return ret;
 }
@@ -1497,23 +1497,27 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 {
 	if (pred_set.empty())
 		return -1;
-	int n = getVertNum();
+
 	long long numTriangle = 0;
-	for (size_t i = 0; i < n; i++)
+	// loop each vertex and count triangle
+	int vertex_num = getVertNum();
+	for(int vid=0; vid<vertex_num; ++vid)
 	{
+		// count triangle for vid
+
 		// directed: get the in-neighbor set of the current node
 		// directed: neighbor
 		unordered_set<int> inSet;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(i, pred);
+			int inSize = getInSize(vid, pred);
 			for (int j = 0; j < inSize; j++)
-				inSet.insert(getInVertID(i, pred, j));
+				inSet.insert(getInVertID(vid, pred, j));
 			if (directed == 0)
 			{
-				int outSize = getOutSize(i, pred);
+				int outSize = getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
-					inSet.insert(getOutVertID(i, pred, j));
+					inSet.insert(getOutVertID(vid, pred, j));
 			}
 		}
 
@@ -1524,16 +1528,16 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 		{
 			for (int pred : pred_set)
 			{
-				int outSize = getOutSize(i, pred);
+				int outSize = getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
 				{
-					int outNode = getOutVertID(i, pred, j);
-					for (int pred : pred_set)
+					int outNode = getOutVertID(vid, pred, j);
+					for (int pd : pred_set)
 					{
-						int outOutSize = getOutSize(outNode, pred);
+						int outOutSize = getOutSize(outNode, pd);
 						for (int k = 0; k < outOutSize; k++)
 						{
-							int outOutNode = getOutVertID(outNode, pred, k);
+							int outOutNode = getOutVertID(outNode, pd, k);
 							if (inSet.find(outOutNode) != inSet.end())
 								numTriangle++;
 						}
@@ -1569,25 +1573,18 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 			}
 		}
 	}
+	//}
 
-	if (directed)
+    int dup_num = 6;
+    if (directed) 
+        dup_num = 3;
+	if (numTriangle % dup_num != 0)
 	{
-		// divide by 3 (duplicates)
-		if (numTriangle % 3 != 0)
-		{
-			cout << "ERROR!!!" << numTriangle << " is not triple of 3!" << endl;
-			return -1;
-		}
-		cout << numTriangle / 3 << endl;
-		return numTriangle / 3;
-	}
-	if (numTriangle % 6 != 0)
-	{
-		cout << "ERROR!!!" << numTriangle << " is not triple of 6!" << endl;
+		cout << "ERROR!!!" << numTriangle << " is not triple of " << dup_num << "!" << endl;
 		return -1;
 	}
-	cout << numTriangle / 6 << endl;
-	return numTriangle / 6;
+	cout << numTriangle / dup_num << endl;
+	return numTriangle / dup_num;
 }
 
 
@@ -1611,7 +1608,6 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 	Q.push(uid);
 	int sum = 0;
 	int cnt = 0;
-	int predNum = pred_set.size();
 	while (Q.size())
 	{
 		int ele = Q.front();
@@ -1726,8 +1722,84 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 **/
 vector<vector<int>> PathQueryHandler::WCC(bool directed, const std::vector<int> &pred_set)
 {
-	return vector<vector<int>>();
+	/*mark wcc*/
+	unordered_map<int,int> vid2wccid;
+	int wccid = 0;
+	vector<int> wccsz;
+
+	// loop each vertex for bfs start vertex
+
+	// vector<unsigned> *id2vid = csr->id2vid;
+	// unsigned pdnum = csr->pre_num;
+	// for(unsigned pd=0; pd<pdnum; ++pd){
+	//	for(int vertexid : id2vid[pd]){
+	int vertex_num = getVertNum();
+	for(int vertexid=0; vertexid<vertex_num; ++vertexid){
+		if(vid2wccid.count(vertexid)==0){
+			cout<<"start vertexid: "<<vertexid<<endl;
+
+			unordered_set<int> visited; // visited in current wcc
+			// mark when pushing into queue: to avoid one same vertex being added twice in the same level
+			queue<int> q;
+			int uid = vertexid; // current vertex
+			q.push(uid);
+			visited.insert(uid);
+			vid2wccid[uid] = wccid;
+			while(q.empty()==0){					
+				uid = q.front(); q.pop();
+
+				//directed or not, all neighbors
+				for (int pred : pred_set)
+				{
+					int sz = getInSize(uid, pred), vid;
+					for (int j = 0; j < sz; j++){
+						vid = getInVertID(uid, pred, j);
+						if(visited.count(vid)==0){
+							q.push(vid);
+							visited.insert(vid);
+							vid2wccid[vid] = wccid;
+						}
+					}
+					sz = getOutSize(uid, pred);
+					for (int j = 0; j < sz; j++){
+						vid = getOutVertID(uid, pred, j);
+						if(visited.count(vid)==0){
+							q.push(vid);
+							visited.insert(vid);
+							vid2wccid[vid] = wccid;
+						}
+					}
+				}
+			}
+			++wccid;
+			cout<<"current found WCC count: "<<wccid<<endl;
+
+			cout<<"new wcc (sz:"<<visited.size()<<"): ";
+			for(auto v : visited){
+				cout<<v<<" ";
+			}
+			cout<<endl;
+
+			wccsz.push_back(visited.size());
+		}
+	}
+	//}
+
+	/*vid2wccid to result*/
+	// already know the exact size of each wcc: utilize this to skip the "double alloc and copy" growing stage of STL vector
+	vector<vector<int>> result(wccid); // call default constructor for each wcc vector, each 3 pointer, no further memory alloc
+	for(int i=0; i<wccid; ++i){
+		// reserve: Increase the capacity of the vector (the total number of elements that the vector can hold WITHOUT requiring reallocation)
+		result[i].reserve(wccsz[i]);
+	}
+	for(auto pr : vid2wccid){
+		result[pr.second].push_back(pr.first);
+	}
+	
+	// will call move constructor when construction return val
+	return move(result);
 }
+
 
 /**
 	Compute and return the (local) clustering coefficient of vertex u.
@@ -1811,7 +1883,6 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 
     // fora_query_topk_with_bound
     // for delta: try value from 1/4 to 1/n
-    int iteration = 0;
     while( delta >= min_delta ){
         rmax = epsilon * sqrt(delta / 3 / numPredEdges / log(2 / pfail));
         rmax *= rmax_scale;
@@ -2099,7 +2170,7 @@ inline double PathQueryHandler::calculate_lambda(double rsum, double pfail, doub
 inline int PathQueryHandler::random_walk(int start, double alpha, const vector<int> &pred_set)
 {
     int cur = start;
-    unsigned long k;
+    int k;
     if(getSetOutSize(start, pred_set) == 0)
         return start;
     while (true)
@@ -2109,7 +2180,7 @@ inline int PathQueryHandler::random_walk(int start, double alpha, const vector<i
         if (getSetOutSize(cur, pred_set))
         {
             k = rand() % getSetOutSize(cur, pred_set);	// lrand
-        	unsigned long curr_idx = k;
+        	int curr_idx = k;
         	for (int pred : pred_set)
         	{
         		int curr_out = getOutSize(cur, pred);
@@ -2168,7 +2239,7 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
     temp_bounds.clear();
     temp_bounds.resize(lower_bounds.occur.m_num);
     int nodeid;
-    for(int i=0; i<lower_bounds.occur.m_num; i++){
+    for(unsigned i = 0; i<lower_bounds.occur.m_num; i++){
         nodeid = lower_bounds.occur[i];
         temp_bounds[i] = make_pair( nodeid, lower_bounds[nodeid] );
     }
@@ -2195,7 +2266,7 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
     if(low_bound_k <= delta)
         return false;
 
-    for(int i=0; i<upper_bounds.occur.m_num; i++)
+    for(unsigned i = 0; i<upper_bounds.occur.m_num; i++)
     {
         nodeid = upper_bounds.occur[i];
         if(topk_filter.exist(nodeid) || v2ppr[nodeid] <= 0)

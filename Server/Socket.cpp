@@ -19,6 +19,13 @@ Socket::Socket()
 	this->password = "";
 }
 
+Socket::Socket(const Socket &socket_src) {
+	this->sock = socket_src.sock;
+	this->addr = socket_src.addr;
+	this->username = socket_src.username;
+	this->password = socket_src.password;
+}
+
 Socket::~Socket()
 {
 	if (this->isValid())

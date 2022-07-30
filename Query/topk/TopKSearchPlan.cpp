@@ -247,10 +247,11 @@ void TopKSearchPlan::DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
     for(decltype(child_num) child_i=0;child_i<child_num;child_i++)
     {
       auto &child_p = now_node->descendents_[child_i];
+#ifdef TOPK_DEBUG_INFO
       auto &tree_edge_ptr = now_node->tree_edges_[child_i];
       auto child_id = child_p->var_id;
 
-#ifdef TOPK_DEBUG_INFO
+
       cout << "\t child "<<bgp_query->get_var_name_by_id(child_id)<<"["<<child_id<<"]"<<endl;
       auto edge_num = tree_edge_ptr->predicate_constant_.size();
       for(decltype(edge_num) j = 0;j<edge_num;j++)
@@ -349,10 +350,10 @@ void TopKSearchPlan::AdjustOrder() {
  * Using Topological method to find if the query has a cycle
  * @return the found cycle. Empty if not found
  */
-std::vector<int> TopKSearchPlan::FindCycle() {
-  std::vector<int> result_cycle;
+std::vector<unsigned> TopKSearchPlan::FindCycle() {
+  std::vector<unsigned> result_cycle;
   // each var and its corresponding degree
-  auto degrees = map<int,size_t>();
+  auto degrees = map<unsigned,size_t>();
   stack<int> one_degree;
 
   for(auto &pair:this->neighbours_)
@@ -385,18 +386,18 @@ std::vector<int> TopKSearchPlan::FindCycle() {
     return result_cycle;
 
   // a cycle exists in the remaining 'degrees', find it
-  set<int> possible_vars;
+  set<unsigned> possible_vars;
   for(auto& pair:degrees)
     possible_vars.insert(pair.first);
 
   auto cycle_start = *possible_vars.begin();
-  set<int> walk_pass_vars;
+  set<unsigned> walk_pass_vars;
   walk_pass_vars.insert(cycle_start);
   result_cycle.push_back(cycle_start);
   bool found = walk(possible_vars,walk_pass_vars,result_cycle);
   if(!found)
     throw string(" Not Expected Situation for topology");
-  return move(result_cycle);
+  return result_cycle;
 }
 
 /**
@@ -439,7 +440,7 @@ bool TopKSearchPlan::SuggestTopK()
 /**
  * A dfs way to find cycle
  */
-bool TopKSearchPlan::walk(set<int> &possible_vars,set<int> &walk_pass_vars, vector<int> &result_cycle)
+bool TopKSearchPlan::walk(set<unsigned> &possible_vars,set<unsigned> &walk_pass_vars, vector<unsigned> &result_cycle)
 {
   auto var_now = result_cycle.back();
   auto& next_vars = this->neighbours_[var_now];
@@ -454,7 +455,7 @@ bool TopKSearchPlan::walk(set<int> &possible_vars,set<int> &walk_pass_vars, vect
       auto start_it = result_cycle.begin();
       while(*start_it!=next_var)
         start_it++;
-      vector<int> tem(start_it,result_cycle.end());
+      vector<unsigned> tem(start_it,result_cycle.end());
       result_cycle = tem;
       return true;
     }
@@ -527,13 +528,11 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
 
       double sel;
       if(s_string==b_string) {
-        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
-                                                     b_cache,a_cache);
+        sel = PlanGenerator::EstimateOneEdgeSelectivity(predicate_id, predicate_constant, kv_store, b_cache, a_cache);
       }
       else // s_string==a_string
       {
-        sel = PlanGenerator::estimate_one_edge_selectivity(predicate_id,predicate_constant,kv_store,
-                                                     a_cache,b_cache);
+        sel = PlanGenerator::EstimateOneEdgeSelectivity(predicate_id, predicate_constant, kv_store, a_cache, b_cache);
       }
       min_sel = std::min(min_sel,sel);
     }

@@ -263,7 +263,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
   {
     //union right to this
     case 1:
-      for (i = 0; i < neighbour_key_num; ++i)
+      for (i = 0; i < static_cast<int>(neighbour_key_num); ++i)
       {
         this->addKey(neighbour->getKey(i), this->GetKeyNum());
         this->AddValue(neighbour->GetValue(i), this->GetKeyNum());

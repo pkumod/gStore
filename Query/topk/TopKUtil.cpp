@@ -80,12 +80,12 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
   if(comp_tree_node->rchild!=nullptr)
     cout<<comp_tree_node->rchild->val<<std::endl;
 #endif
-  // if both of the child are leaves
-  // e.g
-  // case    A                B
-  //         *                +
-  //      /     \          /     \
-  //    ?x      1.0      ?x       ?y
+  /* if both of the child are leaves   */
+  /* e.g                               */
+  /* case    A                B        */
+  /*         *                +        */
+  /*      /     \          /     \     */
+  /*    ?x      1.0      ?x       ?y   */
   if( comp_tree_node->children.size()==2&&
       comp_tree_node->children[0].children.size()==0&&
       comp_tree_node->children[1].children.size()==0)

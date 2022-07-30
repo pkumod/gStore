@@ -331,7 +331,7 @@ bool BGPQuery::build_edge_info(KVstore *_kvstore) {
 		if(p_string.at(0) != '?'){
 			p_id = _kvstore->getIDByPredicate(p_string);
 			p_is_var = false;
-			if(p_id == INVALID) legal_bgp = false;
+			if(p_id == static_cast<int>(INVALID)) legal_bgp = false;
 		} else{
 			p_id = this->get_var_id_by_name(p_string);
 		}
@@ -556,7 +556,7 @@ bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *_kvs
 
 		if(p_string.at(0) != '?'){
 			p_id = _kvstore->getIDByPredicate(p_string);
-			if(p_id == INVALID) return false;
+			if(p_id == static_cast<int>(INVALID)) return false;
 		} else{
 			cout << "error: pass an var in CheckConstBGPExist!" << endl;
 			exit(-1);

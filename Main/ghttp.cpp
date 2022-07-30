@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-06-17 13:03:54
+ * @LastEditTime: 2022-07-29 17:25:16
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -715,7 +715,6 @@ void build_thread_new(const shared_ptr<HttpServer::Request>& request, const shar
 		string database = db_name;
 		cout << "Import dataset to build database..." << endl;
 		cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
-		int len = database.length();
 		Database* current_database = new Database(database);
 		bool flag = current_database->build(dataset);
 		delete current_database;
@@ -797,10 +796,18 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 	if (doc.HasMember("StatusCode") && doc["StatusCode"].IsInt())
 	{
 		code = doc["StatusCode"].GetInt();
+	} 
+	else 
+	{
+		code = 1005;
 	}
 	if (doc.HasMember("StatusMsg") && doc["StatusMsg"].IsString())
 	{
 		msg = doc["StatusMsg"].GetString();
+	}
+	else
+	{
+		msg = "";
 	}
 	string remote_ip = getRemoteIp(request);
 	apiUtil->write_access_log(operation, remote_ip, code, msg);
@@ -1373,7 +1380,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 			}
 
 			Util::split(privilege, ",", privileges);
-			for (int i = 0; i < privileges.size(); i++)
+			for (unsigned i = 0; i < privileges.size(); i++)
 			{
 				string temp_privilege_int = privileges[i];
 				string temp_privilege = "";
@@ -2235,7 +2242,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		
 		txn_id_t TID;
 		TID = apiUtil->check_txn_id(TID_s);
-		if(TID == NULL)
+		if(TID == (unsigned long long)0)
 		{
 			error = "TID is not a pure number. TID: " + TID_s;
 			sendResponseMsg(1003, error, operation, request, response);
@@ -2347,7 +2354,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request>& request, const sha
 		}
 		string res;
 		auto TID = apiUtil->check_txn_id(TID_s);
-		if( TID == NULL)
+		if( TID == (unsigned long long)0)
 		{
 			error = "TID is not a pure number. TID: " + TID_s;
 			sendResponseMsg(1003, error, operation, request, response);
@@ -2445,7 +2452,7 @@ void rollback_thread_new(const shared_ptr<HttpServer::Request>& request, const s
 		}
 		string res;
 		auto TID = apiUtil->check_txn_id(TID_s);
-		if (TID == NULL)
+		if (TID == (unsigned long long)0)
 		{
 			error = "TID is not a pure number. TID: " + TID_s;
 			sendResponseMsg(1003, error, operation, request, response);
@@ -4038,7 +4045,7 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request>& request, const s
 			size_t count = ip_list.size();
 			stringstream str_stream;
 			str_stream << "[";
-			for(int i = 0; i < count; i++){
+			for(size_t i = 0; i < count; i++){
 				if (i > 0)
 				{
 					str_stream << ",";

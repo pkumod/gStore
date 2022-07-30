@@ -23,6 +23,8 @@ public:
 	/** @brief A default constructor. */
 	Socket();
 
+	Socket(const Socket &socket_src);
+
 	/** @brief A default destructor. */
 	~Socket();
 

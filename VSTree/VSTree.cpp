@@ -301,7 +301,7 @@ bool VSTree::updateEntry(int _entity_id, const EntityBitSet& _bitset)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
 
-        if (entry.getEntityId() == _entity_id)
+        if (entry.getEntityId() == static_cast<unsigned>(_entity_id))
         {
             SigEntry newEntry = entry;
             newEntry |= SigEntry(EntitySig(_bitset), _entity_id);
@@ -370,7 +370,7 @@ VSTree::replaceEntry(int _entity_id, const EntityBitSet& _bitset)
     for (int i = 0; i < childNum; i++)
     {
         const SigEntry& entry = leafNodePtr->getChildEntry(i);
-        if (entry.getEntityId() == _entity_id)
+        if (entry.getEntityId() == static_cast<unsigned>(_entity_id))
         {
 			//cout<<"find the entityid in pos "<<i<<endl;
             SigEntry newEntry(EntitySig(_bitset), _entity_id);
@@ -535,7 +535,7 @@ VSTree::removeEntry(int _entity_id)
 
     for(int i = 0; i < childNum; i++)
     {
-        if(leafNodePtr->getChildEntry(i).getEntityId() == _entity_id)
+        if(leafNodePtr->getChildEntry(i).getEntityId() == static_cast<unsigned>(_entity_id))
         {
             entryIndex = i;
             break;
@@ -785,7 +785,7 @@ VSTree::split(VNode* _p_node_being_split, const SigEntry& _insert_entry, VNode* 
 		cout<<"to insert id "<<_insert_entry.getEntityId()<<endl;
 		cout<<"height: "<<this->height<<endl;
 #endif
-	int oldnode_fileline = _p_node_being_split->getFileLine();
+	// int oldnode_fileline = _p_node_being_split->getFileLine();
     // first, add the new child node(if not leaf) or child entry(if leaf) to the full node.
 	bool just_insert_entry = (_p_insert_node == NULL);
     if(just_insert_entry)
@@ -1251,7 +1251,7 @@ VSTree::coalesce(VNode*& _child, int _entry_index)
 
 	VNode* tmp = NULL;
 	int child_no = _child->getFileLine();
-	int father_no = _father->getFileLine();
+	// int father_no = _father->getFileLine();
 
 #ifdef DEBUG
 	if(ccase == 1 || ccase == 3)
@@ -1617,8 +1617,8 @@ VSTree::loadTreeInfo()
     fread(&tmp, sizeof(int), 1, filePtr);
     fread(&tmp,sizeof(int), 1, filePtr);
 
-    int sigLength = Signature::ENTITY_SIG_LENGTH;
-    fread(&sigLength, sizeof(int), 1, filePtr);
+    unsigned sigLength = Signature::ENTITY_SIG_LENGTH;
+    fread(&sigLength, sizeof(unsigned), 1, filePtr);
 
     if (sigLength > Signature::ENTITY_SIG_LENGTH)
     {
@@ -1674,7 +1674,7 @@ VSTree::loadEntityID2FileLineMap()
         return false;
     }
 
-    size_t vNodeSize = sizeof(VNode);
+    // size_t vNodeSize = sizeof(VNode);
     int flag = 0;
 
     flag = fseek(filePtr, 0, SEEK_SET);
