@@ -2517,6 +2517,19 @@ std::string Util::md5(const string& text)
     return _md5.md5();
 }
 
+bool Util::iscontain(const string& _parent,const string& _child)
+{
+ string::size_type idx = _parent.find(_child);
+ if(idx != string::npos )
+ {
+   return true;
+ }
+ else
+ {
+   return false;
+ }
+}
+
 void Util::formatPrint(std::string content, std::string type)
 {
     string time = Util::get_date_time();

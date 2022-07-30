@@ -19,10 +19,13 @@ Database::Database()
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
+	this->statistics_info_file="statistics_info_file.dat";
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
 	this->csr = NULL;
+
+	this->type_predicate_name="type@@TYPE@@类型";
 	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
@@ -77,12 +80,13 @@ Database::Database(string _name)
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";
 	this->db_info_file = "db_info_file.dat";
+	this->statistics_info_file="statistics_info_file.dat";
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
 	this->csr = NULL;
 	// this->csr = new CSR[2];
-
+    this->type_predicate_name="type@@TYPE@@类型";
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = new KVstore(kv_store_path);
 	// string vstree_store_path = store_path + "/vs_store";
@@ -960,6 +964,8 @@ Database::load(bool loadCSR)
 		cout << "CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)" << endl;
 	}
 
+	//load the statistics file of db
+	this->loadStatisticsInfoFile();
 	return true;
 }
 
@@ -1556,6 +1562,7 @@ Database::unload()
 	if (if_loaded)
 	{
 		this->saveDBInfoFile();
+		//this->saveStatisticsInfoFile();
 		this->writeIDinfo();
 		this->initIDinfo();
 	}
@@ -2188,6 +2195,28 @@ Database::getDBInfoFile()
 	return this->getStorePath() + "/" + this->db_info_file;
 }
 
+void Database::setTypePredicateName(string& names)
+{
+	this->type_predicate_name=names;
+}
+
+bool Database::checkIsTypePredicate(string& predicate)
+{
+	vector<string> names;
+	Util::split(this->type_predicate_name,"@@",names);
+	for(int i=0;i<names.size();i++)
+	{
+       //cout<<"temp is "<<names[i]<<endl;
+       if(Util::iscontain(predicate,names[i]))
+	   {
+		 //cout<<predicate<<" is contain "<<names[i]<<endl;
+		return true;
+	   }
+
+	}
+	return false;
+}
+
 string
 Database::getIDTuplesFile()
 {
@@ -2682,7 +2711,11 @@ Database::encodeRDF_new(const string _rdf_file,const string _error_log)
 
 	long t9 = Util::get_cur_time();
 	cout << "db info saved, used " << (t9 - t8) << "ms." << endl;
-
+    flag=this->saveStatisticsInfoFile();
+	if(!flag)
+	{
+		cout<<"the statistics info file of db saved failure!"<<endl;
+	}
 	//Util::logging("finish encodeRDF_new");
 
 	// not use statistics
@@ -3457,6 +3490,10 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	//Util::logging("==> while(true)");
 
 	num_lines = 0;
+	std::cout<<"this type predicate name is "<<this->type_predicate_name<<endl;
+	// string type="rdf:type";
+	// this->checkIsTypePredicate(type);
+	this->umap.clear();
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -3544,6 +3581,24 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 					//this->entity_num++;
 					(this->kvstore)->setIDByEntity(_obj, _obj_id);
 					(this->kvstore)->setEntityByID(_obj_id, _obj);
+				}
+
+				//when the predicat is type 
+			    
+				if(this->checkIsTypePredicate(_pre))
+				{
+				
+				   //umap.insert(_obj,)	
+				  auto it=this->umap.find(_obj);
+				  if(it!=this->umap.end())
+				  {
+					it->second=it->second+1;
+				  }
+				  else{
+		
+					this->umap.insert(pair<string,unsigned long long>(_obj,1));
+				  }
+				  //cout<<"the umap size is "<<umap.size()<<endl;
 				}
 			}
 			//obj is literal
@@ -3654,7 +3709,7 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 	}
 	this->kvstore->set_if_single_thread(false);
 	//cout<<"==> end while(true)"<<endl;
-
+    
 	delete[] triple_array;
 	triple_array = NULL;
 	_fin.close();
@@ -6410,4 +6465,66 @@ Database::CreateJson(int StatusCode, std::string StatusMsg, std::string Response
 void Database::load_statistics() {
     this->statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
     this->statistics->load_Statistics();
+}
+
+bool Database::saveStatisticsInfoFile()
+{
+     ofstream file;
+	 string filepath=this->getStorePath() + "/" + this->statistics_info_file;
+	 if(Util::file_exist(filepath)==false)
+	 {
+		cout<<"the statistics file is not exist"<<endl;
+		Util::create_file(filepath);
+	 }
+	 file.open(filepath);
+	 int i=0;
+	 for(auto& kv:this->umap){
+		//cout<<"first:"<<kv.first<<",second:"<<kv.second<<endl;
+        file<<kv.first<<"@@"<<kv.second<<endl;
+		i++;
+    }
+	file.flush();
+	file.close();
+	cout<<"save the statistics file successfully! total "<<i<<" records have been saved!" <<endl;
+	return true;
+}
+
+bool Database::loadStatisticsInfoFile()
+{
+ 
+   string filepath=this->getStorePath() + "/" + this->statistics_info_file;
+   if(Util::file_exist(filepath)==false)
+   {
+		cout<<"the statistics file is not exist."<<endl;
+		cout<<"load the statistics file failure!"<<endl;
+		return false;
+   }
+   cout<<"load the file: "<<filepath<<endl;
+   ifstream file(filepath,ios::in);
+   string line;
+   vector<string> lines;
+
+   stringstream str;
+   unsigned long long value;
+   if(file)
+   {
+	   this->umap.clear();
+   while(getline(file,line))
+   {
+	 
+	  Util::split(line,"@@",lines);
+	  if(lines.size()==2)
+	  {
+		str<<lines[1];
+		str>>value;
+		this->umap.insert(pair<string,unsigned long long>(lines[0],value));
+	  }
+    }
+	 return true;
+   }
+   else
+   return false;
+   
+  
+	
 }

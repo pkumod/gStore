@@ -91,6 +91,10 @@ public:
 	//root Path of this DB + DBInfoFile
 	string getDBInfoFile();
 
+	void setTypePredicateName(string& names);
+
+	bool checkIsTypePredicate(string& predicate);
+
 	//id tuples file
 	string getIDTuplesFile();
 
@@ -154,6 +158,12 @@ private:
     //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
 
+	//this Statistics data  of catalog entities this database
+	string statistics_info_file;
+
+	//this type predicate name
+	string type_predicate_name;
+
 	//six tuples: <sub pre obj sid pid oid> 
 	string six_tuples_file;
 
@@ -184,6 +194,9 @@ private:
 	unsigned literal_buffer_size;
 
 	QueryCache *query_cache;
+
+	// the unordered_map for store the statistic data of entitys 
+	unordered_map<string,unsigned long long> umap;
 
 	//Trie *trie;
 
@@ -259,6 +272,10 @@ private:
 
 	bool saveDBInfoFile();
 	bool loadDBInfoFile();
+
+	bool saveStatisticsInfoFile();
+
+	bool loadStatisticsInfoFile();
 
 	string getStorePath();
 
