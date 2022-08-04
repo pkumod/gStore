@@ -381,6 +381,7 @@ public:
     std::vector<std::vector<int>> WCC(bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
+    std::vector<int> maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set);
 
     std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	

@@ -413,7 +413,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
-				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF")	// Path calls
+				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMCLIQUE")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -456,6 +456,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::wcc_type;
 				else if (tmp == "CLUSTERCOEFF")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::clusterCoeff_type;
+				else if (tmp == "MAXIMUMCLIQUE")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::maximumClique_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -466,6 +468,11 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 						proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
 						replacePrefix(proj_var.path_args.dst);
 					}
+				}
+				for (auto voi : bicCtx->varOrIri())
+				{
+					proj_var.path_args.vert_set.push_back(voi->getText());
+					replacePrefix(proj_var.path_args.vert_set.back());
 				}
 				// proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
 				// replacePrefix(proj_var.path_args.src);

@@ -1826,6 +1826,19 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 	return 0;
 }
 
+/**
+	Compute and return the maximum clique containing the input vertices (assuming
+	the graph is undirected).
+
+	@param uid_ls the vector of input vertices.
+	@param pred_set the set of edge labels allowed.
+	@return the vertices in the maximal clique containing the input vertices.
+**/
+vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set)
+{
+	return vector<int>();
+}
+
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
 void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred_set, vector< pair<int ,double> > &topkV2ppr)
 {
