@@ -982,7 +982,7 @@ void PlanGenerator::AddSatelliteNode(PlanTree* best_plan) {
 	sort(satellitenode_score.begin(), satellitenode_score.end(), compare_pair_vector);
 
 	for(const auto &satellite_node_sore_id_par : satellitenode_score){
-		best_plan->add_satellitenode(bgpquery, satellite_nodes[satellite_node_sore_id_par.second]);
+		best_plan->AddSatelliteNode(bgpquery, satellite_nodes[satellite_node_sore_id_par.second]);
 	}
 }
 
