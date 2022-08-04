@@ -1506,7 +1506,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				{
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
+					vector<vector<int>> uid_ls_ls;
 					vector<int> pred_id_set;
+					uid_ls_ls.push_back(vector<int>());
+					for (auto vert : proj[0].path_args.vert_set)
+						uid_ls_ls.back().push_back(kvstore->getIDByString(vert));
 					if (!proj[0].path_args.src.empty())
 						uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
 					else
@@ -1543,11 +1547,42 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 					ss << "\"{\"paths\":[";
 					cout<<"proj[0].aggregate_type :"<<proj[0].aggregate_type <<endl;
+					if (proj[0].aggregate_type == QueryTree::ProjectionVar::maximumClique_type)
+					{
+						for (auto seeds : uid_ls_ls)
+						{
+							auto clique = pqHandler->maximumClique(seeds, pred_id_set);
+							bool localFirstOutput = true;
+							if (notFirstOutput)
+								ss << ',';
+							else
+								notFirstOutput = true;
+							ss << "{\"seeds\":\"[";
+							for (int uid : seeds)
+							{
+								if (localFirstOutput)
+									localFirstOutput = false;
+								else
+									ss << ',';
+								ss << kvstore->getStringByID(uid);
+							}
+							localFirstOutput = true;
+							ss << "], \"clique\":\"[";
+							for (int vid : clique)
+							{
+								if (localFirstOutput)
+									localFirstOutput = false;
+								else
+									ss << ',';
+								ss << kvstore->getStringByID(vid);
+							}
+							ss << "]}";
+						}
+					}
 					for (int uid : uid_ls)
 					{
 						for (int vid : vid_ls)
 						{
-						
 							if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
 							{
 								if (uid == vid)
@@ -2917,8 +2952,34 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						prepPathQuery();
 
 						vector<int> uid_ls, vid_ls;
+						vector<vector<int>> uid_ls_ls;
 						vector<int> pred_id_set;
 
+						// uid_ls_ls (multiple input vertices)
+						auto vars2temp = Varset(proj[i].path_args.vert_set).mapTo(result0.getAllVarset());
+						for (int j = begin; j <= end; j++)
+						{
+							bool row_valid = true;
+							for (size_t k = 0; k < vars2temp.size(); k++)
+								if ((proj[i].path_args.vert_set[k][0] != '?' && vars2temp[k] == -1) \
+									|| vars2temp[k] >= result0_id_cols || result0.result[j].id[vars2temp[k]] == INVALID)
+								{
+									row_valid = false;
+									break;
+								}
+							if (!row_valid) break;
+
+							uid_ls_ls.push_back(vector<int>());
+
+							for (size_t k = 0; k < vars2temp.size(); k++)
+							{
+								if (vars2temp[k] == -1)
+									uid_ls_ls.back().push_back(kvstore->getIDByString(proj[i].path_args.vert_set[k]));
+								else
+									uid_ls_ls.back().push_back(result0.result[j].id[vars2temp[k]]);
+							}
+						}
+						
 						// uid
 						if (!proj[i].path_args.src.empty())
 						{
@@ -3004,6 +3065,38 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						bool notFirstOutput = 0;	// For outputting commas
 						bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 						ss << "\"{\"paths\":[";
+						if (proj[i].aggregate_type == QueryTree::ProjectionVar::maximumClique_type)
+						{
+							for (auto seeds : uid_ls_ls)
+							{
+								auto clique = pqHandler->maximumClique(seeds, pred_id_set);
+								bool localFirstOutput = true;
+								if (notFirstOutput)
+									ss << ',';
+								else
+									notFirstOutput = true;
+								ss << "{\"seeds\":\"[";
+								for (int uid : seeds)
+								{
+									if (localFirstOutput)
+										localFirstOutput = false;
+									else
+										ss << ',';
+									ss << kvstore->getStringByID(uid);
+								}
+								localFirstOutput = true;
+								ss << "], \"clique\":\"[";
+								for (int vid : clique)
+								{
+									if (localFirstOutput)
+										localFirstOutput = false;
+									else
+										ss << ',';
+									ss << kvstore->getStringByID(vid);
+								}
+								ss << "]}";
+							}
+						}
 						for (int uid : uid_ls)
 						{
 							for (int vid : vid_ls)

@@ -140,6 +140,7 @@ class QueryTree
 			std::string src, dst, fun_name;
 			bool directed;
 			std::vector<std::string> iri_set;
+			std::vector<std::string> vert_set;
 			std::vector<std::string> pred_set;
 			int k;
 			float confidence;
@@ -300,8 +301,8 @@ class QueryTree
 					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
 					kHopReachablePath_type, ppr_type, triangleCounting_type, closenessCentrality_type,
 					bfsCount_type, pr_type, sssp_type, sssplen_type, labelProp_type, wcc_type, clusterCoeff_type,
-					CompTree_type, Contains_type, Custom_type,
-					PFN_type};
+					maximumClique_type,
+					CompTree_type, Contains_type, Custom_type, PFN_type};
 				AggregateType aggregate_type;
 
 				std::string separator;	// For GROUP_CONCAT
