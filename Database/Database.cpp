@@ -605,10 +605,10 @@ Database::setPreMap()
 			unsigned len = 0;
 			this->kvstore->getsubIDlistBypreID(i,list,len,true);
 			this->pre2sub[i] = len;
-			free(list);
+			delete[] list;
 			this->kvstore->getobjIDlistBypreID(i,list,len,true);
 			this->pre2obj[i] = len;
-			free(list);
+			delete[] list;
 		}
 		else
 		{
@@ -1574,6 +1574,8 @@ Database::unload()
 		this->writeIDinfo();
 		this->initIDinfo();
 	}
+
+	delete this->query_cache;
 
 	this->if_loaded = false;
 	this->clear_update_log();

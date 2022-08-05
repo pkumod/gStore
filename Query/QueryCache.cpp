@@ -245,3 +245,7 @@ void QueryCache::clear()
 	while (!lru.empty())
 		lru.pop();
 }
+
+QueryCache::~QueryCache() {
+	this->clear();
+}

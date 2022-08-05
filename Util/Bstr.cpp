@@ -59,6 +59,13 @@ Bstr::Bstr(const Bstr& _bstr)
 //	this->str = _bstr.str;
 //	return *this;
 //}
+Bstr& Bstr::operator=(const Bstr& _bstr) {
+	if(*this == _bstr)
+		return *this;		//a=a
+	this->length = _bstr.length;
+	this->str = _bstr.str;
+	return *this;
+};
 
 bool 
 Bstr::operator > (const Bstr& _bstr)
@@ -173,7 +180,7 @@ Bstr::copy(const char* _str, unsigned long _len)
 void
 Bstr::clear()	
 {
-	this->str = NULL;
+	this->str = nullptr;
 	this->length = 0;
 }
 
@@ -187,7 +194,8 @@ Bstr::release()
 
 Bstr::~Bstr()	
 {	//avoid mutiple delete
-	release();
+	if (this->str)
+		release();
 }
 
 void

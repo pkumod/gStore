@@ -15,7 +15,7 @@ using namespace std;
 GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct()
 {
 	// result = new TempResultSet();
-	result = NULL;
+	result = nullptr;
 }
 
 GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct(const EvaluationStackStruct& that)
@@ -350,7 +350,7 @@ bool GeneralEvaluation::doQuery()
 	// }
 
 	this->rewriting_evaluation_stack.clear();
-	this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+	this->rewriting_evaluation_stack.emplace_back();
 	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
 	this->rewriting_evaluation_stack.back().result = NULL;
 
@@ -3566,64 +3566,59 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			a[2]->request_reserve(counterPredicate);*/
 			
 			ret_result.delete_another_way = 1;
-			string *t = new string[retAnsNum*selectVar];
-			for (unsigned int i = 0,off =0 ; i < retAnsNum; i++, off += selectVar)
-				ret_result.answer[i] = t + off;
+			string *t = nullptr;
+			if (retAnsNum > 0) {
+				t = new string[retAnsNum * selectVar];
+				for (unsigned int i = 0, off = 0; i < retAnsNum; i++, off += selectVar)
+					ret_result.answer[i] = t + off;
 
-			//a[0]->set_string_base(t);
-			//a[1]->set_string_base(t);
-			//a[2]->set_string_base(t);
+				//a[0]->set_string_base(t);
+				//a[1]->set_string_base(t);
+				//a[2]->set_string_base(t);
 
-			//write index lock
-			for (unsigned j = 0; j < selectVar; j++)
-			{
-				int k = proj2temp[j];
-				if (k != -1)
-				{
-					if (k < id_cols)
-					{
-						if (isel[k])
-						{
-							for (unsigned i = 0; i < retAnsNum; i++)
-							{
-								unsigned ans_id = result0.result[i].id[k];
-								if (ans_id != INVALID)
-								{
-									if (ans_id < Util::LITERAL_FIRST_ID)
-										//a[0]->addRequest
-										requestVectors[0].push_back(StringIndexFile::AccessRequest(ans_id, i*selectVar + j));
-									else
-										//a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
-										requestVectors[1].push_back(StringIndexFile::AccessRequest(ans_id - Util::LITERAL_FIRST_ID, i*selectVar + j));
+				//write index lock
+				for (unsigned j = 0; j < selectVar; j++) {
+					int k = proj2temp[j];
+					if (k != -1) {
+						if (k < id_cols) {
+							if (isel[k]) {
+								for (unsigned i = 0; i < retAnsNum; i++) {
+									unsigned ans_id = result0.result[i].id[k];
+									if (ans_id != INVALID) {
+										if (ans_id < Util::LITERAL_FIRST_ID)
+											//a[0]->addRequest
+											requestVectors[0].push_back(StringIndexFile::AccessRequest(ans_id,
+																									   i * selectVar
+																										   + j));
+										else
+											//a[1]->addRequest(ans_id - Util::LITERAL_FIRST_ID , i*selectVar + j);
+											requestVectors[1].push_back(StringIndexFile::AccessRequest(
+												ans_id - Util::LITERAL_FIRST_ID, i * selectVar + j));
+									}
+								}
+							} else {
+								for (unsigned i = 0; i < retAnsNum; i++) {
+									unsigned ans_id = result0.result[i].id[k];
+									if (ans_id != INVALID) {
+										//a[2]->addRequest(ans_id, i*selectVar + j);
+										requestVectors[2].push_back(StringIndexFile::AccessRequest(ans_id,
+																								   i * selectVar + j));
+									}
 								}
 							}
-						}
-						else
-						{
-							for (unsigned i = 0; i < retAnsNum; i++)
-							{
-								unsigned ans_id = result0.result[i].id[k];
-								if (ans_id != INVALID){
-									//a[2]->addRequest(ans_id, i*selectVar + j);
-									requestVectors[2].push_back(StringIndexFile::AccessRequest(ans_id, i*selectVar + j));
-								}
+						} else {
+							for (unsigned i = 0; i < retAnsNum; i++) {
+								ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
+								// Up to this point the backslashes are hidden
 							}
-						}
-					}
-					else
-					{
-						for (unsigned i = 0; i < retAnsNum; i++)
-						{
-							ret_result.answer[i][j] = result0.result[i].str[k - id_cols];
-							// Up to this point the backslashes are hidden
 						}
 					}
 				}
+				//cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
+				//pthread_join(tidp, NULL);
+				this->stringindex->trySequenceAccess(requestVectors, t, true, -1);
+				//write index unlock
 			}
-			//cout << "in getFinal Result the first half use " << Util::get_cur_time() - t0 << "  ms" << endl;
-			//pthread_join(tidp, NULL);
-			this->stringindex->trySequenceAccess(requestVectors,t, true, -1);
-			//write index unlock
 		}
 		else
 		{

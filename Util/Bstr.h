@@ -28,6 +28,7 @@ public:
 	Bstr(const char* _str, unsigned long _len, bool _nocopy = false);
 	//Bstr(char* _str, unsigned _len);
 	Bstr(const Bstr& _bstr);
+	Bstr& operator=(const Bstr& _bstr);
 	//Bstr& operate = (const Bstr& _bstr);
 
 	bool operator > (const Bstr& _bstr);
