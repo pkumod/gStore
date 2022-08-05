@@ -35,6 +35,7 @@ SINode::SINode(bool isVirtual)
 {
   store = node_flag_ = 0;
   heapId = -1;
+  keys = nullptr;
   if (!isVirtual)
   {
     node_flag_ |= NF_IM;

@@ -32,6 +32,7 @@ SIIntlNode::Virtual()
 void
 SIIntlNode::Normal()
 {
+  delete[] keys;
   this->AllocKeys();
   this->SetInMem();
 }
@@ -287,11 +288,13 @@ SIIntlNode::Release()
 	for (unsigned i = num; i < MAX_KEY_NUM; ++i)
 		keys[i].clear();
 	delete[] keys;
+	keys = nullptr;
 }
 
 SIIntlNode::~SIIntlNode()
 {
-  Release();
+  if (keys)
+  	this->Release();
 }
 
 void

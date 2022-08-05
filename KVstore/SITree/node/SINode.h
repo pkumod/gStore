@@ -59,6 +59,8 @@ class SINode       				//abstract basic class
  public:
   SINode();
   SINode(bool isVirtual);
+  // virtual ~SINode() { delete[] keys, keys = nullptr;};
+  virtual ~SINode() { };
 
   bool isLeaf() const;
   bool isDirty() const;

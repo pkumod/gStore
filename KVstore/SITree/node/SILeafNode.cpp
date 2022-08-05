@@ -41,6 +41,8 @@ SILeafNode::Virtual()
 void
 SILeafNode::Normal()
 {
+  delete[] keys;
+  delete[] values;
   this->AllocKeys();
   this->AllocValues();
   this->SetInMem();
@@ -345,6 +347,8 @@ SILeafNode::Release()
   }
   delete[] keys;
   delete[] values;
+  keys = nullptr;
+  values = nullptr;
 }
 
 SILeafNode::~SILeafNode()

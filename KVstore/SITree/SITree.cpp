@@ -33,6 +33,7 @@ SITree::SITree()
  */
 SITree::SITree(string store_path, string _filename, string _mode, unsigned long long _buffer_size)
 {
+  this->root_ = nullptr;
   store_path_ = store_path;
   filename_ = _filename;
   this->height_ = 0;
@@ -457,7 +458,7 @@ SITree::Release(SINode* _np) const
 SITree::~SITree()
 {
   delete tsm_;
-  tsm_ = NULL;
+  tsm_ = nullptr;
 #ifdef DEBUG_KVSTORE
   //printf("already empty the buffer, now to delete all nodes in tree!\n");
 #endif
