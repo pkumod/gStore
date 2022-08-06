@@ -5,11 +5,10 @@
 # Last Modified: 2015-10-23 15:03
 # Description: originally written by liyouhuan, modified by zengli 
 =============================================================================*/
-
-#include "../Util/Util.h"
-
 #ifndef _QUERY_IDLIST_H
 #define _QUERY_IDLIST_H
+
+#include "../Util/Util.h"
 
 class IDList
 {

@@ -7,7 +7,7 @@
 =============================================================================*/
 
 #include "GeneralEvaluation.h"
-#include<set>
+
 using namespace std;
 
 #define TEST_BGPQUERY
@@ -114,11 +114,11 @@ GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
 
 
 GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
-									 Statistics *_statistics, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
+									 TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
 									 shared_ptr<Transaction> _txn):
-	kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), statistics(_statistics), ranked(false),
+	kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),
 	pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate),
 	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), fp(NULL), export_flag(false), temp_result(NULL)
 {
@@ -127,7 +127,7 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 	else
 		pqHandler = NULL;
 	well_designed = -1;	// Not checked yet
-	this->optimizer_ = make_shared<Optimizer>(kvstore,statistics,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
+	this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
 	this->bgp_query_total = make_shared<BGPQuery>();
 }
@@ -323,7 +323,7 @@ bool GeneralEvaluation::doQuery()
 	// 	this->limitID_predicate, this->limitID_literal, this->limitID_entity,
 	// 	this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
 
-    // this->optimizer_ = make_shared<Optimizer>(kvstore,statistics,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
+    // this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
     //                                   limitID_literal,limitID_entity,txn);
 
 	// if (this->query_tree.checkWellDesigned())
@@ -859,13 +859,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 										basic_query[k].predicate.value.c_str(),
 										basic_query[k].object.value.c_str()
 									);
-
-								//// Check query cache for saved results of this BGP ////
-	        			if(this->export_flag)
-	        			{
-	        				this->strategy.fp = this->fp;
-	        				this->strategy.export_flag = this->export_flag;
-	        			}
 								bool success = false;
 								// if (this->query_cache != NULL && dep == 0)
 								// 	success = checkBasicQueryCache(basic_query, sub_result, useful);

@@ -9,24 +9,15 @@
 #ifndef _DATABASE_DATABASE_H
 #define _DATABASE_DATABASE_H 
 
-#include "../Util/Util.h"
-#include "../Util/Triple.h"
-#include "Join.h"
-#include "../Query/IDList.h"
-#include "../Query/ResultSet.h"
 #include "../Query/SPARQLquery.h"
-#include "../Query/BasicQuery.h"
 #include "../Signature/SigEntry.h"
 #include "../VSTree/VSTree.h"
-#include "../KVstore/KVstore.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Parser/RDFParser.h"
 #include "../Parser/SPARQL/SPARQLParser.h"
-#include "../Query/QueryCache.h"
 #include "../Query/GeneralEvaluation.h"
 #include "../Server/Socket.h"
 #include "CSR.h"
-#include "./Statistics.h"
 
 class Database
 {
@@ -153,7 +144,6 @@ private:
 
 	enum class UPDATE_TYPE{ SUBJECT_INSERT, SUBJECT_REMOVE, PREDICATE_INSERT, PREDICATE_REMOVE, OBJECT_INSERT, OBJECT_REMOVE};
 	//metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
-    Statistics *statistics;
 
     //metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
@@ -313,8 +303,6 @@ private:
 	void build_s2xx(ID_TUPLE*);
 	void build_o2xx(ID_TUPLE*);
 	void build_p2xx(ID_TUPLE*);
-
-    void load_statistics();
 
     //insert and delete, notice that modify is not needed here
 	//we can read from file or use sparql syntax

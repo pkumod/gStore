@@ -7,17 +7,10 @@
 #ifndef GSTORE_PLANGENERATOR_H
 #define GSTORE_PLANGENERATOR_H
 
-#include "../Util/Util.h"
-#include "../Query/BasicQuery.h"
-#include "../Query/BGPQuery.h"
 #include "../Query/IDList.h"
-#include "../KVstore/KVstore.h"
-#include "./Statistics.h"
 #include "./PlanTree.h"
-#include "TableOperator.h"
 #include "../Util/OrderedVector.h"
 
-#include <unordered_map>
 #include <map>
 #include <cstring>
 #include <climits>
@@ -36,7 +29,6 @@ class PlanGenerator {
 private:
 	KVstore *kvstore;
 	BGPQuery *bgpquery;
-	Statistics *statistics;
 	IDCachesSharePtr & id_caches;
 	TYPE_TRIPLE_NUM triples_num;
 	TYPE_PREDICATE_ID limitID_predicate;
@@ -83,7 +75,7 @@ private:
   static const unsigned HEURISTIC_CANDIDATE_MAX;
 
 public:
-	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
+	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
 

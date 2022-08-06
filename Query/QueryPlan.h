@@ -3,15 +3,11 @@
 # Author: Yuqi Zhou
 # Mail: zhouyuqi@pku.edu.cn
 =============================================================================*/
-
-#include "../Util/Util.h"
-#include "../Query/BasicQuery.h"
-#include "../Database/TableOperator.h"
-#include "../Database/ResultTrigger.h"
-#include "../Database/PlanTree.h"
-
 #ifndef GSTORELIMITK_QUERY_QUERYPLAN_H_
 #define GSTORELIMITK_QUERY_QUERYPLAN_H_
+
+#include "../Database/TableOperator.h"
+#include "../Database/PlanTree.h"
 
 class QueryPlan
 {

@@ -9,11 +9,9 @@
 #ifndef _QUERY_TEMPRESULT_H
 #define _QUERY_TEMPRESULT_H
 
-#include "../Util/Util.h"
 #include "../StringIndex/StringIndex.h"
 #include "QueryTree.h"
 #include "RegexExpression.h"
-#include "Varset.h"
 #include "../Util/EvalMultitypeValue.h"
 
 class TempResult

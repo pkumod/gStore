@@ -32,11 +32,11 @@ const unsigned PlanGenerator::PARAM_SIZE = 1000000;
 const unsigned PlanGenerator::PARAM_PRE = 10000;
 const unsigned PlanGenerator::HEURISTIC_CANDIDATE_MAX = 100;
 
-PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr &id_caches_,
+PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr &id_caches_,
 							 TYPE_TRIPLE_NUM triples_num_, TYPE_PREDICATE_ID limitID_predicate_,
 							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 							 TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_):
-					kvstore(kvstore_), bgpquery(bgpquery_), statistics(statistics_), id_caches(id_caches_), triples_num(triples_num_),
+					kvstore(kvstore_), bgpquery(bgpquery_), id_caches(id_caches_), triples_num(triples_num_),
 					limitID_predicate(limitID_predicate_), limitID_literal(limitID_literal_), limitID_entity(limitID_entity_),
 					pre2num(pre2num_), pre2sub(pre2sub_), pre2obj(pre2obj_), txn(std::move(txn_)) { };
 
