@@ -41,8 +41,8 @@ CC = gcc
 #NOTICE: -O2 is recommended, while -O3(add loop-unroll and inline-function) is dangerous
 #when developing, not use -O because it will disturb the normal 
 #routine. use it for test and release.
-CFLAGS = -c -Wall -O2 -pthread -std=c++11 -Werror=return-type
-EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
+CFLAGS = -c -Wall -O2 -pthread -std=c++11 -Werror=return-type -ffunction-sections -fdata-sections -Wl,--gc-sections
+EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type -ffunction-sections -fdata-sections -Wl,--gc-sections
 #-coverage for debugging
 #CFLAGS = -c -Wall -pthread -O0 -g3 -std=c++11  -gdwarf-2
 #EXEFLAG = -pthread -O0 -g3 -std=c++11 -gdwarf-2
@@ -56,6 +56,7 @@ EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
 library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
+# library = -lreadline -L./lib -L/lib64 -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread  -lcurl -L/home/yanglinglin/.my_util/boost_1_74/lib
 #used for parallelsort
 march = -march=native
 openmp = -fopenmp ${march}
