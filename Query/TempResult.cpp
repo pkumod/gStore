@@ -485,6 +485,9 @@ void TempResult::doOptional(vector<bool> &binding, TempResult &x, TempResult &rn
 
 void TempResult::doMinus(TempResult &x, TempResult &r)
 {
+	if (x.result.empty())
+		r = *this;
+	
 	int this_id_cols = this->id_varset.getVarsetSize();
 
 	int r_id_cols = r.id_varset.getVarsetSize();
