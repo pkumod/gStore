@@ -5,15 +5,6 @@
 #ifndef GSTOREGDB_QUERY_TOPK_DPB_TOPKUTIL_H_
 #define GSTOREGDB_QUERY_TOPK_DPB_TOPKUTIL_H_
 
-#include "../../Util/Util.h"
-#include "../../KVstore/KVstore.h"
-#include "DPB/OrderedList.h"
-#include "../../Query/SPARQLquery.h"
-#include "../../Query/BasicQuery.h"
-#include "../../Database/Statistics.h"
-#include "../../Query/QueryTree.h"
-#include "../../Query/IDList.h"
-#include "../../Database/TableOperator.h"
 #include "TopKSearchPlan.h"
 
 namespace TopKUtil {
@@ -22,7 +13,6 @@ struct Env{
   KVstore *kv_store;
   unsigned int limitID_entity;
   unsigned int limitID_literal;
-  BasicQuery *basic_query;
   shared_ptr<BGPQuery> bgp_query;
   shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches;
   int k;

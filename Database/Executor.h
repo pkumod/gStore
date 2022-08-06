@@ -6,20 +6,14 @@
 =============================================================================*/
 #ifndef GSTOREGDB_DATABASE_EXECUTOR_H_
 #define GSTOREGDB_DATABASE_EXECUTOR_H_
-#include "../Util/Util.h"
-#include "../Query/SPARQLquery.h"
-#include "../Query/BasicQuery.h"
+
+// #include "../Query/SPARQLquery.h"
 #include "../Query/IDList.h"
-#include "../KVstore/KVstore.h"
 #include "../VSTree/VSTree.h"
 #include "TableOperator.h"
-#include "ResultTrigger.h"
-#include "../Query/QueryPlan.h"
+// #include "../Query/QueryPlan.h"
 #include "../Query/QueryTree.h"
 #include "Join.h"
-#include "./Statistics.h"
-#include "./PlanTree.h"
-#include "./PlanGenerator.h"
 
 namespace gstore
 {

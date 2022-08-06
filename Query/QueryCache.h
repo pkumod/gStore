@@ -9,10 +9,7 @@
 #ifndef _QUERY_QUERYCACHE_H
 #define _QUERY_QUERYCACHE_H
 
-#include "../Util/Util.h"
-#include "QueryTree.h"
 #include "TempResult.h"
-#include "Varset.h"
 
 class QueryCache
 {
