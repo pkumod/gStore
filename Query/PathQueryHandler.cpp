@@ -1779,7 +1779,49 @@ vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_
 **/
 unordered_map<int, vector<int>> PathQueryHandler::SSSP(int uid, bool directed, const std::vector<int> &pred_set)
 {
-	return unordered_map<int, vector<int>>();
+	unordered_map<int, vector<int>> res;
+	set<int> vis;
+	queue<int> Q;
+	Q.push(uid);
+	vis.insert(uid);
+	res[uid].push_back(uid);
+	while (Q.size())
+	{
+		int vid = Q.front();
+		Q.pop();
+		for (int pred : pred_set)
+		{
+			int outNum = getOutSize(vid, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(vid, pred, i); // get the node]
+				if (!vis.count(to))
+				{
+					vis.insert(to);
+					res[to] = res[vid];
+					res[to].push_back(pred);
+					res[to].push_back(to);
+					Q.push(to);
+				}
+			}
+			if (directed)
+				continue;
+			int inNum = getInSize(vid, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(vid, pred, i);
+				if (!vis.count(to))
+				{
+					vis.insert(to);
+					res[to] = res[vid];
+					res[to].push_back(pred);
+					res[to].push_back(to);
+					Q.push(to);
+				}
+			}
+		}
+	}
+	return res;
 }
 
 /**
@@ -1793,7 +1835,45 @@ unordered_map<int, vector<int>> PathQueryHandler::SSSP(int uid, bool directed, c
 **/
 unordered_map<int, int> PathQueryHandler::SSSPLen(int uid, bool directed, const std::vector<int> &pred_set)
 {
-	return unordered_map<int, int>();
+	unordered_map<int, int> res;
+	set<int> vis;
+	queue<int> Q;
+	Q.push(uid);
+	vis.insert(uid);
+	res[uid] = 0;
+	while (Q.size())
+	{
+		int vid = Q.front();
+		Q.pop();
+		for (int pred : pred_set)
+		{
+			int outNum = getOutSize(vid, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(vid, pred, i); // get the node]
+				if (!vis.count(to))
+				{
+					vis.insert(to);
+					res[to] = res[vid] + 1;
+					Q.push(to);
+				}
+			}
+			if (directed)
+				continue;
+			int inNum = getInSize(vid, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(vid, pred, i);
+				if (!vis.count(to))
+				{
+					vis.insert(to);
+					res[to] = res[vid] + 1;
+					Q.push(to);
+				}
+			}
+		}
+	}
+	return res;
 }
 
 /**
