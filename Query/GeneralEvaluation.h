@@ -10,19 +10,12 @@
 #define _QUERY_GENERALEVALUATION_H
 
 #include "../VSTree/VSTree.h"
-#include "../KVstore/KVstore.h"
 #include "../StringIndex/StringIndex.h"
-#include "../Database/Strategy.h"
 #include "../Database/CSR.h"
 #include "../Database/Optimizer.h"
-#include "../Database/Statistics.h"
 #include "../Parser/QueryParser.h"
-#include "../Util/Triple.h"
-#include "../Util/Util.h"
 #include "../Util/EvalMultitypeValue.h"
 #include "SPARQLquery.h"
-#include "QueryTree.h"
-#include "Varset.h"
 #include "RegexExpression.h"
 #include "TempResult.h"
 #include "QueryCache.h"
@@ -39,12 +32,10 @@ class GeneralEvaluation
 		// VSTree *vstree;
 		KVstore *kvstore;
 		StringIndex *stringindex;
-		Strategy strategy;
 		shared_ptr<Optimizer> optimizer_;
 		QueryCache *query_cache;
 		PathQueryHandler *pqHandler;
 		CSR *csr;
-        Statistics *statistics;
 		bool ranked;
 
 		TYPE_TRIPLE_NUM *pre2num;
@@ -63,7 +54,7 @@ class GeneralEvaluation
 
 	public:
 		GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
-						  Statistics *_statistics, TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
+						  TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 						  TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
 						  shared_ptr<Transaction> txn = nullptr);

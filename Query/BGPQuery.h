@@ -21,18 +21,13 @@
 #define GSTORE_BGPQUERY_H
 
 #include "BasicQuery.h"
-#include "../Util/Util.h"
 #include "../Util/Triple.h"
 #include "../KVstore/KVstore.h"
 
 #include <cstdlib>
 #include <utility>
-#include <vector>
-
 
 using namespace std;
-
-
 
 class VarDescriptor{
 

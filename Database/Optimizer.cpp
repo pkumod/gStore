@@ -8,7 +8,6 @@
 // #define FEED_PLAN
 
 Optimizer::Optimizer(KVstore *kv_store,
-                     Statistics *statistics,
                      TYPE_TRIPLE_NUM *pre2num,
                      TYPE_TRIPLE_NUM *pre2sub,
                      TYPE_TRIPLE_NUM *pre2obj,
@@ -18,8 +17,7 @@ Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_ENTITY_LITERAL_ID limitID_entity,
                      shared_ptr<Transaction> txn
 ):
-    kv_store_(kv_store), statistics(statistics), pre2num_(pre2num),
-    pre2sub_(pre2obj),pre2obj_(pre2obj),triples_num_(triples_num),
+    kv_store_(kv_store), pre2num_(pre2num), pre2sub_(pre2obj),pre2obj_(pre2obj),triples_num_(triples_num),
     limitID_predicate_(limitID_predicate), limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
     txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_){}
 
@@ -34,7 +32,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
       // TODO: more accurate decision of algebraic expressions that can be processed by topk
       if((*query_info->ordered_by_expressions_)[0].comp_tree_root.children.empty())
         return BasicQueryStrategy::Normal;
-      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,this->statistics,
+      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
                                                      (*query_info->ordered_by_expressions_)[0],nullptr);
       if(search_plan->SuggestTopK())
         return BasicQueryStrategy::TopK;
@@ -286,7 +284,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   {
 
     PlanTree* best_plan_tree;
-	PlanGenerator plan_generator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+	PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
 								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
     long t1 =Util::get_cur_time();
@@ -377,10 +375,10 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 #endif
 
     auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
-                                                   this->statistics, (*query_info.ordered_by_expressions_)[0],
+                                                   (*query_info.ordered_by_expressions_)[0],
                                                    var_candidates_cache);
     search_plan->GetPlan(bgp_query, this->kv_store_,
-                         this->statistics, (*query_info.ordered_by_expressions_)[0],
+                         (*query_info.ordered_by_expressions_)[0],
                          var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
     std::cout<<"Top-k Search Plan"<<std::endl;
@@ -394,7 +392,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   else if(strategy == BasicQueryStrategy::limitK)
   {
     PlanTree* best_plan_tree;
-	PlanGenerator plan_generator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+	PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
 								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
 	long t1 =Util::get_cur_time();

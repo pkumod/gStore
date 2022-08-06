@@ -826,10 +826,6 @@ Database::load(bool loadCSR)
 		return false;
 	}*/
 
-	// long t1 = Util::get_cur_time();
-    // this->load_statistics();
-    // long t2 = Util::get_cur_time();
-    // cout << "load statistics, used " << (t2 - t1) << "ms." << endl;
 
     this->if_loaded = true;
 
@@ -1765,7 +1761,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->kvstore, this->stringindex, this->query_cache, this->csr,
-										 this->statistics, this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
+										 this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
 										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn);
 	if(txn != nullptr)
 	cout << "query in transaction............................................" << endl;
@@ -6472,11 +6468,6 @@ Database::CreateJson(int StatusCode, std::string StatusMsg, std::string Response
 	writer.EndObject();
 	std::string res = s.GetString();
 	return res;
-}
-
-void Database::load_statistics() {
-    this->statistics = new Statistics(this->getStorePath(), this->getlimitID_predicate());
-    this->statistics->load_Statistics();
 }
 
 bool Database::saveStatisticsInfoFile()

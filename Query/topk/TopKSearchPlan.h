@@ -1,18 +1,12 @@
 //
 // Created by Yuqi Zhou on 2021/8/30.
 //
-#include "../../Util/Util.h"
-#include "../../KVstore/KVstore.h"
-#include "DPB/OrderedList.h"
-#include "../../Query/SPARQLquery.h"
-#include "../../Query/BasicQuery.h"
-#include "../../Database/Statistics.h"
-#include "../../Query/QueryTree.h"
-#include "../../Query/IDList.h"
-#include "../../Database/TableOperator.h"
-#include "../../Database/PlanGenerator.h"
 #ifndef GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
 #define GSTOREGDB_QUERY_TOPK_TOPKSEARCHPLAN_H_
+
+#include "DPB/OrderedList.h"
+#include "../../Query/QueryTree.h"
+#include "../../Database/PlanGenerator.h"
 
 // #define TOPK_DEBUG_INFO
 #define TOPK_DEBUG_RESULT_INFO
@@ -67,13 +61,13 @@ class TopKSearchPlan {
   bool walk(set<unsigned> &possible_vars, set<unsigned> &walk_pass_vars, vector<unsigned> &result_cycle);
 
   void DeleteEdge(TYPE_ENTITY_LITERAL_ID a,TYPE_ENTITY_LITERAL_ID b);
-  bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
+  bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
                 shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
 
  public:
-  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics,
+  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
                           const QueryTree::Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
-  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, Statistics *statistics, const QueryTree::Order& expression,
+  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, const QueryTree::Order& expression,
                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;

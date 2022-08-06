@@ -10,10 +10,7 @@
 #define _JOIN_JOIN_H 
 
 #include "../Query/IDList.h"
-#include "../Query/BasicQuery.h"
 #include "../Query/SPARQLquery.h"
-#include "../KVstore/KVstore.h"
-#include "../Util/Util.h"
 #include "../Util/Transaction.h"
 
 typedef vector<unsigned> RecordType;
