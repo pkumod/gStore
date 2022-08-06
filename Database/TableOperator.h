@@ -4,8 +4,6 @@
 # Mail: zhouyuqi@pku.edu.cn
 =============================================================================*/
 
-#include "../Util/Util.h"
-#include "../Query/BasicQuery.h"
 #include "../Query/BGPQuery.h"
 
 

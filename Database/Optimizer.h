@@ -7,27 +7,12 @@
 #ifndef _DATABASE_OPTIMIZER_H
 #define _DATABASE_OPTIMIZER_H
 
-
-#include "../Util/Util.h"
-#include "../Query/SPARQLquery.h"
-#include "../Query/IDList.h"
-#include "../KVstore/KVstore.h"
-#include "../VSTree/VSTree.h"
-#include "TableOperator.h"
-#include "ResultTrigger.h"
 #include "../Query/QueryPlan.h"
-#include "../Query/QueryTree.h"
-#include "Join.h"
-#include "./Statistics.h"
-#include "./PlanTree.h"
 #include "./PlanGenerator.h"
-#include "../Util/OrderedVector.h"
 #include "./Executor.h"
 #ifdef TOPK_SUPPORT
 #include "../Query/topk/DPBTopKUtil.h"
 #endif // TOPK_SUPPORT
-#include <unordered_map>
-#include <map>
 #include <cstring>
 #include <climits>
 #include <algorithm>
@@ -80,7 +65,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
 			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
 			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
@@ -125,7 +110,6 @@ class Optimizer
                                                       IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
-  Statistics* statistics;
 
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size

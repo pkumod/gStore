@@ -44,8 +44,8 @@ CC = gcc
 CFLAGS = -c -Wall -O2 -pthread -std=c++11 -Werror=return-type
 EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
 #-coverage for debugging
-# CFLAGS = -c -Wall -pthread -g3 -std=c++11  -gdwarf-2
-# EXEFLAG = -pthread -g3 -std=c++11 -gdwarf-2
+#CFLAGS = -c -Wall -pthread -O0 -g3 -std=c++11  -gdwarf-2
+#EXEFLAG = -pthread -O0 -g3 -std=c++11 -gdwarf-2
 #-coverage for debugging and with performance
 # CFLAGS = -c -Wall -pthread -g3 -std=c++11  -gdwarf-2 -pg
 # EXEFLAG = -pthread -g3 -std=c++11 -gdwarf-2 -pg
@@ -79,18 +79,13 @@ api_cpp = api/http/cpp/lib/libgstoreconnector.a
 
 api_socket = api/socket/cpp/lib/libclient.a
 
-# api_java = api/http/java/lib/GstoreJavaAPI.jar
-
 # objects
 
-#sstreeobj = $(objdir)Tree.o $(objdir)Storage.o $(objdir)Node.o $(objdir)IntlNode.o $(objdir)LeafNode.o $(objdir)Heap.o 
-sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o 
-istreeobj = $(objdir)ISTree.o $(objdir)ISStorage.o $(objdir)ISNode.o $(objdir)ISIntlNode.o $(objdir)ISLeafNode.o $(objdir)ISHeap.o 
-ivtreeobj = $(objdir)IVTree.o $(objdir)IVStorage.o $(objdir)IVNode.o $(objdir)IVIntlNode.o $(objdir)IVLeafNode.o $(objdir)IVHeap.o 
+sitreeobj = $(objdir)SITree.o $(objdir)SIStorage.o $(objdir)SINode.o $(objdir)SIIntlNode.o $(objdir)SILeafNode.o $(objdir)SIHeap.o
 ivarrayobj = $(objdir)IVArray.o $(objdir)IVEntry.o $(objdir)IVBlockManager.o
 isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
-kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
+kvstoreobj = $(objdir)KVstore.o $(sitreeobj)  $(ivarrayobj) $(isarrayobj)
 
 utilobj = $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
@@ -100,7 +95,7 @@ topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
-		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o $(topkobj)
+		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o
 
 signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -115,14 +110,14 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
 grpcobj = $(objdir)grpcImpl.o $(objdir)grpc.pb.o ${objdir}APIUtil.o
 
-databaseobj = $(objdir)Statistics.o $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o \
- $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
- $(objdir)PlanGenerator.o $(objdir)Executor.o $(objdir)Optimizer.o $(objdir)ResultTrigger.o
+databaseobj =  $(objdir)Database.o $(objdir)Join.o \
+			   $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
+			   $(objdir)PlanGenerator.o $(objdir)Executor.o $(objdir)Optimizer.o
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
 objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseobj) \
-		  $(utilobj) $(signatureobj) $(queryobj) $(trieobj)
+		  $(utilobj) $(signatureobj) $(topkobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 inc_rpc = -I./tools/srpc/_include -I./tools/srpc/workflow/_include -I/usr/local/include/google/protobuf
@@ -135,12 +130,11 @@ inc_rpc = -I./tools/srpc/_include -I./tools/srpc/workflow/_include -I/usr/local/
 #gtest
 
 TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler \
-$(exedir)gquery  $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor \
-$(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test \
-$(testdir)dataset_test $(testdir)transaction_test $(testdir)run_transaction \
-$(testdir)workload $(testdir)debug_test $(exedir)gbackup $(exedir)grestore \
-$(exedir)gpara $(exedir)rollback $(exedir)grpc\
-$(exedir)gconsole
+		 $(exedir)gquery  $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor \
+		 $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop  $(exedir)gbackup \
+		 $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc $(exedir)gconsole
+# TestTarget = $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test \
+			 $(testdir)run_transaction $(testdir)workload $(testdir)debug_test
 # TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
 
 all: $(TARGET)
@@ -312,26 +306,6 @@ $(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
 
 #objects in kvstore/ begin
 
-#objects in sstree/ begin
-#$(objdir)Tree.o: KVstore/SSTree/Tree.cpp KVstore/SSTree/Tree.h $(objdir)Stream.o
-	#$(CXX) $(CFLAGS) KVstore/SSTree/Tree.cpp -o $(objdir)Tree.o
-
-#$(objdir)Storage.o: KVstore/SSTree/storage/Storage.cpp KVstore/SSTree/storage/Storage.h $(objdir)Util.o
-	#$(CXX) $(CFLAGS) KVstore/SSTree/storage/Storage.cpp -o $(objdir)Storage.o $(def64IO)
-
-#$(objdir)Node.o: KVstore/SSTree/node/Node.cpp KVstore/SSTree/node/Node.h $(objdir)Util.o
-	#$(CXX) $(CFLAGS) KVstore/SSTree/node/Node.cpp -o $(objdir)Node.o
-
-#$(objdir)IntlNode.o: KVstore/SSTree/node/IntlNode.cpp KVstore/SSTree/node/IntlNode.h
-	#$(CXX) $(CFLAGS) KVstore/SSTree/node/IntlNode.cpp -o $(objdir)IntlNode.o
-
-#$(objdir)LeafNode.o: KVstore/SSTree/node/LeafNode.cpp KVstore/SSTree/node/LeafNode.h
-	#$(CXX) $(CFLAGS) KVstore/SSTree/node/LeafNode.cpp -o $(objdir)LeafNode.o
-
-#$(objdir)Heap.o: KVstore/SSTree/heap/Heap.cpp KVstore/SSTree/heap/Heap.h $(objdir)Util.o
-	#$(CXX) $(CFLAGS) KVstore/SSTree/heap/Heap.cpp -o $(objdir)Heap.o
-#objects in sstree/ end
-
 #objects in sitree/ begin
 $(objdir)SITree.o: KVstore/SITree/SITree.cpp KVstore/SITree/SITree.h $(objdir)Stream.o
 	$(CXX) $(CFLAGS) KVstore/SITree/SITree.cpp -o $(objdir)SITree.o $(openmp)
@@ -352,26 +326,6 @@ $(objdir)SIHeap.o: KVstore/SITree/heap/SIHeap.cpp KVstore/SITree/heap/SIHeap.h $
 	$(CXX) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp -o $(objdir)SIHeap.o $(openmp)
 #objects in sitree/ end
 
-#objects in istree/ begin
-$(objdir)ISTree.o: KVstore/ISTree/ISTree.cpp KVstore/ISTree/ISTree.h $(objdir)Stream.o
-	$(CXX) $(CFLAGS) KVstore/ISTree/ISTree.cpp -o $(objdir)ISTree.o $(openmp)
-
-$(objdir)ISStorage.o: KVstore/ISTree/storage/ISStorage.cpp KVstore/ISTree/storage/ISStorage.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/ISTree/storage/ISStorage.cpp -o $(objdir)ISStorage.o $(def64IO) $(openmp)
-
-$(objdir)ISNode.o: KVstore/ISTree/node/ISNode.cpp KVstore/ISTree/node/ISNode.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/ISTree/node/ISNode.cpp -o $(objdir)ISNode.o $(openmp)
-
-$(objdir)ISIntlNode.o: KVstore/ISTree/node/ISIntlNode.cpp KVstore/ISTree/node/ISIntlNode.h
-	$(CXX) $(CFLAGS) KVstore/ISTree/node/ISIntlNode.cpp -o $(objdir)ISIntlNode.o $(openmp)
-
-$(objdir)ISLeafNode.o: KVstore/ISTree/node/ISLeafNode.cpp KVstore/ISTree/node/ISLeafNode.h
-	$(CXX) $(CFLAGS) KVstore/ISTree/node/ISLeafNode.cpp -o $(objdir)ISLeafNode.o $(openmp)
-
-$(objdir)ISHeap.o: KVstore/ISTree/heap/ISHeap.cpp KVstore/ISTree/heap/ISHeap.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/ISTree/heap/ISHeap.cpp -o $(objdir)ISHeap.o $(openmp)
-#objects in istree/ end
-
 #objects in isarray/ begin
 $(objdir)ISArray.o: KVstore/ISArray/ISArray.cpp KVstore/ISArray/ISArray.h $(objdir)VList.o
 	$(CXX) $(CFLAGS) KVstore/ISArray/ISArray.cpp -o $(objdir)ISArray.o
@@ -382,26 +336,6 @@ $(objdir)ISBlockManager.o: KVstore/ISArray/ISBlockManager.cpp KVstore/ISArray/IS
 $(objdir)ISEntry.o: KVstore/ISArray/ISEntry.cpp KVstore/ISArray/ISEntry.h
 	$(CXX) $(CFLAGS) KVstore/ISArray/ISEntry.cpp -o $(objdir)ISEntry.o
 #objects in isarray/ end
-
-#objects in ivtree/ begin
-$(objdir)IVTree.o: KVstore/IVTree/IVTree.cpp KVstore/IVTree/IVTree.h $(objdir)Stream.o $(objdir)VList.o
-	$(CXX) $(CFLAGS) KVstore/IVTree/IVTree.cpp -o $(objdir)IVTree.o $(openmp)
-
-$(objdir)IVStorage.o: KVstore/IVTree/storage/IVStorage.cpp KVstore/IVTree/storage/IVStorage.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/IVTree/storage/IVStorage.cpp -o $(objdir)IVStorage.o $(def64IO) $(openmp)
-
-$(objdir)IVNode.o: KVstore/IVTree/node/IVNode.cpp KVstore/IVTree/node/IVNode.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/IVTree/node/IVNode.cpp -o $(objdir)IVNode.o $(openmp)
-
-$(objdir)IVIntlNode.o: KVstore/IVTree/node/IVIntlNode.cpp KVstore/IVTree/node/IVIntlNode.h
-	$(CXX) $(CFLAGS) KVstore/IVTree/node/IVIntlNode.cpp -o $(objdir)IVIntlNode.o $(openmp)
-
-$(objdir)IVLeafNode.o: KVstore/IVTree/node/IVLeafNode.cpp KVstore/IVTree/node/IVLeafNode.h
-	$(CXX) $(CFLAGS) KVstore/IVTree/node/IVLeafNode.cpp -o $(objdir)IVLeafNode.o $(openmp)
-
-$(objdir)IVHeap.o: KVstore/IVTree/heap/IVHeap.cpp KVstore/IVTree/heap/IVHeap.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) KVstore/IVTree/heap/IVHeap.cpp -o $(objdir)IVHeap.o $(openmp)
-#objects in ivtree/ end
 
 #objects in ivarray/ begin
 $(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(objdir)VList.o  $(objdir)Transaction.o 
@@ -423,51 +357,40 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 
 #objects in Database/ begin
 
-$(objdir)Statistics.o: Database/Statistics.cpp Database/Statistics.h $(objdir)Util.o $(objdir)KVstore.o
-	$(CXX) $(CFLAGS) Database/Statistics.cpp $(inc) -o $(objdir)Statistics.o $(openmp)
 
 $(objdir)Database.o: Database/Database.cpp Database/Database.h \
-	$(objdir)IDList.o $(objdir)ResultSet.o $(objdir)SPARQLquery.o \
-	$(objdir)BasicQuery.o $(objdir)Triple.o $(objdir)SigEntry.o \
-	$(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Statistics.o \
-	$(objdir)Util.o $(objdir)RDFParser.o $(objdir)Join.o $(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
+	$(objdir)SigEntry.o $(objdir)VSTree.o $(objdir)RDFParser.o \
+	$(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CXX) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
-$(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o $(objdir)BasicQuery.o $(objdir)Util.o\
-	$(objdir)KVstore.o $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)Transaction.o
+$(objdir)Join.o: Database/Join.cpp Database/Join.h $(objdir)IDList.o \
+	$(objdir)KVstore.o $(objdir)SPARQLquery.o $(objdir)Transaction.o
 	$(CXX) $(CFLAGS) Database/Join.cpp $(inc) -o $(objdir)Join.o $(openmp)
-
-$(objdir)Strategy.o: Database/Strategy.cpp Database/Strategy.h $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Triple.o $(objdir)IDList.o $(objdir)KVstore.o $(objdir)VSTree.o $(objdir)Util.o $(objdir)Join.o $(objdir)Transaction.o
-	$(CXX) $(CFLAGS) Database/Strategy.cpp $(inc) -o $(objdir)Strategy.o $(openmp)
 
 $(objdir)CSR.o: Database/CSR.cpp Database/CSR.h
 	$(CXX) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
 	$(CXX) -std=c++11 -fPIC -shared Database/CSR.cpp -o lib/libgcsr.so
 
-$(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(objdir)Util.o $(objdir)BasicQuery.o
+$(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(objdir)BGPQuery.o
 	$(CXX) $(CFLAGS) Database/TableOperator.cpp $(inc) -o $(objdir)TableOperator.o $(openmp)
 
-$(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
+#$(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
+#	$(CXX) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
 
-$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(objdir)BasicQuery.o $(objdir)TableOperator.o \
-    $(objdir)BGPQuery.o $(objdir)Util.o
+$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(objdir)TableOperator.o
 	$(CXX) $(CFLAGS) Database/PlanTree.cpp $(inc) -o $(objdir)PlanTree.o  $(openmp)
 
 $(objdir)PlanGenerator.o: Database/PlanGenerator.cpp Database/PlanGenerator.h \
-	$(objdir)Util.o $(objdir)BasicQuery.o $(objdir)BGPQuery.o $(objdir)IDList.o $(objdir)KVstore.o \
-	$(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)TableOperator.o $(objdir)OrderedVector.o
+	$(objdir)IDList.o $(objdir)PlanTree.o $(objdir)OrderedVector.o
 	$(CXX) $(CFLAGS) Database/PlanGenerator.cpp $(inc) -o $(objdir)PlanGenerator.o $(openmp)
 
-$(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)IDList.o \
-	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o \
-	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
+$(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(objdir)IDList.o \
+	$(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)DPBTopKUtil.o
 	$(CXX) $(CFLAGS) Database/Executor.cpp $(inc) -o $(objdir)Executor.o $(openmp) ${ldl}
 
-$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h $(objdir)Util.o $(objdir)SPARQLquery.o $(objdir)IDList.o \
-	$(objdir)KVstore.o  $(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o $(objdir)Executor.o\
-	$(objdir)QueryPlan.o $(objdir)Statistics.o $(objdir)PlanTree.o $(objdir)PlanGenerator.o $(objdir)OrderedVector.o $(objdir)DPBTopKUtil.o
+$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h \
+	$(objdir)Join.o $(objdir)Transaction.o $(objdir)Executor.o $(objdir)QueryPlan.o \
+	$(objdir)PlanGenerator.o $(objdir)DPBTopKUtil.o
 	$(CXX) $(CFLAGS) Database/Optimizer.cpp $(inc) -o $(objdir)Optimizer.o $(openmp) ${ldl}
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(objdir)Util.o $(objdir)Transaction.o $(objdir)Database.o
@@ -493,26 +416,24 @@ $(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(objdir)Stream.o
 $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 	$(CXX) $(CFLAGS) Query/Varset.cpp $(inc) -o $(objdir)Varset.o $(openmp)
 
-$(objdir)QueryPlan.o: Query/QueryPlan.cpp Query/QueryPlan.h $(objdir)BasicQuery.o $(objdir)TableOperator.o $(objdir)ResultTrigger.o
+$(objdir)QueryPlan.o: Query/QueryPlan.cpp Query/QueryPlan.h  $(objdir)TableOperator.o
 	$(CXX) $(CFLAGS) Query/QueryPlan.cpp $(inc) -o $(objdir)QueryPlan.o $(openmp)
 
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(objdir)Varset.o
 	$(CXX) $(CFLAGS) Query/QueryTree.cpp $(inc) -o $(objdir)QueryTree.o $(openmp)
 
-$(objdir)TempResult.o: Query/TempResult.cpp Query/TempResult.h Query/RegexExpression.h $(objdir)Util.o \
-	$(objdir)StringIndex.o $(objdir)QueryTree.o $(objdir)Varset.o $(objdir)EvalMultitypeValue.o
+$(objdir)TempResult.o: Query/TempResult.cpp Query/TempResult.h Query/RegexExpression.h \
+	$(objdir)StringIndex.o $(objdir)QueryTree.o $(objdir)EvalMultitypeValue.o
 	$(CXX) $(CFLAGS) Query/TempResult.cpp $(inc) -o $(objdir)TempResult.o $(openmp)
 
-$(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)Util.o $(objdir)QueryTree.o \
-	$(objdir)TempResult.o $(objdir)Varset.o
+$(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(objdir)TempResult.o
 	$(CXX) $(CFLAGS) Query/QueryCache.cpp $(inc) -o $(objdir)QueryCache.o $(openmp)
 
 $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(objdir)CSR.o
 	$(CXX) $(CFLAGS) Query/PathQueryHandler.cpp $(inc) -o $(objdir)PathQueryHandler.o $(openmp) ${ldl}
 	$(CXX) -std=c++11 -fPIC -shared Query/PathQueryHandler.cpp -o lib/libgpathqueryhandler.so lib/libgcsr.so
 
-$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h $(objdir)BasicQuery.o  $(objdir)Util.o \
-    $(objdir)Triple.o $(objdir)KVstore.o
+$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h   $(objdir)Util.o $(objdir)Triple.o $(objdir)KVstore.o
 	$(CXX) $(CFLAGS) Query/BGPQuery.cpp $(inc) -o $(objdir)BGPQuery.o $(openmp)
 
 #objects in Query/topk/ begin
@@ -527,17 +448,12 @@ $(objdir)OrderedList.o: Query/topk/DPB/OrderedList.cpp Query/topk/DPB/OrderedLis
 	$(objdir)DynamicTrie.o
 	$(CXX) $(CFLAGS) Query/topk/DPB/OrderedList.cpp $(inc) -o $(objdir)OrderedList.o $(openmp)
 
-$(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h $(objdir)Util.o \
-	$(objdir)KVstore.o $(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o \
-	$(objdir)Statistics.o $(objdir)QueryTree.o $(objdir)IDList.o \
-	$(objdir)PlanGenerator.o $(objdir)TableOperator.o
+$(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h \
+	$(objdir)OrderedList.o $(objdir)QueryTree.o $(objdir)PlanGenerator.o
 	$(CXX) $(CFLAGS) Query/topk/TopKSearchPlan.cpp $(inc) -o $(objdir)TopKSearchPlan.o $(openmp)
 
-$(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(objdir)Util.o $(objdir)KVstore.o \
-	$(objdir)OrderedList.o $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)Statistics.o \
-	$(objdir)QueryTree.o $(objdir)IDList.o $(objdir)TableOperator.o $(objdir)TopKSearchPlan.o
+$(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(objdir)TopKSearchPlan.o
 	$(CXX) $(CFLAGS) Query/topk/TopKUtil.cpp $(inc) -o $(objdir)TopKUtil.o $(openmp)
-
 
 $(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(objdir)TopKUtil.o
 	$(CXX) $(CFLAGS) Query/topk/DPBTopKUtil.cpp $(inc) -o $(objdir)DPBTopKUtil.o $(openmp)
@@ -547,9 +463,9 @@ $(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(ob
 
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
-	$(objdir)VSTree.o $(objdir)KVstore.o $(objdir)StringIndex.o $(objdir)Strategy.o $(objdir)QueryParser.o \
-	$(objdir)Triple.o $(objdir)Util.o $(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o $(objdir)QueryTree.o $(objdir)Varset.o  $(objdir)Statistics.o \
-	$(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o $(objdir)Optimizer.o
+	$(objdir)VSTree.o $(objdir)StringIndex.o $(objdir)QueryParser.o \
+	$(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o \
+	$(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o $(objdir)Optimizer.o
 	$(CXX) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp) ${ldl}
 
 #objects in Query/ end

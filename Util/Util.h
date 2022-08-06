@@ -16,7 +16,7 @@ in the sparql query can point to the same node in data graph)
 #define TOPK_SUPPORT
 //basic macros and types are defined here, including common headers 
 
-#include <stdio.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>

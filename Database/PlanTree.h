@@ -7,14 +7,7 @@
 #ifndef GSTORE_PLANTREE_H
 #define GSTORE_PLANTREE_H
 
-#include <vector>
-#include <string>
-#include <iostream>
-
-#include "../Query/BasicQuery.h"
-#include "../Query/BGPQuery.h"
 #include "./TableOperator.h"
-#include "../Util/Util.h"
 
 using namespace std;
 

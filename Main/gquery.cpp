@@ -11,28 +11,10 @@
 =============================================================================*/
 
 #include "../Database/Database.h"
-#include "../Util/Util.h"
-//#include "../Util/Slog.h"
 
 using namespace std;
 
 // WARN:cannot support soft links!
-
-void help()
-{
-	printf("\
-			/*=============================================================================\n\
-# Filename: gquery.cpp\n\
-# Author: Bookug Lobert\n\
-# Mail: 1181955272@qq.com\n\
-# Last Modified: 2015-10-20 12:23\n\
-# Description: query a database, there are several ways to use this program:\n\
-1. ./gquery                                        print the help message\n\
-2. ./gquery --help                                 simplified as -h, equal to 1\n\
-3. ./gquery db_folder query_path                   load query from given path fro given database\n\
-4. ./gquery db_folder                              load the given database and open console\n\
-=============================================================================*/\n");
-}
 
 int main(int argc, char *argv[])
 {
