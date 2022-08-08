@@ -1687,7 +1687,75 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 **/
 vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector<int> &pred_set)
 {
-	return vector<int>(1, 1);
+	queue<int> q;
+	q.push(uid);
+	unordered_set<int> nodes;
+	nodes.insert(uid);
+	int currentlevel = 1; // vertices in the current level
+	int nextlevel = 0;	  // vertices in the next level
+	vector<int> ans;
+	ans.push_back(1);
+	while (!q.empty())
+	{
+		if (currentlevel == 0)
+		{
+			currentlevel = nextlevel;
+			nextlevel = 0;
+			ans.push_back(currentlevel);
+		}
+		int now = q.front();
+		q.pop();
+		currentlevel--;
+		if (!directed)
+		{
+			for (int pred : pred_set)
+			{
+				int inNum = getInSize(now, pred);
+				for (int i = 0; i < inNum; i++)
+				{
+					int inN = getInVertID(now, pred, i);
+					if (!nodes.count(inN))
+					{
+						q.push(inN);
+						nodes.insert(inN);
+						nextlevel++;
+					}
+				}
+			}
+			for (int pred : pred_set)
+			{
+				int outNum = getOutSize(now, pred);
+				for (int i = 0; i < outNum; i++)
+				{
+					int outN = getOutVertID(now, pred, i);
+					if (!nodes.count(outN))
+					{
+						q.push(outN);
+						nodes.insert(outN);
+						nextlevel++;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int pred : pred_set)
+			{
+				int outNum = getOutSize(now, pred);
+				for (int i = 0; i < outNum; i++)
+				{
+					int outN = getOutVertID(now, pred, i);
+					if (!nodes.count(outN))
+					{
+						q.push(outN);
+						nodes.insert(outN);
+						nextlevel++;
+					}
+				}
+			}
+		}
+	}
+	return ans;
 }
 
 /**
@@ -1997,7 +2065,107 @@ vector<vector<int>> PathQueryHandler::WCC(bool directed, const std::vector<int> 
 **/
 double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set)
 {
-	return 0;
+	cout << "local clusteringCoeff" << endl;
+	if (pred_set.empty())
+		return -1;
+	double lcc;
+	int dins = 0, indins = 0;
+	if (directed)
+	{
+		unordered_set<int> inSet, neighbors;
+		for (int pred : pred_set)
+		{
+			int inSize = getInSize(uid, pred);
+			for (int i = 0; i < inSize; i++)
+			{
+				inSet.insert(getInVertID(uid, pred, i));
+				neighbors.insert(getInVertID(uid, pred, i));
+			}
+		}
+
+		for (int pred : pred_set)
+		{
+			int outSize = getOutSize(uid, pred);
+			for (int j = 0; j < outSize; j++)
+			{
+				int outNode = getOutVertID(uid, pred, j);
+				if (!neighbors.count(outNode))
+					neighbors.insert(outNode);
+				for (int pd : pred_set) // all out neighbors
+				{
+					int outOutSize = getOutSize(outNode, pd);
+					for (int k = 0; k < outOutSize; k++)
+					{
+						int outOutNode = getOutVertID(outNode, pd, k);
+						if (inSet.count(outOutNode))
+							dins++; // directed neighbors size
+					}
+				}
+			}
+		}
+		int ns = neighbors.size();
+		indins = ns * (ns - 1); // indirected neighbors size
+		if (indins == 0)
+		{
+			lcc = 0;
+		}
+		else
+		{
+			lcc = (double)dins / indins;
+		}
+	}
+	else
+	{
+		unordered_set<int> neiSet;
+		for (int pred : pred_set)
+		{
+			int inSize = getInSize(uid, pred);
+			for (int i = 0; i < inSize; i++)
+			{
+				neiSet.insert(getInVertID(uid, pred, i));
+			}
+			int outSize = getOutSize(uid, pred);
+			for (int j = 0; j < outSize; j++)
+			{
+				neiSet.insert(getOutVertID(uid, pred, j));
+			}
+		}
+
+		for (int neiNode : neiSet)
+		{
+			unordered_set<int> nbrs;
+			for (int pred : pred_set)
+			{
+				int outOutSize = getOutSize(neiNode, pred);
+				for (int k = 0; k < outOutSize; k++)
+				{
+					nbrs.insert(getOutVertID(neiNode, pred, k));
+				}
+				int outInSize = getInSize(neiNode, pred);
+				for (int k = 0; k < outInSize; k++)
+				{
+					nbrs.insert(getInVertID(neiNode, pred, k));
+				}
+			}
+			for (int outOutNode : nbrs)
+			{
+				if (neiSet.find(outOutNode) != neiSet.end())
+					dins++;
+			}
+		}
+		dins /= 2; // directed neighbors size (de-duplication)
+		int ns = neiSet.size();
+		indins = ns * (ns - 1) / 2; // indirected neighbors size
+		if (indins == 0)
+		{
+			lcc = 0;
+		}
+		else
+		{
+			lcc = (double)dins / indins;
+		}
+	}
+	return lcc;
 }
 
 /**
@@ -2009,7 +2177,74 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 **/
 double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &pred_set)
 {
-	return 0;
+	cout << "global clusteringCoeff" << endl;
+	if (pred_set.empty())
+		return -1;
+	int n = getVertNum();
+	int nclt = 0; // number of closed triplet
+	int nopt = 0; // number of open triplet
+	double gcc;
+
+	for (size_t curnode = 0; curnode < n; curnode++)
+	{
+		unordered_set<int> neiSet;
+		for (int pred : pred_set)
+		{
+			int inSize = getInSize(curnode, pred);
+			for (int j = 0; j < inSize; j++)
+			{
+				neiSet.insert(getInVertID(curnode, pred, j));
+			}
+			int outSize = getOutSize(curnode, pred);
+			for (int j = 0; j < outSize; j++)
+			{
+				neiSet.insert(getOutVertID(curnode, pred, j));
+			}
+		}
+
+		for (int neiNode : neiSet)
+		{
+			unordered_set<int> neighbors;
+			for (int pred : pred_set)
+			{
+				int outOutSize = getOutSize(neiNode, pred);
+				for (int k = 0; k < outOutSize; k++)
+				{
+					neighbors.insert(getOutVertID(neiNode, pred, k));
+				}
+				int outInSize = getInSize(neiNode, pred);
+				for (int k = 0; k < outInSize; k++)
+				{
+					neighbors.insert(getInVertID(neiNode, pred, k));
+				}
+			}
+			for (int outOutNode : neighbors)
+			{
+				if (neiSet.find(outOutNode) != neiSet.end())
+				{
+					nclt++;
+				}
+				else
+				{
+					if (outOutNode == curnode)
+						continue;
+					nopt++;
+				}
+			}
+		}
+	}
+
+	nclt /= 2;
+	nopt /= 2;
+	if (nclt + nopt == 0)
+	{
+		gcc = 0;
+	}
+	else
+	{
+		gcc = (double)nclt / (nclt + nopt);
+	}
+	return gcc;
 }
 
 /**
