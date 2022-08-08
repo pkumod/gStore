@@ -93,7 +93,7 @@ struct ResultCmp
 					return false;
 				else	// error_value
 				{
-					printf("[ERROR]	Incomparable datatypes, result order is invalid.\n");
+					// printf("[ERROR]	Incomparable datatypes, result order is invalid.\n");
 					return true;	// Arbitrary
 				}
 			}
