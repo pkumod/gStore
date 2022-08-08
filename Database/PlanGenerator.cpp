@@ -107,7 +107,7 @@ unsigned PlanGenerator::GetCandidateSizeFromWholeDB(unsigned int var_id) const {
 		}
 	}
 
-	return max((not_literal ? limitID_entity : limitID_entity + limitID_literal)/limitID_predicate, (unsigned)1);
+	return max((not_literal ? limitID_entity : limitID_entity + limitID_literal), (unsigned)1);
 }
 
 unsigned PlanGenerator::GetSampleSize(unsigned int id_cache_size) {
