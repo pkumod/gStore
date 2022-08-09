@@ -626,7 +626,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						fillCandList(sparql_query, dep, encode_varset);
 						#else
-						fillCandList(bgp_query_vec, dep, encode_varset);
+						if (dep == 0)
+							fillCandList(bgp_query_vec, dep, encode_varset, result);
+						else
+							fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
 					// }
 					long tv_fillcand = Util::get_cur_time();
@@ -3980,9 +3983,11 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pat
 	return success;
 }
 
-void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset)
+void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset, TempResultSet *fill_result)
 {
-	TempResultSet *&last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
+	TempResultSet *last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
+	if (dep == 0 && fill_result)
+		last_result = fill_result;
 	if (!last_result || last_result->results.empty() || (dep == 0 && last_result->results.size() > 1000000)) return;
 
 	for (unsigned j = 0; j < bgp_query_vec.size(); j++)
