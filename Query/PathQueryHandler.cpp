@@ -2069,7 +2069,7 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 	if (pred_set.empty())
 		return -1;
 	double lcc;
-	int dins = 0, indins = 0;
+	int dins = 0, maxns = 0;
 	if (directed)
 	{
 		unordered_set<int> inSet, neighbors;
@@ -2103,15 +2103,15 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 				}
 			}
 		}
-		int ns = neighbors.size();
-		indins = ns * (ns - 1); // indirected neighbors size
-		if (indins == 0)
+		int ns = neighbors.size(); // indirected neighbors size
+		maxns = ns * (ns - 1); 
+		if (maxns == 0)
 		{
 			lcc = 0;
 		}
 		else
 		{
-			lcc = (double)dins / indins;
+			lcc = (double)dins / maxns;
 		}
 	}
 	else
@@ -2154,15 +2154,15 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 			}
 		}
 		dins /= 2; // directed neighbors size (de-duplication)
-		int ns = neiSet.size();
-		indins = ns * (ns - 1) / 2; // indirected neighbors size
-		if (indins == 0)
+		int ns = neiSet.size(); // indirected neighbors size
+		maxns = ns * (ns - 1) / 2;  
+		if (maxns == 0)
 		{
 			lcc = 0;
 		}
 		else
 		{
-			lcc = (double)dins / indins;
+			lcc = (double)dins / maxns;
 		}
 	}
 	return lcc;
@@ -2233,7 +2233,6 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 			}
 		}
 	}
-
 	nclt /= 2;
 	nopt /= 2;
 	if (nclt + nopt == 0)
