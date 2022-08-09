@@ -2898,6 +2898,7 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 
 		if (!_get) 
 		{
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -2937,6 +2938,7 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 			txn->SetErrorType(TransactionErrorType::SUB_S);
 		if (!_get) 
 		{
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -2973,6 +2975,7 @@ KVstore::getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlis
 		}
 
 		if(_len == 0) {
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3005,7 +3008,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) 
 		{
-
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3046,6 +3049,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 
 		if (!_get) 
 		{
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3085,6 +3089,7 @@ KVstore::getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlis
 		}
 		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
 		if(_len == 0) {
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3120,6 +3125,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if (!_get) {
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3129,6 +3135,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		//if (_result == -1) 
 		if (_result == INVALID) 
 		{
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3172,6 +3179,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 
 		if (!_get) 
 		{
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3212,6 +3220,7 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		// for(int i = 0; i < _len / sizeof(unsigned); i++) cerr << _tmp[i] << " ";
 		// cerr << endl;
 		if(_len == 0) {
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3220,9 +3229,9 @@ KVstore::getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_
 		//if (_result == -1) 
 		if (_result == INVALID) 
 		{
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
-			//delete[] _tmp;
 			return false;
 		}
 		unsigned _offset = _tmp[4 + 2 * _result];
@@ -3269,6 +3278,7 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if (!_get) {
+			delete[] _tmp;
 			_preid_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3318,6 +3328,7 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 			txn->SetErrorType(TransactionErrorType::SUB_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_preid_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3356,6 +3367,7 @@ KVstore::getpreIDobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _pre
 		}
 		//cout << ".........._tmp:                                                 " <<  _tmp << endl;
 		if(_len == 0) {
+			delete[] _tmp;
 			_preid_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3524,7 +3536,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if (!_get) {
-			
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3562,6 +3574,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3598,6 +3611,7 @@ KVstore::getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlis
 		}
 
 		if(_len == 0) {
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3632,6 +3646,7 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 		unsigned* _tmp = (unsigned*)char_tmp;
 
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3672,6 +3687,7 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3707,6 +3723,7 @@ KVstore::getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlis
 		}
 
 		if(_len == 0) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3742,6 +3759,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3791,6 +3809,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3830,6 +3849,7 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 		}
 
 		if(_len == 0) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3890,6 +3910,7 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
+			delete[] _tmp;
 			_preid_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3938,6 +3959,7 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 			txn->SetErrorType(TransactionErrorType::OBJ_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_preid_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -3973,6 +3995,7 @@ KVstore::getpreIDsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _pre
 		}
 
 		if(_len == 0) {
+			delete[] _tmp;
 			_preid_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4098,6 +4121,7 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4137,6 +4161,7 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 			txn->SetErrorType(TransactionErrorType::PRE_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4177,6 +4202,7 @@ KVstore::getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, un
 		}
 
 		if(_len == 0){
+			delete[] _tmp;
 			_subidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4205,6 +4231,7 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 		if (!_get) {
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4246,6 +4273,7 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 
 		//cout << "getobjIDlistBypreID:.............................." << _get << endl;
 		if (!_get) {
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4286,6 +4314,7 @@ KVstore::getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, un
 		}
 
 		if(_len == 0){
+			delete[] _tmp;
 			_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4321,6 +4350,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 #endif
 		if (!_get) 
 		{
+			delete[] _tmp;
 			_subid_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4366,6 +4396,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 			txn->SetErrorType(TransactionErrorType::PRE_S);
 
 		if (!_get) {
+			delete[] _tmp;
 			_subid_objidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4406,6 +4437,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 		}
 		//bool ret = true;
 		if(_len == 0) {
+			delete[] _tmp;
 			_subid_objidlist = NULL;
 			_list_len = 0;
 			//ret = false;
@@ -4436,12 +4468,14 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 	if(txn == nullptr)
 	{
 		if (!this->getpreIDlistBysubID(_subid, list1, len1, true)) {
+			delete[] list1, delete[] list2;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
 
 		if (!this->getpreIDlistByobjID(_objid, list2, len2, true)) {
+			delete[] list1, delete[] list2;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4521,12 +4555,14 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 	else
 	{
 		if (!this->getpreIDlistBysubID(_subid, list1, len1, true, txn)) {
+			delete[] list1, delete[] list2;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
 		}
 
 		if (!this->getpreIDlistByobjID(_objid, list2, len2, true, txn)) {
+			delete[] list1, delete[] list2;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
@@ -4578,6 +4614,7 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 			_len = _values_len * sizeof(unsigned);
 		}
 		if(_len == 0) {
+			delete[] _tmp;
 			_preidlist = NULL;
 			_list_len = 0;
 			return false;
