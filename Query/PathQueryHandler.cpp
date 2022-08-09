@@ -2440,7 +2440,93 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 **/
 vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set)
 {
-	return vector<int>();
+	int verNum = getVertNum();
+	set<int> cands;
+	for (int i = 0; i < verNum; ++i)
+		cands.insert(i);
+	for (auto uid : uid_ls)
+	{
+		if (cands.find(uid) == cands.end())
+			return vector<int>();
+		cands.erase(uid);
+		set<int> neis;
+		for (auto pred : pred_set)
+		{
+			int outNum = getOutSize(uid, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(uid, pred, i);
+				if (cands.find(to) != cands.end())
+					neis.insert(to);
+			}
+			int inNum = getInSize(uid, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(uid, pred, i);
+				if (cands.find(to) != cands.end())
+					neis.insert(to);
+			}
+		}
+		cands = neis;
+	}
+
+	class Searcher
+	{
+	public:
+		int bestSz;
+		set<int> bestSol;
+		PathQueryHandler &handler;
+		const set<int> &nodes;
+		const vector<int> &pred_set;
+		Searcher(PathQueryHandler &_handler, const set<int> &_nodes, const vector<int> &_pred_set)
+			: bestSz(0), handler(_handler), nodes(_nodes), pred_set(_pred_set)
+		{
+			dfs(nodes, set<int>());
+		}
+		void dfs(set<int> cands, set<int> cliqs)
+		{
+			if (cands.size() + cliqs.size() <= bestSz)
+				return;
+			if (!cands.size())
+			{
+				bestSol = cliqs;
+				bestSz = cliqs.size();
+				return;
+			}
+			for (auto iter = cands.begin(); iter != cands.end(); iter++)
+			{
+				auto cand = *iter;
+				set<int> neis;
+				for (auto pred : pred_set)
+				{
+					int outNum = handler.getOutSize(cand, pred);
+					for (int i = 0; i < outNum; ++i)
+					{
+						int to = handler.getOutVertID(cand, pred, i);
+						if (to > cand && cands.find(to) != cands.end())
+							neis.insert(to);
+					}
+					int inNum = handler.getInSize(cand, pred);
+					for (int i = 0; i < inNum; ++i)
+					{
+						int to = handler.getInVertID(cand, pred, i);
+						if (to > cand && cands.find(to) != cands.end())
+							neis.insert(to);
+					}
+				}
+				cliqs.insert(cand);
+				dfs(neis, cliqs);
+				cliqs.erase(cand);
+			}
+		}
+	};
+	Searcher searcher(*this, cands, pred_set);
+	vector<int> res;
+	for (auto uid : uid_ls)
+		res.push_back(uid);
+	for (auto ele : searcher.bestSol)
+		res.push_back(ele);
+	return res;
 }
 
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
