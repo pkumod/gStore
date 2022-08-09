@@ -3814,7 +3814,7 @@ GeneralEvaluation::vertVec2JSON(const std::vector<int> &v, std::stringstream &ss
 	int vLen = v.size();
 	for (int i = 0; i < vLen; i++)
 	{
-		ss << kvstore->getStringByID(v[i]);
+		ss << '\"' << kvstore->getStringByID(v[i]) << '\"';
 		if (i != vLen - 1)
 			ss << ",";
 	}
