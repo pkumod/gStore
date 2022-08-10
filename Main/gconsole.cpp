@@ -23,54 +23,17 @@ using namespace std;
    3. use GNU Readline for line editing/history/completion feature
 */
 
+/* **************************************************************** */
+/*                                                                  */
+/*                            config                                */
+/*                                                                  */
+/* **************************************************************** */
 //#define _GCONSOLE_TRACE
-
-// param: <cmd> <arg>: <arg>
-// eg: connect ip port usr_name pswd, then param is (ip port usr_name pswd)
-int help_handler(const vector<string> &);
-int version_handler(const vector<string> &);
-int quit_handler(const vector<string> &);
-int create_handler(const vector<string> &);
-int drop_handler(const vector<string> &);
-int settings_handler(const vector<string> &);
-int query_handler(const vector<string> &);
-int show_handler(const vector<string> &);
-int use_handler(const vector<string> &);
-int clear_handler(const vector<string> &);
-int pwd_handler(const vector<string> &);
-int backup_handler(const vector<string> &);
-int restore_handler(const vector<string> &);
-int flushpriv_handler(const vector<string> &);
-int pusr_handler(const vector<string> &);
-int setpswd_handler(const vector<string> &);
-int setpriv_handler(const vector<string> &);
-int addusr_handler(const vector<string> &);
-int delusr_handler(const vector<string> &args);
-int pdb_handler(const vector<string> &);
-int raw_query_handler(string query);
-int print_arg_handler(const vector<string> &);
-
-int enter_pswd(string prompt);
-char *dupstr(const char *);
-char *stripwhite(char *);
-string stripwhite(const string &s);
-string rm_comment(string line);
-void replace_cr(string &line);
-int find_command(const char *name);
-void initialize_readline();
-int execute_line(char *);
-bool parse_arguments(char *, vector<string> &);
-int save_history();
-int load_history();
-void print_lowbits(unsigned priv, int sz);
-
-int silence_sysdb_query(const string &query, ResultSet &_rs);
-vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs);
-int read_pswd(string usr_name, string &pswd);
-unsigned read_priv(string usr, string db_name);
-unsigned get_priv(string usr, string db_name);
+//#define _GCONSOLE_DEBUG
+#define _GCONSOLE_SHOW_SYSDB_QUERY
 
 #define INIT_CONF_FILE "conf.ini"
+#define MAX_WRONG_PSWD_TIMES 7
 #define PRIVILEGE_NUM 8
 // 0:root
 // 1:query
@@ -102,9 +65,39 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 23
+#define TOTAL_COMMAND_NUM 25
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
-#define MAX_WRONG_PSWD_TIMES 7
+
+// param: <cmd> <arg>: <arg>
+// eg: connect ip port usr_name pswd, then param is (ip port usr_name pswd)
+int help_handler(const vector<string> &);
+int version_handler(const vector<string> &);
+int settings_handler(const vector<string> &);
+int quit_handler(const vector<string> &);
+int clear_handler(const vector<string> &);
+int pwd_handler(const vector<string> &);
+
+int create_handler(const vector<string> &);
+int drop_handler(const vector<string> &);
+int show_handler(const vector<string> &);
+int use_handler(const vector<string> &);
+int backup_handler(const vector<string> &);
+int restore_handler(const vector<string> &);
+int query_handler(const vector<string> &);
+int raw_query_handler(string query);
+
+int flushpriv_handler(const vector<string> &);
+int pusr_handler(const vector<string> &);
+int pdb_handler(const vector<string> &);
+int showdbs_handler(const vector<string> &);
+
+int setpswd_handler(const vector<string> &);
+int setpriv_handler(const vector<string> &);
+int addusr_handler(const vector<string> &);
+int delusr_handler(const vector<string> &);
+int showusrs_handler(const vector<string> &);
+
+// int print_arg_handler(const vector<string> &);
 
 typedef struct
 {
@@ -119,35 +112,38 @@ COMMAND commands[] =
 	{
 		///*
 		// database op
-		{"query", query_handler, "\tAnswer SPARQL query(s) in file.", "QUERY <; separated SPARQL file>;", QUERY_PRIVILEGE_BIT}, // file query
-		{"create", create_handler, "\tBuild a database from a dataset or create an empty database.", "CREATE <database_name> [<nt_file_path>];", 0},
-		{"use", use_handler, "\tSet current database.", "USE <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
-		{"drop", drop_handler, "\tDrop a database according to the given path.", "DROP <database_name>;", ALL_PRIVILEGE_BIT},
-		{"show", show_handler, "\tShow the database name which is used now.", "SHOW DATABASES;\tSHOW [<database_name>] [-n <displayed_triple_num>];", QUERY_PRIVILEGE_BIT},
-		{"backup", backup_handler, "\tBackup current database.", "BACKUP;", BACKUP_PRIVILEGE_BIT},
-		{"restore", restore_handler, "\tRestore a database backup.", "RESTORE <database_name>;", RESTORE_PRIVILEGE_BIT},
+		{"query", query_handler, "\tAnswer SPARQL query(s) in file.", "query <; separated SPARQL file>;", QUERY_PRIVILEGE_BIT}, // file query
+		{"create", create_handler, "\tBuild a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
+		{"use", use_handler, "\tSet current database.", "use <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
+		{"drop", drop_handler, "\tDrop a database according to the given path.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
+		{"show", show_handler, "\tShow the database name which is used now.", "show [<database_name>] [-n <displayed_triple_num>];", QUERY_PRIVILEGE_BIT},
+		{"showdbs", showdbs_handler, "\tDisplay all databases the current user has query privilege on.", "showdbs;", 0},
+		{"backup", backup_handler, "\tBackup current database.", "backup;", BACKUP_PRIVILEGE_BIT},
+		{"restore", restore_handler, "\tRestore a database backup.", "restore <database_name>;", RESTORE_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "\tDisplay current database name.", "pdb;", 0},
 
 		// id and usr manage
-		{"flushpriv", flushpriv_handler, "\tFlush priv for current user, updating the in-memory structure.", "FLUSHPRIV;", 0},
+		{"flushpriv", flushpriv_handler, "\tFlush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
 		{"pusr", pusr_handler, "\tDisplay user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
 		{"setpswd", setpswd_handler, "\tSet your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"setpriv", setpriv_handler, "\tSet user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
 		{"addusr", addusr_handler, "\tAdd usr.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"delusr", delusr_handler, "\tDel usr.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"showusrs", showusrs_handler, "\tShow all users and privilege for each user.", "showusrs;", ROOT_PRIVILEGE_BIT},
 
 		// other
-		{"cancel", 0, "\tQuit current input command.", "enter \"CANCEL;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
-		{"clear", clear_handler, "\tClear the screen.", "clear;", 0},
-		{"quit", quit_handler, "\tQuit this console.", "QUIT;", 0},
-		{"help", help_handler, "\tDisplay this text.", "HELP; or ?;", 0},
-		{"?", help_handler, "\tSynonym for \"help\".", "HELP; or ?;", 0},
+		{"cancel", 0, "\tQuit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
+		{"quit", quit_handler, "\tQuit this console.", "quit;", 0},
+		{"help", help_handler, "\tDisplay this text.", "help; or ?;", 0},
+		{"?", help_handler, "\tSynonym for \"help\".", "help; or ?;", 0},
 		{"settings", settings_handler, "\tDisplay settings.", "settings [<conf_name>];", 0},
 		{"version", version_handler, "\tDisplay gstore core version.", "version;", 0},
 
 		// linux shell cmd
-		{"pwd", pwd_handler, "\tPrint name of current/working directory.", "PWD;", 0},
+		{"pwd", pwd_handler, "\tPrint name of current/working directory.", "pwd;", 0},
+		{"clear", clear_handler, "\tClear the screen.", "clear;", 0},
 
+		// raw_query
 		{"raw_query", 0, "Support enter sparql query directedly in gconsole.",
 		 "Begin with SELECT, INSERT, DELETE, PREFIX or BASE. For more about SPARQL, see https://www.w3.org/TR/sparql11-query/ and http://www.gstore.cn/pcsite/index.html#/documentation", QUERY_PRIVILEGE_BIT},
 		// handler: int raw_query_handler(string query);
@@ -171,35 +167,25 @@ COMMAND commands[] =
 		*/
 };
 
-bool gconsole_done = false; // 1: quit
-bool gconsole_eoq = false;	// 1: current command input done
-// bool gconsole_inputing = false; // 1: still inputing current command: control prompt
-
-FILE *output = stdout;
-string usrname, stdpswd;
-Database *current_database = NULL;
-unsigned current_privilege_bitset = 0;	 // when no current_database: 0, i.e. no priv
-int current_cmd_offset = -1;			 // current_cmd offset in commands
-unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, avoiding fetch from sysdb everytime
-
-string db_home = ".";
-string gstore_version, root_username, root_password;
-
-void print_enter_help_msg()
-{
-	cout << "Gstore Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;
-	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl;
-	cout << "Copyright (c) 2018, 2022, pkumod and/or its affiliates." << endl;
-	cout << "" << endl;
-	cout << "Usage: bin/gconsole [OPTIONS]" << endl;
-	cout << "  -?, --help          Display this help and exit." << endl;
-	cout << "  -u, --user          username. " << endl;
-	cout << "  " << endl;
-	cout << "Supported command in gconsole: Type \"?\" or \"help\" in the console to see info of all commands." << endl;
-	cout << "  " << endl;
-	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl
+/* **************************************************************** */
+/*                                                                  */
+/*                    macro and declaration                         */
+/*                                                                  */
+/* **************************************************************** */
+#define PRINT_ENTER_HELP_MSG                                                                                                 \
+	cout << "Gstore Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
+	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl; \
+	cout << "Copyright (c) 2018, 2022, pkumod and/or its affiliates." << endl;                                               \
+	cout << "" << endl;                                                                                                      \
+	cout << "Usage: bin/gconsole [OPTIONS]" << endl;                                                                         \
+	cout << "  -?, --help          Display this help and exit." << endl;                                                     \
+	cout << "  -u, --user          username. " << endl;                                                                      \
+	cout << "  " << endl;                                                                                                    \
+	cout << "Supported command in gconsole: Type \"?\" or \"help\" in the console to see info of all commands." << endl;     \
+	cout << "  " << endl;                                                                                                    \
+	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl                                  \
 		 << endl;
-}
+
 #define PRINT_WRONG_USG      \
 	cout << "Wrong usage.\n" \
 		 << endl;
@@ -215,6 +201,46 @@ void print_enter_help_msg()
 		cout << "Current database not selected. Please select it first, through \"USE <database_name>\"." << endl; \
 		return -1;                                                                                                 \
 	}
+
+char *dupstr(const char *);
+char *stripwhite(char *);
+string stripwhite(const string &s);
+string rm_comment(string line);
+void replace_cr(string &line);
+int find_command(const char *name);
+int execute_line(char *);
+bool parse_arguments(char *, vector<string> &);
+
+void initialize_readline();
+int save_history();
+int load_history();
+
+int enter_pswd(string prompt);
+int silence_sysdb_query(const string &query, ResultSet &_rs);
+vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs);
+int read_pswd(string usr_name, string &pswd);
+unsigned read_priv(string usr, string db_name);
+unsigned get_priv(string usr, string db_name);
+
+/* **************************************************************** */
+/*                                                                  */
+/*                    global var and main                           */
+/*                                                                  */
+/* **************************************************************** */
+bool gconsole_done = false; // 1: quit
+bool gconsole_eoq = false;	// 1: current command input done
+// bool gconsole_inputing = false; // 1: still inputing current command: control prompt
+
+// FILE *output = stdout;
+string usrname, stdpswd;
+Database *current_database = NULL;
+unsigned current_privilege_bitset = 0;	 // when no current_database: 0, i.e. no priv
+int current_cmd_offset = -1;			 // current_cmd offset in commands
+unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, avoiding fetch from sysdb everytime
+
+string db_home = ".";
+string gstore_version, root_username, root_password;
+
 int main(int argc, char **argv)
 {
 	Util util; // This is needed for database loading(Database_instance.load()) and other Util static member fetching situation
@@ -239,9 +265,9 @@ int main(int argc, char **argv)
 		fin.close();
 
 #ifdef _GCONSOLE_TRACE
-		cout << "root_username:" << root_username << endl;
-		cout << "root_password:" << root_password << endl;
-		cout << "gstore_version:" << gstore_version << endl;
+		cout << "[root_username:]" << root_username << endl;
+		cout << "[root_password:]" << root_password << endl;
+		cout << "[gstore_version:]" << gstore_version << endl;
 #endif //_GCONSOLE_TRACE
 	}
 
@@ -249,7 +275,7 @@ int main(int argc, char **argv)
 	{
 		if ((strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
 		{
-			print_enter_help_msg();
+			PRINT_ENTER_HELP_MSG
 			return 0;
 		}
 		if (strcmp(argv[1], "--version") == 0)
@@ -261,7 +287,7 @@ int main(int argc, char **argv)
 	if ((argc != 1 && argc != 3) || (argc == 3 && strcmp("-u", argv[1]) && strcmp("--user", argv[1]) == 0))
 	{
 		PRINT_WRONG_USG
-		print_enter_help_msg();
+		PRINT_ENTER_HELP_MSG
 		return 0;
 	}
 
@@ -305,8 +331,10 @@ int main(int argc, char **argv)
 			{
 				stdpswd = root_password;
 			}
-			// cout << stdpswd << endl;
 		}
+#ifdef _GCONSOLE_TRACE
+		cout << "[stdpswd:]" << stdpswd << endl;
+#endif //_GCONSOLE_TRACE
 		if (stdpswd.empty())
 		{
 			cout << "Warn: pswd for you(" << usrname << ") is empty!" << endl;
@@ -398,6 +426,75 @@ int main(int argc, char **argv)
 /*                                                                  */
 /* **************************************************************** */
 
+// implement redirect stdout in class: exception safety, RAII
+// destructors of all objects are ensured to be called when exception occurs(ensured by compiler)
+// (definition explain: if <des> is descriptor to <file>, then we call <des>'s refer is <file>)
+// redirect: redirect descriptor 1's refer ori_file to file(func's param)(and push ori_file to static stk top)
+// destruct: restore descriptor 1's refer to stk top(and pop stk) for redirect_cnt times, fflush at each restore
+// static stk design ensures when there's no RedirectStdout instance, descriptor 1's refer is stdout
+class RedirectStdout
+{
+	static stack<int> ori_file_stk;
+	int redirect_cnt = 0;
+
+public:
+	RedirectStdout() : redirect_cnt(0)
+	{
+	}
+
+	RedirectStdout(const char *file, int append = 0) : redirect_cnt(0)
+	{
+		redirect(file, append);
+	}
+
+	/* redirect descriptor 1's refer ori_file to file(and push ori_file to static stk top) */
+	// append: if set, then open file with |O_APPEND
+	int redirect(const char *file, int append = 0)
+	{
+		// TODO: check these syscall's return value and return accordingly
+		// now 1 is descriptor to ori_file(if stk is empty, ori_file is STDOUT; else ori_file is stk.top())
+
+		int pfd;
+		if (append)
+		{
+			pfd = open(file, O_WRONLY | O_CREAT | O_APPEND, 0777);
+		}
+		else
+		{
+			pfd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+		}
+		// now pfd is descriptor to file
+		int saved = dup(1); // now 1 and saved both are descriptor to ori_file(1 previously refer to)
+		// int dup2(int oldfd, int newfd);
+		dup2(pfd, 1); // would close descriptor 1 first, then now 1 and pfd both are descriptor to file(pfd previously refer to)
+		close(pfd);	  // close descriptor pfd
+
+		ori_file_stk.push(saved);
+		// now saved(stk.top()) is descriptor to ori_file, 1 is descriptor to file
+
+		++redirect_cnt;
+		return 0;
+	}
+
+	/* fflush and restore descriptor 1's refer to stk top(and pop stk) */
+	~RedirectStdout()
+	{
+		// TODO: check these syscall's return value
+		while (redirect_cnt--)
+		{
+			fflush(stdout); // NOTE that flush the buffer is necessary to indeed push content into file
+
+			int saved = ori_file_stk.top();
+			ori_file_stk.pop();
+			dup2(saved, 1); // would close descriptor 1 first, then now 1 and saved both are descriptor to "saved previously refer to"
+			close(saved);	// close descriptor saved
+
+			// now only 1 is descriptor to "saved previously refer to"
+		}
+	}
+};
+stack<int> RedirectStdout::ori_file_stk;
+
 // RAII
 class HideStdinDisplay
 {
@@ -468,94 +565,13 @@ dupstr(const char *s)
 	return r;
 }
 
-// print lowest sz bits of priv
-void print_lowbits(unsigned priv, int sz)
-{
-	for (int i = sz - 1; i >= 0; --i)
-	{
-		cout << (((1 << i) & priv) != 0);
-	}
-}
-// fetch usr priv on db_name from sysdb. return priv
-// return -1u on fail
-unsigned read_priv(string usr, string db_name)
-{
-	unsigned priv = 0;
-	string query = "SELECT ?p WHERE{<" + usr + "> ?p <" + db_name + "> .}";
-	ResultSet rs;
-	if (silence_sysdb_query(query, rs))
-	{
-		SYSDB_QUERY_FAILED(query)
-	}
-	for (unsigned i = 0; i < rs.ansNum; ++i)
-	{
-		string privstr = rs.answer[i][0];
-		cout << privstr << endl;
-		if (privstr2bitset.count(privstr) == 0)
-		{
-			cout << "Strange priv: " << privstr << ".\n Please check system db contents." << endl;
-			return -1;
-		}
-		priv |= privstr2bitset.at(privstr);
-	}
-	cout << "[priv in binary]:0b";
-	print_lowbits(priv, 8);
-	cout << endl;
-	return priv;
-}
-// return priv bitset of usr on db_name
-// check db_name exist or not
-unsigned get_priv(string usr, string db_name)
-{
-	// db not exist
-	if (access(string(db_name + ".db").c_str(), F_OK))
-	{
-		cout << "Database " << db_name << " does not exist." << endl;
-		return -1u;
-	}
-
-	if (usr == root_username)
-	{
-		return ROOT_PRIVILEGE_BIT;
-	}
-	if (db2priv.count(db_name))
-	{
-		return db2priv[db_name];
-	}
-
-	unsigned priv = read_priv(usr, db_name);
-	if (priv == -1u)
-	{
-		cout << "Read priv failed." << endl;
-		return -1u;
-	}
-	db2priv[db_name] = priv;
-	return priv;
-}
-// usrname has request_priv on db_name: return 0, else return -1;
-// db_name doesn't exist: return -1
-int check_priv(string db_name, unsigned request_priv)
-{
-	unsigned priv = get_priv(usrname, db_name);
-	if (priv == -1u)
-	{
-		return -1;
-	}
-	if (priv != ROOT_PRIVILEGE_BIT && (priv & request_priv) != request_priv)
-	{
-		cout << "Permission denied. Check your privilege with database: " << db_name << endl;
-		return -1;
-	}
-	return 0;
-}
-
 // Execute a command line. won't check priv
 // return value seems no use?
 int execute_line(char *line)
 {
-	//#ifdef _GCONSOLE_TRACE
+#ifdef _GCONSOLE_DEBUG
 	cout << "[exec:]" << line << endl;
-	//#endif //_GCONSOLE_TRACE
+#endif //_GCONSOLE_DEBUG
 
 	// whether cancel
 	int i = strlen(line) - 1;
@@ -577,8 +593,8 @@ int execute_line(char *line)
 	i = 0;
 	char *word = NULL;
 
-	// TODO: for redirected: only set var output, not used it yet!
 	// whether redirected: > or >>
+	RedirectStdout redirect;
 	bool is_redirected = false;
 	int j = strlen(line) - 1;
 	while (j > -1)
@@ -602,24 +618,26 @@ int execute_line(char *line)
 		{
 			j++;
 		}
-		cout << "The file is: " << (line + j) << endl;
+		cout << "Redirect output to file: " << (line + j) << endl;
 		// >>
 		if (i > 0 && line[i - 1] == '>')
 		{
-			output = fopen(line + j, "a+");
+			// output = fopen(line + j, "a+");
 			line[i - 1] = '\0';
+			redirect.redirect(line + j, 1); // redirect stdout
 		}
 		// >
 		else
 		{
-			output = fopen(line + j, "w+");
+			// output = fopen(line + j, "w+");
 			line[i] = '\0';
+			redirect.redirect(line + j); // redirect stdout
 		}
-		if (output == NULL)
-		{
-			cout << "Failed to open " << (line + j) << endl;
-			output = stdout;
-		}
+		// if (output == NULL)
+		// {
+		// 	cout << "Failed to open " << (line + j) << endl;
+		// 	output = stdout;
+		// }
 	}
 
 	// Isolate the command word.
@@ -645,7 +663,9 @@ int execute_line(char *line)
 	if ((current_cmd_offset = find_command(word)) == RAW_QUERY_CMD_OFFSET)
 	{
 		line[i] = recover_ch; // recover line: line is total sparql
-		cout << "The query is: " << line << endl;
+#ifdef _GCONSOLE_DEBUG
+		cout << "[The query is: ]" << line << endl;
+#endif //_GCONSOLE_DEBUG
 
 		ret = raw_query_handler(line);
 	}
@@ -656,11 +676,11 @@ int execute_line(char *line)
 		{
 			cout << word << ": No such command for gconsole." << endl
 				 << endl;
-			if (output != stdout)
-			{
-				fclose(output);
-				output = stdout;
-			}
+			// if (output != stdout)
+			// {
+			// 	fclose(output);
+			// 	output = stdout;
+			// }
 			return -1;
 		}
 
@@ -688,11 +708,11 @@ int execute_line(char *line)
 			ret = -1;
 		}
 	}
-	if (output != stdout)
-	{
-		fclose(output);
-		output = stdout;
-	}
+	// if (output != stdout)
+	// {
+	// 	fclose(output);
+	// 	output = stdout;
+	// }
 	cout << endl;
 	return ret;
 }
@@ -726,8 +746,7 @@ int find_command(const char *name)
 }
 
 // Strip whitespace from the start and end of STRING. Return a pointer into STRING.
-char *
-stripwhite(char *string)
+char *stripwhite(char *string)
 {
 	char *s, *t;
 
@@ -775,7 +794,6 @@ bool parse_arguments(char *word, vector<string> &args)
 			{
 				word[++i] = '\0';
 				args.push_back(string(word));
-				// cout << args.size() - 1 << '\t' << args.back() << endl; //debug
 				word[i] = tmp;
 				while (word[i] && whitespace(word[i]))
 				{
@@ -876,49 +894,128 @@ int load_history()
 	return 0;
 }
 
-// implement redirect stdout in class: exception safety, RAII
-// destructors of all objects are ensured to be called when exception occurs(ensured by compiler)
-// redirect stdout to file when constructing instance, restore when destructing
-// WARN: only one instance is allowed
-class RedirectStdout
+/* **************************************************************** */
+/*                                                                  */
+/*                  query system_db related                         */
+/*                                                                  */
+/* **************************************************************** */
+// has user:return 0, else return -1; query failed return -1
+int read_pswd(string usr_name, string &pswd)
 {
-	int saved;
-
-public:
-	// redirect stdout to file
-	RedirectStdout(const char *file)
+	ResultSet rs;
+	string sqarql = "select ?x where{<" + usr_name + "><has_password>?x.}";
+	if (silence_sysdb_query(sqarql, rs) == 0)
 	{
-		// TODO: check these syscall's return value
-		// now 1 is descriptor to STDOUT
-
-		int pfd = open(file, O_WRONLY | O_CREAT, 0777); // now pfd is descriptor to file
-		saved = dup(1);									// now 1 and saved both are descriptor to STDOUT
-		// int dup2(int oldfd, int newfd);
-		dup2(pfd, 1); // would close descriptor 1 first, then now 1 and pfd both are descriptor to file(pfd previously pointed to)
-		close(pfd);	  // close descriptor pfd
-
-		// now saved is descriptor to STDOUT, 1 is descriptor to file
+		if (rs.ansNum)
+		{
+			pswd = rs.answer[0][0];
+			// strip ""
+			pswd = pswd.substr(1, pswd.size() - 2);
+			return 0;
+		}
+		return -1;
 	}
-	// fflush and restore stdout
-	~RedirectStdout()
+	return -1;
+}
+
+// print lowest sz bits of priv
+void print_lowbits(unsigned priv, int sz)
+{
+	for (int i = sz - 1; i >= 0; --i)
 	{
-		// TODO: check these syscall's return value
-		// now saved is descriptor to STDOUT, 1 is descriptor to file
-
-		fflush(stdout); // NOTE that flush the buffer is necessary to indeed push content into file
-		dup2(saved, 1); // would close descriptor 1 first, then now 1 and saved both are descriptor to STDOUT(saved previously pointed to)
-		close(saved);	// close descriptor saved
-
-		// now only 1 is descriptor to STDOUT
+		cout << (((1 << i) & priv) != 0);
 	}
-};
+}
+
+// fetch usr priv on db_name from sysdb. return priv
+// return -1u on fail
+unsigned read_priv(string usr, string db_name)
+{
+	unsigned priv = 0;
+	string query = "SELECT ?p WHERE{<" + usr + "> ?p <" + db_name + "> .}";
+	ResultSet rs;
+	if (silence_sysdb_query(query, rs))
+	{
+		SYSDB_QUERY_FAILED(query)
+	}
+	for (unsigned i = 0; i < rs.ansNum; ++i)
+	{
+		string privstr = rs.answer[i][0];
+#ifdef _GCONSOLE_TRACE
+		cout << privstr << endl;
+#endif //_GCONSOLE_TRACE
+		if (privstr2bitset.count(privstr) == 0)
+		{
+			cout << "Strange priv: " << privstr << ".\n Please check system db contents." << endl;
+			return -1;
+		}
+		priv |= privstr2bitset.at(privstr);
+	}
+#ifdef _GCONSOLE_TRACE
+	cout << "[priv in binary]:0b";
+	print_lowbits(priv, 8);
+	cout << endl;
+#endif //_GCONSOLE_TRACE
+	return priv;
+}
+
+// return priv bitset of usr on db_name
+// check db_name exist or not
+unsigned get_priv(string usr, string db_name)
+{
+	// db not exist
+	if (access(string(db_name + ".db").c_str(), F_OK))
+	{
+		cout << "Database " << db_name << " does not exist." << endl;
+		return -1u;
+	}
+
+	if (usr == root_username)
+	{
+		return ROOT_PRIVILEGE_BIT;
+	}
+	if (usr == usrname && db2priv.count(db_name))
+	{
+		return db2priv[db_name];
+	}
+
+	unsigned priv = read_priv(usr, db_name);
+	if (priv == -1u)
+	{
+		cout << "Read priv failed." << endl;
+		return -1u;
+	}
+	if (usr == usrname)
+		db2priv[db_name] = priv;
+	return priv;
+}
+
+// usrname has request_priv on db_name: return 0, else return -1;
+// db_name doesn't exist: return -1
+int check_priv(string db_name, unsigned request_priv)
+{
+	unsigned priv = get_priv(usrname, db_name);
+	if (priv == -1u)
+	{
+		return -1;
+	}
+	if (priv != ROOT_PRIVILEGE_BIT && (priv & request_priv) != request_priv)
+	{
+		cout << "Permission denied. Check your privilege with database: " << db_name << endl;
+		return -1;
+	}
+	return 0;
+}
+
 // Query system db. Support multi query, separated by ;
-// for each query: return -1: failed. return 0: succeed.
+// for each query: return -1: failed, error report is done inside. return 0: succeed.
 // absorb query output to cout
 //! _rs NEED to be already sized to correct size: because vector<ResultSet> grow step by step is dangerous(key: for ResultSet, copy: LOW copy; destruct: release all pointers), refer to the comments in function body for further explaination
 vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 {
+#ifdef _GCONSOLE_SHOW_SYSDB_QUERY
 	cout << "\x1b[34m[sparql to sysdb]:" << query << "\x1b[0m" << endl;
+#endif //_GCONSOLE_SHOW_SYSDB_QUERY
 
 	vector<int> retv;
 
@@ -976,9 +1073,12 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 	return move(retv);
 }
 // single query
+// return -1: failed, error report is done inside. return 0: succeed.
 int silence_sysdb_query(const string &query, ResultSet &_rs)
 {
+#ifdef _GCONSOLE_SHOW_SYSDB_QUERY
 	cout << "\x1b[34m[sparql to sysdb]:" << query << "\x1b[0m" << endl;
+#endif //_GCONSOLE_SHOW_SYSDB_QUERY
 
 	int ret;
 
@@ -987,7 +1087,6 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 		RedirectStdout silence("bin/.gconsole_tmp_out");
 
 		Database system_db("system");
-		cout << "load system db ..." << endl;
 		system_db.load();
 
 		ret = system_db.query(query, _rs);
@@ -1007,24 +1106,6 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 		SYSDB_QUERY_FAILED(query)
 	}
 	return 0;
-}
-// has user:return 0, else return -1; query failed return -1
-int read_pswd(string usr_name, string &pswd)
-{
-	ResultSet rs;
-	string sqarql = "select ?x where{<" + usr_name + "><has_password>?x.}";
-	if (silence_sysdb_query(sqarql, rs) == 0)
-	{
-		if (rs.ansNum)
-		{
-			pswd = rs.answer[0][0];
-			// strip ""
-			pswd = pswd.substr(1, pswd.size() - 2);
-			return 0;
-		}
-		return -1;
-	}
-	return -1;
 }
 
 /* **************************************************************** */
@@ -1183,7 +1264,7 @@ int check_argc_or(int argc, int std_argc_num, ...)
 		return -1;                                             \
 	}
 
-int print_arg_handler(const vector<string> &args)
+/*int print_arg_handler(const vector<string> &args)
 {
 	cout << commands[current_cmd_offset].name << endl;
 	for (const auto &s : args)
@@ -1192,7 +1273,7 @@ int print_arg_handler(const vector<string> &args)
 	}
 	cout << endl;
 	return 0;
-}
+}*/
 
 // update db2priv for current usr
 int flushpriv_handler(const vector<string> &args)
@@ -1207,6 +1288,7 @@ int flushpriv_handler(const vector<string> &args)
 		}
 		else
 		{
+#ifdef _GCONSOLE_TRACE
 			if (p.second != priv)
 			{
 				cout << "\t[Update priv on " << p.first << "] before:";
@@ -1215,10 +1297,11 @@ int flushpriv_handler(const vector<string> &args)
 				print_lowbits(priv, 8);
 				cout << endl;
 			}
+#endif //_GCONSOLE_TRACE
 			p.second = priv;
 		}
 	}
-	cout << "[db2priv after flush priv]:";
+	cout << "[db2priv after flush priv:][db:priv]:";
 	for (auto p : db2priv)
 	{
 		cout << p.first << ":";
@@ -1244,12 +1327,13 @@ int raw_query_handler(string query)
 	}
 
 	ResultSet _rs;
-	FILE *ofp = output;
+	FILE *ofp = stdout;
+	// FILE *ofp = output;
 	bool export_flag = false;
-	if (ofp != stdout)
-	{
-		export_flag = true;
-	}
+	// if (ofp != stdout)
+	// {
+	// 	export_flag = true;
+	// }
 	long tv_begin = Util::get_cur_time();
 	int ret = current_database->query(query, _rs, ofp, true, export_flag, nullptr);
 	current_database->save();
@@ -1517,51 +1601,6 @@ int show_handler(const vector<string> &args)
 	CHECK_ARGC(4, 0, 1, 2, 3)
 	int argc = args.size();
 
-	// show databases: only show those with query priv, all if root
-	if (argc == 1 && args[0] == "databases")
-	{
-		string sparql;
-		if (usrname == root_username)
-		{
-			// display all db
-			sparql = "SELECT ?dbname ?usr WHERE { ?dbname <built_by> ?usr. }; SELECT ?dbname ?stat WHERE { ?dbname <database_status> ?stat. };";
-		}
-		else
-		{
-			// display those with query priv
-			string addstr = "<" + usrname + "> <has_query_priv> ?dbname. OPTIONAL{ ";
-			sparql = "SELECT ?dbname ?usr WHERE { " + addstr + "?dbname <built_by> ?usr. } }; SELECT ?dbname ?stat WHERE { " + addstr + "?dbname <database_status> ?stat. } };";
-		}
-		vector<ResultSet> rsv(2);
-		vector<int> retv = silence_sysdb_query(sparql, rsv);
-		if (retv.size() != 2 || retv[0] || retv[1])
-		{
-			SYSDB_QUERY_FAILED(sparql)
-		}
-		unordered_map<string, string> db2stat;
-
-		int sz = rsv[1].ansNum;
-		string **ans = rsv[1].answer;
-		for (int i = 0; i < sz; ++i)
-		{
-			db2stat[ans[i][0]] = ans[i][1];
-		}
-
-		cout << "database\tcreater\tstatus" << endl;
-		sz = rsv[0].ansNum;
-		ans = rsv[0].answer;
-		for (int i = 0; i < sz; ++i)
-		{
-			string dbname = ans[i][0];
-			cout << dbname << "\t" << ans[i][1];
-			if (db2stat.count(dbname))
-				cout << "\t" << db2stat[dbname];
-			cout << endl;
-		}
-
-		return 0;
-	}
-
 	string db_name;
 	string lines = "10";
 	// show
@@ -1627,7 +1666,6 @@ int show_handler(const vector<string> &args)
 
 	// do query here: because query would output MUCH process info to stdout
 	ResultSet re;
-	cout << "SELECT ?x ?y ?z WHERE{ ?x ?y ?z. } LIMIT " + lines << endl;
 	int ret = db->query("SELECT ?x ?y ?z WHERE{ ?x ?y ?z. } LIMIT " + lines, re); // limit query result to lines
 	if (ret != -100)															  // select query failed
 	{
@@ -1662,6 +1700,53 @@ int show_handler(const vector<string> &args)
 		// db->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 		delete db;
 	}
+	return 0;
+}
+
+int showdbs_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 0)
+
+	// only show those with query priv, all if root
+	string sparql;
+	if (usrname == root_username)
+	{
+		// display all db
+		sparql = "SELECT ?dbname ?usr WHERE { ?dbname <built_by> ?usr. }; SELECT ?dbname ?stat WHERE { ?dbname <database_status> ?stat. };";
+	}
+	else
+	{
+		// display those with query priv
+		string addstr = "<" + usrname + "> <has_query_priv> ?dbname. OPTIONAL{ ";
+		sparql = "SELECT ?dbname ?usr WHERE { " + addstr + "?dbname <built_by> ?usr. } }; SELECT ?dbname ?stat WHERE { " + addstr + "?dbname <database_status> ?stat. } };";
+	}
+	vector<ResultSet> rsv(2);
+	vector<int> retv = silence_sysdb_query(sparql, rsv);
+	if (retv.size() != 2 || retv[0] || retv[1])
+	{
+		SYSDB_QUERY_FAILED(sparql)
+	}
+	unordered_map<string, string> db2stat;
+
+	int sz = rsv[1].ansNum;
+	string **ans = rsv[1].answer;
+	for (int i = 0; i < sz; ++i)
+	{
+		db2stat[ans[i][0]] = ans[i][1];
+	}
+
+	cout << "\"database\"\t\"creater\"\tstatus\"" << endl;
+	sz = rsv[0].ansNum;
+	ans = rsv[0].answer;
+	for (int i = 0; i < sz; ++i)
+	{
+		string dbname = ans[i][0];
+		cout << dbname << "\t" << ans[i][1];
+		if (db2stat.count(dbname))
+			cout << "\t" << db2stat[dbname];
+		cout << endl;
+	}
+
 	return 0;
 }
 
@@ -1742,8 +1827,6 @@ int create_handler(const vector<string> &args)
 	}
 	add_priv_sparql += "}";
 
-	cout << add_priv_sparql << endl;
-
 	{
 		ResultSet rs;
 		if (silence_sysdb_query(add_priv_sparql, rs))
@@ -1791,7 +1874,7 @@ int drop_handler(const vector<string> &args)
 	system(cmd.c_str());
 	Util::delete_backuplog(db_name);
 
-	cout << "Database " << db_name << " dropped." << endl;
+	cout << "Database " << db_name << " dropped successfully." << endl;
 	return 0;
 }
 
@@ -1837,7 +1920,6 @@ int use_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string new_db_name = args[0];
-	cout << new_db_name << endl;
 	if (check_priv(new_db_name, commands[current_cmd_offset].privilege_bitset))
 	{
 		return -1;
@@ -1869,7 +1951,7 @@ int use_handler(const vector<string> &args)
 		delete pre_db;
 	}
 
-	cout << "Current database switch to " << new_db_name << "." << endl;
+	cout << "Current database switch to " << new_db_name << " successfully." << endl;
 	return 0;
 }
 
@@ -2070,7 +2152,9 @@ int setpriv_handler(const vector<string> &args)
 	string line;
 	// getchar(); // absorb from enter_pswd stage
 	getline(cin, line);
-	cout << "[priv str:]" << line << endl;
+#ifdef _GCONSOLE_TRACE
+	cout << "[priv str from usr input:]" << line << endl;
+#endif //_GCONSOLE_TRACE
 	stringstream ss(line);
 	unsigned num, priv = 0;
 	while (ss >> num)
@@ -2237,5 +2321,67 @@ int pusr_handler(const vector<string> &args)
 		priv = (priv >> 1);
 	}
 	cout << endl;
+	return 0;
+}
+
+int showusrs_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 0)
+	if (usrname != root_username)
+	{
+		cout << "Permission denied. Only root is allowed to view all usrs." << endl;
+		return -1;
+	}
+
+	cout << root_username << "\n"
+		 << string(root_username.size(), '-') << "\nall privilege on all db\n"
+		 << endl;
+
+	// print all usr
+	ResultSet allusr_rs;
+	if (silence_sysdb_query("SELECT ?usr WHERE {?usr <has_password> ?pswd.}", allusr_rs))
+	{
+		return -1;
+	}
+	for (unsigned i = 0; i < allusr_rs.ansNum; ++i)
+	{
+		string tar_usr = allusr_rs.answer[i][0];
+		tar_usr = tar_usr.substr(1, tar_usr.size() - 2); // strip <>
+		if (tar_usr == root_username)
+			continue;
+		cout << tar_usr << "\n"
+			 << string(tar_usr.size(), '-') << "\n";
+
+		// print all db which tar_usr has some priv on
+		ResultSet rs;
+		if (silence_sysdb_query("SELECT DISTINCT ?db WHERE {<" + tar_usr + "> ?priv ?db. MINUS{<" + tar_usr + "> <has_password> ?db.}} ", rs))
+		{
+			cout << "<fetch databases from sysdb failed>\n"
+				 << endl;
+			continue;
+		}
+		for (unsigned j = 0; j < rs.ansNum; ++j)
+		{
+			string db_name = rs.answer[j][0];
+			db_name = db_name.substr(1, db_name.size() - 2); // strip <>
+			unsigned priv = get_priv(tar_usr, db_name);
+			cout << db_name << ": ";
+			if (priv == -1u)
+			{
+				cout << "<fetch privilege from sysdb failed>" << endl;
+				continue;
+			}
+			for (int i = 0; i < PRIVILEGE_NUM; ++i)
+			{
+				if (priv & 1)
+				{
+					cout << priv_offset2name[i] << " ";
+				}
+				priv = (priv >> 1);
+			}
+			cout << endl;
+		}
+		cout << endl;
+	}
 	return 0;
 }
