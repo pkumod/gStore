@@ -32,8 +32,7 @@ SIIntlNode::Virtual()
 void
 SIIntlNode::Normal()
 {
-  delete[] keys;
-  this->AllocKeys();
+  if (!keys) this->AllocKeys();
   this->SetInMem();
 }
 
