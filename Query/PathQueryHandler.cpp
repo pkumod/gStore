@@ -1519,6 +1519,22 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 }
 
 /**
+	Return all paths from u to v within k hops via edges labeled by labels
+	in pred_set.
+
+	@param uid the vertex u's ID.
+	@param vid the vertex v's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param k the hop constraint.
+	@param pred_set the set of edge labels allowed.
+	@return a vector of all paths from u to v; the format of each path is the same as in shortestPath.
+*/
+vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
+{
+	return vector<vector<int>>();
+}
+
+/**
 	Compute and return the number of triangles in the graph, only considering the
 	edges in the path with labels in pred_set.
 
@@ -2996,11 +3012,6 @@ bool PathQueryHandler::if_stop(int retNum, double delta, double threshold, doubl
 	}
 
 	return true;
-}
-
-vector<pair<pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
-{
-	return vector<pair<pair<int, int>, int>>();
 }
 
 /**

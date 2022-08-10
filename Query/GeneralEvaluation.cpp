@@ -1628,7 +1628,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 							{
-								cout << "begin run  kHopReachablePath " << endl;
 								if (uid == vid)
 								{
 									if (notFirstOutput)
@@ -1650,6 +1649,34 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										notFirstOutput = 1;
 									pathVec2JSON(uid, vid, path, ss);
+								}
+							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+							{
+								if (uid == vid)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									vector<int> path; // Empty path
+									pathVec2JSON(uid, vid, path, ss);
+									continue;
+								}
+								int hopConstraint = proj[0].path_args.k;
+								if (hopConstraint < 0)
+									hopConstraint = 999;
+								vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								if (!paths.empty())
+								{
+									for (auto path : paths)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
 								}
 							}
 							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
@@ -3197,7 +3224,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								}
 								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 								{
-									cout << "begin run kHopReachablePath " << endl;
 									if (uid == vid)
 									{
 										if (notFirstOutput)
@@ -3219,6 +3245,34 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										else
 											notFirstOutput = 1;
 										pathVec2JSON(uid, vid, path, ss);
+									}
+								}
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+								{
+									if (uid == vid)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										vector<int> path; // Empty path
+										pathVec2JSON(uid, vid, path, ss);
+										continue;
+									}
+									int hopConstraint = proj[i].path_args.k;
+									if (hopConstraint < 0)
+										hopConstraint = 999;
+									vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									if (!paths.empty())
+									{
+										for (auto path : paths)
+										{
+											if (notFirstOutput)
+												ss << ",";
+											else
+												notFirstOutput = 1;
+											pathVec2JSON(uid, vid, path, ss);
+										}
 									}
 								}
 								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::ppr_type)
