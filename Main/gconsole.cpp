@@ -54,6 +54,8 @@ int enter_pswd(string prompt);
 char *dupstr(const char *);
 char *stripwhite(char *);
 string stripwhite(const string &s);
+string rm_comment(string line);
+void replace_cr(string &line);
 int find_command(const char *name);
 void initialize_readline();
 int execute_line(char *);
@@ -112,7 +114,7 @@ typedef struct
 	const char *usage;					 // Usage for this function
 	unsigned privilege_bitset;			 // usr's privilege_bitset must cover this to use this command(test: through &)
 } COMMAND;
-// TODO: commands doc, usage and privilege_bitset
+
 COMMAND commands[] =
 	{
 		///*
@@ -215,8 +217,8 @@ void print_enter_help_msg()
 	}
 int main(int argc, char **argv)
 {
-	Util util; // WHAT'S THE HELL... this is needed for database loading(Database_instance.load())
-	// read conf from conf.ini: version, root_name, root_pswd
+	Util util; // This is needed for database loading(Database_instance.load()) and other Util static member fetching situation
+	//  read conf from conf.ini: version, root_name, root_pswd
 	{
 		ifstream fin(INIT_CONF_FILE);
 		if (fin.is_open() == 0)
@@ -317,6 +319,7 @@ int main(int argc, char **argv)
 	}
 
 	/* welcome and work */
+	cout << endl;
 	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl;
 	cout << "Welcome to the gStore Console.  Commands end with ;." << endl;
 	PRINT_VERSION
@@ -324,7 +327,7 @@ int main(int argc, char **argv)
 	cout << "Type 'help;' for help. Type 'cancel;' to quit the current input statement." << endl
 		 << endl;
 
-	char *line, *s;
+	char *line; //, *s;
 
 	initialize_readline(); // set completer and readline end char(;)
 	using_history();
@@ -337,8 +340,7 @@ int main(int argc, char **argv)
 		// rl_replace_line("", 0); // Replace the contents of rl_line_buffer with text.
 		// rl_redisplay();			// Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
 
-		// if (gconsole_inputing == 0) // new command
-		line = readline("gstore> ");
+		line = readline("gstore> "); // new command
 
 #ifdef _GCONSOLE_TRACE
 		cout << "[rl_line_buffer:]" << rl_line_buffer << endl;
@@ -349,6 +351,7 @@ int main(int argc, char **argv)
 		{
 			if (current_database != NULL)
 			{
+				// current_database->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 				delete current_database;
 				current_database = NULL;
 			}
@@ -357,10 +360,24 @@ int main(int argc, char **argv)
 			break;
 		}
 
-		// Remove leading and trailing whitespace from the line.
+		// Remove comment and leading-trailing whitespace from the line.
 		// Then, if there is anything left, add it to the history
 		// list and execute it.
-		s = stripwhite(line);
+
+		// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
+		string strline(line);
+		free(line);
+		strline = rm_comment(std::move(strline));
+		strline = stripwhite(std::move(strline));
+		replace_cr(strline);
+
+		if (strline.empty() == 0)
+		{
+			add_history(strline.c_str()); // cross-line-style cmd is stored by concating in line("line" is one line!)
+			execute_line(const_cast<char *>(strline.c_str()));
+		}
+
+		/*s = stripwhite(line);
 
 		if (*s)
 		{
@@ -369,6 +386,7 @@ int main(int argc, char **argv)
 		}
 
 		free(line);
+		*/
 	}
 	save_history();
 	exit(0);
@@ -535,9 +553,9 @@ int check_priv(string db_name, unsigned request_priv)
 // return value seems no use?
 int execute_line(char *line)
 {
-#ifdef _GCONSOLE_TRACE
+	//#ifdef _GCONSOLE_TRACE
 	cout << "[exec:]" << line << endl;
-#endif //_GCONSOLE_TRACE
+	//#endif //_GCONSOLE_TRACE
 
 	// whether cancel
 	int i = strlen(line) - 1;
@@ -872,16 +890,21 @@ public:
 	{
 		// TODO: check these syscall's return value
 		// now 1 is descriptor to STDOUT
-		int pfd = open(file, O_WRONLY | O_CREAT, 0777); // now pfd is descriptor to "bin/.gconsole_tmp_out"
+
+		int pfd = open(file, O_WRONLY | O_CREAT, 0777); // now pfd is descriptor to file
 		saved = dup(1);									// now 1 and saved both are descriptor to STDOUT
 		// int dup2(int oldfd, int newfd);
-		dup2(pfd, 1); // would close descriptor 1 first, then now 1 and pfd both are descriptor to "bin/.gconsole_tmp_out"(pfd previously pointed to)
+		dup2(pfd, 1); // would close descriptor 1 first, then now 1 and pfd both are descriptor to file(pfd previously pointed to)
 		close(pfd);	  // close descriptor pfd
+
+		// now saved is descriptor to STDOUT, 1 is descriptor to file
 	}
 	// fflush and restore stdout
 	~RedirectStdout()
 	{
 		// TODO: check these syscall's return value
+		// now saved is descriptor to STDOUT, 1 is descriptor to file
+
 		fflush(stdout); // NOTE that flush the buffer is necessary to indeed push content into file
 		dup2(saved, 1); // would close descriptor 1 first, then now 1 and saved both are descriptor to STDOUT(saved previously pointed to)
 		close(saved);	// close descriptor saved
@@ -895,7 +918,7 @@ public:
 //! _rs NEED to be already sized to correct size: because vector<ResultSet> grow step by step is dangerous(key: for ResultSet, copy: LOW copy; destruct: release all pointers), refer to the comments in function body for further explaination
 vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 {
-	cout << "[sparql to sysdb]:" << query << endl;
+	cout << "\x1b[34m[sparql to sysdb]:" << query << "\x1b[0m" << endl;
 
 	vector<int> retv;
 
@@ -903,7 +926,6 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 	{
 		RedirectStdout silence("bin/.gconsole_tmp_out");
 
-		// Util util;
 		Database system_db("system");
 		system_db.load();
 
@@ -944,6 +966,8 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 		{
 			system_db.save();
 		}
+
+		// system_db.unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 	}
 
 	// remove tmpout file //TODO: check this return value
@@ -954,15 +978,16 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 // single query
 int silence_sysdb_query(const string &query, ResultSet &_rs)
 {
-	cout << "[sparql to sysdb]:" << query << endl;
+	cout << "\x1b[34m[sparql to sysdb]:" << query << "\x1b[0m" << endl;
+
 	int ret;
 
 	// redirect stdout to bin/.gconsole_tmp_out: for silencing load&query output of system.db
 	{
 		RedirectStdout silence("bin/.gconsole_tmp_out");
 
-		// Util util;
 		Database system_db("system");
+		cout << "load system db ..." << endl;
 		system_db.load();
 
 		ret = system_db.query(query, _rs);
@@ -970,6 +995,8 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 		{ // update and update succeed
 			system_db.save();
 		}
+
+		// system_db.unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 	}
 
 	// remove tmpout file //TODO: check this return value
@@ -1095,8 +1122,10 @@ int gconsole_bind_cr(int count, int key)
 	}
 	else
 	{
-		rl_insert_text(" "); // Insert text into the line at the current cursor position.
-		printf("\n     -> ");
+		rl_insert_text("\n"); // Insert text into the line at the current cursor position.
+		rl_redisplay();		  // Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
+		// so this would show the inserted \n to console
+		printf("     -> ");
 	}
 	return 0;
 }
@@ -1237,6 +1266,10 @@ int raw_query_handler(string query)
 
 string stripwhite(const string &s)
 {
+#ifdef _GCONSOLE_TRACE
+	cout << "[before stripwhite the line is:]\n"
+		 << s << endl;
+#endif //_GCONSOLE_TRACE
 	int i = 0, sz = s.size();
 	while (i < sz && whitespace(s[i]))
 	{
@@ -1253,8 +1286,60 @@ string stripwhite(const string &s)
 		--j;
 	}
 	// s[j] not whitespace
+
+#ifdef _GCONSOLE_TRACE
+	cout << "[after stripwhite:]\n"
+		 << s.substr(i, j - i + 1) << endl;
+#endif //_GCONSOLE_TRACE
 	return s.substr(i, j - i + 1);
 }
+
+// rm # comment from line
+string rm_comment(string line)
+{
+#ifdef _GCONSOLE_TRACE
+	cout << "[before rm comment the line is:]\n"
+		 << line << endl;
+#endif //_GCONSOLE_TRACE
+	line.push_back('#');
+	// deal with #: look for #, the content after it and before the nearest \n is comments
+	string sparql;
+	int i = 0, sz = line.size();
+	int seg_start_pos = 0;
+	while (i < sz)
+	{
+		// met a new comment: [seg_start_pos,i) -> sparql
+		// if seg_start_pos<0, it means we have met a # but haven't met a \n, so it's inside a comment
+		if (line[i] == '#' && seg_start_pos >= 0)
+		{
+			sparql += line.substr(seg_start_pos, i - seg_start_pos);
+			seg_start_pos = -1; // mark as meeting #
+		}
+		// have met a # before, now meet \n
+		else if (line[i] == '\n' && seg_start_pos == -1)
+		{
+			seg_start_pos = i + 1;
+			sparql.push_back('\n');
+		}
+		++i;
+	}
+#ifdef _GCONSOLE_TRACE
+	cout << "[after rm comment:]\n"
+		 << sparql << endl;
+#endif //_GCONSOLE_TRACE
+	return sparql;
+}
+
+// replace '\n' with ' '
+void replace_cr(string &line)
+{
+	for (char &c : line)
+	{
+		if (c == '\n')
+			c = ' ';
+	}
+}
+
 // QUERY query.sql
 int query_handler(const vector<string> &args)
 {
@@ -1419,6 +1504,7 @@ int quit_handler(const vector<string> &args)
 
 	if (current_database != NULL)
 	{
+		// current_database->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 		delete current_database;
 	}
 
@@ -1527,6 +1613,7 @@ int show_handler(const vector<string> &args)
 	if (db_name.empty() == 0)
 	{
 		db = new Database(db_name);
+		cout << "load " << db_name << " db ..." << endl;
 		db->load();
 	}
 	else
@@ -1572,6 +1659,7 @@ int show_handler(const vector<string> &args)
 
 	if (db_name.empty() == 0)
 	{
+		// db->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 		delete db;
 	}
 	return 0;
@@ -1757,12 +1845,13 @@ int use_handler(const vector<string> &args)
 
 	Database *pre_db = current_database;
 
-	// Util util;
 	current_database = new Database(new_db_name);
+	cout << "load " << new_db_name << " db ..." << endl;
 	bool flag = current_database->load();
 	if (!flag)
 	{
 		cout << "Database change failed: Fail to load new database " << new_db_name << ".\nReturn to previout current database. Current database unchanged." << endl;
+		// current_database->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 		delete current_database;
 		if (pre_db != NULL)
 		{
@@ -1776,6 +1865,7 @@ int use_handler(const vector<string> &args)
 	}
 	if (pre_db != NULL)
 	{
+		// pre_db->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
 		delete pre_db;
 	}
 
@@ -1830,23 +1920,33 @@ int settings_handler(const vector<string> &args)
 	// display args[0]
 	else
 	{
-		string line, target = args[0];
+		string line, target = stripwhite(args[0]);
+		bool found_target = 0;
 		while (getline(fin, line))
 		{
 			size_t idx = line.find(target);
 			if (idx != string::npos && (idx = line.find('=')) != string::npos)
 			{
-				size_t comment_idx = line.find('#');
-				if (comment_idx == string::npos)
+				if (stripwhite(line.substr(0, idx)) == target)
 				{
-					cout << line.substr(idx + 1) << endl;
+					found_target = 1;
+					size_t comment_idx = line.find('#');
+					if (comment_idx == string::npos)
+					{
+						cout << line.substr(idx + 1) << endl;
+					}
+					else if (idx < comment_idx)
+					{
+						cout << line.substr(idx + 1, comment_idx - idx - 1) << endl;
+					}
+					break;
 				}
-				else if (idx < comment_idx)
-				{
-					cout << line.substr(idx + 1, comment_idx - idx - 1) << endl;
-				}
-				break;
 			}
+		}
+
+		if (found_target == 0)
+		{
+			cout << target << " not found in settings." << endl;
 		}
 	}
 	fin.close();
@@ -2032,7 +2132,7 @@ int adddelusr_handler(int add, string usr)
 
 	// check whether usr exist
 	ResultSet rs;
-	if (silence_sysdb_query("SELECT WHERE { <" + usr + "> <has_password> ?y. }", rs))
+	if (silence_sysdb_query("SELECT ?y WHERE { <" + usr + "> <has_password> ?y. }", rs))
 	{
 		cout << "System db query failed(check usr exists or not). Add usr failed." << endl;
 		return -1;
@@ -2049,7 +2149,7 @@ int adddelusr_handler(int add, string usr)
 		cout << "Enter password for new user: ";
 		string new_pswd;
 		cin >> new_pswd;
-		query = "INSERT DATA { <" + usr + "> <has_password> <" + new_pswd + ">. }";
+		query = "INSERT DATA { <" + usr + "> <has_password> \"" + new_pswd + "\". }";
 	}
 	else
 	{
@@ -2058,7 +2158,7 @@ int adddelusr_handler(int add, string usr)
 			cout << "User " << usr << " doesn't exists." << endl;
 			return -1;
 		}
-		query = "DELETE DATA { <" + usr + "> <has_password> ?y. }";
+		query = "DELETE WHERE { <" + usr + "> <has_password> ?y. }";
 	}
 
 	if (silence_sysdb_query(query, rs))
