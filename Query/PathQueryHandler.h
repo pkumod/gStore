@@ -370,6 +370,8 @@ public:
 	bool kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	bool kHopReachableTest(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	std::vector<int> kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
+    std::vector<std::vector<int>> kHopEnumeratePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
+    // std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	void SSPPR(int uid, int retNum, int k, const std::vector<int> &pred_set, std::vector< std::pair<int ,double> > &topkV2ppr);
     long long triangleCounting(bool directed, const std::vector<int> &pred_set);
     double closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set);
@@ -382,8 +384,6 @@ public:
     double clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
     std::vector<int> maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set);
-
-    std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
     
