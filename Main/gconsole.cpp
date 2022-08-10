@@ -2,14 +2,13 @@
 # Filename:		gconsole.cpp
 # Author: Bookug Lobert, modified by Wang Libo, updated by Yuan Zhiqiu
 # Mail: 1181955272@qq.com
-# Last Modified:	2016-07-20 19:28
+# Last Modified:	2022-08-10 23:45
 # Description:
 This is a console integrating all commands in Gstore System and others. It
 provides completion of command names, line editing features, and access to the
 history list.
-NOTICE: no separators required in the end of your commands, and please just type
-one command at a time. If there are many instructions to execute, please write
-them in a file like test.sql, and tell the gconsole to use this file
+NOTICE: Commands end with ;. Cross line input is allowed.
+Comment start with #. Redirect (> and >>) is supported.
 =============================================================================*/
 #include "../Database/Database.h"
 #include "../Util/Util.h"
@@ -352,7 +351,7 @@ int main(int argc, char **argv)
 	cout << "" << endl;
 	cout << "Welcome to the gStore Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
-	cout << "Comment start with #." << endl;
+	cout << "Comment start with #. Redirect (> and >>) is supported." << endl;
 	cout << "Type 'help;' for help. Type 'cancel;' to quit the current input statement." << endl
 		 << endl;
 
