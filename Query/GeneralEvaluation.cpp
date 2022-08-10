@@ -1853,7 +1853,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									auto ret = pqHandler->WCC(proj[0].path_args.directed, pred_id_set);
+									auto ret = pqHandler->WCC(pred_id_set);
 									bool localFirstOutput = true;
 									for (auto mp : ret)
 									{
@@ -3409,7 +3409,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										auto ret = pqHandler->WCC(proj[i].path_args.directed, pred_id_set);
+										auto ret = pqHandler->WCC(pred_id_set);
 										bool localFirstOutput = true;
 										for (auto mp : ret)
 										{
