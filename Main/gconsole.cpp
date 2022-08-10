@@ -30,7 +30,7 @@ using namespace std;
 /* **************************************************************** */
 //#define _GCONSOLE_TRACE
 //#define _GCONSOLE_DEBUG
-#define _GCONSOLE_SHOW_SYSDB_QUERY
+//#define _GCONSOLE_SHOW_SYSDB_QUERY
 
 #define INIT_CONF_FILE "conf.ini"
 #define MAX_WRONG_PSWD_TIMES 7
@@ -83,8 +83,8 @@ int show_handler(const vector<string> &);
 int use_handler(const vector<string> &);
 int backup_handler(const vector<string> &);
 int restore_handler(const vector<string> &);
-int query_handler(const vector<string> &);
-int raw_query_handler(string query);
+int sparql_handler(const vector<string> &);
+int raw_sparql_handler(string query);
 
 int flushpriv_handler(const vector<string> &);
 int pusr_handler(const vector<string> &);
@@ -107,46 +107,45 @@ typedef struct
 	const char *usage;					 // Usage for this function
 	unsigned privilege_bitset;			 // usr's privilege_bitset must cover this to use this command(test: through &)
 } COMMAND;
-
 COMMAND commands[] =
 	{
 		///*
 		// database op
-		{"query", query_handler, "\tAnswer SPARQL query(s) in file.", "query <; separated SPARQL file>;", QUERY_PRIVILEGE_BIT}, // file query
-		{"create", create_handler, "\tBuild a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
-		{"use", use_handler, "\tSet current database.", "use <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
-		{"drop", drop_handler, "\tDrop a database according to the given path.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
-		{"show", show_handler, "\tShow the database name which is used now.", "show [<database_name>] [-n <displayed_triple_num>];", QUERY_PRIVILEGE_BIT},
-		{"showdbs", showdbs_handler, "\tDisplay all databases the current user has query privilege on.", "showdbs;", 0},
-		{"backup", backup_handler, "\tBackup current database.", "backup;", BACKUP_PRIVILEGE_BIT},
-		{"restore", restore_handler, "\tRestore a database backup.", "restore <database_name>;", RESTORE_PRIVILEGE_BIT},
-		{"pdb", pdb_handler, "\tDisplay current database name.", "pdb;", 0},
+		{"sparql", sparql_handler, "Answer SPARQL query(s) in file.", "sparql <; separated SPARQL file>;", QUERY_PRIVILEGE_BIT}, // file query
+		{"create", create_handler, "Build a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
+		{"use", use_handler, "Set current database.", "use <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
+		{"drop", drop_handler, "Drop a database.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
+		{"show", show_handler, "Show info and specified number of triples of current database or other database.", "show [<database_name>] [-n <displayed_triple_num>];", QUERY_PRIVILEGE_BIT},
+		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
+		{"backup", backup_handler, "Backup current database.", "backup;", BACKUP_PRIVILEGE_BIT},
+		{"restore", restore_handler, "Restore a database.", "restore <database_name>;", RESTORE_PRIVILEGE_BIT},
+		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
 
 		// id and usr manage
-		{"flushpriv", flushpriv_handler, "\tFlush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
-		{"pusr", pusr_handler, "\tDisplay user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
-		{"setpswd", setpswd_handler, "\tSet your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
-		{"setpriv", setpriv_handler, "\tSet user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
-		{"addusr", addusr_handler, "\tAdd usr.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
-		{"delusr", delusr_handler, "\tDel usr.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
-		{"showusrs", showusrs_handler, "\tShow all users and privilege for each user.", "showusrs;", ROOT_PRIVILEGE_BIT},
+		{"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
+		{"pusr", pusr_handler, "Display user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
+		{"setpswd", setpswd_handler, "Set your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"setpriv", setpriv_handler, "Set user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
+		{"addusr", addusr_handler, "Add user.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"delusr", delusr_handler, "Del user.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
 
 		// other
-		{"cancel", 0, "\tQuit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
-		{"quit", quit_handler, "\tQuit this console.", "quit;", 0},
-		{"help", help_handler, "\tDisplay this text.", "help; or ?;", 0},
-		{"?", help_handler, "\tSynonym for \"help\".", "help; or ?;", 0},
-		{"settings", settings_handler, "\tDisplay settings.", "settings [<conf_name>];", 0},
-		{"version", version_handler, "\tDisplay gstore core version.", "version;", 0},
+		{"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
+		{"quit", quit_handler, "Quit this console.", "quit;", 0},
+		{"help", help_handler, "Display help msg. Enter 'help/?' see more about usage.", "help/? [edit/usage/<command>];", 0},
+		{"?", help_handler, "Synonym for \"help\".", "help/? [edit/usage/<command>];", 0},
+		{"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
+		{"version", version_handler, "Display gstore core version.", "version;", 0},
 
 		// linux shell cmd
-		{"pwd", pwd_handler, "\tPrint name of current/working directory.", "pwd;", 0},
-		{"clear", clear_handler, "\tClear the screen.", "clear;", 0},
+		{"pwd", pwd_handler, "Print name of current/working directory.", "pwd;", 0},
+		{"clear", clear_handler, "Clear screen.", "clear;", 0},
 
-		// raw_query
-		{"raw_query", 0, "Support enter sparql query directedly in gconsole.",
+		// raw_sparql
+		{"raw_sparql", 0, "Support enter sparql query directedly in gconsole.",
 		 "Begin with SELECT, INSERT, DELETE, PREFIX or BASE. For more about SPARQL, see https://www.w3.org/TR/sparql11-query/ and http://www.gstore.cn/pcsite/index.html#/documentation", QUERY_PRIVILEGE_BIT},
-		// handler: int raw_query_handler(string query);
+		// handler: int raw_sparql_handler(string query);
 
 		//*/
 		/* //for debug: print_arg_handler and quit_handler
@@ -175,7 +174,7 @@ COMMAND commands[] =
 #define PRINT_ENTER_HELP_MSG                                                                                                 \
 	cout << "Gstore Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
 	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl; \
-	cout << "Copyright (c) 2018, 2022, pkumod and/or its affiliates." << endl;                                               \
+	cout << "Copyright (c) 2016, 2022, pkumod and/or its affiliates." << endl;                                               \
 	cout << "" << endl;                                                                                                      \
 	cout << "Usage: bin/gconsole [OPTIONS]" << endl;                                                                         \
 	cout << "  -?, --help          Display this help and exit." << endl;                                                     \
@@ -186,8 +185,8 @@ COMMAND commands[] =
 	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl                                  \
 		 << endl;
 
-#define PRINT_WRONG_USG      \
-	cout << "Wrong usage.\n" \
+#define PRINT_WRONG_USG    \
+	cout << "Wrong usage." \
 		 << endl;
 #define SYSDB_QUERY_FAILED(sparql)                                      \
 	cout << "System db query failed. The query is: " << sparql << endl; \
@@ -349,9 +348,11 @@ int main(int argc, char **argv)
 	/* welcome and work */
 	cout << endl;
 	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl;
-	cout << "Welcome to the gStore Console.  Commands end with ;." << endl;
 	PRINT_VERSION
 	cout << "" << endl;
+	cout << "Welcome to the gStore Console." << endl;
+	cout << "Commands end with ;. Cross line input is allowed." << endl;
+	cout << "Comment start with #." << endl;
 	cout << "Type 'help;' for help. Type 'cancel;' to quit the current input statement." << endl
 		 << endl;
 
@@ -667,7 +668,7 @@ int execute_line(char *line)
 		cout << "[The query is: ]" << line << endl;
 #endif //_GCONSOLE_DEBUG
 
-		ret = raw_query_handler(line);
+		ret = raw_sparql_handler(line);
 	}
 	// other command
 	else
@@ -729,6 +730,7 @@ int find_command(const char *name)
 		c = tolower(c);
 	}
 	// sparql query
+	// TODO: better parsing of sparql
 	if (lower_name == "select" || lower_name == "insert" || lower_name == "delete" || lower_name == "prefix" || lower_name == "base")
 	{
 		return RAW_QUERY_CMD_OFFSET;
@@ -804,7 +806,7 @@ bool parse_arguments(char *word, vector<string> &args)
 			}
 			else
 			{
-				cerr << "Invalid arguments!" << endl;
+				cout << "Invalid arguments!" << endl;
 				return false;
 			}
 		}
@@ -1260,7 +1262,7 @@ int check_argc_or(int argc, int std_argc_num, ...)
 	if (check_argc_or(args.size(), std_argc_num, __VA_ARGS__)) \
 	{                                                          \
 		PRINT_WRONG_USG                                        \
-		cerr << commands[current_cmd_offset].usage << endl;    \
+		cout << commands[current_cmd_offset].usage << endl;    \
 		return -1;                                             \
 	}
 
@@ -1301,6 +1303,7 @@ int flushpriv_handler(const vector<string> &args)
 			p.second = priv;
 		}
 	}
+#ifdef _GCONSOLE_TRACE
 	cout << "[db2priv after flush priv:][db:priv]:";
 	for (auto p : db2priv)
 	{
@@ -1308,12 +1311,15 @@ int flushpriv_handler(const vector<string> &args)
 		print_lowbits(p.second, 8);
 		cout << endl;
 	}
+#endif //_GCONSOLE_TRACE
+
+	cout << "Privilige Flushed for current user successfully." << endl;
 	return 0;
 }
 
 // ofp is set to output, and output need to be closed outer
 // query success:return 0; failed:return -1
-int raw_query_handler(string query)
+int raw_sparql_handler(string query)
 {
 	CHECK_CURRENT_DB_LOADED
 	if (check_priv(current_database->getName(), commands[current_cmd_offset].privilege_bitset))
@@ -1424,8 +1430,7 @@ void replace_cr(string &line)
 	}
 }
 
-// QUERY query.sql
-int query_handler(const vector<string> &args)
+int sparql_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	CHECK_CURRENT_DB_LOADED
@@ -1470,7 +1475,7 @@ int query_handler(const vector<string> &args)
 		/*query sparql*/
 		sparql = stripwhite(sparql);
 
-		if (sparql.empty() == 0 && raw_query_handler(sparql))
+		if (sparql.empty() == 0 && raw_sparql_handler(sparql))
 		{
 			cout << "Query failed: " << sparql << endl;
 		}
@@ -1494,8 +1499,11 @@ int help_handler(const vector<string> &args)
 		cout << "For developer information, including the gStore Reference Manual, visit:" << endl;
 		cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
 		cout << "" << endl;
+		cout << "Commands end with ;. Cross line input is allowed." << endl;
+		cout << "Comment start with #." << endl;
+		cout << "Type 'cancel;' to quit the current input statement." << endl
+			 << endl;
 		cout << "List of all gconsole commands:" << endl;
-		cout << "Note that all text commands must be end with ';' but need not be in one line." << endl;
 
 		for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
 		{
@@ -1625,7 +1633,7 @@ int show_handler(const vector<string> &args)
 		else
 		{
 			PRINT_WRONG_USG
-			cerr << commands[current_cmd_offset].usage << endl;
+			cout << commands[current_cmd_offset].usage << endl;
 		}
 	}
 	// show -n num
@@ -1638,7 +1646,7 @@ int show_handler(const vector<string> &args)
 		else
 		{
 			PRINT_WRONG_USG
-			cerr << commands[current_cmd_offset].usage << endl;
+			cout << commands[current_cmd_offset].usage << endl;
 		}
 	}
 
@@ -1755,9 +1763,9 @@ int create_handler(const vector<string> &args)
 	CHECK_ARGC(2, 1, 2)
 
 	string db_name = args[0];
-	if (db_name == "system" || db_name == "databases")
+	if (db_name == "system")
 	{
-		cout << "Your db name can NOT be \"system\" or \"databases\". Database create failed." << endl;
+		cout << "Your db name can NOT be \"system\". Database create failed." << endl;
 		return -1;
 	}
 	/* int access(const char *pathname, int mode);
@@ -1837,6 +1845,8 @@ int create_handler(const vector<string> &args)
 			return -1;
 		}
 	}
+
+	cout << "Database " << db_name << "created successfully. " << endl;
 
 	return 0;
 }
@@ -2343,10 +2353,13 @@ int showusrs_handler(const vector<string> &args)
 	{
 		return -1;
 	}
+
+	// cout << "allusr_rs.ansNum: "<<allusr_rs.ansNum << endl;
 	for (unsigned i = 0; i < allusr_rs.ansNum; ++i)
 	{
 		string tar_usr = allusr_rs.answer[i][0];
 		tar_usr = tar_usr.substr(1, tar_usr.size() - 2); // strip <>
+
 		if (tar_usr == root_username)
 			continue;
 		cout << tar_usr << "\n"
@@ -2360,6 +2373,8 @@ int showusrs_handler(const vector<string> &args)
 				 << endl;
 			continue;
 		}
+
+		// cout << "rs.ansNum: " << rs.ansNum << endl;
 		for (unsigned j = 0; j < rs.ansNum; ++j)
 		{
 			string db_name = rs.answer[j][0];
