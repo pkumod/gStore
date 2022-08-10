@@ -775,7 +775,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
 			{
-				TempResultSet *sub_result;
+				TempResultSet *sub_result = nullptr;
 				if (well_designed == 0)
 				{
 					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
