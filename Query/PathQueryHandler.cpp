@@ -2053,7 +2053,7 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 		{
 			int res = 0;
 			set<int> nodes;
-			for (int vid = 0; vid < nodeNum; vid++)
+			for (int vid = 0; vid < (int)nodeNum; vid++)
 				if (labels[vid] == com)
 					nodes.insert(vid);
 			for (auto &node : nodes)
@@ -2084,7 +2084,7 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 		int degreeSum(int com)
 		{
 			int res = 0;
-			for (int vid = 0; vid < nodeNum; vid++)
+			for (int vid = 0; vid < (int)nodeNum; vid++)
 			{
 				if (labels[vid] != com)
 					continue;
@@ -2385,7 +2385,7 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 	int nopt = 0; // number of open triplet
 	double gcc;
 
-	for (size_t curnode = 0; curnode < n; curnode++)
+	for (int curnode = 0; curnode < n; curnode++)
 	{
 		unordered_set<int> neiSet;
 		for (int pred : pred_set)
@@ -2501,7 +2501,7 @@ vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::
 		}
 		void dfs(set<int> cands, set<int> cliqs)
 		{
-			if (cands.size() + cliqs.size() <= bestSz)
+			if (cands.size() + cliqs.size() <= (size_t)bestSz)
 				return;
 			if (!cands.size())
 			{
