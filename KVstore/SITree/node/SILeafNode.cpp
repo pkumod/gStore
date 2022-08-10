@@ -27,6 +27,7 @@ SILeafNode::SILeafNode(bool isVirtual)
 {
   node_flag_ |= NF_IL;
   prev = next = NULL;
+  values = nullptr;
   if (!isVirtual)
     AllocValues();
 }
@@ -41,10 +42,8 @@ SILeafNode::Virtual()
 void
 SILeafNode::Normal()
 {
-  delete[] keys;
-  delete[] values;
-  this->AllocKeys();
-  this->AllocValues();
+  if (!keys) this->AllocKeys();
+  if (!values) this->AllocValues();
   this->SetInMem();
 }
 
