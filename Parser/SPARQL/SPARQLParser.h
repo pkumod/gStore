@@ -2458,8 +2458,6 @@ public:
     Num_integerContext* num_integer(size_t i);
     Integer_positiveContext *integer_positive();
     Integer_negativeContext *integer_negative();
-    std::vector<NumericLiteralContext *> numericLiteral();
-    NumericLiteralContext* numericLiteral(size_t i);
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
     antlr4::tree::TerminalNode *K_KHOPREACHABLEPATH();
     antlr4::tree::TerminalNode *K_PPR();
@@ -2468,6 +2466,8 @@ public:
     antlr4::tree::TerminalNode *K_BFSCOUNT();
     antlr4::tree::TerminalNode *K_PR();
     antlr4::tree::TerminalNode *K_ALPHA();
+    std::vector<NumericLiteralContext *> numericLiteral();
+    NumericLiteralContext* numericLiteral(size_t i);
     antlr4::tree::TerminalNode *K_MAXITER();
     antlr4::tree::TerminalNode *K_TOL();
     antlr4::tree::TerminalNode *K_SSSP();
