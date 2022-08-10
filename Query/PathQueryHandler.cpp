@@ -2164,7 +2164,7 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 	@param pred_set the set of edge labels allowed.
 	@return a vector of vectors, each containing the IDs of the vertices in a WCC.
 **/
-vector<vector<int>> PathQueryHandler::WCC(bool directed, const std::vector<int> &pred_set)
+vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 {
 	/*mark wcc*/
 	unordered_map<int, int> vid2wccid;

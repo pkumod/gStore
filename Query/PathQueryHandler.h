@@ -380,7 +380,7 @@ public:
     std::unordered_map<int, std::vector<int>> SSSP(int uid, bool directed, const std::vector<int> &pred_set);
     std::unordered_map<int, int> SSSPLen(int uid, bool directed, const std::vector<int> &pred_set);
     std::vector<std::vector<int>> labelProp(bool directed, const std::vector<int> &pred_set);
-    std::vector<std::vector<int>> WCC(bool directed, const std::vector<int> &pred_set);
+    std::vector<std::vector<int>> WCC(const std::vector<int> &pred_set);
     double clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
     std::vector<int> maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set);
