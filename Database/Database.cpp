@@ -530,8 +530,31 @@ Database::setPreMap()
 	this->pre2obj = new TYPE_TRIPLE_NUM[this->limitID_predicate];
 	TYPE_PREDICATE_ID valid = 0, i, t;
 
+	using namespace indicators;
+	ProgressBar bar{
+		option::BarWidth{50},
+		option::Start{"["},
+		option::Fill{"="},
+		option::Lead{">"},
+		option::Remainder{" "},
+		option::Remainder{" "},
+		option::End{"]"},
+		option::PostfixText{"Set pre map, pre num = " + to_string(limitID_predicate)},
+		option::ForegroundColor{Color::green},
+		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	};
+
+	int bar_tmp = 0;
+	int one_percent_num = limitID_predicate/100;
+
 	for (i = 0; i < this->limitID_predicate; ++i)
 	{
+		++bar_tmp;
+		if(bar_tmp == one_percent_num) {
+			bar.tick();
+			bar_tmp = 0;
+		}
+
 		if (valid == this->pre_num)
 		{
 			t = 0;
@@ -570,6 +593,9 @@ Database::setPreMap()
 			this->pre2obj[i] = 0;
 		}
 	}
+
+	if (!bar.is_completed())
+		bar.set_progress(100);
 	/*
 	for(int i = 0;i < this->pre_num;i++)
 	{
@@ -706,7 +732,7 @@ Database::load(bool loadCSR)
 	pre2values_thread.join();
 #endif
 
-	cout << "Begin to set pre map ......";
+	cout << "Begin to set pre map ......" << endl;
 	this->setPreMap();
 
 #ifdef THREAD_ON
