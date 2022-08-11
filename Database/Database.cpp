@@ -766,7 +766,7 @@ Database::load(bool loadCSR)
 	obj2values_thread.join();
 #endif
 	//load cache of sub2values and obj2values
-	cout<<"Begin to load s2v, p2v and o2v cache ......"<<endl;
+	cout << "Begin to load p2v, s2v and o2v cache ......" << endl;
 	this->load_cache();
 	cout<<"Cache loaded successfully!"<<endl;
 	//warm up always as finishing build(), to utilize the system buffer
