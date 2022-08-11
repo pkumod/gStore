@@ -11,7 +11,7 @@
 
 #include "../Util/Util.h"
 #include "../Util/Triple.h"
-#include "../Signature/Signature.h"
+// #include "../Signature/Signature.h"
 #include "../KVstore/KVstore.h"
 #include "IDList.h"
 
@@ -146,7 +146,7 @@ private:
 	// edge_type[var_id][i]
 	char**   edge_type;
 
-	EntityBitSet* var_sig;
+	// EntityBitSet* var_sig;
 
 	// BETTER:edge sig is of little importance 
 	// edge_sig[sub_id][obj_id]
@@ -230,7 +230,7 @@ public:
 	//get the index of edge between two var ids
 	vector<int> getEdgeIndex(int _id0, int _id);
 
-	const EntityBitSet& getVarBitSet(int _i)const;
+	// const EntityBitSet& getVarBitSet(int _i)const;
 
 	// get the candidate list of _var in the query graph
 	IDList& getCandidateList(int _var);
@@ -242,7 +242,7 @@ public:
 	vector<unsigned*>* getResultListPointer();
 
 	// get the entity signature of _var in the query graph
-	const EntityBitSet& getEntitySignature(int _var);
+	// const EntityBitSet& getEntitySignature(int _var);
 
 	// check whether the i-th edge of _var is IN edge
 	bool isInEdge(int _var, int _i_th_edge)const;

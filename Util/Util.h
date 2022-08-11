@@ -114,6 +114,7 @@ in the sparql query can point to the same node in data graph)
 #include "../tools/rapidjson/writer.h"
 #include "../tools/rapidjson/stringbuffer.h"
 #include "INIParser.h"
+#include "../tools/indicators/progress_bar.hpp"
 
 #include "Latch.h"
 
@@ -304,11 +305,6 @@ typedef struct TYPE_ID_TUPLE
 class Util
 {
 public:
-	//static int triple_num;
-	//static int pre_num;
-	//static int entity_num;
-	//static int literal_num;
-
 	static const unsigned MB = 1048576;
 	static const unsigned GB = 1073741824;
 	//static const int TRIPLE_NUM_MAX = 1000*1000*1000;
