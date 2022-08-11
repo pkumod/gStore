@@ -2808,18 +2808,16 @@ KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_subID2values(KVstore::CREATE_MODE, total_entity_num);
 
-	using namespace indicators;
-	ProgressBar bar{
-		option::BarWidth{50},
-		option::Start{"["},
-		option::Fill{"="},
-		option::Lead{">"},
-		option::Remainder{" "},
-		option::Remainder{" "},
-		option::End{"]"},
-		option::PostfixText{"Build s2value"},
-		option::ForegroundColor{Color::green},
-		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build s2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
 
 	int bar_tmp = 0;
@@ -3488,18 +3486,16 @@ KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_objID2values(KVstore::CREATE_MODE, total_entity_num, total_literal_num);
 
-	using namespace indicators;
-	ProgressBar bar{
-		option::BarWidth{50},
-		option::Start{"["},
-		option::Fill{"="},
-		option::Lead{">"},
-		option::Remainder{" "},
-		option::Remainder{" "},
-		option::End{"]"},
-		option::PostfixText{"Build o2value"},
-		option::ForegroundColor{Color::green},
-		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build o2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
 
 	int bar_tmp = 0;
@@ -4119,18 +4115,16 @@ KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_preID2values(KVstore::CREATE_MODE, total_pre_num);
 
-	using namespace indicators;
-	ProgressBar bar{
-		option::BarWidth{50},
-		option::Start{"["},
-		option::Fill{"="},
-		option::Lead{">"},
-		option::Remainder{" "},
-		option::Remainder{" "},
-		option::End{"]"},
-		option::PostfixText{"Build p2value"},
-		option::ForegroundColor{Color::green},
-		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build p2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
 
 	int bar_tmp = 0;
