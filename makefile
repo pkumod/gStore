@@ -482,7 +482,7 @@ $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluatio
 
 #objects in Util/ begin
 
-$(objdir)Util.o:  Util/Util.cpp Util/Util.h tqdm/tqdm.h tqdm/utils.h
+$(objdir)Util.o:  Util/Util.cpp Util/Util.h
 	$(CXX) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
 
 $(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
