@@ -530,19 +530,18 @@ Database::setPreMap()
 	this->pre2obj = new TYPE_TRIPLE_NUM[this->limitID_predicate];
 	TYPE_PREDICATE_ID valid = 0, i, t;
 
-	using namespace indicators;
-	ProgressBar bar{
-		option::BarWidth{50},
-		option::Start{"["},
-		option::Fill{"="},
-		option::Lead{">"},
-		option::Remainder{" "},
-		option::Remainder{" "},
-		option::End{"]"},
-		option::PostfixText{"Set pre map, pre num = " + to_string(limitID_predicate)},
-		option::ForegroundColor{Color::green},
-		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Set pre map, pre num = " + to_string(limitID_predicate)},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
+
 
 	int bar_tmp = 0;
 	int one_percent_num = limitID_predicate/100;
@@ -924,17 +923,16 @@ Database::load(bool loadCSR)
 void
 Database::load_cache()
 {
-	using namespace indicators;
-	ProgressBar bar{
-		option::BarWidth{50},
-		option::Start{"["},
-		option::Fill{"="},
-		option::Lead{">"},
-		option::Remainder{" "},
-		option::End{"]"},
-		option::PostfixText{"Load p2v cache 0/3"},
-		option::ForegroundColor{Color::green},
-		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Load p2v cache 0/3"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
 
 	// get important pre ID
@@ -949,15 +947,15 @@ Database::load_cache()
 	// cout << "Begin to add cache of s2v, p2v and o2v ......" << endl;
 	this->load_candidate_pre2values();
 
-	bar.set_option(option::PostfixText{"Load s2v cache 1/3"});
+	bar.set_option(indicators::option::PostfixText{"Load s2v cache 1/3"});
 	bar.set_progress(33);
 	this->load_important_sub2values();
 
-	bar.set_option(option::PostfixText{"Load o2v cache 2/3"});
+	bar.set_option(indicators::option::PostfixText{"Load o2v cache 2/3"});
 	bar.set_progress(66);
 	this->load_important_obj2values();
 
-	bar.set_option(option::PostfixText{"Load cache done!"});
+	bar.set_option(indicators::option::PostfixText{"Load cache done!"});
 	bar.set_progress(100); // all done
 	
 	// long t0 = Util::get_cur_time();
@@ -2727,18 +2725,16 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 				break;
 			}
 
-			using namespace indicators;
-			ProgressBar bar{
-				option::BarWidth{50},
-				option::Start{"["},
-				option::Fill{"="},
-				option::Lead{">"},
-				option::Remainder{" "},
-				option::Remainder{" "},
-				option::End{"]"},
-				option::PostfixText{"Build Trie for batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
-				option::ForegroundColor{Color::green},
-				option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+			indicators::ProgressBar bar{
+				indicators::option::BarWidth{50},
+				indicators::option::Start{"["},
+				indicators::option::Fill{"="},
+				indicators::option::Lead{">"},
+				indicators::option::Remainder{" "},
+				indicators::option::End{"]"},
+				indicators::option::PostfixText{"Build Trie for batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
+				indicators::option::ForegroundColor{indicators::Color::green},
+				indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 			};
 
 			int bar_tmp = 0;
@@ -2798,18 +2794,16 @@ Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file,const str
 		{
 			break;
 		}
-		using namespace indicators;
-		ProgressBar bar{
-			option::BarWidth{50},
-			option::Start{"["},
-			option::Fill{"="},
-			option::Lead{">"},
-			option::Remainder{" "},
-			option::Remainder{" "},
-			option::End{"]"},
-			option::PostfixText{"Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
-			option::ForegroundColor{Color::green},
-			option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+		indicators::ProgressBar bar{
+			indicators::option::BarWidth{50},
+			indicators::option::Start{"["},
+			indicators::option::Fill{"="},
+			indicators::option::Lead{">"},
+			indicators::option::Remainder{" "},
+			indicators::option::End{"]"},
+			indicators::option::PostfixText{"Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
+			indicators::option::ForegroundColor{indicators::Color::green},
+			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 		};
 
 		int bar_tmp = 0;
