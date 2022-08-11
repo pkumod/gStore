@@ -55,7 +55,7 @@ void StringIndexFile::save(KVstore &kv_store)
 	fwrite(&this->num, sizeof(unsigned), 1, this->index_file);
 
 	long offset = 0;
-	cout << "String index save num=" << num << endl;
+	// cout << "String index save num=" << num << endl;
 	for (unsigned i = 0; i < this->num; i++)
 	{
 		string str;
@@ -400,11 +400,11 @@ void StringIndex::save(KVstore &kv_store)
 void StringIndex::load()
 {
 	this->entity.load();
-	cout<<"entity has loaded successfully!"<<endl;
+	// cout<<"entity has loaded successfully!"<<endl;
 	this->literal.load();
-	cout<<"literal has loaded successfully!"<<endl;
+	// cout<<"literal has loaded successfully!"<<endl;
 	this->predicate.load();
-	cout<<"predicate has loaded successfully!"<<endl;
+	// cout<<"predicate has loaded successfully!"<<endl;
 }
 
 bool
@@ -506,7 +506,7 @@ void StringIndex::SetTrie(Trie* trie)
 vector<StringIndexFile*>
 StringIndex::get_three_StringIndexFile()
 {
-	cout<<"begin three StringIndexFile"<<endl;
+	// cout<<"begin three StringIndexFile"<<endl;
 	latch.lockShared();
 	vector<StringIndexFile*> ret;
 	ret.push_back(&this->entity);

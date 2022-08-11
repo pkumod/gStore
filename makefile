@@ -97,9 +97,9 @@ queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
 		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o
 
-signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
+#signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
-vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
+#vstreeobj = $(objdir)VSTree.o $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
 
 stringindexobj = $(objdir)StringIndex.o
 
@@ -116,12 +116,11 @@ databaseobj =  $(objdir)Database.o $(objdir)Join.o \
 
 trieobj = $(objdir)Trie.o $(objdir)TrieNode.o
 
-objfile = $(kvstoreobj) $(vstreeobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseobj) \
-		  $(utilobj) $(signatureobj) $(topkobj) $(queryobj) $(trieobj)
+objfile = $(kvstoreobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseobj) \
+		  $(utilobj) $(topkobj) $(queryobj) $(trieobj)
 	 
 inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 inc_rpc = -I./tools/srpc/_include -I./tools/srpc/workflow/_include -I/usr/local/include/google/protobuf
-
 
 #auto generate dependencies
 # http://blog.csdn.net/gmpy_tiger/article/details/51849474
@@ -358,8 +357,7 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 #objects in Database/ begin
 
 
-$(objdir)Database.o: Database/Database.cpp Database/Database.h \
-	$(objdir)SigEntry.o $(objdir)VSTree.o $(objdir)RDFParser.o \
+$(objdir)Database.o: Database/Database.cpp Database/Database.h $(objdir)RDFParser.o \
 	$(objdir)GeneralEvaluation.o $(objdir)StringIndex.o $(objdir)Transaction.o
 	$(CXX) $(CFLAGS) Database/Database.cpp $(inc) -o $(objdir)Database.o $(openmp)
 
@@ -385,7 +383,7 @@ $(objdir)PlanGenerator.o: Database/PlanGenerator.cpp Database/PlanGenerator.h \
 	$(CXX) $(CFLAGS) Database/PlanGenerator.cpp $(inc) -o $(objdir)PlanGenerator.o $(openmp)
 
 $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(objdir)IDList.o \
-	$(objdir)VSTree.o $(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)DPBTopKUtil.o
+	$(objdir)Join.o $(objdir)Transaction.o $(objdir)TableOperator.o $(objdir)DPBTopKUtil.o
 	$(CXX) $(CFLAGS) Database/Executor.cpp $(inc) -o $(objdir)Executor.o $(openmp) ${ldl}
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h \
@@ -407,7 +405,7 @@ $(objdir)IDList.o: Query/IDList.cpp Query/IDList.h
 $(objdir)SPARQLquery.o: Query/SPARQLquery.cpp Query/SPARQLquery.h $(objdir)BasicQuery.o
 	$(CXX) $(CFLAGS) Query/SPARQLquery.cpp $(inc) -o $(objdir)SPARQLquery.o $(openmp)
 
-$(objdir)BasicQuery.o: Query/BasicQuery.cpp Query/BasicQuery.h $(objdir)Signature.o
+$(objdir)BasicQuery.o: Query/BasicQuery.cpp Query/BasicQuery.h
 	$(CXX) $(CFLAGS) Query/BasicQuery.cpp $(inc) -o $(objdir)BasicQuery.o $(openmp)
 
 $(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(objdir)Stream.o
@@ -463,7 +461,7 @@ $(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(ob
 
 #no more using $(objdir)Database.o
 $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
-	$(objdir)VSTree.o $(objdir)StringIndex.o $(objdir)QueryParser.o \
+	$(objdir)StringIndex.o $(objdir)QueryParser.o \
 	$(objdir)EvalMultitypeValue.o $(objdir)SPARQLquery.o \
 	$(objdir)QueryCache.o $(objdir)ResultSet.o $(objdir)PathQueryHandler.o $(objdir)Optimizer.o
 	$(CXX) $(CFLAGS) Query/GeneralEvaluation.cpp $(inc) -o $(objdir)GeneralEvaluation.o $(openmp) ${ldl}
@@ -473,18 +471,18 @@ $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluatio
 
 #objects in Signature/ begin
 
-$(objdir)SigEntry.o: Signature/SigEntry.cpp Signature/SigEntry.h $(objdir)Signature.o
-	$(CXX) $(CFLAGS) Signature/SigEntry.cpp $(inc) -o $(objdir)SigEntry.o $(openmp)
-
-$(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
-	$(CXX) $(CFLAGS) Signature/Signature.cpp $(inc) -o $(objdir)Signature.o $(openmp)
+#$(objdir)SigEntry.o: Signature/SigEntry.cpp Signature/SigEntry.h $(objdir)Signature.o
+#	$(CXX) $(CFLAGS) Signature/SigEntry.cpp $(inc) -o $(objdir)SigEntry.o $(openmp)
+#
+#$(objdir)Signature.o: Signature/Signature.cpp Signature/Signature.h
+#	$(CXX) $(CFLAGS) Signature/Signature.cpp $(inc) -o $(objdir)Signature.o $(openmp)
 
 #objects in Signature/ end
 
 
 #objects in Util/ begin
 
-$(objdir)Util.o:  Util/Util.cpp Util/Util.h
+$(objdir)Util.o:  Util/Util.cpp Util/Util.h tqdm/tqdm.h tqdm/utils.h
 	$(CXX) $(CFLAGS) Util/Util.cpp -o $(objdir)Util.o $(openmp)
 
 $(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
@@ -551,17 +549,17 @@ $(objdir)OrderedVector.o: Util/OrderedVector.cpp Util/OrderedVector.h
 
 #objects in VSTree/ begin
 
-$(objdir)VSTree.o: VSTree/VSTree.cpp VSTree/VSTree.h $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
-	$(CXX) $(CFLAGS) VSTree/VSTree.cpp $(inc) -o $(objdir)VSTree.o $(def64IO) $(openmp)
-
-$(objdir)EntryBuffer.o: VSTree/EntryBuffer.cpp VSTree/EntryBuffer.h Signature/SigEntry.h
-	$(CXX) $(CFLAGS) VSTree/EntryBuffer.cpp $(inc) -o $(objdir)EntryBuffer.o $(def64IO) $(openmp)
-
-$(objdir)LRUCache.o: VSTree/LRUCache.cpp  VSTree/LRUCache.h VSTree/VNode.h
-	$(CXX) $(CFLAGS) VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o $(def64IO) $(openmp)
-
-$(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
-	$(CXX) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO) $(openmp)
+#$(objdir)VSTree.o: VSTree/VSTree.cpp VSTree/VSTree.h $(objdir)EntryBuffer.o $(objdir)LRUCache.o $(objdir)VNode.o
+#	$(CXX) $(CFLAGS) VSTree/VSTree.cpp $(inc) -o $(objdir)VSTree.o $(def64IO) $(openmp)
+#
+#$(objdir)EntryBuffer.o: VSTree/EntryBuffer.cpp VSTree/EntryBuffer.h Signature/SigEntry.h
+#	$(CXX) $(CFLAGS) VSTree/EntryBuffer.cpp $(inc) -o $(objdir)EntryBuffer.o $(def64IO) $(openmp)
+#
+#$(objdir)LRUCache.o: VSTree/LRUCache.cpp  VSTree/LRUCache.h VSTree/VNode.h
+#	$(CXX) $(CFLAGS) VSTree/LRUCache.cpp $(inc) -o $(objdir)LRUCache.o $(def64IO) $(openmp)
+#
+#$(objdir)VNode.o: VSTree/VNode.cpp VSTree/VNode.h
+#	$(CXX) $(CFLAGS) VSTree/VNode.cpp $(inc) -o $(objdir)VNode.o $(def64IO) $(openmp)
 
 #objects in VSTree/ end
 
@@ -644,13 +642,16 @@ pre:
 	rm -rf tools/antlr4-cpp-runtime-4/
 	rm -rf tools/srpc
 	rm -rf lib/libantlr4-runtime.a lib/libworkflow.a lib/libsrpc.a
+	rm -rf tools/indicators
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
+	cd tools; tar -xvf indicators.tar;
 	cd tools; unzip srpc.zip;
 	# cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	cd tools/srpc/workflow; make; cp _lib/libworkflow.a ../../../lib/;
-	cd tools/srpc; make; cp _lib/libsrpc.a ../../lib/; 
+	cd tools/srpc; make; cp _lib/libsrpc.a ../../lib/;
+
 $(api_cpp):
 	$(MAKE) -C api/http/cpp/src
 

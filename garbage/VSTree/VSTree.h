@@ -9,8 +9,8 @@
 #ifndef _VSTREE_VSTREE_H
 #define _VSTREE_VSTREE_H
 
-#include "../Util/Util.h"
-#include "../Query/SPARQLquery.h"
+#include "Util/Util.h"
+#include "Query/SPARQLquery.h"
 #include "VNode.h"
 #include "LRUCache.h"
 #include "EntryBuffer.h"

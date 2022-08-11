@@ -2,15 +2,15 @@
  *
  * EntryBuffer.h
  *
- *  Created on: 2014Äê7ÔÂ3ÈÕ
+ *  Created on: 2014ï¿½ï¿½7ï¿½ï¿½3ï¿½ï¿½
  *      Author: hanshuo
  */
 
 #ifndef ENTRYBUFFER_H_
 #define ENTRYBUFFER_H_
 
-#include "../Util/Util.h"
-#include "../Signature/SigEntry.h"
+#include "Util/Util.h"
+#include "Signature/SigEntry.h"
 
 //class SigEntry;
 
