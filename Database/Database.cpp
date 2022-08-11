@@ -705,6 +705,8 @@ Database::load(bool loadCSR)
 #ifdef THREAD_ON
 	pre2values_thread.join();
 #endif
+
+	cout << "Begin to set pre map ......";
 	this->setPreMap();
 
 #ifdef THREAD_ON
@@ -896,6 +898,19 @@ Database::load(bool loadCSR)
 void
 Database::load_cache()
 {
+	using namespace indicators;
+	ProgressBar bar{
+		option::BarWidth{50},
+		option::Start{"["},
+		option::Fill{"="},
+		option::Lead{">"},
+		option::Remainder{" "},
+		option::End{"]"},
+		option::PostfixText{"Load p2v cache 0/3"},
+		option::ForegroundColor{Color::green},
+		option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+	};
+
 	// get important pre ID
 	// a pre whose degree is more than 50% of max pre degree is important pre
 	// cout << "get important pre ID" << endl;
@@ -907,8 +922,17 @@ Database::load_cache()
 	// cout << endl;
 	// cout << "Begin to add cache of s2v, p2v and o2v ......" << endl;
 	this->load_candidate_pre2values();
+
+	bar.set_option(option::PostfixText{"Load s2v cache 1/3"});
+	bar.set_progress(33);
 	this->load_important_sub2values();
+
+	bar.set_option(option::PostfixText{"Load o2v cache 2/3"});
+	bar.set_progress(66);
 	this->load_important_obj2values();
+
+	bar.set_option(option::PostfixText{"Load cache done!"});
+	bar.set_progress(100); // all done
 	
 	// long t0 = Util::get_cur_time();
 	if (this->stringindex==NULL) {
