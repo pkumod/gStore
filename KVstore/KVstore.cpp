@@ -2781,7 +2781,6 @@ KVstore::close_subID2values()
 	this->subID2values->save();
 	delete this->subID2values;
 	this->subID2values = NULL;
-	cout << "Done closing subID2values" << endl;
 
 	return true;
 }
@@ -2792,7 +2791,7 @@ KVstore::close_subID2values()
 bool 
 KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num) 
 {
-	cout << "Begin building subID2values..." << endl;
+	// cout << "Begin building subID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_spo_cmp);
 	vector<unsigned> _oidlist_s;
 	vector<unsigned> _pidoffsetlist_s;
@@ -2809,10 +2808,31 @@ KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_subID2values(KVstore::CREATE_MODE, total_entity_num);
 
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build s2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
+	};
+
+	int bar_tmp = 0;
+	int one_percent_num = _triples_num/100;
+
 	//NOTICE: i*3 + j maybe break the unsigned limit
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		++bar_tmp;
+		if(bar_tmp == one_percent_num) {
+			bar.tick();
+			bar_tmp = 0;
+		}
+
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) 
 		{
@@ -2874,8 +2894,11 @@ KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 		}
 	}
 
+	if (!bar.is_completed())
+		bar.set_progress(100);
+
 	this->close_subID2values();
-	cout << "Finished building subID2values" << endl;
+	// cout << "Finished building subID2values" << endl;
 
 	return true;
 }
@@ -3449,7 +3472,7 @@ KVstore::close_objID2values()
 bool 
 KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num) 
 {
-	cout << "Begin building objID2values..." << endl;
+	// cout << "Begin building objID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_ops_cmp);
 	vector<unsigned> _sidlist_o;
 	vector<unsigned> _pidoffsetlist_o;
@@ -3463,9 +3486,30 @@ KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_objID2values(KVstore::CREATE_MODE, total_entity_num, total_literal_num);
 
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build o2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
+	};
+
+	int bar_tmp = 0;
+	int one_percent_num = _triples_num/100;
+
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		++bar_tmp;
+		if(bar_tmp == one_percent_num) {
+			bar.tick();
+			bar_tmp = 0;
+		}
+
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
 			if (_obj_change) {
@@ -3513,8 +3557,12 @@ KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 			}
 		}
 	}
+
+	if (!bar.is_completed())
+		bar.set_progress(100);
+
 	this->close_objID2values();
-	cout << "Finished building objID2values" << endl;
+	// cout << "Finished building objID2values" << endl;
 	return true;
 }
 
@@ -4057,7 +4105,7 @@ KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 //NOTICE: if we sort sidlist, then oidlist is not sorted; otherwise if we sort oidlist, then sidlist is not sorted
 //STRUCT of p2xx: triple_number sidlist oidlist(not sorted, linked with sidlist one by one)
 {
-	cout << "Begin building preID2values..." << endl;
+	// cout << "Begin building preID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_pso_cmp);
 	vector<unsigned> _sidlist_p;
 	vector<unsigned> _oidlist_p;
@@ -4067,9 +4115,30 @@ KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 
 	this->open_preID2values(KVstore::CREATE_MODE, total_pre_num);
 
+	indicators::ProgressBar bar{
+		indicators::option::BarWidth{50},
+		indicators::option::Start{"["},
+		indicators::option::Fill{"="},
+		indicators::option::Lead{">"},
+		indicators::option::Remainder{" "},
+		indicators::option::End{"]"},
+		indicators::option::PostfixText{"Build p2value"},
+		indicators::option::ForegroundColor{indicators::Color::green},
+		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
+	};
+
+	int bar_tmp = 0;
+	int one_percent_num = _triples_num/100;
+
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		++bar_tmp;
+		if(bar_tmp == one_percent_num) {
+			bar.tick();
+			bar_tmp = 0;
+		}
+
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
 			if (_pre_change) {
@@ -4105,8 +4174,11 @@ KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num
 		}
 	}
 
+	if (!bar.is_completed())
+		bar.set_progress(100);
+
 	this->close_preID2values();
-	cout << "Finished building preID2values" << endl;
+	// cout << "Finished building preID2values" << endl;
 	return true;
 }
 
@@ -4700,7 +4772,6 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
 		return false;
 	}
-    cout<<"open the "<<_tree_name<<endl;
 	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
 }

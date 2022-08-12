@@ -11,8 +11,8 @@
 #include <vector>
 #include <functional>
 #include <string>
-#include "../Util/Util.h"
-#include "../KVstore/KVstore.h"
+#include "Util/Util.h"
+#include "KVstore/KVstore.h"
 
 //    Statistics 类主要考虑了一条边和两条边的信息,
 //    以谓词 pre_id 作索引, 存储 (stype_id)-[pre_id]->(otype_id) 的数目和抽样信息

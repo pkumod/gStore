@@ -9,7 +9,6 @@
  */
 
 
-#include "../Util/Util.h"
 #include "../Database/Database.h"
 //#include "../Util/Slog.h"
 
@@ -107,7 +106,6 @@ main(int argc, char * argv[])
 		}
 		else
 		{
-			cout<<"Begin to build database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database _db(_db_path);
 			bool flag = _db.build(_rdf);

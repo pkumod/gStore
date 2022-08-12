@@ -9,8 +9,8 @@
 #ifndef _VSTREE_VNODE_H
 #define _VSTREE_VNODE_H
 
-#include "../Util/Util.h"
-#include "../Signature/SigEntry.h"
+#include "Util/Util.h"
+#include "Signature/SigEntry.h"
 #include "LRUCache.h"
 
 class VNode

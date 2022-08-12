@@ -359,7 +359,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		}
 		else
 		{
-			cout << "Alloc new array size " << CurEntryNum << endl;
+			// cout << "Alloc new array size " << CurEntryNum << endl;
 		}
 
 		for(unsigned i = 0; i < OldEntryNum; i++)
@@ -368,7 +368,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		delete [] array;
 		array = newp;
 
-		cout << "Finish Alloc" << endl;
+		// cout << "Finish Alloc" << endl;
 	}
 
 	AddInCache(_key, _str, _len);

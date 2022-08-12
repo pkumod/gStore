@@ -1297,11 +1297,11 @@ void QueryParser::replacePrefix(string &str)
 		//blank node
 		if (prefix == "_:")	return;
 
-		printf("prefix = %s\n", prefix.c_str());
+		// printf("prefix = %s\n", prefix.c_str());
 		if (this->prefix_map.count(prefix) != 0)
 		{
 			str = this->prefix_map[prefix].substr(0, this->prefix_map[prefix].length() - 1) + str.substr(sep + 1 ,str.length() - sep - 1) + ">";
-			printf("str = %s\n",str.c_str());
+			// printf("str = %s\n",str.c_str());
 		}
 		else
 		{
