@@ -10,8 +10,6 @@
 #define _DATABASE_DATABASE_H
 
 #include "../Query/SPARQLquery.h"
-#include "../Signature/SigEntry.h"
-#include "../VSTree/VSTree.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Parser/RDFParser.h"
 #include "../Parser/SPARQL/SPARQLParser.h"
@@ -90,7 +88,6 @@ public:
 	// id tuples file
 	string getIDTuplesFile();
 
-	// VSTree* getVSTree();
 	KVstore *getKVstore();
 	StringIndex *getStringIndex();
 	QueryCache *getQueryCache();
@@ -139,7 +136,6 @@ private:
 	// for log file
 	mutex log_lock;
 
-	// VSTree* vstree;
 	KVstore *kvstore;
 	StringIndex *stringindex;
 	Join *join;
@@ -206,7 +202,7 @@ private:
 	// However, I think this is not necessary because ?p is rare and the p2xx tree is small enough
 
 	void query_stringIndex(int id);
-	void check();
+	void print_data_count();
 	// used for multiple threads
 	//  void load_vstree(unsigned _vstree_size);
 	void load_entity2id(int _mode);

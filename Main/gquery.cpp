@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 				long tv_begin = Util::get_cur_time();
 
 				_db.load();
-				cout << "finish loading" << endl;
+				// cout << "finish loading" << endl;
 
 				string query = Util::getQueryFromFile(queryfile.c_str());
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 					cout << "the query file is empty!" << endl;
 					return 0;
 				}
-				cout << "the query is :" + query << endl;
+				// cout << "the query is :" + query << endl;
 				string resultfile = Util::getArgValue(argc, argv, "f", "resultfile");
 				ResultSet _rs;
 				FILE *ofp = stdout;

@@ -61,7 +61,6 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			ofile.open(_error_log,ios::app);
 			if (ofile)
 			{
-				cout << "Error log file: " << _error_log << endl;
 				cout.rdbuf(ofile.rdbuf());
 			}
 			else
@@ -316,7 +315,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			cout.rdbuf(coutbuf);
 		}
 	}
-	cout << "RDFParser parseFile done!" << endl;
+	// cout << "RDFParser parseFile done!" << endl;
 
 	return numLines;
 }

@@ -9,7 +9,6 @@
 
 // #include "../Query/SPARQLquery.h"
 #include "../Query/IDList.h"
-#include "../VSTree/VSTree.h"
 #include "TableOperator.h"
 // #include "../Query/QueryPlan.h"
 #include "../Query/QueryTree.h"

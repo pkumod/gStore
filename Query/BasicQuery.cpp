@@ -25,7 +25,7 @@ void
 BasicQuery::clear()
 {
     delete[] this->var_degree;
-    delete[] this->var_sig;
+    // delete[] this->var_sig;
     delete[] this->var_name;
     delete[] this->link_with_constant;
 
@@ -45,7 +45,7 @@ BasicQuery::clear()
     delete[] this->edge_type;
 
     this->var_degree = NULL;
-    this->var_sig = NULL;
+    // this->var_sig = NULL;
     this->var_name = NULL;
 
     //this->edge_sig = NULL;
@@ -198,12 +198,12 @@ BasicQuery::getResultListPointer()
     return &result_list;
 }
 
-const EntityBitSet& 
-BasicQuery::getVarBitSet(int _i)const
-{
-    // check whether _i exceeds will be better
-    return (this->var_sig[_i]);
-}
+// const EntityBitSet&
+// BasicQuery::getVarBitSet(int _i)const
+// {
+//     // check whether _i exceeds will be better
+//     return (this->var_sig[_i]);
+// }
 
 // check whether the i-th edge of _var is IN edge
 bool 
@@ -739,7 +739,7 @@ BasicQuery::initial()
     this->encode_result = false;
     this->graph_var_num = 0;
     this->var_degree = new int[BasicQuery::MAX_VAR_NUM];
-    this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
+    // this->var_sig = new EntityBitSet[BasicQuery::MAX_VAR_NUM];
     this->var_name = new string[BasicQuery::MAX_VAR_NUM];
     this->link_with_constant = new bool[BasicQuery::MAX_VAR_NUM];
 
@@ -756,7 +756,7 @@ BasicQuery::initial()
     for(int i = 0; i < BasicQuery::MAX_VAR_NUM; ++i)
     {
         this->var_degree[i] = 0;
-        this->var_sig[i].reset();
+        // this->var_sig[i].reset();
         this->var_name[i] = "";
         this->link_with_constant[i] = false;
         //this->is_literal_candidate_added[i] = false;
@@ -996,7 +996,6 @@ string BasicQuery::triple_str()
     return _ss.str();
 }
 
-
 string BasicQuery::to_str()
 {
     Util::logging("IN BasicQuery::to_str");
@@ -1012,7 +1011,7 @@ string BasicQuery::to_str()
     {
         _ss << "\t" << i << " : [name=" << this->var_name[i] << "]";
         _ss << " [degree=" << this->var_degree[i] << "]";
-        _ss << " [sig=" << Signature::BitSet2str(this->var_sig[i]) << "]";
+        // _ss << " [sig=" << Signature::BitSet2str(this->var_sig[i]) << "]";
         _ss << endl << endl;
     }
     _ss << "Edge: " << endl;

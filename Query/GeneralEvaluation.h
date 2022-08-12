@@ -9,7 +9,6 @@
 #ifndef _QUERY_GENERALEVALUATION_H
 #define _QUERY_GENERALEVALUATION_H
 
-#include "../VSTree/VSTree.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Database/CSR.h"
 #include "../Database/Optimizer.h"
@@ -29,7 +28,6 @@ class GeneralEvaluation
 		QueryParser query_parser;
 		QueryTree query_tree;
 		int well_designed;
-		// VSTree *vstree;
 		KVstore *kvstore;
 		StringIndex *stringindex;
 		shared_ptr<Optimizer> optimizer_;
