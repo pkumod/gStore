@@ -1,9 +1,9 @@
 /**
-* @file  Socket.cpp
-* @author  suxunbin
-* @date  11-AUG-2021
-* @brief  a socket interface
-*/
+ * @file  Socket.cpp
+ * @author  suxunbin
+ * @date  11-AUG-2021
+ * @brief  a socket interface
+ */
 
 #include "Socket.h"
 
@@ -19,7 +19,8 @@ Socket::Socket()
 	this->password = "";
 }
 
-Socket::Socket(const Socket &socket_src) {
+Socket::Socket(const Socket &socket_src)
+{
 	this->sock = socket_src.sock;
 	this->addr = socket_src.addr;
 	this->username = socket_src.username;
@@ -43,17 +44,17 @@ bool Socket::create()
 	}
 
 	/**
-	* @brief TIME_WAIT - arg
-	*/
+	 * @brief TIME_WAIT - arg
+	 */
 	int on = 1;
-	int setsockopt_REUSEADDR_return = setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
+	int setsockopt_REUSEADDR_return = setsockopt(this->sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
 
 	/**
-	* @brief BUFFER_SIZE - arg
-	*/
+	 * @brief BUFFER_SIZE - arg
+	 */
 	int buffer_size = 128 * 1024;
-	int setsockopt_RCVBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_RCVBUF, (const char*)&buffer_size, sizeof(buffer_size));
-	int setsockopt_SNDBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_SNDBUF, (const char*)&buffer_size, sizeof(buffer_size));
+	int setsockopt_RCVBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_RCVBUF, (const char *)&buffer_size, sizeof(buffer_size));
+	int setsockopt_SNDBUF_return = setsockopt(this->sock, SOL_SOCKET, SO_SNDBUF, (const char *)&buffer_size, sizeof(buffer_size));
 
 	if (setsockopt_REUSEADDR_return == -1 ||
 		setsockopt_RCVBUF_return == -1 ||
@@ -97,7 +98,7 @@ bool Socket::bind(const unsigned short _port)
 	this->addr.sin_addr.s_addr = htons(INADDR_ANY);
 	this->addr.sin_port = htons(_port);
 
-	int bind_return = ::bind(this->sock, (struct sockaddr*) & this->addr, sizeof(this->addr));
+	int bind_return = ::bind(this->sock, (struct sockaddr *)&this->addr, sizeof(this->addr));
 
 	if (bind_return == -1)
 	{
@@ -107,7 +108,7 @@ bool Socket::bind(const unsigned short _port)
 	return true;
 }
 
-bool Socket::listen()const
+bool Socket::listen() const
 {
 	if (!this->isValid())
 	{
@@ -123,10 +124,10 @@ bool Socket::listen()const
 	return true;
 }
 
-bool Socket::accept(Socket& _new_socket)const
+bool Socket::accept(Socket &_new_socket) const
 {
 	size_t addr_length = sizeof(this->addr);
-	_new_socket.sock = ::accept(this->sock, (struct sockaddr*) & this->addr, (socklen_t*)&addr_length);
+	_new_socket.sock = ::accept(this->sock, (struct sockaddr *)&this->addr, (socklen_t *)&addr_length);
 
 	if (_new_socket.sock < 0)
 	{
@@ -136,10 +137,10 @@ bool Socket::accept(Socket& _new_socket)const
 	return true;
 }
 
-bool Socket::send(const std::string& _msg)const
+bool Socket::send(const std::string &_msg) const
 {
 	int send_len = _msg.size() + 1;
-	char* buf = new char[send_len];
+	char *buf = new char[send_len];
 	::strcpy(buf, _msg.c_str());
 
 	int send_return = ::send(this->sock, buf, send_len, 0);
@@ -154,14 +155,14 @@ bool Socket::send(const std::string& _msg)const
 	return true;
 }
 
-int Socket::recv(std::string& _msg)const
+int Socket::recv(std::string &_msg) const
 {
 	_msg.clear();
 
 	/**
-	* @brief Allocate the buffer's space by the BUFFER_SIZE, and receive the message's context.
-	*/
-	char* buf = new char[BUFFER_SIZE];
+	 * @brief Allocate the buffer's space by the BUFFER_SIZE, and receive the message's context.
+	 */
+	char *buf = new char[BUFFER_SIZE];
 	int recv_len = 0;
 	while (true)
 	{
@@ -177,7 +178,7 @@ int Socket::recv(std::string& _msg)const
 		else if (recv_len > 0)
 		{
 			buf[recv_len] = '\0';
-			//std::cout << "the connection has been gracefully closed." << std::endl;
+			// std::cout << "the connection has been gracefully closed." << std::endl;
 			break;
 		}
 	}
@@ -210,7 +211,7 @@ bool Socket::connect(const std::string _hostname, const unsigned short _port)
 		return false;
 	}
 
-	status = ::connect(this->sock, (sockaddr*)&this->addr, sizeof(this->addr));
+	status = ::connect(this->sock, (sockaddr *)&this->addr, sizeof(this->addr));
 
 	if (status == 0)
 	{
@@ -222,7 +223,7 @@ bool Socket::connect(const std::string _hostname, const unsigned short _port)
 	}
 }
 
-bool Socket::isValid()const
+bool Socket::isValid() const
 {
 	return (this->sock != -1);
 }
