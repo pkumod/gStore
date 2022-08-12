@@ -8,25 +8,29 @@
 #ifndef __HTTP_CURL_H__
 #define __HTTP_CURL_H__
 
-//REFERENCE: https://curl.haxx.se/
-//libcurl is useful for developing http client, but not for server
+// REFERENCE: https://curl.haxx.se/
+// libcurl is useful for developing http client, but not for server
 //
-//TODO: deal with cookie
-//URL encode: http://www.ruanyifeng.com/blog/2010/02/url_encoding.html
+// TODO: deal with cookie
+// URL encode: http://www.ruanyifeng.com/blog/2010/02/url_encoding.html
 
 #include <curl/curl.h>
+#include "../../../../Server/Socket.h"
 #include <string>
 #include <cstring>
 #include <iostream>
 
 #define defaultServerIP "127.0.0.1"
 #define defaultServerPort 9000
+#define defaultlocalPort 21000
 
 class GstoreConnector
 {
 public:
 	std::string serverIP;
 	int serverPort;
+	int localPort;
+	Socket socket;
 	std::string Url;
 	std::string username;
 	std::string password;
@@ -36,48 +40,48 @@ public:
 
 public:
 	/**
-	* @brief: HTTP POST request
-	* @param strUrl: the Url of the request, for example: http://www.baidu.com
-	* @param strPost: input format: para1=val1?para2=val2&¡­
-	* @param strResponse: content returned
-	* @return: returned value
-	*/
+	 * @brief: HTTP POST request
+	 * @param strUrl: the Url of the request, for example: http://www.baidu.com
+	 * @param strPost: input format: para1=val1?para2=val2&ï¿½ï¿½
+	 * @param strResponse: content returned
+	 * @return: returned value
+	 */
 
-	int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
+	int Post(const std::string &strUrl, const std::string &strPost, const std::string &filename);
 
-	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
-
-	/**
-	* @brief: HTTP GET request
-	* @param strUrl: the Url of the request, for example: http://www.baidu.com
-	* @param strResponse: content returned
-	* @return: returned value
-	*/
-
-	int Get(const std::string& strUrl, const std::string& filename);
-
-	int Get(const std::string& strUrl, std::string& strResponse);
+	int Post(const std::string &strUrl, const std::string &strPost, std::string &strResponse);
 
 	/**
-	* @brief: HTTPS POST request (uncertified version)
-	* @param strUrl: the Url of the request, for example: https://www.alipay.com
-	* @param strPost: input format: para1=val1?para2=val2&¡­
-	* @param strResponse: content returned
-	* @param pCaPath: the path to the CA certificate. If NULL, the server-side certificate is not validated.
-	* @return: returned value
-	*/
+	 * @brief: HTTP GET request
+	 * @param strUrl: the Url of the request, for example: http://www.baidu.com
+	 * @param strResponse: content returned
+	 * @return: returned value
+	 */
 
-	int Posts(const std::string& strUrl, const std::string& strPost, std::string& strResponse, const char* pCaPath = NULL);
+	int Get(const std::string &strUrl, const std::string &filename);
+
+	int Get(const std::string &strUrl, std::string &strResponse);
 
 	/**
-	* @brief: HTTPS GET request (uncertified version)
-	* @param strUrl: the Url of the request, for example: https://www.alipay.com
-	* @param strResponse: content returned
-	* @param pCaPath: the path to the CA certificate. If NULL, the server-side certificate is not validated.
-	* @return: returned value
-	*/
+	 * @brief: HTTPS POST request (uncertified version)
+	 * @param strUrl: the Url of the request, for example: https://www.alipay.com
+	 * @param strPost: input format: para1=val1?para2=val2&ï¿½ï¿½
+	 * @param strResponse: content returned
+	 * @param pCaPath: the path to the CA certificate. If NULL, the server-side certificate is not validated.
+	 * @return: returned value
+	 */
 
-	int Gets(const std::string& strUrl, std::string& strResponse, const char* pCaPath = NULL);
+	int Posts(const std::string &strUrl, const std::string &strPost, std::string &strResponse, const char *pCaPath = NULL);
+
+	/**
+	 * @brief: HTTPS GET request (uncertified version)
+	 * @param strUrl: the Url of the request, for example: https://www.alipay.com
+	 * @param strResponse: content returned
+	 * @param pCaPath: the path to the CA certificate. If NULL, the server-side certificate is not validated.
+	 * @return: returned value
+	 */
+
+	int Gets(const std::string &strUrl, std::string &strResponse, const char *pCaPath = NULL);
 
 public:
 	std::string build(std::string db_name, std::string db_path, std::string request_type = "GET");
@@ -102,6 +106,8 @@ public:
 	std::string rollback(std::string db_name, std::string tid, std::string request_type = "GET");
 	std::string getTransLog(std::string request_type = "GET");
 	std::string checkpoint(std::string db_name, std::string request_type = "GET");
+	void get_info();
+	int parseJson(std::string strJson);
 	void SetDebug(bool bDebug);
 
 private:
