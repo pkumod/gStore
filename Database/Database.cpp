@@ -783,7 +783,7 @@ bool Database::load(Socket &socket, bool loadCSR)
 	this->if_loaded = true;
 
 	cout << "finish load" << endl;
-	check();
+	print_data_count();
 
 #ifdef ONLY_READ
 	this->kvstore->close_id2entity();
