@@ -652,10 +652,10 @@ pre:
 	cd tools/srpc/workflow; make; cp _lib/libworkflow.a ../../../lib/;
 	cd tools/srpc; make; cp _lib/libsrpc.a ../../lib/;
 
-$(api_cpp):
+$(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/http/cpp/src
 
-$(api_socket):
+$(api_socket): $(objdir)Socket.o
 	$(MAKE) -C api/socket/cpp/src
 
 
