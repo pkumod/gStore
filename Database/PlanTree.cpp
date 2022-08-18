@@ -534,7 +534,7 @@ void PlanTree::AddSatelliteNode(BGPQuery *bgpquery, unsigned int satellite_node_
 												var_descrip->so_edge_type_[0] == Util::EDGE_IN ? JoinMethod::s2p : JoinMethod::o2p);
 			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
-			auto join_node = make_shared<FeedOneNode>(satellite_node_id,join_a_node_edge_info, join_a_node_edge_const_info, false);
+			auto join_node = make_shared<FeedOneNode>(bgpquery->p_id_[edge_index],join_a_node_edge_info, join_a_node_edge_const_info, true);
 			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
 																	join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
 
