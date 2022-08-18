@@ -44,12 +44,12 @@ void CalculatePosVarMappingNode(TopKTreeNode* top_k_tree_node,shared_ptr<std::ma
 shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>> CalculatePosVarMapping(shared_ptr<TopKSearchPlan> search_plan);
 
 double GetScore(string &v, stringstream &ss);
-void GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
+void GetVarCoefficientsTreeNode(CompTreeNode *comp_tree_node,
                                 std::map<std::string,double>& coefficients,
                                 bool minus_signed=false);
 
 
-std::shared_ptr<std::map<std::string,double>> getVarCoefficients(QueryTree::Order order);
+std::shared_ptr<std::map<std::string,double>> getVarCoefficients(Order order);
 
 std::shared_ptr< std::map<TYPE_ENTITY_LITERAL_ID,double>>
 GetChildNodeScores(double coefficient,

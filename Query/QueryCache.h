@@ -25,7 +25,7 @@ class QueryCache
 		int time_now;
 		long long total_memory_used;
 
-		typedef std::vector<QueryTree::GroupPattern::Pattern> Patterns;
+		typedef std::vector<GroupPattern::Pattern> Patterns;
 		typedef std::pair<int, std::pair<Patterns, std::vector<std::string> > > LRUStruct;
 
 		std::map<Patterns, std::map<std::vector<std::string>, std::pair<std::vector<unsigned>, int> > > cache;

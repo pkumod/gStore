@@ -478,3 +478,54 @@ ResultSet::getOneRecord()
 	}
 }
 
+TempResult
+ResultSet::to_tempresult()
+{
+	TempResult tmp;
+    long long ans_num = max((long long)this->ansNum - this->output_offset, 0LL);
+	if (this->output_limit != -1)
+		ans_num = min(ans_num, (long long)this->output_limit);
+	if(ans_num == 0)
+	{
+		return tmp;
+	}
+
+	for(int i = 0; i < this->true_select_var_num; i++)
+	{
+        tmp.str_varset.addVar(this->var_name[i]);
+        //cout<<"##VAR##"<<this->var_name[i]<<endl;
+	}
+
+	if (this->useStream)
+		this->resetStream();
+
+	const Bstr* bp = NULL;
+	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
+	{
+		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+			break;
+
+		if (this->useStream)
+			bp = this->stream->read();
+
+		if (i >= this->output_offset)
+		{
+            //cout<<"##VALUE##";
+            tmp.result.push_back(TempResult::ResultPair());
+            TempResult::ResultPair& rp=*(tmp.result.end()-1);
+			for(int j = 0; j < this->true_select_var_num; j++)
+			{
+				if (!this->useStream){
+					rp.str.push_back(Util::node2string(this->answer[i][j].c_str()));
+                    //cout<<","<<this->answer[i][j].c_str();
+				}else{
+					rp.str.push_back(Util::node2string(bp[j].getStr()));
+                    //cout<<";"<<bp[j].getStr();
+                }
+			}
+            //cout<<endl;
+		}
+	}
+
+	return tmp;
+}

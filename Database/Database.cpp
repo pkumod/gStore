@@ -1858,13 +1858,13 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 
 		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 		{
-			QueryTree::GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
+			GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
 
 			update_triple_num = update_pattern.sub_group_pattern.size();
 			update_triple = new TripleWithObjType[update_triple_num];
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
-				if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 				{
 					TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
 					if (update_pattern.sub_group_pattern[i].pattern.object.value[0] == '<')

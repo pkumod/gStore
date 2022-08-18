@@ -108,23 +108,6 @@ void QueryParser::printQueryTree()
 }
 
 /**
-	queryUnit : query ;
-	Visit node queryUnit: recursively call visit on its only child node query.
-	(Redundant, can be removed without affecting QueryParser's function)
-
-	@param ctx pointer to queryUnit's context.
-	@return a dummy antlrcpp::Any object.
-*/
-antlrcpp::Any QueryParser::visitQueryUnit(SPARQLParser::QueryUnitContext *ctx)
-{
-	// printNode(ctx, "queryUnit");
-
-	visit(ctx->query());
-
-	return antlrcpp::Any();
-}
-
-/**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
 	(Redundant, can be removed without affecting QueryParser's function)
@@ -220,7 +203,7 @@ antlrcpp::Any QueryParser::visitAskquery(SPARQLParser::AskqueryContext *ctx)
 	@param group_pattern the reference to QueryTree's outermost group graph pattern.
 	@return a dummy antlrcpp::Any object.
 */
-antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ctx, QueryTree::GroupPattern &group_pattern)
+antlrcpp::Any QueryParser::visitWhereClause(SPARQLParser::WhereClauseContext *ctx, GroupPattern &group_pattern)
 {
 	// Call explictly to pass group_pattern as a parameter
 	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern);
@@ -308,8 +291,8 @@ antlrcpp::Any QueryParser::visitSelectClause(SPARQLParser::SelectClauseContext *
 		for (auto var : ctx->var())
 		{
 			query_tree_ptr->addProjectionVar();
-			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-			proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
+			ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+			proj_var.aggregate_type = ProjectionVar::None_type;
 			proj_var.var = var->getText();
 		}
 		for (auto expressionAsVar : ctx->expressionAsVar())
@@ -360,20 +343,20 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				throw runtime_error("[ERROR] The supported aggregate function now is COUNT, MIN, MAX, AVG, SUM only");
 
 			query_tree_ptr->addProjectionVar();
-			QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+			ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 			if (tmp == "COUNT")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Count_type;
+				proj_var.aggregate_type = ProjectionVar::Count_type;
 			else if (tmp == "MIN")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Min_type;
+				proj_var.aggregate_type = ProjectionVar::Min_type;
 			else if (tmp == "MAX")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Max_type;
+				proj_var.aggregate_type = ProjectionVar::Max_type;
 			else if (tmp == "AVG")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Avg_type;
+				proj_var.aggregate_type = ProjectionVar::Avg_type;
 			else if (tmp == "SUM")
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Sum_type;
+				proj_var.aggregate_type = ProjectionVar::Sum_type;
 			else if (tmp == "GROUP_CONCAT")
 			{
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Groupconcat_type;
+				proj_var.aggregate_type = ProjectionVar::Groupconcat_type;
 				if (aggCtx->string())
 					proj_var.separator = aggCtx->string()->getText();
 				if (proj_var.separator[0] == '\'')
@@ -416,48 +399,48 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMCLIQUE")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
-				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 				// cout<<"tmp:"<<tmp<<endl;
 				if (tmp == "SIMPLECYCLEPATH")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCyclePath_type;
+					proj_var.aggregate_type = ProjectionVar::simpleCyclePath_type;
 				else if (tmp == "SIMPLECYCLEBOOLEAN")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::simpleCycleBoolean_type;
+					proj_var.aggregate_type = ProjectionVar::simpleCycleBoolean_type;
 				else if (tmp == "CYCLEPATH")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::cyclePath_type;
+					proj_var.aggregate_type = ProjectionVar::cyclePath_type;
 				else if (tmp == "CYCLEBOOLEAN")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::cycleBoolean_type;
+					proj_var.aggregate_type = ProjectionVar::cycleBoolean_type;
 				else if (tmp == "SHORTESTPATH")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPath_type;
+					proj_var.aggregate_type = ProjectionVar::shortestPath_type;
 				else if (tmp == "SHORTESTPATHLEN")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::shortestPathLen_type;
+					proj_var.aggregate_type = ProjectionVar::shortestPathLen_type;
 				else if (tmp == "KHOPREACHABLE")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachable_type;
+					proj_var.aggregate_type = ProjectionVar::kHopReachable_type;
 				else if (tmp == "KHOPENUMERATE")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopEnumerate_type;
+					proj_var.aggregate_type = ProjectionVar::kHopEnumerate_type;
 				else if (tmp == "KHOPREACHABLEPATH")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachablePath_type;
+					proj_var.aggregate_type = ProjectionVar::kHopReachablePath_type;
 				else if (tmp == "PPR")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::ppr_type;
+					proj_var.aggregate_type = ProjectionVar::ppr_type;
 				else if (tmp == "TRIANGLECOUNTING")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::triangleCounting_type;
+					proj_var.aggregate_type = ProjectionVar::triangleCounting_type;
 				else if (tmp == "CLOSENESSCENTRALITY")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::closenessCentrality_type;
+					proj_var.aggregate_type = ProjectionVar::closenessCentrality_type;
 				else if (tmp == "BFSCOUNT")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::bfsCount_type;
+					proj_var.aggregate_type = ProjectionVar::bfsCount_type;
 				else if (tmp == "PR")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::pr_type;
+					proj_var.aggregate_type = ProjectionVar::pr_type;
 				else if (tmp == "SSSP")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::sssp_type;
+					proj_var.aggregate_type = ProjectionVar::sssp_type;
 				else if (tmp == "SSSPLEN")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::sssplen_type;
+					proj_var.aggregate_type = ProjectionVar::sssplen_type;
 				else if (tmp == "LABELPROP")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::labelProp_type;
+					proj_var.aggregate_type = ProjectionVar::labelProp_type;
 				else if (tmp == "WCC")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::wcc_type;
+					proj_var.aggregate_type = ProjectionVar::wcc_type;
 				else if (tmp == "CLUSTERCOEFF")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::clusterCoeff_type;
+					proj_var.aggregate_type = ProjectionVar::clusterCoeff_type;
 				else if (tmp == "MAXIMUMCLIQUE")
-					proj_var.aggregate_type = QueryTree::ProjectionVar::maximumClique_type;
+					proj_var.aggregate_type = ProjectionVar::maximumClique_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -541,8 +524,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			else if (tmp == "PFN") //Personalized Function
 			{
 				query_tree_ptr->addProjectionVar();
-				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-				proj_var.aggregate_type = QueryTree::ProjectionVar::PFN_type;
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = ProjectionVar::PFN_type;
 				// set iri_set
 				auto iriSet = bicCtx->varOrIriSet()->varOrIri();
 				for (auto iri : iriSet)
@@ -592,8 +575,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{
 				query_tree_ptr->addProjectionVar();
-				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-				proj_var.aggregate_type = QueryTree::ProjectionVar::Contains_type;
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = ProjectionVar::Contains_type;
 				proj_var.func_args.push_back(bicCtx->expression(0)->getText());
 				proj_var.func_args.push_back(bicCtx->expression(1)->getText());
 				proj_var.var = varCtx->getText();
@@ -621,8 +604,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		}
 		// SPARQLParser::IriOrFunctionContext *funcCtx = prmCtx->iriOrFunction();
 		query_tree_ptr->addProjectionVar();
-		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-		proj_var.aggregate_type = QueryTree::ProjectionVar::Custom_type;
+		ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		proj_var.aggregate_type = ProjectionVar::Custom_type;
 		string custom_func_iri = prmCtx->iriOrFunction()->iri()->getText();
 		proj_var.custom_func_name = custom_func_iri.substr(1, custom_func_iri.length() - 2);
 		// Don't deal with DISTINCT in argList for now
@@ -632,10 +615,10 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	else
 	{
 		query_tree_ptr->addProjectionVar();
-		QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-		proj_var.aggregate_type = QueryTree::ProjectionVar::CompTree_type;
+		ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+		proj_var.aggregate_type = ProjectionVar::CompTree_type;
 		proj_var.var = varCtx->getText();
-		// proj_var.comp_tree_root = new QueryTree::CompTreeNode;
+		// proj_var.comp_tree_root = new CompTreeNode;
 		buildCompTree(expCtx, -1, proj_var.comp_tree_root);
 	}
 }
@@ -649,7 +632,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	used to branch out the right child node.
 	@param curr_node pointer to the current CompTree node.
 */
-void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node)
+void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node)
 {
 	if (root->children.size() == 1)
 	{
@@ -707,8 +690,8 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 		if (((SPARQLParser::IriOrFunctionContext *)root)->argList())
 			throw runtime_error("[ERROR]	Custom function not supported");
 		curr_node.oprt = left;
-		// curr_node.lchild = new QueryTree::CompTreeNode;
-		curr_node.children.push_back(QueryTree::CompTreeNode());
+		// curr_node.lchild = new CompTreeNode;
+		curr_node.children.push_back(CompTreeNode());
 		// curr_node.rchild = NULL;
 		curr_node.val = "";
 		if (left != "NOW")
@@ -728,13 +711,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			// relationalexpression : numericexpression K_IN expressionList
 			curr_node.oprt = "IN";
 			curr_node.val = "";
-			curr_node.children.push_back(QueryTree::CompTreeNode());
+			curr_node.children.push_back(CompTreeNode());
 			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
 			int numChild = 1;
 			for (auto expression : \
 				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
 			{
-				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children.push_back(CompTreeNode());
 				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
 				numChild++;
 			}
@@ -747,12 +730,12 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 				// int new_oper_pos = oper_pos + 2;
 				curr_node.oprt = root->children[oper_pos + 2]->getText();
 				curr_node.val = "";
-				// curr_node.lchild = new QueryTree::CompTreeNode;
-				// curr_node.rchild = new QueryTree::CompTreeNode;
+				// curr_node.lchild = new CompTreeNode;
+				// curr_node.rchild = new CompTreeNode;
 				// buildCompTree(root->children[oper_pos + 1], -1, curr_node.lchild);
 				// buildCompTree(root, oper_pos + 2, curr_node.rchild);
-				curr_node.children.push_back(QueryTree::CompTreeNode());
-				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children.push_back(CompTreeNode());
+				curr_node.children.push_back(CompTreeNode());
 				buildCompTree(root->children[oper_pos + 1], -1, curr_node.children[0]);
 				buildCompTree(root, oper_pos + 2, curr_node.children[1]);
 			}
@@ -770,13 +753,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			// relationalexpression : K_NOT K_IN expressionList
 			curr_node.oprt = "NOT IN";
 			curr_node.val = "";
-			curr_node.children.push_back(QueryTree::CompTreeNode());
+			curr_node.children.push_back(CompTreeNode());
 			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
 			int numChild = 1;
 			for (auto expression : \
 				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
 			{
-				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children.push_back(CompTreeNode());
 				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
 				numChild++;
 			}
@@ -798,7 +781,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 			curr_node.oprt = funcName;
 			if (funcName == "BOUND")
 			{
-				curr_node.children.push_back(QueryTree::CompTreeNode());
+				curr_node.children.push_back(CompTreeNode());
 				curr_node.children[0].oprt = "";
 				curr_node.children[0].val = ((SPARQLParser::BuiltInCallContext *)root)->var()->getText();
 			}
@@ -834,7 +817,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 				int numChild = 0;
 				for (auto expression : ((SPARQLParser::RegexexpressionContext *)root)->expression())
 				{
-					curr_node.children.push_back(QueryTree::CompTreeNode());
+					curr_node.children.push_back(CompTreeNode());
 					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
 					numChild++;
 				}
@@ -844,7 +827,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 				int numChild = 0;
 				for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expression())
 				{
-					curr_node.children.push_back(QueryTree::CompTreeNode());
+					curr_node.children.push_back(CompTreeNode());
 					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
 					numChild++;
 				}
@@ -865,15 +848,45 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
-	// subSelect not supported
+	if (ctx->subSelect()) visitSubSelect(ctx->subSelect(), group_pattern);
+	else visitGroupGraphPatternSub(ctx->groupGraphPatternSub(), group_pattern);
 
-	visitGroupGraphPatternSub(ctx->groupGraphPatternSub(), group_pattern);
-
-	return antlrcpp::Any(); 
+	return antlrcpp::Any();
 }
 
+antlrcpp::Any QueryParser::visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
+	GroupPattern &group_pattern)
+{
+    // cout<<"##Enter visitSubSelect##"<<ctx->getText()<<endl;
+	group_pattern.addOneSubquery();
+    QueryParser new_parser(&group_pattern.getLastSubquery());
+    new_parser.prefix_map=prefix_map;
+    new_parser.visitSubSelect_inner(ctx);
+    if(!group_pattern.getLastSubquery().checkProjectionAsterisk()){
+        QueryTreeRelabeler qtr("_aaaaaaaaaaaa");
+        qtr.excluding=group_pattern.getLastSubquery().getResultProjectionVarset();
+        for(int i=1;i<=12;i++) qtr.suffix[i]+=rand()%26;
+        group_pattern.getLastSubquery().relabel(qtr);
+    }
+    // cout<<"##Result visitSubSelect##"<<endl;
+    // group_pattern.print(0);
+    // cout<<"##Exit visitSubSelect##"<<endl;
+	return antlrcpp::Any();
+}
+
+antlrcpp::Any QueryParser::visitSubSelect_inner(SPARQLParser::SubSelectContext *ctx)
+{
+    //selectClause
+    visit(ctx->selectClause());
+    //whereClause
+    visitWhereClause(ctx->whereClause(), query_tree_ptr->getGroupPattern());
+    //solutionModifier
+    visit(ctx->solutionModifier());
+    //valuesClause
+	return antlrcpp::Any();
+}
 /**
 	groupGraphPatternSub : triplesBlock? graphPatternTriplesBlock* ;
 	graphPatternTriplesBlock : graphPatternNotTriples '.'? triplesBlock? ;
@@ -886,7 +899,7 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	if (firstVisitGroupGraphPatternSub && ctx->graphPatternTriplesBlock().empty())
 		query_tree_ptr->setSingleBGP(true);
@@ -913,7 +926,7 @@ antlrcpp::Any QueryParser::visitGroupGraphPatternSub(SPARQLParser::GroupGraphPat
 	@param group_pattern a group graph pattern.
 	@return a dummy antlrcpp::Any object.
 */
-antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, QueryTree::GroupPattern &group_pattern)
+antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, GroupPattern &group_pattern)
 {
 	visitTriplesSameSubjectpath(ctx->triplesSameSubjectpath(), group_pattern);
 	if (ctx->triplesBlock())
@@ -933,7 +946,7 @@ antlrcpp::Any QueryParser::visitTriplesBlock(SPARQLParser::TriplesBlockContext *
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitGraphPatternNotTriples(SPARQLParser::GraphPatternNotTriplesContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	if (ctx->groupOrUnionGraphPattern())
 		visitGroupOrUnionGraphPattern(ctx->groupOrUnionGraphPattern(), group_pattern);
@@ -963,12 +976,17 @@ antlrcpp::Any QueryParser::visitGraphPatternNotTriples(SPARQLParser::GraphPatter
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUnionGraphPatternContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	if (ctx->children.size() == 1)
 	{
-		group_pattern.addOneGroup();
-		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern.getLastGroup());
+		if (ctx->groupGraphPattern(0)->subSelect())
+			visitSubSelect(ctx->groupGraphPattern(0)->subSelect(), group_pattern);
+		else
+		{
+			group_pattern.addOneGroup();
+			visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern.getLastGroup());
+		}
 	}
 	else
 	{
@@ -993,9 +1011,9 @@ antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUn
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitOptionalGraphPattern(SPARQLParser::OptionalGraphPatternContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
-	group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Optional_type);
+	group_pattern.addOneOptional(GroupPattern::SubGroupPattern::Optional_type);
 	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern.getLastOptional());
 
 	return antlrcpp::Any();
@@ -1011,9 +1029,9 @@ antlrcpp::Any QueryParser::visitOptionalGraphPattern(SPARQLParser::OptionalGraph
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
-	group_pattern.addOneOptional(QueryTree::GroupPattern::SubGroupPattern::Minus_type);
+	group_pattern.addOneOptional(GroupPattern::SubGroupPattern::Minus_type);
 	visitGroupGraphPattern(ctx->groupGraphPattern(), group_pattern.getLastOptional());
 
 	return antlrcpp::Any();
@@ -1029,7 +1047,7 @@ antlrcpp::Any QueryParser::visitMinusGraphPattern(SPARQLParser::MinusGraphPatter
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	if (ctx->constraint()->functionCall())
 		throw runtime_error("[ERROR]	Function call currently not supported in filter.");
@@ -1059,7 +1077,7 @@ antlrcpp::Any QueryParser::visitFilter(SPARQLParser::FilterContext *ctx, \
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	string var;
 	var = ctx->var()->getText();
@@ -1091,7 +1109,7 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	@return a dummy antlrcpp::Any object.
 */
 antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	string subject, predicate, object;
 	bool kleene = false;
@@ -1193,20 +1211,20 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	@param group_pattern a group graph pattern.
 */
 void QueryParser::addTriple(string subject, string predicate, string object, bool kleene, \
-	QueryTree::GroupPattern &group_pattern)
+	GroupPattern &group_pattern)
 {
 	// Add one pattern
-	group_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(QueryTree::GroupPattern::Pattern::Element(subject), \
-		QueryTree::GroupPattern::Pattern::Element(predicate), \
-		QueryTree::GroupPattern::Pattern::Element(object), kleene));
+	group_pattern.addOnePattern(GroupPattern::Pattern(GroupPattern::Pattern::Element(subject), \
+		GroupPattern::Pattern::Element(predicate), \
+		GroupPattern::Pattern::Element(object), kleene));
 
 	// Scope of filter
 	for (int j = (int)group_pattern.sub_group_pattern.size() - 1; j > 0; j--)
 	{
-		if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type &&
-			group_pattern.sub_group_pattern[j - 1].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+		if (group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Pattern_type &&
+			group_pattern.sub_group_pattern[j - 1].type == GroupPattern::SubGroupPattern::Filter_type)
 		{
-			QueryTree::GroupPattern::SubGroupPattern tmp(group_pattern.sub_group_pattern[j - 1]);
+			GroupPattern::SubGroupPattern tmp(group_pattern.sub_group_pattern[j - 1]);
 			group_pattern.sub_group_pattern[j - 1] = group_pattern.sub_group_pattern[j];
 			group_pattern.sub_group_pattern[j] = tmp;
 		}
@@ -1426,8 +1444,8 @@ antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 */
 antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx)
 {
-	QueryTree::GroupPattern &group_pattern_insert = query_tree_ptr->getInsertPatterns();
-	QueryTree::GroupPattern &group_pattern_delete = query_tree_ptr->getDeletePatterns();
+	GroupPattern &group_pattern_insert = query_tree_ptr->getInsertPatterns();
+	GroupPattern &group_pattern_delete = query_tree_ptr->getDeletePatterns();
 
 	string subject, predicate, object;
 
