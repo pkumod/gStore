@@ -57,7 +57,7 @@ double TopKUtil::GetScore(string &v, stringstream &ss)
   return double_v;
 }
 
-void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_node,
+void TopKUtil::GetVarCoefficientsTreeNode(CompTreeNode *comp_tree_node,
                                           std::map<std::string,double>& coefficients,
                                           bool minus_signed)
 {
@@ -135,7 +135,7 @@ void TopKUtil::GetVarCoefficientsTreeNode(QueryTree::CompTreeNode *comp_tree_nod
  * @param order
  * @return
  */
-std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(QueryTree::Order order)
+std::shared_ptr<std::map<std::string,double>> TopKUtil::getVarCoefficients(Order order)
 {
 #ifdef TOPK_DEBUG_INFO
   order.comp_tree_root->print(0);

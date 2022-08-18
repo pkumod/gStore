@@ -118,9 +118,9 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
 									 shared_ptr<Transaction> _txn):
-	kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),
+	temp_result(NULL), query_parser(make_shared<QueryParser>()), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),
 	pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate),
-	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), fp(NULL), export_flag(false), temp_result(NULL)
+	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), fp(NULL), export_flag(false)
 {
 	if (csr)
 		pqHandler = new PathQueryHandler(csr);
@@ -256,8 +256,8 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 {
 	try
 	{
-		this->query_parser.setQueryTree(&(this->query_tree));
-		this->query_parser.SPARQLParse(_query);
+		this->query_parser->setQueryTree(&(this->query_tree));
+		this->query_parser->SPARQLParse(_query);
 	}
 	catch (const char *e)
 	{
@@ -315,6 +315,8 @@ bool GeneralEvaluation::doQuery()
 	}
 
 	// Gather and encode all triples
+	if (!this->bgp_query_total)
+		this->bgp_query_total = make_shared<BGPQuery>();
 	addAllTriples(this->query_tree.getGroupPattern());
 	bgp_query_total->EncodeBGPQuery(kvstore, vector<string>(), \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
@@ -359,21 +361,21 @@ bool GeneralEvaluation::doQuery()
 	return true;
 }
 
-void GeneralEvaluation::getAllPattern(const QueryTree::GroupPattern &group_pattern, vector<QueryTree::GroupPattern::Pattern> &vp)
+void GeneralEvaluation::getAllPattern(const GroupPattern &group_pattern, vector<GroupPattern::Pattern> &vp)
 {
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 	{
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Group_type)
 			getAllPattern(group_pattern.sub_group_pattern[i].group_pattern, vp);
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 			vp.push_back(group_pattern.sub_group_pattern[i].pattern);
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Union_type)
 		{
 			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
 				getAllPattern(group_pattern.sub_group_pattern[i].unions[j], vp);
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type \
-			|| group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type \
+			|| group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
 			getAllPattern(group_pattern.sub_group_pattern[i].optional, vp);
 	}
 }
@@ -390,7 +392,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		{
 			// TODO: this is problematic. Even if all are Pattern_type, could still have multiple BGPs (not coalescable)
 			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].type \
-				!= QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				!= GroupPattern::SubGroupPattern::Pattern_type)
 			{
 				singleBGP = false;
 				break;
@@ -423,7 +425,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 	}
 
-	QueryTree::GroupPattern group_pattern;
+	GroupPattern group_pattern;
 
 	// Check well-designed (TODO: check at every depth, now only check once) //
 	// If well-designed, split and refill group_pattern according to rewriting //
@@ -447,7 +449,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		/// Construct group_pattern_union, which will consist of all expansion results ///
 		/// (group-patterns without UNIONs, whose results will have to be UNION'ed to get ///
 		/// the original result) ///
-		deque<QueryTree::GroupPattern> queue;
+		deque<GroupPattern> queue;
 		queue.push_back(this->rewriting_evaluation_stack[dep].group_pattern);
 		group_pattern.addOneGroupUnion();
 
@@ -467,7 +469,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	// Iterate across all sub-group-patterns, process according to type
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 	{
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Group_type)
 		{
 			group_pattern.sub_group_pattern[i].group_pattern.print(0);
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
@@ -494,7 +496,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				result->initial = false;
 			}
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
 			if (!group_pattern.sub_group_pattern[i].pattern.kleene)
 			{
@@ -508,17 +510,17 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					query_info.limit_num_ = this->query_tree.getLimit();
 				}
 				query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
-				query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
+				query_info.ordered_by_expressions_ = make_shared<vector<Order>>();
 				for(auto order_item:this->query_tree.getOrderVarVector())
 					query_info.ordered_by_expressions_->push_back(order_item);
 				
 				int st = i;
-				while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == QueryTree::GroupPattern::SubGroupPattern::Union_type))
+				while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Union_type))
 					st--;
 
 				for (int j = st; j < i; j++)
 				{
-					if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+					if (group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Pattern_type)
 					{
 						// Does not merge triples with predicate as iri*
 						if (group_pattern.sub_group_pattern[i].pattern.subject_object_varset.hasCommonVar(group_pattern.sub_group_pattern[j].pattern.subject_object_varset) \
@@ -528,7 +530,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				}
 
 				if (i + 1 == (int)group_pattern.sub_group_pattern.size() ||
-					(group_pattern.sub_group_pattern[i + 1].type != QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+					(group_pattern.sub_group_pattern[i + 1].type != GroupPattern::SubGroupPattern::Pattern_type \
 					|| group_pattern.sub_group_pattern[i + 1].pattern.kleene))
 				{
 					// Start merging (may be multiple BGPs here)
@@ -537,13 +539,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					vector<shared_ptr<BGPQuery>> bgp_query_vec;
 					#endif
 					vector<vector<string> > encode_varset;
-					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
+					vector<vector<GroupPattern::Pattern> > basic_query_handle;
 
 					// auto limit_num = query_tree.getLimit();
 					auto order_var_vec = query_tree.getOrderVarVector();
 
 					for (int j = st; j <= i; j++)
-						if (group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+						if (group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Pattern_type \
 							&& !group_pattern.sub_group_pattern[j].pattern.kleene)
 						{
 							if (!group_pattern.sub_group_pattern[j].pattern.varset.empty())
@@ -551,10 +553,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								if (group_pattern.getRootPatternBlockID(j) == j)		//root node, coming from mergePatternBlockID
 								{
 									Varset occur;
-									vector<QueryTree::GroupPattern::Pattern> basic_query;
+									vector<GroupPattern::Pattern> basic_query;
 
 									for (int k = st; k <= i; k++)
-										if (group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+										if (group_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
 											if (group_pattern.getRootPatternBlockID(k) == j)
 											{
 												occur += group_pattern.sub_group_pattern[k].pattern.varset;
@@ -769,7 +771,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				}
 			}
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Union_type)
 		{
 			TempResultSet *sub_result_outer = new TempResultSet();
 
@@ -797,7 +799,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					sub_result = new TempResultSet();
 
 					// Construct triple_pattern //
-					QueryTree::GroupPattern triple_pattern;
+					GroupPattern triple_pattern;
 					int group_pattern_triple_num = constructTriplePattern(triple_pattern, dep);
 
 					// Get useful varset //
@@ -809,17 +811,17 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					vector<shared_ptr<BGPQuery>> bgp_query_vec;
 					#endif
 					vector<vector<string> > encode_varset;
-					vector<vector<QueryTree::GroupPattern::Pattern> > basic_query_handle;
+					vector<vector<GroupPattern::Pattern> > basic_query_handle;
 
 					// Get connected block (BGP): merge the block IDs of triples with common vars //
 					triple_pattern.initPatternBlockid();
 					for (int l = 0; l < (int)triple_pattern.sub_group_pattern.size(); l++)
-						if (triple_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+						if (triple_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Pattern_type \
 							&& !triple_pattern.sub_group_pattern[l].pattern.kleene)
 						{
 							// cout << "l = " << l << ", not kleene" << endl;
 							for (int k = 0; k < l; k++)
-								if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+								if (triple_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type \
 									&& !triple_pattern.sub_group_pattern[k].pattern.kleene)
 									if (triple_pattern.sub_group_pattern[l].pattern.subject_object_varset.hasCommonVar(triple_pattern.sub_group_pattern[k].pattern.subject_object_varset))
 										triple_pattern.mergePatternBlockID(l, k);
@@ -827,7 +829,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// Retrieve current BGP's result if query cache hit, or else save into sparql_query //
 					for (int l = 0; l < (int)triple_pattern.sub_group_pattern.size(); l++)
-						if (triple_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type \
+						if (triple_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Pattern_type \
 							&& !triple_pattern.sub_group_pattern[l].pattern.kleene)
 						{
 							/// Process only the root triples of each BGP ///
@@ -836,9 +838,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								//// Construct occur: all vars that occur in this BGP ////
 								//// Construct basic_query: vector of triples in this block ////
 								Varset occur;
-								vector<QueryTree::GroupPattern::Pattern> basic_query;
+								vector<GroupPattern::Pattern> basic_query;
 								for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
-									if (triple_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+									if (triple_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
 										if (triple_pattern.getRootPatternBlockID(k) == l)
 										{
 											if (k < group_pattern_triple_num)
@@ -934,7 +936,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
 
-					query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
+					query_info.ordered_by_expressions_ = make_shared<vector<Order>>();
 					for(auto order_item:this->query_tree.getOrderVarVector())
 						query_info.ordered_by_expressions_->push_back(order_item);
 
@@ -1061,7 +1063,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// Process BIND //
 					for (int l = 0; l < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); l++)
-						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Bind_type)
 						{
 							sub_result->doBind(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind, kvstore, stringindex, \
 								rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
@@ -1087,7 +1089,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					// Process FILTER (with var in minimal_varset constraint) //
 					for (int l = 0; l < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); l++)
-						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Filter_type)
 							if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done && \
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.varset. \
 								belongTo(rewriting_evaluation_stack[dep].group_pattern.group_pattern_resultset_minimal_varset))
@@ -1110,7 +1112,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					{
 						for (int l = 0; l < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); l++)
 						{
-							if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+							if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Optional_type)
 							{
 								if ((int)this->rewriting_evaluation_stack.size() == dep + 1)
 								{
@@ -1144,7 +1146,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// NOTE: Why separate into two stages? //
 					for (int l = 0; l < (int)rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); l++)
 					{
-						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Filter_type)
 						{
 							if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done)
 							{
@@ -1201,20 +1203,20 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				result = new_result;
 			}
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
 		{
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
-			if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+			if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type)
 				this->rewriting_evaluation_stack[dep].result = result;	// For OPTIONAL FillCand (MINUS cannot do this)
 			TempResultSet *temp = queryEvaluation(dep + 1);
 			{
 				TempResultSet *new_result = new TempResultSet();
 
-				if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+				if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type)
 					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-				else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+				else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
 					result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				temp->release();
@@ -1226,7 +1228,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				result->initial = false;
 			}
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Filter_type)
 		{
 			TempResultSet *new_result = new TempResultSet();
 			result->doFilter(group_pattern.sub_group_pattern[i].filter, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
@@ -1237,7 +1239,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			result = new_result;
 			result->initial = false;
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type)
 		{
 			result->doBind(group_pattern.sub_group_pattern[i].bind, kvstore, stringindex, \
 				group_pattern.group_pattern_subject_object_maximal_varset);
@@ -1263,11 +1265,76 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			// 	result->initial = false;
 			// }
 		}
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Subquery_type)
+		{ 
+            QueryTree& sub_query=group_pattern.sub_group_pattern[i].subquery;
+            if(sub_query.getOffset()==0&&sub_query.getLimit()==-1&&sub_query.getGroupByVarset().empty()&&sub_query.getOrderVarVector().empty() \
+				&& sub_query.getProjectionModifier() != QueryTree::Modifier_Distinct)
+			{
+                cout<<"### Subtree (simp.) print start###\n";
+		    	sub_query.getGroupPattern().print(0);
+                cout<<"### Subtree (simp.) print end###\n";
+		    	// group_pattern.sub_group_pattern[i].group_pattern.getVarset();
+                this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+				this->rewriting_evaluation_stack.back().group_pattern = sub_query.getGroupPattern();
+				this->rewriting_evaluation_stack.back().result = NULL;
+				TempResultSet *temp = queryEvaluation(dep + 1); //TODO: IF parent IS NOT NULL, IT SHOULD BE JOINED
+                cout<<"<SIMP> number of results: ";
+                for(std::vector<TempResult>::iterator it=temp->results.begin();it!=temp->results.end(); it++) {
+                    Varset rvs=it->getAllVarset();
+                    for(std::vector<std::string>::iterator it2=rvs.vars.begin();it2!=rvs.vars.end(); it2++){
+                        cout<<*it2<<",";
+                    }
+                    cout<<it->result.size()<<"; ";
+                }
+                cout<<endl;
+		    	if (result->results.empty())
+		    	{
+		    		delete result;
+		    		result = temp;
+		    	}
+	    		else
+		    	{
+		    		TempResultSet *new_result = new TempResultSet();
+	    			result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+		    		temp->release();
+	    			result->release();
+		    		delete temp;
+		    		delete result;
+
+	    			result = new_result;
+	    		}
+            } else {
+                GeneralEvaluation tmp_GeneralEvaluation=*this;
+                
+		    	tmp_GeneralEvaluation.getQueryTree()=sub_query;
+                cout<<"### Subtree print start###\n";
+                tmp_GeneralEvaluation.getQueryTree().print();
+                cout<<"### Subtree print end###\n";
+		    	// group_pattern.sub_group_pattern[i].group_pattern.getVarset();
+                tmp_GeneralEvaluation.doQuery();
+		    	ResultSet* temp_rs = new ResultSet();
+                tmp_GeneralEvaluation.getFinalResult(*temp_rs);
+                cout<<"<NONSIMP> number of results: "<<temp_rs->ansNum<<endl;
+                TempResultSet *temp_trs = new TempResultSet();
+                temp_trs->results.push_back(temp_rs->to_tempresult());
+                TempResultSet *new_result = new TempResultSet();
+                result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+                temp_trs->release();
+		    	result->release();
+	    		delete temp_trs;
+		    	delete result;
+
+				result = new_result;
+            }
+            cout<<"### Subquery ###"<<endl;
+		}
 	}
 
 	// for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 	// {
-	// 	if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type
+	// 	if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type
 	// 		&& group_pattern.sub_group_pattern[i].pattern.kleene)
 	// 	{
 	// 		// PathQueryHandler function arguments are vertex IDs
@@ -1309,14 +1376,14 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	return result;
 }
 
-bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, deque<QueryTree::GroupPattern> &queue)
+bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(GroupPattern &group_pattern, deque<GroupPattern> &queue)
 {
 	// group_pattern is the top element of queue
 	int first_union_pos = -1;
 
 	// Iterate across sub-group-patterns, find the first UNION
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Union_type)
 		{
 			first_union_pos = i;
 			break;
@@ -1333,7 +1400,7 @@ bool GeneralEvaluation::expanseFirstOuterUnionGroupPattern(QueryTree::GroupPatte
 	// Each item can still be expanded once by consecutive calls to this function (expanseFirstOuterUnionGroupPattern)
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern[first_union_pos].unions.size(); i++)
 	{
-		QueryTree::GroupPattern new_group_pattern;
+		GroupPattern new_group_pattern;
 
 		for (int j = 0; j < first_union_pos; j++)
 			new_group_pattern.sub_group_pattern.push_back(group_pattern.sub_group_pattern[j]);
@@ -1389,10 +1456,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			this->temp_result = new_temp_result;
 		}
 
-		if (this->query_tree.checkAtLeastOneAggregateFunction() || !this->query_tree.getGroupByVarset().empty())
+		if (this->query_tree.checkAtLeastOneAggregateFunction() \
+		|| this->query_tree.checkAtLeastOneCompTree()\
+		|| !this->query_tree.getGroupByVarset().empty())
 		{
-			// vector<QueryTree::ProjectionVar> &proj = this->query_tree.getProjection();
-			vector<QueryTree::ProjectionVar> proj = this->query_tree.getProjection();
+			// vector<ProjectionVar> &proj = this->query_tree.getProjection();
+			vector<ProjectionVar> proj = this->query_tree.getProjection();
 			vector<string> order_vars = query_tree.getOrderByVarset().vars;
 			for (string var : order_vars)
 			{
@@ -1407,8 +1476,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				}
 				if (already_exist)
 					continue;
-				QueryTree::ProjectionVar proj_var;
-				proj_var.aggregate_type = QueryTree::ProjectionVar::None_type;
+				ProjectionVar proj_var;
+				proj_var.aggregate_type = ProjectionVar::None_type;
 				proj_var.var = var;
 				proj.push_back(proj_var);
 			}
@@ -1420,7 +1489,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			TempResult &new_result0 = new_temp_result->results[0];
 
 			for (int i = 0; i < (int)proj.size(); i++)
-				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+				if (proj[i].aggregate_type == ProjectionVar::None_type)
 				{
 					if (result0.id_varset.findVar(proj[i].var))
 						new_result0.id_varset.addVar(proj[i].var);
@@ -1432,7 +1501,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 			vector<int> proj2temp((int)proj.size(), -1);
 			for (int i = 0; i < (int)proj.size(); i++)
-				if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+				if (proj[i].aggregate_type == ProjectionVar::None_type)
 					proj2temp[i] = Varset(proj[i].var).mapTo(result0.getAllVarset())[0];
 				else if (proj[i].aggregate_var != "*")
 					proj2temp[i] = Varset(proj[i].aggregate_var).mapTo(result0.getAllVarset())[0];
@@ -1455,7 +1524,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			vector<int> group2distinct;
 
 			for (int i = 0; i < (int)proj.size(); i++)
-				if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type && proj[i].distinct && proj[i].aggregate_var == "*")
+				if (proj[i].aggregate_type == ProjectionVar::Count_type && proj[i].distinct && proj[i].aggregate_var == "*")
 				{
 					temp_result_distinct = new TempResultSet();
 
@@ -1475,15 +1544,15 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			// 2. For non-aggregate functions, split argument gathering and executing
 			// (possibly get rid of PathArgs and stick with a string vector for args?)
 			if (result0_size == 0 && proj.size() == 1 && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::None_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::CompTree_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Count_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Groupconcat_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Sum_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Avg_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Min_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Max_type && \
-				proj[0].aggregate_type != QueryTree::ProjectionVar::Contains_type)
+				proj[0].aggregate_type != ProjectionVar::None_type && \
+				proj[0].aggregate_type != ProjectionVar::CompTree_type && \
+				proj[0].aggregate_type != ProjectionVar::Count_type && \
+				proj[0].aggregate_type != ProjectionVar::Groupconcat_type && \
+				proj[0].aggregate_type != ProjectionVar::Sum_type && \
+				proj[0].aggregate_type != ProjectionVar::Avg_type && \
+				proj[0].aggregate_type != ProjectionVar::Min_type && \
+				proj[0].aggregate_type != ProjectionVar::Max_type && \
+				proj[0].aggregate_type != ProjectionVar::Contains_type)
 			{
 				// Non-aggregate functions, no var (all constant) in arg list
 				// TODO: handle CONTAINS and custom functions
@@ -1497,8 +1566,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					new_result0.result.back().id[i] = INVALID;
 
 				// Path functions
-				if (proj[0].aggregate_type != QueryTree::ProjectionVar::Custom_type && \
-					proj[0].aggregate_type != QueryTree::ProjectionVar::PFN_type)
+				if (proj[0].aggregate_type != ProjectionVar::Custom_type && \
+					proj[0].aggregate_type != ProjectionVar::PFN_type)
 				{
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
@@ -1511,7 +1580,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						uid_ls.push_back(kvstore->getIDByString(proj[0].path_args.src));
 					else
 						uid_ls.push_back(-1);	// Dummy for loop
-					// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+					// if (proj[0].aggregate_type != ProjectionVar::ppr_type)
 					if (!proj[0].path_args.dst.empty())
 						vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
 					else
@@ -1543,7 +1612,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 					ss << "\"{\"paths\":[";
 					cout<<"proj[0].aggregate_type :"<<proj[0].aggregate_type <<endl;
-					if (proj[0].aggregate_type == QueryTree::ProjectionVar::maximumClique_type)
+					if (proj[0].aggregate_type == ProjectionVar::maximumClique_type)
 					{
 						for (auto seeds : uid_ls_ls)
 						{
@@ -1579,7 +1648,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						for (int vid : vid_ls)
 						{
-							if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+							if (proj[0].aggregate_type == ProjectionVar::cyclePath_type)
 							{
 								if (uid == vid)
 									continue;
@@ -1593,7 +1662,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									pathVec2JSON(uid, vid, path, ss);
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+							else if (proj[0].aggregate_type == ProjectionVar::cycleBoolean_type)
 							{
 								if (uid == vid)
 									continue;
@@ -1604,7 +1673,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									break;
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+							else if (proj[0].aggregate_type == ProjectionVar::shortestPath_type)
 							{
 								if (uid == vid)
 								{
@@ -1626,7 +1695,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									pathVec2JSON(uid, vid, path, ss);
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+							else if (proj[0].aggregate_type == ProjectionVar::kHopReachablePath_type)
 							{
 								if (uid == vid)
 								{
@@ -1651,7 +1720,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									pathVec2JSON(uid, vid, path, ss);
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+							else if (proj[0].aggregate_type == ProjectionVar::kHopEnumerate_type)
 							{
 								if (uid == vid)
 								{
@@ -1679,7 +1748,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									}
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+							else if (proj[0].aggregate_type == ProjectionVar::shortestPathLen_type)
 							{
 								if (uid == vid)
 								{
@@ -1705,7 +1774,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "}";
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+							else if (proj[0].aggregate_type == ProjectionVar::kHopReachable_type)
 							{
 								if (uid == vid)
 								{
@@ -1730,7 +1799,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "\"false\"}";
 								// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+							else if (proj[0].aggregate_type == ProjectionVar::ppr_type)
 							{
 								vector<pair<int, double>> v2ppr;
 								pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
@@ -1744,7 +1813,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								}
 								ss << "]}";
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+							else if (proj[0].aggregate_type == ProjectionVar::triangleCounting_type)
 							{
 								if (!doneOnceOp)
 								{
@@ -1753,13 +1822,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									doneOnceOp = true;
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+							else if (proj[0].aggregate_type == ProjectionVar::closenessCentrality_type)
 							{
 								auto ret = pqHandler->closenessCentrality(uid, proj[0].path_args.directed, pred_id_set);
 								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
 								ss << to_string(ret) << "}";
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+							else if (proj[0].aggregate_type == ProjectionVar::bfsCount_type)
 							{
 								auto ret = pqHandler->bfsCount(uid, proj[0].path_args.directed, pred_id_set);
 								size_t retSz = ret.size();
@@ -1772,7 +1841,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								}
 								ss << "]}";
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::pr_type)
+							else if (proj[0].aggregate_type == ProjectionVar::pr_type)
 							{
 								if (!doneOnceOp)
 								{
@@ -1792,7 +1861,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									doneOnceOp = true;
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+							else if (proj[0].aggregate_type == ProjectionVar::sssp_type)
 							{
 								if (notFirstOutput)
 									ss << ",";
@@ -1812,7 +1881,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									}
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::sssplen_type)
+							else if (proj[0].aggregate_type == ProjectionVar::sssplen_type)
 							{
 								if (notFirstOutput)
 									ss << ",";
@@ -1832,7 +1901,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									   << "\",\"length\":" << mp.second << "}";
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+							else if (proj[0].aggregate_type == ProjectionVar::labelProp_type)
 							{
 								if (!doneOnceOp)
 								{
@@ -1849,7 +1918,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									doneOnceOp = true;
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+							else if (proj[0].aggregate_type == ProjectionVar::wcc_type)
 							{
 								if (!doneOnceOp)
 								{
@@ -1866,7 +1935,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									doneOnceOp = true;
 								}
 							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+							else if (proj[0].aggregate_type == ProjectionVar::clusterCoeff_type)
 							{
 								if (uid == -1)	// Source not given, compute once globally
 								{
@@ -1889,8 +1958,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							break;
 					}
 					ss << "]}\"";
-					cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
-					if (proj[0].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+					// cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
+					if (proj[0].aggregate_type == ProjectionVar::cycleBoolean_type)
 					{
 						if (exist)
 							new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
@@ -1902,7 +1971,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = ss.str();
 					}
 				}
-				else if (proj[0].aggregate_type == QueryTree::ProjectionVar::PFN_type)
+				else if (proj[0].aggregate_type == ProjectionVar::PFN_type)
 				{
 					prepPathQuery();
 					vector<int> iri_id_set;
@@ -2024,7 +2093,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			else
 			{
 				// Custom functions
-				if (proj[0].aggregate_type == QueryTree::ProjectionVar::Custom_type \
+				if (proj[0].aggregate_type == ProjectionVar::Custom_type \
 					&& proj[0].custom_func_name == "PPR")
 				{
 					prepPathQuery();
@@ -2035,7 +2104,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
 					{
 						pred = proj[0].func_args[i];
-						query_parser.replacePrefix(pred);
+						query_parser->replacePrefix(pred);
 						pred_id_set.push_back(kvstore->getIDByPredicate(pred));
 					}
 					if (pred_id_set.empty())
@@ -2082,19 +2151,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 				for (int i = 0; i < (int)proj.size(); i++)
 				{
-					if (proj[i].aggregate_type == QueryTree::ProjectionVar::None_type)
+					if (proj[i].aggregate_type == ProjectionVar::None_type)
 					{
 						if (proj2temp[i] < result0_id_cols)
 							new_result0.result.back().id[proj2new[i]] = result0.result[begin].id[proj2temp[i]];
 						else
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = result0.result[begin].str[proj2temp[i] - result0_id_cols];
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type
-						|| proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+					else if (proj[i].aggregate_type == ProjectionVar::Count_type
+						|| proj[i].aggregate_type == ProjectionVar::Sum_type
+						|| proj[i].aggregate_type == ProjectionVar::Avg_type
+						|| proj[i].aggregate_type == ProjectionVar::Min_type
+						|| proj[i].aggregate_type == ProjectionVar::Max_type
+						|| proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 					{
 						int count = 0;
 						bool numeric = false, datetime = false, succ = true;
@@ -2129,14 +2198,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												&& tmp.datatype != EvalMultitypeValue::xsd_float
 												&& tmp.datatype != EvalMultitypeValue::xsd_double)
 											{
-												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												if (proj[i].aggregate_type == ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 												{
 													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
 													continue;
 												}
-												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+												else if ((proj[i].aggregate_type == ProjectionVar::Min_type
+													|| proj[i].aggregate_type == ProjectionVar::Max_type)
 													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 												{
 													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
@@ -2153,19 +2222,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												if (!numeric)
 													numeric = true;
 											}
-											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											if (datetime && numeric && proj[i].aggregate_type != ProjectionVar::Count_type)
 											{
 												succ = false;
 												break;
 											}
 
-											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type
-												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+											if (proj[i].aggregate_type == ProjectionVar::Count_type
+												|| proj[i].aggregate_type == ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 												count_set.insert(tmp.term_value);
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 												count_set.insert(tmp.str_value);
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 											{
 												if (numeric)
 												{
@@ -2180,7 +2249,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 														datetime_min = tmp;
 												}
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 											{
 												if (numeric)
 												{
@@ -2200,8 +2269,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									
 									// Obtained count_set
 									count = (int)count_set.size();
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-										|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == ProjectionVar::Sum_type
+										|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										for (string elem : count_set)
 										{
@@ -2211,7 +2280,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											numeric_sum = numeric_sum + tmp;
 										}
 									}
-									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 									{
 										for (string elem : count_set)
 										{
@@ -2227,7 +2296,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										if (!groupconcat.empty())
 											groupconcat += "\"";
 									}
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2249,14 +2318,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												&& tmp.datatype != EvalMultitypeValue::xsd_float
 												&& tmp.datatype != EvalMultitypeValue::xsd_double)
 											{
-												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												if (proj[i].aggregate_type == ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 												{
 													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
 													continue;
 												}
-												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+												else if ((proj[i].aggregate_type == ProjectionVar::Min_type
+													|| proj[i].aggregate_type == ProjectionVar::Max_type)
 													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 												{
 													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
@@ -2273,17 +2342,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												if (!numeric)
 													numeric = true;
 											}
-											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											if (datetime && numeric && proj[i].aggregate_type != ProjectionVar::Count_type)
 											{
 												succ = false;
 												break;
 											}
 
-											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+											if (proj[i].aggregate_type == ProjectionVar::Count_type)
 												count_set.insert(result0.result[j].str[proj2temp[i] - result0_id_cols]);
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 												count_set.insert(tmp.str_value);
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 											{
 												if (numeric)
 												{
@@ -2298,7 +2367,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 														datetime_min = tmp;
 												}
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 											{
 												if (numeric)
 												{
@@ -2320,8 +2389,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 									// Obtained count_set
 									count = (int)count_set.size();
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-										|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == ProjectionVar::Sum_type
+										|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										for (string elem : count_set)
 										{
@@ -2331,7 +2400,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											numeric_sum = numeric_sum + tmp;
 										}
 									}
-									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 									{
 										for (string elem : count_set)
 										{
@@ -2347,7 +2416,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										if (!groupconcat.empty())
 											groupconcat += "\"";
 									}
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									if (proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2372,14 +2441,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												&& tmp.datatype != EvalMultitypeValue::xsd_float
 												&& tmp.datatype != EvalMultitypeValue::xsd_double)
 											{
-												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												if (proj[i].aggregate_type == ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 												{
 													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
 													continue;
 												}
-												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+												else if ((proj[i].aggregate_type == ProjectionVar::Min_type
+													|| proj[i].aggregate_type == ProjectionVar::Max_type)
 													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 												{
 													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
@@ -2396,19 +2465,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												if (!numeric)
 													numeric = true;
 											}
-											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											if (datetime && numeric && proj[i].aggregate_type != ProjectionVar::Count_type)
 											{
 												succ = false;
 												break;
 											}
 
-											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+											if (proj[i].aggregate_type == ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 											{
 												numeric_sum = numeric_sum + tmp;
 												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 											{
 												size_t bIdx = tmp.str_value.find('\"'), eIdx = tmp.str_value.rfind('\"');
 												if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
@@ -2419,7 +2488,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 													groupconcat += proj[i].separator;
 												groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 											{
 												if (numeric)
 												{
@@ -2434,7 +2503,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 														datetime_min = tmp;
 												}
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 											{
 												if (numeric)
 												{
@@ -2453,9 +2522,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											count++;
 										}
 									}
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 										groupconcat += "\"";
-									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									else if (proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2476,14 +2545,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												&& tmp.datatype != EvalMultitypeValue::xsd_float
 												&& tmp.datatype != EvalMultitypeValue::xsd_double)
 											{
-												if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+												if (proj[i].aggregate_type == ProjectionVar::Sum_type
+													|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 												{
 													cout << "[ERROR] Invalid type for SUM or AVG." << endl;
 													continue;
 												}
-												else if ((proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type
-													|| proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+												else if ((proj[i].aggregate_type == ProjectionVar::Min_type
+													|| proj[i].aggregate_type == ProjectionVar::Max_type)
 													&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 												{
 													cout << "[ERROR] Invalid type for MIN or MAX." << endl;
@@ -2500,19 +2569,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												if (!numeric)
 													numeric = true;
 											}
-											if (datetime && numeric && proj[i].aggregate_type != QueryTree::ProjectionVar::Count_type)
+											if (datetime && numeric && proj[i].aggregate_type != ProjectionVar::Count_type)
 											{
 												succ = false;
 												break;
 											}
 
-											if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-												|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+											if (proj[i].aggregate_type == ProjectionVar::Sum_type
+												|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 											{
 												numeric_sum = numeric_sum + tmp;
 												cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 											{
 												size_t bIdx = tmp.str_value.find('\"'), eIdx = tmp.str_value.rfind('\"');
 												if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
@@ -2523,7 +2592,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 													groupconcat += proj[i].separator;
 												groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 											{
 												if (numeric)
 												{
@@ -2538,7 +2607,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 														datetime_min = tmp;
 												}
 											}
-											else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+											else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 											{
 												if (numeric)
 												{
@@ -2557,9 +2626,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											count++;
 										}
 									}
-									if (proj[i].aggregate_type == QueryTree::ProjectionVar::Groupconcat_type)
+									if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 										groupconcat += "\"";
-									else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+									else if (proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										tmp.term_value = "\"" + to_string(count) + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 										tmp.deduceTypeValue();
@@ -2585,7 +2654,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						// Write aggregate result
 						stringstream ss;
 
-						if (proj[i].aggregate_type == QueryTree::ProjectionVar::Count_type)
+						if (proj[i].aggregate_type == ProjectionVar::Count_type)
 						{
 							ss << "\"";
 							ss << count;
@@ -2593,20 +2662,20 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 						else if (succ)
 						{
-							if (proj[i].aggregate_type == QueryTree::ProjectionVar::Sum_type
-								|| proj[i].aggregate_type == QueryTree::ProjectionVar::Avg_type)
+							if (proj[i].aggregate_type == ProjectionVar::Sum_type
+								|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 							{
 								cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
 								ss << numeric_sum.term_value;
 							}
-							else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Min_type)
+							else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 							{
 								if (numeric)
 									ss << numeric_min.term_value;
 								else if (datetime)
 									ss << datetime_min.term_value;
 							}
-							else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Max_type)
+							else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 							{
 								if (numeric)
 									ss << numeric_max.term_value;
@@ -2623,7 +2692,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = groupconcat;
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::CompTree_type)
+					else if (proj[i].aggregate_type == ProjectionVar::CompTree_type)
 					{
 						// Strictly speaking, not an aggregate; each original line will produce a line of results
 						for (int j = begin; j <= end; j++)
@@ -2641,7 +2710,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 						}
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Contains_type)
+					else if (proj[i].aggregate_type == ProjectionVar::Contains_type)
 					{
 						if (proj[i].func_args.size() == 2)
 						{
@@ -2737,7 +2806,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 						}
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::Custom_type)
+					else if (proj[i].aggregate_type == ProjectionVar::Custom_type)
 					{
 						if (proj[i].custom_func_name == "PPR")
 						{
@@ -2760,7 +2829,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
 							{
 								pred = proj[0].func_args[i];
-								query_parser.replacePrefix(pred);
+								query_parser->replacePrefix(pred);
 								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
 							}
 							if (pred_id_set.empty())
@@ -2794,7 +2863,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							cout << "HERE !!!! " << tmp << endl;
 						}
 					}
-					else if (proj[i].aggregate_type == QueryTree::ProjectionVar::PFN_type)
+					else if (proj[i].aggregate_type == ProjectionVar::PFN_type)
 					{
 						prepPathQuery();
 						vector<int> uid_ls, vid_ls;
@@ -3032,7 +3101,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						// cout << endl;
 
 						// vid
-						// if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						// if (proj[0].aggregate_type != ProjectionVar::ppr_type)
 						if (!proj[i].path_args.dst.empty())
 						{
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
@@ -3088,7 +3157,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						bool notFirstOutput = 0;	// For outputting commas
 						bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 						ss << "\"{\"paths\":[";
-						if (proj[i].aggregate_type == QueryTree::ProjectionVar::maximumClique_type)
+						if (proj[i].aggregate_type == ProjectionVar::maximumClique_type)
 						{
 							for (auto seeds : uid_ls_ls)
 							{
@@ -3124,7 +3193,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (int vid : vid_ls)
 							{
-								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
+								if (proj[i].aggregate_type == ProjectionVar::cyclePath_type)
 								{
 									if (uid == vid)
 										continue;
@@ -3138,7 +3207,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+								else if (proj[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 								{
 									if (uid == vid)
 										continue;
@@ -3149,7 +3218,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										break;
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::shortestPath_type)
+								else if (proj[i].aggregate_type == ProjectionVar::shortestPath_type)
 								{
 									if (uid == vid)
 									{
@@ -3171,7 +3240,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
+								else if (proj[i].aggregate_type == ProjectionVar::shortestPathLen_type)
 								{
 									if (uid == vid)
 									{
@@ -3197,7 +3266,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										ss << "}";
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachable_type)
+								else if (proj[i].aggregate_type == ProjectionVar::kHopReachable_type)
 								{
 									if (uid == vid)
 									{
@@ -3222,7 +3291,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+								else if (proj[i].aggregate_type == ProjectionVar::kHopReachablePath_type)
 								{
 									if (uid == vid)
 									{
@@ -3247,7 +3316,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+								else if (proj[i].aggregate_type == ProjectionVar::kHopEnumerate_type)
 								{
 									if (uid == vid)
 									{
@@ -3275,7 +3344,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										}
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::ppr_type)
+								else if (proj[i].aggregate_type == ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
 									pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
@@ -3293,7 +3362,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									}
 									ss << "]}";
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::triangleCounting_type)
+								else if (proj[i].aggregate_type == ProjectionVar::triangleCounting_type)
 								{
 									if (!doneOnceOp)
 									{
@@ -3302,7 +3371,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										doneOnceOp = true;
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::closenessCentrality_type)
+								else if (proj[i].aggregate_type == ProjectionVar::closenessCentrality_type)
 								{
 									auto ret = pqHandler->closenessCentrality(uid, proj[i].path_args.directed, pred_id_set);
 									if (notFirstOutput)
@@ -3312,7 +3381,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
 									ss << to_string(ret) << "}";
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::bfsCount_type)
+								else if (proj[i].aggregate_type == ProjectionVar::bfsCount_type)
 								{
 									auto ret = pqHandler->bfsCount(uid, proj[i].path_args.directed, pred_id_set);
 									if (notFirstOutput)
@@ -3329,7 +3398,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									}
 									ss << "]}";
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::pr_type)
+								else if (proj[i].aggregate_type == ProjectionVar::pr_type)
 								{
 									if (!doneOnceOp)
 									{
@@ -3348,7 +3417,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										doneOnceOp = true;
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::sssp_type)
+								else if (proj[i].aggregate_type == ProjectionVar::sssp_type)
 								{
 									if (notFirstOutput)
 										ss << ",";
@@ -3368,7 +3437,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										}
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::sssplen_type)
+								else if (proj[i].aggregate_type == ProjectionVar::sssplen_type)
 								{
 									if (notFirstOutput)
 										ss << ",";
@@ -3388,7 +3457,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										<< "\",\"length\":" << mp.second << "}";
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::labelProp_type)
+								else if (proj[i].aggregate_type == ProjectionVar::labelProp_type)
 								{
 									if (!doneOnceOp)
 									{
@@ -3405,7 +3474,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										doneOnceOp = true;
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::wcc_type)
+								else if (proj[i].aggregate_type == ProjectionVar::wcc_type)
 								{
 									if (!doneOnceOp)
 									{
@@ -3422,7 +3491,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										doneOnceOp = true;
 									}
 								}
-								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::clusterCoeff_type)
+								else if (proj[i].aggregate_type == ProjectionVar::clusterCoeff_type)
 								{
 									if (uid == -1)	// Source not given, compute once globally
 									{
@@ -3445,8 +3514,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								break;
 						}
 						ss << "]}\"";
-						cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
-						if (proj[i].aggregate_type == QueryTree::ProjectionVar::cycleBoolean_type)
+						// cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
+						if (proj[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)
 								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
@@ -3738,7 +3807,7 @@ void GeneralEvaluation::releaseResult()
 	this->temp_result = NULL;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num)
 {
 	update_pattern.getVarset();
 
@@ -3754,7 +3823,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 	update_triple_num = 0;
 
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
-		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
 			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 				if (update_pattern.sub_group_pattern[i].pattern.varset.belongTo(this->temp_result->results[j].getAllVarset()))
@@ -3765,7 +3834,7 @@ void GeneralEvaluation::prepareUpdateTriple(QueryTree::GroupPattern &update_patt
 
 	int update_triple_count = 0;
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
-		if (update_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
 			for (int j = 0; j < (int)this->temp_result->results.size(); j++)
 			{
@@ -3875,17 +3944,17 @@ GeneralEvaluation::vertVec2JSON(const std::vector<int> &v, std::stringstream &ss
 	ss << "]";
 }
 
-int GeneralEvaluation::constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep)
+int GeneralEvaluation::constructTriplePattern(GroupPattern& triple_pattern, int dep)
 {
 	int group_pattern_triple_num = 0;
 	// Extract all sub-group-patterns that are themselves triples, add into triple_pattern //
 	for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
-		if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
-			triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-				QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.subject.value),
-				QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.predicate.value),
-				QueryTree::GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.object.value),
+			triple_pattern.addOnePattern(GroupPattern::Pattern(
+				GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.subject.value),
+				GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.predicate.value),
+				GroupPattern::Pattern::Element(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.object.value),
 				rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].pattern.kleene
 			));
 			group_pattern_triple_num++;
@@ -3899,7 +3968,7 @@ int GeneralEvaluation::constructTriplePattern(QueryTree::GroupPattern& triple_pa
 		/// Construct var_count: map from variable name to #occurrence in triple_pattern ///
 		map<string, int> var_count;
 		for (int j = 0; j < (int)triple_pattern.sub_group_pattern.size(); j++)
-			if (triple_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+			if (triple_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Pattern_type)
 			{
 				string subject = triple_pattern.sub_group_pattern[j].pattern.subject.value;
 				string object = triple_pattern.sub_group_pattern[j].pattern.object.value;
@@ -3930,17 +3999,17 @@ int GeneralEvaluation::constructTriplePattern(QueryTree::GroupPattern& triple_pa
 		/// QUESTION: Why first 1 then 2? ///
 		for (int j = 0; j < dep; j++)
 		{
-			QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+			GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
 			for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
-				if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (parrent_group_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
 					if (need_add.hasCommonVar(parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
 						parrent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 1)	// Only difference here: 1
 					{
-						triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value),
+						triple_pattern.addOnePattern(GroupPattern::Pattern(
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value),
 							parrent_group_pattern.sub_group_pattern[k].pattern.kleene
 						));
 						need_add = need_add - parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
@@ -3948,17 +4017,17 @@ int GeneralEvaluation::constructTriplePattern(QueryTree::GroupPattern& triple_pa
 		}
 		for (int j = 0; j < dep; j++)
 		{
-			QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+			GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
 			for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
-				if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (parrent_group_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
 					if (need_add.hasCommonVar(parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset) &&
 						parrent_group_pattern.sub_group_pattern[k].pattern.varset.getVarsetSize() == 2)	// Only difference here: 2
 					{
-						triple_pattern.addOnePattern(QueryTree::GroupPattern::Pattern(
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
-							QueryTree::GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value),
+						triple_pattern.addOnePattern(GroupPattern::Pattern(
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.subject.value),
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.predicate.value),
+							GroupPattern::Pattern::Element(parrent_group_pattern.sub_group_pattern[k].pattern.object.value),
 							parrent_group_pattern.sub_group_pattern[k].pattern.kleene
 						));
 						need_add = need_add - parrent_group_pattern.sub_group_pattern[k].pattern.subject_object_varset;
@@ -3980,28 +4049,28 @@ void GeneralEvaluation::getUsefulVarset(Varset& useful, int dep)
 		// All vars from ancestor levels' triples and filters //
 		for (int j = 0; j < dep; j++)
 		{
-			QueryTree::GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
+			GroupPattern &parrent_group_pattern = this->rewriting_evaluation_stack[j].group_pattern;
 
 			for (int k = 0; k < (int)parrent_group_pattern.sub_group_pattern.size(); k++)
 			{
-				if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+				if (parrent_group_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
 					useful += parrent_group_pattern.sub_group_pattern[k].pattern.varset;
-				else if (parrent_group_pattern.sub_group_pattern[k].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+				else if (parrent_group_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Filter_type)
 					useful += parrent_group_pattern.sub_group_pattern[k].filter.varset;
 			}
 		}
 		// All vars from current levels' triples and filters //
 		for (int j = 0; j < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); j++)
 		{
-			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+			if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Optional_type)
 				useful += rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].optional.group_pattern_resultset_maximal_varset;
-			else if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+			else if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].type == GroupPattern::SubGroupPattern::Filter_type)
 				useful += rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[j].filter.varset;
 		}
 	}
 }
 
-bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful)
+bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful)
 {
 	bool success = false;
 	if (this->query_cache != NULL)
@@ -4140,7 +4209,7 @@ void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<
 }
 
 void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
-	vector<vector<QueryTree::GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep)
+	vector<vector<GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep)
 {
 	// Each BGP's results are copied out to temp, and then joined with sub_result //
 	for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
@@ -4346,31 +4415,31 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
     }
 	catch (...)
 	{
-		string content = "run personalized function fail: unknow error";
+		string content = "run personalized function fail: unknown error";
 		std::cout << content << endl;
 		throw runtime_error(content);
 	}
 }
-void GeneralEvaluation::addAllTriples(const QueryTree::GroupPattern &group_pattern)
+void GeneralEvaluation::addAllTriples(const GroupPattern &group_pattern)
 {
 	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
 	{
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Group_type)
 			addAllTriples(group_pattern.sub_group_pattern[i].group_pattern);
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Union_type)
 		{
 			for (size_t j = 0; j < group_pattern.sub_group_pattern[i].unions.size(); j++)
 				addAllTriples(group_pattern.sub_group_pattern[i].unions[j]);
 		}
-		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type \
-			|| group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type \
+			|| group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
 			addAllTriples(group_pattern.sub_group_pattern[i].optional);
 	}
 
 	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
 	{
 		// Here not yet transformed into BGP_type
-		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
 			bgp_query_total->AddTriple(Triple(group_pattern.sub_group_pattern[i].pattern.subject.value, \
 					group_pattern.sub_group_pattern[i].pattern.predicate.value, \

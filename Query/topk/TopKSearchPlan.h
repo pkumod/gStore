@@ -66,8 +66,8 @@ class TopKSearchPlan {
 
  public:
   explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
-                          const QueryTree::Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
-  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, const QueryTree::Order& expression,
+                          const Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
+  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, const Order& expression,
                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;

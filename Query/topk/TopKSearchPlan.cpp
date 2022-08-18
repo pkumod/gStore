@@ -48,7 +48,7 @@ std::size_t TopKSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_E
 }
 
 TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
-                               const QueryTree::Order& expression,
+                               const Order& expression,
                                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches):
                                tree_root_(nullptr)
 {
@@ -125,7 +125,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
 
 void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
                              KVstore *kv_store,
-                             const QueryTree::Order& expression,
+                             const Order& expression,
                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDList>>> id_caches) {
 
 

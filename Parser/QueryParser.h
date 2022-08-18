@@ -34,32 +34,34 @@ public:
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
 
-	antlrcpp::Any visitQueryUnit(SPARQLParser::QueryUnitContext *ctx);
 	antlrcpp::Any visitQuery(SPARQLParser::QueryContext *ctx);
 	antlrcpp::Any visitSelectquery(SPARQLParser::SelectqueryContext *ctx);
 	antlrcpp::Any visitAskquery(SPARQLParser::AskqueryContext *ctx);
-	antlrcpp::Any visitWhereClause(SPARQLParser::WhereClauseContext *ctx, QueryTree::GroupPattern &group_pattern);
+	antlrcpp::Any visitWhereClause(SPARQLParser::WhereClauseContext *ctx, GroupPattern &group_pattern);
 	antlrcpp::Any visitLimitClause(SPARQLParser::LimitClauseContext *ctx);
 	antlrcpp::Any visitOffsetClause(SPARQLParser::OffsetClauseContext *ctx);
 	antlrcpp::Any visitPrefixDecl(SPARQLParser::PrefixDeclContext *ctx);
 	antlrcpp::Any visitSelectClause(SPARQLParser::SelectClauseContext *ctx);
 	antlrcpp::Any visitGroupGraphPattern(SPARQLParser::GroupGraphPatternContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
+	antlrcpp::Any visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
+		GroupPattern &group_pattern);
+	antlrcpp::Any visitSubSelect_inner(SPARQLParser::SubSelectContext *ctx);
 	antlrcpp::Any visitGroupGraphPatternSub(SPARQLParser::GroupGraphPatternSubContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
-	antlrcpp::Any visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
+	antlrcpp::Any visitTriplesBlock(SPARQLParser::TriplesBlockContext *ctx, GroupPattern &group_pattern);
 	antlrcpp::Any visitGraphPatternNotTriples(SPARQLParser::GraphPatternNotTriplesContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
 	antlrcpp::Any visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUnionGraphPatternContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
 	antlrcpp::Any visitOptionalGraphPattern(SPARQLParser::OptionalGraphPatternContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
 	antlrcpp::Any visitMinusGraphPattern(SPARQLParser::MinusGraphPatternContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
-	antlrcpp::Any visitFilter(SPARQLParser::FilterContext *ctx, QueryTree::GroupPattern &group_pattern);
-	antlrcpp::Any visitBind(SPARQLParser::BindContext *ctx, QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
+	antlrcpp::Any visitFilter(SPARQLParser::FilterContext *ctx, GroupPattern &group_pattern);
+	antlrcpp::Any visitBind(SPARQLParser::BindContext *ctx, GroupPattern &group_pattern);
 	antlrcpp::Any visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
 	antlrcpp::Any visitGroupClause(SPARQLParser::GroupClauseContext *ctx);
 	antlrcpp::Any visitOrderClause(SPARQLParser::OrderClauseContext *ctx);
 	
@@ -71,9 +73,9 @@ public:
 
 	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 		SPARQLParser::VarContext *varCtx);
-	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, QueryTree::CompTreeNode &curr_node);
+	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node);
 	void addTriple(std::string subject, std::string predicate, std::string object, bool kleene, \
-		QueryTree::GroupPattern &group_pattern);
+		GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);
 	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);
 	std::string getTextWithRange(antlr4::tree::ParseTree *ctx);

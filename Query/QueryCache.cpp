@@ -33,7 +33,7 @@ bool QueryCache::getMinimalRepresentation(const Patterns &triple_pattern, Patter
 		n_permutation *= (i + 1);
 	}
 
-	vector<QueryTree::GroupPattern::Pattern> temp_repre;
+	vector<GroupPattern::Pattern> temp_repre;
 	map<string, string> temp_mapping;
 
 	for (int i = 0; i < n_permutation; i++)

@@ -42,7 +42,7 @@ struct QueryInfo{
   bool limit_;
   int limit_num_;
   bool is_distinct_;
-  shared_ptr<vector<QueryTree::Order>> ordered_by_expressions_;
+  shared_ptr<vector<Order>> ordered_by_expressions_;
 };
 /*
  *
