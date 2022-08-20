@@ -11,8 +11,8 @@ echo -e "g++ installed \n"
 pacman -S --noconfirm make
 echo -e "make installed \n"
 
-pacman -S --noconfirm jdk8-openjdk
-echo -e "openjdk 8 installed \n"
+#pacman -S --noconfirm jdk8-openjdk
+#echo -e "openjdk 8 installed \n"
 
 pacman -S --noconfirm readline
 echo -e "readline-devel installed \n"
