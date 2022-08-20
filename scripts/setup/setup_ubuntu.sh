@@ -14,8 +14,8 @@ echo -e "g++ installed \n"
 apt install -y make
 echo -e "make installed \n"
 
-apt install -y openjdk-8-jdk
-echo -e "openjdk 8 installed \n"
+#apt install -y openjdk-8-jdk
+#echo -e "openjdk 8 installed \n"
 
 apt install -y libreadline-dev
 echo -e "readline-devel installed \n"

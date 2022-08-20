@@ -11,8 +11,8 @@ echo -e "g++ installed \n"
 yum install -y make
 echo -e "make installed \n"
 
-yum install -y java-1.8.0-openjdk-devel
-echo -e "openjdk 8 installed \n"
+#yum install -y java-1.8.0-openjdk-devel
+#echo -e "openjdk 8 installed \n"
 
 yum install -y readline readline-devel
 echo -e "readline-devel installed \n"
