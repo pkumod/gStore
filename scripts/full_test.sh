@@ -85,11 +85,6 @@ log3=load.log/
 
 #clean logs in home(this script)
 home=`pwd`
-if [ -d ${home}/garbage/ ]	#! as not
-then
-	rm -rf ${home}/garbage/
-fi
-mkdir ${home}/garbage/
 if [ -d ${home}/${log1} ]
 then 
 	rm -rf ${home}/${log1}
