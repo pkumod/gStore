@@ -21,34 +21,23 @@ ResultSet::ResultSet()
 	this->useStream = false;
 	this->output_offset = 0;
 	this->output_limit = -1;
-	this->delete_another_way = 0;
 }
 
 ResultSet::~ResultSet()
 {
-	//cout<<"call the delete function for ResultSet"<<endl;
-	delete[] this->var_name;
-	if (!this->useStream)
-	{
-		if (this ->delete_another_way == 0)
-		{
-			for (unsigned i = 0; i < this->ansNum; i++)
-			{
-				delete[] this->answer[i];
-			}
-		}
-		else 
-		{
-			if(this->ansNum>0)
-				delete[] this->answer[0];
-		}
-
-		delete[] this->answer;
-	}
-	else
-	{
-		delete this->stream;    //maybe NULL
-	}
+  delete[] this->var_name;
+  if (!this->useStream)
+  {
+    for(unsigned i = 0; i < this->ansNum; i++)
+    {
+      delete[] this->answer[i];
+    }
+    delete[] this->answer;
+  }
+  else
+  {
+    delete this->stream;    //maybe NULL
+  }
 }
 
 ResultSet::ResultSet(int _v_num, const string* _v_names)
