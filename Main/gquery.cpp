@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
 		}
 		if (Util::dir_exist(db_folder) == false)
 		{
+			cout << "the db path is " << db_folder << endl;
 			cout << "The database is not exist!" << endl;
 			return 0;
 		}
