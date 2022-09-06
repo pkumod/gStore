@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 			cout << "The database name can not end with .db" << endl;
 			return 0;
 		}
-		if (Util::dir_exist(db_folder) == false)
+		if (Util::dir_exist(db_folder + ".db") == false)
 		{
 			cout << "the db path is " << db_folder << endl;
 			cout << "The database is not exist!" << endl;
