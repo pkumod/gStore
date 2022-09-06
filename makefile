@@ -712,8 +712,8 @@ dist: clean
 	rm -rf backups/*.db
 
 tarball:
-	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini NOTES.md StringIndex COVERAGE \
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini StringIndex COVERAGE \
 		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_socket) 
