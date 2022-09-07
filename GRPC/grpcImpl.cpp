@@ -1,11 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2022-02-28 10:31:06
- * @LastEditTime: 2022-06-17 13:21:29
- * @LastEditors: wangjian 2606583267@qq.com
- * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- * @FilePath: /gStore/GRPC/grpcImpl.cpp
- */
 #include "grpcImpl.h"
 #define TEST_IP ""
 #define HTTP_TYPE "grpc"
@@ -189,11 +181,11 @@ void GrpcImpl::api(CommonRequest *request, CommonResponse *response, srpc::RPCCo
         string resJson = response->ShortDebugString();
         if (response->statuscode() == 0)
         {
-            Util::formatPrint("response result:\n" + resJson);
+            SLOG_DEBUG("response result:\n" + resJson);
         }
         else
         {
-            Util::formatPrint("response result:\n" + resJson, "ERROR");
+            SLOG_ERROR("response result:\n" + resJson);
         }
         apiUtil->write_access_log(operation, remoteIP, response->statuscode(), response->statusmsg());
     });
@@ -294,12 +286,12 @@ void GrpcImpl::build_task(CommonRequest *&request, CommonResponse *&response, sr
         apiUtil->add_privilege(request->username(), "export", request->db_name()) == 0)
         {
             string error = "add query or load or unload or backup or restore or export privilege failed.";
-            Util::formatPrint(error, "ERROR");
+            SLOG_ERROR(error);
             response->set_statuscode(1006);
             response->set_statusmsg(error);
             return;
         }
-        Util::formatPrint("add query and load and unload and backup and restore privilege succeed after build.");
+        SLOG_DEBUG("add query and load and unload and backup and restore privilege succeed after build.");
 
         //add database information to system.db
         if(apiUtil->build_db_user_privilege(request->db_name() ,request->username()))
@@ -312,7 +304,7 @@ void GrpcImpl::build_task(CommonRequest *&request, CommonResponse *&response, sr
         else 
         {
             string error = "add database information to system failed.";
-            Util::formatPrint(error, "ERROR");
+            SLOG_ERROR(error);
             response->set_statuscode(1006);
             response->set_statusmsg(error);
         }
@@ -687,12 +679,12 @@ void GrpcImpl::drop_task(CommonRequest *&request, CommonResponse *&response, srp
             if (apiUtil->check_already_load(db_name))
             {
                 apiUtil->delete_from_databases(db_name);
-                Util::formatPrint("remove " + db_name + " from loaded database list");
+                SLOG_DEBUG("remove " + db_name + " from loaded database list");
                 
             }
             apiUtil->unlock_databaseinfo(db_info);
             apiUtil->delete_from_already_build(db_name);
-            Util::formatPrint("remove " + db_name + " from the already build database list");
+            SLOG_DEBUG("remove " + db_name + " from the already build database list");
             //@ delete the database info from  the system database
             string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
             apiUtil->update_sys_db(update);
@@ -848,7 +840,7 @@ void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, s
         {
             path = path.substr(0, path.length() - 1);
         }
-        Util::formatPrint("backup path:" + path);
+        SLOG_DEBUG("backup path:" + path);
         string db_path = db_name + ".db";
         // APIUtil::trywrlock_database_map(); //lock the databases_map_lock
         apiUtil->rw_wrlock_database_map();
@@ -874,7 +866,7 @@ void GrpcImpl::backup_task(CommonRequest *&request, CommonResponse *&response, s
             string sys_cmd = "mv " + path + " " + _path;
             system(sys_cmd.c_str());
 
-            Util::formatPrint("database backup done: " + db_name);
+            SLOG_DEBUG("database backup done: " + db_name);
             string success = "Database backup successfully.";
             apiUtil->unlock_databaseinfo(db_info);
             
@@ -932,7 +924,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
         {
             path = path.substr(0, path.length()-1);
         }
-        Util::formatPrint("backup path: " + path);
+        SLOG_DEBUG("backup path: " + path);
         if(Util::dir_exist(path)==false){
             string error = "Backup path not exist, restore failed.";
             response->set_statuscode(1003);
@@ -940,7 +932,7 @@ void GrpcImpl::restore_task(CommonRequest *&request, CommonResponse *&response, 
             return;
         }
         string database = db_name;
-        Util::formatPrint("restore database: " + database);
+        SLOG_DEBUG("restore database: " + database);
         //@ check database build?
         if( apiUtil->check_already_build(db_name) == false){
             string error = "Database not built yet. Rebuild Now";
@@ -1085,7 +1077,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             bool lock_rt = apiUtil->rdlock_database(db_name);
             if (lock_rt)
             {
-                Util::formatPrint("get current database read lock success: " + db_name);
+                SLOG_DEBUG("get current database read lock success: " + db_name);
             }
             else
             {
@@ -1116,7 +1108,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
         try
         {
-            Util::formatPrint("begin query...");
+            SLOG_DEBUG("begin query...");
             rs.setUsername(username);
             ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
             query_time = Util::get_cur_time() - query_time;
@@ -1139,7 +1131,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
         catch (...)
         {
             string content = "unknow error";
-            Util::formatPrint("query failed:unknow error", "ERROR");
+            SLOG_ERROR("query failed: unknow error!");
             apiUtil->unlock_database(db_name);
             response->set_statuscode(1005);
             response->set_statusmsg("query failed: " + content);
@@ -1203,7 +1195,7 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             else
             {
                 apiUtil->unlock_database(db_name);
-                Util::formatPrint("query fail: unkown result format.", "ERROR");
+                SLOG_ERROR("query fail: unkown result format.");
                 response->set_statuscode(1005);
                 response->set_statusmsg("Unkown result format.");
                 return;
@@ -1238,20 +1230,19 @@ void GrpcImpl::query_task(CommonRequest *&request, CommonResponse *&response, sr
             {
                 status_code = 0;
                 status_msg = "update query returns true.";
-                Util::formatPrint(status_msg);
+                SLOG_DEBUG(status_msg);
             }
             else
             {
                 status_code = 1005;
                 status_msg = "search query returns false.";
-                std::cout << status_msg << endl;
-                Util::formatPrint(status_msg, "WARN");
+                SLOG_WARN(status_msg);
             }
             response->set_statuscode(status_code);
             response->set_statusmsg(status_msg);
         }
         apiUtil->unlock_database(db_name);
-        Util::formatPrint("query complete!");
+        SLOG_DEBUG("query complete!");
     }
     catch (std::exception &e)
     {
@@ -1329,7 +1320,7 @@ void GrpcImpl::export_task(CommonRequest *&request, CommonResponse *&response, s
             return;
         }
         apiUtil->rdlock_database(db_name);//lock database
-        Util::formatPrint("export_path: " + db_path);
+        SLOG_DEBUG("export_path: " + db_path);
         FILE* ofp = fopen(db_path.c_str(), "w");
         current_database->export_db(ofp);
         fflush(ofp);
@@ -1556,7 +1547,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
             response->set_statusmsg(error);
             return;
         }
-        Util::formatPrint("tquery sparql: " + sparql);
+        SLOG_DEBUG("tquery sparql: " + sparql);
         string res;
         int ret = txn_m->Query(TID, sparql ,res);
         if(ret == -1)
@@ -1656,7 +1647,7 @@ void GrpcImpl::tquery_task(CommonRequest *&request, CommonResponse *&response, s
                     }
                     else 
                     {
-                        Util::formatPrint("Unknown bindings type", "ERROR");
+                        SLOG_ERROR("Unknown bindings type");
                     }
                 }
                 response->set_statuscode(0);
@@ -1789,9 +1780,9 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
 			cout << "latest TID: " << latest_tid <<  endl;
 			if (latest_tid == 0)
 			{
-				Util::formatPrint("this is latest TID, auto checkpoint and save.");
+				SLOG_DEBUG("this is latest TID, auto checkpoint and save.");
 				txn_m->Checkpoint();
-                Util::formatPrint("transaction checkpoint done.");
+                SLOG_DEBUG("transaction checkpoint done.");
 				if (apiUtil->trywrlock_database(db_name))
 				{
 					current_database->save();
@@ -1799,7 +1790,7 @@ void GrpcImpl::commit_task(CommonRequest *&request, CommonResponse *&response, s
 				}
 				else
 				{
-					Util::formatPrint("the save operation can not been excuted due to loss of lock.", "ERROR");
+					SLOG_ERROR("the save operation can not been excuted due to loss of lock.");
 				}
 			}
             string success = "transaction commit success. TID: " + TID_s;
@@ -1977,7 +1968,7 @@ void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&respons
         }
         else
         {
-            Util::formatPrint("get Txn_ptr");
+            SLOG_DEBUG("get Txn_ptr");
             auto txn_m = apiUtil->get_Txn_ptr(db_name);
             if(txn_m == NULL)
             {
@@ -1988,9 +1979,9 @@ void GrpcImpl::checkpoint_task(CommonRequest *&request, CommonResponse *&respons
             }
             else
             {
-                Util::formatPrint("begin checkpoint");
+                SLOG_DEBUG("begin checkpoint");
                 txn_m->Checkpoint();
-                Util::formatPrint("begin save");
+                SLOG_DEBUG("begin save");
                 current_database->save();
                 apiUtil->unlock_database(db_name);
                 response->set_statuscode(0);
@@ -2307,7 +2298,7 @@ void GrpcImpl::shutdown_task(CommonRequest *&request, CommonResponse *&response,
         response->set_statuscode(0);
         response->set_statusmsg(msg);
         apiUtil->write_access_log("shutdown", remote_ip, 0, msg);
-        Util::formatPrint(msg);
+        SLOG_DEBUG(msg);
         delete apiUtil;
         _exit(1);
     }
@@ -3332,7 +3323,7 @@ void GrpcImpl::fun_cudb_task(CommonRequest *&request, CommonResponse *&response,
                 }
                 else
                 {
-                    Util::formatPrint("Fun build fail:\n" + result, "ERROR");
+                    SLOG_ERROR("Fun build fail:\n" + result);
                     response->set_statuscode(1005);
                     response->set_statusmsg(result);
                 }
@@ -3444,7 +3435,7 @@ void GrpcImpl::fun_copy_from_pfn_info(FunInfo * target, struct PFNInfo * source)
 void GrpcImpl::default_task(CommonRequest *&request, CommonResponse *&response, srpc::RPCContext *&ctx)
 {
     string msg = "the operation '" + request->operation() + "' has not match handler function";
-    Util::formatPrint(msg,"ERROR");
+    SLOG_ERROR(msg);
     response->set_statuscode(1100);
     response->set_statusmsg(msg);
 }

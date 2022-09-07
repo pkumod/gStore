@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-07-29 17:25:16
+ * @LastEditTime: 2022-09-07 08:57:31
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -302,7 +302,7 @@ void Thread::assign(Task *t)
 }
 void Thread::run()
 {
-	cout << "Thread:" << ID << " run\n";
+	SLOG_DEBUG("Thread: " + to_string(ID) + " run...");
 	task->run();
 	delete task;
 	BackToFree(this);
@@ -474,12 +474,12 @@ int main(int argc, char *argv[])
 					string cmd = "rm system.db/port.txt";
 					system(cmd.c_str());
 				}
-				Util::formatPrint("Stopped abnormally, restarting server...", "WARN");
+				SLOG_WARN("Stopped abnormally, restarting server...");
 			}
 		}
 		else
 		{
-			Util::formatPrint("Failed to start server: deamon fork failure.", "ERROR");
+			SLOG_ERROR("Failed to start server: deamon fork failure.");
 			return -1;
 		}
 	}
@@ -488,7 +488,6 @@ int main(int argc, char *argv[])
 
 int initialize(int argc, char *argv[])
 {
-	Util::formatPrint("ghttp begin initialize...");
 	// Server restarts to use the original database
 	// current_database = NULL;
 
@@ -501,8 +500,8 @@ int initialize(int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		Util::formatPrint("Use the default port:9000!");
-		Util::formatPrint("Not load any database!");
+		SLOG_DEBUG("Use the default port:9000!");
+		SLOG_DEBUG("Not load any database!");
 	}
 	else if (argc == 2)
 	{
@@ -525,7 +524,7 @@ int initialize(int argc, char *argv[])
 		}
 		else
 		{
-			Util::formatPrint("Invalid arguments! Input \"bin/ghttp -h\" for help.", "error");
+			cout << "Invalid arguments! Input \"bin/ghttp -h\" for help." << endl;
 			return 0;
 		}
 	}
@@ -534,12 +533,12 @@ int initialize(int argc, char *argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
 		{
-			Util::formatPrint("Your db name to be built should not end with \".db\".", "error");
+			SLOG_ERROR("Your db name to be built should not end with \".db\".");
 			return -1;
 		}
 		else if (db_name == "system")
 		{
-			Util::formatPrint("You can not load system files.", "error");
+			SLOG_ERROR("You can not load system files.");
 			return -1;
 		}
 		port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
@@ -549,7 +548,7 @@ int initialize(int argc, char *argv[])
 	// check port.txt exist
 	if (Util::file_exist("system.db/port.txt"))
 	{
-		Util::formatPrint("Server port " + port_str + " is already in use.", "ERROR");
+		SLOG_ERROR("Server port " + port_str + " is already in use.");
 		return -1;
 	}
 	// call apiUtil initialized
@@ -593,14 +592,14 @@ int initialize(int argc, char *argv[])
 		//handle the Ctrl+C signal
 		signal(SIGINT, signalHandler);
 		//Start server
-		Util::formatPrint("ghttp server port " + to_string(server.config.port));
+		SLOG_DEBUG("ghttp server port " + to_string(server.config.port));
 		server.start(); });
 
 	// Wait for server to start so that the client can connect
-	this_thread::sleep_for(chrono::seconds(1));
+	this_thread::sleep_for(std::chrono::seconds(1));
 
 	server_thread.join();
-	Util::formatPrint("ghttp server stoped.");
+	SLOG_DEBUG("ghttp server stoped.");
 	return 0;
 }
 
@@ -610,7 +609,7 @@ void signalHandler(int signum)
 	{
 		delete apiUtil;
 	}
-	Util::formatPrint("ghttp server stopped.");
+	SLOG_DEBUG("ghttp server stopped.");
 	exit(signum);
 }
 
@@ -625,17 +624,13 @@ void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer
 	// read and send 128 KB at a time
 	static vector<char> buffer(131072); // Safe when server is running on one thread
 	streamsize read_length;
-	cout << "int 0" << endl;
 	if ((read_length = ifs->read(&buffer[0], buffer.size()).gcount()) > 0)
 	{
 		response->write(&buffer[0], read_length);
-		cout << "int 1" << endl;
 		if (read_length == static_cast<streamsize>(buffer.size()))
 		{
-			cout << "int 2" << endl;
 			server.send(response, [&server, response, ifs](const boost::system::error_code &ec)
 						{
-	cout<<"int 3"<<endl;
                     if(!ec)
                     default_resource_send(server, response, ifs);
                     else
@@ -716,8 +711,8 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		Socket socket;
 		string dataset = db_path;
 		string database = db_name;
-		cout << "Import dataset to build database..." << endl;
-		cout << "DB_store: " << database << "\tRDF_data: " << dataset << endl;
+		SLOG_DEBUG("Import dataset to build database...");
+		SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
 		Database *current_database = new Database(database);
 		bool flag;
 		if (!port.empty())
@@ -761,7 +756,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			sendResponseMsg(1006, error, operation, request, response);
 			return;
 		}
-		Util::formatPrint("add query and load and unload privilege succeed after build.");
+		SLOG_DEBUG("add query and load and unload privilege succeed after build.");
 
 		// add database information to system.db
 		if (apiUtil->build_db_user_privilege(db_name, username))
@@ -795,11 +790,11 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 	string resJson = CreateJson(code, msg, 0);
 	if (code == 0)
 	{
-		Util::formatPrint("response result:\n" + resJson);
+		SLOG_DEBUG("response result:\n" + resJson);
 	}
 	else
 	{
-		Util::formatPrint("response result:\n" + resJson, "ERROR");
+		SLOG_ERROR("response result:\n" + resJson);
 	}
 	string remote_ip = getRemoteIp(request);
 	apiUtil->write_access_log(operation, remote_ip, code, msg);
@@ -834,7 +829,7 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 	doc.Accept(resWriter);
 	string json_str = resBuffer.GetString();
 
-	Util::formatPrint("response result:\n" + json_str);
+	SLOG_DEBUG("response result:\n" + json_str);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << json_str.length() << "\r\n\r\n"
 			  << json_str;
 }
@@ -851,7 +846,7 @@ string getRemoteIp(const shared_ptr<HttpServer::Request> &request)
 		remote_ip = lu.first->second;
 	else
 		remote_ip = request->remote_endpoint_address;
-	// Util::formatPrint("remote_ip: " + remote_ip);
+	// SLOG_DEBUG("remote_ip: " + remote_ip);
 	return remote_ip;
 }
 
@@ -891,7 +886,7 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 
 			Socket socket;
 			Database *current_database = new Database(db_name);
-			Util::formatPrint("begin loading...");
+			SLOG_DEBUG("begin loading...");
 			bool rt;
 			if (!port.empty())
 			{
@@ -907,14 +902,14 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 			{
 				rt = current_database->load(load_csr);
 			}
-			Util::formatPrint("end loading...");
+			SLOG_DEBUG("end loading...");
 			if (rt)
 			{
 				apiUtil->add_database(db_name, current_database);
 				// todo insert txn
 				if (apiUtil->insert_txn_managers(current_database, db_name) == false)
 				{
-					Util::formatPrint("when load insert_txn_managers fail.", "WARN");
+					SLOG_WARN("when load insert_txn_managers fail.");
 				}
 				string csr_str = "false";
 				if (current_database->csr != NULL)
@@ -1131,11 +1126,11 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 			{
 				//@ the database has loaded, unload it firstly
 				apiUtil->delete_from_databases(db_name);
-				Util::formatPrint("remove " + db_name + " from loaded database list");
+				SLOG_DEBUG("remove " + db_name + " from loaded database list");
 			}
 			apiUtil->unlock_databaseinfo(db_info);
 			apiUtil->delete_from_already_build(db_name);
-			Util::formatPrint("remove " + db_name + " from the already build database list");
+			SLOG_DEBUG("remove " + db_name + " from the already build database list");
 			//@ delete the database info from  the system database
 			string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
 			apiUtil->update_sys_db(update);
@@ -1145,7 +1140,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 				cmd = "rm -r " + db_name + ".db";
 			else if (is_backup == "true")
 				cmd = "mv " + db_name + ".db " + db_name + ".bak";
-			cout << "delete the file: " << cmd << endl;
+			SLOG_DEBUG("delete the file: " + cmd);
 			system(cmd.c_str());
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
@@ -1561,7 +1556,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		if (path.empty())
 		{
 			path = apiUtil->get_backup_path();
-			Util::formatPrint("backup_path is empty, set to default path: " + path);
+			SLOG_DEBUG("backup_path is empty, set to default path: " + path);
 		}
 		if (path == ".")
 		{
@@ -1574,7 +1569,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		{
 			path = path.substr(0, path.length() - 1);
 		}
-		Util::formatPrint("backup path: " + path);
+		SLOG_DEBUG("backup path: " + path);
 		string db_path = db_name + ".db";
 		apiUtil->rw_wrlock_database_map();
 		int ret = apiUtil->db_copy(db_path, path);
@@ -1594,7 +1589,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			string sys_cmd = "mv " + path + " " + _path;
 			system(sys_cmd.c_str());
 
-			Util::formatPrint("database backup done: " + db_name);
+			SLOG_DEBUG("database backup done: " + db_name);
 			string success = "Database backup successfully.";
 			apiUtil->unlock_databaseinfo(db_info);
 
@@ -1640,7 +1635,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		{
 			path = path.substr(0, path.length() - 1);
 		}
-		Util::formatPrint("backup path:" + path);
+		SLOG_DEBUG("backup path:" + path);
 		if (Util::dir_exist(path) == false)
 		{
 			string error = "Backup path not exist, restore failed.";
@@ -1648,7 +1643,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			return;
 		}
 		string database = db_name;
-		Util::formatPrint("restore database:" + database);
+		SLOG_DEBUG("restore database:" + database);
 		if (apiUtil->check_already_build(db_name) == false)
 		{
 			error = "Database not built yet. Rebuild Now";
@@ -1778,7 +1773,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			bool lock_rt = apiUtil->rdlock_database(db_name);
 			if (lock_rt)
 			{
-				Util::formatPrint("get current database read lock success: " + db_name);
+				SLOG_DEBUG("get current database read lock success: " + db_name);
 			}
 			else
 			{
@@ -1807,7 +1802,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
 		try
 		{
-			cout << "begin query..." << endl;
+			SLOG_DEBUG("begin query...");
 			rs.setUsername(username);
 			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
 			query_time = Util::get_cur_time() - query_time;
@@ -1852,7 +1847,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		string localname = "./query_result/" + filename;
 		if (ret)
 		{
-			// Util::formatPrint(thread_id + ":search query returned successfully.");
+			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
 
 			// record each query operation, including the sparql and the answer number
 			// accurate down to microseconds
@@ -1898,7 +1893,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				resDoc.Parse(success.c_str());
 				if (resDoc.HasParseError())
 				{
-					Util::formatPrint("result parse error:\n" + success, "ERROR");
+					SLOG_ERROR("result parse error:\n" + success);
 					error = "parse error";
 					string filename2 = "error_" + filename;
 					string localname2 = "./query_result/" + filename2;
@@ -1920,11 +1915,13 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
 
-					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
-					*response << "\r\nCache-Control: no-cache"
+					*response << "HTTP/1.1 200 OK"
+							  << "\r\nContent-Type: application/json"
+							  << "\r\nContent-Length: " << resJson.length()
+							  << "\r\nCache-Control: no-cache"
 							  << "\r\nPragma: no-cache"
-							  << "\r\nExpires: 0";
-					*response << "\r\n\r\n"
+							  << "\r\nExpires: 0"
+							  << "\r\n\r\n"
 							  << resJson;
 				}
 			}
@@ -1957,11 +1954,13 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				// beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
 				// then the following query will show the same result without sending a request to let the service run query
 				// so the download function will go wrong because there is no file in the service.
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
-				*response << "\r\nCache-Control: no-cache"
+				*response << "HTTP/1.1 200 OK"
+						  << "\r\nContent-Type: application/json"
+						  << "\r\nContent-Length: " << resJson.length()
+						  << "\r\nCache-Control: no-cache"
 						  << "\r\nPragma: no-cache"
-						  << "\r\nExpires: 0";
-				*response << "\r\n\r\n"
+						  << "\r\nExpires: 0"
+						  << "\r\n\r\n"
 						  << resJson;
 			}
 			else if (format == "json+file" || format == "file+json")
@@ -1976,7 +1975,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				resDoc.Parse(success.c_str());
 				if (resDoc.HasParseError())
 				{
-					Util::formatPrint("result parse error:\n" + success, "ERROR");
+					SLOG_ERROR("result parse error:\n" + success);
 					error = "parse error";
 					string filename2 = "error_" + filename;
 					string localname2 = "./query_result/" + filename2;
@@ -1997,21 +1996,25 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					PrettyWriter<StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-					*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length();
-					*response << "\r\nCache-Control: no-cache"
+					*response << "HTTP/1.1 200 OK"
+							  << "\r\nContent-Type: application/json"
+							  << "\r\nContent-Length: " << resJson.length()
+					          << "\r\nCache-Control: no-cache"
 							  << "\r\nPragma: no-cache"
-							  << "\r\nExpires: 0";
-					*response << "\r\n\r\n"
+							  << "\r\nExpires: 0"
+					          << "\r\n\r\n"
 							  << resJson;
 				}
 			}
 			else if (format == "sparql-results+json")
 			{
-				*response << "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: " << success.length();
-				*response << "\r\nCache-Control: no-cache"
+				*response << "HTTP/1.1 200 OK"
+						  << "\r\nContent-Type: application/sparql-results+json"
+						  << "\r\nContent-Length: " << success.length()
+						  << "\r\nCache-Control: no-cache"
 						  << "\r\nPragma: no-cache"
-						  << "\r\nExpires: 0";
-				*response << "\r\n\r\n"
+						  << "\r\nExpires: 0"
+						  << "\r\n\r\n"
 						  << success; // success contains the json-encoded result
 			}
 			else
@@ -2026,20 +2029,20 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			int error_code;
 			if (update)
 			{
-				cout << log_prefix << "update query returned correctly." << endl;
+				SLOG_DEBUG(log_prefix + "update query returned correctly.");
 				error = "update query returns true.";
 				error_code = 0;
 			}
 			else
 			{
-				cout << log_prefix << "search query returned error." << endl;
+				SLOG_DEBUG(log_prefix + "search query returned error.");
 				error = "search query returns false.";
 				error_code = 1005;
 			}
 			sendResponseMsg(error_code, error, operation, request, response);
 		}
 		apiUtil->unlock_database(db_name);
-		Util::formatPrint("query complete!");
+		SLOG_DEBUG("query complete!");
 	}
 	catch (const std::exception &e)
 	{
@@ -2098,7 +2101,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			return;
 		}
 		apiUtil->rdlock_database(db_name); // lock database
-		Util::formatPrint("export_path: " + db_path);
+		SLOG_DEBUG("export_path: " + db_path);
 		FILE *ofp = fopen(db_path.c_str(), "w");
 		current_database->export_db(ofp);
 		fflush(ofp);
@@ -2302,7 +2305,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Util::formatPrint("tquery sparql: " + sparql);
+		SLOG_DEBUG("tquery sparql: " + sparql);
 		string res;
 		int ret = txn_m->Query(TID, sparql, res);
 		if (ret == -1)
@@ -2329,7 +2332,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			resDoc.Parse(res.c_str());
 			if (resDoc.HasParseError())
 			{
-				Util::formatPrint("error parse", "error");
+				SLOG_ERROR("parse error:" + res);
 				resDoc.Parse("{}");
 				resDoc.AddMember("result", StringRef(res.c_str()), allocator);
 			}
@@ -2431,12 +2434,12 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		{
 			apiUtil->commit_process(txn_m, TID);
 			auto latest_tid = txn_m->find_latest_txn();
-			cout << "latest TID: " << latest_tid << endl;
+			SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
 			if (latest_tid == 0)
 			{
-				Util::formatPrint("this is latest TID, auto checkpoint and save.");
+				SLOG_DEBUG("this is latest TID, auto checkpoint and save.");
 				txn_m->Checkpoint();
-				Util::formatPrint("transaction checkpoint done.");
+				SLOG_DEBUG("transaction checkpoint done.");
 				if (apiUtil->trywrlock_database(db_name))
 				{
 					current_database->save();
@@ -2444,7 +2447,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 				}
 				else
 				{
-					Util::formatPrint("the save operation can not been excuted due to loss of lock.", "ERROR");
+					SLOG_ERROR("the save operation can not been excuted due to loss of lock.");
 				}
 			}
 			string success = "transaction commit success. TID: " + TID_s;
@@ -2885,8 +2888,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	{
 		url = request->path;
 		url = UrlDecode(url);
-		cout << "get url: \n"
-			 << url << endl;
+		SLOG_DEBUG("get url: \n" + url);
 
 		operation = WebUrl::CutParam(url, "operation");
 		username = WebUrl::CutParam(url, "username");
@@ -2901,8 +2903,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (request_type == "POST")
 	{
 		auto strJson = request->content.string();
-		cout << "post content: \n"
-			 << strJson << endl;
+		SLOG_DEBUG("post content: \n" + strJson);
 
 		document.Parse(strJson.c_str());
 		if (document.HasParseError())
@@ -2946,16 +2947,17 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		sendResponseMsg(1004, msg, "methodcheck", request, response);
 		return;
 	}
-
-	std::cout << "------------------------ ghttp-api ------------------------" << std::endl;
-	std::cout << "thread_id: " << thread_id << std::endl;
-	std::cout << "remote_ip: " << remote_ip << std::endl;
-	std::cout << "operation: " << operation << std::endl;
-	std::cout << "method: " << request_type << std::endl;
-	std::cout << "request_path: " << request->path << std::endl;
-	std::cout << "http_version: " << request->http_version << std::endl;
-	std::cout << "request_time: " << Util::get_date_time() << std::endl;
-	std::cout << "----------------------------------------------------------" << std::endl;
+	stringstream ss;
+	ss << "\n------------------------ ghttp-api ------------------------";
+	ss << "\nthread_id: " << thread_id;
+	ss << "\nremote_ip: " << remote_ip;
+	ss << "\noperation: " << operation;
+	ss << "\nmethod: " << request_type;
+	ss << "\nrequest_path: " << request->path;
+	ss << "\nhttp_version: " << request->http_version;
+	ss << "\nrequest_time: " << Util::get_date_time();
+	ss << "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss.str());
 	if (operation == "check")
 	{
 		check_thread_new(request, response);
@@ -3857,8 +3859,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	else if (request_type == "POST")
 	{
 		auto strJson = request->content.string();
-		cout << "shutdown post content: \n"
-			 << strJson << endl;
+		SLOG_DEBUG("shutdown post content: \n" + strJson);
 
 		document.Parse(strJson.c_str());
 		if (document.HasParseError())
@@ -3904,19 +3905,19 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	{
 		string msg = "Server stopped successfully.";
 		string resJson = CreateJson(0, msg, 0);
-		Util::formatPrint("response result:\n" + resJson);
+		SLOG_DEBUG("response result:\n" + resJson);
 		apiUtil->write_access_log(operation, remote_ip, 0, msg);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
 				  << resJson;
 		delete apiUtil;
 		// TODO exit synchlized
-		exit(1);
+		_exit(1);
 	}
 	else
 	{
 		string msg = "Server stopped failed.";
 		string resJson = CreateJson(1005, msg, 0);
-		Util::formatPrint("response result:\n" + resJson);
+		SLOG_DEBUG("response result:\n" + resJson);
 		apiUtil->write_access_log(operation, remote_ip, 1005, msg);
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
 				  << resJson;
@@ -3956,9 +3957,7 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 	try
 	{
 		struct DBQueryLogs dbQueryLogs;
-		cout << "1" << endl;
 		apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
-		cout << "2" << endl;
 		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
 		size_t count = logList.size();
 		string line = "";
@@ -3975,7 +3974,6 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			str_stream << line;
 		}
 		str_stream << "]";
-		cout << "3" << endl;
 		Document all;
 		Document jsonArray;
 		Document::AllocatorType &allocator = all.GetAllocator();
@@ -3983,7 +3981,6 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		jsonArray.SetArray();
 		line = str_stream.str();
 		jsonArray.Parse(line.c_str());
-		cout << "4" << endl;
 		int totalSize = dbQueryLogs.getTotalSize();
 		int totalPage = dbQueryLogs.getTotalPage();
 		all.AddMember("StatusCode", 0, allocator);
@@ -3993,9 +3990,7 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		all.AddMember("pageNo", page_no, allocator);
 		all.AddMember("pageSize", page_size, allocator);
 		all.AddMember("list", jsonArray, allocator);
-		cout << "5" << endl;
 		sendResponseMsg(all, operation, request, response);
-		cout << "6" << endl;
 	}
 	catch (const std::exception &e)
 	{
