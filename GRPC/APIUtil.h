@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-07-29 17:26:56
+ * @LastEditTime: 2022-09-05 14:26:25
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -959,7 +959,7 @@ public:
     bool user_pwd_alert(string username, string password);
     void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
-    string check_access_ip(string ip);
+    string check_access_ip(const string& ip);
     bool ip_save(string ip_type, vector<string> ipVector);
     vector<string> ip_list(string type);
     string ip_enabled_type();
