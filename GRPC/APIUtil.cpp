@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-05 14:59:07
+ * @LastEditTime: 2022-09-09 22:04:02
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -837,7 +837,7 @@ txn_id_t APIUtil::check_txn_id(string TID_s)
 		TID = strtoull(TID_s.c_str(), NULL, 0);
 	} 
     else if (TID_s.find("_") != string::npos)
-    {   // case for workbench call commit and rollback: "begin_time_tid"
+    {   // case for workbench call commit and rollback: "beginTime_tid"
         int pos = TID_s.find("_") + 1;
         string TID_s_new = TID_s.substr(pos, TID_s.size()-pos);
         if (Util::is_number(TID_s_new))
@@ -1029,7 +1029,7 @@ std::string APIUtil::check_server_indentity(const std::string& password)
     return error;
 }
 
-std::string APIUtil::check_param_value(string paramname, string value)
+std::string APIUtil::check_param_value(const string& paramname, const string& value)
 {
     string result = "";
 	if (value.empty()) 
