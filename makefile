@@ -112,7 +112,9 @@ parserobj = $(objdir)RDFParser.o $(objdir)SPARQLParser.o \
 
 serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
-grpcobj = $(objdir)grpcImpl.o ${objdir}APIUtil.o
+grpcobj = $(objdir)grpc_server.o $(objdir)grpc_server_task.o $(objdir)grpc_message.o \
+		  $(objdir)grpc_router.o $(objdir)grpc_routetable.o $(objdir)grpc_content.o \
+		  $(objdir)grpc_status_code.o ${objdir}APIUtil.o
 
 databaseobj =  $(objdir)Database.o $(objdir)Join.o \
 			   $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
@@ -130,12 +132,12 @@ inc_log = -I./tools/log4cplus/include
 # http://blog.csdn.net/gmpy_tiger/article/details/51849474
 # http://blog.csdn.net/jeffrey0000/article/details/12421317
 
-#gtest $(exedir)grpc 
+#gtest
 
 TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_backup_scheduler \
 		 $(exedir)gquery  $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor \
 		 $(exedir)gshow $(exedir)shutdown $(exedir)ginit $(exedir)gdrop  $(exedir)gbackup \
-		 $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)gconsole
+		 $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc $(exedir)gconsole
 # TestTarget = $(testdir)update_test $(testdir)dataset_test $(testdir)transaction_test \
 			 $(testdir)run_transaction $(testdir)workload $(testdir)debug_test
 # TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
@@ -188,7 +190,7 @@ $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/
 #	$(CXX) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp)
 
 $(exedir)grpc: $(lib_antlr) $(lib_rpc) $(objdir)grpc.o $(grpcobj) $(objfile)
-	$(CXX) $(EXEFLAG) -o $(exedir)grpc $(objdir)grpc.o ${grpcobj} $(objfile) $(library) $(inc) ${inc_rpc} -lworkflow -lssl -lcrypto -DUSE_BOOST_REGEX $(openmp) ${ldl}
+	$(CXX) $(EXEFLAG) -o $(exedir)grpc $(objdir)grpc.o ${grpcobj} $(objfile) $(library) $(inc) ${inc_rpc} -lworkflow -lssl -lcrypto $(openmp) ${ldl}
 
 $(exedir)gbackup: $(lib_antlr) $(objdir)gbackup.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gbackup $(objdir)gbackup.o $(objfile) $(library) $(openmp) ${ldl}
@@ -265,8 +267,8 @@ $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp D
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CXX) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp GRPC/grpcImpl.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_log) $(inc_rpc) -o $(objdir)grpc.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc_server.h GRPC/grpc_status_code.h GRPC/grpc_operation.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_log) $(inc_rpc) -o $(objdir)grpc.o $(def64IO) $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gbackup.cpp $(inc) $(inc_log) -o $(objdir)gbackup.o $(openmp)
@@ -640,11 +642,26 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(filter $(FIRST_BUILD),$(o
 $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) $(inc_log) -o $(objdir)APIUtil.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
-# $(objdir)grpc.pb.o: GRPC/grpc.pb.cc GRPC/grpc.pb.h $(lib_antlr) $(lib_rpc)
-# 	$(CXX) $(CFLAGS) GRPC/grpc.pb.cc $(inc) $(inc_rpc) -o $(objdir)grpc.pb.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+$(objdir)grpc_status_code.o: GRPC/grpc_status_code.cpp GRPC/grpc_status_code.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_status_code.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_status_code.o $(def64IO) $(openmp)
 
-$(objdir)grpcImpl.o: GRPC/grpcImpl.cpp GRPC/grpcImpl.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpcImpl.cpp $(inc) $(inc_log) $(inc_rpc) -o $(objdir)grpcImpl.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_content.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_content.o $(def64IO) $(openmp)
+
+$(objdir)grpc_message.o: GRPC/grpc_message.cpp GRPC/grpc_message.h GRPC/grpc_noncopyable.h $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_message.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_message.o $(def64IO) $(openmp)
+
+$(objdir)grpc_server_task.o: GRPC/grpc_server_task.cpp GRPC/grpc_server_task.h $(objdir)grpc_message.o GRPC/grpc_noncopyable.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_server_task.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_server_task.o $(def64IO) $(openmp)
+
+$(objdir)grpc_routetable.o: GRPC/grpc_routetable.cpp GRPC/grpc_routetable.h GRPC/grpc_request_handler.h GRPC/grpc_noncopyable.h GRPC/grpc_stringpiece.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_routetable.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_routetable.o $(def64IO) $(openmp)
+
+$(objdir)grpc_router.o: GRPC/grpc_router.cpp GRPC/grpc_router.h $(objdir)grpc_routetable.o GRPC/grpc_noncopyable.h $(objdir)grpc_server_task.o $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_router.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_router.o $(def64IO) $(openmp)
+
+$(objdir)grpc_server.o: GRPC/grpc_server.cpp GRPC/grpc_server.h $(objdir)grpc_message.o $(objdir)grpc_router.o $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_server.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_server.o $(def64IO) $(openmp)
 
 #objects in GRPC/ end
 

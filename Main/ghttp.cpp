@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-07 08:57:31
+ * @LastEditTime: 2022-09-09 22:24:49
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -1220,20 +1220,27 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 	string operation = "usermanage";
 	try
 	{
+		error = apiUtil->check_param_value("op_username", username);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		error = apiUtil->check_param_value("op_password", password);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
 		if (type == "1") // add user
 		{
-			if (username.empty() || password.empty())
+			if (apiUtil->user_add(username, password))
 			{
-				error = "the user name and password can not be empty while adding user.";
-				sendResponseMsg(1003, error, operation, request, response);
-			}
-			else if (apiUtil->user_add(username, password))
-			{
-				sendResponseMsg(0, "user add done.", operation, request, response);
+				sendResponseMsg(0, "User add done.", operation, request, response);
 			}
 			else
 			{
-				error = "username already existed, add user failed.";
+				error = "Username already existed, add user failed.";
 				sendResponseMsg(1004, error, operation, request, response);
 			}
 		}
@@ -1241,16 +1248,16 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		{
 			if (username == apiUtil->get_root_username())
 			{
-				error = "you cannot delete root, delete user failed.";
+				error = "You cannot delete root, delete user failed.";
 				sendResponseMsg(1004, error, operation, request, response);
 			}
 			else if (apiUtil->user_delete(username, password))
 			{
-				sendResponseMsg(0, "delete user done.", operation, request, response);
+				sendResponseMsg(0, "Delete user done.", operation, request, response);
 			}
 			else
 			{
-				error = "username not exist, delete user failed.";
+				error = "Username not exist, delete user failed.";
 				sendResponseMsg(1004, error, operation, request, response);
 			}
 		}
@@ -1258,17 +1265,17 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		{
 			if (apiUtil->user_pwd_alert(username, password))
 			{
-				sendResponseMsg(0, "change password done. ", operation, request, response);
+				sendResponseMsg(0, "Change password done.", operation, request, response);
 			}
 			else
 			{
-				error = "username not exist, change password failed.";
+				error = "Username not exist, change password failed.";
 				sendResponseMsg(1004, error, operation, request, response);
 			}
 		}
 		else
 		{
-			error = "the operation is not support.";
+			error = "The operation is not support.";
 			sendResponseMsg(1003, error, operation, request, response);
 		}
 	}
@@ -1356,7 +1363,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		error = apiUtil->check_param_value("username", username);
+		error = apiUtil->check_param_value("op_username", username);
 		if (error.empty() == false)
 		{
 			sendResponseMsg(1003, error, operation, request, response);
@@ -1370,7 +1377,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 				sendResponseMsg(1003, error, operation, request, response);
 				return;
 			}
-			error = apiUtil->check_param_value("privilege", privilege);
+			error = apiUtil->check_param_value("privileges", privilege);
 			if (error.empty() == false)
 			{
 				sendResponseMsg(1003, error, operation, request, response);
@@ -1379,7 +1386,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 		}
 		if (username == apiUtil->get_root_username())
 		{
-			string error = "you can't add privilege to root user.";
+			string error = "You can't change privileges for root user.";
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
@@ -1500,19 +1507,25 @@ void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, con
 	string operation = "userpassword";
 	try
 	{
+		std::string error = apiUtil->check_param_value("op_password", password);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
 		if (apiUtil->user_pwd_alert(username, password))
 		{
-			sendResponseMsg(0, "change password done. ", operation, request, response);
+			sendResponseMsg(0, "Change password done. ", operation, request, response);
 		}
 		else
 		{
-			error = "username not exist, change password failed.";
+			error = "Username not exist.";
 			sendResponseMsg(1004, error, operation, request, response);
 		}
 	}
 	catch (const std::exception &e)
 	{
-		string error = "User manager fail:" + string(e.what());
+		string error = "Alert password fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -2230,7 +2243,7 @@ void begin_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		if (TID_s.empty())
 		{
 			error = "transaction begin failed.";
-			sendResponseMsg(1005, error, operation, request, response);
+			sendResponseMsg(1008, error, operation, request, response);
 			return;
 		}
 		StringBuffer s;
@@ -2282,7 +2295,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		TID = apiUtil->check_txn_id(TID_s);
 		if (TID == (unsigned long long)0)
 		{
-			error = "TID is not a pure number. TID: " + TID_s;
+			error = "TID "+TID_s+" is not a pure number.";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -2290,6 +2303,12 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		if (error.empty() == false)
 		{
 			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		if (apiUtil->check_db_exist(db_name) == false)
+		{
+			error = "Database not built yet.";
+			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
 		if (apiUtil->check_already_load(db_name) == false)
@@ -2301,8 +2320,8 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		auto txn_m = apiUtil->get_Txn_ptr(db_name);
 		if (txn_m == NULL)
 		{
-			error = "Database transaction manager error.";
-			sendResponseMsg(1004, error, operation, request, response);
+			error = "Get database transaction manager error.";
+			sendResponseMsg(1008, error, operation, request, response);
 			return;
 		}
 		SLOG_DEBUG("tquery sparql: " + sparql);
@@ -2394,7 +2413,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		auto TID = apiUtil->check_txn_id(TID_s);
 		if (TID == (unsigned long long)0)
 		{
-			error = "TID is not a pure number. TID: " + TID_s;
+			error = "TID " + TID_s + " is not a pure number.";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -2414,19 +2433,19 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		auto txn_m = apiUtil->get_Txn_ptr(db_name);
 		if (txn_m == NULL)
 		{
-			error = "Database transaction manager error.";
-			sendResponseMsg(1004, error, operation, request, response);
+			error = "Get database transaction manager error.";
+			sendResponseMsg(1008, error, operation, request, response);
 			return;
 		}
 		int ret = txn_m->Commit(TID);
 		if (ret == -1)
 		{
-			error = "transaction not found, commit failed. TID: " + TID_s;
+			error = "Transaction not found, commit failed. TID: " + TID_s;
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if (ret == 1)
 		{
-			error = "transaction not in running state! commit failed. TID: " + TID_s;
+			error = "Transaction not in running state! commit failed. TID: " + TID_s;
 			apiUtil->rollback_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
@@ -2437,9 +2456,9 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
 			if (latest_tid == 0)
 			{
-				SLOG_DEBUG("this is latest TID, auto checkpoint and save.");
+				SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
 				txn_m->Checkpoint();
-				SLOG_DEBUG("transaction checkpoint done.");
+				SLOG_DEBUG("Transaction checkpoint done.");
 				if (apiUtil->trywrlock_database(db_name))
 				{
 					current_database->save();
@@ -2447,16 +2466,16 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 				}
 				else
 				{
-					SLOG_ERROR("the save operation can not been excuted due to loss of lock.");
+					SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
 				}
 			}
-			string success = "transaction commit success. TID: " + TID_s;
+			string success = "Transaction commit success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
 	}
 	catch (const std::exception &e)
 	{
-		string error = "transaction commit fail:" + string(e.what());
+		string error = "Transaction commit fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -2488,7 +2507,6 @@ void rollback_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		string res;
 		auto TID = apiUtil->check_txn_id(TID_s);
 		if (TID == (unsigned long long)0)
 		{
@@ -2511,31 +2529,31 @@ void rollback_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		auto txn_m = apiUtil->get_Txn_ptr(db_name);
 		if (txn_m == NULL)
 		{
-			string error = "Database transaction manager error.";
-			sendResponseMsg(1004, error, operation, request, response);
+			string error = "Get database transaction manager error.";
+			sendResponseMsg(1008, error, operation, request, response);
 			return;
 		}
 		int ret = txn_m->Rollback(TID);
 		if (ret == 1)
 		{
-			error = "transaction not in running state! rollback failed. TID: " + TID_s;
+			error = "Transaction not in running state! rollback failed. TID: " + TID_s;
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if (ret == -1)
 		{
-			error = "transaction not found, rollback failed. TID: " + TID_s;
+			error = "Transaction not found, rollback failed. TID: " + TID_s;
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else
 		{
 			apiUtil->rollback_process(txn_m, TID);
-			string success = "transaction rollback success. TID: " + TID_s;
+			string success = "Transaction rollback success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
 	}
 	catch (const std::exception &e)
 	{
-		string error = "transaction rollback fail:" + string(e.what());
+		string error = "Transaction rollback fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -2556,7 +2574,7 @@ void txnlog_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		// if (username != apiUtil->get_root_username())
 		// {
 		// 	string error = "Root User Only!";
-		// 	sendResponseMsg(1003, error, operation, request, response);
+		// 	sendResponseMsg(1004, error, operation, request, response);
 		// 	return;
 		// }
 
@@ -2641,17 +2659,17 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 		}
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
-			error = "the operation can not been excuted due to loss of lock.";
-			sendResponseMsg(1004, error, operation, request, response);
+			error = "The operation can not been excuted due to loss of lock.";
+			sendResponseMsg(1007, error, operation, request, response);
 		}
 		else
 		{
 			auto txn_m = apiUtil->get_Txn_ptr(db_name);
 			if (txn_m == NULL)
 			{
-				error = "Database transaction manager error.";
+				error = "Get database transaction manager error.";
 				apiUtil->unlock_database(db_name);
-				sendResponseMsg(1004, error, operation, request, response);
+				sendResponseMsg(1008, error, operation, request, response);
 			}
 			else
 			{
@@ -2764,7 +2782,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		Database *current_database = apiUtil->get_database(db_name);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
-			error = "the operation can not been excuted due to loss of lock.";
+			error = "The operation can not been excuted due to loss of lock.";
 			sendResponseMsg(1004, error, operation, request, response);
 		}
 		else
@@ -2785,7 +2803,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 	}
 	catch (const std::exception &e)
 	{
-		string error = "runtime error" + string(e.what());
+		string error = "Batch insert fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -2838,7 +2856,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		Database *current_database = apiUtil->get_database(db_name);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
-			error = "the operation can not been excuted due to loss of lock.";
+			error = "The operation can not been excuted due to loss of lock.";
 			sendResponseMsg(1007, error, operation, request, response);
 		}
 		else
@@ -2859,7 +2877,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 	}
 	catch (const std::exception &e)
 	{
-		string error = "runtime error" + string(e.what());
+		string error = "Batch remove fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -3956,6 +3974,12 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 	string operation = "querylog";
 	try
 	{
+		std::string error = apiUtil->check_param_value("date", date);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
 		struct DBQueryLogs dbQueryLogs;
 		apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
 		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
@@ -4081,6 +4105,7 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			if (IPtype == "3")
 			{
 				sendResponseMsg(1005, "please configure ip_deny_path or ip_allow_path in the conf.ini file first.", operation, request, response);
+				return;
 			}
 			vector<string> ip_list = apiUtil->ip_list(IPtype);
 			size_t count = ip_list.size();
@@ -4113,6 +4138,7 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			if (ips.empty())
 			{
 				sendResponseMsg(1003, "the ips can't be empty", operation, request, response);
+				return;
 			}
 			vector<string> ipVector;
 			Util::split(ips, ",", ipVector);
@@ -4193,7 +4219,7 @@ void fun_query_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 	}
 	catch (const std::exception &e)
 	{
-		string msg = "Fun query fail:" + string(e.what());
+		string msg = "Function query fail:" + string(e.what());
 		sendResponseMsg(1005, msg, operation, request, response);
 	}
 }
@@ -4201,6 +4227,12 @@ void fun_query_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info, string type)
 {
 	string operation = "funcudb";
+	std::string error = apiUtil->check_param_value("type", type);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, operation, request, response);
+		return;
+	}
 	if (type == "1")
 	{
 		operation = "funcreate";
@@ -4211,7 +4243,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		}
 		catch (const std::exception &e)
 		{
-			string msg = "Fun create fail:" + string(e.what());
+			string msg = "Function create fail:" + string(e.what());
 			sendResponseMsg(1005, msg, operation, request, response);
 		}
 	}
@@ -4225,7 +4257,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		}
 		catch (const std::exception &e)
 		{
-			string msg = "Fun update fail:" + string(e.what());
+			string msg = "Function update fail:" + string(e.what());
 			sendResponseMsg(1005, msg, operation, request, response);
 		}
 	}
@@ -4239,7 +4271,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		}
 		catch (const std::exception &e)
 		{
-			string msg = "Fun delete fail:" + string(e.what());
+			string msg = "Function delete fail:" + string(e.what());
 			sendResponseMsg(1005, msg, operation, request, response);
 		}
 	}
@@ -4260,13 +4292,13 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		}
 		catch (const std::exception &e)
 		{
-			string msg = "Fun build fail:" + string(e.what());
+			string msg = "Function build fail:" + string(e.what());
 			sendResponseMsg(1005, msg, operation, request, response);
 		}
 	}
 	else
 	{
-		sendResponseMsg(1003, "type is invalid, please look up the api document.", operation, request, response);
+		sendResponseMsg(1003, "Type is invalid, please look up the api document.", operation, request, response);
 	}
 }
 
@@ -4287,7 +4319,7 @@ void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const
 	}
 	catch (const std::exception &e)
 	{
-		string msg = "Fun review fail:" + string(e.what());
+		string msg = "Function review fail:" + string(e.what());
 		sendResponseMsg(1005, msg, operation, request, response);
 	}
 }
@@ -4316,7 +4348,7 @@ void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info)
 	}
 	if (fun_info.HasMember("funStatus") && fun_info["funStatus"].IsString())
 	{
-		pfn_info.setFunArgs(fun_info["funStatus"].GetString());
+		pfn_info.setFunStatus(fun_info["funStatus"].GetString());
 	}
 	if (fun_info.HasMember("funReturn") && fun_info["funReturn"].IsString())
 	{

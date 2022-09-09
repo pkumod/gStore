@@ -49,8 +49,18 @@ string gc_getUrl(string _type, string _port)
 
 int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
-    string strUrl = gc_getUrl(_type, _port).append("/api");
-    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"\"}";
+    std::string strUrl = gc_getUrl(_type, _port).append("/api");
+	std::string strPost;
+	if (_type == "grpc")
+    {
+        strUrl.append("/grpc");
+		strPost = "operation=check";
+    }
+	else
+	{
+		strUrl.append("/");
+		strPost = "{\"operation\": \"check\"}";
+	}
     int ret = gc.Post(strUrl, strPost, res);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
@@ -64,7 +74,7 @@ int main(int argc, char *argv[])
 		if (command == "-h" || command == "--help")
 		{
 			cout << endl;
-			cout << "Shutdown the ghttp server" << endl;
+			cout << "Shutdown the http server" << endl;
 			cout << endl;
 			cout << "Usage:\tbin/shutdown -t [type]" << endl;
 			cout << endl;
@@ -157,27 +167,45 @@ int main(int argc, char *argv[])
 		ofp.close();
 		
 		string res;
-		// int ret;
-		string postdata = "{\"username\":\""+SYSTEM_USERNAME+"\",\"password\":\"" + system_password + "\"}";
+		string postdata;
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
-		// cout << "post url:" << strUrl << '\n' << postdata << endl;
-		// todo: chech this return value
-		gc.Post(strUrl, postdata, res);
-		// ret = gc.Post(strUrl, postdata, res);
-		// cout << "post result:" << ret << endl;
-		if (Util::file_exist("system.db/port.txt"))
+		if (type == "grpc")
 		{
-			string cmd = "rm system.db/password*.txt";;
-			system(cmd.c_str());
-			cmd = "rm system.db/port.txt";
-			system(cmd.c_str());
-		}
-		if (res == "")
+			postdata = "username="+SYSTEM_USERNAME+"&password=" + system_password;
+			gc.Post(strUrl, postdata, res);
+			cout << "Result: " << res << endl;
+			rapidjson::Document jsonRes;
+			jsonRes.Parse(res.c_str());
+			if (jsonRes.HasParseError())
+			{
+				cout << "the server stop fail.";
+			}
+			if (jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
+			{
+				if (Util::file_exist("system.db/port.txt"))
+				{
+					string cmd = "rm system.db/password*.txt";;
+					system(cmd.c_str());
+					cmd = "rm system.db/port.txt";
+					system(cmd.c_str());
+				}
+				cout << "the Server is stopped successfully!";
+			}
+		} 
+		else
 		{
-			res = "the Server is stopped successfully!";
+			postdata = "{\"username\":\""+SYSTEM_USERNAME+"\",\"password\":\"" + system_password + "\"}";
+			gc.Post(strUrl, postdata, res);
+			if (Util::file_exist("system.db/port.txt"))
+			{
+				string cmd = "rm system.db/password*.txt";;
+				system(cmd.c_str());
+				cmd = "rm system.db/port.txt";
+				system(cmd.c_str());
+			}
+			cout << "the Server is stopped successfully!";
 		}
-		cout << "Result: " << res << endl;
 		return 0;
 	}
 }
