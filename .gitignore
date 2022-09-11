@@ -105,5 +105,3 @@ node_modules
 *.info
 
 /.vs
-/garbage/VSTree/LRUCache2.h
-/garbage/VSTree/LRUCache2.cpp
