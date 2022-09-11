@@ -475,6 +475,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].group_pattern;
 			this->rewriting_evaluation_stack.back().result = NULL;
+			this->rewriting_evaluation_stack[dep].result = result;
 			TempResultSet *temp = queryEvaluation(dep + 1);
 
 			if (result->results.empty())
@@ -783,6 +784,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 					this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].unions[j];
 					this->rewriting_evaluation_stack.back().result = NULL;
+					this->rewriting_evaluation_stack[dep].result = result;
 					sub_result = queryEvaluation(dep + 1);
 				}
 				else if (well_designed == 1)
@@ -1208,8 +1210,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
-			if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type)
-				this->rewriting_evaluation_stack[dep].result = result;	// For OPTIONAL FillCand (MINUS cannot do this)
+			this->rewriting_evaluation_stack[dep].result = result;
 			TempResultSet *temp = queryEvaluation(dep + 1);
 			{
 				TempResultSet *new_result = new TempResultSet();
@@ -1269,7 +1270,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		{ 
             QueryTree& sub_query=group_pattern.sub_group_pattern[i].subquery;
             if(sub_query.getOffset()==0&&sub_query.getLimit()==-1&&sub_query.getGroupByVarset().empty()&&sub_query.getOrderVarVector().empty() \
-				&& sub_query.getProjectionModifier() != QueryTree::Modifier_Distinct)
+				&& sub_query.getProjectionModifier() == QueryTree::Modifier_None)
 			{
                 cout<<"### Subtree (simp.) print start###\n";
 		    	sub_query.getGroupPattern().print(0);
@@ -1278,6 +1279,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
                 this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 				this->rewriting_evaluation_stack.back().group_pattern = sub_query.getGroupPattern();
 				this->rewriting_evaluation_stack.back().result = NULL;
+				this->rewriting_evaluation_stack[dep].result = result;
 				TempResultSet *temp = queryEvaluation(dep + 1); //TODO: IF parent IS NOT NULL, IT SHOULD BE JOINED
                 cout<<"<SIMP> number of results: ";
                 for(std::vector<TempResult>::iterator it=temp->results.begin();it!=temp->results.end(); it++) {
@@ -4488,17 +4490,12 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		{
 			int curDep = dep - 1;
 			while (curDep >= 0 && (!this->rewriting_evaluation_stack[curDep].result || \
+				this->rewriting_evaluation_stack[curDep].result->results.empty() ||
 				this->rewriting_evaluation_stack[curDep].result->results[0].result.size() == 0))
 				curDep--;
 			if (curDep >= 0)
 				cand = &(this->rewriting_evaluation_stack[curDep].result->results[0]);
 		}
-	}
-	
-	if (!cand || cand->result.size() == 0)
-	{
-		cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
-		return;
 	}
 	
 	temp->results.push_back(TempResult());
@@ -4546,6 +4543,12 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		vars.push_back(subject);
 		vars.push_back(object);
 		temp->results[0].id_varset = Varset(vars);
+		
+		if (!cand || cand->result.size() == 0)
+		{
+			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
+			return;
+		}
 
 		unsigned subjectIdx = 0, objectIdx = 0;
 		while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
