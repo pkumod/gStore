@@ -1171,38 +1171,6 @@ void Database::load_cache()
 
 	bar.set_option(indicators::option::PostfixText{"Load cache done!"});
 	bar.set_progress(100); // all done
-
-	// long t0 = Util::get_cur_time();
-	if (this->stringindex == NULL)
-	{
-		cout << "The string index is null" << endl;
-	}
-	vector<StringIndexFile *> indexfile = this->stringindex->get_three_StringIndexFile();
-
-	StringIndexFile *entity = indexfile[0];
-	StringIndexFile *literal = indexfile[1];
-	StringIndexFile *predicate = indexfile[2];
-
-	struct stat statbuf;
-	int fd;
-
-	stat((entity->get_loc() + "value").c_str(), &statbuf);
-	fd = open((entity->get_loc() + "value").c_str(), O_RDONLY);
-	entity->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
-	entity->Mmap = (char *)mmap(NULL, entity->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
-	close(fd);
-
-	stat((literal->get_loc() + "value").c_str(), &statbuf);
-	fd = open((literal->get_loc() + "value").c_str(), O_RDONLY);
-	literal->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
-	literal->Mmap = (char *)mmap(NULL, literal->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
-	close(fd);
-
-	stat((predicate->get_loc() + "value").c_str(), &statbuf);
-	fd = open((predicate->get_loc() + "value").c_str(), O_RDONLY);
-	predicate->mmapLength = (statbuf.st_size / 4096 + 1) * 4096;
-	predicate->Mmap = (char *)mmap(NULL, predicate->mmapLength, PROT_READ, MAP_POPULATE | MAP_SHARED, fd, 0);
-	close(fd);
 }
 
 void Database::get_important_preID()
