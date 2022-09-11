@@ -110,7 +110,6 @@ void QueryParser::printQueryTree()
 /**
 	query : prologue( selectquery | constructquery | describequery | askquery )valuesClause ;
 	Visit node query: recursively call visit on each of its children.
-	(Redundant, can be removed without affecting QueryParser's function)
 
 	@param ctx pointer to query's context.
 	@return a dummy antlrcpp::Any object.
