@@ -516,7 +516,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					query_info.ordered_by_expressions_->push_back(order_item);
 				
 				int st = i;
-				while (st > 0 && (group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Pattern_type || group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Union_type))
+				while (st > 0 && ((group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Pattern_type
+					&& !group_pattern.sub_group_pattern[st - 1].pattern.kleene) 
+					|| group_pattern.sub_group_pattern[st - 1].type == GroupPattern::SubGroupPattern::Union_type))
 					st--;
 
 				for (int j = st; j < i; j++)
