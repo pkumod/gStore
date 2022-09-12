@@ -474,10 +474,6 @@ ResultSet::to_tempresult()
     long long ans_num = max((long long)this->ansNum - this->output_offset, 0LL);
 	if (this->output_limit != -1)
 		ans_num = min(ans_num, (long long)this->output_limit);
-	if(ans_num == 0)
-	{
-		return tmp;
-	}
 
 	for(int i = 0; i < this->true_select_var_num; i++)
 	{
