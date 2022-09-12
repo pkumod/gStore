@@ -1321,14 +1321,22 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
                 cout<<"<NONSIMP> number of results: "<<temp_rs->ansNum<<endl;
                 TempResultSet *temp_trs = new TempResultSet();
                 temp_trs->results.push_back(temp_rs->to_tempresult());
-                TempResultSet *new_result = new TempResultSet();
-                result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-                temp_trs->release();
-		    	result->release();
-	    		delete temp_trs;
-		    	delete result;
+				if (result->results.empty())
+		    	{
+		    		delete result;
+		    		result = temp_trs;
+		    	}
+				else
+				{
+					TempResultSet *new_result = new TempResultSet();
+					result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					temp_trs->release();
+					result->release();
+					delete temp_trs;
+					delete result;
 
-				result = new_result;
+					result = new_result;
+				}
             }
             cout<<"### Subquery ###"<<endl;
 		}
