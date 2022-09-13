@@ -3,6 +3,7 @@
 
 #include "workflow/WFHttpServer.h"
 #include "workflow/HttpUtil.h"
+#include "workflow/StringUtil.h"
 
 #include <unordered_map>
 #include <string>

@@ -1,5 +1,4 @@
 #include "workflow/HttpMessage.h"
-#include "workflow/StringUtil.h"
 
 #include <utility>
 #include "grpc_server.h"

@@ -292,11 +292,27 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::stringstream ss;
+			std::string v;
+			ss << "{";
+			int count = 0;
 			while (iter != params.end())
 			{
-				json_data.AddMember(StringRef(iter->first.c_str()), StringRef(iter->second.c_str()), allocator);
+				if (count > 0)
+				{
+					ss << ",";
+				}
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					StringUtil::url_decode(v);
+				}
+				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
+				count++;
 				iter++;
 			}
+			ss << "}";
+			json_data.Parse(ss.str().c_str());
 		}
 	}
 	std::stringstream ss;
@@ -397,11 +413,27 @@ void api(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::stringstream ss;
+			std::string v;
+			ss << "{";
+			int count = 0;
 			while (iter != params.end())
 			{
-				json_data.AddMember(StringRef(iter->first.c_str()), StringRef(iter->second.c_str()), allocator);
+				if (count > 0)
+				{
+					ss << ",";
+				}
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					StringUtil::url_decode(v);
+				}
+				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
+				count++;
 				iter++;
 			}
+			ss << "}";
+			json_data.Parse(ss.str().c_str());
 		}
 	}
 	// add remote_ip param
@@ -1505,7 +1537,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
 		try
 		{
-			SLOG_DEBUG("begin query...");
+			SLOG_DEBUG("begin query...\n" + sparql);
 			rs.setUsername(username);
 			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
 			query_time = Util::get_cur_time() - query_time;
@@ -1811,7 +1843,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		int level = Util::string2int(isolevel);
 		if (level <= 0 || level > 3)
 		{
-			error = "the Isolation level's value only can been 1/2/3";
+			error = "The isolation level's value only can been 1/2/3";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
@@ -1837,7 +1869,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		string TID_s = apiUtil->begin_process(db_name, level, username);
 		if (TID_s.empty())
 		{
-			error = "transaction begin failed.";
+			error = "Transaction begin failed.";
 			response->Error(StatusTranscationManageFailed, error);
 			return;
 		}
@@ -1846,7 +1878,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		resp_data.SetObject();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "transaction begin success", allocator);
+		resp_data.AddMember("StatusMsg", "Transaction begin success", allocator);
 		resp_data.AddMember("TID", StringRef(TID_s.c_str()), allocator);
 		response->Json(resp_data);
 	}
@@ -2355,7 +2387,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Batch insert fail:" + string(e.what());
+		string error = "Batch remove fail:" + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2835,22 +2867,26 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		vector<string> logfiles;
 		apiUtil->get_query_log_files(logfiles);
-		stringstream str_stream;
+		std::stringstream str_stream;
 		str_stream << "[";
 		size_t count = logfiles.size();
+		std::string item;
 		for (size_t i = 0; i < count; i++)
 		{
 			if (i > 0)
 			{
 				str_stream << ",";
 			}
-			str_stream << logfiles[i];
+			item = logfiles[i];
+			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
+			str_stream << "\"" << item << "\"";
 		}
 		str_stream << "]";
 		Json resp_data;
 		Json array_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.SetObject();
 		array_data.SetArray();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		array_data.Parse(str_stream.str().c_str());
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get query log date success", allocator);
@@ -2942,22 +2978,26 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		vector<string> logfiles;
 		apiUtil->get_access_log_files(logfiles);
-		stringstream str_stream;
+		std::stringstream str_stream;
 		str_stream << "[";
 		size_t count = logfiles.size();
+		std::string item;
 		for (size_t i = 0; i < count; i++)
 		{
 			if (i > 0)
 			{
 				str_stream << ",";
 			}
-			str_stream << logfiles[i];
+			item = logfiles[i];
+			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
+			str_stream << "\"" << item << "\"";
 		}
 		str_stream << "]";
 		Json resp_data;
 		Json array_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.SetObject();
 		array_data.SetArray();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		array_data.Parse(str_stream.str().c_str());
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get access log date success", allocator);

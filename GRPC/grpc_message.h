@@ -90,7 +90,7 @@ public:
 
     void set_query_params(std::map<std::string, std::string> &&query_params)
     { 
-        _query_params = std::move(query_params); 
+        _query_params = std::move(query_params);
     }
 
     void set_parsed_uri(ParsedURI &&parsed_uri)

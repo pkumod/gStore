@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-09 22:04:47
+ * @LastEditTime: 2022-09-13 09:26:49
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -862,8 +862,8 @@ private:
     string backup_path = "./backups";
     string DB_path = ".";
     unsigned int max_output_size = 10000000;
-    string query_log_path = "logs/ipaccess/";
-    string access_log_path = "logs/endpoint/";
+    string query_log_path = "logs/endpoint/";
+    string access_log_path = "logs/ipaccess/";
     std::string pfn_file_path = "fun/";
     std::string pfn_lib_path = "lib/";
     std::string pfn_include_header = "";
