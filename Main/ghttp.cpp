@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-06-17 13:03:54
+ * @LastEditTime: 2022-09-14 09:15:30
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -3857,7 +3857,7 @@ void shutdown_handler(const HttpServer& server, const shared_ptr<HttpServer::Res
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n" << resJson;
 		delete apiUtil;
 		// TODO exit synchlized
-		exit(1);
+		_exit(1);
 	}
 	else
 	{
