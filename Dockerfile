@@ -13,8 +13,8 @@ ENV LANG C.UTF-8
 
 RUN make pre -j && make -j FIRST_BUILD=y \
 	&& apt autoclean && apt clean \
-    && rm ./.git \
-    && rm ./tools \
+    && rm -rf /usr/src/gstore/.git \
+    && rm -rf /usr/src/gstore/tools \
 	&& rm -rf /tmp/* /var/tmp/* \
 	&& rm -rf /usr/share/doc/* \
 	&& rm -rf /var/lib/apt/lists/*
