@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-15 10:20:29
+ * @LastEditTime: 2022-09-15 18:15:39
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -457,7 +457,8 @@ int main(int argc, char *argv[])
 		if (fpid == 0)
 		{
 			int ret = initialize(argc, argv);
-			exit(ret);
+			std::cout.flush();
+			_exit(ret);
 		}
 		else if (fpid > 0)
 		{
