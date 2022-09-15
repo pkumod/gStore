@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-09 22:24:49
+ * @LastEditTime: 2022-09-15 10:20:29
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -687,14 +687,25 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 	string operation = "build";
 	try
 	{
-
+		string result = apiUtil->check_param_value("db_path", db_path);
+		if (result.empty() == false)
+		{
+			sendResponseMsg(1003, result, operation, request, response);
+			return;
+		}
 		if (db_path == apiUtil->get_system_path())
 		{
-			string error = "You have no rights to access system files";
+			string error = "You have no rights to access system files.";
 			sendResponseMsg(1002, error, operation, request, response);
 			return;
 		}
-		string result = apiUtil->check_param_value("db_name", db_name);
+		if (Util::file_exist(db_path) == false)
+		{
+			string error = "RDF file not exist.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		result = apiUtil->check_param_value("db_name", db_name);
 		if (result.empty() == false)
 		{
 			sendResponseMsg(1003, result, operation, request, response);
@@ -1138,7 +1149,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 
 			if (is_backup == "false")
 				cmd = "rm -r " + db_name + ".db";
-			else if (is_backup == "true")
+			else
 				cmd = "mv " + db_name + ".db " + db_name + ".bak";
 			SLOG_DEBUG("delete the file: " + cmd);
 			system(cmd.c_str());
@@ -1226,11 +1237,14 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		error = apiUtil->check_param_value("op_password", password);
-		if (error.empty() == false)
+		if (type != "2")
 		{
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
+			error = apiUtil->check_param_value("op_password", password);
+			if (error.empty() == false)
+			{
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
 		}
 		if (type == "1") // add user
 		{
@@ -1251,7 +1265,7 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 				error = "You cannot delete root, delete user failed.";
 				sendResponseMsg(1004, error, operation, request, response);
 			}
-			else if (apiUtil->user_delete(username, password))
+			else if (apiUtil->user_delete(username))
 			{
 				sendResponseMsg(0, "Delete user done.", operation, request, response);
 			}
@@ -1360,6 +1374,12 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 		error = apiUtil->check_param_value("type", type);
 		if (error.empty() == false)
 		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		else if (type != "1" && type != "2" && type != "3")
+		{
+			error = "The type " + type + " is not support.";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -2452,23 +2472,24 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		else
 		{
 			apiUtil->commit_process(txn_m, TID);
-			auto latest_tid = txn_m->find_latest_txn();
-			SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
-			if (latest_tid == 0)
-			{
-				SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
-				txn_m->Checkpoint();
-				SLOG_DEBUG("Transaction checkpoint done.");
-				if (apiUtil->trywrlock_database(db_name))
-				{
-					current_database->save();
-					apiUtil->unlock_database(db_name);
-				}
-				else
-				{
-					SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
-				}
-			}
+			// TODO auto checkpoint are sometimes blocked
+			// auto latest_tid = txn_m->find_latest_txn();
+			// SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
+			// if (latest_tid == 0)
+			// {
+			// 	SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
+			// 	txn_m->Checkpoint();
+			// 	SLOG_DEBUG("Transaction checkpoint done.");
+			// 	if (apiUtil->trywrlock_database(db_name))
+			// 	{
+			// 		current_database->save();
+			// 		apiUtil->unlock_database(db_name);
+			// 	}
+			// 	else
+			// 	{
+			// 		SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
+			// 	}
+			// }
 			string success = "Transaction commit success. TID: " + TID_s;
 			sendResponseMsg(0, success, operation, request, response);
 		}
