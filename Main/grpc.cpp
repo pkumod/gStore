@@ -2919,6 +2919,9 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		vector<string> logfiles;
 		apiUtil->get_query_log_files(logfiles);
+		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
+			return a > b;
+		});
 		std::stringstream str_stream;
 		str_stream << "[";
 		size_t count = logfiles.size();
@@ -3030,6 +3033,9 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		vector<string> logfiles;
 		apiUtil->get_access_log_files(logfiles);
+		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
+			return a > b;
+		});
 		std::stringstream str_stream;
 		str_stream << "[";
 		size_t count = logfiles.size();
