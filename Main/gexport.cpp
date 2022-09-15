@@ -71,8 +71,8 @@ main(int argc, char * argv[])
 		{
 			if (filepath[filepath.length() - 1] != '/')
 				filepath = filepath + "/";
-			if (!boost::filesystem::exists(filepath))
-				boost::filesystem::create_directories(filepath);
+			if (!Util::file_exist(filepath))
+				Util::create_dir(filepath);
 			filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
 			
 		}

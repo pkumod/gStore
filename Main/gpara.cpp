@@ -40,7 +40,7 @@ int main(int argc, char * argv[]){
 	string value = argv[3];
 
 	int isbuilt;
-	if (boost::filesystem::exists(db_name + ".db"))
+	if (Util::file_exist(db_name + ".db"))
 		isbuilt = 1;
 	else
 		isbuilt = 0;
