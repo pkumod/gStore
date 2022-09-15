@@ -1837,7 +1837,7 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
 void APIUtil::init_transactionlog()
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
-    if (boost::filesystem::exists(TRANSACTION_LOG_PATH)) {
+    if (Util::file_exist(TRANSACTION_LOG_PATH)) {
         SLOG_DEBUG("transaction log has been created.");
         pthread_rwlock_unlock(&transactionlog_lock);
         return;

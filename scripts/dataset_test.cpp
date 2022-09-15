@@ -45,7 +45,7 @@ int main(int argc, char * argv[])
 		}
 	}
 	closedir(dir);
-	if (!boost::filesystem::exists("./" + db_name + ".db/success.txt"))
+	if (!Util::file_exist("./" + db_name + ".db/success.txt"))
 	{
 		db = new Database(db_name);
 		bool flag = db->build(db_path);
