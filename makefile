@@ -91,7 +91,7 @@ isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj)  $(ivarrayobj) $(isarrayobj)
 
-utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
+utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
 
@@ -525,9 +525,6 @@ $(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(filter $(FIRST_BUILD),$(objdir)Util
 
 $(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) Util/Triple.cpp $(inc_log) -o $(objdir)Triple.o $(openmp)
-
-$(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
-	$(CXX) $(CFLAGS) Util/BloomFilter.cpp $(inc_log) -o $(objdir)BloomFilter.o $(openmp) 
 
 $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 	$(CXX) $(CFLAGS) Util/VList.cpp $(inc_log) -o $(objdir)VList.o $(openmp)
