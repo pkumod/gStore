@@ -167,7 +167,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
 		cerr << "wrong transaction id!" << endl;
-		checkpoint_lock.unlock();
+		// checkpoint_lock.unlock();
 		return -1;
 	}
 	else if (txn->GetState() != TransactionState::RUNNING) {
@@ -277,7 +277,9 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 
 void Txn_manager::Checkpoint()
 {
+	cerr << "set checkpoint_lock lockExclusive begin..." << endl;
 	checkpoint_lock.lockExclusive();
+	cerr << "set checkpoint_lock lockExclusive ok." << endl;
 	vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
 	sub_ids.insert(sub_ids.begin(), DirtyKeys[0].begin(), DirtyKeys[0].end());
 	pre_ids.insert(pre_ids.begin(), DirtyKeys[1].begin(), DirtyKeys[1].end());
