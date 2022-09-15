@@ -128,7 +128,8 @@ int main(int argc, char *argv[])
 		if (fpid == 0)
 		{
 			int ret = initialize(argc, argv);
-			exit(ret);
+			std::cout.flush();
+			_exit(ret);
 		}
 		else if (fpid > 0)
 		{
@@ -215,7 +216,7 @@ int initialize(int argc, char *argv[])
 	// check port.txt exist
 	if (Util::file_exist("system.db/port.txt"))
 	{
-		cout << "Server port " + port_str + " is already in use." << endl;
+		SLOG_ERROR("Server port " + port_str + " is already in use.");
 		return -1;
 	}
 
