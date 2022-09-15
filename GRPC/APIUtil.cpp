@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-09 22:04:02
+ * @LastEditTime: 2022-09-15 09:39:05
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -571,7 +571,7 @@ int APIUtil::db_copy(string src_path, string dest_path)
         // check the destnation path
         log_info = "the path: " + dest_path + " is not exist ,system will create it.";
        SLOG_DEBUG(log_info);
-        sys_cmd = "mkdir -p ./" + dest_path;
+        sys_cmd = "mkdir -p " + dest_path;
         system(sys_cmd.c_str());
     }
     sys_cmd = "cp -r " + src_path + ' ' + dest_path;
@@ -659,13 +659,14 @@ bool APIUtil::insert_txn_managers(Database* current_database, std::string databa
     shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(current_database, database);
     if(pthread_rwlock_trywrlock(&txn_m_lock) ==0)
     {
-        SLOG_DEBUG("begin txn manager...");
         txn_managers.insert(pair<string, shared_ptr<Txn_manager>>(database, txn_m));
         if (pthread_rwlock_unlock(&txn_m_lock) == 0)
         {
+            SLOG_DEBUG("add txn manager for " + database + " ok");
             return true;
         }
     }
+    SLOG_ERROR("add txn manager for " + database + " error!");
     return false;
 }
 
@@ -675,6 +676,8 @@ bool APIUtil::find_txn_managers(std::string db_name)
     pthread_rwlock_rdlock(&txn_m_lock);
     if (txn_managers.find(db_name) == txn_managers.end())
     {
+        string error = db_name + " transaction manager not exist!";
+        SLOG_ERROR(error);
         pthread_rwlock_unlock(&txn_m_lock);
         return false;
     }
@@ -1268,7 +1271,7 @@ bool APIUtil::build_db_user_privilege(std::string db_name, std::string username)
     return true;
 }
 
-bool APIUtil::user_add(string username, string password)
+bool APIUtil::user_add(const string& username, const string& password)
 {
     pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;
@@ -1285,7 +1288,7 @@ bool APIUtil::user_add(string username, string password)
     return result;
 }
 
-bool APIUtil::user_delete(string username, string password)
+bool APIUtil::user_delete(const string& username)
 {
     pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;
@@ -1300,7 +1303,7 @@ bool APIUtil::user_delete(string username, string password)
     return result;
 }
 
-bool APIUtil::user_pwd_alert(string username, string password)
+bool APIUtil::user_pwd_alert(const string& username, const string& password)
 {
     pthread_rwlock_wrlock(&users_map_lock);
     bool result = false;

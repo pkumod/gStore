@@ -74,13 +74,18 @@ std::string jsonParam(const Json &json, const std::string &key)
 
 std::string jsonParam(const Json &json, const std::string &key, const std::string &default_val)
 {
+	string value;
 	if (json.HasMember(key.c_str()) && json[key.c_str()].IsString())
 	{
-		return json[key.c_str()].GetString();
+		value = json[key.c_str()].GetString();
+	}
+	if (value.empty())
+	{
+		return default_val;
 	}
 	else
 	{
-		return default_val;
+		return value;
 	}
 }
 
@@ -280,11 +285,27 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
+		std::stringstream ss;
+		std::string v;
+		ss << "{";
+		int count = 0;
 		while (iter != form_data.end())
 		{
-			json_data.AddMember(StringRef(iter->first.c_str()), StringRef(iter->second.c_str()), allocator);
+			if (count > 0)
+			{
+				ss << ",";
+			}
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
+			{
+				StringUtil::url_decode(v);
+			}
+			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
+			count++;
 			iter++;
 		}
+		ss << "}";
+		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -401,11 +422,27 @@ void api(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
+		std::stringstream ss;
+		std::string v;
+		ss << "{";
+		int count = 0;
 		while (iter != form_data.end())
 		{
-			json_data.AddMember(StringRef(iter->first.c_str()), StringRef(iter->second.c_str()), allocator);
+			if (count > 0)
+			{
+				ss << ",";
+			}
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
+			{
+				StringUtil::url_decode(v);
+			}
+			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
+			count++;
 			iter++;
 		}
+		ss << "}";
+		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -593,6 +630,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 		break;
 	case OP_FUN_CUDB:
 		fun_cudb_task(request, response, json_data);
+		break;
 	case OP_FUN_REVIEW:
 		fun_review_task(request, response, json_data);
 		break;
@@ -734,7 +772,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				{
 					str_stream << ",";
 				}
-				str_stream << ip_list[i];
+				str_stream << "\"" << ip_list[i] << "\"";
 			}
 			str_stream << "]";
 			Json listDoc;
@@ -771,7 +809,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				bool rt = apiUtil->ip_save(ip_type, ipVector);
 				if (rt)
 				{
-					response->Success("");
+					response->Success("success");
 				}
 				else
 				{
@@ -881,7 +919,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		if (!apiUtil->check_already_build(db_name))
 		{
-			error = "the database [" + db_name + "] not built yet.";
+			error = "The database [" + db_name + "] not built yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
@@ -922,7 +960,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				resp_data.SetObject();
 				Json::AllocatorType &allocator = resp_data.GetAllocator();
 				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", "database loaded successfully.", allocator);
+				resp_data.AddMember("StatusMsg", "Database loaded successfully.", allocator);
 				resp_data.AddMember("csr", StringRef(csr_str.c_str()), allocator);
 				response->Json(resp_data);
 			}
@@ -944,7 +982,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			resp_data.SetObject();
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "the database already load yet.", allocator);
+			resp_data.AddMember("StatusMsg", "The database already load yet.", allocator);
 			resp_data.AddMember("csr", StringRef(csr_str.c_str()), allocator);
 			response->Json(resp_data);
 		}
@@ -1102,14 +1140,26 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_path = jsonParam(json_data, "db_path");
+		std::string error = apiUtil->check_param_value("db_path", db_path);
+		if (error.empty() == false)
+		{
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
 		if (db_path == apiUtil->get_system_path())
 		{
-			string error = "You have no rights to access system files";
+			error = "You have no rights to access system files.";
 			response->Error(StatusCheckPrivilegeFailed, error);
 			return;
 		}
+		if (Util::file_exist(db_path) == false)
+		{
+			error = "RDF file not exist.";
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
+		error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)
 		{
 			response->Error(StatusParamIsIllegal, error);
@@ -1231,7 +1281,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 
 			if (is_backup == "false")
 				cmd = "rm -r " + db_name + ".db";
-			else if (is_backup == "true")
+			else
 				cmd = "mv " + db_name + ".db " + db_name + ".bak";
 			SLOG_DEBUG(cmd);
 			system(cmd.c_str());
@@ -2077,23 +2127,24 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		else
 		{
 			apiUtil->commit_process(txn_m, TID);
-			auto latest_tid = txn_m->find_latest_txn();
-			SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
-			if (latest_tid == 0)
-			{
-				SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
-				txn_m->Checkpoint();
-				SLOG_DEBUG("Transaction checkpoint done.");
-				if (apiUtil->trywrlock_database(db_name))
-				{
-					current_database->save();
-					apiUtil->unlock_database(db_name);
-				}
-				else
-				{
-					SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
-				}
-			}
+			// TODO auto checkpoint are sometimes blocked
+			// auto latest_tid = txn_m->find_latest_txn();
+			// SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
+			// if (latest_tid == 0)
+			// {
+			// 	SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
+			// 	txn_m->Checkpoint();
+			// 	SLOG_DEBUG("Transaction checkpoint done.");
+			// 	if (apiUtil->trywrlock_database(db_name))
+			// 	{
+			// 		current_database->save();
+			// 		apiUtil->unlock_database(db_name);
+			// 	}
+			// 	else
+			// 	{
+			// 		SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
+			// 	}
+			// }
 			string success = "Transaction commit success. TID: " + TID_s;
 			response->Success(success);
 		}
@@ -2406,7 +2457,6 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 {
 	try
 	{
-		
 		std::string op_username = jsonParam(json_data, "op_username");
 		std::string error = apiUtil->check_param_value("op_username", op_username);
 		if (error.empty() == false)
@@ -2415,13 +2465,17 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			return;
 		}
 		std::string op_password = jsonParam(json_data, "op_password");
-		error = apiUtil->check_param_value("op_password", op_password);
-		if (error.empty() == false)
-		{
-			response->Error(StatusParamIsIllegal, error);
-			return;
-		}
 		std::string type = jsonParam(json_data, "type");
+		if (type != "2")
+		{
+			error = apiUtil->check_param_value("op_password", op_password);
+			if (error.empty() == false)
+			{
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
+		}
+		
 		if (type == "1") // add user
 		{
 			if (apiUtil->user_add(op_username, op_password))
@@ -2441,7 +2495,7 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 				error = "You cannot delete root, delete user failed.";
 				response->Error(StatusOperationFailed, error);
 			}
-			else if (apiUtil->user_delete(op_username, op_password))
+			else if (apiUtil->user_delete(op_username))
 			{
 				response->Success("Delete user done.");
 			}
@@ -2551,9 +2605,9 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}  
-		else if (type != "1" || type != "2" || type != "3")
+		else if (type != "1" && type != "2" && type != "3")
 		{
-			error = "The operation type is not support.";
+			error = "The type " + type + " is not support.";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
@@ -2562,6 +2616,11 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 		if (error.empty() == false)
 		{
 			response->Error(StatusParamIsIllegal, error);
+			return;
+		} else if (op_username == apiUtil->get_root_username())
+		{
+			error = "You can't change privileges for root user.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
@@ -2581,18 +2640,11 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				return;
 			}
 		}
-		std::string username = jsonParam(json_data, "username");
-		if (username == apiUtil->get_root_username())
-		{
-			error = "You can't change privileges for root user.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
 		
 		if (type == "3")
 		{
 			// clear the user all privileges
-			int resultint = apiUtil->clear_user_privilege(username);
+			int resultint = apiUtil->clear_user_privilege(op_username);
 			if (resultint == -1)
 			{
 				error = "The username is not exists.";
@@ -2656,7 +2708,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				
 				if (type == "1")
 				{
-					if (apiUtil->add_privilege(username, temp_privilege, db_name) == 0)
+					if (apiUtil->add_privilege(op_username, temp_privilege, db_name) == 0)
 					{
 						result << "add privilege " + temp_privilege + " failed. \r\n";
 					}
@@ -2667,7 +2719,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				}
 				else if (type == "2")
 				{
-					if (apiUtil->del_privilege(username, temp_privilege, db_name) == 0)
+					if (apiUtil->del_privilege(op_username, temp_privilege, db_name) == 0)
 					{
 						result << "delete privilege " + temp_privilege + " failed. \r\n";
 					}
@@ -3064,7 +3116,7 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		struct PFNInfo pfn_info;
 		if (hasJsonParam(json_data, "funInfo"))
 		{
-			rapidjson::Value &fun_info = json_data["fun_info"];
+			rapidjson::Value &fun_info = json_data["funInfo"];
 			build_PFNInfo(fun_info, pfn_info);
 		}
 		std::string username =  jsonParam(json_data, "username");
@@ -3143,7 +3195,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	std::string username = jsonParam(json_data, "username");
 	struct PFNInfo pfn_info;
-	rapidjson::Value &fun_info = json_data["fun_info"];
+	rapidjson::Value &fun_info = json_data["funInfo"];
 	build_PFNInfo(fun_info, pfn_info);
 	if (type == "1")
 	{
@@ -3241,7 +3293,7 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		}
 		std::string username = jsonParam(json_data, "username");
 		struct PFNInfo pfn_info;
-		rapidjson::Value &fun_info = json_data["fun_info"];
+		rapidjson::Value &fun_info = json_data["funInfo"];
 		build_PFNInfo(fun_info, pfn_info);
 		apiUtil->fun_review(username, &pfn_info);
 		string content = pfn_info.getFunBody();

@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-13 09:26:49
+ * @LastEditTime: 2022-09-15 09:38:57
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -954,9 +954,9 @@ public:
     string begin_process(string db_name, int level , string username);
     bool commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
     bool rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
-    bool user_add(string username, string password);
-    bool user_delete(string username, string password);
-    bool user_pwd_alert(string username, string password);
+    bool user_add(const string& username, const string& password);
+    bool user_delete(const string& username);
+    bool user_pwd_alert(const string& username, const string& password);
     void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
     string check_access_ip(const string& ip);
