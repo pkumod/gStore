@@ -91,9 +91,18 @@ std::string jsonParam(const Json &json, const std::string &key, const std::strin
 
 int jsonParam(const Json &json, const std::string &key, const int &default_val)
 {
-	if (json.HasMember(key.c_str()) && json[key.c_str()].IsString())
+	if (json.HasMember(key.c_str()))
 	{
-		return json[key.c_str()].GetInt();
+		if (json[key.c_str()].IsInt())
+		{
+			return json[key.c_str()].GetInt();
+		}
+		else if (json[key.c_str()].IsString())
+		{
+			return atoi(json[key.c_str()].GetString());
+		} else {
+			return default_val;
+		}
 	}
 	else
 	{
