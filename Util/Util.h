@@ -115,6 +115,7 @@ in the sparql query can point to the same node in data graph)
 #include "INIParser.h"
 
 #include "Latch.h"
+#include "Slog.h"
 
 #define thread_num 1
 //below is used to control if using the parallelable sort()
@@ -502,7 +503,7 @@ public:
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
     static bool checkPort(int port, std::string p_name = "");
     static std::string md5(const string& text);
-    static void formatPrint(std::string content, std::string type = "INFO");
+    // static void formatPrint(std::string content, std::string type = "INFO");
     static std::string urlEncode(const std::string& str);
     static std::string urlDecode(const std::string& str);
     static std::string get_cur_path();

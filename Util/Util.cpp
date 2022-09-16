@@ -135,6 +135,7 @@ Util::configure()
 	Util::global_config["gstore_mode"] = "single";
 	//NOTICE+BETTER+TODO:use macro is better to avoid too many judging on this variable(add a DEBUG macro at the outer)
 	Util::global_config["debug_level"] = "simple";
+	Util::global_config["log_mode"] = "0";
 	Util::global_config["db_home"] = ".";
 	Util::global_config["db_suffix"] = ".db";
 	Util::global_config["buffer_maxium"] = "100";
@@ -209,37 +210,37 @@ Util::configure()
 	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
 }
 
-bool
-Util::config_debug()
-{
-    const unsigned len1 = 100;
-    const unsigned len2 = 505;
-	char AppName[] = "setting";
-    char KeyName[] = "mode";
-	char appname[len1], keyname[len1];
-    char KeyVal[len1];
-    char *buf, *c;
-    char buf_i[len1], buf_o[len1];
-    FILE *fp = NULL;
-    int status = 0; // 1 AppName 2 KeyName
-	return true;
-}
+// bool
+// Util::config_debug()
+// {
+//     const unsigned len1 = 100;
+    // const unsigned len2 = 505;
+	// char AppName[] = "setting";
+    // char KeyName[] = "mode";
+	// char appname[len1], keyname[len1];
+    // char KeyVal[len1];
+    // char *buf, *c;
+    // char buf_i[len1], buf_o[len1];
+    // FILE *fp = NULL;
+    // int status = 0; // 1 AppName 2 KeyName
+// 	return true;
+// }
 
-bool
-Util::config_advanced()
-{
-    const unsigned len1 = 100;
-    const unsigned len2 = 505;
-	char AppName[] = "setting";
-    char KeyName[] = "mode";
-	char appname[len1], keyname[len1];
-    char KeyVal[len1];
-    char *buf, *c;
-    char buf_i[len1], buf_o[len1];
-    FILE *fp = NULL;
-    int status = 0; // 1 AppName 2 KeyName
-	return true;
-}
+// bool
+// Util::config_advanced()
+// {
+//     const unsigned len1 = 100;
+    // const unsigned len2 = 505;
+	// char AppName[] = "setting";
+    // char KeyName[] = "mode";
+	// char appname[len1], keyname[len1];
+    // char KeyVal[len1];
+    // char *buf, *c;
+    // char buf_i[len1], buf_o[len1];
+    // FILE *fp = NULL;
+    // int status = 0; // 1 AppName 2 KeyName
+// 	return true;
+// }
 
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
@@ -286,15 +287,17 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "save_log");
     Util::setGlobalConfig(ini_parser, "system", "version");
+    Util::setGlobalConfig(ini_parser, "system", "log_mode");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
-    cout << "the current settings are as below: " << endl;
-    cout << "key : value" << endl;
-    cout << "------------------------------------------------------------" << endl;
+    
+    SLOG_DEBUG("the current settings are as below: ");
+    SLOG_DEBUG("key : value");
+    SLOG_DEBUG("------------------------------------------------------------");
     for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
     {
-        cout << it->first << " : " << it->second << endl;
+        SLOG_DEBUG(it->first + " : " + it->second);
     }
-    cout << endl;
+    SLOG_DEBUG("------------------------------------------------------------");
     return true;
 }
 
@@ -411,6 +414,9 @@ Util::config_setting()
 Util::Util()
 {
     Util::configure();
+    // init slog
+    string log_mode = Util::getConfigureValue("log_mode");
+    Slog::getInstance().init(log_mode.c_str());
 #ifdef DEBUG_KVSTORE
     if(this->debug_kvstore == NULL)
     {
@@ -683,53 +689,53 @@ Util::bsearch_int_uporder(unsigned _key, const unsigned* _array, unsigned _array
 	return INVALID;
 }
 
-bool
-Util::bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len)
-{
-    if(_list_len == 0)
-    {
-        return false;
-    }
-	//NOTICE: if list len > 0, then it must >= 2, so pair num >= 1
-    unsigned pair_num = _list_len / 2;
-    unsigned _first = _pair_idlist[2*0 + 0];
-    unsigned _last = _pair_idlist[2*(pair_num-1) + 0];
-
-    if(_preid == _last)
-    {
-        return true;
-    }
-
-    bool not_find = (_last < _preid || _first > _preid);
-    if(not_find)
-    {
-        return false;
-    }
-
-    unsigned low = 0;
-    unsigned high = pair_num - 1;
-    unsigned mid;
-
-    while(low <= high)
-    {
-        mid = (high - low) / 2 + low;
-        if(_pair_idlist[2*mid + 0] == _preid)
-        {
-            return true;
-        }
-
-        if(_pair_idlist[2*mid + 0] > _preid)
-        {
-            high = mid - 1;
-        } 
-		else
-        {
-            low = mid + 1;
-        }
-    }
-
-    return false;
-}
+// bool
+// Util::bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len)
+// {
+//     if(_list_len == 0)
+//     {
+//         return false;
+//     }
+// 	//NOTICE: if list len > 0, then it must >= 2, so pair num >= 1
+//     unsigned pair_num = _list_len / 2;
+//     unsigned _first = _pair_idlist[2*0 + 0];
+//     unsigned _last = _pair_idlist[2*(pair_num-1) + 0];
+//
+//     if(_preid == _last)
+//     {
+//         return true;
+//     }
+//
+//     bool not_find = (_last < _preid || _first > _preid);
+//     if(not_find)
+//     {
+//         return false;
+//     }
+//
+//     unsigned low = 0;
+//     unsigned high = pair_num - 1;
+//     unsigned mid;
+//
+//     while(low <= high)
+//     {
+//         mid = (high - low) / 2 + low;
+//         if(_pair_idlist[2*mid + 0] == _preid)
+//         {
+//             return true;
+//         }
+//
+//         if(_pair_idlist[2*mid + 0] > _preid)
+//         {
+//             high = mid - 1;
+//         }
+// 		else
+//         {
+//             low = mid + 1;
+//         }
+//     }
+//
+//     return false;
+// }
 
 unsigned
 Util::bsearch_vec_uporder(unsigned _key, const vector<unsigned>* _vec)
@@ -1708,7 +1714,7 @@ Util::getTimeName()
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	string tempTime = asctime(timeinfo);
-	for(int i = 0; i < tempTime.length(); i++)
+	for(unsigned i = 0; i < tempTime.length(); i++)
 	{
 		if(tempTime[i] == ' ')
 			tempTime[i] = '_';
@@ -2163,7 +2169,7 @@ void
 Util::split(string str, string pattern, vector<string> &res){
     string::size_type pos = 0;
     str += pattern;
-    for(int i = 0; i < str.size(); i++)
+    for(int i = 0; i < static_cast<int>(str.size()); i++)
     {
         pos = str.find(pattern, i);
         if(pos < str.size()){
@@ -2201,7 +2207,7 @@ int
 Util::add_backuplog(string db_name)
 {
     if(db_name == "system"){
-        cout << "system can not be duplicated" << endl;
+        SLOG_ERROR("system can not be duplicated");
         return -1;
     }
     if(has_record_backuplog(db_name)) return 1;
@@ -2235,7 +2241,7 @@ int
 Util::delete_backuplog(string db_name)
 {
     if(db_name == "system"){
-        cout << "system can not be deleted!" << endl;
+        SLOG_ERROR("system can not be deleted!");
         return -1;
     }
     pthread_rwlock_wrlock(&backuplog_lock);
@@ -2272,7 +2278,7 @@ int
 Util::update_backuplog(string db_name, string parameter, string value)
 {
     if(parameter == "db_name"){
-        cout << "parameter can not be db_name!" << endl;
+       SLOG_ERROR("parameter can not be db_name!");
         return -1;
     }
     pthread_rwlock_wrlock(&backuplog_lock);
@@ -2301,7 +2307,7 @@ Util::update_backuplog(string db_name, string parameter, string value)
         }
         else{
             fputs(readBuffer, fp1);
-            cout << "wrong parameter!" << endl;
+            SLOG_ERROR("wrong parameter!");
             ret = 1;
         }
     }
@@ -2338,7 +2344,7 @@ Util::query_backuplog(string db_name, string parameter)
 
         }
         else{
-            cout << "wrong parameter!" << endl;
+            SLOG_ERROR("wrong parameter!");
         }
     }
     fclose(fp);
@@ -2377,7 +2383,7 @@ Util::has_record_backuplog(string db_name)
         Document d;
         d.ParseStream(is);
         if (d["db_name"].GetString() == db_name){
-            cout << rec << endl;
+            SLOG_DEBUG(rec);
             pthread_rwlock_unlock(&backuplog_lock);
             return true;
         }
@@ -2530,11 +2536,11 @@ bool Util::iscontain(const string& _parent,const string& _child)
  }
 }
 
-void Util::formatPrint(std::string content, std::string type)
-{
-    string time = Util::get_date_time();
-    cout << "[" << type << "][" << time << "] " << content << endl;
-}
+// void Util::formatPrint(std::string content, std::string type)
+// {
+//     string time = Util::get_date_time();
+//     cout << "[" << type << "][" << time << "] " << content << endl;
+// }
 
 std::string Util::urlEncode(const std::string& str)
 {
@@ -2608,13 +2614,13 @@ std::string Util::get_cur_path()
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL) 
     {
-        Util::formatPrint("get cur path error", "ERROR");
+        SLOG_ERROR("get cur path error");
         return "";
     }
     else
     {
         string cur_path = string(buffer);
-        Util::formatPrint("cur_path: " + cur_path);
+        SLOG_DEBUG("cur_path: " + cur_path);
         return cur_path;
     }
 }

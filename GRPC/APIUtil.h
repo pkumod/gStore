@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-05-31 11:24:40
+ * @LastEditTime: 2022-09-16 10:31:06
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -862,8 +862,8 @@ private:
     string backup_path = "./backups";
     string DB_path = ".";
     unsigned int max_output_size = 10000000;
-    string query_log_path = "logs/ipaccess/";
-    string access_log_path = "logs/endpoint/";
+    string query_log_path = "logs/endpoint/";
+    string access_log_path = "logs/ipaccess/";
     std::string pfn_file_path = "fun/";
     std::string pfn_lib_path = "lib/";
     std::string pfn_include_header = "";
@@ -895,6 +895,7 @@ private:
     pthread_rwlock_t query_log_lock;
     pthread_rwlock_t access_log_lock;
     pthread_rwlock_t transactionlog_lock;
+    pthread_rwlock_t fun_data_lock;
 
     bool ip_check(string ip);
     bool ip_error_num_check(string ip);
@@ -929,7 +930,7 @@ public:
     bool unlock_database(const std::string& db_name);
     std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);
     std::string check_server_indentity(const std::string& password);
-    std::string check_param_value(string paramname, string value);
+    std::string check_param_value(const string& paramname, const string& value);
     bool check_db_exist(const std::string& db_name);
     bool add_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool del_privilege(const std::string& username, const std::string& type, const std::string& db_name);
@@ -953,12 +954,12 @@ public:
     string begin_process(string db_name, int level , string username);
     bool commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
     bool rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
-    bool user_add(string username, string password);
-    bool user_delete(string username, string password);
-    bool user_pwd_alert(string username, string password);
+    bool user_add(const string& username, const string& password);
+    bool user_delete(const string& username);
+    bool user_pwd_alert(const string& username, const string& password);
     void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
-    string check_access_ip(string ip);
+    string check_access_ip(const string& ip);
     bool ip_save(string ip_type, vector<string> ipVector);
     vector<string> ip_list(string type);
     string ip_enabled_type();
