@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-16 10:31:15
+ * @LastEditTime: 2022-09-16 17:53:07
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -1375,8 +1375,6 @@ int APIUtil::clear_user_privilege(string username)
 		it->second->export_priv.clear();
 		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 		
-        refresh_sys_db();
-	
 		pthread_rwlock_unlock(&users_map_lock);
 		return 1;
 	}
@@ -1398,7 +1396,6 @@ bool APIUtil::del_privilege(const std::string& username, const std::string& type
     int del_result = 0;
 	if(it != users.end())
 	{
-		pthread_rwlock_unlock(&users_map_lock);
 		if(type == "query" && it->second->query_priv.find(db_name) != it->second->query_priv.end())
 		{
 			string update = "DELETE DATA {<" + username + "> <has_query_priv> <" + db_name + ">.}";
