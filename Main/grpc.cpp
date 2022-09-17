@@ -239,9 +239,16 @@ int initialize(int argc, char *argv[])
 	// register rest service
 	register_service(grpcServer);
 
-	grpcServer.start(port);
-
-	SLOG_DEBUG("grpc server port " + port_str);
+	if(grpcServer.start(port) == 0)
+	{
+		SLOG_DEBUG("grpc server port " + port_str);
+	}
+	else
+	{
+		SLOG_ERROR("grpc server start failed.");
+		delete apiUtil;
+		return -1;
+	}
 
 	// handle the Ctrl+C signal
 	signal(SIGINT, sig_handler);
