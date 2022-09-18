@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-15 18:15:39
+ * @LastEditTime: 2022-09-18 08:41:53
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -611,7 +611,7 @@ void signalHandler(int signum)
 		delete apiUtil;
 	}
 	SLOG_DEBUG("ghttp server stopped.");
-	exit(signum);
+	_exit(signum);
 }
 
 // QUERY: can server.send() in default_resource_send run in parallism?
