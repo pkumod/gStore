@@ -123,7 +123,7 @@ void sig_handler(int signo)
 	}
 	SLOG_DEBUG("grpc server stopped.");
 	wait_group.done();
-	exit(signo);
+	_exit(signo);
 }
 
 int main(int argc, char *argv[])
