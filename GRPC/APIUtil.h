@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-15 09:38:57
+ * @LastEditTime: 2022-09-19 22:36:53
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -931,6 +931,7 @@ public:
     std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);
     std::string check_server_indentity(const std::string& password);
     std::string check_param_value(const string& paramname, const string& value);
+    bool check_user_exist(const std::string& username);
     bool check_db_exist(const std::string& db_name);
     bool add_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool del_privilege(const std::string& username, const std::string& type, const std::string& db_name);

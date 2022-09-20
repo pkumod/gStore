@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-18 08:41:53
+ * @LastEditTime: 2022-09-20 09:23:04
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -1141,11 +1141,16 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 				SLOG_DEBUG("remove " + db_name + " from loaded database list");
 			}
 			apiUtil->unlock_databaseinfo(db_info);
-			apiUtil->delete_from_already_build(db_name);
-			SLOG_DEBUG("remove " + db_name + " from the already build database list");
-			//@ delete the database info from  the system database
-			string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
-			apiUtil->update_sys_db(update);
+			//@ delete the database info from the system database
+			bool rt = apiUtil->delete_from_already_build(db_name);
+			if (!rt)
+			{
+				SLOG_DEBUG("remove " + db_name + " from the already build database list fail.");
+				error = "the operation can not been excuted due to loss of lock.";
+				sendResponseMsg(1007, error, operation, request, response);
+				return;
+			}
+			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
 			string cmd;
 
 			if (is_backup == "false")
@@ -1390,12 +1395,31 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
+		else if (apiUtil->check_user_exist(username) == false)
+		{
+			error = "The username is not exists.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		else if (username == apiUtil->get_root_username())
+		{
+			string error = "You can't change privileges for root user.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
 		if (type != "3")
 		{
 			error = apiUtil->check_param_value("db_name", db_name);
 			if (error.empty() == false)
 			{
 				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
+			// check database exist
+			if (apiUtil->check_db_exist(db_name) == false)
+			{
+				error = "Database not build yet.";
+				sendResponseMsg(1004, error, operation, request, response);
 				return;
 			}
 			error = apiUtil->check_param_value("privileges", privilege);
@@ -1405,26 +1429,20 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 				return;
 			}
 		}
-		if (username == apiUtil->get_root_username())
-		{
-			string error = "You can't change privileges for root user.";
-			sendResponseMsg(1004, error, operation, request, response);
-			return;
-		}
 		string result = "";
 		if (type == "3")
 		{
 			// clear the user all privileges
 			int resultint = apiUtil->clear_user_privilege(username);
-			if (resultint == -1)
+			if (resultint == 1)
 			{
-				error = "the username is not exists or the username is root.";
-				sendResponseMsg(1004, error, operation, request, response);
+				result = "Clear the all privileges for the user successfully!";
+				sendResponseMsg(0, result, operation, request, response);
 			}
 			else
 			{
-				result = "clear the all privileges for the user successfully!";
-				sendResponseMsg(0, result, operation, request, response);
+				error = "Clear the all privileges for the user fail.";
+				sendResponseMsg(1004, error, operation, request, response);
 			}
 		}
 		else
