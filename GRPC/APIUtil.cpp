@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-16 17:53:07
+ * @LastEditTime: 2022-09-20 09:19:53
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -761,6 +761,62 @@ bool APIUtil::delete_from_already_build(string db_name)
 {
     if(APIUtil::trywrlock_already_build_map()){
         already_build.erase(db_name);
+        // remove databse info from system.db
+        std::string update = "DELETE WHERE {<" + db_name + "> <database_status> ?y.}";
+        update_sys_db(update);
+        update = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}";
+        update_sys_db(update);
+        update = "DELETE WHERE {<" + db_name + "> <built_time> ?y.}";
+        update_sys_db(update);
+
+        // clear all privileges 
+        std::map<std::string, struct DBUserInfo *>::iterator iter;
+        for (iter = users.begin(); iter != users.end(); iter++)
+        {
+            pthread_rwlock_wrlock(&(iter->second->query_priv_set_lock));
+			iter->second->query_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->query_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->update_priv_set_lock));
+			iter->second->update_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->update_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->load_priv_set_lock));
+			iter->second->load_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->load_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->unload_priv_set_lock));
+			iter->second->unload_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->unload_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->backup_priv_set_lock));
+			iter->second->backup_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->backup_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->restore_priv_set_lock));
+			iter->second->restore_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->restore_priv_set_lock));
+
+            pthread_rwlock_wrlock(&(iter->second->export_priv_set_lock));
+			iter->second->export_priv.erase(db_name);
+			pthread_rwlock_unlock(&(iter->second->export_priv_set_lock));
+        }
+        
+        update = "DELETE where {?x <has_query_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_load_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_unload_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_update_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_backup_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_restore_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+        update = "DELETE where {?x <has_export_priv> <" + db_name + ">.}";
+		update_sys_db(update);
+
         APIUtil::unlock_already_build_map();
         return true;
     }
@@ -1058,6 +1114,17 @@ std::string APIUtil::check_param_value(const string& paramname, const string& va
 	return "";
 }
 
+bool APIUtil::check_user_exist(const std::string& username)
+{
+    pthread_rwlock_rdlock(&users_map_lock);
+    std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
+    pthread_rwlock_unlock(&users_map_lock);
+	if(it != users.end())
+        return true;
+    else
+        return false;
+}
+
 bool APIUtil::check_db_exist(const std::string& db_name)
 {
     bool result = true;
@@ -1295,8 +1362,24 @@ bool APIUtil::user_delete(const string& username)
     if(users.find(username) != users.end())
     {
         users.erase(username);
-        string update = "DELETE where {<" + username + "> ?p ?o.}";
+        string update = "DELETE where {<" + username + "> <has_password> ?o.}";
 		update_sys_db(update);
+        // clear privileges
+        update = "DELETE where {<" + username + "> <has_query_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_load_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_unload_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_update_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_backup_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_restore_priv> ?x.}";
+		update_sys_db(update);
+        update = "DELETE where {<" + username + "> <has_export_priv> ?x.}";
+		update_sys_db(update);
+
         result = true;
     }
     pthread_rwlock_unlock(&users_map_lock);

@@ -1282,11 +1282,17 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				SLOG_DEBUG("remove " + db_name + " from loaded database list");
 			}
 			apiUtil->unlock_databaseinfo(db_info);
-			apiUtil->delete_from_already_build(db_name);
-			SLOG_DEBUG("remove " + db_name + " from the already build database list");
-			//@ delete the database info from  the system database
-			std::string update = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
-			apiUtil->update_sys_db(update);
+			//@ delete the database info from the system database
+			bool rt = apiUtil->delete_from_already_build(db_name);
+			if (!rt)
+			{
+				SLOG_DEBUG("remove " + db_name + " from the already build database list fail.");
+				error = "the operation can not been excuted due to loss of lock.";
+				response->Error(StatusLossOfLock, error);
+				return;
+			}
+			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
+
 			std::string cmd;
 
 			if (is_backup == "false")
@@ -2627,7 +2633,14 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 		{
 			response->Error(StatusParamIsIllegal, error);
 			return;
-		} else if (op_username == apiUtil->get_root_username())
+		}
+		else if (apiUtil->check_user_exist(op_username) == false)
+		{
+			error = "The username is not exists.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+		else if (op_username == apiUtil->get_root_username())
 		{
 			error = "You can't change privileges for root user.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -2643,6 +2656,13 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				response->Error(StatusParamIsIllegal, error);
 				return;
 			}
+			// check database exist
+			if (apiUtil->check_db_exist(db_name) == false)
+			{
+				error = "Database not build yet.";
+				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				return;
+			}
 			error = apiUtil->check_param_value("privileges", privileges);
 			if (error.empty() == false)
 			{
@@ -2655,14 +2675,14 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 		{
 			// clear the user all privileges
 			int resultint = apiUtil->clear_user_privilege(op_username);
-			if (resultint == -1)
+			if (resultint == 1)
 			{
-				error = "The username is not exists.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				response->Success("Clear the all privileges for the user successfully!");
 			}
 			else
 			{
-				response->Success("Clear the all privileges for the user successfully!");
+				error = "Clear the all privileges for the user fail.";
+				response->Error(StatusOperationFailed, error);
 			}
 		}
 		else
