@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-20 09:19:53
+ * @LastEditTime: 2022-09-20 11:09:37
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -182,7 +182,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                     string db_name = p22["value"].GetString();
                     struct DatabaseInfo *temp_db = new DatabaseInfo(db_name);
 
-                    sparql = "select ?x ?y where{<" + db_name + "> ?x ?y.}";
+                    sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
                     ret_val = system_database->query(sparql, rs, output);
                     if (ret_val == -100)
                     {
@@ -197,12 +197,11 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                                 rapidjson::Value &p31 = p22[j];
                                 rapidjson::Value &p32 = p31["x"];
                                 rapidjson::Value &p33 = p31["y"];
-                                std::string type = p32["value"].GetString();
-                                std::string info = p33["value"].GetString();
-                                if (type == "built_by")
-                                    temp_db->setCreator(info);
-                                else if (type == "built_time")
-                                    temp_db->setTime(info);
+                                std::string built_by = p32["value"].GetString();
+                                std::string built_time = p33["value"].GetString();
+                                temp_db->setCreator(built_by);
+                                temp_db->setTime(built_time);
+                                break;
                             }
                         }
                         else
@@ -977,7 +976,7 @@ void APIUtil::get_already_builds(const std::string& username, vector<struct Data
         {
             continue;
         }
-        if (username != ROOT_USERNAME && db_info->getName() != username && check_privilege(username, "query", db_info->getName()) == false)
+        if (username != ROOT_USERNAME && check_privilege(username, "query", db_info->getName()) == false)
         {
             continue;
         }
