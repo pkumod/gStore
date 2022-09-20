@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-20 09:23:28
+ * @LastEditTime: 2022-09-20 10:42:09
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -126,7 +126,11 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 
 void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string date, int page_no, int page_size);
 
+void querylogdate_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
+
 void accesslog_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string date, int page_no, int page_size);
+
+void accesslogdate_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
 void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string type, string ips, string ip_type);
 
@@ -3603,6 +3607,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		}
 		querylog_thread_new(request, response, date, page_no, page_size);
 	}
+	else if (operation == "querylogdate")
+	{
+		querylogdate_thread_new(request, response);
+	}
 	else if (operation == "accesslog")
 	{
 		string date = "";
@@ -3642,6 +3650,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			return;
 		}
 		accesslog_thread_new(request, response, date, page_no, page_size);
+	}
+	else if (operation == "accesslogdate")
+	{
+		accesslogdate_thread_new(request, response);
 	}
 	else if (operation == "ipmanage")
 	{
@@ -4023,6 +4035,55 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 }
 
 /**
+ * query log date thread
+ * 
+ * @param request 
+ * @param response 
+ */
+void querylogdate_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+{
+	string operation = "querylogdate";
+	try
+	{
+		vector<string> logfiles;
+		apiUtil->get_query_log_files(logfiles);
+		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
+			return a > b;
+		});
+		std::stringstream str_stream;
+		str_stream << "[";
+		size_t count = logfiles.size();
+		std::string item;
+		for (size_t i = 0; i < count; i++)
+		{
+			if (i > 0)
+			{
+				str_stream << ",";
+			}
+			item = logfiles[i];
+			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
+			str_stream << "\"" << item << "\"";
+		}
+		str_stream << "]";
+		rapidjson::Document resp_data;
+		rapidjson::Document array_data;
+		resp_data.SetObject();
+		array_data.SetArray();
+		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		array_data.Parse(str_stream.str().c_str());
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "Get query log date success", allocator);
+		resp_data.AddMember("list", array_data, allocator);
+		sendResponseMsg(resp_data, operation, request, response);
+	}
+	catch(const std::exception& e)
+	{
+		string error = "Get query log date fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
+
+/**
  * access log thread
  *
  * @param response
@@ -4081,6 +4142,54 @@ void accesslog_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 	}
 }
 
+/**
+ * access log date thread
+ * 
+ * @param request 
+ * @param response 
+ */
+void accesslogdate_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+{
+	string operation = "accesslogdate";
+	try
+	{
+		vector<string> logfiles;
+		apiUtil->get_access_log_files(logfiles);
+		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
+			return a > b;
+		});
+		std::stringstream str_stream;
+		str_stream << "[";
+		size_t count = logfiles.size();
+		std::string item;
+		for (size_t i = 0; i < count; i++)
+		{
+			if (i > 0)
+			{
+				str_stream << ",";
+			}
+			item = logfiles[i];
+			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
+			str_stream << "\"" << item << "\"";
+		}
+		str_stream << "]";
+		rapidjson::Document resp_data;
+		rapidjson::Document array_data;
+		resp_data.SetObject();
+		array_data.SetArray();
+		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		array_data.Parse(str_stream.str().c_str());
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "Get access log date success", allocator);
+		resp_data.AddMember("list", array_data, allocator);
+		sendResponseMsg(resp_data, operation, request, response);
+	}
+	catch(const std::exception& e)
+	{
+		string error = "Get access log date fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
 /**
  * @brief IP manager
  *
