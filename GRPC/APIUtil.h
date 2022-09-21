@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-19 22:36:53
+ * @LastEditTime: 2022-09-21 17:36:22
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -289,30 +289,31 @@ public:
 struct IpInfo
 {
 private:
-    int accessNum=0;
-    int successNum=0;
-    int errorNum=0;
+    unsigned int accessNum = 0;
+    unsigned int successNum = 0;
+    unsigned int errorNum = 0;
     std::string ip;
-public:
-    IpInfo(){
 
+public:
+    IpInfo()
+    {
     }
     IpInfo(string name)
     {
-        ip=name;
-        accessNum=0;
-        successNum=0;
-        errorNum=0;
+        ip = name;
+        accessNum = 0;
+        successNum = 0;
+        errorNum = 0;
     }
-    int getAccessNum()
+    unsigned int getAccessNum()
     {
         return accessNum;
     }
-    int getSuccessNum()
+    unsigned int getSuccessNum()
     {
         return successNum;
     }
-    int getErrorNum()
+    unsigned int getErrorNum()
     {
         return errorNum;
     }
@@ -320,21 +321,32 @@ public:
     {
         return ip;
     }
-    void setAccessNum(int value)
+    void setAccessNum(unsigned int value)
     {
-        accessNum=value;
+        accessNum = value;
     }
-    void setSuccessNum(int value)
+    void addAccessNum()
     {
-        successNum=value;
+        accessNum += 1;
     }
-    void setErrorNum(int value)
+    void setSuccessNum(unsigned int value)
     {
-        errorNum=value;
+        successNum = value;
+    }
+    void addSuccessNum() 
+    {
+        successNum += 1;
+    }
+    void setErrorNum(unsigned int value)
+    {
+        errorNum = value;
+    }
+    void addErrorNum() {
+        errorNum += 1;
     }
     void setName(string value)
     {
-        ip=value;
+        ip = value;
     }
 };
 
@@ -897,8 +909,8 @@ private:
     pthread_rwlock_t transactionlog_lock;
     pthread_rwlock_t fun_data_lock;
 
-    bool ip_check(string ip);
-    bool ip_error_num_check(string ip);
+    bool ip_check(const string& ip);
+    bool ip_error_num_check(const string& ip);
     std::string fun_cppcheck(const std::string username, struct PFNInfo *fun_info);
     std::string fun_build_source_data(struct PFNInfo * fun_info, bool has_header);
     void fun_write_json_file(const std::string& username, struct PFNInfo *fun_info, std::string operation);
@@ -961,6 +973,7 @@ public:
     void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
     string check_access_ip(const string& ip);
+    void update_access_ip_error_num(const string& ip);
     bool ip_save(string ip_type, vector<string> ipVector);
     vector<string> ip_list(string type);
     string ip_enabled_type();
@@ -994,4 +1007,5 @@ public:
     string get_root_username();
     string get_system_username();
     unsigned int get_connection_num();
+    void increase_connection_num();
 };

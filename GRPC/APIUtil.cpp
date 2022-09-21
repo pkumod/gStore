@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-21 15:12:23
+ * @LastEditTime: 2022-09-21 17:45:07
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -505,7 +505,7 @@ bool APIUtil::ip_save(string ip_type, vector<string> ipVector)
     }
 }
 
-bool APIUtil::ip_check(string ip)
+bool APIUtil::ip_check(const string& ip)
 {
     if(whiteList == 1){
         return ipWhiteList->Check(ip);
@@ -516,25 +516,44 @@ bool APIUtil::ip_check(string ip)
     return true;
 }
 
-bool APIUtil::ip_error_num_check(string ip)
+bool APIUtil::ip_error_num_check(const string& ip)
 {
     pthread_rwlock_rdlock(&ips_map_lock);
-	std::map<std::string, struct IpInfo *>::iterator it = ips.find(ip);
-	if(it != ips.end())
-	{
-		pthread_rwlock_unlock(&ips_map_lock);
-		int errornum=it->second->getErrorNum();
-		if(errornum>5)
-		{
-			return false;
-		}
-	}
-	else{
-		struct IpInfo *ipinfo=new IpInfo(ip);
-		ips.insert(pair<std::string, struct IpInfo *>(ip, ipinfo));
-		pthread_rwlock_unlock(&ips_map_lock);
-	}
-	return true;
+    std::map<std::string, struct IpInfo *>::iterator it = ips.find(ip);
+    if (it != ips.end())
+    {
+        pthread_rwlock_unlock(&ips_map_lock);
+        unsigned int errornum = it->second->getErrorNum();
+        if (errornum > 4)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        struct IpInfo *ipinfo = new IpInfo(ip);
+        ips.insert(pair<std::string, struct IpInfo *>(ip, ipinfo));
+        pthread_rwlock_unlock(&ips_map_lock);
+    }
+    return true;
+}
+
+void APIUtil::update_access_ip_error_num(const string& ip)
+{
+    pthread_rwlock_rdlock(&ips_map_lock);
+    std::map<std::string, struct IpInfo *>::iterator it = ips.find(ip);
+    if (it != ips.end())
+    {
+        it->second->addErrorNum();
+        pthread_rwlock_unlock(&ips_map_lock);
+    }
+    else
+    {
+        struct IpInfo *ipinfo = new IpInfo(ip);
+        ipinfo->addErrorNum();
+        ips.insert(pair<std::string, struct IpInfo *>(ip, ipinfo));
+        pthread_rwlock_unlock(&ips_map_lock);
+    }
 }
 
 string APIUtil::check_access_ip(const string& ip)
@@ -547,7 +566,7 @@ string APIUtil::check_access_ip(const string& ip)
     }
     if(!ip_error_num_check(ip))
     {
-        result = "The ip havs too many error during accessing server, the ip has been locked until the server restart!";
+        result = "The ip has too many error during accessing server, the ip has been locked until the server restart!";
         return result;
     }
     return result;
@@ -1060,18 +1079,18 @@ std::string APIUtil::check_indentity(const std::string &username, const std::str
     string error = "";
     if (it == users.end())
     {
-        error = "username not find.";
+        error = "Username or password is wrong.";
     }
     else if (encryption == "1")
     {
         if (Util::md5(it->second->getPassword()) != password)
         {
-            error = "wrong password.";
+            error = "Username or password is wrong.";
         }
     }
     else if (it->second->getPassword() != password)
     {
-        error = "wrong password.";
+        error = "Username or password is wrong.";
     }
     pthread_rwlock_unlock(&users_map_lock);
     return error;
@@ -2606,4 +2625,12 @@ string APIUtil::get_system_username()
 unsigned int APIUtil::get_connection_num()
 {
     return connection_num;
+}
+
+void APIUtil::increase_connection_num()
+{
+    if (connection_num < UINT32_MAX)
+    {
+        connection_num += 1;
+    }
 }

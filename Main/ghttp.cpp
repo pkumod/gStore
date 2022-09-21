@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-20 10:44:17
+ * @LastEditTime: 2022-09-21 17:53:41
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -615,6 +615,7 @@ void signalHandler(int signum)
 		delete apiUtil;
 	}
 	SLOG_DEBUG("ghttp server stopped.");
+	std::cout.flush();
 	_exit(signum);
 }
 
@@ -3029,6 +3030,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
 	if (checkidentityresult.empty() == false)
 	{
+		apiUtil->update_access_ip_error_num(remote_ip);
 		sendResponseMsg(1001, checkidentityresult, "authcheck", request, response);
 		return;
 	}
@@ -3967,6 +3969,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	string checkidentityresult = apiUtil->check_server_indentity(password);
 	if (checkidentityresult.empty() == false)
 	{
+		apiUtil->update_access_ip_error_num(remote_ip);
 		sendResponseMsg(1001, checkidentityresult, operation, request, response);
 		return;
 	}
@@ -3980,6 +3983,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
 				  << resJson;
 		delete apiUtil;
+		std::cout.flush();
 		// TODO exit synchlized
 		_exit(1);
 	}
