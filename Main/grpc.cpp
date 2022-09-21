@@ -123,6 +123,7 @@ void sig_handler(int signo)
 	}
 	SLOG_DEBUG("grpc server stopped.");
 	wait_group.done();
+	std::cout.flush();
 	_exit(signo);
 }
 
@@ -283,7 +284,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
-	if (ipCheckResult != "")
+	if (ipCheckResult.empty() == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -387,6 +388,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	error = apiUtil->check_server_indentity(password);
 	if (error.empty() == false)
 	{
+		apiUtil->update_access_ip_error_num(ip_addr);
 		response->Error(StatusAuthenticationFailed, error);
 		return;
 	}
@@ -419,7 +421,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
-	if (ipCheckResult != "")
+	if (ipCheckResult.empty() == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -539,6 +541,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	std::string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
 	if (checkidentityresult.empty() == false)
 	{
+		apiUtil->update_access_ip_error_num(ip_addr);
 		response->Error(StatusAuthenticationFailed, checkidentityresult);
 		return;
 	}
