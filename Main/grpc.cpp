@@ -696,7 +696,7 @@ void login_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "login fail:" + string(e.what());
+		string error = "login fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -725,7 +725,7 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Test connect fail:" + string(e.what());
+		string error = "Test connect fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -751,7 +751,7 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Get core version fail:" + string(e.what());
+		string error = "Get core version fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -856,7 +856,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "IP manger fail:" + string(e.what());
+		string error = "IP manger fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1006,7 +1006,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "load fail:" + string(e.what());
+		std::string error = "load fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1139,7 +1139,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Monitor fail:" + string(e.what());
+		std::string error = "Monitor fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1242,7 +1242,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Build fail:" + string(e.what());
+		std::string error = "Build fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1314,7 +1314,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Drop fail:" + string(e.what());
+		std::string error = "Drop fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1406,7 +1406,7 @@ try
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Backup fail:" + string(e.what());
+		std::string error = "Backup fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1516,7 +1516,7 @@ try
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Restore fail:" + string(e.what());
+		std::string error = "Restore fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1589,7 +1589,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch (const std::exception &e)
 		{
-			error = "Query fail:" + string(e.what());
+			error = "Query fail: " + string(e.what());
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
@@ -1616,7 +1616,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch (const std::exception &e)
 		{
-			error = "Query fail:" + string(e.what());
+			error = "Query fail: " + string(e.what());
 			apiUtil->unlock_database(db_name);
 			response->Error(StatusOperationFailed, error);
 			return;
@@ -1806,7 +1806,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Query fail:" + string(e.what());
+		std::string error = "Query fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1881,7 +1881,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Export fail:" + string(e.what());
+		std::string error = "Export fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1956,7 +1956,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Transaction begin fail:" + string(e.what());
+		std::string error = "Transaction begin fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2076,7 +2076,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Transaction query fail:" + string(e.what());
+		string error = "Transaction query fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2173,7 +2173,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Transaction commit fail:" + string(e.what());
+		string error = "Transaction commit fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2251,7 +2251,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Transaction rollback fail:" + string(e.what());
+		string error = "Transaction rollback fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2313,7 +2313,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Checkpoint fail:" + string(e.what());
+		string error = "Checkpoint fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 
@@ -2387,7 +2387,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Batch insert fail:" + string(e.what());
+		string error = "Batch insert fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2460,7 +2460,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Batch remove fail:" + string(e.what());
+		string error = "Batch remove fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2547,7 +2547,7 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 	}
 	catch (const std::exception &e)
 	{
-		string error = "User manager fail:" + string(e.what());
+		string error = "User manage fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2598,7 +2598,7 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Show user fail:" + string(e.what());
+		string error = "Show user fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2771,7 +2771,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "User privilege manage fail:" + string(e.what());
+		std::string error = "User privilege manage fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2808,7 +2808,7 @@ void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Alert password fail:" + string(e.what());
+		string error = "Change password fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2875,7 +2875,7 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Get Transaction log fail: " + string(e.what());
+		string error = "Get transaction log fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2939,7 +2939,7 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Get query log fail:" + string(e.what());
+		string error = "Get query log fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -2987,7 +2987,7 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch(const std::exception& e)
 	{
-		string error = "Get query log date fail:" + string(e.what());
+		string error = "Get query log date fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -3053,7 +3053,7 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Get access log" + string(e.what());
+		string error = "Get access log fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -3101,7 +3101,7 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 	}
 	catch(const std::exception& e)
 	{
-		string error = "Get access log date fail:" + string(e.what());
+		string error = "Get access log date fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -3198,7 +3198,7 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Fun query fail:" + string(e.what());
+		std::string error = "Fun query fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -3249,7 +3249,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function create fail:" + string(e.what());
+			std::string error = "Function create fail: " + string(e.what());
 			response->Error(StatusOperationFailed, error);
 		}
 	}
@@ -3262,7 +3262,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "function update fail:" + string(e.what());
+			std::string error = "Function update fail: " + string(e.what());
 			response->Error(StatusOperationFailed, error);
 		}
 	}
@@ -3275,7 +3275,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function delete fail:" + string(e.what());
+			std::string error = "Function delete fail: " + string(e.what());
 			response->Error(StatusOperationFailed, error);
 		}
 	}
@@ -3295,7 +3295,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function build fail:" + string(e.what());
+			std::string error = "Function build fail: " + string(e.what());
 			response->Error(StatusOperationFailed, error);
 		}
 	}
@@ -3351,7 +3351,7 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "Function review fail:" + string(e.what());
+		std::string error = "Function review fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
