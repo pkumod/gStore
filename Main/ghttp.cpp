@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-20 10:42:09
+ * @LastEditTime: 2022-09-21 09:04:11
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -4225,7 +4225,7 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 				{
 					str_stream << ",";
 				}
-				str_stream << ip_list[i];
+				str_stream << "\"" << ip_list[i] << "\"";
 			}
 			str_stream << "]";
 			Document responseBody;
