@@ -95,7 +95,7 @@ isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
 
-utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
+utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
 
@@ -591,9 +591,6 @@ $(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(objdir)Util.o
 $(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(objdir)Util.o
 	$(CXX) $(CFLAGS) Util/Triple.cpp $(inc_log) -o $(objdir)Triple.o $(openmp)
 
-$(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) Util/BloomFilter.cpp $(inc_log) -o $(objdir)BloomFilter.o $(openmp) 
-
 $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 	$(CXX) $(CFLAGS) Util/VList.cpp $(inc_log) -o $(objdir)VList.o $(openmp)
 
@@ -791,8 +788,8 @@ dist: clean
 	rm -rf backups/*.db
 
 tarball:
-	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini NOTES.md StringIndex COVERAGE \
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini StringIndex COVERAGE \
 		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_socket) 
