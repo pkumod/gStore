@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-20 11:20:31
+ * @LastEditTime: 2022-09-21 15:12:23
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: grpc util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -1698,11 +1698,17 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
             totalSize++;
         }
         in.close();
+        if (totalSize == 0)
+        {
+            dbAccessLogs->setTotalSize(totalSize);
+            dbAccessLogs->setTotalPage(totalPage);
+            return;
+        }
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
             pthread_rwlock_unlock(&access_log_lock);
-            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
+            throw std::invalid_argument("more then max page number  " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
         endLine = totalSize - page_size*(page_no - 1) + 1;
@@ -1835,12 +1841,18 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             totalSize++;
         }
         in.close();
+        if (totalSize == 0)
+        {
+            dbQueryLogs->setTotalSize(totalSize);
+            dbQueryLogs->setTotalPage(totalPage);
+            return;
+        }
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
             rt = pthread_rwlock_unlock(&query_log_lock);
             SLOG_DEBUG("query_log_lock unlock1:" + to_string(rt));
-            throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
+            throw std::invalid_argument("more then max page number " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
         endLine = totalSize - page_size*(page_no - 1) + 1;
@@ -2013,43 +2025,46 @@ void APIUtil::get_transactionlog(int &page_no, int &page_size, struct Transactio
             totalSize++;
         }
         in.close();
-        if (totalSize > 0)
+        if (totalSize == 0)
         {
-            totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
-            if (page_no > totalPage)
-            {
-                pthread_rwlock_unlock(&transactionlog_lock);
-                throw runtime_error("page_no more then max_page_no " + to_string(totalPage));
-            }
-            startLine = totalSize - page_size*page_no + 1;
-            endLine = totalSize - page_size*(page_no - 1) + 1;
-            if (startLine < 1)
-            {
-                startLine = 1;
-            }
-            // seek to start line;
-            in.open(TRANSACTION_LOG_PATH, ios::in);
-            int i_temp;
-            char buf_temp[1024];
-            in.seekg(0, ios::beg);
-            for (i_temp = 1; i_temp < startLine; i_temp++)
-            {
-                in.getline(buf_temp, sizeof(buf_temp));
-            }
-            vector<std::string> lines;
-            while (startLine < endLine && getline(in, line, '\n')) {
-                lines.push_back(line);
-                startLine++;
-            }
-            in.close();
+            dbQueryLogs->setTotalSize(totalSize);
+            dbQueryLogs->setTotalPage(totalPage);
+            return;
+        }
+        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
+        if (page_no > totalPage)
+        {
             pthread_rwlock_unlock(&transactionlog_lock);
-            size_t count;
-            count =  lines.size();
-            for (size_t i = 0; i < count; i++)
-            {
-                line = lines[count - i - 1];
-                dbQueryLogs->addTransactionLogInfo(line);
-            }
+            throw std::invalid_argument("more then max page number " + to_string(totalPage));
+        }
+        startLine = totalSize - page_size*page_no + 1;
+        endLine = totalSize - page_size*(page_no - 1) + 1;
+        if (startLine < 1)
+        {
+            startLine = 1;
+        }
+        // seek to start line;
+        in.open(TRANSACTION_LOG_PATH, ios::in);
+        int i_temp;
+        char buf_temp[1024];
+        in.seekg(0, ios::beg);
+        for (i_temp = 1; i_temp < startLine; i_temp++)
+        {
+            in.getline(buf_temp, sizeof(buf_temp));
+        }
+        vector<std::string> lines;
+        while (startLine < endLine && getline(in, line, '\n')) {
+            lines.push_back(line);
+            startLine++;
+        }
+        in.close();
+        pthread_rwlock_unlock(&transactionlog_lock);
+        size_t count;
+        count =  lines.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            line = lines[count - i - 1];
+            dbQueryLogs->addTransactionLogInfo(line);
         }
     }
     dbQueryLogs->setTotalPage(totalPage);
@@ -2174,7 +2189,7 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     SLOG_DEBUG("file_path: " + file_path);
     if (Util::file_exist(file_path))
     {
-        throw runtime_error("function name " + pfn_info->getFunName() + " already exists");
+        throw std::invalid_argument("function name " + pfn_info->getFunName() + " already exists");
     }
     // cppcheck start
     string report_detail = "";
@@ -2203,7 +2218,7 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     }
     else
     {
-        throw runtime_error(report_detail);    
+        throw std::runtime_error(report_detail);
     }
 }
 
@@ -2217,7 +2232,7 @@ void APIUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
     string file_path = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
     if (Util::file_exist(file_path) == false)
     {
-        throw runtime_error("function name " + pfn_infos->getFunName() + " not exists");
+        throw std::invalid_argument("function name " + pfn_infos->getFunName() + " not exists");
     }
     // cpp check start
     string report_detail = "";
@@ -2246,7 +2261,7 @@ void APIUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
     }
     else
     {
-        throw runtime_error(report_detail);
+        throw std::runtime_error(report_detail);
     }
 }
 
@@ -2262,7 +2277,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     string sourceFile = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
     if (!Util::file_exist(sourceFile))
     {
-        throw new runtime_error("function file is not exist");
+        throw std::invalid_argument("function source file is not exist");
     }
     // get function info from json file
     PFNInfo *fun_info = new PFNInfo();
@@ -2415,7 +2430,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         if (fp == NULL)
         {
             pthread_rwlock_unlock(&fun_data_lock);
-            throw runtime_error("open function json file error.");
+            throw std::runtime_error("open function json file error");
         }
         json_str.push_back('\n');
         fprintf(fp, "%s", json_str.c_str());
@@ -2434,7 +2449,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         if (!in.is_open())
         {
             pthread_rwlock_unlock(&fun_data_lock);
-            throw runtime_error("open function json file error.");
+            throw std::runtime_error("open function json file error");
         }
         PFNInfo *fun_info_tmp;
         while (getline(in, line))
@@ -2475,7 +2490,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         if (!out.is_open())
         {
             pthread_rwlock_unlock(&fun_data_lock);
-            throw runtime_error("open function json temp file error.");
+            throw std::runtime_error("open function json temp file error.");
         }
         out << line;
         out.close();
@@ -2502,18 +2517,18 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
                 pthread_rwlock_unlock(&fun_data_lock);
-                throw runtime_error("save function info to json file error, status code:" + status);
+                throw std::runtime_error("save function info to json file error, status code:" + status);
             }
         }
         else
         {
             pthread_rwlock_unlock(&fun_data_lock);
-            throw runtime_error("save function info to json file error, status code:" + status);
+            throw std::runtime_error("save function info to json file error, status code:" + status);
         }
     }
     else
     {
-        throw runtime_error("save function info to json file error, no match operation:" + operation);
+        throw std::invalid_argument("save function info to json file error, no match operation:" + operation);
     }
 }
 
@@ -2526,7 +2541,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
     if (!in.is_open())
     {
         pthread_rwlock_unlock(&fun_data_lock);
-        throw runtime_error("open function json file error.");
+        throw std::runtime_error("open function json file error.");
     }
     string line;
     bool isMatch;
@@ -2554,7 +2569,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
     else
     {
         delete temp_ptr;
-        throw runtime_error("function " + fun_name + " not exists");
+        throw std::invalid_argument("function " + fun_name + " not exists");
     }
 }
 
