@@ -96,7 +96,7 @@ main(int argc, char * argv[])
 		}
 
 		int isbuilt;
-		if (boost::filesystem::exists(_db_path + ".db"))
+		if (Util::file_exist(_db_path + ".db"))
 			isbuilt = 1;
 		else
 			isbuilt = 0;

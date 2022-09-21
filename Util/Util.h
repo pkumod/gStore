@@ -91,7 +91,7 @@ in the sparql query can point to the same node in data graph)
 #include <boost/property_tree/json_parser.hpp>
 
 //Added for the default_resource example
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 //#include <boost/regex.hpp>
 //#include <boost/thread/thread.hpp>
 //#include <boost/bind.hpp>
