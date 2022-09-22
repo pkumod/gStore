@@ -17,12 +17,12 @@ using namespace std;
 
 int copy(string src_path, string dest_path)
 {
-	if(!boost::filesystem::exists(src_path)){
+	if(!Util::file_exist(src_path)){
 		//check the source path
 		cout << "Source Path Error, Please Check It Again!" << endl;
 		return 1;
 	}
-	if(!boost::filesystem::exists(dest_path)){
+	if(!Util::file_exist(dest_path)){
 		//check the destnation path 
 		cout << "Destnation Path Error, Please Check It Again!" << endl;
 		return -1;

@@ -55,7 +55,7 @@ EXEFLAG = -O2 -pthread -std=c++11
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus
+library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus
 #used for parallelsort
 #used for parallelsort
 march = -march=native
@@ -95,7 +95,7 @@ isarrayobj = $(objdir)ISArray.o $(objdir)ISEntry.o $(objdir)ISBlockManager.o
 
 kvstoreobj = $(objdir)KVstore.o $(sitreeobj) $(istreeobj) $(ivtreeobj) $(ivarrayobj) $(isarrayobj) #$(sstreeobj)
 
-utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)BloomFilter.o $(objdir)VList.o \
+utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
 			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
 
@@ -591,9 +591,6 @@ $(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(objdir)Util.o
 $(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(objdir)Util.o
 	$(CXX) $(CFLAGS) Util/Triple.cpp $(inc_log) -o $(objdir)Triple.o $(openmp)
 
-$(objdir)BloomFilter.o:  Util/BloomFilter.cpp Util/BloomFilter.h $(objdir)Util.o
-	$(CXX) $(CFLAGS) Util/BloomFilter.cpp $(inc_log) -o $(objdir)BloomFilter.o $(openmp) 
-
 $(objdir)VList.o:  Util/VList.cpp Util/VList.h
 	$(CXX) $(CFLAGS) Util/VList.cpp $(inc_log) -o $(objdir)VList.o $(openmp)
 
@@ -791,8 +788,8 @@ dist: clean
 	rm -rf backups/*.db
 
 tarball:
-	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts garbage docs data logs \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini NOTES.md StringIndex COVERAGE \
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts docs data logs \
+		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini StringIndex COVERAGE \
 		Dockerfile LICENSE makefile Trie
 
 APIexample: $(api_cpp) $(api_socket) 
