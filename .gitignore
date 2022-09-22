@@ -16,38 +16,38 @@ Parser/Sparql*
 #result logs
 *.txt
 *.log
+logs
+
+#backup files
+backup.json
 
 #download files
 *.torrent
-*.iso 
+*.iso
+
 #compressed files
 *.tar.bz2
 *.zip
-*.tar.gz 
-*.tar.bz2
-*.7z 
-*.rar 
-#compiled objects
-*.o
-*.class
-#debug logs
-*.log
+*.tar.gz
+*.7z
+*.rar
+
 #temp files
 *.dat
+
 #datasets
 *.nt
 *.n3
+
 #databases
 *.db
-#libs
-*.a
-*.so
-*.jar
+
 #pictures
 *.jpg
 *.jpeg
 *.png
 *.pdf
+
 #music and movie
 *.mp3
 *.wav
@@ -59,6 +59,7 @@ Parser/Sparql*
 *.ko
 *.obj
 *.elf
+*.class
 
 # Precompiled Headers
 *.gch
@@ -69,6 +70,7 @@ Parser/Sparql*
 *.a
 *.la
 *.lo
+*.jar
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -85,13 +87,14 @@ cscope*
 .project
 tags
 .settings
+.vs
+*.iml
+.idea
 
 # latex files
 *.aux
 *.toc
 *.synctex.gz
-*.log
-*.out
 *.bak~
 
 # queries
@@ -104,6 +107,3 @@ node_modules
 # query results
 *.info
 
-/.vs
-/VSTree/LRUCache2.h
-/VSTree/LRUCache2.cpp
