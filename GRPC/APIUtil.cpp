@@ -1,9 +1,9 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-21 17:56:22
+ * @LastEditTime: 2022-09-23 15:13:57
  * @LastEditors: wangjian 2606583267@qq.com
- * @Description: grpc util
+ * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
  */
 #include "APIUtil.h"
@@ -23,6 +23,7 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&fun_data_lock, NULL);
     ipWhiteList = new IPWhiteList();
     ipBlackList = new IPBlackList();
+    util.configure_new();
 }
 
 APIUtil::~APIUtil()
@@ -85,42 +86,41 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
     try
     {
         SLOG_DEBUG("--------initialization start--------");
-        Util util;
-        util.configure_new();
-        system_path = Util::getConfigureValue("system_path");
-        system_path = Util::replace_all(system_path, "\"", "");
-        backup_path = Util::getConfigureValue("backup_path");
-        backup_path = Util::replace_all(backup_path, "\"", "");
-        DB_path = Util::getConfigureValue("db_path");
-        // root_username = Util::getConfigureValue("root_username");
-        // root_username = Util::replace_all(root_username, "\"", "");
-        system_username = Util::getConfigureValue("system_username");
-        system_username = Util::replace_all(system_username, "\"", "");
-        max_output_size = Util::string2int(Util::getConfigureValue("max_output_size"));
-        query_log_path = Util::getConfigureValue("querylog_path");
-        query_log_path = Util::replace_all(query_log_path, "\"", "");
-        if (Util::dir_exist(query_log_path) == false)
-        {
-            Util::create_dir(query_log_path);
-        }
-        access_log_path = Util::getConfigureValue("accesslog_path");
-        access_log_path = Util::replace_all(access_log_path, "\"", "");
-        if (Util::dir_exist(access_log_path) == false)
-        {
-            Util::create_dir(access_log_path);
-        }
-        pfn_file_path = Util::getConfigureValue("pfn_file_path");
-        pfn_file_path = Util::replace_all(pfn_file_path, "\"", "");
-        pfn_lib_path = Util::getConfigureValue("pfn_lib_path");
-        pfn_lib_path = Util::replace_all(pfn_lib_path, "\"", "");
+        system_path = get_configure_value("system_path", system_path);
+        backup_path = get_configure_value("backup_path", backup_path);
+        DB_path = get_configure_value("db_path", DB_path);
+        default_port = get_configure_value("default_port", default_port);
+        thread_pool_num = get_configure_value("thread_num", thread_pool_num);
+        system_username = get_configure_value("system_username", system_username);
+        max_database_num = get_configure_value("max_database_num", max_database_num);
+        max_user_num = get_configure_value("max_user_num", max_user_num);
+        max_output_size = get_configure_value("max_output_size", max_output_size);
+        query_log_mode = get_configure_value("querylog_mode", query_log_mode);
+        query_log_path = get_configure_value("querylog_path", query_log_path);
+        string_suffix(query_log_path, '/');
+        util.create_dir(query_log_path);
+        
+        access_log_path = get_configure_value("accesslog_path", access_log_path);
+        string_suffix(access_log_path, '/');
+        util.create_dir(access_log_path);
+        
+        query_result_path = get_configure_value("queryresult_path", query_result_path);
+        string_suffix(query_result_path, '/');
+        util.create_dir(query_result_path);
+        
+        pfn_file_path = get_configure_value("pfn_file_path", pfn_file_path);
+        string_suffix(pfn_file_path, '/');
+        util.create_dir(pfn_file_path);
+
+        pfn_lib_path = get_configure_value("pfn_lib_path", pfn_lib_path);
+        string_suffix(pfn_lib_path, '/');
+        util.create_dir(pfn_lib_path);
 
         pfn_include_header = PFN_HEADER;
 
         //load ip-list
-        ipWhiteFile = Util::getConfigureValue("ip_allow_path");
-        ipWhiteFile = Util::replace_all(ipWhiteFile, "\"", "");
-        ipBlackFile = Util::getConfigureValue("ip_deny_path");
-        ipBlackFile = Util::replace_all(ipBlackFile, "\"", "");
+        ipWhiteFile = get_configure_value("ip_allow_path", ipWhiteFile);
+        ipBlackFile = get_configure_value("ip_deny_path", ipBlackFile);
         if (ipWhiteFile.empty())
         {
             whiteList = 0;
@@ -149,7 +149,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         }
         
         // load system db
-        if(!Util::dir_exist("system.db"))
+        if(!util.dir_exist("system.db"))
         {
            SLOG_ERROR("Can not find system.db.");
             return -1;
@@ -304,7 +304,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         init_transactionlog();
         // create system password file
         fstream ofp;
-        system_password = Util::int2string(Util::getRandNum());
+        system_password = util.int2string(util.getRandNum());
         system_password_path = "system.db/password" + port + ".txt";
         ofp.open(system_password_path, ios::out);
         ofp << system_password;
@@ -324,7 +324,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                 SLOG_ERROR(result);
                 return -1;
             }           
-            if(Util::dir_exist(db_name + ".db") == false)
+            if(util.dir_exist(db_name + ".db") == false)
             {
                 SLOG_ERROR("Database " + db_name + ".db has not been built.");
 			    return -1;
@@ -577,14 +577,14 @@ int APIUtil::db_copy(string src_path, string dest_path)
 {
     string sys_cmd;
     string log_info;
-    if (Util::dir_exist(src_path) == false)
+    if (util.dir_exist(src_path) == false)
     {
         // check the source path
         log_info = "Source path error, please check it again!";
         SLOG_ERROR(log_info);
         return 1;
     }
-    if (Util::dir_exist(dest_path) == false)
+    if (util.dir_exist(dest_path) == false)
     {
         // check the destnation path
         log_info = "the path: " + dest_path + " is not exist ,system will create it.";
@@ -727,7 +727,7 @@ bool APIUtil::db_checkpoint_all()
     pthread_rwlock_rdlock(&databases_map_lock);
     std::map<std::string, Database *>::iterator iter;
 	string return_msg = "";
-	abort_transactionlog(Util::get_cur_time());
+	abort_transactionlog(util.get_cur_time());
     for(iter=databases.begin(); iter != databases.end(); iter++)
 	{
 		string database_name = iter->first;
@@ -909,7 +909,7 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
 txn_id_t APIUtil::check_txn_id(string TID_s)
 {
     txn_id_t TID = (unsigned long long)0;
-    if(Util::is_number(TID_s))
+    if(util.is_number(TID_s))
 	{
 		TID = strtoull(TID_s.c_str(), NULL, 0);
 	} 
@@ -917,7 +917,7 @@ txn_id_t APIUtil::check_txn_id(string TID_s)
     {   // case for workbench call commit and rollback: "beginTime_tid"
         int pos = TID_s.find("_") + 1;
         string TID_s_new = TID_s.substr(pos, TID_s.size()-pos);
-        if (Util::is_number(TID_s_new))
+        if (util.is_number(TID_s_new))
         {
             TID = strtoull(TID_s_new.c_str(), NULL, 0);
         }
@@ -1083,7 +1083,7 @@ std::string APIUtil::check_indentity(const std::string &username, const std::str
     }
     else if (encryption == "1")
     {
-        if (Util::md5(it->second->getPassword()) != password)
+        if (util.md5(it->second->getPassword()) != password)
         {
             error = "Username or password is wrong.";
         }
@@ -1143,6 +1143,11 @@ bool APIUtil::check_user_exist(const std::string& username)
         return false;
 }
 
+bool APIUtil::check_user_count()
+{
+    return users.size() < max_user_num;
+}
+
 bool APIUtil::check_db_exist(const std::string& db_name)
 {
     bool result = true;
@@ -1154,6 +1159,11 @@ bool APIUtil::check_db_exist(const std::string& db_name)
 	}
     pthread_rwlock_unlock(&already_build_map_lock);
 	return result;
+}
+
+bool APIUtil::check_db_count()
+{
+    return already_build.size() < max_database_num;
 }
 
 bool APIUtil::add_privilege(const std::string& username, const std::string& type, const std::string& db_name)
@@ -1262,7 +1272,7 @@ bool APIUtil::update_sys_db(string query)
 		{
 			if(ret >= 0)
 			{
-				msg = "update num: " + Util::int2string(ret);
+				msg = "update num: " + util.int2string(ret);
 				SLOG_DEBUG(msg);
 				refresh_sys_db();
 				//system_database->save();
@@ -1345,7 +1355,7 @@ bool APIUtil::build_db_user_privilege(std::string db_name, std::string username)
 {
     pthread_rwlock_wrlock(&already_build_map_lock);
 	SLOG_DEBUG("already_build_map_lock acquired.");
-	string time = Util::get_date_time();
+	string time = util.get_date_time();
     struct DatabaseInfo* temp_db = new DatabaseInfo(db_name, username, time);
     already_build.insert(pair<std::string, struct DatabaseInfo*>(db_name, temp_db));
     pthread_rwlock_unlock(&already_build_map_lock);
@@ -1694,7 +1704,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     int totalSize = 0;
     int totalPage = 0;
     string accessLog = APIUtil::access_log_path + date + ".log";
-    if(Util::file_exist(accessLog))
+    if(util.file_exist(accessLog))
     {
         ifstream in;
         string line;
@@ -1771,12 +1781,12 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
 
 void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg)
 {
-    string iplog_name = Util::get_date_day();
+    string iplog_name = util.get_date_day();
     string iplogfile = access_log_path + iplog_name + ".log";
-    if (Util::file_exist(iplogfile) == false)
+    if (util.file_exist(iplogfile) == false)
     {
         SLOG_DEBUG("ip access log file is not exist, now create it.");
-        Util::create_file(iplogfile);
+        util.create_file(iplogfile);
     }
     // SLOG_DEBUG("accesslog: " + iplogfile);
     FILE *ip_logfp = fopen(iplogfile.c_str(), "a");
@@ -1788,11 +1798,11 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&access_log_lock);
     // build json
-    string createTime = Util::get_date_time();
+    string createTime = util.get_date_time();
     string status_msg = string(statusMsg.c_str());
-    status_msg = Util::string_replace(status_msg, "\r\n", "");
-	status_msg = Util::string_replace(status_msg, "\n", "");
-    status_msg = Util::string_replace(status_msg, "    ", "");
+    status_msg = util.string_replace(status_msg, "\r\n", "");
+	status_msg = util.string_replace(status_msg, "\n", "");
+    status_msg = util.string_replace(status_msg, "    ", "");
     struct DBAccessLogInfo *dbAccessLogInfo = new DBAccessLogInfo(remoteIP, operation, statusCode, status_msg, createTime);
     
     string _info = dbAccessLogInfo->toJSON();
@@ -1800,7 +1810,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     _info.push_back('\n');
     fprintf(ip_logfp, "%s", _info.c_str());
 
-    Util::Csync(ip_logfp);
+    util.Csync(ip_logfp);
     // long logSize = ftell(ip_logfp);
     fclose(ip_logfp);
     // SLOG_DEBUG("logSize:" + to_string(logSize);
@@ -1837,7 +1847,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
-    if(Util::file_exist(queryLog))
+    if(util.file_exist(queryLog))
     {
         ifstream in;
         string line;
@@ -1915,12 +1925,16 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
 
 void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
 {
-    std::string queyrlog_name = Util::get_date_day();
-    std::string querylog_file = query_log_path + queyrlog_name + ".log";
-    if (Util::file_exist(querylog_file) == false)
+    if (query_log_mode == "0")
     {
-        SLOG_DEBUG("qeury log file is not exist, now create it.");
-        Util::create_file(querylog_file);
+        return;
+    }
+    std::string queyrlog_name = util.get_date_day();
+    std::string querylog_file = query_log_path + queyrlog_name + ".log";
+    if (util.file_exist(querylog_file) == false)
+    {
+        SLOG_DEBUG("query log file is not exist, now create it.");
+        util.create_file(querylog_file);
     }
     // SLOG_DEBUG("querylog: " + to_string(querylog_file);
     FILE *querylog_fp = fopen(querylog_file.c_str(), "a");
@@ -1937,7 +1951,7 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
     _info.push_back('\n');
     std::fprintf(querylog_fp, "%s", _info.c_str());
 
-    Util::Csync(querylog_fp);
+    util.Csync(querylog_fp);
     // long logSize = ftell(querylog_fp);
     std::fclose(querylog_fp);
     // SLOG_DEBUG("logSize: " + to_string(logSize));
@@ -1947,7 +1961,7 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
 void APIUtil::init_transactionlog()
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
-    if (Util::file_exist(TRANSACTION_LOG_PATH)) {
+    if (util.file_exist(TRANSACTION_LOG_PATH)) {
         SLOG_DEBUG("transaction log has been created.");
         pthread_rwlock_unlock(&transactionlog_lock);
         return;
@@ -2020,7 +2034,7 @@ void APIUtil::get_transactionlog(int &page_no, int &page_size, struct Transactio
 {
     int totalSize = 0;
     int totalPage = 0;
-    if (Util::file_exist(TRANSACTION_LOG_PATH))
+    if (util.file_exist(TRANSACTION_LOG_PATH))
     {
         pthread_rwlock_rdlock(&transactionlog_lock);
         ifstream in;
@@ -2166,7 +2180,7 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
 void APIUtil::fun_query(const string &fun_name, const string &fun_status, const string &username, struct PFNInfos *pfn_infos)
 {
     string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
-    if (Util::file_exist(json_file_path) == false)
+    if (util.file_exist(json_file_path) == false)
     {
         return;
     }
@@ -2200,13 +2214,11 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     string file_name;
     file_name = pfn_info->getFunName();
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
-    string file_dir = APIUtil::pfn_file_path;
-    Util::create_dir(file_dir);
-    file_dir = file_dir + username;
-    Util::create_dir(file_dir);
+    string file_dir = APIUtil::pfn_file_path + username;
+    util.create_dir(file_dir);
     string file_path = file_dir + "/" + file_name + ".cpp";
     SLOG_DEBUG("file_path: " + file_path);
-    if (Util::file_exist(file_path))
+    if (util.file_exist(file_path))
     {
         throw std::invalid_argument("function name " + pfn_info->getFunName() + " already exists");
     }
@@ -2249,7 +2261,7 @@ void APIUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
 
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string file_path = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
-    if (Util::file_exist(file_path) == false)
+    if (util.file_exist(file_path) == false)
     {
         throw std::invalid_argument("function name " + pfn_infos->getFunName() + " not exists");
     }
@@ -2294,7 +2306,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     string file_name = fun_name;
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string sourceFile = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
-    if (!Util::file_exist(sourceFile))
+    if (!util.file_exist(sourceFile))
     {
         throw std::invalid_argument("function source file is not exist");
     }
@@ -2304,14 +2316,12 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     APIUtil::fun_parse_from_name(username, fun_name, fun_info);
 
     //create a temp file
-    string last_time = Util::get_timestamp();
-    string md5str = Util::md5(last_time);
-    string targetDir = APIUtil::pfn_lib_path;
-    Util::create_dir(targetDir);
-    targetDir = targetDir + username;
-    Util::create_dir(targetDir);
+    string last_time = util.get_timestamp();
+    string md5str = util.md5(last_time);
+    string targetDir = APIUtil::pfn_lib_path + username;
+    util.create_dir(targetDir);
     targetDir = targetDir + "/.temp";
-    Util::create_dir(targetDir);
+    util.create_dir(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
     string cmd = "rm -f " + targetFile;
@@ -2333,7 +2343,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
         string mvCmd = "mv " +  targetFile + " " + usingPath +"/";
         system(mvCmd.c_str());
     }
-    else if (Util::file_exist(logFile))
+    else if (util.file_exist(logFile))
     {
         // update function status to 3
         fun_info->setFunStatus("3");
@@ -2378,12 +2388,12 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 {
     const string fun_name = fun_info->getFunName();
     const string fun_args = fun_info->getFunArgs();
-    const string fun_subs = Util::urlDecode(fun_info->getFunSubs());
-    string fun_body = Util::urlDecode(fun_info->getFunBody());
+    const string fun_subs = util.urlDecode(fun_info->getFunSubs());
+    string fun_body = util.urlDecode(fun_info->getFunBody());
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
     if(fun_body_o != NULL) 
     {
-        Util::a_trim(fun_body_o, fun_body.c_str());
+        util.a_trim(fun_body_o, fun_body.c_str());
         if(fun_body_o && strlen(fun_body_o) > 0)
             fun_body = string(fun_body_o);
         xfree(fun_body_o);
@@ -2436,14 +2446,14 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
     if (operation == "1") // create
     {
         pthread_rwlock_wrlock(&fun_data_lock);
-        if (!Util::file_exist(json_file_path))
+        if (!util.file_exist(json_file_path))
         {
             string json_file_dir = APIUtil::pfn_file_path + username;
-            if (!Util::dir_exist(json_file_dir))
+            if (!util.dir_exist(json_file_dir))
             {
-                Util::create_dir(json_file_dir);
+                util.create_dir(json_file_dir);
             }
-            Util::create_file(json_file_path);
+            util.create_file(json_file_path);
         }
         FILE *fp = fopen(json_file_path.c_str(), "a");
         if (fp == NULL)
@@ -2487,7 +2497,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     string file_name = fun_name;
                     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                     string sourcePath = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
-                    // string backPath = sourcePath + "." + Util::getTimeString2();
+                    // string backPath = sourcePath + "." + util.getTimeString2();
                     string libPath = APIUtil::pfn_lib_path + username + "/lib" + file_name + "*.so";
                     cmd = "rm -f " + sourcePath;
                     system(cmd.c_str());
@@ -2607,6 +2617,21 @@ string APIUtil::get_Db_path()
     return DB_path;
 }
 
+string APIUtil::get_query_result_path()
+{
+    return query_result_path;
+}
+
+string APIUtil::get_default_port()
+{
+    return default_port;
+}
+
+int APIUtil::get_thread_pool_num() 
+{
+    return thread_pool_num;
+}
+
 unsigned int APIUtil::get_max_output_size()
 {
     return max_output_size;
@@ -2632,5 +2657,41 @@ void APIUtil::increase_connection_num()
     if (connection_num < UINT32_MAX)
     {
         connection_num += 1;
+    }
+}
+
+void APIUtil::string_suffix(string& str, const char suffix)
+{
+    if (str[str.length()-1] != suffix)
+    {
+        str.push_back(suffix);
+    }
+}
+
+string APIUtil::get_configure_value(const string& key, string default_value)
+{
+    string value = util.getConfigureValue(key);
+    if (value.empty())
+    {
+        value = default_value;
+    }
+    return value;
+    
+}
+
+int APIUtil::get_configure_value(const string& key, int default_value)
+{
+    string value = util.getConfigureValue(key);
+    if (value.empty())
+    {
+       return default_value;
+    } 
+    else if (util.is_number(value))
+    {
+        return util.string2int(value);
+    }
+    else
+    {
+        return default_value;
     }
 }

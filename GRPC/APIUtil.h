@@ -1,9 +1,9 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-21 17:56:28
+ * @LastEditTime: 2022-09-23 14:12:47
  * @LastEditors: wangjian 2606583267@qq.com
- * @Description: grpc util
+ * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
  */
 #pragma once
@@ -870,12 +870,20 @@ public:
 class APIUtil
 {
 private:
-    string system_path = "data/system/system.nt";
-    string backup_path = "./backups";
-    string DB_path = ".";
+    Util util;
+    string default_port = "9000";
+    int thread_pool_num = 30;
+    
     unsigned int max_output_size = 10000000;
+    int max_database_num = 100;
+    int max_user_num = 1000;
+    string system_path = "data/system/system.nt";
+    string DB_path = ".";
+    string backup_path = "./backups";
+    string query_log_mode = "0";
     string query_log_path = "logs/endpoint/";
     string access_log_path = "logs/ipaccess/";
+    string query_result_path = "logs/query_result/";
     std::string pfn_file_path = "fun/";
     std::string pfn_lib_path = "lib/";
     std::string pfn_include_header = "";
@@ -900,7 +908,7 @@ private:
     int blackList = 0;
     int whiteList = 0;
     string ipBlackFile = "ipDeny.config";
-    string ipWhiteFile = "ipAllow.config";
+    string ipWhiteFile = "";
     IPWhiteList* ipWhiteList;
     IPBlackList* ipBlackList;
 
@@ -944,7 +952,9 @@ public:
     std::string check_server_indentity(const std::string& password);
     std::string check_param_value(const string& paramname, const string& value);
     bool check_user_exist(const std::string& username);
+    bool check_user_count();
     bool check_db_exist(const std::string& db_name);
+    bool check_db_count();
     bool add_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool del_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool check_privilege(const std::string& username, const std::string& type, const std::string& db_name);
@@ -1003,9 +1013,15 @@ public:
     string get_system_path();
     string get_backup_path();
     string get_Db_path();
+    string get_query_result_path();
+    string get_default_port();
+    int get_thread_pool_num();
     unsigned int get_max_output_size();
     string get_root_username();
     string get_system_username();
     unsigned int get_connection_num();
     void increase_connection_num();
+    void string_suffix(string& str, const char suffix);
+    string get_configure_value(const string& key, string default_value);
+    int get_configure_value(const string& key, int default_value);
 };
