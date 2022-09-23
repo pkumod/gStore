@@ -246,7 +246,7 @@ bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
-        Util::global_config[keyname] = value;
+        Util::global_config[keyname] = replace_all(value,"\"","");
     return true;
 }
 
@@ -266,38 +266,44 @@ bool Util::configure_new()
     ini_parser.ReadINI("conf.ini");
     /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
     Util::global_config["max_out_limit"] = value;*/
+    Util::setGlobalConfig(ini_parser, "ghttp", "default_port");
     Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
+    Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
     Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
     Util::setGlobalConfig(ini_parser, "ghttp", "root_password");
+    Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
     Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "accesslog_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_log");
     Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "pfn_file_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "pfn_lib_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "max_querylog_size");
-    Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
-    Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
-    Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "save_log");
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "log_mode");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
     
-    SLOG_DEBUG("the current settings are as below: ");
-    SLOG_DEBUG("key : value");
-    SLOG_DEBUG("------------------------------------------------------------");
-    for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+    // init slog
+    string log_mode = Util::getConfigureValue("log_mode");
+    Slog::getInstance().init(log_mode.c_str());
+    if(Slog::getInstance()._logger.getLogLevel() == log4cplus::DEBUG_LOG_LEVEL)
     {
-        SLOG_DEBUG(it->first + " : " + it->second);
+        SLOG_DEBUG("the current settings are as below: ");
+        SLOG_DEBUG("key : value");
+        SLOG_DEBUG("----------------------------------");
+        for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+        {
+            SLOG_DEBUG(it->first + " : " + it->second);
+        }
+        SLOG_DEBUG("----------------------------------");
     }
-    SLOG_DEBUG("------------------------------------------------------------");
     return true;
 }
 
@@ -414,9 +420,6 @@ Util::config_setting()
 Util::Util()
 {
     Util::configure();
-    // init slog
-    string log_mode = Util::getConfigureValue("log_mode");
-    Slog::getInstance().init(log_mode.c_str());
 #ifdef DEBUG_KVSTORE
     if(this->debug_kvstore == NULL)
     {
