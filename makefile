@@ -143,7 +143,7 @@ TARGET = $(exedir)gexport $(exedir)gbuild $(exedir)gserver $(exedir)gserver_back
          $(exedir)gadd $(exedir)gsub $(exedir)ghttp  $(exedir)gmonitor $(exedir)gshow \
 		 $(exedir)shutdown $(exedir)ginit $(exedir)gdrop $(testdir)update_test $(testdir)dataset_test \
 		 $(testdir)transaction_test $(testdir)run_transaction $(testdir)workload $(testdir)debug_test $(exedir)gbackup \
-		 $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc
+		 $(exedir)grestore $(exedir)gpara $(exedir)rollback $(exedir)grpc $(exedir)gconsole
 # TARGET = $(exedir)gbuild $(exedir)gdrop $(exedir)gquery $(exedir)ginit
 
 all: $(TARGET)
@@ -226,6 +226,9 @@ $(testdir)workload: $(lib_antlr) $(objdir)workload.o $(objfile)
 $(testdir)debug_test: $(lib_antlr) $(objdir)debug_test.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(testdir)debug_test $(objdir)debug_test.o $(objfile) $(library) $(openmp) ${ldl}
 
+$(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile) 
+	$(CXX) $(EXEFLAG) -o $(exedir)gconsole $(objdir)gconsole.o $(objfile) $(library) $(openmp) ${ldl}
+
 #executables end
 
 
@@ -282,6 +285,9 @@ $(objdir)gpara.o: Main/gpara.cpp Database/Database.h Util/Util.h $(lib_antlr)
 
 $(objdir)rollback.o: Main/rollback.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/rollback.cpp $(inc) $(inc_log) -o $(objdir)rollback.o $(openmp)
+
+$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h $(lib_antlr)
+	$(CXX) $(CFLAGS) Main/gconsole.cpp $(inc) $(inc_log) -o $(objdir)gconsole.o $(openmp)
 #objects in Main/ end
 
 #objects in scripts/ begin
