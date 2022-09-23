@@ -2,8 +2,8 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2021-10-15 21:18:15
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-09-23 10:50:25
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
  */
@@ -14,7 +14,6 @@
 //#include "../Util/Slog.h"
 
 using namespace std;
-#define SYSTEM_PATH "data/system/system.nt"
 
 //[0]./gbuild [1]data_folder_path  [2]rdf_file_path
 int
@@ -84,7 +83,9 @@ main(int argc, char * argv[])
 		string _rdf = Util::getArgValue(argc, argv, "f", "file");
 
 		//check if the db_path is the path of system.nt
-		if (_rdf == SYSTEM_PATH)
+		util.configure_new();
+		string system_path = util.getConfigureValue("system_path");
+		if (_rdf == system_path)
 		{
 			cout<<"You have no rights to access system files"<<endl;
 			return -1;
