@@ -11,9 +11,6 @@
 
 using namespace std;
 
-const string SYSTEM_USERNAME = "system";
-const string USERNAME = "root";
-
 bool is_number(string s)
 {
     if (s.empty())
@@ -68,6 +65,7 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 
 int main(int argc, char *argv[])
 {
+	Util util;
 	if (argc == 2)
 	{
 		string command = argv[1];
@@ -166,13 +164,15 @@ int main(int argc, char *argv[])
 		ofp >> system_password;
 		ofp.close();
 		
+		util.configure_new();
+		string system_user = util.getConfigureValue("system_username");
 		string res;
 		string postdata;
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
 		if (type == "grpc")
 		{
-			postdata = "username="+SYSTEM_USERNAME+"&password=" + system_password;
+			postdata = "username=" + system_user + "&password=" + system_password;
 			gc.Post(strUrl, postdata, res);
 			cout << "Result: " << res << endl;
 			rapidjson::Document jsonRes;
@@ -195,11 +195,11 @@ int main(int argc, char *argv[])
 		} 
 		else
 		{
-			postdata = "{\"username\":\""+SYSTEM_USERNAME+"\",\"password\":\"" + system_password + "\"}";
+			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
 			gc.Post(strUrl, postdata, res);
 			if (Util::file_exist("system.db/port.txt"))
 			{
-				string cmd = "rm system.db/password*.txt";;
+				string cmd = "rm system.db/password*.txt";
 				system(cmd.c_str());
 				cmd = "rm system.db/port.txt";
 				system(cmd.c_str());
