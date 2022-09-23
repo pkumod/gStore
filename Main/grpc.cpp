@@ -129,8 +129,8 @@ void sig_handler(int signo)
 
 int main(int argc, char *argv[])
 {
-	Util util;
 	srand(time(NULL));
+	apiUtil = new APIUtil();
 	while (true)
 	{
 		pid_t fpid = fork();
@@ -171,15 +171,16 @@ int main(int argc, char *argv[])
 
 int initialize(int argc, char *argv[])
 {
-	apiUtil = new APIUtil();
 	unsigned short port = 9000;
 	string db_name = "";
-	string port_str = "9000";
+	string port_str = apiUtil->get_default_port();
 	bool loadCSR = 0; // DO NOT load CSR by default
 	stringstream ss;
 	if (argc < 2)
 	{
 		SLOG_DEBUG("Server will use the default port: " + port_str);
+		SLOG_DEBUG("Not load any database!");
+		port = atoi(port_str.c_str());
 	}
 	else if (argc == 2)
 	{
@@ -219,7 +220,7 @@ int initialize(int argc, char *argv[])
 			SLOG_ERROR("You can not load system files.");
 			return -1;
 		}
-		port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
+		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
 		port = atoi(port_str.c_str());
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
 	}
@@ -924,7 +925,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param request 
  * @param response 
  * @param json_data 
- * {db_name: "the name of database", load_csr: "load csr resource flag, default 'false'"}
+ * {db_name: "the name of database", csr: "load csr resource flag, default '0'"}
  */
 void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
@@ -956,7 +957,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			Database *current_database = new Database(db_name);
 			SLOG_DEBUG("begin loading...");
 			bool load_csr = false;
-			if (jsonParam(json_data, "load_csr", "false") == "true")
+			if (jsonParam(json_data, "csr", "0") == "1")
 			{
 				load_csr = true;
 			}
@@ -971,10 +972,10 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				{
 					SLOG_WARN("when load insert_txn_managers fail.");
 				}
-				std::string csr_str = "false";
+				std::string csr_str = "0";
 				if (current_database->csr != NULL)
 				{
-					csr_str = "true";
+					csr_str = "1";
 				}
 				Json resp_data;
 				resp_data.SetObject();
@@ -993,10 +994,10 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		else
 		{
-			std::string csr_str = "false";
+			std::string csr_str = "0";
 			if (current_database->csr != NULL)
 			{
-				csr_str = "true";
+				csr_str = "1";
 			}
 			Json resp_data;
 			resp_data.SetObject();
@@ -1190,6 +1191,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		if (apiUtil->check_db_exist(db_name))
 		{
 			error = "database already built.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+		// check databse number
+		if (apiUtil->check_db_count() == false)
+		{
+			string error = "The total number of databases more than max_databse_num.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
@@ -1635,12 +1643,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			update = true;
 		}
 
-		if (Util::dir_exist("./query_result") == false)
-		{
-			Util::create_dir("./query_result");
-		}
 		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
-		string localname = "./query_result/" + filename;
+		string localname = apiUtil->get_query_result_path() + filename;
 		if (ret)
 		{
 			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
@@ -1696,7 +1700,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				if (resp_data.HasParseError())
 				{
 					string filename2 = "error_" + filename;
-					string localname2 = "./query_result/" + filename2;
+					string localname2 = apiUtil->get_query_result_path() + filename2;
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
@@ -1754,7 +1758,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				if (resp_data.HasParseError())
 				{
 					string filename2 = "error_" + filename;
-					string localname2 = "./query_result/" + filename2;
+					string localname2 = apiUtil->get_query_result_path() + filename2;
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
@@ -2503,6 +2507,13 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 		
 		if (type == "1") // add user
 		{
+			// check user number
+			if (apiUtil->check_user_count() == false)
+			{
+				string error = "The total number of users more than max_user_num.";
+				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				return;
+			}
 			if (apiUtil->user_add(op_username, op_password))
 			{
 				response->Success("Add user done.");
