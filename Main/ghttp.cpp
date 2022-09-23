@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-21 17:53:41
+ * @LastEditTime: 2022-09-23 15:16:31
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -35,7 +35,6 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 
-#define THREAD_NUM 30
 #define TEST_IP ""
 #define HTTP_TYPE "ghttp"
 APIUtil *apiUtil = nullptr;
@@ -333,8 +332,8 @@ public:
 	thread ThreadsManage;
 	queue<Task *> tasklines;
 	ThreadPool();
-	ThreadPool(int t);
 	~ThreadPool();
+	void InitThreadPool(int t);
 	void create();
 	void SetThreadNum(int t);
 	int GetThreadNum();
@@ -344,17 +343,14 @@ public:
 };
 ThreadPool::ThreadPool()
 {
-	isclose = false;
-	ThreadNum = 10;
-	busythreads.clear();
-	freethreads.clear();
-	for (int i = 0; i < ThreadNum; i++)
-	{
-		Thread *p = new Thread();
-		freethreads.push_back(p);
-	}
+
 }
-ThreadPool::ThreadPool(int t)
+ThreadPool::~ThreadPool()
+{
+	for (vector<Thread *>::iterator i = freethreads.begin(); i != freethreads.end(); i++)
+		delete *i;
+}
+void ThreadPool::InitThreadPool(int t)
 {
 	isclose = false;
 	ThreadNum = t;
@@ -365,11 +361,6 @@ ThreadPool::ThreadPool(int t)
 		Thread *p = new Thread();
 		freethreads.push_back(p);
 	}
-}
-ThreadPool::~ThreadPool()
-{
-	for (vector<Thread *>::iterator i = freethreads.begin(); i != freethreads.end(); i++)
-		delete *i;
 }
 void ThreadPool::create()
 {
@@ -441,12 +432,12 @@ void ThreadPool::close()
 	isclose = true;
 }
 
-ThreadPool pool(THREAD_NUM);
+ThreadPool pool;
 
 int main(int argc, char *argv[])
 {
-	Util util;
 	srand(time(NULL));
+	apiUtil = new APIUtil();
 
 	// Notice that current_database is assigned in the child process, not in the father process
 	// when used as endpoint, or when the database is indicated in command line, we can assign
@@ -495,18 +486,17 @@ int initialize(int argc, char *argv[])
 {
 	// Server restarts to use the original database
 	// current_database = NULL;
-
-	apiUtil = new APIUtil();
 	HttpServer server;
 	string db_name = "";
-	string port_str = "9000";
-	int port = 9000;
+	string port_str = apiUtil->get_default_port();
+	int port;
 	bool loadCSR = 0; // DO NOT load CSR by default
 
 	if (argc < 2)
 	{
-		SLOG_DEBUG("Use the default port:9000!");
+		SLOG_DEBUG("Use the default port:" + port_str + "!");
 		SLOG_DEBUG("Not load any database!");
+		port = Util::string2int(port_str);
 	}
 	else if (argc == 2)
 	{
@@ -546,7 +536,7 @@ int initialize(int argc, char *argv[])
 			SLOG_ERROR("You can not load system files.");
 			return -1;
 		}
-		port_str = Util::getArgValue(argc, argv, "p", "port", "9000");
+		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
 		port = Util::string2int(port_str);
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
 	}
@@ -557,14 +547,15 @@ int initialize(int argc, char *argv[])
 		return -1;
 	}
 	// call apiUtil initialized
-	if (apiUtil->initialize("ghttp", port_str, db_name, loadCSR) == -1)
+	if (apiUtil->initialize(HTTP_TYPE, port_str, db_name, loadCSR) == -1)
 	{
 		return -1;
 	}
 
 	server.config.port = port;
-	server.config.thread_pool_size = THREAD_NUM;
+	server.config.thread_pool_size = apiUtil->get_thread_pool_num();
 
+	pool.InitThreadPool(apiUtil->get_thread_pool_num());
 	pool.create();
 	// Default GET-example. If no other matches, this anonymous function will be called.
 	// Will respond with content in the web/-directory, and its subdirectories.
@@ -722,6 +713,13 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		if (apiUtil->check_db_exist(db_name))
 		{
 			string error = "database already built.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		// check databse number
+		if (apiUtil->check_db_count() == false)
+		{
+			string error = "The total number of databases more than max_databse_num.";
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
@@ -928,10 +926,10 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 				{
 					SLOG_WARN("when load insert_txn_managers fail.");
 				}
-				string csr_str = "false";
+				string csr_str = "0";
 				if (current_database->csr != NULL)
 				{
-					csr_str = "true";
+					csr_str = "1";
 				}
 				rapidjson::Document doc;
 				doc.SetObject();
@@ -950,10 +948,10 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 		}
 		else
 		{
-			string csr_str = "false";
+			string csr_str = "0";
 			if (current_database->csr != NULL)
 			{
-				csr_str = "true";
+				csr_str = "1";
 			}
 			rapidjson::Document doc;
 			doc.SetObject();
@@ -1259,6 +1257,13 @@ void userManager_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		if (type == "1") // add user
 		{
+			// check user number
+			if (apiUtil->check_user_count() == false)
+			{
+				string error = "The total number of users more than max_user_num.";
+				sendResponseMsg(1004, error, operation, request, response);
+				return;
+			}
 			if (apiUtil->user_add(username, password))
 			{
 				sendResponseMsg(0, "User add done.", operation, request, response);
@@ -1896,12 +1901,8 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			update = true;
 		}
 
-		if (Util::dir_exist("./query_result") == false)
-		{
-			Util::create_dir("./query_result");
-		}
 		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
-		string localname = "./query_result/" + filename;
+		string localname = apiUtil->get_query_result_path() + filename;
 		if (ret)
 		{
 			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
@@ -1953,7 +1954,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					SLOG_ERROR("result parse error:\n" + success);
 					error = "parse error";
 					string filename2 = "error_" + filename;
-					string localname2 = "./query_result/" + filename2;
+					string localname2 = apiUtil->get_query_result_path() + filename2;
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
@@ -2035,7 +2036,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					SLOG_ERROR("result parse error:\n" + success);
 					error = "parse error";
 					string filename2 = "error_" + filename;
-					string localname2 = "./query_result/" + filename2;
+					string localname2 = apiUtil->get_query_result_path() + filename2;
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
@@ -3084,16 +3085,16 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		{
 			if (request_type == "GET")
 			{
-				loadCSRStr = WebUrl::CutParam(url, "load_csr");
+				loadCSRStr = WebUrl::CutParam(url, "csr");
 				port = WebUrl::CutParam(url, "port");
 				loadCSRStr = UrlDecode(loadCSRStr);
 				port = UrlDecode(port);
 			}
 			else if (request_type == "POST")
 			{
-				if (document.HasMember("load_csr") && document["load_csr"].IsString())
+				if (document.HasMember("csr") && document["csr"].IsString())
 				{
-					loadCSRStr = document["load_csr"].GetString();
+					loadCSRStr = document["csr"].GetString();
 				}
 				if (document.HasMember("port") && document["port"].IsString())
 				{
@@ -3107,7 +3108,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		if (loadCSRStr == "true")
+		if (loadCSRStr == "1")
 			load_csr = true;
 		load_thread_new(request, response, db_name, remote_ip, port, load_csr);
 	}
