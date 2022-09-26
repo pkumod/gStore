@@ -64,7 +64,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 25
+#define TOTAL_COMMAND_NUM 26
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 
 // param: <cmd> <arg>: <arg>
@@ -82,6 +82,7 @@ int show_handler(const vector<string> &);
 int use_handler(const vector<string> &);
 int backup_handler(const vector<string> &);
 int restore_handler(const vector<string> &);
+int export_handler(const vector<string> &);
 int sparql_handler(const vector<string> &);
 int raw_sparql_handler(string query);
 
@@ -118,6 +119,7 @@ COMMAND commands[] =
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
 		{"backup", backup_handler, "Backup current database.", "backup;", BACKUP_PRIVILEGE_BIT},
 		{"restore", restore_handler, "Restore a database.", "restore <database_name>;", RESTORE_PRIVILEGE_BIT},
+		{"export", export_handler, "Export a database to .nt file.", "export <database_name> <file_path>;", EXPORT_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
 
 		// id and usr manage
@@ -1906,6 +1908,26 @@ int backup_handler(const vector<string> &args)
 	return 0;
 }
 
+int export_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 1)
+	CHECK_CURRENT_DB_LOADED
+	if (check_priv(current_database->getName(), commands[current_cmd_offset].privilege_bitset))
+	{
+		return -1;
+	}
+
+	string filepath = args[0];
+	FILE *ofp = fopen(filepath.c_str(), "w");
+	current_database->export_db(ofp);
+	fflush(ofp);
+	fclose(ofp);
+	ofp = NULL;
+
+	cout << "Database " << current_database->getName() << " export successfully." << endl;
+	return 0;
+}
+
 int restore_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
@@ -2134,6 +2156,34 @@ int setpswd_handler(const vector<string> &args)
 	if (tar_usr == root_username)
 	{
 		root_password = new_pswd;
+
+		// write to config file
+		string res;
+		{
+			ifstream fin(INIT_CONF_FILE);
+			if (fin.is_open() == 0)
+			{
+				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+				return 0;
+			}
+			string line;
+			while (getline(fin, line))
+			{
+				if (line.find("root_password") != string::npos)
+					res += "root_password=\"" + new_pswd + "\"\n";
+				else
+					res += line + "\n";
+			}
+		}
+		{
+			ofstream fout(INIT_CONF_FILE);
+			if (fout.is_open() == 0)
+			{
+				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+				return 0;
+			}
+			fout << res;
+		}
 	}
 	cout << "Password set successfully." << endl;
 	return 0;
@@ -2145,6 +2195,17 @@ int setpriv_handler(const vector<string> &args)
 	if (usrname != root_username)
 	{
 		cout << "Permission denied. Only root is allowed to set other's privilege." << endl;
+		return -1;
+	}
+	string usr = args[0], db = args[1];
+	if (usr == root_username)
+	{
+		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
+		return -1;
+	}
+	if (access(string(db + ".db").c_str(), F_OK))
+	{
+		cout << "Database " << db << " does not exist. \nPrivilege set failed." << endl;
 		return -1;
 	}
 	if (enter_pswd("Enter your password: "))
@@ -2185,7 +2246,6 @@ int setpriv_handler(const vector<string> &args)
 	// write to sysdb
 
 	// setpriv <usrname> <database_name>
-	string usr = args[0], db = args[1];
 	string query = "DELETE WHERE { <" + usr + "> ?y <" + db + ">. };\n INSERT DATA { ";
 	priv = (priv >> 1); // shift root bit
 	for (int i = 1; i < PRIVILEGE_NUM; ++i)
