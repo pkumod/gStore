@@ -1,6 +1,6 @@
 /*=============================================================================
 # Filename:		gconsole.cpp
-# Author: Bookug Lobert, modified by Wang Libo, overwriten by Yuan Zhiqiu
+# Author: Bookug Lobert, modified by Wang Libo, overwritten by Yuan Zhiqiu
 # Mail: 1181955272@qq.com
 # Last Modified:	2022-09-26 23:45
 # Description:
