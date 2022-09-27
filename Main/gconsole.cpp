@@ -1,14 +1,15 @@
 /*=============================================================================
 # Filename:		gconsole.cpp
-# Author: Bookug Lobert, modified by Wang Libo, updated by Yuan Zhiqiu
+# Author: Bookug Lobert, modified by Wang Libo, overwriten by Yuan Zhiqiu
 # Mail: 1181955272@qq.com
-# Last Modified:	2022-08-10 23:45
+# Last Modified:	2022-09-26 23:45
 # Description:
 This is a console integrating all commands in Gstore System and others. It
 provides completion of command names, line editing features, and access to the
 history list.
 NOTICE: Commands end with ;. Cross line input is allowed.
 Comment start with #. Redirect (> and >>) is supported.
+CTRL+C to quit current command. CTRL+D to exit this console.
 =============================================================================*/
 #include "../Database/Database.h"
 #include "../Util/Util.h"
@@ -64,9 +65,11 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 26
+#define TOTAL_COMMAND_NUM 25
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
+#define QUIT_CMD_OFFSET 0
 
+// ret_val of cmd_handler is reserved
 // param: <cmd> <arg>: <arg>
 // eg: connect ip port usr_name pswd, then param is (ip port usr_name pswd)
 int help_handler(const vector<string> &);
@@ -110,6 +113,8 @@ typedef struct
 COMMAND commands[] =
 	{
 		///*
+		{"quit", quit_handler, "Quit this console.", "quit;", 0},
+
 		// database op
 		{"sparql", sparql_handler, "Answer SPARQL query(s) in file.", "sparql <; separated SPARQL file>;", QUERY_PRIVILEGE_BIT}, // file query
 		{"create", create_handler, "Build a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
@@ -132,8 +137,7 @@ COMMAND commands[] =
 		{"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
 
 		// other
-		{"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
-		{"quit", quit_handler, "Quit this console.", "quit;", 0},
+		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
 		{"help", help_handler, "Display help msg. Enter 'help/?' see more about usage.", "help/? [edit/usage/<command>];", 0},
 		{"?", help_handler, "Synonym for \"help\".", "help/? [edit/usage/<command>];", 0},
 		{"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
@@ -172,6 +176,8 @@ COMMAND commands[] =
 /*                    macro and declaration                         */
 /*                                                                  */
 /* **************************************************************** */
+#define CROSS_LINE_PROMPT "     -> "
+#define PROMPT_LEN 8
 #define PRINT_ENTER_HELP_MSG                                                                                                 \
 	cout << "Gstore Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
 	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl; \
@@ -208,9 +214,11 @@ string stripwhite(const string &s);
 string rm_comment(string line);
 void replace_cr(string &line);
 int find_command(const char *name);
+void single_cmd();
 int execute_line(char *);
 bool parse_arguments(char *, vector<string> &);
 
+void ctrlc_handler(int);
 void initialize_readline();
 int save_history();
 int load_history();
@@ -231,6 +239,8 @@ bool gconsole_done = false; // 1: quit
 bool gconsole_eoq = false;	// 1: current command input done
 // bool gconsole_inputing = false; // 1: still inputing current command: control prompt
 
+pthread_t child_th = 0;
+int in_readline = 0;
 // FILE *output = stdout;
 string usrname, stdpswd;
 Database *current_database = NULL;
@@ -354,69 +364,38 @@ int main(int argc, char **argv)
 	cout << "Welcome to the gStore Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
 	cout << "Comment start with #. Redirect (> and >>) is supported." << endl;
-	cout << "Type 'help;' for help. Type 'cancel;' to quit the current input statement." << endl
+	cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
+	cout << "Type 'help;' for help. " << endl
 		 << endl;
 
-	char *line; //, *s;
+	// signal handler for ctrl+c
+	signal(SIGINT, ctrlc_handler);
+#ifdef _GCONSOLE_DEBUG
+	cout << "[main_th_id:]" << pthread_self() << endl;
+#endif //#ifdef _GCONSOLE_DEBUG
 
 	initialize_readline(); // set completer and readline end char(;)
+	rl_catch_signals = 0;  // If this variable is non-zero, Readline will install signal handlers for SIGINT, SIGQUIT, SIGTERM, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU.
+	// the following behavior prevents quitting current inputing instantly:
+	// Readline contains an internal signal handler that is installed for a number of signals
+	// (SIGINT, SIGQUIT, SIGTERM, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU).
+	// When one of these signals is received,
+	// the signal handler will reset the terminal attributes to those that were in effect before readline () was called,
+	// reset the signal handling to what it was before readline () was called,
+	// and resend the signal to the calling application.
+	// If and when the calling application's signal handler returns, Readline will reinitialize the terminal and continue to accept input.
+	// When a SIGINT is received, the Readline signal handler performs some additional work, which will cause any partially-entered line to be aborted (see the description of rl_free_line_state ()).
+
 	using_history();
 	load_history();
 
 	// Loop reading and executing lines until the user quits.
 	while (!gconsole_done)
 	{
-		// clear buffer
-		// rl_replace_line("", 0); // Replace the contents of rl_line_buffer with text.
-		// rl_redisplay();			// Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
-
-		line = readline("gstore> "); // new command
-
-#ifdef _GCONSOLE_TRACE
-		cout << "[rl_line_buffer:]" << rl_line_buffer << endl;
-		cout << "[readline_get:]" << line << endl;
-#endif //_GCONSOLE_TRACE
-
-		if (line == NULL) // EOF or Ctrl-D
-		{
-			if (current_database != NULL)
-			{
-				// current_database->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
-				delete current_database;
-				current_database = NULL;
-			}
-			cout << endl
-				 << endl;
-			break;
-		}
-
-		// Remove comment and leading-trailing whitespace from the line.
-		// Then, if there is anything left, add it to the history
-		// list and execute it.
-
-		// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
-		string strline(line);
-		free(line);
-		strline = rm_comment(std::move(strline));
-		strline = stripwhite(std::move(strline));
-		replace_cr(strline);
-
-		if (strline.empty() == 0)
-		{
-			add_history(strline.c_str()); // cross-line-style cmd is stored by concating in line("line" is one line!)
-			execute_line(const_cast<char *>(strline.c_str()));
-		}
-
-		/*s = stripwhite(line);
-
-		if (*s)
-		{
-			add_history(s); // cross-line-style cmd is stored by concating in line("line" is one line!)
-			execute_line(s);
-		}
-
-		free(line);
-		*/
+		thread th(single_cmd);
+		child_th = th.native_handle();
+		th.join();
+		child_th = 0;
 	}
 	save_history();
 	exit(0);
@@ -427,7 +406,6 @@ int main(int argc, char **argv)
 /*                  Some Utilities                                  */
 /*                                                                  */
 /* **************************************************************** */
-
 // implement redirect stdout in class: exception safety, RAII
 // destructors of all objects are ensured to be called when exception occurs(ensured by compiler)
 // (definition explain: if <des> is descriptor to <file>, then we call <des>'s refer is <file>)
@@ -556,6 +534,32 @@ int enter_pswd(string prompt)
 	return 0;
 }
 
+class ReadlineWrapper
+{
+	int &flag;
+
+public:
+	ReadlineWrapper(int &flag, char *&line, const char *prompt) : flag(flag)
+	{
+		flag = 1;
+		// printf(prompt);
+		line = readline(prompt);
+		if (line == NULL)
+			return;
+
+		// replace CROSS_LINE_PROMPT from line
+		string tmp(line); // line is copied into
+		size_t idx;
+		while ((idx = tmp.find(CROSS_LINE_PROMPT)) != string::npos)
+		{
+			tmp.erase(idx, PROMPT_LEN);
+		}
+		free(line);
+		line = dupstr(tmp.c_str());
+	}
+	~ReadlineWrapper() { flag = 0; }
+};
+
 char *
 dupstr(const char *s)
 {
@@ -567,32 +571,82 @@ dupstr(const char *s)
 	return r;
 }
 
+// thread routine: parse command and exec; set gconsole_done if quit is needed
+void single_cmd()
+{
+	char *line;
+#ifdef _GCONSOLE_DEBUG
+	cout << "[in single_cmd]" << pthread_self() << endl;
+#endif //#ifdef _GCONSOLE_DEBUG
+
+	{
+		volatile ReadlineWrapper rl(in_readline, line, "gstore> ");
+	}
+
+#ifdef _GCONSOLE_TRACE
+	cout << "[rl_line_buffer:]" << rl_line_buffer << endl;
+	cout << "[readline_get:]" << line << endl;
+#endif //_GCONSOLE_TRACE
+
+	if (line == NULL) // EOF or Ctrl-D
+	{
+		if (current_database != NULL)
+		{
+			// current_database->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
+			delete current_database;
+			current_database = NULL;
+		}
+		cout << endl
+			 << endl;
+		gconsole_done = 1;
+		return;
+	}
+
+	// Remove comment and leading-trailing whitespace from the line.
+	// Then, if there is anything left, add it to the history
+	// list and execute it.
+
+	// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
+	string strline(line);
+	free(line);
+	strline = rm_comment(std::move(strline));
+	strline = stripwhite(std::move(strline));
+	replace_cr(strline);
+
+	if (strline.empty() == 0)
+	{
+		add_history(strline.c_str()); // cross-line-style cmd is stored by concating in line("line" is one line!)
+		if (execute_line(const_cast<char *>(strline.c_str())))
+			gconsole_done = 1;
+	}
+}
+
 // Execute a command line. won't check priv
-// return value seems no use?
+// return quit(-1) or not(0)
 int execute_line(char *line)
 {
 #ifdef _GCONSOLE_DEBUG
 	cout << "[exec:]" << line << endl;
 #endif //_GCONSOLE_DEBUG
 
-	// whether cancel
-	int i = strlen(line) - 1;
-	while (i > -1 && whitespace(line[i]))
-	{
-		--i;
-	}					  // now i hits the last word(line is not empty, so there must be at least one word)
-	if (i > -1 && i >= 5) // len(cancel):6
-	{
-		// line[i+1] is white or '\0'
-		line[i + 1] = 0;
-		if (strcmp("cancel", line + i - 5) == 0) // cancel
-		{
-			return 0;
-		}
-		// no need to recover line[i+1], since it's the end() of last word
-	}
+	// // whether cancel
+	// int i = strlen(line) - 1;
+	// while (i > -1 && whitespace(line[i]))
+	// {
+	// 	--i;
+	// }					  // now i hits the last word(line is not empty, so there must be at least one word)
+	// if (i > -1 && i >= 5) // len(cancel):6
+	// {
+	// 	// line[i+1] is white or '\0'
+	// 	line[i + 1] = 0;
+	// 	if (strcmp("cancel", line + i - 5) == 0) // cancel
+	// 	{
+	// 		return 0;
+	// 	}
+	// 	// no need to recover line[i+1], since it's the end() of last word
+	// }
 
-	i = 0;
+	int i = 0;
 	char *word = NULL;
 
 	// whether redirected: > or >>
@@ -660,7 +714,6 @@ int execute_line(char *line)
 	cout << "[cmdword:]" << word << endl;
 #endif //#ifdef _GCONSOLE_TRACE
 
-	int ret;
 	// cmd raw query
 	if ((current_cmd_offset = find_command(word)) == RAW_QUERY_CMD_OFFSET)
 	{
@@ -668,8 +721,7 @@ int execute_line(char *line)
 #ifdef _GCONSOLE_DEBUG
 		cout << "[The query is: ]" << line << endl;
 #endif //_GCONSOLE_DEBUG
-
-		ret = raw_sparql_handler(line);
+		raw_sparql_handler(line);
 	}
 	// other command
 	else
@@ -683,7 +735,7 @@ int execute_line(char *line)
 			// 	fclose(output);
 			// 	output = stdout;
 			// }
-			return -1;
+			return 0;
 		}
 
 		if (recover_ch) // line[i] is not '\0', there are args
@@ -701,22 +753,32 @@ int execute_line(char *line)
 		}
 
 		vector<string> args;
-		if (parse_arguments(word, args))
+		if (parse_arguments(word, args) == 0)
 		{
-			ret = commands[current_cmd_offset].func(args);
+			cout << endl;
+			return 0;
 		}
-		else
+
+		// quit
+		if (current_cmd_offset == QUIT_CMD_OFFSET)
 		{
-			ret = -1;
+			if (quit_handler(args))
+			{ // wrong args, so don't quit
+				return 0;
+			}
+			return -1; // return quit(-1) or not(0)
 		}
+
+		commands[current_cmd_offset].func(args);
 	}
+
 	// if (output != stdout)
 	// {
 	// 	fclose(output);
 	// 	output = stdout;
 	// }
 	cout << endl;
-	return ret;
+	return 0;
 }
 
 // Look up NAME as the name of a command.
@@ -1120,7 +1182,62 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 char *command_generator(const char *, int);
 char **gconsole_completion(const char *, int, int);
 int gconsole_bind_cr(int count, int key);
+// TODO: bind backspace and delete key to better support cross line command editing
+// note: binding to '\b''\d' or 8 46 takes no effect
 int gconsole_bind_eoq(int count, int key);
+// int gconsole_bind_del(int count, int key);
+// /*delete edit*/
+// int gconsole_bind_del(int count, int key)
+// {
+// 	cout << "[in gconsole_bind_del]" << endl;
+// 	// check whether is "     -> "
+// 	const char *special = "\n     -> "; // len9
+// 	int cross = 1;
+// 	// if rl_point is next char
+// 	if (rl_point >= 9)
+// 	{
+// 		for (int i = 0; i < 9; ++i)
+// 		{
+// 			if (rl_line_buffer[rl_point - i - 1] != special[9 - i])
+// 			{
+// 				cout << "not eq[rl_line_buffer(" << rl_point - i - 1 << "):" << rl_line_buffer[rl_point - i - 1] << "]" << endl;
+// 				cout << "[special(" << 9 - i << "):" << special[9 - i] << "]" << endl;
+// 				cross = 0;
+// 			}
+// 		}
+// 	}
+// 	if (cross)
+// 	{
+// 		// if[b,e)
+// 		rl_delete_text(rl_point - 10, rl_point);
+// 		rl_point -= 10;
+// 	}
+// 	else
+// 	{
+// 		rl_delete_text(rl_point - 1, rl_point);
+// 		--rl_point;
+// 	}
+// 	return 0;
+// }
+
+// ctrl+c signal handler: quit current cmd inputting or executing
+void ctrlc_handler(int signo)
+{
+#ifdef _GCONSOLE_DEBUG
+	cout << "[exec ctrl+c handler:]" << pthread_self() << endl;
+	cout << "[pthread_cancel:]" << child_th << endl;
+#endif //#ifdef _GCONSOLE_DEBUG
+	if (child_th)
+	{ // quit current cmd exec
+		if (in_readline)
+		{
+			rl_free_line_state();
+			rl_cleanup_after_signal();
+		}
+		pthread_cancel(child_th);
+		cout << "\x1b[0m" << endl; // reset shell color
+	}
+}
 
 /* Tell the GNU Readline library how to complete.  We want to try to complete
 on command names if this is the first word in the line, or on filenames
@@ -1202,14 +1319,15 @@ int gconsole_bind_cr(int count, int key)
 	{
 		rl_done = 1;
 		gconsole_eoq = 0; // clear eoq flag
-		printf("\n");
+		// printf("\n");
+		rl_crlf();
 	}
 	else
 	{
 		rl_insert_text("\n"); // Insert text into the line at the current cursor position.
-		rl_redisplay();		  // Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
-		// so this would show the inserted \n to console
-		printf("     -> ");
+		rl_insert_text(CROSS_LINE_PROMPT);
+		rl_redisplay(); // Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
+						// so this would show the inserted \n to console
 	}
 	return 0;
 }
@@ -1259,12 +1377,12 @@ int check_argc_or(int argc, int std_argc_num, ...)
 	va_end(valist);
 	return is_valid;
 }
-#define CHECK_ARGC(std_argc_num, ...)                          \
-	if (check_argc_or(args.size(), std_argc_num, __VA_ARGS__)) \
-	{                                                          \
-		PRINT_WRONG_USG                                        \
-		cout << commands[current_cmd_offset].usage << endl;    \
-		return -1;                                             \
+#define CHECK_ARGC(std_argc_num, ...)                                    \
+	if (check_argc_or(args.size(), std_argc_num, __VA_ARGS__))           \
+	{                                                                    \
+		PRINT_WRONG_USG                                                  \
+		cout << "Usage: " << commands[current_cmd_offset].usage << endl; \
+		return -1;                                                       \
 	}
 
 /*int print_arg_handler(const vector<string> &args)
@@ -1502,8 +1620,7 @@ int help_handler(const vector<string> &args)
 		cout << "" << endl;
 		cout << "Commands end with ;. Cross line input is allowed." << endl;
 		cout << "Comment start with #." << endl;
-		cout << "Type 'cancel;' to quit the current input statement." << endl
-			 << endl;
+		cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
 		cout << "List of all gconsole commands:" << endl;
 
 		for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
@@ -2083,6 +2200,7 @@ int pdb_handler(const vector<string> &args)
 
 int setpswd_handler(const vector<string> &args)
 {
+	cout << "[exec setpswd cmd:]" << pthread_self() << endl;
 	CHECK_ARGC(2, 0, 1)
 	string prompt, tar_usr;
 	// set args[0]'s pswd
