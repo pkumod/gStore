@@ -920,7 +920,7 @@ int save_history()
 
 	if (fout.is_open() == 0)
 	{
-		cout << "File open failed: bin/.gconsole_history/" + usrname << endl;
+		cout << "File open failed: bin/.gconsole_history/" + usrname << ". will create one." << endl;
 		return -1;
 	}
 
@@ -2200,7 +2200,6 @@ int pdb_handler(const vector<string> &args)
 
 int setpswd_handler(const vector<string> &args)
 {
-	cout << "[exec setpswd cmd:]" << pthread_self() << endl;
 	CHECK_ARGC(2, 0, 1)
 	string prompt, tar_usr;
 	// set args[0]'s pswd
