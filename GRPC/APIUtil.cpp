@@ -1737,7 +1737,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
         if (page_no > totalPage)
         {
             pthread_rwlock_unlock(&access_log_lock);
-            throw std::invalid_argument("more then max page number  " + to_string(totalPage));
+            throw std::invalid_argument("more then max page number " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
         endLine = totalSize - page_size*(page_no - 1) + 1;
@@ -1843,7 +1843,6 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
     int rt = pthread_rwlock_rdlock(&query_log_lock);
-    SLOG_DEBUG("query_log_lock lock:" + to_string(rt));
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
@@ -1880,7 +1879,6 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
         if (page_no > totalPage)
         {
             rt = pthread_rwlock_unlock(&query_log_lock);
-            SLOG_DEBUG("query_log_lock unlock1:" + to_string(rt));
             throw std::invalid_argument("more then max page number " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
@@ -1906,7 +1904,6 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
         }
         in.close();
         rt = pthread_rwlock_unlock(&query_log_lock);
-        SLOG_DEBUG("query_log_lock unlock2:" + to_string(rt));
         size_t count;
         count =  lines.size();
         for (size_t i = 0; i < count; i++)
