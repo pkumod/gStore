@@ -277,6 +277,7 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
+    Util::setGlobalConfig(ini_parser, "ghttp", "querylog_mode");
     Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "accesslog_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_log");
