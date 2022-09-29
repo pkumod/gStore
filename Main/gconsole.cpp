@@ -1,6 +1,6 @@
 /*=============================================================================
 # Filename:		gconsole.cpp
-# Author: Bookug Lobert, modified by Wang Libo, overwriten by Yuan Zhiqiu
+# Author: Bookug Lobert, modified by Wang Libo, overwritten by Yuan Zhiqiu
 # Mail: 1181955272@qq.com
 # Last Modified:	2022-09-26 23:45
 # Description:
@@ -122,8 +122,8 @@ COMMAND commands[] =
 		{"drop", drop_handler, "Drop a database.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
 		{"show", show_handler, "Show info and specified number of triples of current database or other database.", "show [<database_name>] [-n <displayed_triple_num>];", QUERY_PRIVILEGE_BIT},
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
-		{"backup", backup_handler, "Backup current database.", "backup;", BACKUP_PRIVILEGE_BIT},
-		{"restore", restore_handler, "Restore a database.", "restore <database_name>;", RESTORE_PRIVILEGE_BIT},
+		{"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
+		{"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
 		{"export", export_handler, "Export a database to .nt file.", "export <database_name> <file_path>;", EXPORT_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
 
@@ -2006,25 +2006,6 @@ int drop_handler(const vector<string> &args)
 	return 0;
 }
 
-int backup_handler(const vector<string> &args)
-{
-	CHECK_ARGC(1, 0)
-	CHECK_CURRENT_DB_LOADED
-	if (check_priv(current_database->getName(), commands[current_cmd_offset].privilege_bitset))
-	{
-		return -1;
-	}
-
-	if (current_database->backup() == 0)
-	{
-		cout << "Database " << current_database->getName() << " backup failed." << endl;
-		return -1;
-	}
-
-	cout << "Database " << current_database->getName() << " backup successfully." << endl;
-	return 0;
-}
-
 int export_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
@@ -2041,26 +2022,174 @@ int export_handler(const vector<string> &args)
 	fclose(ofp);
 	ofp = NULL;
 
-	cout << "Database " << current_database->getName() << " export successfully." << endl;
+	cout << "Database " << current_database->getName() << " exported successfully." << endl;
+	return 0;
+}
+
+int backup_handler(const vector<string> &args)
+{
+	CHECK_ARGC(2, 0, 1)
+	CHECK_CURRENT_DB_LOADED
+	if (check_priv(current_database->getName(), commands[current_cmd_offset].privilege_bitset))
+	{
+		return -1;
+	}
+
+	string backup_path;
+	if (args.empty() == 0)
+		backup_path = args[0];
+	string db_name = current_database->getName();
+
+	string default_backup_path = "./backups";
+	if (backup_path.empty())
+	{
+		backup_path = default_backup_path;
+	}
+	if (backup_path == "." || backup_path == "./")
+	{
+		cout << "<backup_path> is the same as current storage. Please choose another <backup_path>." << endl;
+		cout << "Database " << current_database->getName() << " backup failed." << endl;
+		return -1;
+	}
+	if (backup_path[0] == '/')
+		backup_path = '.' + backup_path;
+	if (backup_path[backup_path.length() - 1] == '/')
+		backup_path = backup_path.substr(0, backup_path.length() - 1);
+	Util::backup_path = backup_path + "/";
+
+	// string db_path = current_database->getDBInfoFile();
+	// {
+	// 	size_t idx = db_path.find_last_of('/');
+	// 	db_path = db_path.substr(0, idx);
+	// }
+	// int ret = copy(db_path, backup_path);
+	// if (ret)
+
+	if (current_database->backup() == 0)
+	{
+		cout << "Database " << current_database->getName() << " backup failed." << endl;
+		return -1;
+	}
+
+	// rename backup folder with current timestamp
+	string timestamp = Util::get_timestamp();
+	backup_path = backup_path + "/" + db_name + ".db";
+	string _backup_path = backup_path + "_" + timestamp;
+	string sys_cmd = "mv " + backup_path + " " + _backup_path;
+	system(sys_cmd.c_str());
+
+	cout << "Database " << current_database->getName() << " backup successfully." << endl;
 	return 0;
 }
 
 int restore_handler(const vector<string> &args)
 {
-	CHECK_ARGC(1, 1)
+	CHECK_ARGC(1, 2)
 	string db_name = args[0];
 	if (check_priv(db_name, commands[current_cmd_offset].privilege_bitset))
 	{
 		return -1;
 	}
 
-	Database db(db_name);
-	if (!db.restore())
+	bool is_current_db = 0;
+	if (current_database && db_name == current_database->getName())
 	{
-		cout << "Database " << db_name << " restore failed." << endl;
+		cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it." << endl;
+		delete current_database;
+		// current_database->unload(); // destructor of Database would call unload()
+		current_database = 0;
+		is_current_db = 1;
+	}
+	string backup_path = args[1];
+
+	// from grestore.cpp
+	Util util;
+	if (backup_path[0] == '/')
+		backup_path = '.' + backup_path;
+	if (backup_path[backup_path.length() - 1] == '/')
+		backup_path = backup_path.substr(0, backup_path.length() - 1);
+
+	if (!Util::dir_exist(backup_path))
+	{
+		cout << "Backup Path Error, Restore Failed" << endl;
+		return 0;
+	}
+
+	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+	ResultSet ask_rs;
+	silence_sysdb_query(sparql, ask_rs);
+	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+	{
+		cout << "The database does not exist. Rebuild" << endl;
+		string time = Util::get_backup_time(backup_path, db_name);
+		if (time.size() == 0)
+		{
+			cout << "Backup Path Does not Match DataBase Name, Restore Failed" << endl;
+			return 0;
+		}
+		string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+		ResultSet _rs;
+		int ret = silence_sysdb_query(sparql, _rs);
+
+		if (ret >= 0)
+			cout << "update num : " + Util::int2string(ret) << endl;
+		else
+		{
+			// update error
+			cout << "Rebuild Error, Restore Failed" << endl;
+			return 0;
+		}
+		Util::add_backuplog(db_name);
+	}
+
+	//!单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
+	//!可能和文件复制的落盘有关系
+	// cp -r backups/eg.db_220929114732 .
+	// rm -rf eg.db
+	// mv eg.db_220929114732 eg.db
+	string sys_cmd = "cp -r " + backup_path + " .";
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
+	{
+		cout << sys_cmd << " failed. Restore failed." << endl;
 		return -1;
 	}
-	cout << "Database " << db_name << " restore successfully." << endl;
+
+	string db_path = db_name + ".db";
+	sys_cmd = "rm -rf " + db_path;
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
+	{
+		cout << sys_cmd << " failed. Restore failed." << endl;
+		return -1;
+	}
+
+	string path = Util::get_folder_name(backup_path, db_name);
+	// {
+	// 	size_t idx = backup_path.find_last_of('/');
+	// 	path = backup_path.substr(idx + 1);
+	// }
+	sys_cmd = "mv " + path + ' ' + db_path;
+	// sys_cmd = "cp -r " + path + ' ' + db_path;
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
+	{
+		cout << sys_cmd << " failed. Restore failed." << endl;
+		return -1;
+	}
+
+	if (is_current_db)
+	{
+		cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it.\nRestore is done, now reload it." << endl;
+		current_database = new Database(db_name);
+		if (current_database->load() == 0)
+		{
+			cout << "WARNNING: The database you restored just now is current database(" << db_name << "), and we tried to reload it but failed.\nWe suggest type `USE " << db_name << "` command to reload current database." << std::endl;
+			cout << "Database(current database) " << db_name << " restored successfully, but reload failed." << endl;
+			return -1;
+		}
+	}
+	cout << "Database " << db_name << " restored successfully." << endl;
 	return 0;
 }
 
