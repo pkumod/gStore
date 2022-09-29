@@ -2026,25 +2026,6 @@ int export_handler(const vector<string> &args)
 	return 0;
 }
 
-int copy(string src_path, string dest_path)
-{
-	string sys_cmd;
-	if (!Util::file_exist(src_path))
-	{
-		cout << "Source Path Error, Please Check It Again:" << src_path << endl;
-		return -1;
-	}
-	if (!Util::file_exist(dest_path))
-	{
-		sys_cmd = "mkdir -p ./" + dest_path;
-		system(sys_cmd.c_str());
-	}
-
-	sys_cmd = "cp -r " + src_path + " ./" + dest_path;
-	system(sys_cmd.c_str());
-	return 0; // success
-}
-
 int backup_handler(const vector<string> &args)
 {
 	CHECK_ARGC(2, 0, 1)
@@ -2110,9 +2091,14 @@ int restore_handler(const vector<string> &args)
 		return -1;
 	}
 
+	bool is_current_db = 0;
 	if (current_database && db_name == current_database->getName())
 	{
 		cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it." << endl;
+		delete current_database;
+		// current_database->unload(); // destructor of Database would call unload()
+		current_database = 0;
+		is_current_db = 1;
 	}
 	string backup_path = args[1];
 
@@ -2128,9 +2114,6 @@ int restore_handler(const vector<string> &args)
 		cout << "Backup Path Error, Restore Failed" << endl;
 		return 0;
 	}
-	// system.db
-	Database system_db("system");
-	system_db.load();
 
 	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
 	ResultSet ask_rs;
@@ -2159,51 +2142,55 @@ int restore_handler(const vector<string> &args)
 		Util::add_backuplog(db_name);
 	}
 
-	int ret = copy(backup_path, ".");
-
-	if (ret)
+	//!单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
+	//!可能和文件复制的落盘有关系
+	// cp -r backups/eg.db_220929114732 .
+	// rm -rf eg.db
+	// mv eg.db_220929114732 eg.db
+	string sys_cmd = "cp -r " + backup_path + " .";
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
 	{
-		cout << "Backup Path Error." << endl;
-	}
-	else
-	{
-		// TODO update the in system.db
-		string time = Util::get_date_time();
-		cout << "Time:" + time << endl;
-		cout << "DB:" + db_name + " Restore done!" << endl;
+		cout << sys_cmd << " failed. Restore failed." << endl;
+		return -1;
 	}
 
 	string db_path = db_name + ".db";
-	string sys_cmd = "rm -rf " + db_path;
-	system(sys_cmd.c_str());
-
-	string path = Util::get_folder_name(backup_path, db_name);
-	sys_cmd = "mv " + path + ' ' + db_path;
-	system(sys_cmd.c_str());
-
-	if (ret == 0)
+	sys_cmd = "rm -rf " + db_path;
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
 	{
-		if (current_database && db_name == current_database->getName())
-		{
-			cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it.\nRestore is done, now reload it." << endl;
-			delete current_database;
-			// current_database->unload(); // destructor of Database would call unload()
-			current_database = new Database(db_name);
-			if (current_database->load() == 0)
-			{
-				cout << "WARNNING: The database you restored just now is current database(" << db_name << "), and we tried to reload it but failed.\nWe suggest type `USE " << db_name << "` command to reload current database." << std::endl;
-				cout << "Database(current database) " << db_name << " restored successfully, but reload failed." << endl;
-				return -1;
-			}
-		}
-		cout << "Database " << db_name << " restored successfully." << endl;
-		return 0;
-	}
-	else
-	{
-		cout << "Database " << db_name << " restored failed." << endl;
+		cout << sys_cmd << " failed. Restore failed." << endl;
 		return -1;
 	}
+
+	string path = Util::get_folder_name(backup_path, db_name);
+	// {
+	// 	size_t idx = backup_path.find_last_of('/');
+	// 	path = backup_path.substr(idx + 1);
+	// }
+	sys_cmd = "mv " + path + ' ' + db_path;
+	// sys_cmd = "cp -r " + path + ' ' + db_path;
+	cout << "[" << sys_cmd << "]" << std::endl;
+	if (system(sys_cmd.c_str()))
+	{
+		cout << sys_cmd << " failed. Restore failed." << endl;
+		return -1;
+	}
+
+	if (is_current_db)
+	{
+		cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it.\nRestore is done, now reload it." << endl;
+		current_database = new Database(db_name);
+		if (current_database->load() == 0)
+		{
+			cout << "WARNNING: The database you restored just now is current database(" << db_name << "), and we tried to reload it but failed.\nWe suggest type `USE " << db_name << "` command to reload current database." << std::endl;
+			cout << "Database(current database) " << db_name << " restored successfully, but reload failed." << endl;
+			return -1;
+		}
+	}
+	cout << "Database " << db_name << " restored successfully." << endl;
+	return 0;
 }
 
 int use_handler(const vector<string> &args)
