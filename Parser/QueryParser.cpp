@@ -411,7 +411,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "CYCLEPATH" || tmp == "CYCLEBOOLEAN" \
 				|| tmp == "SHORTESTPATH" || tmp == "SHORTESTPATHLEN" \
 				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
-				|| tmp == "PPR")	// Path calls
+				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
+				|| tmp == "BFSCOUNT")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				QueryTree::ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -436,20 +437,44 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = QueryTree::ProjectionVar::kHopReachablePath_type;
 				else if (tmp == "PPR")
 					proj_var.aggregate_type = QueryTree::ProjectionVar::ppr_type;
+				else if (tmp == "TRIANGLECOUNTING")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::triangleCounting_type;
+				else if (tmp == "CLOSENESSCENTRALITY")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::closenessCentrality_type;
+				else if (tmp == "BFSCOUNT")
+					proj_var.aggregate_type = QueryTree::ProjectionVar::bfsCount_type;
 
-				proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
-				replacePrefix(proj_var.path_args.src);
-				if (tmp != "PPR")
+				// proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
+				// replacePrefix(proj_var.path_args.src);
+				// if (tmp != "PPR")
+				// {
+				// 	proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+				// 	replacePrefix(proj_var.path_args.dst);
+				// }
+				if (bicCtx->varOrIri().size() >= 1)
 				{
-					proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
-					replacePrefix(proj_var.path_args.dst);
+					proj_var.path_args.src = bicCtx->varOrIri(0)->getText();
+					replacePrefix(proj_var.path_args.src);
+					if (bicCtx->varOrIri().size() >= 2)
+					{
+						proj_var.path_args.dst = bicCtx->varOrIri(1)->getText();
+						replacePrefix(proj_var.path_args.dst);
+					}
 				}
-				auto predSet = bicCtx->predSet()->iri();
-				for (auto pred : predSet)
+				for (auto voi : bicCtx->varOrIri())
 				{
-					string prefixedPred = pred->getText();
-					replacePrefix(prefixedPred);
-					proj_var.path_args.pred_set.push_back(prefixedPred);
+					proj_var.path_args.vert_set.push_back(voi->getText());
+					replacePrefix(proj_var.path_args.vert_set.back());
+				}
+				if (bicCtx->predSet())
+				{
+					auto predSet = bicCtx->predSet()->iri();
+					for (auto pred : predSet)
+					{
+						string prefixedPred = pred->getText();
+						replacePrefix(prefixedPred);
+						proj_var.path_args.pred_set.push_back(prefixedPred);
+					}
 				}
 
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
@@ -474,8 +499,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
 					}
 
-					if (bicCtx->numericLiteral())
-						proj_var.path_args.confidence = stof(bicCtx->numericLiteral()->getText());
+					if (!(bicCtx->numericLiteral()).empty())
+						proj_var.path_args.confidence = stof(bicCtx->numericLiteral(0)->getText());
 					else
 						proj_var.path_args.confidence = 1;
 				}
@@ -775,7 +800,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 					(curr_node.path_args).k = \
 						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					(curr_node.path_args).confidence = \
-						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral()->getText());
+						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral(0)->getText());
 				}
 				if (((SPARQLParser::BuiltInCallContext *)root)->booleanLiteral()->getText() == "true")
 					(curr_node.path_args).directed = true;

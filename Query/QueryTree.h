@@ -140,6 +140,7 @@ class QueryTree
 			std::string src, dst, fun_name;
 			bool directed;
 			std::vector<std::string> iri_set;
+			std::vector<std::string> vert_set;
 			std::vector<std::string> pred_set;
 			int k;
 			float confidence;
@@ -297,7 +298,8 @@ class QueryTree
 				enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, Groupconcat_type,
 					simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
 					shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
-					kHopReachablePath_type, ppr_type,
+					kHopReachablePath_type, ppr_type, triangleCounting_type, closenessCentrality_type,
+					bfsCount_type,
 					CompTree_type, Contains_type, Custom_type,
 					PFN_type};
 				AggregateType aggregate_type;

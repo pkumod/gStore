@@ -2068,3 +2068,392 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 	
 	return ret;
 }
+
+/**
+	Compute and return the number of triangles in the graph, only considering the
+	edges in the path with labels in pred_set.
+
+	@param directed if false, treat all edges in the graph as bidirectional.
+					if true, only count cycle type triangle (eg: a->b->c->a)
+	@param pred_set the set of edge labels allowed.
+	@return the number of triangles in the graph.
+**/
+long long PathQueryHandler::triangleCounting(bool directed, const std::vector<int> &pred_set)
+{
+	if (pred_set.empty())
+		return -1;
+
+	long long numTriangle = 0;
+	// loop each vertex and count triangle
+	int vertex_num = getVertNum();
+	for (int vid = 0; vid < vertex_num; ++vid)
+	{
+		// count triangle for vid
+
+		// directed: get the in-neighbor set of the current node
+		// directed: neighbor
+		unordered_set<int> inSet;
+		for (int pred : pred_set)
+		{
+			int inSize = getInSize(vid, pred);
+			for (int j = 0; j < inSize; j++)
+				inSet.insert(getInVertID(vid, pred, j));
+			if (directed == 0)
+			{
+				int outSize = getOutSize(vid, pred);
+				for (int j = 0; j < outSize; j++)
+					inSet.insert(getOutVertID(vid, pred, j));
+			}
+		}
+
+		// directed:
+		// for each out-neighbor, intersect its out-neighbors with the current node's in-neighbors
+		// the size of the intersection is the # of triangles
+		if (directed)
+		{
+			for (int pred : pred_set)
+			{
+				int outSize = getOutSize(vid, pred);
+				for (int j = 0; j < outSize; j++)
+				{
+					int outNode = getOutVertID(vid, pred, j);
+					for (int pd : pred_set)
+					{
+						int outOutSize = getOutSize(outNode, pd);
+						for (int k = 0; k < outOutSize; k++)
+						{
+							int outOutNode = getOutVertID(outNode, pd, k);
+							if (inSet.find(outOutNode) != inSet.end())
+								numTriangle++;
+						}
+					}
+				}
+			}
+		}
+		// undirected:
+		// for each neighbor, intersect its neighbors(except current node) with the current node's neighbors
+		else
+		{
+			for (int outNode : inSet)
+			{
+				unordered_set<int> nbrs;
+				for (int pred : pred_set)
+				{
+					int outOutSize = getOutSize(outNode, pred);
+					for (int k = 0; k < outOutSize; k++)
+					{
+						nbrs.insert(getOutVertID(outNode, pred, k));
+					}
+					int outInSize = getInSize(outNode, pred);
+					for (int k = 0; k < outInSize; k++)
+					{
+						nbrs.insert(getInVertID(outNode, pred, k));
+					}
+				}
+				for (int outOutNode : nbrs)
+				{
+					if (inSet.find(outOutNode) != inSet.end())
+						numTriangle++;
+				}
+			}
+		}
+	}
+	//}
+
+	int dup_num = 6;
+	if (directed)
+		dup_num = 3;
+	if (numTriangle % dup_num != 0)
+	{
+		cout << "ERROR!!!" << numTriangle << " is not triple of " << dup_num << "!" << endl;
+		return -1;
+	}
+	cout << numTriangle / dup_num << endl;
+	return numTriangle / dup_num;
+}
+
+/**
+	Compute and return the closeness centrality of a vertex, only
+	considering the edges in the path with labels in pred_set.
+	closenessCentrality(u) = n' / \\Sigma_{v \\neq u}d_{uv},
+	where n' = the number of reachable vertices from u,
+	d_{uv} = the distance from u to v (only consider v reachable from u)
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return the closeness centrality of vertex u.
+**/
+double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	map<int, int> dis;
+	dis[uid] = 0;
+	queue<int> Q;
+	Q.push(uid);
+	int sum = 0;
+	int cnt = 0;
+	while (Q.size())
+	{
+		int ele = Q.front();
+		Q.pop();
+		cnt++;
+		for (int pred : pred_set)
+		{
+			int outNum = getOutSize(ele, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(ele, pred, i); // get the node
+				if (dis.find(to) != dis.end())
+					continue;
+				dis[to] = dis[ele] + 1;
+				sum += dis[to];
+				Q.push(to);
+			}
+			if (directed)
+				continue;
+			int inNum = getInSize(ele, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(ele, pred, i); // get the node
+				if (dis.find(to) != dis.end())
+					continue;
+				dis[to] = dis[ele] + 1;
+				sum += dis[to];
+				Q.push(to);
+			}
+		}
+	}
+	return 1.0 * (cnt - 1) / sum;
+}
+
+/**
+	Compute and return the number of vertices reachable from vertex u by BFS
+	at different distances.
+
+	@param uid vertex u's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param pred_set the set of edge labels allowed.
+	@return a vertex whose v[i] is the number of vertices reachable from u
+	with i steps.
+**/
+vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector<int> &pred_set)
+{
+	queue<int> q;
+	q.push(uid);
+	unordered_set<int> nodes;
+	nodes.insert(uid);
+	int currentlevel = 1; // vertices in the current level
+	int nextlevel = 0;	  // vertices in the next level
+	vector<int> ans;
+	ans.push_back(1);
+	while (!q.empty())
+	{
+		if (currentlevel == 0)
+		{
+			currentlevel = nextlevel;
+			nextlevel = 0;
+			ans.push_back(currentlevel);
+		}
+		int now = q.front();
+		q.pop();
+		currentlevel--;
+		if (!directed)
+		{
+			for (int pred : pred_set)
+			{
+				int inNum = getInSize(now, pred);
+				for (int i = 0; i < inNum; i++)
+				{
+					int inN = getInVertID(now, pred, i);
+					if (!nodes.count(inN))
+					{
+						q.push(inN);
+						nodes.insert(inN);
+						nextlevel++;
+					}
+				}
+			}
+			for (int pred : pred_set)
+			{
+				int outNum = getOutSize(now, pred);
+				for (int i = 0; i < outNum; i++)
+				{
+					int outN = getOutVertID(now, pred, i);
+					if (!nodes.count(outN))
+					{
+						q.push(outN);
+						nodes.insert(outN);
+						nextlevel++;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int pred : pred_set)
+			{
+				int outNum = getOutSize(now, pred);
+				for (int i = 0; i < outNum; i++)
+				{
+					int outN = getOutVertID(now, pred, i);
+					if (!nodes.count(outN))
+					{
+						q.push(outN);
+						nodes.insert(outN);
+						nextlevel++;
+					}
+				}
+			}
+		}
+	}
+	return ans;
+}
+
+/**
+	Return all paths from u to v within k hops via edges labeled by labels
+	in pred_set.
+
+	@param uid the vertex u's ID.
+	@param vid the vertex v's ID.
+	@param directed if false, treat all edges in the graph as bidirectional.
+	@param k the hop constraint.
+	@param pred_set the set of edge labels allowed.
+	@return a vector of all paths from u to v; the format of each path is the same as in shortestPath.
+*/
+vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
+{
+	vector<vector<int>> ret;
+	vector<pair<int, int>> s;
+	vector<int> bar(getVertNum(), 0);
+	// Use reverse kBFS from destination to refine bar
+	queue<int> q;
+	q.push(vid);
+	while (!q.empty())
+	{
+		int cur = q.front();
+		q.pop();
+		if (bar[cur] >= k)
+			continue;
+		for (int pred : pred_set)
+		{
+			int inNum = getInSize(cur, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				int to = getInVertID(cur, pred, i);
+				if (bar[to] == 0 && to != vid)
+				{
+					bar[to] = bar[cur] + 1;
+					q.push(to);
+				}
+			}
+			if (directed)
+				continue;
+			int outNum = getOutSize(cur, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				int to = getOutVertID(cur, pred, i);
+				if (bar[to] == 0 && to != vid)
+				{
+					bar[to] = bar[cur] + 1;
+					if (to == 2)
+						cout << "bar[to] = " << bar[to] << endl;
+					q.push(to);
+				}
+			}
+		}
+	}
+
+	s.push_back(make_pair(uid, -1));	// (vertex_id, pred_id that precedes it)
+	bc_dfs(uid, vid, directed, k, pred_set, s, bar, ret);
+	cout << "ret.size() = " << ret.size() << endl;
+	return ret;
+}
+
+int PathQueryHandler::bc_dfs(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set, vector<pair<int, int>> &s, vector<int> &bar, vector<vector<int>> &paths)
+{
+	int f = k + 1;
+
+	if (uid == vid)
+	{
+		cout << "stack: ";
+		paths.emplace_back();
+		for (size_t i = 0; i < s.size(); i++)
+		{
+			auto pr = s[i];
+			cout << '(' << pr.first << ',' << pr.second << ") ";
+			if (i != 0)
+				paths.back().emplace_back(pr.second);
+			paths.back().emplace_back(pr.first);
+		}
+		cout << endl;
+		cout << "path: ";
+		for (auto ele : paths.back())
+			cout << ele << ' ';
+		cout << endl;
+		s.pop_back();
+		return 0;
+	}
+	else if ((int)s.size() - 1 < k)
+	{
+		int inNum, outNum, to;
+		for (int pred : pred_set)
+		{
+			outNum = getOutSize(uid, pred);
+			for (int i = 0; i < outNum; ++i)
+			{
+				to = getOutVertID(uid, pred, i);
+				bool stacked = false;
+				for (auto pr : s)
+					if (pr.first == to)
+					{
+						stacked = true;
+						break;
+					}
+				if (stacked)
+					continue;
+
+				if ((int)s.size() + bar[to] <= k)
+				{
+					s.push_back(make_pair(to, pred));
+					int next_f = bc_dfs(to, vid, directed, k, pred_set, s, bar, paths);
+					if (next_f != k + 1 && f < next_f + 1)
+						f = next_f + 1;
+				}
+
+			}
+			if (directed)
+				continue;
+			inNum = getInSize(uid, pred);
+			for (int i = 0; i < inNum; ++i)
+			{
+				to = getInVertID(uid, pred, i);
+				bool stacked = false;
+				for (auto pr : s)
+					if (pr.first == to)
+					{
+						stacked = true;
+						break;
+					}
+				if (stacked)
+					continue;
+
+				if ((int)s.size() + bar[to] <= k)
+				{
+					s.push_back(make_pair(to, pred));
+					int next_f = bc_dfs(to, vid, directed, k, pred_set, s, bar, paths);
+					if (next_f != k + 1 && f < next_f + 1)
+						f = next_f + 1;
+				}
+			}
+		}
+	}
+
+	// The following pruning not suitable for labeled multigraphs
+	// if (f == k + 1)
+	// 	bar[uid] = k - s.size() + 2;
+	// else
+	// 	updateBarrier(uid, directed, pred_set, bar, f);
+
+	s.pop_back();
+	return f;
+}
