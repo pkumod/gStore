@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-28 14:38:01
+ * @LastEditTime: 2022-09-30 10:22:27
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -588,9 +588,8 @@ int APIUtil::db_copy(string src_path, string dest_path)
     {
         // check the destnation path
         log_info = "the path: " + dest_path + " is not exist ,system will create it.";
-       SLOG_DEBUG(log_info);
-        sys_cmd = "mkdir -p " + dest_path;
-        system(sys_cmd.c_str());
+        SLOG_DEBUG(log_info);
+        util.create_dirs(dest_path);
     }
     sys_cmd = "cp -r " + src_path + ' ' + dest_path;
     system(sys_cmd.c_str());
@@ -1842,7 +1841,7 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
-    int rt = pthread_rwlock_rdlock(&query_log_lock);
+    pthread_rwlock_rdlock(&query_log_lock);
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
@@ -1878,7 +1877,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
-            rt = pthread_rwlock_unlock(&query_log_lock);
+            pthread_rwlock_unlock(&query_log_lock);
             throw std::invalid_argument("more then max page number " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
@@ -1903,7 +1902,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             startLine++;
         }
         in.close();
-        rt = pthread_rwlock_unlock(&query_log_lock);
+        pthread_rwlock_unlock(&query_log_lock);
         size_t count;
         count =  lines.size();
         for (size_t i = 0; i < count; i++)
@@ -2676,7 +2675,7 @@ string APIUtil::get_configure_value(const string& key, string default_value)
     
 }
 
-int APIUtil::get_configure_value(const string& key, int default_value)
+unsigned int APIUtil::get_configure_value(const string& key, unsigned int default_value)
 {
     string value = util.getConfigureValue(key);
     if (value.empty())

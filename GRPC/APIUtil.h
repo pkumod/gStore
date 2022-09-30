@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-28 14:37:42
+ * @LastEditTime: 2022-09-30 09:50:06
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -881,8 +881,8 @@ private:
     int thread_pool_num = 30;
     
     unsigned int max_output_size = 10000000;
-    int max_database_num = 100;
-    int max_user_num = 1000;
+    unsigned int max_database_num = 100;
+    unsigned int max_user_num = 1000;
     string system_path = "data/system/system.nt";
     string DB_path = ".";
     string backup_path = "./backups";
@@ -1029,5 +1029,5 @@ public:
     void increase_connection_num();
     void string_suffix(string& str, const char suffix);
     string get_configure_value(const string& key, string default_value);
-    int get_configure_value(const string& key, int default_value);
+    unsigned int get_configure_value(const string& key, unsigned int default_value);
 };
