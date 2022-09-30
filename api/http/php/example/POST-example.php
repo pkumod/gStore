@@ -11,13 +11,14 @@ require "../src/GstoreConnector.php";
 
 $IP = "127.0.0.1";
 $Port = 9000;
+$httpTye = "ghttp";
 $username = "root";
 $password = "123456";
 $sparql = "select ?x where { ?x <rdf:type> <ub:UndergraduateStudent>. ?y <ub:name> <Course1>. ?x <ub:takesCourse> ?y. ?z <ub:teacherOf> ?y. ?z <ub:name> <FullProfessor1>. ?z <ub:worksFor> ?w. ?w <ub:name> <Department0>. }";
 $filename = "res.txt";
 
 // start a gc with given IP, Port, username and password
-$gc = new GstoreConnector($IP, $Port, $username, $password);
+$gc = new GstoreConnector($IP, $Port, $httpTye, $username, $password);
 
 // build a database with a RDF graph
 $res = $gc->build("lubm", "data/lubm/lubm.nt", "POST");

@@ -36,7 +36,7 @@ class Mythread extends Thread {
     }
     public function run () {
         // query
-        $gc = new GstoreConnector("127.0.0.1", 9000, "root", "123456");
+        $gc = new GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456");
         $res = $gc->query("lubm", "json", $this->sparql, $this->RequestType);
 
         // fquery

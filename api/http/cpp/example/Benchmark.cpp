@@ -18,6 +18,7 @@ using namespace std;
 // default db_name: lubm(must be built in advance)
 #define IP "127.0.0.1"
 #define Port 9000
+#define httpType "ghttp"
 #define username "root"
 #define password "123456"
 #define tnum 1000
@@ -37,7 +38,7 @@ void* MyThread_run(void* thread_args)
 {
 	struct MyThread_args* args;
 	args = (struct MyThread_args*)thread_args;
-	GstoreConnector gc(IP, Port, username, password);
+	GstoreConnector gc(IP, Port, httpType, username, password);
 
 	// query
 	string res = gc.query("lubm", "json", args->sparql, args->request_type);

@@ -21,6 +21,7 @@ const sparql = "select ?x where{" +
 const gc = new GstoreConnector(
     "127.0.0.1",
     9000,
+    "ghttp",
     "root",
     "123456"
 );
@@ -31,7 +32,7 @@ const gc = new GstoreConnector(
     console.log(JSON.stringify(res, ","));
 
     // load the database
-    res = await gc.load("lubm", "POST");
+    res = await gc.load("lubm", "0", "POST");
     console.log(JSON.stringify(res, ","));
 
     // show all users

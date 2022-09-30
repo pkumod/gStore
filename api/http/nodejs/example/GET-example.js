@@ -1,4 +1,12 @@
 /*
+ * @Author: wangjian 2606583267@qq.com
+ * @Date: 2022-09-29 20:56:24
+ * @LastEditors: wangjian 2606583267@qq.com
+ * @LastEditTime: 2022-09-29 20:56:24
+ * @FilePath: /gstore/api/http/nodejs/example/GET-example.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+/*
 # Filename: GET-example.js
 # Author: suxunbin
 # Last Modified: 2019-5-20 17:26
@@ -22,6 +30,7 @@ const sparql = "select ?x where{" +
 const gc = new GstoreConnector(
     "127.0.0.1",
     9000,
+    "ghttp",
     "root",
     "123456"
 );
@@ -32,7 +41,7 @@ const gc = new GstoreConnector(
     console.log(JSON.stringify(res, ","));
 
     // load the database
-    res = await gc.load("lubm");
+    res = await gc.load("lubm", "0");
     console.log(JSON.stringify(res, ","));
 
     // show all users

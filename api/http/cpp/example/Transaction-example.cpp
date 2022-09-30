@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 {
 	std::string IP = "127.0.0.1";
 	int Port = 9000;
+	std::string httpType = "ghttp";
 	std::string username = "root";
 	std::string password = "123456";
 	string query = "select ?x ?y where{<gStore> ?x ?y}";
@@ -21,14 +22,14 @@ int main(int argc, char* argv[])
 	string indegree_query2 = "select (count(?x) as ?yCount) where{?x ?y <all>  }";
 	string remove_triple = "delete data {<gStore> <test> <all>}";
 
-	GstoreConnector gc(IP, Port, username, password);
+	GstoreConnector gc(IP, Port, httpType, username, password);
 
 	// build a database with a RDF graph
 	std::string res = gc.build("lubm", "data/lubm/lubm.nt");
 	cout << res << endl;
 
 	// load the database
-	res = gc.load("lubm");
+	res = gc.load("lubm", "0");
 	cout << res << endl;
 
 	//test 1
