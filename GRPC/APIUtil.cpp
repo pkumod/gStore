@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-23 15:13:57
+ * @LastEditTime: 2022-09-30 10:22:47
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -588,9 +588,8 @@ int APIUtil::db_copy(string src_path, string dest_path)
     {
         // check the destnation path
         log_info = "the path: " + dest_path + " is not exist ,system will create it.";
-       SLOG_DEBUG(log_info);
-        sys_cmd = "mkdir -p " + dest_path;
-        system(sys_cmd.c_str());
+        SLOG_DEBUG(log_info);
+        util.create_dirs(dest_path);
     }
     sys_cmd = "cp -r " + src_path + ' ' + dest_path;
     system(sys_cmd.c_str());
@@ -2676,7 +2675,7 @@ string APIUtil::get_configure_value(const string& key, string default_value)
     
 }
 
-int APIUtil::get_configure_value(const string& key, int default_value)
+unsigned int APIUtil::get_configure_value(const string& key, unsigned int default_value)
 {
     string value = util.getConfigureValue(key);
     if (value.empty())

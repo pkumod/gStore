@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-23 14:12:47
+ * @LastEditTime: 2022-09-30 10:05:54
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -1029,5 +1029,5 @@ public:
     void increase_connection_num();
     void string_suffix(string& str, const char suffix);
     string get_configure_value(const string& key, string default_value);
-    int get_configure_value(const string& key, int default_value);
+    unsigned int get_configure_value(const string& key, unsigned int default_value);
 };
