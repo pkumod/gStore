@@ -52,10 +52,11 @@ int main(int argc, char * argv[])
 	const string func = "GET";
 	std::string IP = "127.0.0.1";
 	int Port = 9000;
+	std::string httpType = "ghttp";
 	std::string username = "root";
 	std::string password = "123456";
 	
-	GstoreConnector gc(IP, Port, username, password);
+	GstoreConnector gc(IP, Port, httpType, username, password);
 	status s = status::Begin;
 	string cmd;
 	string res; 
