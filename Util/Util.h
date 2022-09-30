@@ -377,6 +377,7 @@ public:
 	static bool dir_exist(const std::string _dir);
     static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
+	static bool create_dirs(const std:: string _dirs);
 	static bool create_file(const std::string _file);
 
 	static std::string getTimeName();

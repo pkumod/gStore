@@ -833,7 +833,7 @@ bool Util::file_exist(const string _file)
 }
 
 bool
-Util::create_dir(const  string _dir)
+Util::create_dir(const string _dir)
 {
     if(! Util::dir_exist(_dir))
     {
@@ -841,6 +841,33 @@ Util::create_dir(const  string _dir)
         return true;
     }
 
+    return false;
+}
+
+bool
+Util::create_dirs(const string _dirs)
+{
+    if (! Util::dir_exist(_dirs))
+    {
+        char tmpDirPath[255] = {0};
+        size_t len = _dirs.length();
+        for (size_t i = 0; i < len; i++)
+        {
+            tmpDirPath[i] = _dirs[i];
+            if (tmpDirPath[i] == '/')
+            {
+                if (access(tmpDirPath, 0) != 0)
+                {
+                    mkdir(tmpDirPath, 755);
+                }
+            }
+        }
+        if (access(tmpDirPath, 0) != 0)
+        {
+            mkdir(tmpDirPath, 755);
+        }
+        return true;
+    }
     return false;
 }
 
