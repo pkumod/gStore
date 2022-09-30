@@ -1856,7 +1856,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		if (Util::dir_exist(db_path) == false)
 		{
-			Util::create_dir(db_path);
+			Util::create_dirs(db_path);
 		}
 		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
 		// check if database named [db_name] is already load
