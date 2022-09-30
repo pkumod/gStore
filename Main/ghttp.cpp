@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-23 15:16:53
+ * @LastEditTime: 2022-09-29 22:29:15
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2119,7 +2119,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		if (Util::dir_exist(db_path) == false)
 		{
-			Util::create_dir(db_path);
+			Util::create_dirs(db_path);
 		}
 		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
 		// check if database named [db_name] is already load
