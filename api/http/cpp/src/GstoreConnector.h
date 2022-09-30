@@ -31,14 +31,14 @@ public:
 	std::string username;
 	std::string password;
 	GstoreConnector(void);
-	GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd);
+	GstoreConnector(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd);
 	~GstoreConnector(void);
 
 public:
 	/**
 	* @brief: HTTP POST request
 	* @param strUrl: the Url of the request, for example: http://www.baidu.com
-	* @param strPost: input format: para1=val1?para2=val2&¡­
+	* @param strPost: input format: para1=val1?para2=val2&ï¿½ï¿½
 	* @param strResponse: content returned
 	* @return: returned value
 	*/
@@ -61,7 +61,7 @@ public:
 	/**
 	* @brief: HTTPS POST request (uncertified version)
 	* @param strUrl: the Url of the request, for example: https://www.alipay.com
-	* @param strPost: input format: para1=val1?para2=val2&¡­
+	* @param strPost: input format: para1=val1?para2=val2&ï¿½ï¿½
 	* @param strResponse: content returned
 	* @param pCaPath: the path to the CA certificate. If NULL, the server-side certificate is not validated.
 	* @return: returned value
@@ -81,7 +81,7 @@ public:
 
 public:
 	std::string build(std::string db_name, std::string db_path, std::string request_type = "GET");
-	std::string load(std::string db_name, std::string request_type = "GET");
+	std::string load(std::string db_name, std::string csr = "0", std::string request_type = "GET");
 	std::string unload(std::string db_name, std::string request_type = "GET");
 	std::string monitor(std::string db_name, std::string request_type = "GET");
 	std::string drop(std::string db_name, bool is_backup, std::string request_type = "GET");

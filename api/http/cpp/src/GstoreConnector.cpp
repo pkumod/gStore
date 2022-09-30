@@ -5,7 +5,7 @@ GstoreConnector::GstoreConnector(void) :
 {
 
 }
-GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd) :
+GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd) :
 	m_bDebug(false)
 {
 	if (_ip == "localhost")
@@ -14,6 +14,10 @@ GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _user, 
 		this->serverIP = _ip;
 	this->serverPort = _port;
 	this->Url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort) + "/";
+	if (_http_type == "grpc")
+	{
+		this->Url = this->Url + "grpc/api";
+	}
 	this->username = _user;
 	this->password = _passwd;
 }
@@ -316,17 +320,17 @@ std::string GstoreConnector::check(std::string request_type)
 	return res;
 }
 
-std::string GstoreConnector::load(std::string db_name, std::string request_type)
+std::string GstoreConnector::load(std::string db_name, std::string csr, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=load&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=load&db_name=" + db_name + "&csr=" + csr + "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"csr\": \"" + csr + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
