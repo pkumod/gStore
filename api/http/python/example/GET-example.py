@@ -13,6 +13,7 @@ import GstoreConnector
 # "GET" is a default parameter that can be omitted
 IP = "127.0.0.1"
 Port = 9000
+httpType = "ghttp"
 username = "root"
 password = "123456"
 sparql = "select ?x where \
@@ -28,14 +29,14 @@ sparql = "select ?x where \
 filename = "res.txt"
 
 # start a gc with given IP, Port, username and password
-gc =  GstoreConnector.GstoreConnector(IP, Port, username, password)
+gc =  GstoreConnector.GstoreConnector(IP, Port, httpType, username, password)
 
 # build a database with a RDF graph
 res = gc.build("lubm", "data/lubm/lubm.nt")
 print(res)
 
 # load the database 
-res = gc.load("lubm")
+res = gc.load("lubm", "0")
 print(res);
 
 # show all users

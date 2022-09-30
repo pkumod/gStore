@@ -8,7 +8,7 @@
 const request = require('request-promise');
 
 class GstoreConnector {
-    constructor(ip = '', port, username = '', password = '') 
+    constructor(ip = '', port, httpType = 'ghttp', username = '', password = '') 
     {
         if (ip == 'localhost')
             this.serverIP = '127.0.0.1';
@@ -16,6 +16,8 @@ class GstoreConnector {
             this.serverIP = ip;
         this.serverPort = port;
         this.Url = 'http://' + this.serverIP + ':' + this.serverPort.toString() + '/';
+        if (httpType == 'grpc')
+            this.Url = this.Url + 'grpc/api/';
         this.username = username;
         this.password = password;
     }
@@ -75,17 +77,17 @@ class GstoreConnector {
         }
     }
 
-    async load(db_name = '', request_type = 'GET') 
+    async load(db_name = '', csr = '0', request_type = 'GET') 
     {
         if (request_type == 'GET')
         {
-            const strUrl = "?operation=load&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            const strUrl = "?operation=load&db_name=" + db_name + "&csr=" + csr + "&username=" + this.username + "&password=" + this.password;
             const res = this.Get(strUrl);
             return res;
         }
         else if (request_type == 'POST')
         {
-            const strPost = '{\"operation\": \"load\", \"db_name\": \"' + db_name + '\", \"username\": \"' + this.username + '\", \"password\": \"' + this.password + '\"}';
+            const strPost = '{\"operation\": \"load\", \"db_name\": \"' + db_name + '\", \"csr\": \"' + csr + '\", \"username\": \"' + this.username + '\", \"password\": \"' + this.password + '\"}';
             const res = this.Post(strPost);
             return res;
         }

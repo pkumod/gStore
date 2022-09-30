@@ -16,13 +16,15 @@ defaultServerIP = "127.0.0.1"
 defaultServerPort = "9000"
 
 class GstoreConnector:
-    def __init__(self, ip, port, username, password):
+    def __init__(self, ip, port, httpType, username, password):
         if (ip == "localhost"):
             self.serverIP = defaultServerIP
         else:
             self.serverIP = ip
         self.serverPort = port
         self.Url = "http://" + self.serverIP + ":" + str(self.serverPort) + "/"
+        if (httpType == "grpc"):
+            self.Url += "grpc/api/"
         self.username = username
         self.password = password
    
@@ -52,7 +54,7 @@ class GstoreConnector:
         return r.text
 
     def Post(self, strPost):
-        r = requests.post(self.Url + strPost)
+        r = requests.post(self.Url, strPost)
         return r.text
 
     def fGet(self, strUrl, filename):
@@ -87,12 +89,12 @@ class GstoreConnector:
             res = self.Post(strPost)
         return res
 
-    def load(self, db_name, request_type='GET'):
+    def load(self, db_name, csr, request_type='GET'):
         if request_type == 'GET':        
-            strUrl = "?operation=load&db_name=" + db_name + "&username=" + self.username + "&password=" + self.password
+            strUrl = "?operation=load&db_name=" + db_name + "&csr=" + csr + "&username=" + self.username + "&password=" + self.password
             res = self.Get(strUrl)
         elif request_type == 'POST':        
-            strPost = '{\"operation\": \"load\", \"db_name\": \"' + db_name + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
+            strPost = '{\"operation\": \"load\", \"db_name\": \"' + db_name + '\", \"csr\": \"' + csr + '\", \"username\": \"' + self.username + '\", \"password\": \"' + self.password + '\"}'
             res = self.Post(strPost)
         return res
   

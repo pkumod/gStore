@@ -1,34 +1,35 @@
 #include "GstoreConnector.h"
 
-using namespace rapidjson;
-
-GstoreConnector::GstoreConnector(void) : m_bDebug(false)
+GstoreConnector::GstoreConnector(void) :
+	m_bDebug(false)
 {
+
 }
-GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd) : m_bDebug(false)
+GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd) :
+	m_bDebug(false)
 {
 	if (_ip == "localhost")
 		this->serverIP = defaultServerIP;
 	else
 		this->serverIP = _ip;
 	this->serverPort = _port;
-	this->localPort = defaultlocalPort;
 	this->Url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort) + "/";
+	if (_http_type == "grpc")
+	{
+		this->Url = this->Url + "grpc/api";
+	}
 	this->username = _user;
 	this->password = _passwd;
-	this->socket.create();
-	this->socket.bind(this->localPort);
-	this->socket.listen();
 }
 GstoreConnector::~GstoreConnector(void)
 {
-	this->socket.close();
+
 }
 
-static const std::string UrlEncode(const std::string &s)
+static const std::string UrlEncode(const std::string& s)
 {
 	std::string ret;
-	unsigned char *ptr = (unsigned char *)s.c_str();
+	unsigned char* ptr = (unsigned char*)s.c_str();
 	ret.reserve(s.length());
 
 	for (int i = 0; i < s.length(); ++i)
@@ -54,7 +55,7 @@ static const std::string UrlEncode(const std::string &s)
 	return ret;
 }
 
-static int OnDebug(CURL *, curl_infotype itype, char *pData, size_t size, void *)
+static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
 {
 	if (itype == CURLINFO_TEXT)
 	{
@@ -79,24 +80,24 @@ static int OnDebug(CURL *, curl_infotype itype, char *pData, size_t size, void *
 	return 0;
 }
 
-static size_t OnWriteData(void *buffer, size_t size, size_t nmemb, void *lpVoid)
+static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 {
-	std::string *str = dynamic_cast<std::string *>((std::string *)lpVoid);
+	std::string* str = dynamic_cast<std::string*>((std::string*)lpVoid);
 	if (NULL == str || NULL == buffer)
 	{
 		return -1;
 	}
 
-	char *pData = (char *)buffer;
+	char* pData = (char*)buffer;
 	str->append(pData, size * nmemb);
 	return nmemb;
 }
 
-int GstoreConnector::Get(const std::string &strUrl, std::string &strResponse)
+int GstoreConnector::Get(const std::string& strUrl, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -109,19 +110,19 @@ int GstoreConnector::Get(const std::string &strUrl, std::string &strResponse)
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	// curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	// curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	return res;
 }
 
-int GstoreConnector::Get(const std::string &strUrl, const std::string &filename)
+int GstoreConnector::Get(const std::string& strUrl, const std::string& filename)
 {
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -136,7 +137,7 @@ int GstoreConnector::Get(const std::string &strUrl, const std::string &filename)
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
 
-	FILE *fw = fopen(filename.c_str(), "wb");
+	FILE* fw = fopen(filename.c_str(), "wb");
 	if (!fw)
 	{
 		std::cout << "open file failed" << std::endl;
@@ -152,11 +153,11 @@ int GstoreConnector::Get(const std::string &strUrl, const std::string &filename)
 	return res;
 }
 
-int GstoreConnector::Post(const std::string &strUrl, const std::string &strPost, std::string &strResponse)
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -171,19 +172,19 @@ int GstoreConnector::Post(const std::string &strUrl, const std::string &strPost,
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	// curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	// curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	return res;
 }
 
-int GstoreConnector::Post(const std::string &strUrl, const std::string &strPost, const std::string &filename)
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -199,7 +200,7 @@ int GstoreConnector::Post(const std::string &strUrl, const std::string &strPost,
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
-	FILE *fw = fopen(filename.c_str(), "wb");
+	FILE* fw = fopen(filename.c_str(), "wb");
 	if (!fw)
 	{
 		std::cout << "open file failed" << std::endl;
@@ -213,11 +214,11 @@ int GstoreConnector::Post(const std::string &strUrl, const std::string &strPost,
 	return res;
 }
 
-int GstoreConnector::Gets(const std::string &strUrl, std::string &strResponse, const char *pCaPath)
+int GstoreConnector::Gets(const std::string& strUrl, std::string& strResponse, const char* pCaPath)
 {
 	strResponse.clear();
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -230,7 +231,7 @@ int GstoreConnector::Gets(const std::string &strUrl, std::string &strResponse, c
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	if (NULL == pCaPath)
 	{
@@ -242,18 +243,18 @@ int GstoreConnector::Gets(const std::string &strUrl, std::string &strResponse, c
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
 		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
 	}
-	// curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	// curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	return res;
 }
 
-int GstoreConnector::Posts(const std::string &strUrl, const std::string &strPost, std::string &strResponse, const char *pCaPath)
+int GstoreConnector::Posts(const std::string& strUrl, const std::string& strPost, std::string& strResponse, const char* pCaPath)
 {
 	strResponse.clear();
 	CURLcode res;
-	CURL *curl = curl_easy_init();
+	CURL* curl = curl_easy_init();
 	if (NULL == curl)
 	{
 		return CURLE_FAILED_INIT;
@@ -268,7 +269,7 @@ int GstoreConnector::Posts(const std::string &strUrl, const std::string &strPost
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	if (NULL == pCaPath)
 	{
@@ -280,8 +281,8 @@ int GstoreConnector::Posts(const std::string &strUrl, const std::string &strPost
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
 		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
 	}
-	// curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
-	// curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
+	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	return res;
@@ -289,17 +290,15 @@ int GstoreConnector::Posts(const std::string &strUrl, const std::string &strPost
 
 std::string GstoreConnector::build(std::string db_name, std::string db_path, std::string request_type)
 {
-	thread socket_thread = thread(&GstoreConnector::get_info, this);
-	socket_thread.detach();
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&port=" + std::to_string(this->localPort) + "&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"port\": \"" + std::to_string(this->localPort) + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -321,19 +320,17 @@ std::string GstoreConnector::check(std::string request_type)
 	return res;
 }
 
-std::string GstoreConnector::load(std::string db_name, std::string request_type)
+std::string GstoreConnector::load(std::string db_name, std::string csr, std::string request_type)
 {
-	thread socket_thread(&GstoreConnector::get_info, this);
-	socket_thread.detach();
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=load&db_name=" + db_name + "&port=" + std::to_string(this->localPort) + "&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=load&db_name=" + db_name + "&csr=" + csr + "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"port\": \"" + std::to_string(this->localPort) + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"csr\": \"" + csr + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -649,42 +646,6 @@ std::string GstoreConnector::checkpoint(std::string db_name, std::string request
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
-}
-
-void GstoreConnector::get_info()
-{
-	Socket new_server_socket;
-
-	this->socket.accept(new_server_socket);
-
-	int repeated_num = 0;
-	while (true)
-	{
-		if (repeated_num > 10)
-			break;
-
-		std::string recv_info;
-		bool recv_return = new_server_socket.recv(recv_info);
-		if (parseJson(recv_info) != 1)
-			break;
-		if (!recv_return)
-		{
-			cerr << "Receive command from client error. @Server::listen" << endl;
-			repeated_num++;
-			continue;
-		}
-
-		cout << "Received msg: " << recv_info << endl;
-	}
-}
-
-int GstoreConnector::parseJson(std::string strJson)
-{
-	Document document;
-	document.Parse(strJson.c_str());
-	Value &p = document["StatusCode"];
-	int StatusCode = p.GetInt();
-	return StatusCode;
 }
 
 void GstoreConnector::SetDebug(bool bDebug)

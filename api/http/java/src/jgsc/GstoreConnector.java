@@ -26,7 +26,7 @@ public class GstoreConnector {
 	private String username;
     private String password;
 
-    public GstoreConnector(String _ip, int _port, String _user, String _passwd) {
+    public GstoreConnector(String _ip, int _port, String _http_type, String _user, String _passwd) {
 	    if (_ip.equals("localhost")) {
             this.serverIP = GstoreConnector.defaultServerIP;
         }
@@ -35,6 +35,9 @@ public class GstoreConnector {
 		}
         this.serverPort = _port;
 		this.Url = "http://" + this.serverIP + ":" + this.serverPort + "/";
+        if ("grpc".equals(_http_type)) {
+            this.Url = this.Url + "grpc/api";
+        }
 		this.username = _user;
 		this.password = _passwd;
     }
@@ -330,21 +333,24 @@ public class GstoreConnector {
         return res;
     }
 
-    public String load(String db_name, String request_type) {
+    public String load(String db_name, String csr, String request_type) {
 	    String res = "";
+        if (csr == null || "".equals(csr)) {
+            csr = "0";
+        }
         if (request_type.equals("GET")) {
-            String strUrl = "?operation=load&db_name=" + db_name + "&username=" + this.username + "&password=" + this.password;
+            String strUrl = "?operation=load&db_name=" + db_name + "&csr=" + csr + "&username=" + this.username + "&password=" + this.password;
             res = this.sendGet(strUrl);
 		}
         else if (request_type.equals("POST")) {
-			String strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
+			String strPost = "{\"operation\": \"load\", \"db_name\": \"" + db_name + "\", \"csr\": \"" + csr + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
             res = this.sendPost(strPost);
         }
         return res;
     }
 
-    public String load(String db_name) {
-	    String res = this.load(db_name, "GET");
+    public String load(String db_name, String csr) {
+	    String res = this.load(db_name, csr, "GET");
         return res;
     }
 

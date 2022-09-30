@@ -14,6 +14,7 @@ import GstoreConnector
 
 IP = "127.0.0.1"
 Port = 9000
+httpType = "ghttp"
 username = "root"
 password = "123456"
 tnum = 1000
@@ -71,7 +72,7 @@ def Mythread(rnum, sparql, filename, RequestType):
     global correctness
     
     # query
-    gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
+    gc = GstoreConnector.GstoreConnector(IP, Port, httpType, username, password)
     res = gc.query("lubm", "json", sparql, RequestType)
 
     # fquery

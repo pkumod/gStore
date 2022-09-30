@@ -6,16 +6,16 @@ src_dir=../src/
 all: Benchmark GET-example POST-example Transaction-example
 
 Benchmark: Benchmark.o
-	$(CC) -o Benchmark Benchmark.o -I../ -L../lib -lgstoreconnector -lpthread -lcurl -lboost_system
+	$(CC) -o Benchmark Benchmark.o -I../ -L../lib -lgstoreconnector -lpthread -lcurl
 
 GET-example: GET-example.o
-	$(CC) -o GET-example GET-example.o -I../ -L../lib -lgstoreconnector -lpthread -lcurl -lboost_system
+	$(CC) -o GET-example GET-example.o -I../ -L../lib -lgstoreconnector -lcurl
 
 POST-example: POST-example.o
-	$(CC) -o POST-example POST-example.o -I../ -L../lib -lgstoreconnector -lpthread -lcurl -lboost_system
+	$(CC) -o POST-example POST-example.o -I../ -L../lib -lgstoreconnector -lcurl
 
 Transaction-example:Transaction-example.o
-	$(CC) -o Transaction-example Transaction-example.o -I../ -L../lib -lgstoreconnector -lpthread -lcurl -lboost_system
+	$(CC) -o Transaction-example Transaction-example.o -I../ -L../lib -lgstoreconnector -lcurl
 
 Benchmark.o: Benchmark.cpp $(src_dir)GstoreConnector.cpp $(src_dir)GstoreConnector.h
 	$(CC) -c -I../src/ Benchmark.cpp -o Benchmark.o

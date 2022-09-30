@@ -13,13 +13,15 @@ class GstoreConnector {
     var $username;
     var $password;
 
-    function __construct($ip, $port, $user, $passwd) {
+    function __construct($ip, $port, $httpType, $user, $passwd) {
         if ($ip == "localhost")
             $this->serverIP = "127.0.0.1";
         else
             $this->serverIP = $ip;
         $this->serverPort = $port;
         $this->Url = "http://" . $ip . ":" . strval($port) . "/";
+        if ($httpType == "grpc")
+            $this->Url .= "grpc/api/"; 
         $this->username = $user;
         $this->password = $passwd;
     }
@@ -138,15 +140,15 @@ class GstoreConnector {
         return $res;    
     }
 
-    function load($db_name, $request_type="GET") {
+    function load($db_name, $csr, $request_type="GET") {
         if ($request_type == "GET")
         {
-            $strUrl = $this->Url . "?operation=load&db_name=" . $db_name . "&username=" . $this->username . "&password=" . $this->password;
+            $strUrl = $this->Url . "?operation=load&db_name=" . $db_name . "&csr=" . $csr . "&username=" . $this->username . "&password=" . $this->password;
             $res = $this->Get($strUrl);
         }
         elseif ($request_type == "POST")
         {
-            $strPost = "{\"operation\": \"load\", \"db_name\": \"" . $db_name . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
+            $strPost = "{\"operation\": \"load\", \"db_name\": \"" . $db_name . "\", \"csr\": \"" . $csr . "\", \"username\": \"" . $this->username . "\", \"password\": \"" . $this->password . "\"}";
             $res = $this->Post($this->Url, $strPost);
         }
         return $res;
