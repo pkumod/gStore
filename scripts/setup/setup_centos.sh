@@ -17,7 +17,7 @@ echo -e "make installed \n"
 yum install -y readline readline-devel
 echo -e "readline-devel installed \n"
 
-yum install -y libcurl-devel
+yum install -y libcurl-devel openssl-devel
 echo -e "libcurl-devel installed \n"
 
 yum install pkgconfig.x86_64
@@ -34,7 +34,7 @@ wget https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.gz
 tar -xzvf boost_1_66_0.tar.gz && cd boost_1_66_0
 #./bootstrap.sh --prefix=/home/usrname/boost_1_43_0/boost_install
 # by default: /usr/local/include and /usr/local/lib
-./bootstrap.sh 
+./bootstrap.sh
 ./b2
 ./b2 install
 echo "/usr/local/lib" >> /etc/ld.so.conf

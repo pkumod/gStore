@@ -23,7 +23,7 @@ echo -e "readline-devel installed \n"
 apt install -y libboost-all-dev
 echo -e "libboost-all-dev installed \n"
 
-apt install -y curl libcurl4 libcurl4-openssl-dev
+apt install -y curl libcurl4 libcurl4-openssl-dev libssl-dev
 echo -e "libcurl-devel installed \n"
 
 apt install -y cmake
