@@ -8,7 +8,6 @@
 
 #include "IPBlackList.h"
 #include <fstream>
-#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -66,10 +65,10 @@ bool IPBlackList::Check(std::string ip){
             std::vector<std::string> start;
             std::vector<std::string> end;
             std::vector<std::string> test_ip;
-            boost::split( fields, test, boost::is_any_of( "-" ) );
-            boost::split( start, fields[0], boost::is_any_of( "\\." ) );
-            boost::split( end, fields[1], boost::is_any_of( "\\." ) );
-            boost::split( test_ip, ip, boost::is_any_of( "\\." ) );
+            Util::split( test, "-", fields );
+            Util::split( fields[0], ".", start );
+            Util::split( fields[1], ".", end );
+            Util::split( ip, ".", test_ip );
             bool res = false;
             for(int i = 0; i < 4; i++){
                 int s = std::stoi(start[i]);
