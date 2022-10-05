@@ -17,7 +17,7 @@ echo -e "make installed \n"
 yum install -y readline readline-devel
 echo -e "readline-devel installed \n"
 
-yum install -y libcurl-devel
+yum install -y libcurl-devel openssl-devel
 echo -e "libcurl-devel installed \n"
 
 yum install pkgconfig.x86_64
