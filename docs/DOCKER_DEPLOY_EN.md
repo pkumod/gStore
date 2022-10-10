@@ -12,13 +12,13 @@
 
 Official doc of Docker has explained how to download and use it on common Liunx release version in details. And here is the link: [English doc](https://docs.docker.com/install/linux/docker-ce/ubuntu/), [中文文档](https://docs.docker-cn.com/engine/installation/linux/docker-ce/centos/#%E5%85%88%E5%86%B3%E6%9D%A1%E4%BB%B6)
 
-## 0x01. Build the mirror via Dockerfile
+## 0x01. Build the mirror via Dockerfile (recommendation)
 
 After having the correct Docker environment and network, use `git clone` to download the project firstly. Then enter the root directory and input command `docker build -t gstore .` to start building. More specific explanation has been written in the Dockerfile.
 
 After the building, using `docker run -p 9000:80 -it gstore` directly to start and enter the container and execute other operations. 
 
-## 0x02. pulling the mirror directly to run(recommendation)
+## 0x02. pulling the mirror directly to run
 
 Instead of downloading project or building on your own, input `docker pull pkumodlab/gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumodlab/gstore:latest` to start and enter the container and execute other operations. 
 
