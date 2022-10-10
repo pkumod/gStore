@@ -404,6 +404,65 @@ ResultSet::output(FILE* _fp)
 }
 
 void
+ResultSet::prettyPrint()
+{
+	long long ans_num = max((long long)this->ansNum - this->output_offset, 0LL);
+	if (this->output_limit != -1)
+		ans_num = min(ans_num, (long long)this->output_limit);
+	std::vector<std::string> headers;
+	std::vector<std::vector<std::string>> rows;
+	for(int i = 0; i < this->true_select_var_num; i++)
+	{
+		headers.emplace_back(this->var_name[i]);
+	}
+	if(ans_num == 0)
+	{
+		Util::printConsole(headers, rows);
+		return;
+	}
+	if (this->useStream)
+	{
+		const Bstr* bp;
+		for(long long i = 0; i < this->ansNum; i++)
+		{
+			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+				break;
+
+			bp = this->stream->read();
+			if (i >= this->output_offset)
+			{
+				std::vector<std::string> row;
+				for(int j = 0; j < this->true_select_var_num; j++)
+				{
+					row.emplace_back(Util::node2string(bp[j].getStr()));
+				}
+				rows.emplace_back(row);
+			}
+		}
+		bp = NULL;
+	}
+	else
+	{
+		for(long long i = this->output_offset; i < this->ansNum; i++)
+		{
+			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+				break;
+
+			if (i >= this->output_offset)
+			{
+				std::vector<std::string> row;
+				for(int j = 0; j < this->true_select_var_num; j++)
+				{
+					row.emplace_back(Util::node2string(this->answer[i][j].c_str()));
+				}
+				rows.emplace_back(row);
+			}
+		}
+	}
+	Util::printConsole(headers, rows);
+}
+
+void
 ResultSet::openStream(vector<unsigned> &_keys, vector<bool> &_desc)
 {
 	if (this->useStream)

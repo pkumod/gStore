@@ -43,6 +43,7 @@ public:
 	//convert to JSON string
 	std::string to_JSON();
 	void output(FILE* _fp);		//output all results using Stream
+	void prettyPrint();
 	void setVar(const std::vector<std::string> & _var_names);
 
 	//operations on private stream from caller
