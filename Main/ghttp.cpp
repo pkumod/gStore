@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-09-29 22:29:15
+ * @LastEditTime: 2022-10-11 10:31:55
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -119,7 +119,7 @@ void test_connect_thread_new(const shared_ptr<HttpServer::Request> &request, con
 
 void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file);
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir);
 
 void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file);
 
@@ -764,8 +764,21 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		if (apiUtil->build_db_user_privilege(db_name, username))
 		{
 			string success = "Import RDF file to database done.";
-			sendResponseMsg(0, success, operation, request, response);
+			string error_log = "./" + database + ".db/parse_error.log";
+			size_t parse_error_num = Util::count_lines(error_log);
+			rapidjson::Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+			doc.AddMember("failed_num", parse_error_num, allocator);
+			if (parse_error_num > 0)
+			{
+				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
+				SLOG_ERROR("See log file for details " + database + ".db/parse_error.log");
+			}
 			Util::add_backuplog(db_name);
+			sendResponseMsg(doc, operation, request, response);
 		}
 		else
 		{
@@ -2761,10 +2774,11 @@ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, c
  * @param {string} file: the insert data file
  * @return {*}
  */
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string IP)
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir)
 {
 	string error;
 	string operation = "batchInsert";
+	bool is_file = true;
 	try
 	{
 		error = apiUtil->check_param_value("db_name", db_name);
@@ -2776,12 +2790,24 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		error = apiUtil->check_param_value("file", file);
 		if (error.empty() == false)
 		{
+			is_file = false;
+			error = apiUtil->check_param_value("dir", dir);
+			if (error.empty() == false)
+			{
+				error = "file and dir cannot be empty at the same time!";
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
+		}
+		if (is_file && Util::file_exist(file) == false)
+		{
+			error = "The data file is not exist";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		if (Util::file_exist(file) == false)
+		if (!is_file && Util::dir_exist(dir) == false )
 		{
-			error = "The data file is not exist";
+			error = "The data directory is not exist";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -2806,16 +2832,40 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		else
 		{
 			string success = "Batch insert data successfully.";
-			unsigned success_num = current_database->batch_insert(file, false, nullptr);
+			unsigned success_num = 0;
+			unsigned total_num = 0;
+			if (is_file)
+			{
+				total_num = Util::count_lines(file);
+				success_num = current_database->batch_insert(file, false, nullptr);
+			}
+			else
+			{
+				vector<string> files;
+				if (dir[dir.length() - 1] != '/')
+				{
+					dir.push_back('/');
+				}
+				Util::dir_files(dir, "", files);
+				for (string rdf_file : files)
+				{
+					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
+					total_num += Util::count_lines(dir + rdf_file);
+					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
+				}
+			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
+			unsigned parse_error_num = total_num - success_num;
 
 			Document resDoc;
 			resDoc.SetObject();
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+			resDoc.AddMember("success_num", success_num, allocator);
+			resDoc.AddMember("failed_num", parse_error_num, allocator);
+			
 			sendResponseMsg(resDoc, operation, request, response);
 		}
 	}
@@ -3522,18 +3572,25 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (operation == "batchInsert")
 	{
 		string file = "";
+		string dir = "";
 		try
 		{
 			if (request_type == "GET")
 			{
 				file = WebUrl::CutParam(url, "file");
 				file = UrlDecode(file);
+				dir = WebUrl::CutParam(url, "dir");
+				dir = UrlDecode(dir);
 			}
 			else if (request_type == "POST")
 			{
 				if (document.HasMember("file") && document["file"].IsString())
 				{
 					file = document["file"].GetString();
+				}
+				if (document.HasMember("dir") && document["dir"].IsString())
+				{
+					dir = document["dir"].GetString();
 				}
 			}
 		}
@@ -3543,7 +3600,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		batchInsert_thread_new(request, response, db_name, file, remote_ip);
+		batchInsert_thread_new(request, response, db_name, file, dir);
 	}
 	else if (operation == "batchRemove")
 	{
