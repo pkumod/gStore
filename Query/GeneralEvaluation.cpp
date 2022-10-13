@@ -747,8 +747,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				// Use `tr` to store BFS starting vertices
 				TempResultSet *sub_result = new TempResultSet();
 				TempResult *tr = NULL;
-				if (result->results.size() > 0 && result->results[0].result.size() > 0)
-					tr = &(result->results[0]);
+				if (result->results.size() > 0)
+				{
+					size_t j;
+					for (j = 0; j < result->results.size(); j++)
+					{
+						if (result->results[j].result.empty())
+							j++;
+						break;
+					}
+					if (j < result->results.size() && !result->results[j].result.empty())
+						tr = &(result->results[j]);
+				}
 
 				// BFS from the subjects / objects to find results
 				kleeneClosure(sub_result, tr, group_pattern.sub_group_pattern[i].pattern.subject.value, \
@@ -1033,8 +1043,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							TempResultSet *temp = new TempResultSet();
 
 							TempResult *tr = NULL;
-							if (sub_result->results.size() > 0 && sub_result->results[0].result.size() > 0)
-								tr = &(sub_result->results[0]);
+							if (sub_result->results.size() > 0)
+							{
+								size_t k;
+								for (k = 0; k < sub_result->results.size(); k++)
+								{
+									if (sub_result->results[k].result.empty())
+										k++;
+									break;
+								}
+								if (k < sub_result->results.size() && !sub_result->results[k].result.empty())
+									tr = &(sub_result->results[k]);
+							}
 
 							// BFS from the subjects / objects to find results
 							kleeneClosure(temp, tr, triple_pattern.sub_group_pattern[l].pattern.subject.value, \
@@ -4477,26 +4497,48 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		}
 
 		unsigned subjectIdx = 0, objectIdx = 0;
+		bool subjectInId = true, objectInId = true;
 		while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
 			subjectIdx++;
 		while (objectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[objectIdx] != object)
 			objectIdx++;
 		if (subjectIdx == cand->id_varset.vars.size() && objectIdx == cand->id_varset.vars.size())
 		{
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
-			return;
+			subjectIdx = 0;
+			objectIdx = 0;
+			while (subjectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[subjectIdx] != subject)
+				subjectIdx++;
+			while (objectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[objectIdx] != object)
+				objectIdx++;
+			if (subjectIdx < cand->str_varset.vars.size())
+				subjectInId = false;
+			else if (objectIdx < cand->str_varset.vars.size())
+				objectInId = false;
+			else
+				cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
+				return;
 		}
 		// prepPathQuery();
 		set<unsigned> sid_set, tid_set;
-		if (subjectIdx < cand->id_varset.vars.size())
+		if (subjectInId && subjectIdx < cand->id_varset.vars.size())
 		{
 			for (size_t i = 0; i < cand->result.size(); i++)
 				sid_set.insert(cand->result[i].id[subjectIdx]);
 		}
-		if (objectIdx < cand->id_varset.vars.size())
+		else if (subjectIdx < cand->str_varset.vars.size())
+		{
+			for (size_t i = 0; i < cand->result.size(); i++)
+				sid_set.insert(kvstore->getIDByString(cand->result[i].str[subjectIdx]));
+		}
+		if (objectInId && objectIdx < cand->id_varset.vars.size())
 		{
 			for (size_t i = 0; i < cand->result.size(); i++)
 				tid_set.insert(cand->result[i].id[objectIdx]);
+		}
+		else if (objectIdx < cand->str_varset.vars.size())
+		{
+			for (size_t i = 0; i < cand->result.size(); i++)
+				tid_set.insert(kvstore->getIDByString(cand->result[i].str[objectIdx]));
 		}
 		if (sid_set.size() > 0 && (sid_set.size() <= tid_set.size() || tid_set.size() == 0))
 		{
