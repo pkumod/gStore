@@ -31,21 +31,6 @@ int get_all_folders(string path, vector<string> &folders)
     return 0;
 }
 
-long int get_timestamp(string& line)
-{
-    int n = line.length()-2;
-    long int timestamp = 0;
-    int i = 0;
-    while(isdigit(line[n]))
-    {
-        timestamp = pow(10, i) * (line[n] - '0') + timestamp;
-        i++;
-        n--;
-    }
-    line = line.substr(0, line.length() - i - 2);
-    return timestamp;
-}
-
 string undo_sparql(string line)
 {
     string undo_sparql;
@@ -69,30 +54,6 @@ string get_postfix(string datetime)
     postfix += datetime.substr(14,2);
     postfix += datetime.substr(17,2);
     return postfix;
-}
-
-string stamp2time(int timestamp)
-{
-    time_t tick = (time_t)timestamp;
-    struct tm tm;
-    char s[100];
-    tm = *localtime(&tick);
-    strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S", &tm);
-
-    return s;
-}
-
-bool is_number(string s)
-{
-    if (s.empty())
-    {
-        return false;
-    }
-    string::size_type pos = 0;
-    for(; pos < s.size(); pos++){
-        if(!isdigit(s[pos])) return false;
-    }
-    return true;
 }
 
 string gc_getUrl(string _type, string _port)
@@ -256,7 +217,7 @@ main(int argc, char * argv[])
                 port = res[1];
             } 
         }
-        else if (is_number(type_port))
+        else if (Util::is_number(type_port))
         {
             port = type_port;
             string res;
@@ -357,8 +318,8 @@ main(int argc, char * argv[])
     cout << flag << endl;
     //undo updates according to log
     if(flag == 1)
-    cout << "Database " << db_name << " has restored to time: " 
-    << stamp2time(undo_point) << endl;
+    cout << "Database " << db_name << " has restored to time: "
+    << Util::stamp2time(undo_point) << endl;
     else
     cout << "Database " << db_name << " has restored to time: " 
     << folders[inx] << endl;

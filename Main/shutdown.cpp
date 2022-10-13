@@ -11,28 +11,6 @@
 
 using namespace std;
 
-bool is_number(string s)
-{
-    if (s.empty())
-    {
-        return false;
-    }
-    string::size_type pos = 0;
-    for(; pos < s.size(); pos++){
-        if(!isdigit(s[pos])) return false;
-    }
-    return true;
-}
-
-string int2string(int n)
-{
-	string s;
-	stringstream ss;
-	ss<<n;
-	ss>>s;
-	return s;
-}
-
 string gc_getUrl(string _type, string _port)
 {
     string _url = "";
@@ -117,9 +95,9 @@ int main(int argc, char *argv[])
 			{
 				type = res[0];
 				port = res[1];
-			} 
-		} 
-		else if (is_number(type_port))
+			}
+		}
+		else if (Util::is_number(type_port))
 		{
 			port = type_port;
 			string res = "";
