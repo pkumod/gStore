@@ -377,7 +377,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			}
 			// TODO: can only handle aggregates on var for now
 			if (aggCtx->expression())
-				proj_var.aggregate_var = aggCtx->expression()->getText();	// Error would have been dealt with
+				buildCompTree(aggCtx->expression(), -1, proj_var.comp_tree_root);
 			else
 				proj_var.aggregate_var = "*";
 			tmp = aggCtx->children[2]->getText();

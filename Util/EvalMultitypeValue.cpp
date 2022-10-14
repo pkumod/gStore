@@ -923,6 +923,13 @@ void EvalMultitypeValue::deduceTermValue()
 
 void EvalMultitypeValue::deduceTypeValue()
 {
+	if (term_value.empty())
+	{
+		datatype = EvalMultitypeValue::xsd_boolean;
+		bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+		return;
+	}
+	
 	if (term_value[0] == '<' && term_value[term_value.length() - 1] == '>')
 	{
 		datatype = EvalMultitypeValue::iri;
