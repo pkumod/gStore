@@ -184,7 +184,7 @@ $(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_schedule
 	$(CXX) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library) $(openmp) ${ldl}
 
 $(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile) ${objdir}APIUtil.o
-	$(CXX) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) ${objdir}APIUtil.o $(library) $(inc) -DUSE_BOOST_REGEX $(openmp) ${ldl}
+	$(CXX) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) ${objdir}APIUtil.o $(library) $(inc) $(openmp) ${ldl}
 
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
 #	$(CXX) $(EXEFLAG) -o $(exedir)gapiserver $(objdir)gapiserver.o $(objfile) $(library) $(openmp)
@@ -262,7 +262,7 @@ $(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Se
 	$(CXX) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) $(inc_log) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
 $(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
-	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) -o $(objdir)ghttp.o $(def64IO) $(openmp)
 
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CXX) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
@@ -637,7 +637,7 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(filter $(FIRST_BUILD),$(o
 #objects in GRPC/ begin
 
 $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) $(inc_log) -o $(objdir)APIUtil.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) $(inc_log) -o $(objdir)APIUtil.o $(def64IO) $(openmp)
 
 $(objdir)grpc_status_code.o: GRPC/grpc_status_code.cpp GRPC/grpc_status_code.h $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_status_code.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_status_code.o $(def64IO) $(openmp)
@@ -750,10 +750,10 @@ $(objdir)gadd.o: Main/gadd.cpp
 	$(CXX) $(CFLAGS) Main/gadd.cpp $(inc) $(inc_log) -o $(objdir)gadd.o $(openmp)
 
 #$(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
-	#$(CXX) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr4-runtime.a $(library) $(inc) -DUSE_BOOST_REGEX
+	#$(CXX) $(CFLAGS) -o $(exedir)HttpConnector $(objdir)HttpConnector.o $(objfile) lib/libantlr4-runtime.a $(library) $(inc)
 
 #$(objdir)HttpConnector.o: Main/HttpConnector.cpp
-	#$(CXX) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library) -DUSE_BOOST_REGEX
+	#$(CXX) $(CFLAGS) Main/HttpConnector.cpp $(inc) -o $(objdir)HttpConnector.o $(library)
 
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) ${ldl}

@@ -8,7 +8,7 @@ sleep 5s
 apt install -y aptitude
 echo -e "aptitude installed to search softwares conveniently \n"
 
-apt install -y gcc-5 g++-5
+apt install -y gcc g++
 echo -e "g++ installed \n"
 
 apt install -y make
