@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <memory>
+#include <regex>
 
 #ifndef CASE_INSENSITIVE_EQUALS_AND_HASH
 #define CASE_INSENSITIVE_EQUALS_AND_HASH
@@ -31,15 +32,6 @@ public:
     return seed;
   }
 };
-#endif
-
-// Late 2017 TODO: remove the following checks and always use std::regex
-#ifdef USE_BOOST_REGEX
-#include <boost/regex.hpp>
-#define REGEX_NS boost
-#else
-#include <regex>
-#define REGEX_NS std
 #endif
 
 // TODO when switching to c++14, use [[deprecated]] instead
@@ -109,7 +101,7 @@ namespace SimpleWeb {
 
             std::unordered_multimap<std::string, std::string, case_insensitive_hash, case_insensitive_equals> header;
 
-            REGEX_NS::smatch path_match;
+            std::smatch path_match;
 
             std::string remote_endpoint_address;
             unsigned short remote_endpoint_port;
@@ -149,11 +141,11 @@ namespace SimpleWeb {
         Config config;
 
     private:
-        class regex_orderable : public REGEX_NS::regex {
+        class regex_orderable : public std::regex {
             std::string str;
         public:
-            regex_orderable(const char *regex_cstr) : REGEX_NS::regex(regex_cstr), str(regex_cstr) {}
-            regex_orderable(const std::string &regex_str) : REGEX_NS::regex(regex_str), str(regex_str) {}
+            regex_orderable(const char *regex_cstr) : std::regex(regex_cstr), str(regex_cstr) {}
+            regex_orderable(const std::string &regex_str) : std::regex(regex_str), str(regex_str) {}
             bool operator<(const regex_orderable &rhs) const {
                 return str<rhs.str;
             }
@@ -371,8 +363,8 @@ namespace SimpleWeb {
             for(auto &regex_method: resource) {
                 auto it=regex_method.second.find(request->method);
                 if(it!=regex_method.second.end()) {
-                    REGEX_NS::smatch sm_res;
-                    if(REGEX_NS::regex_match(request->path, sm_res, regex_method.first)) {
+                    std::smatch sm_res;
+                    if(std::regex_match(request->path, sm_res, regex_method.first)) {
                         request->path_match=std::move(sm_res);
                         write_response(socket, request, it->second);
                         return;

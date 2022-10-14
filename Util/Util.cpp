@@ -1047,6 +1047,7 @@ Util::string_replace(string rec, const string src, const string des)
 bool
 Util::is_number(string s)
 {
+	if (s.empty()) return false;
     string::size_type pos = 0;
     for(; pos < s.size(); pos++){
         if(!isdigit(s[pos])) return false;
