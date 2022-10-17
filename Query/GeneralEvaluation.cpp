@@ -2850,7 +2850,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						// cout << endl;
 
 						// vid
-						if (proj[0].aggregate_type != QueryTree::ProjectionVar::ppr_type)
+						if (proj[i].aggregate_type != QueryTree::ProjectionVar::ppr_type)
 						{
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 							{
