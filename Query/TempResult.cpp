@@ -246,6 +246,11 @@ void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, 
 
 void TempResult::doJoin(TempResult &x, TempResult &r)
 {
+	// long large_begin, large_end;
+	// long small_begin, small_end;
+	// large_begin = Util::get_cur_time();
+	// small_begin = Util::get_cur_time();
+
 	int this_id_cols = this->id_varset.getVarsetSize();
 	int x_id_cols = x.id_varset.getVarsetSize();
 
@@ -262,50 +267,153 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 
 	Varset common = this->getAllVarset() * x.getAllVarset();
 
+	// long totalJoinTime = 0, totalSortTime = 0, totalFindBounderTime = 0, totalPreTime = 0;
+	// int iterLen = 0;
+
+	// small_end = Util::get_cur_time();
+	// totalPreTime = small_end - small_begin;
+
 	if (common.empty())
 	{
-		for (int i = 0; i < (int)this->result.size(); i++)
-			for (int j = 0; j < (int)x.result.size(); j++)
+		// printf("Res size = %d, ", (int)this->result.size() * (int)x.result.size());
+		r.result.resize(this->result.size() * x.result.size());
+		// r.result.assign(this->result.size() * x.result.size(), TempResult::ResultPair(r_str_cols));
+		bool x_larger = x.result.size() > this->result.size();
+		if (r_id_cols > 0)
+		{
+			size_t curr = 0;
+
+			if (x_larger)
 			{
-				r.result.push_back(ResultPair());
+				for (int i = 0; i < (int)this->result.size(); i++)
+					for (int j = 0; j < (int)x.result.size(); j++)
+					{
+						r.result[curr].id = new unsigned [r_id_cols];
+						r.result[curr].sz = r_id_cols;
+						unsigned *v = r.result[curr].id;
 
-				if (r_id_cols > 0)
-				{
-					r.result.back().id = new unsigned [r_id_cols];
-					r.result.back().sz = r_id_cols;
-					unsigned *v = r.result.back().id;
+						for (int k = 0; k < this_id_cols; k++)
+							v[this2r_id_pos[k]] = this->result[i].id[k];
+						for (int k = 0; k < x_id_cols; k++)
+							v[x2r_id_pos[k]] = x.result[j].id[k];
 
-					for (int k = 0; k < this_id_cols; k++)
-						v[this2r_id_pos[k]] = this->result[i].id[k];
-					for (int k = 0; k < x_id_cols; k++)
-						v[x2r_id_pos[k]] = x.result[j].id[k];
-				}
-
-				if (r_str_cols > 0)
-				{
-					r.result.back().str.resize(r_str_cols);
-					vector<string> &v = r.result.back().str;
-
-					for (int k = 0; k < this_str_cols; k++)
-						v[this2r_str_pos[k]] = this->result[i].str[k];
-					for (int k = 0; k < x_str_cols; k++)
-						v[x2r_str_pos[k]] = x.result[j].str[k];
-				}
+						curr++;
+					}
 			}
+			else
+			{
+				for (int j = 0; j < (int)x.result.size(); j++)
+					for (int i = 0; i < (int)this->result.size(); i++)
+					{
+						r.result[curr].id = new unsigned [r_id_cols];
+						r.result[curr].sz = r_id_cols;
+						unsigned *v = r.result[curr].id;
+
+						for (int k = 0; k < this_id_cols; k++)
+							v[this2r_id_pos[k]] = this->result[i].id[k];
+						for (int k = 0; k < x_id_cols; k++)
+							v[x2r_id_pos[k]] = x.result[j].id[k];
+
+						curr++;
+					}
+			}
+		}
+		if (r_str_cols > 0)
+		{
+			size_t curr = 0;
+			if (x_larger)
+			{
+				for (int i = 0; i < (int)this->result.size(); i++)
+					for (int j = 0; j < (int)x.result.size(); j++)
+					{
+						r.result[curr].str.resize(r_str_cols);
+						vector<string> &v = r.result[curr].str;
+
+						for (int k = 0; k < this_str_cols; k++)
+							// copy(this->result[i].str[k].begin(), this->result[i].str[k].end(), v[this2r_str_pos[k]].begin());
+							v[this2r_str_pos[k]] = std::move(this->result[i].str[k]);
+							// v[this2r_str_pos[k]] = this->result[i].str[k];	// move
+						for (int k = 0; k < x_str_cols; k++)
+							// copy(x.result[j].str[k].begin(), x.result[j].str[k].end(), v[x2r_str_pos[k]].begin());
+							v[x2r_str_pos[k]] = std::move(x.result[j].str[k]);
+							// v[x2r_str_pos[k]] = x.result[j].str[k];	// move
+
+						curr++;
+					}
+			}
+			else
+			{
+				for (int j = 0; j < (int)x.result.size(); j++)
+					for (int i = 0; i < (int)this->result.size(); i++)
+					{
+						r.result[curr].str.resize(r_str_cols);
+						vector<string> &v = r.result[curr].str;
+
+						for (int k = 0; k < this_str_cols; k++)
+							// copy(this->result[i].str[k].begin(), this->result[i].str[k].end(), v[this2r_str_pos[k]].begin());
+							v[this2r_str_pos[k]] = std::move(this->result[i].str[k]);
+							// v[this2r_str_pos[k]] = this->result[i].str[k];	// move
+						for (int k = 0; k < x_str_cols; k++)
+							// copy(x.result[j].str[k].begin(), x.result[j].str[k].end(), v[x2r_str_pos[k]].begin());
+							v[x2r_str_pos[k]] = std::move(x.result[j].str[k]);
+							// v[x2r_str_pos[k]] = x.result[j].str[k];	// move
+
+						curr++;
+					}
+			}
+		}
+
+		// for (int i = 0; i < (int)this->result.size(); i++)
+		// 	for (int j = 0; j < (int)x.result.size(); j++)
+		// 	{
+		// 		r.result.push_back(ResultPair());
+
+		// 		if (r_id_cols > 0)	// out of for
+		// 		{
+		// 			r.result.back().id = new unsigned [r_id_cols];
+		// 			r.result.back().sz = r_id_cols;
+		// 			unsigned *v = r.result.back().id;
+
+		// 			for (int k = 0; k < this_id_cols; k++)
+		// 				v[this2r_id_pos[k]] = this->result[i].id[k];
+		// 			for (int k = 0; k < x_id_cols; k++)
+		// 				v[x2r_id_pos[k]] = x.result[j].id[k];
+		// 		}
+
+		// 		if (r_str_cols > 0)
+		// 		{
+		// 			r.result.back().str.resize(r_str_cols);	// remove
+		// 			vector<string> &v = r.result.back().str;
+
+		// 			for (int k = 0; k < this_str_cols; k++)
+		// 				v[this2r_str_pos[k]] = this->result[i].str[k];	// move
+		// 			for (int k = 0; k < x_str_cols; k++)
+		// 				v[x2r_str_pos[k]] = x.result[j].str[k];	// move
+		// 		}
+		// 	}
 	}
 	else if (!x.result.empty())
 	{
 		vector<int> common2this = common.mapTo(this->getAllVarset());
 		vector<int> common2x = common.mapTo(x.getAllVarset());
+
+		// small_begin = Util::get_cur_time();
 		x.sort(0, (int)x.result.size() - 1, common2x);
+		// small_end = Util::get_cur_time();
+		// totalSortTime += small_end - small_begin;
 
 		int this_id_cols = this->id_varset.getVarsetSize();
 		for (int i = 0; i < (int)this->result.size(); i++)
 		{
+			// small_begin = Util::get_cur_time();
 			int left = x.findLeftBounder(common2x, this->result[i], this_id_cols, common2this);
 			if (left == -1)	continue;
 			int right = x.findRightBounder(common2x, this->result[i], this_id_cols, common2this);
+			// iterLen += right - left + 1;
+			// small_end = Util::get_cur_time();
+			// totalFindBounderTime += small_end - small_begin;
 
+			// small_begin = Util::get_cur_time();
 			for (int j = left; j <= right; j++)
 			{
 				r.result.push_back(ResultPair());
@@ -333,9 +441,15 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 						v[x2r_str_pos[k]] = x.result[j].str[k];
 				}
 			}
+			// small_end = Util::get_cur_time();
+			// totalJoinTime += small_end - small_begin;
 		}
 	}
 	// If x.result.empty(), do nothing
+	// large_end = Util::get_cur_time();
+	// if (common.empty())
+	// 	printf("Total time %ld ms\n", large_end - large_begin);
+	// printf("Total time %ld ms, common %d, join %ld ms, sort %ld ms, find bounder %ld ms, iterLen = %d, r_id_cols = %d, r_str_cols = %d\n", large_end - large_begin, common.empty(), totalJoinTime, totalSortTime, totalFindBounderTime, iterLen, r_id_cols, r_str_cols);
 }
 
 void TempResult::doUnion(TempResult &r)
@@ -1215,18 +1329,28 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stri
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
 			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
 
+	// long totalFindCompTime = 0, totalInnerJoinTime = 0;
 	for (int i = 0; i < (int)this->results.size(); i++)
 		for (int j = 0; j < (int)x.results.size(); j++)
 		{
 			Varset id_varset = this->results[i].id_varset + x.results[j].id_varset;
 			Varset str_varset = this->results[i].str_varset + x.results[j].str_varset;
 
+			// long small_begin, small_end;
+			// small_begin = Util::get_cur_time();
 			int pos = r.findCompatibleResult(id_varset, str_varset);
+			// small_end = Util::get_cur_time();
+			// totalFindCompTime += small_end - small_begin;
+
+			// small_begin = Util::get_cur_time();
 			this->results[i].doJoin(x.results[j], r.results[pos]);
+			// small_end = Util::get_cur_time();
+			// totalInnerJoinTime += small_end - small_begin;
 		}
 
 	long tv_end = Util::get_cur_time();
 	printf("after doJoin, used %ld ms.\n", tv_end - tv_begin);
+	// printf("after doJoin, used %ld ms (find compatible %ld ms, inner join %ld ms).\n", tv_end - tv_begin, totalFindCompTime, totalInnerJoinTime);
 }
 
 void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
