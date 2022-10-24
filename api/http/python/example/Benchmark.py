@@ -72,7 +72,7 @@ def Mythread(rnum, sparql, filename, RequestType):
     global correctness
     
     # query
-    gc = GstoreConnector.GstoreConnector(IP, Port, httpType, username, password)
+    gc = GstoreConnector.GstoreConnector(IP, Port, username, password, http_type=httpType)
     res = gc.query("lubm", "json", sparql, RequestType)
 
     # fquery
