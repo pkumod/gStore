@@ -29,7 +29,7 @@ sparql = "select ?x where \
 filename = "res.txt"
 
 # start a gc with given IP, Port, username and password
-gc =  GstoreConnector.GstoreConnector(IP, Port, httpType, username, password)
+gc =  GstoreConnector.GstoreConnector(IP, Port, username, password, http_type=httpType)
 
 # build a database with a RDF graph
 res = gc.build("lubm", "data/lubm/lubm.nt")
