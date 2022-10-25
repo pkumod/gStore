@@ -2,7 +2,7 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2022-09-23 14:18:00
+ * @LastEditTime: 2022-10-25 11:13:23
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
@@ -154,20 +154,26 @@ main(int argc, char * argv[])
 				else //update query
 				{
 					if (ret >= 0)
-						msg = "update num : " + Util::int2string(ret);
+						msg = "update num " + Util::int2string(ret);
 					else //update error
 						msg = "update failed.";
 					/*if (ret != -100)
 						cout << msg << endl;*/
 				}
 				Util::add_backuplog(_db_path);
-				cout<<"Saving database info:" + msg<<endl;
+				cout<<"Saving database info: " + msg<<endl;
 				
 			}
 			long tv_end = Util::get_cur_time();
 			//stringstream ss;
 			cout<< "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
-			//Log.Info(ss.str().c_str());
+			string error_log = "./" + _db_path + ".db/parse_error.log";
+			size_t parse_error_num = Util::count_lines(error_log);
+			if (parse_error_num > 0)
+			{
+				cout<< "RDF parse error num "<< parse_error_num << endl;
+				cout<< "See log file for details " << _db_path <<".db/parse_error.log" << endl;
+			}
 			return 0;
 		}
 	}
