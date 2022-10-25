@@ -44,6 +44,7 @@ public:
 	std::string to_JSON();
 	TempResult to_tempresult();
 	void output(FILE* _fp);		//output all results using Stream
+	void prettyPrint();
 	void setVar(const std::vector<std::string> & _var_names);
 
 	//operations on private stream from caller
