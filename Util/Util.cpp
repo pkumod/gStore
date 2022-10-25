@@ -291,13 +291,13 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "system", "log_mode");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
     
-    // init slog
+   // init slog
     string log_mode = Util::getConfigureValue("log_mode");
-    Slog::getInstance().init(log_mode.c_str());
-    if(Slog::getInstance()._logger.getLogLevel() == log4cplus::DEBUG_LOG_LEVEL)
+    Slog &slog = Slog::getInstance();
+    slog.init(log_mode.c_str());
+    if (slog._logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
-        SLOG_DEBUG("the current settings are as below: ");
-        SLOG_DEBUG("key : value");
+        SLOG_DEBUG("the current settings are as below (key:value): ");
         SLOG_DEBUG("----------------------------------");
         for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
         {
@@ -812,6 +812,46 @@ Util::result_id_str(vector<unsigned*>& _v, int _var_num)
     return _ss.str();
 }
 
+void
+Util::dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list)
+{
+
+    DIR *dirp = opendir(_dir.c_str());
+    if (dirp == NULL)
+    {
+        if(Slog::_logger.getAllAppenders().size() > 0)
+        {
+            SLOG_WARN("dir is not exist.");
+        }
+        else
+        {
+            cout << "dir is not exist." << endl;
+        }
+        return;
+    }
+    struct dirent *dir_entry = NULL;
+    string file_name;
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        file_name = dir_entry->d_name;
+        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+        if (!_extend_name.empty())
+        {
+            if (file_name.find(_extend_name.c_str()) != string::npos)
+            {
+                file_list.push_back(dir_entry->d_name);
+            }
+        }
+        else
+        {
+            file_list.push_back(dir_entry->d_name);
+        }
+    }
+    closedir(dirp);
+}
 
 bool
 Util::dir_exist(const string _dir)
@@ -877,6 +917,54 @@ Util::create_file(const string _file) {
 		return true;
 	}
 	return false;
+}
+
+size_t
+Util::count_lines(const std::string _file, unsigned int _mode)
+{
+    size_t count = 0;
+    if (_mode == 0)
+    {
+        std::string cmd = "wc -l " + _file + " | awk '{print $1}'";
+        // cout << "count by cmd: " << cmd << endl;
+        char _cmd[1024] = {0};
+        strcpy(_cmd, cmd.c_str());
+        FILE *ptr;
+        if ((ptr = popen(_cmd, "r")) != NULL)
+        {
+            char buf[64];
+            char *rt = new char[128]{0};
+            while (fgets(buf, 64, ptr) != NULL)
+            {
+                strcat(rt, buf);
+                if (strlen(rt) > 64)
+                {
+                    break;
+                }
+            }
+            pclose(ptr);
+            ptr = NULL;
+            count = atol(rt);
+            delete rt;
+        }
+    }
+    else
+    {
+        // cout << "count by reader: " << _file << endl;
+        ifstream reader;
+        std::string line;
+        reader.open(_file.c_str(),ios::in);
+        if (reader.fail())
+        {
+            return 0;
+        }
+        while (getline(reader, line))
+        {
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 long
@@ -2197,6 +2285,25 @@ Util::replace_all(std::string _content,const std::string oldtext,const std::stri
     return  _content;
 }
 
+std::string
+Util::clear_angle_brackets(std::string _str)
+{
+    size_t len = _str.size();
+    if (_str[0] == '<' && _str[len-1] == '>')
+    {
+        _str = _str.substr(1, len-2);
+    } 
+    else if (_str[0] == '<') 
+    {
+        _str = _str.substr(1, len-1);
+    }
+    else if (_str[len-1] == '>') 
+    {
+        _str = _str.substr(0, len-2);
+    }
+    return _str;
+}
+
 void
 Util::split(string str, string pattern, vector<string> &res){
     string::size_type pos = 0;
@@ -2552,7 +2659,7 @@ pair<bool, double> Util::checkGetNumericLiteral(string &literal)
 std::string Util::md5(const string& text)
 {
     MD5 _md5(text);
-    return _md5.md5();
+    return _md5.toStr();
 }
 
 bool Util::iscontain(const string& _parent,const string& _child)
@@ -2568,11 +2675,36 @@ bool Util::iscontain(const string& _parent,const string& _child)
  }
 }
 
-// void Util::formatPrint(std::string content, std::string type)
-// {
-//     string time = Util::get_date_time();
-//     cout << "[" << type << "][" << time << "] " << content << endl;
-// }
+void Util::printConsole(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows)
+{
+    PrettyPrint pp(headers);
+    for(auto row: rows)
+        pp.addRow(row);
+    pp.print(std::cout);
+}
+
+void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows)
+{
+    PrettyPrint pp(headers);
+    for(auto row: rows)
+        pp.addRow(row);
+    stringstream ss;
+    ss << "\n";
+    pp.print(ss);
+    if (Slog::_logger.getAllAppenders().size() == 0)
+    {
+        Util::configure_new();
+    }
+    
+    if(Slog::_logger.isEnabledFor(log4cplus::INFO_LOG_LEVEL))
+    {
+        SLOG_INFO(ss.str());
+    } 
+    else if (Slog::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
+    {
+        SLOG_DEBUG(ss.str());
+    }
+}
 
 std::string Util::urlEncode(const std::string& str)
 {
