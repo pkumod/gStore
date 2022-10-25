@@ -442,27 +442,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::stringstream ss;
 		std::string v;
-		ss << "{";
-		int count = 0;
 		while (iter != form_data.end())
 		{
-			if (count > 0)
-			{
-				ss << ",";
-			}
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
 				StringUtil::url_decode(v);
 			}
-			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-			count++;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
 		}
-		ss << "}";
-		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -470,27 +460,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::stringstream ss;
 			std::string v;
-			ss << "{";
-			int count = 0;
 			while (iter != params.end())
 			{
-				if (count > 0)
-				{
-					ss << ",";
-				}
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
 					StringUtil::url_decode(v);
 				}
-				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-				count++;
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 				iter++;
 			}
-			ss << "}";
-			json_data.Parse(ss.str().c_str());
 		}
 	}
 	// add remote_ip param
@@ -1242,7 +1222,21 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// add database information to system.db
 		if (apiUtil->build_db_user_privilege(db_name, username))
 		{
-			response->Success("Import RDF file to database done.");
+			string success = "Import RDF file to database done.";
+			string error_log = "./" + database + ".db/parse_error.log";
+			size_t parse_error_num = Util::count_lines(error_log);
+			rapidjson::Document resp_data;
+			resp_data.SetObject();
+			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+			resp_data.AddMember("failed_num", parse_error_num, allocator);
+			if (parse_error_num > 0)
+			{
+				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
+				SLOG_ERROR("See log file for details " + database + ".db/parse_error.log");
+			}
+			response->Json(resp_data);
 			Util::add_backuplog(db_name);
 		}
 		else
@@ -2345,16 +2339,30 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
+		bool is_file = true;
 		std::string file = jsonParam(json_data, "file");
+		std::string dir = jsonParam(json_data, "dir");
 		error = apiUtil->check_param_value("file", file);
 		if (error.empty() == false)
 		{
+			is_file = false;
+			error = apiUtil->check_param_value("dir", dir);
+			if (error.empty() == false)
+			{
+				error = "file and dir cannot be empty at the same time!";
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
+		}
+		if (is_file && Util::file_exist(file) == false)
+		{
+			error = "The data file is not exist";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
-		if (Util::file_exist(file) == false)
+		if (!is_file && Util::file_exist(dir) == false)
 		{
-			error = "The data file is not exist";
+			error = "The data directory is not exist";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
@@ -2379,16 +2387,40 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		else
 		{
 			string success = "Batch insert data successfully.";
-			unsigned success_num = current_database->batch_insert(file, false, nullptr);
+			unsigned success_num = 0;
+			unsigned total_num = 0;
+			if (is_file)
+			{
+				total_num = Util::count_lines(file);
+				success_num = current_database->batch_insert(file, false, nullptr);
+			}
+			else
+			{
+				vector<string> files;
+				if (dir[dir.length() - 1] != '/')
+				{
+					dir.push_back('/');
+				}
+				Util::dir_files(dir, "", files);
+				for (string rdf_file : files)
+				{
+					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
+					total_num += Util::count_lines(dir + rdf_file);
+					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
+				}
+			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
+			unsigned parse_error_num = total_num - success_num;
 
 			Json resp_data;
 			resp_data.SetObject();
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+			resp_data.AddMember("success_num", success_num, allocator);
+			resp_data.AddMember("failed_num", parse_error_num, allocator);
+			
 			response->Json(resp_data);
 		}
 	}
