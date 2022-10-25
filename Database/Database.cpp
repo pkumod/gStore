@@ -1915,11 +1915,17 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
 		if (_result_set.output_limit != -1)
 			ans_num = min(ans_num, (long long)_result_set.output_limit);
-		cout << "#Answers: " << ans_num << endl;
+		cout << "There has answer: " << ans_num << endl;
+		cout << "final result is : " << endl;
 		if (_fp == stdout)
-			cout << "final result is : " << endl;
-		_result_set.output(_fp);
-		fflush(_fp); // to empty the output buffer in C (fflush(stdin) not work in GCC)
+		{
+			_result_set.prettyPrint();
+		}
+		else
+		{
+			_result_set.output(_fp);
+			fflush(_fp); // to empty the output buffer in C (fflush(stdin) not work in GCC)
+		}
 	}
 	// }
 
