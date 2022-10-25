@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 			jsonRes.Parse(res.c_str());
 			if (jsonRes.HasParseError())
 			{
-				cout << "the server stop fail.";
+				cout << "the server stop fail." << endl;
 			}
 			if (jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
 			{
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 					cmd = "rm system.db/port.txt";
 					system(cmd.c_str());
 				}
-				cout << "the Server is stopped successfully!";
+				cout << "the Server is stopped successfully!" << endl;
 			}
 		} 
 		else
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 				cmd = "rm system.db/port.txt";
 				system(cmd.c_str());
 			}
-			cout << "the Server is stopped successfully!";
+			cout << "the Server is stopped successfully!" << endl;
 		}
 		return 0;
 	}
