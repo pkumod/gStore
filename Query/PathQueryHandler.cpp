@@ -577,6 +577,8 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		// }
 		ans = shortestPath0(uid, vid, false, pred_set);
 		int lens = ans.size();
+		if (lens == 0)
+			return ans;
 		for (int i = lens - 2; i > 0; --i)
 			ans.push_back(ans[i]);
 		ans.push_back(uid);
