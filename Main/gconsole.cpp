@@ -1154,7 +1154,7 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 		Database system_db("system");
 		system_db.load();
 
-		ret = system_db.query(query, _rs);
+		ret = system_db.query(query, _rs, nullptr);
 		if (ret >= 0)
 		{ // update and update succeed
 			system_db.save();
@@ -1791,36 +1791,45 @@ int show_handler(const vector<string> &args)
 	}
 
 	// do query here: because query would output MUCH process info to stdout
+	ResultSet _db_rs;
+	int ret = silence_sysdb_query("select ?x ?y where{<" + db->getName() + "> <built_by> ?x. <" + db->getName() + "> <built_time> ?y.}", _db_rs);
+	if (ret != 0)															  // select query failed
+	{
+		cout << "Show database " << db->getName() << " failed: return " << ret <<" ." << endl;
+		return -1;
+	}
 	ResultSet re;
-	int ret = db->query("SELECT ?x ?y ?z WHERE{ ?x ?y ?z. } LIMIT " + lines, re); // limit query result to lines
+	ret = db->query("SELECT ?x ?y ?z WHERE{ ?x ?y ?z. } LIMIT " + lines, re, nullptr); // limit query result to lines
 	if (ret != -100)															  // select query failed
 	{
 		cout << "Show database " << db->getName() << " failed: Query this database failed." << endl;
 		return -1;
 	}
-
-	cout << "\n\n===================================================" << endl;
-	// meta info
-	cout << "Name:\t" << db->getName() << endl;
-	cout << "TripleNum:\t" << db->getTripleNum() << endl;
-	cout << "EntityNum:\t" << db->getEntityNum() << endl;
-	cout << "LiteralNum:\t" << db->getLiteralNum() << endl;
-	cout << "SubNum:\t" << db->getSubNum() << endl;
-	cout << "PreNum:\t" << db->getPreNum() << endl;
-	cout << "===================================================" << endl;
-
+	std::vector<std::string> header = {"name", "value"};
+	std::vector<std::vector<std::string>> rows;
+	rows.push_back({"database", db->getName()});
+	if (_db_rs.ansNum > 0)
+	{
+		string creator = Util::clear_angle_brackets(_db_rs.answer[0][0]); //remove <>
+		string built_time = Util::replace_all(_db_rs.answer[0][1], "\"", "");
+		rows.push_back({"creator", creator});
+		rows.push_back({"built_time", built_time});
+	}
+	rows.push_back({"riple_num", Util::int2string(db->getTripleNum())});
+	rows.push_back({"entity_num", Util::int2string(db->getEntityNum()),});
+	rows.push_back({"literal_num", Util::int2string(db->getLiteralNum())});
+	rows.push_back({"subject_num", Util::int2string(db->getSubNum())});
+	rows.push_back({"predicate_num", Util::int2string(db->getPreNum())});
+	Util::printConsole(header, rows);
 	// head lines triple
+	header = {"?s", "?p", "?o"};
+	rows.clear();
 	unsigned ed = min(re.ansNum, unsigned(stoi(lines)));
 	for (unsigned i = 0; i < ed; ++i)
 	{
-		for (unsigned j = 0; j < 3; ++j)
-		{
-			cout << re.answer[i][j] << "\t";
-		}
-		cout << endl;
+		rows.emplace_back(std::forward<std::vector<std::string>>({re.answer[i][0],re.answer[i][1],re.answer[i][2]}));
 	}
-	cout << endl;
-
+	Util::printConsole(header, rows);
 	if (db_name.empty() == 0)
 	{
 		// db->unload(); //NOTE: destructor of Database would call unload to release mem, if call unload explicitly would end up double free
@@ -1858,21 +1867,24 @@ int showdbs_handler(const vector<string> &args)
 	string **ans = rsv[1].answer;
 	for (int i = 0; i < sz; ++i)
 	{
-		db2stat[ans[i][0]] = ans[i][1];
+		db2stat[ans[i][0]] = Util::replace_all(ans[i][1], "\"", "");
 	}
 
-	cout << "\"database\"\t\"creater\"\tstatus\"" << endl;
+	// cout << "\"database\"\t\"creater\"\tstatus\"" << endl;
+	std::vector<std::string> headers = {"database", "creater", "status"};
+	std::vector<std::vector<std::string>> rows;
 	sz = rsv[0].ansNum;
 	ans = rsv[0].answer;
 	for (int i = 0; i < sz; ++i)
 	{
-		string dbname = ans[i][0];
-		cout << dbname << "\t" << ans[i][1];
-		if (db2stat.count(dbname))
-			cout << "\t" << db2stat[dbname];
-		cout << endl;
+		std::vector<std::string> row = {Util::clear_angle_brackets(ans[i][0]), Util::clear_angle_brackets(ans[i][1])};
+		if (db2stat.count(ans[i][0]))
+			row.emplace_back(db2stat[ans[i][0]]);
+		else
+			row.emplace_back("");
+		rows.emplace_back(row);
 	}
-
+	Util::printConsole(headers, rows);
 	return 0;
 }
 
