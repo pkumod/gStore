@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-10-10 10:03:26
+ * @LastEditTime: 2022-10-25 10:10:35
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -98,23 +98,23 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         query_log_mode = get_configure_value("querylog_mode", query_log_mode);
         query_log_path = get_configure_value("querylog_path", query_log_path);
         string_suffix(query_log_path, '/');
-        util.create_dir(query_log_path);
+        util.create_dirs(query_log_path);
         
         access_log_path = get_configure_value("accesslog_path", access_log_path);
         string_suffix(access_log_path, '/');
-        util.create_dir(access_log_path);
+        util.create_dirs(access_log_path);
         
         query_result_path = get_configure_value("queryresult_path", query_result_path);
         string_suffix(query_result_path, '/');
-        util.create_dir(query_result_path);
+        util.create_dirs(query_result_path);
         
         pfn_file_path = get_configure_value("pfn_file_path", pfn_file_path);
         string_suffix(pfn_file_path, '/');
-        util.create_dir(pfn_file_path);
+        util.create_dirs(pfn_file_path);
 
         pfn_lib_path = get_configure_value("pfn_lib_path", pfn_lib_path);
         string_suffix(pfn_lib_path, '/');
-        util.create_dir(pfn_lib_path);
+        util.create_dirs(pfn_lib_path);
 
         pfn_include_header = PFN_HEADER;
 
@@ -1805,7 +1805,7 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
-    int rt = pthread_rwlock_rdlock(&query_log_lock);
+    pthread_rwlock_rdlock(&query_log_lock);
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
@@ -1841,7 +1841,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
         totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
         if (page_no > totalPage)
         {
-            rt = pthread_rwlock_unlock(&query_log_lock);
+            pthread_rwlock_unlock(&query_log_lock);
             throw std::invalid_argument("more then max page number " + to_string(totalPage));
         }
         startLine = totalSize - page_size*page_no + 1;
@@ -1866,7 +1866,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             startLine++;
         }
         in.close();
-        rt = pthread_rwlock_unlock(&query_log_lock);
+        pthread_rwlock_unlock(&query_log_lock);
         size_t count;
         count =  lines.size();
         for (size_t i = 0; i < count; i++)
@@ -2175,7 +2175,7 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     file_name = pfn_info->getFunName();
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string file_dir = APIUtil::pfn_file_path + username;
-    util.create_dir(file_dir);
+    util.create_dirs(file_dir);
     string file_path = file_dir + "/" + file_name + ".cpp";
     SLOG_DEBUG("file_path: " + file_path);
     if (util.file_exist(file_path))
@@ -2278,10 +2278,8 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     //create a temp file
     string last_time = util.get_timestamp();
     string md5str = util.md5(last_time);
-    string targetDir = APIUtil::pfn_lib_path + username;
-    util.create_dir(targetDir);
-    targetDir = targetDir + "/.temp";
-    util.create_dir(targetDir);
+    string targetDir = APIUtil::pfn_lib_path + username + "/.temp";;
+    util.create_dirs(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
     string cmd = "rm -f " + targetFile;
@@ -2411,7 +2409,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
             string json_file_dir = APIUtil::pfn_file_path + username;
             if (!util.dir_exist(json_file_dir))
             {
-                util.create_dir(json_file_dir);
+                util.create_dirs(json_file_dir);
             }
             util.create_file(json_file_path);
         }
