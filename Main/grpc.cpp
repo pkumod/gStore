@@ -304,27 +304,17 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::stringstream ss;
 		std::string v;
-		ss << "{";
-		int count = 0;
 		while (iter != form_data.end())
 		{
-			if (count > 0)
-			{
-				ss << ",";
-			}
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
 				StringUtil::url_decode(v);
 			}
-			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-			count++;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
 		}
-		ss << "}";
-		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -332,27 +322,17 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::stringstream ss;
 			std::string v;
-			ss << "{";
-			int count = 0;
 			while (iter != params.end())
 			{
-				if (count > 0)
-				{
-					ss << ",";
-				}
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
 					StringUtil::url_decode(v);
 				}
-				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-				count++;
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 				iter++;
 			}
-			ss << "}";
-			json_data.Parse(ss.str().c_str());
 		}
 	}
 	std::stringstream ss;
@@ -360,9 +340,12 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	ss << "\nremote_ip: " << ip_addr;
 	ss << "\noperation: shutdown";
 	ss << "\nmethod: " << request->get_method();
-	ss << "\nrequest_path: " << request->current_path();
 	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_body: \n" << request->body();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	if (!request->body().empty())
+	{
+		ss << "\nrequest_body: \n" << request->body();
+	}
 	ss << "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss.str());
 	std::string error;
@@ -442,27 +425,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::stringstream ss;
 		std::string v;
-		ss << "{";
-		int count = 0;
 		while (iter != form_data.end())
 		{
-			if (count > 0)
-			{
-				ss << ",";
-			}
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
 				StringUtil::url_decode(v);
 			}
-			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-			count++;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
 		}
-		ss << "}";
-		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -470,27 +443,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::stringstream ss;
 			std::string v;
-			ss << "{";
-			int count = 0;
 			while (iter != params.end())
 			{
-				if (count > 0)
-				{
-					ss << ",";
-				}
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
 					StringUtil::url_decode(v);
 				}
-				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-				count++;
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 				iter++;
 			}
-			ss << "}";
-			json_data.Parse(ss.str().c_str());
 		}
 	}
 	// add remote_ip param
@@ -502,9 +465,12 @@ void api(const GRPCReq *request, GRPCResp *response)
 	ss << "\nremote_ip: " << ip_addr;
 	ss << "\noperation: " << operation;
 	ss << "\nmethod: " << request->get_method();
-	ss << "\nrequest_path: " << request->current_path();
 	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_body: \n" << request->body();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	if (!request->body().empty())
+	{
+		ss << "\nrequest_body: \n" << request->body();
+	}
 	ss << "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss.str());
 	// add callback task for access log start
