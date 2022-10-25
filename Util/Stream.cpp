@@ -452,7 +452,9 @@ Stream::setEnd()
 {
     if(this->mode == 1)
     {
+#ifdef DEBUG_STREAM
         fprintf(stderr, "Stream::setEnd(): already in read mode!\n");
+#endif
         this->xpos = 0;
         //FILE* fp = (FILE*)(this->ans);
 		if(!this->inMem)
