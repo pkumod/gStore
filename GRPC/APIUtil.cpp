@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-09-30 10:22:27
+ * @LastEditTime: 2022-10-25 10:09:42
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -98,23 +98,23 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         query_log_mode = get_configure_value("querylog_mode", query_log_mode);
         query_log_path = get_configure_value("querylog_path", query_log_path);
         string_suffix(query_log_path, '/');
-        util.create_dir(query_log_path);
+        util.create_dirs(query_log_path);
         
         access_log_path = get_configure_value("accesslog_path", access_log_path);
         string_suffix(access_log_path, '/');
-        util.create_dir(access_log_path);
+        util.create_dirs(access_log_path);
         
         query_result_path = get_configure_value("queryresult_path", query_result_path);
         string_suffix(query_result_path, '/');
-        util.create_dir(query_result_path);
+        util.create_dirs(query_result_path);
         
         pfn_file_path = get_configure_value("pfn_file_path", pfn_file_path);
         string_suffix(pfn_file_path, '/');
-        util.create_dir(pfn_file_path);
+        util.create_dirs(pfn_file_path);
 
         pfn_lib_path = get_configure_value("pfn_lib_path", pfn_lib_path);
         string_suffix(pfn_lib_path, '/');
-        util.create_dir(pfn_lib_path);
+        util.create_dirs(pfn_lib_path);
 
         pfn_include_header = PFN_HEADER;
 
@@ -163,143 +163,107 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         // init already_build db
         ResultSet rs;
         rapidjson::Document doc;
-        FILE *output = NULL;
+        FILE *output = nullptr;
         std::string sparql = "select ?x where{?x <database_status> \"already_built\".}";       
         int ret_val = system_database->query(sparql, rs, output);
         if (ret_val == -100)
         {
-            std::string json_str = rs.to_JSON();
-            doc.Parse(json_str.c_str());
-            if (!doc.HasParseError())
+            ResultSet _db_rs;
+            pthread_rwlock_wrlock(&already_build_map_lock);
+            for (unsigned int i = 0; i < rs.ansNum; i++)
             {
-                rapidjson::Value &p1 = doc["results"];
-                rapidjson::Value &p2 = p1["bindings"];
-                pthread_rwlock_wrlock(&already_build_map_lock);
-                for (unsigned i = 0; i < p2.Size(); i++)
-                {
-                    rapidjson::Value &p21 = p2[i];
-                    rapidjson::Value &p22 = p21["x"];
-                    string db_name = p22["value"].GetString();
-                    struct DatabaseInfo *temp_db = new DatabaseInfo(db_name);
-
-                    sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
-                    ret_val = system_database->query(sparql, rs, output);
-                    if (ret_val == -100)
-                    {
-                        json_str = rs.to_JSON();
-                        doc.Parse(json_str.c_str());
-                        if (!doc.HasParseError())
-                        {
-                            p21 = doc["results"];
-                            p22 = p21["bindings"];
-                            for (unsigned j = 0; j < p22.Size(); j++)
-                            {
-                                rapidjson::Value &p31 = p22[j];
-                                rapidjson::Value &p32 = p31["x"];
-                                rapidjson::Value &p33 = p31["y"];
-                                std::string built_by = p32["value"].GetString();
-                                std::string built_time = p33["value"].GetString();
-                                temp_db->setCreator(built_by);
-                                temp_db->setTime(built_time);
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            SLOG_ERROR("parse dabase ["+ db_name + "] properties error: " + to_string(doc.GetParseError()));
-                        }
-                    }
-                    else
-                    {
-                         SLOG_ERROR("query dabase ["+ db_name + "] properties error: " + to_string(doc.GetParseError()));
-                    }
-                    already_build.insert(pair<std::string, struct DatabaseInfo *>(db_name, temp_db));
-                    SLOG_DEBUG(db_name + " already build at " + temp_db->getTime());
-                }
-                // insert systemdb into already_build
-                // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
-                // already_build.insert(pair<std::string, struct DatabaseInfo *>(SYSTEM_DB_NAME, system_db));
+                string db_name = util.clear_angle_brackets(rs.answer[i][0]);
+                struct DatabaseInfo *temp_db = new DatabaseInfo(db_name);
                 
-                pthread_rwlock_unlock(&already_build_map_lock);
+                sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
+                ret_val = system_database->query(sparql, _db_rs, output);
+                if (ret_val == -100 && _db_rs.ansNum > 0)
+                {
+                    std::string built_by = util.clear_angle_brackets(_db_rs.answer[0][0]);
+                    std::string built_time = util.replace_all(_db_rs.answer[0][1], "\"", "");
+                    temp_db->setCreator(built_by);
+                    temp_db->setTime(built_time);
+
+                    SLOG_DEBUG(to_string(i) + ": " + temp_db->toJSON());
+                    already_build.insert(pair<std::string, struct DatabaseInfo *>(db_name, temp_db));
+                }
+                else
+                {
+                    SLOG_ERROR("query dabase ["+ db_name + "] properties error: return value " + to_string(ret_val));
+                }
             }
-            else
-            {
-                SLOG_ERROR("init already build database error: " + to_string(doc.GetParseError()));
-            }
+            // insert systemdb into already_build
+            // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
+            // already_build.insert(pair<std::string, struct DatabaseInfo *>(SYSTEM_DB_NAME, system_db));
+            
+            pthread_rwlock_unlock(&already_build_map_lock);
+        }
+        else
+        {
+             SLOG_ERROR("init already build dabase error: return value " + to_string(ret_val));
         }
         //userinfo
         sparql = "select ?x ?y where{?x <has_password> ?y.}";
         ret_val = system_database->query(sparql, rs, output);
         if (ret_val == -100)
         {
-            std::string json_str = rs.to_JSON();
-            doc.Parse(json_str.c_str());
-            if (!doc.HasParseError())
+            ResultSet _user_rs;
+            pthread_rwlock_wrlock(&users_map_lock);
+            for (unsigned int i = 0; i < rs.ansNum; i++)
             {
-                rapidjson::Value &p1 = doc["results"];
-                rapidjson::Value &p2 = p1["bindings"];
-                pthread_rwlock_wrlock(&users_map_lock);
-                for (unsigned i = 0; i < p2.Size(); i++)
+                string username = util.clear_angle_brackets(rs.answer[i][0]);
+                string password = util.replace_all(rs.answer[i][1], "\"", "");
+                struct DBUserInfo *user = new DBUserInfo(username, password);
+                
+                //privilege add
+                
+                string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
+                //string strJson2 = QuerySys(sparql2);
+                ret_val = system_database->query(sparql2, _user_rs, output);
+                
+                if ( ret_val == -100 )
                 {
-                    rapidjson::Value &pp = p2[i];
-                    rapidjson::Value &pp1 = pp["x"];
-                    rapidjson::Value &pp2 = pp["y"];
-                    string username = pp1["value"].GetString();
-                    string password = pp2["value"].GetString();
-                    struct DBUserInfo *user = new DBUserInfo(username, password);
-                    
-                    //privilege add
-                    
-                    string sparql2 = "select ?x ?y where{<" + username + "> ?x ?y.}";
-                    //string strJson2 = QuerySys(sparql2);
-                    ret_val = system_database->query(sparql2, rs, output);
-                    
-                    if ( ret_val == -100 ){
-                        std::string json_str2 = rs.to_JSON();
-                        doc.Parse(json_str2.c_str());
-                        rapidjson::Value &p12 = doc["results"];
-                        rapidjson::Value &p22 = p12["bindings"];
-                        for(unsigned j = 0; j < p22.Size(); j++)
+                    for(unsigned j = 0; j < _user_rs.ansNum; j++)
+                    {
+                        std::string type = util.clear_angle_brackets(_user_rs.answer[j][0]);
+                        std::string db_name = util.clear_angle_brackets(_user_rs.answer[j][1]);
+                        if(type == "has_query_priv")
                         {
-                            rapidjson::Value &ppj = p22[j];
-                            rapidjson::Value &pp12 = ppj["x"];
-                            rapidjson::Value &pp22 = ppj["y"];
-                            std::string type = pp12["value"].GetString();
-                            std::string db_name = pp22["value"].GetString();
-                        
-                            if(type == "has_query_priv")
-                            {
-                                user->query_priv.insert(db_name);
-                            }
-                            else if(type == "has_update_priv")
-                            {
-                                user->update_priv.insert(db_name);
-                            }
-                            else if(type == "has_load_priv")
-                            {
-                                user->load_priv.insert(db_name);
-                            }
-                            else if(type == "has_unload_priv")
-                            {
-                                user->unload_priv.insert(db_name);
-                            }
-                            else if(type == "has_restore_priv")
-                            {
-                                user->restore_priv.insert(db_name);
-                            }else if(type == "has_backup_priv")
-                            {
-                                user->backup_priv.insert(db_name);
-                            }else if(type == "has_export_priv")
-                            {
-                                user->export_priv.insert(db_name);
-                            }
+                            user->query_priv.insert(db_name);
+                        }
+                        else if(type == "has_update_priv")
+                        {
+                            user->update_priv.insert(db_name);
+                        }
+                        else if(type == "has_load_priv")
+                        {
+                            user->load_priv.insert(db_name);
+                        }
+                        else if(type == "has_unload_priv")
+                        {
+                            user->unload_priv.insert(db_name);
+                        }
+                        else if(type == "has_restore_priv")
+                        {
+                            user->restore_priv.insert(db_name);
+                        }else if(type == "has_backup_priv")
+                        {
+                            user->backup_priv.insert(db_name);
+                        }else if(type == "has_export_priv")
+                        {
+                            user->export_priv.insert(db_name);
                         }
                     }
-                    users.insert(pair<std::string, struct DBUserInfo *>(username, user));
                 }
-                
-                pthread_rwlock_unlock(&users_map_lock);
+                SLOG_DEBUG(to_string(i) + ": " + user->toJSON());
+                users.insert(pair<std::string, struct DBUserInfo *>(username, user));
             }
+            
+            pthread_rwlock_unlock(&users_map_lock);
+        }
+        else
+        {
+             SLOG_ERROR("init database users error: return value " + to_string(ret_val));
         }
         init_transactionlog();
         // create system password file
@@ -2211,7 +2175,7 @@ void APIUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     file_name = pfn_info->getFunName();
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string file_dir = APIUtil::pfn_file_path + username;
-    util.create_dir(file_dir);
+    util.create_dirs(file_dir);
     string file_path = file_dir + "/" + file_name + ".cpp";
     SLOG_DEBUG("file_path: " + file_path);
     if (util.file_exist(file_path))
@@ -2314,10 +2278,8 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     //create a temp file
     string last_time = util.get_timestamp();
     string md5str = util.md5(last_time);
-    string targetDir = APIUtil::pfn_lib_path + username;
-    util.create_dir(targetDir);
-    targetDir = targetDir + "/.temp";
-    util.create_dir(targetDir);
+    string targetDir = APIUtil::pfn_lib_path + username + "/.temp";;
+    util.create_dirs(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
     string cmd = "rm -f " + targetFile;
@@ -2447,7 +2409,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
             string json_file_dir = APIUtil::pfn_file_path + username;
             if (!util.dir_exist(json_file_dir))
             {
-                util.create_dir(json_file_dir);
+                util.create_dirs(json_file_dir);
             }
             util.create_file(json_file_path);
         }
