@@ -297,8 +297,7 @@ bool Util::configure_new()
     slog.init(log_mode.c_str());
     if (slog._logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
-        SLOG_DEBUG("the current settings are as below: ");
-        SLOG_DEBUG("key : value");
+        SLOG_DEBUG("the current settings are as below (key:value): ");
         SLOG_DEBUG("----------------------------------");
         for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
         {
@@ -2707,7 +2706,7 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     stringstream ss;
     ss << "\n";
     pp.print(ss);
-    if (Util::getConfigureValue("version").empty())
+    if (Slog::_logger.getAllAppenders().size() == 0)
     {
         Util::configure_new();
     }
@@ -2715,7 +2714,8 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     if(Slog::_logger.isEnabledFor(log4cplus::INFO_LOG_LEVEL))
     {
         SLOG_INFO(ss.str());
-    } else if (Slog::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
+    } 
+    else if (Slog::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
         SLOG_DEBUG(ss.str());
     }
