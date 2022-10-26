@@ -1815,7 +1815,7 @@ int show_handler(const vector<string> &args)
 		rows.push_back({"creator", creator});
 		rows.push_back({"built_time", built_time});
 	}
-	rows.push_back({"riple_num", Util::int2string(db->getTripleNum())});
+	rows.push_back({"triple_num", Util::int2string(db->getTripleNum())});
 	rows.push_back({"entity_num", Util::int2string(db->getEntityNum()),});
 	rows.push_back({"literal_num", Util::int2string(db->getLiteralNum())});
 	rows.push_back({"subject_num", Util::int2string(db->getSubNum())});
