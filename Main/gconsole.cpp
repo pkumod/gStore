@@ -1898,6 +1898,12 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\". Database create failed." << endl;
 		return -1;
 	}
+   int len = db_name.length();
+   if (len <= 3 || (len > 3 && db_name.substr(len - 3, 3) == ".db"))
+   {
+      cout << "your database can not end with .db or less than 3 characters." << endl;
+      return -1;
+   }
 	/* int access(const char *pathname, int mode);
 	   On success (all requested permissions granted, or mode is F_OK
 	   and the file exists), zero is returned.  On error (at least one
