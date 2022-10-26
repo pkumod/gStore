@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 		rows.push_back({"database", db_name});
 		rows.push_back({"creator", creator});
 		rows.push_back({"built_time", built_time});
-		rows.push_back({"riple_num", Util::int2string(_db.getTripleNum())});
+		rows.push_back({"triple_num", Util::int2string(_db.getTripleNum())});
 		rows.push_back({
 			"entity_num",
 			Util::int2string(_db.getEntityNum()),
