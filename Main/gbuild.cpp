@@ -65,7 +65,7 @@ main(int argc, char * argv[])
 			cout<<"You must input the database name for building database!"<<endl;
 			return -1;
 		}
-		if (_db_path.length() > 3 && _db_path.substr(len - 3, 3) == ".db")
+		if (len <= 3 || (len > 3 && _db_path.substr(len - 3, 3) == ".db"))
 		{
 			
 			cout << "your database can not end with .db or less than 3 characters" << endl;

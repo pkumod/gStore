@@ -85,14 +85,11 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		int len = db_name.length();
-
-		if (db_name.substr(len - 3, 3) == ".db")
-		{
-			/*cout << "your database can not end with .db" << endl;*/
-			//Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
-			cout << "your database can not end with .db.! Input \"bin/grestore -h\" for help." << endl;
-			return -1;
-		}
+		if (len <= 3 || (len > 3 && db_name.substr(len - 3, 3) == ".db"))
+        {
+            cout << "your database can not end with .db or less than 3 characters! Input \"bin/grestore -h\" for help." << endl;
+            return -1;
+        }
 		backup_path = Util::getArgValue(argc, argv, "p", "path");
 		if (backup_path.empty())
 		{
