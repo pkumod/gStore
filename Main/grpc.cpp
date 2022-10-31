@@ -34,6 +34,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -554,6 +555,9 @@ void api(const GRPCReq *request, GRPCResp *response)
 		break;
 	case OP_BACKUP:
 		backup_task(request, response, json_data);
+		break;
+	case OP_BACKUP_PATH:
+		backup_path_task(request, response, json_data);
 		break;
 	case OP_RESTORE:
 		restore_task(request, response, json_data);
@@ -1320,7 +1324,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-try
+	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string backup_path = jsonParam(json_data, "backup_path");
@@ -1398,6 +1402,49 @@ try
 	catch (const std::exception &e)
 	{
 		std::string error = "Backup fail: " + string(e.what());
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
+/**
+ * query backup path
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+ */
+void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	try
+	{
+		std::string db_name = jsonParam(json_data, "db_name");
+		std::string error = apiUtil->check_param_value("db_name", db_name);
+
+		if (error.empty() == false)
+		{
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
+		std::vector<std::string> file_list;
+		string backup_path = apiUtil->get_backup_path();
+		Util::dir_files(backup_path, db_name, file_list);
+		Document resp_data;
+		Document pathsDoc;
+		resp_data.SetObject();
+		pathsDoc.SetArray();
+		Document::AllocatorType &allocator = resp_data.GetAllocator();
+		for (size_t i = 0; i < file_list.size(); i++)
+		{
+			pathsDoc.PushBack(Value().SetString((backup_path + "/" + file_list[i]).c_str(), allocator), allocator);
+		}
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "success", allocator);
+		resp_data.AddMember("paths", pathsDoc, allocator);
+		response->Json(resp_data);
+	}
+	catch (const std::exception &e)
+	{
+		std::string error = "Query backup path fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }

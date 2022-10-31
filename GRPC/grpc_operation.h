@@ -23,6 +23,7 @@ namespace grpc
     OP(OP_BUILD,                               build) \
     OP(OP_DROP,                                 drop) \
     OP(OP_BACKUP,                             backup) \
+    OP(OP_BACKUP_PATH,                    backuppath) \
     OP(OP_RESTORE,                           restore) \
     OP(OP_QUERY,                               query) \
     OP(OP_EXPORT,                             export) \
