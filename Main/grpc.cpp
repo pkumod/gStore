@@ -34,6 +34,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -304,27 +305,17 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	{
 		std::map<std::string, std::string> &form_data = request->formData();
 		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::stringstream ss;
 		std::string v;
-		ss << "{";
-		int count = 0;
 		while (iter != form_data.end())
 		{
-			if (count > 0)
-			{
-				ss << ",";
-			}
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
 				StringUtil::url_decode(v);
 			}
-			ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-			count++;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
 		}
-		ss << "}";
-		json_data.Parse(ss.str().c_str());
 	}
 	else // for get
 	{
@@ -332,27 +323,17 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		if (params.empty() == false)
 		{
 			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::stringstream ss;
 			std::string v;
-			ss << "{";
-			int count = 0;
 			while (iter != params.end())
 			{
-				if (count > 0)
-				{
-					ss << ",";
-				}
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
 					StringUtil::url_decode(v);
 				}
-				ss << "\"" << iter->first << "\":" << "\"" << v << "\"";
-				count++;
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 				iter++;
 			}
-			ss << "}";
-			json_data.Parse(ss.str().c_str());
 		}
 	}
 	std::stringstream ss;
@@ -360,9 +341,12 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	ss << "\nremote_ip: " << ip_addr;
 	ss << "\noperation: shutdown";
 	ss << "\nmethod: " << request->get_method();
-	ss << "\nrequest_path: " << request->current_path();
 	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_body: \n" << request->body();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	if (!request->body().empty())
+	{
+		ss << "\nrequest_body: \n" << request->body();
+	}
 	ss << "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss.str());
 	std::string error;
@@ -482,9 +466,12 @@ void api(const GRPCReq *request, GRPCResp *response)
 	ss << "\nremote_ip: " << ip_addr;
 	ss << "\noperation: " << operation;
 	ss << "\nmethod: " << request->get_method();
-	ss << "\nrequest_path: " << request->current_path();
 	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_body: \n" << request->body();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	if (!request->body().empty())
+	{
+		ss << "\nrequest_body: \n" << request->body();
+	}
 	ss << "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss.str());
 	// add callback task for access log start
@@ -568,6 +555,9 @@ void api(const GRPCReq *request, GRPCResp *response)
 		break;
 	case OP_BACKUP:
 		backup_task(request, response, json_data);
+		break;
+	case OP_BACKUP_PATH:
+		backup_path_task(request, response, json_data);
 		break;
 	case OP_RESTORE:
 		restore_task(request, response, json_data);
@@ -1334,7 +1324,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-try
+	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string backup_path = jsonParam(json_data, "backup_path");
@@ -1412,6 +1402,49 @@ try
 	catch (const std::exception &e)
 	{
 		std::string error = "Backup fail: " + string(e.what());
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
+/**
+ * query backup path
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+ */
+void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	try
+	{
+		std::string db_name = jsonParam(json_data, "db_name");
+		std::string error = apiUtil->check_param_value("db_name", db_name);
+
+		if (error.empty() == false)
+		{
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
+		std::vector<std::string> file_list;
+		string backup_path = apiUtil->get_backup_path();
+		Util::dir_files(backup_path, db_name, file_list);
+		Document resp_data;
+		Document pathsDoc;
+		resp_data.SetObject();
+		pathsDoc.SetArray();
+		Document::AllocatorType &allocator = resp_data.GetAllocator();
+		for (size_t i = 0; i < file_list.size(); i++)
+		{
+			pathsDoc.PushBack(Value().SetString((backup_path + "/" + file_list[i]).c_str(), allocator), allocator);
+		}
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "success", allocator);
+		resp_data.AddMember("paths", pathsDoc, allocator);
+		response->Json(resp_data);
+	}
+	catch (const std::exception &e)
+	{
+		std::string error = "Query backup path fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
