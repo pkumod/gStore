@@ -1,8 +1,8 @@
 /*
  * @Author: zhe zhang, liwenjie
  * @Date: 2021-08-22 23:31:50
- * @LastEditTime: 2021-08-22 23:32:04
- * @LastEditors: liwenjie
+ * @LastEditTime: 2022-10-31 11:10:52
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: restore a database by copy its backup files to root location
  * @FilePath: /gstore/Main/grestore.cpp
  */
@@ -57,11 +57,13 @@ main(int argc, char * argv[])
 			cout << "gStore Restore Database Tools(grestore)" << endl;
 			cout << endl;
 			cout << "Usage:\tbin/grestore -db [dbname] -p [path] " << endl;
+			cout << "      \tbin/grestore -l [dbname]" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t the database name. " << endl;
 			cout << "\t-p,--path,\t\tthe backup path, notice that it is relative path for the gstore root path." << endl;
+			cout << "\t-l,--list,\t\tprint the database backup paths, only at the default path './backups'." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -75,7 +77,18 @@ main(int argc, char * argv[])
 	}
 	else
 	{
-
+		db_name = Util::getArgValue(argc, argv, "l", "list");
+		if (db_name.empty() == false)
+		{
+			std::vector<std::string> file_list;
+			Util::dir_files(DEFALUT_BACKUP_PATH, db_name, file_list);
+			for (size_t i = 0; i < file_list.size(); i++)
+			{
+				cout << DEFALUT_BACKUP_PATH << "/" << file_list[i] << endl; 
+			}
+			return 0;
+		}
+		
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.empty())
 		{
