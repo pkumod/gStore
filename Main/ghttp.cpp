@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-10-25 11:20:46
+ * @LastEditTime: 2022-10-31 11:09:21
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -91,6 +91,8 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, string password);
 
 void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path);
+
+void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name);
 
 void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username);
 
@@ -1680,6 +1682,49 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 	catch (const std::exception &e)
 	{
 		string error = "Backup fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
+
+/**
+ * @description:query backup path
+ * @Author:wangjian
+ * @param {const} shared_ptr
+ * @param {string} db_name the operation database name
+ */
+void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name)
+{
+	string operation = "backuppath";
+	try
+	{
+		string error = "";
+		error = apiUtil->check_param_value("db_name", db_name);
+
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		std::vector<std::string> file_list;
+		string backup_path = apiUtil->get_backup_path();
+		Util::dir_files(backup_path, db_name, file_list);
+		Document resDoc;
+		Document pathsDoc;
+		resDoc.SetObject();
+		pathsDoc.SetArray();
+		Document::AllocatorType &allocator = resDoc.GetAllocator();
+		for (size_t i = 0; i < file_list.size(); i++)
+		{
+			pathsDoc.PushBack(Value().SetString((backup_path + "/" + file_list[i]).c_str(), allocator), allocator);
+		}
+		resDoc.AddMember("StatusCode", 0, allocator);
+		resDoc.AddMember("StatusMsg", "success", allocator);
+		resDoc.AddMember("paths", pathsDoc, allocator);
+		sendResponseMsg(resDoc, operation, request, response);
+	}
+	catch (const std::exception &e)
+	{
+		string error = "query backup path fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -3342,6 +3387,11 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			return;
 		}
 		backup_thread_new(request, response, db_name, backup_path);
+	}
+	// query backup path
+	else if (operation == "backuppath")
+	{
+		backup_path_thread_new(request, response, db_name);
 	}
 	// restore database
 	else if (operation == "restore")
