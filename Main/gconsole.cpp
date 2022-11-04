@@ -1460,7 +1460,13 @@ int raw_sparql_handler(string query)
 	// 	export_flag = true;
 	// }
 	long tv_begin = Util::get_cur_time();
-	int ret = current_database->query(query, _rs, ofp, true, export_flag, nullptr);
+	int ret;
+	try {
+		ret = current_database->query(query, _rs, ofp, true, export_flag, nullptr);
+	} catch (const std::exception &e) {
+		cout << "Exception: " << e.what() << endl;
+		return -1;
+	}
 	current_database->save();
 	if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
 	{
