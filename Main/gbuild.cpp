@@ -2,14 +2,13 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2022-10-10 10:16:55
+ * @LastEditTime: 2022-11-04 11:17:21
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
  */
 
 
-#include "../Util/Util.h"
 #include "../Database/Database.h"
 //#include "../Util/Slog.h"
 
@@ -108,7 +107,6 @@ main(int argc, char * argv[])
 		}
 		else
 		{
-			cout<<"Begin to build database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database _db(_db_path);
 			bool flag = _db.build(_rdf);
@@ -167,7 +165,8 @@ main(int argc, char * argv[])
 			//stringstream ss;
 			cout<< "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			string error_log = "./" + _db_path + ".db/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log);
+			// exclude Info line
+			size_t parse_error_num = Util::count_lines(error_log) - 1;
 			if (parse_error_num > 0)
 			{
 				cout<< "RDF parse error num "<< parse_error_num << endl;

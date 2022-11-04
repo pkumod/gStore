@@ -2112,6 +2112,12 @@ Database::build(const string& _rdf_file)
 	//create a file to store the parse error tuple
 	string error_log = this->store_path + "/parse_error.log";
 	Util::create_file(error_log);
+	//write build info to log
+	cout << "Error log file:" << error_log << endl;
+	FILE *fp = fopen(error_log.c_str(), "a");
+	string log_msg = "Info " + Util::get_date_time() + " build parser info, file path " + ret + "\n";
+	fputs(log_msg.c_str(), fp);
+	fclose(fp);
 	cout << "begin encode RDF from : " << ret << " ..." << endl;
 
 	//BETTER+TODO:now require that dataset size < memory
@@ -5239,11 +5245,20 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	//parse a file
 	RDFParser _parser(_fin);
 
+	//parse error log
+	string error_log = this->store_path + "/parse_error.log";
+	cout << "Error log file:" << error_log << endl;
+	//write build info to log
+	FILE *fp = fopen(error_log.c_str(), "a");
+	string log_msg = "Info " + Util::get_date_time() + " batch insert parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
+	fputs(log_msg.c_str(), fp);
+	fclose(fp);
+
 	TYPE_TRIPLE_NUM triple_num = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
-		_parser.parseFile(triple_array, parse_triple_num);
+		_parser.parseFile(triple_array, parse_triple_num, error_log);
 		if (parse_triple_num == 0)
 		{
 			break;

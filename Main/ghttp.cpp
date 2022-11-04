@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-10-28 15:48:05
+ * @LastEditTime: 2022-11-04 13:01:49
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -767,7 +767,8 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		{
 			string success = "Import RDF file to database done.";
 			string error_log = "./" + database + ".db/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log);
+			// exclude Info line
+			size_t parse_error_num = Util::count_lines(error_log) - 1;
 			rapidjson::Document doc;
 			doc.SetObject();
 			Document::AllocatorType &allocator = doc.GetAllocator();
@@ -2879,9 +2880,13 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			string success = "Batch insert data successfully.";
 			unsigned success_num = 0;
 			unsigned total_num = 0;
+			unsigned parse_error_num = 0;
+			string error_log = "./" + db_name + ".db/parse_error.log";
 			if (is_file)
 			{
-				total_num = Util::count_lines(file);
+				total_num = Util::count_lines(error_log);
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - 1;
 				success_num = current_database->batch_insert(file, false, nullptr);
 			}
 			else
@@ -2892,16 +2897,17 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 					dir.push_back('/');
 				}
 				Util::dir_files(dir, "", files);
+				total_num = Util::count_lines(error_log);
 				for (string rdf_file : files)
 				{
 					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-					total_num += Util::count_lines(dir + rdf_file);
 					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
 				}
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
-			unsigned parse_error_num = total_num - success_num;
 
 			Document resDoc;
 			resDoc.SetObject();
