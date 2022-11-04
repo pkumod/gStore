@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 20:14:02
- * @LastEditTime: 2022-10-25 11:14:52
+ * @LastEditTime: 2022-11-04 11:15:31
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: batch insert data tool
  * @FilePath: /gstore/Main/gadd.cpp
@@ -98,9 +98,13 @@ int main(int argc, char *argv[])
 		long tv_begin = Util::get_cur_time();
 		unsigned success_num = 0;
 		unsigned total_num = 0;
+		unsigned parse_error_num = 0 ;
+		string error_log = "./" + db_folder + ".db/parse_error.log";
 		if (filename.empty() == false)
 		{
-			total_num = Util::count_lines(filename);
+			total_num = Util::count_lines(error_log);
+			// exclude Info line
+			parse_error_num = Util::count_lines(error_log) - total_num - 1;
 			success_num = _db.batch_insert(filename, false, nullptr);
 		} 
 		else if (dirname.empty() == false)
@@ -111,17 +115,22 @@ int main(int argc, char *argv[])
 				dirname.push_back('/');
 			}
 			Util::dir_files(dirname, "", files);
+			total_num += Util::count_lines(error_log);
 			for (string rdf_file : files)
 			{
 				cout << "begin insert data from " << dirname << rdf_file << endl;
-				total_num += Util::count_lines(dirname + rdf_file);
 				success_num += _db.batch_insert(dirname + rdf_file, false, nullptr);
 			}
+			// exclude Info line
+			parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 		}
 		long tv_end = Util::get_cur_time();
 		// cout << "finish insert data" << endl;
-		unsigned parse_error_num = total_num - success_num;
 		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num <<",used " << (tv_end - tv_begin) << " ms" << endl;
+		if (parse_error_num > 0)
+		{
+			cout<< "See parse error log file for details " << db_folder <<".db/parse_error.log" << endl;
+		}
 		_db.save();
 
 		/*stringstream ss;
