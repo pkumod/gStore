@@ -48,7 +48,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	string rawSubject, rawPredicate, rawObject;
 	string _subject, _predicate, _object, _objectSubType;
 	string errorMsg;
-	Type::Type_ID _objectType;
+	Type::ID _objectType;
 	streambuf *coutbuf = cout.rdbuf();
 	ofstream ofile;
 
@@ -61,6 +61,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			ofile.open(_error_log,ios::app);
 			if (ofile)
 			{
+				// cout << "Error log file: " << _error_log << endl;
 				cout.rdbuf(ofile.rdbuf());
 			}
 			else
@@ -103,24 +104,25 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 		_predicate = "<" + rawPredicate + ">";
 
 		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
-		if (_objectType == Type::Type_URI)
+		if (_objectType == Type::URI)
 		{
 			_object = "<" + rawObject + ">";
 			_object_type = TripleWithObjType::Entity;
 		}
 		else
 		{
-			if (_objectType == Type::Type_Literal)
+			if (_objectType == Type::Literal)
 				_object = "\"" + rawObject + "\"";
-			else if (_objectType == Type::Type_CustomLanguage)
+			else if (_objectType == Type::CustomLanguage)
 				_object = "\"" + rawObject + "\"@" + _objectSubType;
-			else if (_objectType == Type::Type_String)
+			else if (_objectType == Type::String)
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
-			else if (_objectType == Type::Type_Integer)
+			else if (_objectType == Type::Integer)
 			{
+				long long ll;
 				try
 				{
-					stoll(rawObject);
+					ll = stoll(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
@@ -138,13 +140,14 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
 			}
-			else if (_objectType == Type::Type_Decimal)
+			else if (_objectType == Type::Decimal)
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
-			else if (_objectType == Type::Type_Double)
+			else if (_objectType == Type::Double)
 			{
+				double d;
 				try
 				{
-					stod(rawObject);
+					d = stod(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
@@ -163,15 +166,16 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
 			}
-			else if (_objectType == Type::Type_Boolean)
+			else if (_objectType == Type::Boolean)
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-			else if (_objectType == Type::Type_CustomType)
+			else if (_objectType == Type::CustomType)
 			{
 				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
 				{
+					long long ll;
 					try
 					{
-						stoll(rawObject);
+						ll = stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
@@ -277,9 +281,10 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				}
 				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#float")
 				{
+					float f;
 					try
 					{
-						stof(rawObject);
+						f = stof(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
@@ -315,7 +320,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			cout.rdbuf(coutbuf);
 		}
 	}
-	// cout << "RDFParser parseFile done!" << endl;
+	cout << "RDFParser parseFile done!" << endl;
 
 	return numLines;
 }
