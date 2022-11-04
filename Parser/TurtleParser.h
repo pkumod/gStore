@@ -11,7 +11,10 @@
 // San Francisco, California, 94105, USA.
 //---------------------------------------------------------------------------
 #include "Type.h"
-#include "../Util/Util.h"
+#include <istream>
+#include <string>
+#include <map>
+#include <vector>
 //---------------------------------------------------------------------------
 /// Parse a turtle file
 class TurtleParser
@@ -36,7 +39,7 @@ class TurtleParser
    class Lexer {
       public:
       /// Possible tokens
-      enum Token { Token_Eof, Token_Dot, Token_Colon, Token_Comma, Token_Semicolon, Token_LBracket, Token_RBracket, Token_LParen, Token_RParen, Token_At, Token_Type, Token_Integer, Token_Decimal, Token_Double, Token_Name, Token_A, Token_True, Token_False, Token_String, Token_URI };
+      enum Token { Eof, Dot, Colon, Comma, Semicolon, LBracket, RBracket, LParen, RParen, At, Type, Integer, Decimal, Double, Name, A, True, False, String, URI };
 
       private:
       /// The input
@@ -88,28 +91,25 @@ class TurtleParser
       /// The next token (ignoring the value)
       Token next() { return next(ignored); }
       /// Put a token and a string back
-      void unget(Token t,const std::string& s) { putBack=t; if (t>=Token_Integer) putBackValue=s; }
+      void unget(Token t,const std::string& s) { putBack=t; if (t>=Integer) putBackValue=s; }
       /// Put a token back
-      void ungetIgnored(Token t) { putBack=t; if (t>=Token_Integer) putBackValue=ignored; }
+      void ungetIgnored(Token t) { putBack=t; if (t>=Integer) putBackValue=ignored; }
       /// Get the line
       unsigned getLine() const { return line; }
-      void nextLine()
-      {
-          line++;
-      }
 
-      void readUntilSep(std::string& value);
-	  void discardLine() { char c; while (read(c) && c!='\n'); }
+      void discardLine() { char c; while (read(c) && c!='\n'); }
+
+      Token getBlankNode(std::string& token);
    };
    /// A triple
    struct Triple {
       /// The entries
       std::string subject,predicate,object,objectSubType;
       /// Type for the object
-      Type::Type_ID objectType;
+      Type::ID objectType;
 
       /// Constructor
-      Triple(const std::string& subject,const std::string& predicate,const std::string& object,Type::Type_ID objectType,const std::string& objectSubType) : subject(subject),predicate(predicate),object(object),objectSubType(objectSubType),objectType(objectType) {}
+      Triple(const std::string& subject,const std::string& predicate,const std::string& object,Type::ID objectType,const std::string& objectSubType) : subject(subject),predicate(predicate),object(object),objectSubType(objectSubType),objectType(objectType) {}
    };
 
    /// The lexer
@@ -141,13 +141,13 @@ class TurtleParser
    /// Parse a subject
    void parseSubject(Lexer::Token token,std::string& subject);
    /// Parse an object
-   void parseObject(std::string& object,Type::Type_ID& objectType,std::string& objectSubType);
+   void parseObject(std::string& object,Type::ID& objectType,std::string& objectSubType);
    /// Parse a predicate object list
-   void parsePredicateObjectList(const std::string& subject,std::string& predicate,std::string& object,Type::Type_ID& objectType,std::string& objectSubType);
+   void parsePredicateObjectList(const std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType);
    /// Parse a directive
    void parseDirective();
    /// Parse a new triple
-   void parseTriple(Lexer::Token token,std::string& subject,std::string& predicate,std::string& object,Type::Type_ID& objectType,std::string& objectSubType);
+   void parseTriple(Lexer::Token token,std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType);
 
    public:
    /// Constructor
@@ -156,7 +156,7 @@ class TurtleParser
    ~TurtleParser();
 
    /// Read the next triple
-   bool parse(std::string& subject,std::string& predicate,std::string& object,Type::Type_ID& objectType,std::string& objectSubType);
+   bool parse(std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType);
 
    void discardLine() { lexer.discardLine(); }
 };
