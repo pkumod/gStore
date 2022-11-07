@@ -468,9 +468,9 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLque
 bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
                              IntermediateResult result) {
 
-  auto target = bgp_query->get_result_list_pointer();
+  auto target = bgp_query->get_result_list_pointer1();
   assert(target->empty());
-
+  target->reserve(result.values_->size());
 #ifdef OPTIMIZER_DEBUG_INFO
   cout << "position to var des size: " << result.pos_id_map->size() << endl;
   cout << "total var_num: " << bgp_query->get_total_var_num()<<endl;
@@ -493,18 +493,21 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
     auto old_position = (*id_position_map_ptr)[var_id];
     position_map[pos] = old_position;
   }
-
+  // Data flows from record_ptr to tmp_record and then back to record_ptr
+  // all vector in result.values_ are moved to target
+  auto tmp_record = new unsigned[record_len];
   for (const auto&  record_ptr : *(result.values_))
   {
-    auto new_record = new unsigned[record_len];
-    for (int column_index = 0; column_index < record_len; ++column_index)
-    {
+    for (int column_index = 0; column_index < record_len; ++column_index){
       auto old_position = position_map[column_index];
-      new_record[column_index] = (*record_ptr)[old_position];
+      tmp_record[column_index] = (*record_ptr)[old_position];
     }
-    target->push_back(new_record);
+    for (int column_index = 0; column_index < record_len; ++column_index){
+      (*record_ptr)[column_index] = tmp_record[column_index];
+    }
+    target->emplace_back(std::move(*record_ptr));
   }
-
+  delete[] tmp_record;
   delete[] position_map;
   return false;
 }
