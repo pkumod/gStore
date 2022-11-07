@@ -756,6 +756,12 @@ BGPQuery::get_result_list_pointer()
   return &(this->result_list);
 }
 
+vector<vector<TYPE_ENTITY_LITERAL_ID>>*
+BGPQuery::get_result_list_pointer1()
+{
+  return &(this->result_list1);
+}
+
 unique_ptr<unsigned[]>&
 BGPQuery::resultPositionToId()
 {
