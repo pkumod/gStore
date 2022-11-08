@@ -22,32 +22,24 @@ Optimizer::Optimizer(KVstore *kv_store,
     txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_){}
 
 BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info){
-  if (!query_info->limit_)
-  {
-  	return BasicQueryStrategy::Normal;
-  }
-  else
-  {
-    if(query_info->ordered_by_expressions_->size() == 1) {
-      // TODO: more accurate decision of algebraic expressions that can be processed by topk
-      if((*query_info->ordered_by_expressions_)[0].comp_tree_root.children.empty())
-        return BasicQueryStrategy::Normal;
-      auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
-                                                     (*query_info->ordered_by_expressions_)[0],nullptr);
-      if(search_plan->SuggestTopK())
-        return BasicQueryStrategy::TopK;
-      else
-        return BasicQueryStrategy::Normal;
-    }
-    else if (query_info->ordered_by_expressions_->size() > 1)
-      return BasicQueryStrategy::Normal;
-    else {
-      if (bgp_query->get_triple_num() == 1)
-        return BasicQueryStrategy::Normal;
-      else
-        return BasicQueryStrategy::limitK;
-    }
-  }
+	if (!query_info->limit_)
+		return BasicQueryStrategy::Normal;
+	if(query_info->ordered_by_expressions_->size() == 1) {
+		// TODO: more accurate decision of algebraic expressions that can be processed by topk
+		if ((*query_info->ordered_by_expressions_)[0].comp_tree_root.children.empty())
+			return BasicQueryStrategy::Normal;
+		auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
+													   (*query_info->ordered_by_expressions_)[0], nullptr);
+		if (search_plan->SuggestTopK())
+			return BasicQueryStrategy::TopK;
+		else
+			return BasicQueryStrategy::Normal;
+	} else {
+		if (query_info->ordered_by_expressions_->size() == 0)
+			return BasicQueryStrategy::limitK;
+		else
+			return BasicQueryStrategy::Normal;
+	}
 }
 
 /**
