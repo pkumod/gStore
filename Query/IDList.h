@@ -42,6 +42,7 @@ public:
 	void copy(const std::vector<unsigned>& _new_idlist);
 	void copy(const IDList* _new_idlist);
     void reserve(size_t size);
+    void resize(size_t size);
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
 	unsigned intersectList(const unsigned* _id_list, unsigned _list_len, bool distinct = true);
 	unsigned intersectList(const IDList&);

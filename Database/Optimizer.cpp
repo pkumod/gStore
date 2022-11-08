@@ -102,12 +102,12 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
     auto is_literal = get<1>(property_array);
     auto is_predicate = get<2>(property_array);
     step_result = executor_.InitialTableOneNode(first_operation.join_node_,is_entity,
-                                                is_literal,is_predicate,first_operation.distinct_ , id_caches);
+                                                is_literal,is_predicate,first_operation.distinct_ ,-1, id_caches);
     first_table = get<1>(step_result);
   }
   else // Two Nodes
   {
-    step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,id_caches);
+    step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,-1,id_caches);
     first_table = get<1>(step_result);
   }
   if( query_plan->join_order_->size()==1 || first_table.values_->empty())
@@ -189,7 +189,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
   TableContentShardPtr step_table;
   switch (one_step.join_type_) {
     case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step.distinct_, false, one_step.GetOneNodePlan());
+      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step.distinct_, false, -1, one_step.GetOneNodePlan());
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -205,7 +205,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
       break;
     }
     case StepOperation::JoinType::JoinTwoNodes: {
-      auto step_result = executor_.JoinTwoNode(one_step.join_two_node_, old_table,id_caches,false);
+      auto step_result = executor_.JoinTwoNode(one_step.join_two_node_, old_table,id_caches,false,-1);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -1059,7 +1059,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
     bool is_predicate = get<2>(r);
     auto initial_result =
         executor_.InitialTableOneNode(step_operation->join_node_, is_entity, is_literal, is_predicate,
-                                      step_operation->distinct_, id_caches);
+                                      step_operation->distinct_,-1, id_caches);
     leaf_table = get<1>(initial_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
     PrintTimeOpRange(operation,range,t1);
@@ -1067,7 +1067,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
   else if(range == StepOperation::OpRangeType::TwoNode)
   {
     auto two_node_plan = step_operation->GetTwoNodePlan();
-    auto initial_result = executor_.InitialTableTwoNode(two_node_plan, id_caches);
+    auto initial_result = executor_.InitialTableTwoNode(two_node_plan, -1, id_caches);
     leaf_table = get<1>(initial_result);
     auto node1 = two_node_plan->node_to_join_1_;
     auto node2 = two_node_plan->node_to_join_2_;
@@ -1078,7 +1078,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
     PrintTimeOpRange(operation,range,t1);
   }
   else if (range == StepOperation::OpRangeType::GetAllTriples) {
-    auto all_triple_result = executor_.GetAllTriple(step_operation->join_node_);
+    auto all_triple_result = executor_.GetAllTriple(-1, step_operation->join_node_);
     leaf_table = get<1>(all_triple_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
     PrintTimeOpRange(operation,range,t1);
@@ -1111,7 +1111,8 @@ tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &
   PrintDebugInfoLine(g_format("join node [ %s ] ", bgp_query->get_var_name_by_id(node_to_join).c_str()));
   long t1 = GetTimeDebug();
   auto step_result =
-      executor_.AffectANode(left_table, id_caches, operation == StepOperation::StepOpType::Satellite , step_operation->distinct_, remain_old, one_node_plan);
+      executor_.AffectANode(left_table, id_caches, operation == StepOperation::StepOpType::Satellite ,
+                            step_operation->distinct_, remain_old,-1, one_node_plan);
   PrintDebugInfoLine(g_format("result size: %d", get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation, range, t1);
   return step_result;
@@ -1131,7 +1132,7 @@ tuple<bool, IntermediateResult> Optimizer::ExtendTwoNode(shared_ptr<BGPQuery> &b
                               bgp_query->get_var_name_by_id(node1).c_str(),
                               bgp_query->get_var_name_by_id(node2).c_str()));
 
-  auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_);
+  auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_,-1);
   PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation,range,t1);
   return step_result;

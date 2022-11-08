@@ -499,6 +499,10 @@ void IDList::reserve(size_t size) {
   id_list.reserve(size);
 }
 
+void IDList::resize(size_t size) {
+  id_list.resize(size);
+}
+
 void IDListWithAppending::Init(const TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num, size_t one_record_len, size_t main_key_position)
 {
   for(decltype(records_num) i =0;i<records_num;i++)
