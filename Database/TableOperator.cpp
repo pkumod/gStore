@@ -330,6 +330,56 @@ void AffectOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_
 
 }
 
+string AffectOneNode::GetString() {
+	stringstream oss;
+	for(unsigned i = 0; i < edges_->size(); ++i){
+		oss << "\tedge[" << i << "] " << JoinMethodToString((*edges_)[i].join_method_) << endl;
+		oss << "\t\t" << (*edges_)[i].toString() << endl << "\t\t" << (*edges_constant_info_)[i].toString() << endl;
+	}
+	oss << "\tnode id: " << node_to_join_;
+	return oss.str();
+}
+
+string AffectTwoNode::GetString() {
+	stringstream oss;
+	oss << "\tedge " << JoinMethodToString(edges_.join_method_) << endl;
+	oss << "\t\t" << edges_.toString() << endl << "\t\t" << edges_constant_info_.toString() << endl;
+	cout << "\tnodes id: " << node_to_join_1_ << "    " << node_to_join_2_;
+	return oss.str();
+}
+
+string JoinTwoTable::GetString() {
+	stringstream oss;
+	oss << "\tpublic nodes is: ";
+	for(auto node : *public_variables_)
+		oss << node << "    ";
+	return oss.str();
+}
+
+string StepOperation::StepEffect::GetString() {
+	stringstream oss;
+	oss << "\t" << StepOperation::GetString(range) << endl;
+	switch (range) {
+		case OpRangeType::OneNode:
+			oss << effect_pointer_.one_node->GetString();
+			break;
+		case OpRangeType::TwoNode:
+			oss << effect_pointer_.two_node->GetString();
+			break;
+		case OpRangeType::GetAllTriples:
+			oss << effect_pointer_.one_node->GetString();
+			break;
+		case OpRangeType::TwoTable:
+			oss << effect_pointer_.two_table->GetString();
+			break;
+		case OpRangeType::NullRange:
+			cout << "Error in StepOperation::StepEffect::GetString(). NullRange Error!" << endl;
+			break;
+	}
+	return oss.str();
+}
+
+
 std::shared_ptr<AffectOneNode> StepOperation::StepEffect::GetOneNodePlan() {
   if(this->range == StepOperation::OpRangeType::OneNode)
     return this->effect_pointer_.one_node;
@@ -415,5 +465,12 @@ bool StepOperation::AllowedOpRange(StepOperation::StepOpType op, StepOperation::
   if(op == StepOpType::Satellite)
     return range == OpRangeType::OneNode;
   return false;
+}
+
+string StepOperation::GetString() {
+	stringstream oss;
+	oss << StepOperation::GetString(op_type_) << "\t" << step_effect_.GetString() << endl;
+	oss << "\t" << (distinct_ ? "distinct" : "not_distinct") << "\t" << (remain_old_result_ ? "remain_old_result" : "not_remain_old_result");
+	return oss.str();
 }
 

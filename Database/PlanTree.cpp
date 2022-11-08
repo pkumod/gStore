@@ -555,68 +555,8 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 		print_tree_node(node->right_node, bgpquery);
 
 	if(!node->left_node && !node->right_node) cout << "leaf node ";
-	auto stepoperation = node->node;
-	cout << "join type: " << stepoperation->JoinTypeToString(stepoperation->join_type_);
-	cout << (stepoperation->distinct_ ? " distinct" : " not distinct") << endl;
 
-	switch (stepoperation->join_type_) {
-		case StepOperation::JoinType::GenerateCandidates:
-		case StepOperation::JoinType::EdgeCheck:{
-			for(unsigned i = 0; i < stepoperation->edge_filter_->edges_->size(); ++i){
-				cout << "\tedge[" << i << "]:" << endl;
-				cout << "\t\ts[" << (*stepoperation->edge_filter_->edges_)[i].s_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
-				cout << "p[" << (*stepoperation->edge_filter_->edges_)[i].p_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
-				cout << "o[" << (*stepoperation->edge_filter_->edges_)[i].o_ << "]" << ((*stepoperation->edge_filter_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
-				cout << JoinMethodToString((*stepoperation->edge_filter_->edges_)[i].join_method_) << endl;
-			}
-			cout << "\tnode id: " << stepoperation->edge_filter_->node_to_join_ << endl;
-			break;
-		}
-		case StepOperation::JoinType::JoinNode:{
-			for(unsigned i = 0; i < stepoperation->join_node_->edges_->size(); ++ i){
-				cout << "\tedge[" << i << "]:" << endl;
-				cout << "\t\ts[" << (*stepoperation->join_node_->edges_)[i].s_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
-				cout << "p[" << (*stepoperation->join_node_->edges_)[i].p_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
-				cout << "o[" << (*stepoperation->join_node_->edges_)[i].o_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
-				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
-			}
-			cout << "\tnode id: " << stepoperation->join_node_->node_to_join_;
-			cout << (stepoperation->join_node_->Get_node_should_be_added_into_table() ? ", saved in table" : ", not saved in table") << endl;
-			break;
-		}
-		case StepOperation::JoinType::JoinTable:{
-			cout << "\tpublic nodes is: ";
-			for(auto &x : (*stepoperation->join_table_->public_variables_))
-				cout << x << "    ";
-			cout << endl;
-			break;
-		}
-		case StepOperation::JoinType::JoinTwoNodes:{
-			cout << "\tedge:" << endl;
-			cout << "\t\ts[" << stepoperation->join_two_node_->edges_.s_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.s_constant_ ? "const" : "var") << "    ";
-			cout << "p[" << stepoperation->join_two_node_->edges_.p_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.p_constant_ ? "const" : "var") << "    ";
-			cout << "o[" << stepoperation->join_two_node_->edges_.o_ << "]" << (stepoperation->join_two_node_->edges_constant_info_.o_constant_ ? "const" : "var") << endl;
-
-			cout << "\tnodes id: " << stepoperation->join_two_node_->node_to_join_1_ << "    "
-			<< stepoperation->join_two_node_->node_to_join_2_ << endl;
-			break;
-		}
-		case StepOperation::JoinType::GetAllTriples:{
-			for(unsigned i = 0; i < stepoperation->join_node_->edges_->size(); ++ i){
-				cout << "\tedge[" << i << "]:" << endl;
-				cout << "\t\ts[" << (*stepoperation->join_node_->edges_)[i].s_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].s_constant_ ? "const" : "var") << "    ";
-				cout << "p[" << (*stepoperation->join_node_->edges_)[i].p_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].p_constant_ ? "const" : "var") << "    ";
-				cout << "o[" << (*stepoperation->join_node_->edges_)[i].o_ << "]" << ((*stepoperation->join_node_->edges_constant_info_)[i].o_constant_ ? "const" : "var") << "    ";
-				cout << JoinMethodToString((*stepoperation->join_node_->edges_)[i].join_method_) << endl;
-			}
-			cout << "\tget all triples from database via p2so" << endl;
-			break;
-		}
-		default:{
-			cout << "error! unknown JoinType!" << endl;
-			exit(-1);
-		}
-	}
+	cout << node->node->GetString() << endl;
 }
 
 void PlanTree::print(BGPQuery* bgpquery) {
