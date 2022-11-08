@@ -222,7 +222,7 @@ class JoinTwoTable{
 class StepOperation{
  public:
   enum class StepOpType{
-    Filter, Extend, Check, TableJoin
+    Filter, Extend, Check, TableJoin, Satellite
   } op_type_;
 
   enum class OpRangeType{

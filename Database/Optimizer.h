@@ -115,10 +115,10 @@ class Optimizer
   tuple<bool,IntermediateResult> UpdateCandidates(IDCachesSharePtr &id_caches,
                                       shared_ptr<StepOperation> &step_operation);
 
-  tuple<bool, IntermediateResult> ExtendOneNode(shared_ptr<BGPQuery> &bgp_query,
-                                                shared_ptr<StepOperation> &step_operation,
-                                                const IDCachesSharePtr &id_caches,
-                                                IntermediateResult &left_table);
+  tuple<bool, IntermediateResult> OperateOneNode(shared_ptr<BGPQuery> &bgp_query,
+                                                 shared_ptr<StepOperation> &step_operation,
+                                                 const IDCachesSharePtr &id_caches,
+                                                 IntermediateResult &left_table);
   tuple<bool, IntermediateResult> ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
                                                 shared_ptr<StepOperation> &step_operation,
                                                 const IDCachesSharePtr &id_caches,

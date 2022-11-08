@@ -374,6 +374,9 @@ std::string StepOperation::GetString(StepOperation::StepOpType op) {
     case StepOpType::TableJoin:
       r = "StepOpType::TableJoin";
       break;
+    case StepOpType::Satellite:
+      r = "StepOpType::Satellite";
+      break;
   }
   return r;
 }
@@ -409,6 +412,8 @@ bool StepOperation::AllowedOpRange(StepOperation::StepOpType op, StepOperation::
     return range == OpRangeType::OneNode;
   if(op == StepOpType::TableJoin)
     return true; // not care
+  if(op == StepOpType::Satellite)
+    return range == OpRangeType::OneNode;
   return false;
 }
 
