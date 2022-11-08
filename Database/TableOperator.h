@@ -197,6 +197,8 @@ class AffectOneNode{
   {};
 
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
+
+  string GetString();
 };
 
 class AffectTwoNode{
@@ -208,6 +210,7 @@ public:
 	AffectTwoNode()=default;
 	AffectTwoNode(unsigned node_1, unsigned node_2, EdgeInfo edge_info, EdgeConstantInfo edge_constant):
 		node_to_join_1_(node_1), node_to_join_2_(node_2), edges_(edge_info), edges_constant_info_(edge_constant){};
+	string GetString();
 };
 
 /* Join Two Table on Public Variables*/
@@ -217,6 +220,7 @@ class JoinTwoTable{
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
   JoinTwoTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables): public_variables_(public_variables){};
   JoinTwoTable(){ this->public_variables_=std::make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();};
+  string GetString();
 };
 
 class StepOperation{
@@ -335,6 +339,7 @@ class StepOperation{
     std::shared_ptr<AffectOneNode> GetOneNodePlan();
     std::shared_ptr<AffectTwoNode> GetTwoNodePlan();
     std::shared_ptr<JoinTwoTable> GetTwoTablePlan();
+	string GetString();
   }step_effect_;
  public:
   std::shared_ptr<AffectOneNode> GetOneNodePlan();
@@ -393,6 +398,7 @@ class StepOperation{
     }
     return "err in JoinTypeToString";
   };
+  string GetString();
 };
 
 /**
