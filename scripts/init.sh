@@ -6,10 +6,8 @@
  # @LastEditors: Please set LastEditors
  # @Description: In User Settings Edit
  # @FilePath: /gstore/scripts/init.sh
-### 
-
+###
 #set -v
 #initialize system.db
 #"bin/ginit" "-make" >& /dev/null
 "bin/ginit" "--make"
-
