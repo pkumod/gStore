@@ -856,14 +856,14 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   auto left_records = left_table.values_;
 
   // JoinNode/EdgeCheck/JoinTwoNodes has only ONE left child
-  if(operation== StepOperation::StepOpType::Extend) {
+  if(operation==StepOperation::StepOpType::Extend || operation==StepOperation::StepOpType::Satellite) {
     // create a new table
     if(left_table.GetColumns()==0){
       return InitialTable(bgp_query, id_caches, step_operation);
     }
     if (range == StepOperation::OpRangeType::OneNode)
     {
-      return ExtendOneNode(bgp_query, step_operation, id_caches,  left_table);
+      return OperateOneNode(bgp_query, step_operation, id_caches, left_table);
     }
     else if(range == StepOperation::OpRangeType::TwoNode)
     {
@@ -1099,10 +1099,10 @@ tuple<bool,IntermediateResult> Optimizer::UpdateCandidates(IDCachesSharePtr &id_
   return make_tuple(true,IntermediateResult());
 }
 
-tuple<bool, IntermediateResult> Optimizer::ExtendOneNode(shared_ptr<BGPQuery> &bgp_query,
-                                                         shared_ptr<StepOperation> &step_operation,
-                                                         const IDCachesSharePtr &id_caches,
-                                                         IntermediateResult &left_table) {
+tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &bgp_query,
+                                                          shared_ptr<StepOperation> &step_operation,
+                                                          const IDCachesSharePtr &id_caches,
+                                                          IntermediateResult &left_table) {
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
   auto remain_old = step_operation->remain_old_result_;
@@ -1111,7 +1111,7 @@ tuple<bool, IntermediateResult> Optimizer::ExtendOneNode(shared_ptr<BGPQuery> &b
   PrintDebugInfoLine(g_format("join node [ %s ] ", bgp_query->get_var_name_by_id(node_to_join).c_str()));
   long t1 = GetTimeDebug();
   auto step_result =
-      executor_.AffectANode(left_table, id_caches, true, step_operation->distinct_, remain_old, one_node_plan);
+      executor_.AffectANode(left_table, id_caches, operation == StepOperation::StepOpType::Satellite , step_operation->distinct_, remain_old, one_node_plan);
   PrintDebugInfoLine(g_format("result size: %d", get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation, range, t1);
   return step_result;
