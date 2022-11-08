@@ -55,12 +55,12 @@ class Executor {
                                                            PositionValueSharedPtr id_posing_mapping,
                                                            bool remain_old);
 
-  TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list);
+  TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list, size_t max_output = static_cast<size_t>(-1));
 
   bool AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,bool distinct,IDCachesSharePtr id_caches);
 
-  std::tuple<bool, TableContentShardPtr> GetAllSubObjId(bool need_literal);
-  std::tuple<bool, TableContentShardPtr> GetAllPreId();
+  std::tuple<bool, TableContentShardPtr> GetAllSubObjId(bool need_literal,size_t max_output);
+  std::tuple<bool, TableContentShardPtr> GetAllPreId(size_t max_output);
   std::shared_ptr<IDList> ExtendRecordFirstNode(shared_ptr<AffectOneNode> one_step_join_node_,
 											    PositionValueSharedPtr id_pos_mapping,
 											    IDCachesSharePtr id_caches,
@@ -90,11 +90,16 @@ class Executor {
            kv_store_(kv_store),txn_(txn),limitID_predicate_(limitID_predicate),limitID_literal_(limitID_literal),
            limitID_entity_(limitID_entity){};
 
+  void CheckedInsert(TableContentShardPtr& new_records,
+                     size_t &max_output,
+                     bool remain_old,
+                     shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& inserted_output);
   tuple<bool, IntermediateResult> AffectANode(IntermediateResult old_table,
                                               const IDCachesSharePtr id_caches,
                                               bool node_added_into_table,
                                               bool distinct,
                                               bool remain_old,
+                                              size_t max_output,
                                               const shared_ptr<AffectOneNode> feed_plan);
 
   std::tuple<bool,IntermediateResult> InitialTableOneNode(std::shared_ptr<AffectOneNode> feed_plan,
@@ -102,15 +107,18 @@ class Executor {
                                                           bool is_literal,
                                                           bool is_predicate,
                                                           bool distinct,
+                                                          size_t max_output,
                                                           IDCachesSharePtr id_caches);
 
   std::tuple<bool,IntermediateResult> InitialTableTwoNode(std::shared_ptr<AffectTwoNode> join_plan,
+                                                          size_t max_output,
                                                           IDCachesSharePtr id_caches);
 
   std::tuple<bool, IntermediateResult> JoinTwoNode(shared_ptr<AffectTwoNode> join_two_node_,
                                                    IntermediateResult old_table,
                                                    IDCachesSharePtr id_caches,
-                                                   bool remain_old);
+                                                   bool remain_old,
+                                                   size_t max_output);
 
   tuple<bool,IntermediateResult> JoinTable(shared_ptr<JoinTwoTable> join_plan,
                                            IntermediateResult table_a,
@@ -127,7 +135,7 @@ class Executor {
 
   bool UpdateIDCache(shared_ptr<AffectOneNode> affect_one_node, IDCachesSharePtr id_caches, bool distinct);
 
-  std::tuple<bool,IntermediateResult> GetAllTriple(std::shared_ptr<AffectOneNode> feed_one_node);
+  std::tuple<bool,IntermediateResult> GetAllTriple(size_t max_output, std::shared_ptr<AffectOneNode> feed_one_node);
 };
 } // end namespace gstore
 #endif //GSTOREGDB_DATABASE_EXECUTOR_H_
