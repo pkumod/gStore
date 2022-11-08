@@ -523,6 +523,20 @@ private:
 
 //===================================================================================================================
 
+template<typename ... Args>
+inline std::string g_format(const std::string& format, Args ... args){
+  size_t size = 1 + snprintf(nullptr, 0, format.c_str(), args ...);  // Extra space for \0
+  // unique_ptr<char[]> buf(new char[size]);
+  char bytes[size];
+  snprintf(bytes, size, format.c_str(), args ...);
+  return string(bytes);
+}
+
+inline std::string g_GetLineDescription(const char* file_name, const char* function, int line){
+  return g_format("[%s] %s, line %d",file_name,function,line);
+}
+
+#define GetLineDescription() g_GetLineDescription(__FILE__,__FUNCTION__,__LINE__)
 /**
  * A list of unsigned
  */

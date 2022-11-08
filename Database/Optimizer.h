@@ -10,6 +10,7 @@
 #include "../Query/QueryPlan.h"
 #include "./PlanGenerator.h"
 #include "./Executor.h"
+
 #ifdef TOPK_SUPPORT
 #include "../Query/topk/DPBTopKUtil.h"
 #endif // TOPK_SUPPORT
@@ -20,10 +21,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <random>
-
-//#define FEED_PLAN
-#define OPTIMIZER_DEBUG_INFO
-
+#include "./OptimizerDebug.h"
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
@@ -44,22 +42,6 @@ struct QueryInfo{
   bool is_distinct_;
   shared_ptr<vector<Order>> ordered_by_expressions_;
 };
-/*
- *
- * 还差一个 copyToResult 的操作
- *
-1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
-----------
-2. do_query()首先判断handler0或者handler1-5
-3. 在handler0里面首先调用enum_query_plan()，按照BFS或者DFS生成所有执行计划
-4. 生成完执行计划后调用choose_exec_plan()选择一个计划执行
-5. 在choose_exec_plan()中每一个执行计划需要层次调用cost_model()->cardinality_estimator()->update_cardinality_cache()
- ----------
-6. 按照点的顺序首先需要对起始点调用gen_filter获得该点的候选集 [done]
-    而后的每一个点调用join_one_step()
-7. 在每一步的join_one_step()中需要根据queryplan调用三种基本join之一，同时需要update中间结果，并且每一步的开始需要check一下中间结果能不能利用
-8. 每一步都做完之后，copytoResult()
-*/
 
 class Optimizer
 {
@@ -126,7 +108,26 @@ class Optimizer
   gstore::Executor executor_;
 
   tuple<bool,bool,bool> PrepareInitial(shared_ptr<BGPQuery> bgp_query,
-                            shared_ptr<FeedOneNode> join_a_node_plan) const;
+                            shared_ptr<AffectOneNode> join_a_node_plan) const;
+  tuple<bool,IntermediateResult> InitialTable(shared_ptr<BGPQuery> &bgp_query,
+                                  const IDCachesSharePtr &id_caches,
+                                  shared_ptr<StepOperation> &step_operation);
+  tuple<bool,IntermediateResult> UpdateCandidates(IDCachesSharePtr &id_caches,
+                                      shared_ptr<StepOperation> &step_operation);
+
+  tuple<bool, IntermediateResult> ExtendOneNode(shared_ptr<BGPQuery> &bgp_query,
+                                                shared_ptr<StepOperation> &step_operation,
+                                                const IDCachesSharePtr &id_caches,
+                                                IntermediateResult &left_table);
+  tuple<bool, IntermediateResult> ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
+                                                shared_ptr<StepOperation> &step_operation,
+                                                const IDCachesSharePtr &id_caches,
+                                                IntermediateResult &left_table);
+  tuple<bool, IntermediateResult> TableCheck(shared_ptr<StepOperation> &step_operation,
+                                             IntermediateResult &left_table);
+  tuple<bool, IntermediateResult> JoinTable(shared_ptr<StepOperation> &step_operation,
+                                            IntermediateResult &left_table,
+                                            IntermediateResult &right_table);
 };
 
 

@@ -580,7 +580,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
     }
     edge_info.join_method_ = JoinMethod::so2p;
     EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
-    this->non_tree_edges_.edge_filter_ = make_shared<FeedOneNode>();
+    this->non_tree_edges_.edge_filter_ = make_shared<AffectOneNode>();
     this->non_tree_edges_.edge_filter_->edges_->push_back(edge_info);
     this->non_tree_edges_.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
   }

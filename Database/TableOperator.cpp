@@ -276,7 +276,7 @@ string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_c
  * Last: not in and variable
  * @param already_in
  */
-void FeedOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in){
+void AffectOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in){
   struct ConstantNumberInfo
   {
     int constant_number;
@@ -329,3 +329,86 @@ void FeedOneNode::ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID
   this->edges_constant_info_ = new_edge_constant_info;
 
 }
+
+std::shared_ptr<AffectOneNode> StepOperation::StepEffect::GetOneNodePlan() {
+  if(this->range == StepOperation::OpRangeType::OneNode)
+    return this->effect_pointer_.one_node;
+  else
+    return nullptr;
+}
+std::shared_ptr<AffectTwoNode> StepOperation::StepEffect::GetTwoNodePlan() {
+  if(this->range == StepOperation::OpRangeType::TwoNode)
+    return this->effect_pointer_.two_node;
+  else
+    return nullptr;
+}
+std::shared_ptr<JoinTwoTable> StepOperation::StepEffect::GetTwoTablePlan() {
+  if(this->range == StepOperation::OpRangeType::TwoTable)
+    return this->effect_pointer_.two_table;
+  else
+    return nullptr;
+}
+
+std::shared_ptr<AffectOneNode> StepOperation::GetOneNodePlan() {
+  return this->step_effect_.GetOneNodePlan();
+}
+std::shared_ptr<AffectTwoNode> StepOperation::GetTwoNodePlan() {
+  return this->step_effect_.GetTwoNodePlan();
+}
+std::shared_ptr<JoinTwoTable> StepOperation::GetTwoTablePlan() {
+  return this->step_effect_.GetTwoTablePlan();
+}
+
+std::string StepOperation::GetString(StepOperation::StepOpType op) {
+  std::string r{"OpRangeType::FalseType"};
+  switch (op) {
+    case StepOpType::Filter:
+      r = "StepOpType::Filter";
+      break;
+    case StepOpType::Extend:
+      r = "StepOpType::Extend";
+      break;
+    case StepOpType::Check:
+      r = "StepOpType::Check";
+      break;
+    case StepOpType::TableJoin:
+      r = "StepOpType::TableJoin";
+      break;
+  }
+  return r;
+}
+std::string StepOperation::GetString(StepOperation::OpRangeType op) {
+  std::string r{"OpRangeType::FalseType"};
+  switch (op) {
+    case OpRangeType::OneNode:
+      r = "OpRangeType::OneNode";
+      break;
+    case OpRangeType::TwoNode:
+      r = "OpRangeType::TwoNode";
+      break;
+    case OpRangeType::GetAllTriples:
+      r = "OpRangeType::GetAllTriples";
+      break;
+    case OpRangeType::TwoTable:
+      r = "OpRangeType::TwoTable";
+      break;
+    case OpRangeType::NullRange:
+      r = "OpRangeType::NullRange";
+      break;
+  }
+  return r;
+}
+bool StepOperation::AllowedOpRange(StepOperation::StepOpType op, StepOperation::OpRangeType range) {
+  if(op == StepOpType::Filter)
+    return range == OpRangeType::OneNode;
+  if(op == StepOpType::Extend)
+    return range == OpRangeType::OneNode ||
+        range == OpRangeType::TwoNode ||
+        range == OpRangeType::GetAllTriples;
+  if(op == StepOpType::Check)
+    return range == OpRangeType::OneNode;
+  if(op == StepOpType::TableJoin)
+    return true; // not care
+  return false;
+}
+
