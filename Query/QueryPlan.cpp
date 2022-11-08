@@ -29,7 +29,7 @@ QueryPlan::QueryPlan(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector
    * 2. not selected  but degree > 1  vars
    * no predicate counted
   */
-  this->constant_generating_lists_ = make_shared<vector<shared_ptr<FeedOneNode>>>();
+  this->constant_generating_lists_ = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
@@ -184,7 +184,7 @@ TYPE_ENTITY_LITERAL_ID QueryPlan::SelectANode(BasicQuery *basic_query,std::share
  */
 shared_ptr<QueryPlan> QueryPlan::DefaultBFS(BasicQuery *basic_query,KVstore *kv_store,shared_ptr<vector<OldVarDescriptor>> var_infos) {
   auto r = make_shared<QueryPlan>();
-  r->constant_generating_lists_ = make_shared<vector<shared_ptr<FeedOneNode>>>();
+  r->constant_generating_lists_ = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = basic_query->getTotalVarNum();
   vector<bool> vars_used_vec(total_var_num,false);
   // When id < total_var_num, the var in 'var_infos' maps exactly the id in BasicQuery
@@ -329,7 +329,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
 
     StepOperation one_step_join;
     one_step_join.join_type_ = StepOperation::JoinType::EdgeCheck;
-    auto one_step_join_node = make_shared<FeedOneNode>();
+    auto one_step_join_node = make_shared<AffectOneNode>();
     one_step_join_node->node_to_join_ = satellite_id;
     one_step_join_node->edges_ = check_edge_info;
     one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -427,7 +427,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
     }
     StepOperation one_step_join;
     one_step_join.join_type_ = StepOperation::JoinType::JoinNode;
-    auto one_step_join_node = make_shared<FeedOneNode>();
+    auto one_step_join_node = make_shared<AffectOneNode>();
     one_step_join_node->node_to_join_ = pre_id_Table;
     one_step_join_node->edges_ = predicate_edge_info;
     one_step_join_node->edges_constant_info_ = predicate_edge_constant_info;
@@ -480,7 +480,7 @@ void QueryPlan::ProcessPredicateAndSatellites(BasicQuery *basic_query,
 
     StepOperation one_step_join;
     one_step_join.join_type_ = StepOperation::JoinType::EdgeCheck;
-    auto one_step_join_node = make_shared<FeedOneNode>();
+    auto one_step_join_node = make_shared<AffectOneNode>();
     one_step_join_node->node_to_join_ = left_id;
     one_step_join_node->edges_ = check_edge_info;
     one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -559,7 +559,7 @@ StepOperation QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_st
     generate_edge_constant_info->emplace_back(s_constant,p_constant,o_constant);
   }
   one_step_join.join_type_ = StepOperation::JoinType::GenerateCandidates;
-  auto one_step_join_node = make_shared<FeedOneNode>();
+  auto one_step_join_node = make_shared<AffectOneNode>();
   one_step_join_node->node_to_join_ = start_id;
   one_step_join_node->edges_ = generate_edge_info;
   one_step_join_node->edges_constant_info_ = generate_edge_constant_info;
@@ -576,9 +576,9 @@ StepOperation QueryPlan::FilterFirstNode(BasicQuery *basic_query, KVstore *kv_st
  * @param target_node   the node needed to check constant edge
  * @return the filtering plan
  */
-shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_query,
-                                                            KVstore *kv_store,
-                                                            TYPE_ENTITY_LITERAL_ID target_node) {
+shared_ptr<AffectOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_query,
+                                                              KVstore *kv_store,
+                                                              TYPE_ENTITY_LITERAL_ID target_node) {
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 
@@ -640,7 +640,7 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_qu
     }
   }
 
-  auto one_step_join_node = make_shared<FeedOneNode>();
+  auto one_step_join_node = make_shared<AffectOneNode>();
   one_step_join_node->node_to_join_ = target_node;
   one_step_join_node->edges_ = check_edge_info;
   one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -655,9 +655,9 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(BasicQuery *basic_qu
  * @param target_node   the node needed to check constant edge
  * @return the filtering plan
  */
-shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
-                                                            KVstore *kv_store,
-                                                            TYPE_ENTITY_LITERAL_ID target_node) {
+shared_ptr<AffectOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
+                                                              KVstore *kv_store,
+                                                              TYPE_ENTITY_LITERAL_ID target_node) {
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 
@@ -719,7 +719,7 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery>
     }
   }
 
-  auto one_step_join_node = make_shared<FeedOneNode>();
+  auto one_step_join_node = make_shared<AffectOneNode>();
   one_step_join_node->node_to_join_ = target_node;
   one_step_join_node->edges_ = check_edge_info;
   one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -736,9 +736,9 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery>
  * @param target_node   the node needed to check constant edge
  * @return the filtering plan
  */
-shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
-                                                                 KVstore *kv_store,
-                                                                 TYPE_ENTITY_LITERAL_ID target_node){
+shared_ptr<AffectOneNode> QueryPlan::FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
+                                                                   KVstore *kv_store,
+                                                                   TYPE_ENTITY_LITERAL_ID target_node){
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
 
@@ -798,7 +798,7 @@ shared_ptr<FeedOneNode> QueryPlan::FilterNodeOnConstantPredicate(shared_ptr<BGPQ
     }
   }
 
-  auto one_step_join_node = make_shared<FeedOneNode>();
+  auto one_step_join_node = make_shared<AffectOneNode>();
   one_step_join_node->node_to_join_ = target_node;
   one_step_join_node->edges_ = check_edge_info;
   one_step_join_node->edges_constant_info_ = check_edge_constant_info;
@@ -832,7 +832,7 @@ StepOperation QueryPlan::LinkWithPreviousNodes(BasicQuery *basic_query,
 
   StepOperation one_step_join;
   one_step_join.join_type_ = StepOperation::JoinType::JoinNode;
-  auto one_step_join_node = make_shared<FeedOneNode>();
+  auto one_step_join_node = make_shared<AffectOneNode>();
   one_step_join_node->node_to_join_ = added_id;
   one_step_join_node->edges_ = join_edge_info;
   one_step_join_node->edges_constant_info_ = join_edge_constant_info;
@@ -914,7 +914,7 @@ std::string QueryPlan::toString(KVstore* kv_store) {
     auto step_n = (*this->join_order_)[i];
 
     ss << "\tstep[" << i << "]: " << StepOperation::JoinTypeToString(step_n.join_type_) << " \t ";
-    shared_ptr<FeedOneNode> step_descriptor;
+    shared_ptr<AffectOneNode> step_descriptor;
     switch (step_n.join_type_) {
       case StepOperation::JoinType::JoinNode:
         step_descriptor = step_n.join_node_;
@@ -973,17 +973,17 @@ std::tuple<std::shared_ptr<std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_
   return make_tuple(var_to_position,position_to_var);
 }
 
-std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
-                                                                                      KVstore *kv_store,
-                                                                                      std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
- return make_shared<std::vector<std::shared_ptr<FeedOneNode>>>();
+std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> QueryPlan::OnlyConstFilter(BasicQuery *basic_query,
+                                                                                        KVstore *kv_store,
+                                                                                        std::shared_ptr<std::vector<OldVarDescriptor>> var_infos) {
+ return make_shared<std::vector<std::shared_ptr<AffectOneNode>>>();
 }
 
-std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>>
+std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>>
 QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
                            KVstore *kv_store) {
   auto result = make_shared<QueryPlan>();
-  auto constant_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
+  auto constant_generating_lists = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();
 
   // select the first node to be the max degree
@@ -1002,11 +1002,11 @@ QueryPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
 }
 
 
-std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>>
+std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>>
 QueryPlan::PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
                            KVstore *kv_store) {
   auto result = make_shared<QueryPlan>();
-  auto constant_predicate_generating_lists = make_shared<vector<shared_ptr<FeedOneNode>>>();
+  auto constant_predicate_generating_lists = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();
 
   // select the first node to be the max degree
@@ -1055,7 +1055,7 @@ QueryPlan::QueryPlan(Tree_node *root_node) {
   this->join_order_=make_shared<std::vector<StepOperation>>();
   this->ids_after_join_=make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();
   this->var_descriptors_=make_shared<std::vector<OldVarDescriptor>>();
-  this->constant_generating_lists_= make_shared<vector<std::shared_ptr<FeedOneNode>>>();
+  this->constant_generating_lists_= make_shared<vector<std::shared_ptr<AffectOneNode>>>();
   PreTravel(root_node);
 }
 

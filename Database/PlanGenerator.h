@@ -113,7 +113,7 @@ public:
 	void GetJoinNodes(const vector<unsigned> &plan_a_nodes, vector<unsigned> &other_nodes, set<unsigned> &join_nodes_set) const;
 
 	unsigned GetSampleFromWholeDatabase(unsigned var_id, vector<unsigned> &so_sample_cache) const;
-	vector<shared_ptr<FeedOneNode>> CompleteCandidate();
+	vector<shared_ptr<AffectOneNode>> CompleteCandidate();
 	void GetNeighborBySubPlanNodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void ConsiderWCOJoin(unsigned var_num);
 	void ConsiderBinaryJoin(unsigned var_num);

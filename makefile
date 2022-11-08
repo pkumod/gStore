@@ -398,7 +398,7 @@ $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(filter $(FIRST_
 	$(filter $(FIRST_BUILD),$(objdir)TableOperator.o) $(filter $(FIRST_BUILD), $(objdir)DPBTopKUtil.o)
 	$(CXX) $(CFLAGS) Database/Executor.cpp $(inc) $(inc_log) -o $(objdir)Executor.o $(openmp) ${ldl}
 
-$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h \
+$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h Database/OptimizerDebug.h \
 	$(filter $(FIRST_BUILD), $(objdir)Executor.o) $(filter $(FIRST_BUILD),$(objdir)QueryPlan.o) \
 	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o)
 	$(CXX) $(CFLAGS) Database/Optimizer.cpp $(inc) $(inc_log) -o $(objdir)Optimizer.o $(openmp) ${ldl}

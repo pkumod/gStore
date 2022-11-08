@@ -16,7 +16,7 @@ class QueryPlan
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ids_after_join_;
   std::shared_ptr<std::vector<OldVarDescriptor>> var_descriptors_;
   // Do Before the process begin
-  std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> constant_generating_lists_;
+  std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> constant_generating_lists_;
 
   QueryPlan(Tree_node* root_node);
   QueryPlan(const std::shared_ptr<std::vector<StepOperation>>& join_order,
@@ -27,13 +27,13 @@ class QueryPlan
   QueryPlan(PlanTree* plan_tree);
   QueryPlan()=default;
   void PreTravel(Tree_node *node);
-  static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);
+  static std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> OnlyConstFilter(BasicQuery*, KVstore*, std::shared_ptr<std::vector<OldVarDescriptor>>);
 
-  static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
-                                                                                        KVstore *kv_store);
+  static std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
+                                                                                      KVstore *kv_store);
 
-  static std::shared_ptr<std::vector<std::shared_ptr<FeedOneNode>>> PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
-                                                                                    KVstore *kv_store);
+  static std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
+                                                                                      KVstore *kv_store);
   /* greedy method used in version 0.9 */
   static double ScoreNode(BasicQuery *basic_query, int var);
   static TYPE_ENTITY_LITERAL_ID SelectANode(BasicQuery *basic_query,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> processed_nodes); //include select the start node and choose next node;
@@ -58,17 +58,17 @@ class QueryPlan
                                          const KVstore *kv_store,
                                          TYPE_ENTITY_LITERAL_ID added_id,
                                          const std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> &table_ids);
-  static std::shared_ptr<FeedOneNode> FilterNodeOnConstantEdge(BasicQuery *basic_query,
-                                                               KVstore *kv_store,
-                                                               TYPE_ENTITY_LITERAL_ID target_node);
+  static std::shared_ptr<AffectOneNode> FilterNodeOnConstantEdge(BasicQuery *basic_query,
+                                                                 KVstore *kv_store,
+                                                                 TYPE_ENTITY_LITERAL_ID target_node);
 
-  static shared_ptr<FeedOneNode> FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
-                                                              KVstore *kv_store,
-                                                              TYPE_ENTITY_LITERAL_ID target_node);
+  static shared_ptr<AffectOneNode> FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
+                                                            KVstore *kv_store,
+                                                            TYPE_ENTITY_LITERAL_ID target_node);
 
-  static shared_ptr<FeedOneNode> FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
-                                                               KVstore *kv_store,
-                                                               TYPE_ENTITY_LITERAL_ID target_node);
+  static shared_ptr<AffectOneNode> FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
+                                                                 KVstore *kv_store,
+                                                                 TYPE_ENTITY_LITERAL_ID target_node);
 
   static StepOperation FilterFirstNode(BasicQuery *basic_query, KVstore *kv_store, TYPE_ENTITY_LITERAL_ID start_node,
                                    const shared_ptr<vector<OldVarDescriptor>> &var_list);

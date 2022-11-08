@@ -15,18 +15,19 @@ using namespace std;
  * @param feed_plan
  * @return the new created table
  */
-tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult old_table,
-                                                    const IDCachesSharePtr id_caches,
-                                                    bool distinct,
-                                                    bool remain_old,
-                                                    const shared_ptr<FeedOneNode> feed_plan)
+tuple<bool, IntermediateResult> gstore::Executor::AffectANode(IntermediateResult old_table,
+                                                              const IDCachesSharePtr id_caches,
+                                                              bool node_added_into_table,
+                                                              bool distinct,
+                                                              bool remain_old,
+                                                              const shared_ptr<AffectOneNode> feed_plan)
 {
   auto new_id = feed_plan->node_to_join_;
   auto table_content_ptr = old_table.values_;
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
   auto new_records = new_table.values_;
   auto id_pos_map = new_table.id_pos_map;
-  if (feed_plan->node_should_be_added_into_table)
+  if (node_added_into_table)
     new_table.AddNewNode(new_id);
   auto edges_info = feed_plan->edges_;
 
@@ -42,7 +43,7 @@ tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult o
                                                                    record_iterator);
     if(record_candidate_list->size()>0)
     {
-      if (feed_plan->node_should_be_added_into_table) {
+      if (node_added_into_table) {
         /* write to the new table, first copy the n-1 records
          * and move the last */
         for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++) {
@@ -92,7 +93,7 @@ tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult o
  * @param id_caches
  * @return
  */
-std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const std::shared_ptr<FeedOneNode> feed_plan,
+std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const std::shared_ptr<AffectOneNode> feed_plan,
                                                                   bool is_entity,
                                                                   bool is_literal,
                                                                   bool is_predicate,
@@ -133,7 +134,7 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const 
 }
 
 
-std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const std::shared_ptr<FeedTwoNode> join_plan,
+std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const std::shared_ptr<AffectTwoNode> join_plan,
                                                                   const IDCachesSharePtr id_caches)
 {
   IntermediateResult init_table;
@@ -168,7 +169,7 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const 
 
 
 
-std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
+std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_ptr<AffectTwoNode> join_two_node_,
                                                            IntermediateResult old_table,
                                                            const IDCachesSharePtr id_caches,
                                                            bool remain_old)
@@ -380,7 +381,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
  * @param id_caches
  * @return a new IntermediateResult, changing the return one will not change the old table
  */
-tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
+tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shared_ptr<AffectOneNode> check_plan,
                                                                     IntermediateResult old_table,
                                                                     bool remain_old) {
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
@@ -402,7 +403,7 @@ tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shar
   return make_tuple(true,new_table);
 }
 
-bool gstore::Executor::CacheConstantCandidates(shared_ptr<FeedOneNode> one_step,bool distinct, IDCachesSharePtr id_caches) {
+bool gstore::Executor::CacheConstantCandidates(shared_ptr<AffectOneNode> one_step, bool distinct, IDCachesSharePtr id_caches) {
   auto node_t = one_step->node_to_join_;
   auto edges = one_step->edges_;
   auto edges_constant = one_step->edges_constant_info_;
@@ -441,12 +442,10 @@ gstore::Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned
  * @param id_caches
  * @return bool
  */
-bool gstore::Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
-  //
-  auto feed_plan = step_operation->edge_filter_;
-  auto var_node_id = feed_plan->node_to_join_;
+bool gstore::Executor::UpdateIDCache(shared_ptr<AffectOneNode> affect_one_node, IDCachesSharePtr id_caches, bool distinct) {
+  auto var_node_id = affect_one_node->node_to_join_;
   auto candidate_list_it = id_caches->find(var_node_id);
-  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_,step_operation->distinct_);
+  auto candidate_generated = this->CandidatesWithConstantEdge(affect_one_node->edges_,distinct);
   if(candidate_list_it==id_caches->end())
     (*id_caches)[var_node_id] = candidate_generated;
   else
@@ -970,7 +969,7 @@ std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId()
 
 // The only difference between this func and ExtendRecordOneNode is:
 // In this func, we guarantee the duplicate elements in result_list will not be removed by Deduplicated candidate set.
-std::shared_ptr<IDList> gstore::Executor::ExtendRecordFirstNode(shared_ptr<FeedOneNode> one_step_join_node_,
+std::shared_ptr<IDList> gstore::Executor::ExtendRecordFirstNode(shared_ptr<AffectOneNode> one_step_join_node_,
 															    PositionValueSharedPtr id_pos_mapping,
 															    IDCachesSharePtr id_caches,
 															    TYPE_ENTITY_LITERAL_ID new_id,
@@ -1178,7 +1177,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordFirstNode(shared_ptr<FeedO
 }
 
 
-std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> one_step_join_node_,
+std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectOneNode> one_step_join_node_,
                                                       PositionValueSharedPtr id_pos_mapping,
                                                       IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
@@ -1397,7 +1396,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<FeedOne
  * @return a vector of [id1 id2]_1 [id1 id2]_2  [id1 id2]_3 [id1 id2]_4
  */
 std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>
-gstore::Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
+gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_node_,
                               PositionValueSharedPtr id_pos_mapping,
                               IDCachesSharePtr id_caches,
                               TYPE_ENTITY_LITERAL_ID new_id1,
@@ -1617,7 +1616,7 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
   return id_candidate;
 }
 
-std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(std::shared_ptr<FeedOneNode> feed_one_node)
+std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(std::shared_ptr<AffectOneNode> feed_one_node)
 {
   IntermediateResult init_table;
   auto &records = init_table.values_;

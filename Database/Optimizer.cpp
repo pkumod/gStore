@@ -189,7 +189,7 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPl
   TableContentShardPtr step_table;
   switch (one_step.join_type_) {
     case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.JoinANode(old_table,id_caches,one_step.distinct_,false,one_step.join_node_);
+      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step.distinct_, false, one_step.GetOneNodePlan());
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -814,72 +814,26 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
 {
   // leaf node
   auto step_operation = plan_tree_node->node;
-  auto operation_type = step_operation->join_type_;
+  // auto operation_type = step_operation->join_type_;
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
   auto remain_old = step_operation->remain_old_result_;
   // leaf node : create a table
   if (plan_tree_node->left_node == nullptr && plan_tree_node->right_node == nullptr)
   {
-    auto position_id_map = make_shared<PositionValue>();
-    IntermediateResult leaf_table;
-    if(operation_type== StepOperation::JoinType::JoinNode){
-      auto r = this->PrepareInitial(bgp_query,step_operation->join_node_);
-      bool is_entity= get<0>(r);
-      bool is_literal = get<1>(r);
-      bool is_predicate = get<2>(r);
-#ifdef OPTIMIZER_DEBUG_INFO
-      long t1 = Util::get_cur_time();
-#endif
-      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,
-                                                          step_operation->distinct_,id_caches);
-      leaf_table = get<1>(initial_result);
-#ifdef OPTIMIZER_DEBUG_INFO
-      // cout<<"join node ["<<bgp_query->get_var_name_by_id(step_operation->join_node_->node_to_join_)<<"]" << endl;
-	  cout<< "\tresult size:"<<leaf_table.values_->size();
-      long t2 = Util::get_cur_time();
-      cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
+    if(operation == StepOperation::StepOpType::Extend){
+      return InitialTable(bgp_query, id_caches, step_operation);
     }
-    else if(operation_type== StepOperation::JoinType::GenerateCandidates)
-    {
-      executor_.UpdateIDCache(step_operation,id_caches);
+    else if(operation == StepOperation::StepOpType::Filter){
+      return UpdateCandidates(id_caches,step_operation);
     }
-    else if(operation_type==StepOperation::JoinType::JoinTable)
+    else if(operation == StepOperation::StepOpType::TableJoin)
       throw string("StepOperation::JoinType::JoinTable cannot happened in leaf node");
-    else if(operation_type==StepOperation::JoinType::EdgeCheck)
+    else if(operation == StepOperation::StepOpType::Check)
       throw string("StepOperation::JoinType::EdgeCheck cannot happened in leaf node");
-    else if(operation_type==StepOperation::JoinType::JoinTwoNodes){
-#ifdef OPTIMIZER_DEBUG_INFO
-      long t1 = Util::get_cur_time();
-#endif
-      auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,id_caches);
-      leaf_table = get<1>(initial_result);
-#ifdef OPTIMIZER_DEBUG_INFO
-	  auto node1 = step_operation->join_two_node_->node_to_join_1_;
-	  auto node2 = step_operation->join_two_node_->node_to_join_2_;
-	  cout<<"join two nodes ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  [";
-	  cout<<bgp_query->get_var_name_by_id(node2)<<"]"<<endl;
-      cout<<"\tresult size:"<<leaf_table.values_->size();
-      long t2 = Util::get_cur_time();
-      cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    }
-    else if(operation_type==StepOperation::JoinType::GetAllTriples)
-    {
-#ifdef OPTIMIZER_DEBUG_INFO
-      long t1 = Util::get_cur_time();
-#endif
-      auto all_triple_result = executor_.GetAllTriple(step_operation->join_node_);
-      leaf_table = get<1>(all_triple_result);
-#ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"GetAllTriple result size:"<<leaf_table.values_->size();
-      long t2 = Util::get_cur_time();
-      cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    }
     else
       throw string("unexpected JoinType");
-
-    return make_tuple(true,leaf_table);
+    return make_tuple(true,IntermediateResult());
   }
 
 
@@ -888,21 +842,13 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   tuple<bool,IntermediateResult> right_r;
 
   if(plan_tree_node->left_node != nullptr)
-    left_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->left_node,id_caches);
+    left_r = this->ExecutionBreathFirst(bgp_query,query_info, plan_tree_node->left_node,id_caches);
 
   if(plan_tree_node->right_node != nullptr)
-    right_r = this->ExecutionBreathFirst(bgp_query,query_info,plan_tree_node->right_node,id_caches);
+    right_r = this->ExecutionBreathFirst(bgp_query,query_info, plan_tree_node->right_node,id_caches);
 
-  if(operation_type == StepOperation::JoinType::GenerateCandidates){
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t1 = Util::get_cur_time();
-#endif
-    executor_.UpdateIDCache(step_operation,id_caches);
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t2 = Util::get_cur_time();
-    cout<< "UpdateIDCache ,  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    return left_r;
+  if(operation == StepOperation::StepOpType::Filter){
+    return UpdateCandidates(id_caches,step_operation);
   }
 
   auto left_table = get<1>(left_r);
@@ -910,115 +856,34 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   auto left_records = left_table.values_;
 
   // JoinNode/EdgeCheck/JoinTwoNodes has only ONE left child
-  if(operation_type== StepOperation::JoinType::JoinNode) {
+  if(operation== StepOperation::StepOpType::Extend) {
     // create a new table
     if(left_table.GetColumns()==0){
-      auto position_id_map = make_shared<PositionValue>();
-      auto r = this->PrepareInitial(bgp_query,step_operation->join_node_);
-      bool is_entity= get<0>(r);
-      bool is_literal = get<1>(r);
-      bool is_predicate = get<2>(r);
-#ifdef OPTIMIZER_DEBUG_INFO
-      long t1 = Util::get_cur_time();
-#endif
-      auto initial_result = executor_.InitialTableOneNode(step_operation->join_node_,is_entity,is_literal,is_predicate,
-                                                          step_operation->distinct_,id_caches);
-      auto leaf_table = get<1>(initial_result);
-#ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"InitialTableOneNode result size:"<<leaf_table.values_->size();
-      long t2 = Util::get_cur_time();
-      cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-      return make_tuple(true,leaf_table);
+      return InitialTable(bgp_query, id_caches, step_operation);
     }
-
-    auto one_step_join = plan_tree_node->node;
-    auto node_to_join = one_step_join->join_node_->node_to_join_;
-    cout<<"join node ["<<bgp_query->get_var_name_by_id(node_to_join)<<"]"<<endl;
-    auto join_node = one_step_join->join_node_;
-    auto edges = *join_node->edges_;
-    auto edge_c = *join_node->edges_constant_info_;
-#ifdef TABLE_OPERATOR_DEBUG_INFO
-    for(int i=0;i<edges.size();i++)
-      {
-        std::cout<<"edge["<<i<<"] "<<edges[i].toString()<<std::endl;
-        std::cout<<"constant["<<i<<"] "<<edge_c[i].toString()<<std::endl;
-      }
-#endif
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t1 = Util::get_cur_time();
-#endif
-    auto step_result = executor_.JoinANode(left_table,id_caches,one_step_join->distinct_,remain_old,one_step_join->join_node_);
-
-#ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"\tresult size:"<<get<1>(step_result).values_->size();
-    long t2 = Util::get_cur_time();
-    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    return step_result;
-  }
-  else if(operation_type==StepOperation::JoinType::EdgeCheck){
-
-    auto edge_filter = step_operation->edge_filter_;
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t1 = Util::get_cur_time();
-#endif
-    auto step_result =executor_.ANodeEdgesConstraintFilter(edge_filter, left_table,remain_old);
-#ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"result size "<<get<1>(step_result).values_->size();
-    long t2 = Util::get_cur_time();
-    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    return step_result;
-  }
-  else if(operation_type==StepOperation::JoinType::JoinTwoNodes){
-    if(left_table.GetColumns()==0){
-      auto position_id_map = make_shared<PositionValue>();
-      auto initial_result = executor_.InitialTableTwoNode(step_operation->join_two_node_,id_caches);
-#ifdef OPTIMIZER_DEBUG_INFO
-      cout<<"JoinTwoNodes result size:"<<get<1>(initial_result).values_->size()<<endl;
-#endif
-      return initial_result;
+    if (range == StepOperation::OpRangeType::OneNode)
+    {
+      return ExtendOneNode(bgp_query, step_operation, id_caches,  left_table);
     }
-    auto one_step_join = plan_tree_node->node;
-    auto join_two_plan = one_step_join->join_two_node_;
-#ifdef OPTIMIZER_DEBUG_INFO
-    auto node1 = join_two_plan->node_to_join_1_;
-    auto node2 = join_two_plan->node_to_join_2_;
-    cout<<"join two nodes ["<<bgp_query->get_var_name_by_id(node1)<<"]"<<",  [";
-    cout<<bgp_query->get_var_name_by_id(node2)<<"]"<<endl;
-
-    long t1 = Util::get_cur_time();
-#endif
-    auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches,remain_old);
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t2 = Util::get_cur_time();
-    cout<<"\tresult size:"<<get<1>(step_result).values_->size();
-	cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    return step_result;
+    else if(range == StepOperation::OpRangeType::TwoNode)
+    {
+      return ExtendTwoNode(bgp_query, plan_tree_node->node, id_caches, left_table);
+    }
+  }
+  else if(operation==StepOperation::StepOpType::Check){
+    return TableCheck(step_operation, left_table);
   }
 
   auto right_table = get<1>(right_r);
-  if(operation_type==StepOperation::JoinType::JoinTable){
-#ifndef OPTIMIZER_DEBUG_INFO
-    return executor_.JoinTable(step_operation->join_table_, left_table, right_table);
-#endif
-#ifdef OPTIMIZER_DEBUG_INFO
-    long t1 = Util::get_cur_time();
-#endif
-    auto join_result =  executor_.JoinTable(step_operation->join_table_, left_table, right_table,remain_old);
-#ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"\tresult size:"<<get<1>(join_result).values_->size();
-    long t2 = Util::get_cur_time();
-    cout<< ",  used " << (t2 - t1) << "ms." <<endl;
-#endif
-    return join_result;
+  if(operation==StepOperation::StepOpType::TableJoin){
+    return JoinTable(step_operation, left_table, right_table);
   }
   else
     throw string("unexpected JoinType");
   return make_tuple(false,left_table);
 }
+
+
 
 /**
  * calculator which role a variable node maybe
@@ -1028,9 +893,9 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
  */
 tuple<bool,bool,bool>
 Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
-                          shared_ptr<FeedOneNode> join_a_node_plan) const {
+                          shared_ptr<AffectOneNode> join_a_node_plan) const {
   auto target_var_id = join_a_node_plan->node_to_join_;
-  cout << "leaf node [" << bgp_query->get_var_name_by_id(target_var_id) << "]" << endl;
+  PrintDebugInfoLine(g_format("leaf node [ %s ]", bgp_query->get_var_name_by_id(target_var_id).c_str()));
   return bgp_query->GetOccurPosition(target_var_id);
 }
 
@@ -1175,6 +1040,126 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   delete root_fr;
   delete env;
   return std::make_tuple(true,result_table);
+}
+
+
+tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bgp_query,
+                                            const IDCachesSharePtr &id_caches,
+                                            shared_ptr<StepOperation> &step_operation) {
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+  long t1 = GetTimeDebug();
+
+  IntermediateResult leaf_table;
+  if(range == StepOperation::OpRangeType::OneNode)
+  {
+    auto r = PrepareInitial(bgp_query, step_operation->join_node_);
+    bool is_entity = get<0>(r);
+    bool is_literal = get<1>(r);
+    bool is_predicate = get<2>(r);
+    auto initial_result =
+        executor_.InitialTableOneNode(step_operation->join_node_, is_entity, is_literal, is_predicate,
+                                      step_operation->distinct_, id_caches);
+    leaf_table = get<1>(initial_result);
+    PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
+    PrintTimeOpRange(operation,range,t1);
+  }
+  else if(range == StepOperation::OpRangeType::TwoNode)
+  {
+    auto two_node_plan = step_operation->GetTwoNodePlan();
+    auto initial_result = executor_.InitialTableTwoNode(two_node_plan, id_caches);
+    leaf_table = get<1>(initial_result);
+    auto node1 = two_node_plan->node_to_join_1_;
+    auto node2 = two_node_plan->node_to_join_2_;
+    PrintDebugInfoLine(g_format("join two nodes [ %s, %s ] result size: %d",
+                                bgp_query->get_var_name_by_id(node1).c_str(),
+                                bgp_query->get_var_name_by_id(node2).c_str(),
+                                leaf_table.values_->size()));
+    PrintTimeOpRange(operation,range,t1);
+  }
+  else if (range == StepOperation::OpRangeType::GetAllTriples) {
+    auto all_triple_result = executor_.GetAllTriple(step_operation->join_node_);
+    leaf_table = get<1>(all_triple_result);
+    PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
+    PrintTimeOpRange(operation,range,t1);
+  }
+  else
+    throw string("StepOperation::StepOpType::Extend: invalid range type");
+  return make_tuple(true,std::move(leaf_table));
+}
+
+tuple<bool,IntermediateResult> Optimizer::UpdateCandidates(IDCachesSharePtr &id_caches,
+                                               shared_ptr<StepOperation> &step_operation)
+                                               {
+  long t1 = GetTimeDebug();
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+  executor_.UpdateIDCache(step_operation->GetOneNodePlan(),id_caches,step_operation->distinct_);
+  PrintTimeOpRange(operation,range,t1);
+  return make_tuple(true,IntermediateResult());
+}
+
+tuple<bool, IntermediateResult> Optimizer::ExtendOneNode(shared_ptr<BGPQuery> &bgp_query,
+                                                         shared_ptr<StepOperation> &step_operation,
+                                                         const IDCachesSharePtr &id_caches,
+                                                         IntermediateResult &left_table) {
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+  auto remain_old = step_operation->remain_old_result_;
+  auto one_node_plan = step_operation->GetOneNodePlan();
+  auto node_to_join = one_node_plan->node_to_join_;
+  PrintDebugInfoLine(g_format("join node [ %s ] ", bgp_query->get_var_name_by_id(node_to_join).c_str()));
+  long t1 = GetTimeDebug();
+  auto step_result =
+      executor_.AffectANode(left_table, id_caches, true, step_operation->distinct_, remain_old, one_node_plan);
+  PrintDebugInfoLine(g_format("result size: %d", get<1>(step_result).values_->size()));
+  PrintTimeOpRange(operation, range, t1);
+  return step_result;
+}
+
+tuple<bool, IntermediateResult> Optimizer::ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
+                                                         shared_ptr<StepOperation> &step_operation,
+                                                         const IDCachesSharePtr &id_caches,
+                                                         IntermediateResult& left_table) {
+  auto join_two_plan = step_operation->GetTwoNodePlan();
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+  auto node1 = join_two_plan->node_to_join_1_;
+  auto node2 = join_two_plan->node_to_join_2_;
+  long t1 = GetTimeDebug();
+  PrintDebugInfoLine(g_format("join two nodes [ %s, %s ] ",
+                              bgp_query->get_var_name_by_id(node1).c_str(),
+                              bgp_query->get_var_name_by_id(node2).c_str()));
+
+  auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_);
+  PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
+  PrintTimeOpRange(operation,range,t1);
+  return step_result;
+}
+
+tuple<bool, IntermediateResult> Optimizer::TableCheck(shared_ptr<StepOperation> &step_operation,
+                                                      IntermediateResult &left_table) {
+  auto edge_filter = step_operation->GetOneNodePlan();
+  long t1 = GetTimeDebug();
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+
+  auto step_result = executor_.ANodeEdgesConstraintFilter(edge_filter, left_table, step_operation->remain_old_result_);
+  PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
+  PrintTimeOpRange(operation,range,t1);
+  return step_result;
+}
+
+tuple<bool, IntermediateResult> Optimizer::JoinTable(shared_ptr<StepOperation> &step_operation,
+                                                     IntermediateResult &left_table,
+                                                     IntermediateResult &right_table) {
+  long t1 = GetTimeDebug();
+  auto operation = step_operation->op_type_;
+  auto range = step_operation->GetRange();
+  auto join_result =  executor_.JoinTable(step_operation->GetTwoTablePlan(), left_table, right_table, step_operation->remain_old_result_);
+  PrintDebugInfoLine(g_format("result size: %d",get<1>(join_result).values_->size()));
+  PrintTimeOpRange(operation,range,t1);
+  return join_result;
 }
 
 #endif
