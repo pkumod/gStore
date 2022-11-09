@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-11-04 13:01:49
+ * @LastEditTime: 2022-11-09 17:13:09
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -2885,9 +2885,9 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			if (is_file)
 			{
 				total_num = Util::count_lines(error_log);
+				success_num = current_database->batch_insert(file, false, nullptr);
 				// exclude Info line
 				parse_error_num = Util::count_lines(error_log) - total_num - 1;
-				success_num = current_database->batch_insert(file, false, nullptr);
 			}
 			else
 			{
