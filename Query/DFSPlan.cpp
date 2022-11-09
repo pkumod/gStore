@@ -1,12 +1,12 @@
 /*=============================================================================
-# Filename: QueryPlan.h
+# Filename: DFSPlan.h
 # Author: Yuqi Zhou
 # Mail: zhouyuqi@pku.edu.cn
 =============================================================================*/
 
-#include "QueryPlan.h"
+#include "DFSPlan.h"
 
-QueryPlan::QueryPlan(PlanTree *plan_tree) {
+DFSPlan::DFSPlan(PlanTree *plan_tree) {
   // Do A depth first search
   auto root = plan_tree->root_node;
   stack<decltype(root)> q;
@@ -26,7 +26,7 @@ QueryPlan::QueryPlan(PlanTree *plan_tree) {
   }
 }
 
-void QueryPlan::PreTravel(Tree_node *node)
+void DFSPlan::PreTravel(Tree_node *node)
 {
   if(node->left_node!= nullptr)
     PreTravel(node->left_node);
@@ -35,7 +35,7 @@ void QueryPlan::PreTravel(Tree_node *node)
   this->join_order_->push_back(node->node);
 }
 
-QueryPlan::QueryPlan(Tree_node *root_node) {
+DFSPlan::DFSPlan(Tree_node *root_node) {
   this->join_order_= make_shared<std::vector<shared_ptr<StepOperation>>>();
   this->constant_generating_lists_= make_shared<vector<std::shared_ptr<AffectOneNode>>>();
   PreTravel(root_node);

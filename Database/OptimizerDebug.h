@@ -5,7 +5,7 @@
 #ifndef GSTORE_DATABASE_OPTIMIZERDEBUG_H_
 #define GSTORE_DATABASE_OPTIMIZERDEBUG_H_
 
-#include "../Query/QueryPlan.h"
+#include "../Query/DFSPlan.h"
 #include "./PlanGenerator.h"
 #include "./Executor.h"
 

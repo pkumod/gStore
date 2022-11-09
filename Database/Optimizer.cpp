@@ -47,7 +47,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(const std::shared_ptr<BGPQuery>& bg
  * Generate a list of Intermediate templates, so each layer doesn't have to
  * calculate it each time
  */
-std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTemplate(const shared_ptr<QueryPlan>& query_plan)
+std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTemplate(const shared_ptr<DFSPlan>& query_plan)
 {
   auto table_template = make_shared<std::vector<IntermediateResult>>();
   table_template->emplace_back();
@@ -85,7 +85,7 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
 }
 
 tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQuery>& bgp_query,
-                                                               shared_ptr<QueryPlan>& query_plan,
+                                                               shared_ptr<DFSPlan>& query_plan,
                                                                const QueryInfo& query_info,
                                                                const IDCachesSharePtr& id_caches) {
   auto limit_num = query_info.limit_num_;
@@ -157,7 +157,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
  * @param id_caches
  * @return
  */
-tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPlan>& query_plan,
+tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan>& query_plan,
                                                               int layer_count,
                                                               int &result_number_till_now,
                                                               int limit_number,
@@ -265,7 +265,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   bool ranked = false;
   auto var_candidates_cache = bgp_query->get_all_candidates();
   // auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
-  shared_ptr<QueryPlan> query_plan;
+  shared_ptr<DFSPlan> query_plan;
   auto strategy = this->ChooseStrategy(bgp_query,&query_info);
   auto distinct = bgp_query->distinct_query;
   if(strategy == BasicQueryStrategy::Normal)
@@ -418,7 +418,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     cout << "plan print done" << endl;
 
     long t_ = Util::get_cur_time();
-    auto dfs_query_plan = make_shared<QueryPlan>(best_plan_tree->root_node);
+    auto dfs_query_plan = make_shared<DFSPlan>(best_plan_tree->root_node);
     auto dfs_result = this->ExecutionDepthFirst(bgp_query, dfs_query_plan,
                                                 query_info,var_candidates_cache);
 

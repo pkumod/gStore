@@ -10,7 +10,7 @@
 // #include "../Query/SPARQLquery.h"
 #include "../Query/IDList.h"
 #include "TableOperator.h"
-// #include "../Query/QueryPlan.h"
+// #include "../Query/DFSPlan.h"
 #include "../Query/QueryTree.h"
 #include "Join.h"
 
