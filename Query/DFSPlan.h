@@ -13,15 +13,11 @@ class DFSPlan
 {
  public:
   std::shared_ptr<std::vector<std::shared_ptr<StepOperation>>> join_order_; //join order
-  // Do Before the process begin
-  std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>> constant_generating_lists_;
-
   DFSPlan(Tree_node* root_node);
 
   DFSPlan(PlanTree* plan_tree);
   DFSPlan()=default;
   void PreTravel(Tree_node *node);
-
 
 };
 
