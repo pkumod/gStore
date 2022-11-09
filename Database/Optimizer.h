@@ -27,7 +27,6 @@ using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
 using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
-using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
 
 enum class BasicQueryStrategy{
   Normal, // method 0
@@ -47,7 +46,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, TYPE_TRIPLE_NUM* pre2num, __attribute__((unused)) __attribute__((unused)) TYPE_TRIPLE_NUM* pre2sub,
 			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
 			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
@@ -58,23 +57,23 @@ class Optimizer
  private:
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
-  BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
+  BasicQueryStrategy ChooseStrategy(const std::shared_ptr<BGPQuery>& bgp_query,QueryInfo *query_info);
 
-  std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(shared_ptr<QueryPlan> query_plan);
+  static std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(const shared_ptr<QueryPlan>& query_plan);
 
-  tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query,
-                                                     shared_ptr<QueryPlan> query_plan,
-                                                     QueryInfo query_info,
-                                                     IDCachesSharePtr id_caches);
+  tuple<bool,IntermediateResult> ExecutionDepthFirst(const shared_ptr<BGPQuery>&  bgp_query,
+                                                     const shared_ptr<QueryPlan>& query_plan,
+                                                     const QueryInfo& query_info,
+                                                     const IDCachesSharePtr& id_caches);
 
 
-  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+  tuple<bool,IntermediateResult> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                      int layer_count,
                                                      int &result_number_till_now,
                                                      int limit_number,
                                                      TableContentShardPtr table_content_ptr,
-                                                     IDCachesSharePtr id_caches,
-                                                     shared_ptr<vector<IntermediateResult>> table_template);
+                                                     const IDCachesSharePtr& id_caches,
+                                                     const shared_ptr<vector<IntermediateResult>>& table_template);
 
 #ifdef TOPK_SUPPORT
   tuple<bool,IntermediateResult> ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
@@ -92,10 +91,6 @@ class Optimizer
                                                       IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
-
-  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
-  TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
-
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
   TYPE_TRIPLE_NUM* pre2obj_;
@@ -107,24 +102,31 @@ class Optimizer
 
   gstore::Executor executor_;
 
-  tuple<bool,bool,bool> PrepareInitial(shared_ptr<BGPQuery> bgp_query,
+  tuple<bool,bool,bool> PrepareInitial(const shared_ptr<BGPQuery> &bgp_query,
                             shared_ptr<AffectOneNode> join_a_node_plan) const;
   tuple<bool,IntermediateResult> InitialTable(shared_ptr<BGPQuery> &bgp_query,
                                   const IDCachesSharePtr &id_caches,
-                                  shared_ptr<StepOperation> &step_operation);
+                                  shared_ptr<StepOperation> &step_operation,
+                                  size_t max_output);
+
   tuple<bool,IntermediateResult> UpdateCandidates(IDCachesSharePtr &id_caches,
                                       shared_ptr<StepOperation> &step_operation);
 
   tuple<bool, IntermediateResult> OperateOneNode(shared_ptr<BGPQuery> &bgp_query,
                                                  shared_ptr<StepOperation> &step_operation,
                                                  const IDCachesSharePtr &id_caches,
-                                                 IntermediateResult &left_table);
+                                                 IntermediateResult &left_table,
+                                                 size_t max_output);
+
   tuple<bool, IntermediateResult> ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
                                                 shared_ptr<StepOperation> &step_operation,
                                                 const IDCachesSharePtr &id_caches,
-                                                IntermediateResult &left_table);
+                                                IntermediateResult &left_table,
+                                                size_t max_output);
+
   tuple<bool, IntermediateResult> TableCheck(shared_ptr<StepOperation> &step_operation,
                                              IntermediateResult &left_table);
+
   tuple<bool, IntermediateResult> JoinTable(shared_ptr<StepOperation> &step_operation,
                                             IntermediateResult &left_table,
                                             IntermediateResult &right_table);

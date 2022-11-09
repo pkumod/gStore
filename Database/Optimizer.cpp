@@ -5,11 +5,13 @@
 =============================================================================*/
 
 #include "Optimizer.h"
+
+#include <utility>
 // #define FEED_PLAN
 
 Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_TRIPLE_NUM *pre2num,
-                     TYPE_TRIPLE_NUM *pre2sub,
+                     __attribute__((unused)) TYPE_TRIPLE_NUM *pre2sub,
                      TYPE_TRIPLE_NUM *pre2obj,
                      TYPE_TRIPLE_NUM triples_num,
                      TYPE_PREDICATE_ID limitID_predicate,
@@ -21,7 +23,7 @@ Optimizer::Optimizer(KVstore *kv_store,
     limitID_predicate_(limitID_predicate), limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
     txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_){}
 
-BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info){
+BasicQueryStrategy Optimizer::ChooseStrategy(const std::shared_ptr<BGPQuery>& bgp_query,QueryInfo *query_info){
 	if (!query_info->limit_)
 		return BasicQueryStrategy::Normal;
 	if(query_info->ordered_by_expressions_->size() == 1) {
@@ -35,7 +37,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
 		else
 			return BasicQueryStrategy::Normal;
 	} else {
-		if (query_info->ordered_by_expressions_->size() == 0)
+		if (query_info->ordered_by_expressions_->empty())
 			return BasicQueryStrategy::limitK;
 		else
 			return BasicQueryStrategy::Normal;
@@ -46,7 +48,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
  * Generate a list of Intermediate templates, so each layer doesn't have to
  * calculate it each time
  */
-std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTemplate(shared_ptr<QueryPlan> query_plan)
+std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTemplate(const shared_ptr<QueryPlan>& query_plan)
 {
   auto table_template = make_shared<std::vector<IntermediateResult>>();
   table_template->emplace_back();
@@ -66,10 +68,9 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   while(it!=dfs_operation.end())
   {
     tables.emplace_back( IntermediateResult::OnlyPositionCopy(tables.back()));
-    auto join_type = it->join_type_;
-    if(join_type==StepOperation::JoinType::JoinNode)
+    if(it->join_type_==StepOperation::JoinType::JoinNode)
       tables.back().AddNewNode( it->join_node_->node_to_join_);
-    else if(join_type==StepOperation::JoinType::JoinTwoNodes) {
+    else if(it->join_type_==StepOperation::JoinType::JoinTwoNodes) {
       tables.back().AddNewNode(it->join_two_node_->node_to_join_1_);
       tables.back().AddNewNode(it->join_two_node_->node_to_join_2_);
     }
@@ -78,10 +79,10 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   return table_template;
 }
 
-tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQuery> bgp_query,
-                                                               shared_ptr<QueryPlan> query_plan,
-                                                               QueryInfo query_info,
-                                                               IDCachesSharePtr id_caches) {
+tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(const shared_ptr<BGPQuery>& bgp_query,
+                                                               const shared_ptr<QueryPlan>& query_plan,
+                                                               const QueryInfo& query_info,
+                                                               const IDCachesSharePtr& id_caches) {
   auto limit_num = query_info.limit_num_;
   cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
   auto &first_operation = (*query_plan->join_order_)[0];
@@ -161,15 +162,15 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
  * @param id_caches
  * @return
  */
-tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
                                                               int layer_count,
                                                               int &result_number_till_now,
                                                               int limit_number,
                                                               TableContentShardPtr table_content_ptr,
-                                                              IDCachesSharePtr id_caches,
-                                                              shared_ptr<vector<IntermediateResult>> table_template) {
+                                                              const IDCachesSharePtr& id_caches,
+                                                              const shared_ptr<vector<IntermediateResult>>& table_template) {
   IntermediateResult old_table;
-  old_table.values_ = table_content_ptr;
+  old_table.values_ = std::move(table_content_ptr);
   old_table.pos_id_map = (*table_template)[layer_count-1].pos_id_map;
   old_table.id_pos_map = (*table_template)[layer_count-1].id_pos_map;
 
@@ -809,12 +810,11 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   // auto operation_type = step_operation->join_type_;
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
-  auto remain_old = step_operation->remain_old_result_;
   // leaf node : create a table
   if (plan_tree_node->left_node == nullptr && plan_tree_node->right_node == nullptr)
   {
     if(operation == StepOperation::StepOpType::Extend){
-      return InitialTable(bgp_query, id_caches, step_operation);
+      return InitialTable(bgp_query, id_caches, step_operation, gstore::Executor::NO_LIMIT_OUTPUT);
     }
     else if(operation == StepOperation::StepOpType::Filter){
       return UpdateCandidates(id_caches,step_operation);
@@ -851,15 +851,15 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
   if(operation==StepOperation::StepOpType::Extend || operation==StepOperation::StepOpType::Satellite) {
     // create a new table
     if(left_table.GetColumns()==0){
-      return InitialTable(bgp_query, id_caches, step_operation);
+      return InitialTable(bgp_query, id_caches, step_operation, gstore::Executor::NO_LIMIT_OUTPUT);
     }
     if (range == StepOperation::OpRangeType::OneNode)
     {
-      return OperateOneNode(bgp_query, step_operation, id_caches, left_table);
+      return OperateOneNode(bgp_query, step_operation, id_caches, left_table, gstore::Executor::NO_LIMIT_OUTPUT);
     }
     else if(range == StepOperation::OpRangeType::TwoNode)
     {
-      return ExtendTwoNode(bgp_query, plan_tree_node->node, id_caches, left_table);
+      return ExtendTwoNode(bgp_query, plan_tree_node->node, id_caches, left_table, gstore::Executor::NO_LIMIT_OUTPUT);
     }
   }
   else if(operation==StepOperation::StepOpType::Check){
@@ -871,7 +871,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     return JoinTable(step_operation, left_table, right_table);
   }
   else
-    throw string("unexpected JoinType");
+    throw string("unexpected StepOperation::StepOpType");
   return make_tuple(false,left_table);
 }
 
@@ -884,7 +884,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
  * @return is_entity,is_literal,is_predicate
  */
 tuple<bool,bool,bool>
-Optimizer::PrepareInitial(shared_ptr<BGPQuery> bgp_query,
+Optimizer::PrepareInitial(const shared_ptr<BGPQuery>& bgp_query,
                           shared_ptr<AffectOneNode> join_a_node_plan) const {
   auto target_var_id = join_a_node_plan->node_to_join_;
   PrintDebugInfoLine(g_format("leaf node [ %s ]", bgp_query->get_var_name_by_id(target_var_id).c_str()));
@@ -1037,7 +1037,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 
 tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bgp_query,
                                             const IDCachesSharePtr &id_caches,
-                                            shared_ptr<StepOperation> &step_operation) {
+                                            shared_ptr<StepOperation> &step_operation,
+                                            size_t max_output) {
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
   long t1 = GetTimeDebug();
@@ -1051,7 +1052,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
     bool is_predicate = get<2>(r);
     auto initial_result =
         executor_.InitialTableOneNode(step_operation->join_node_, is_entity, is_literal, is_predicate,
-                                      step_operation->distinct_,-1, id_caches);
+                                      step_operation->distinct_,max_output, id_caches);
     leaf_table = get<1>(initial_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
     PrintTimeOpRange(operation,range,t1);
@@ -1059,7 +1060,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
   else if(range == StepOperation::OpRangeType::TwoNode)
   {
     auto two_node_plan = step_operation->GetTwoNodePlan();
-    auto initial_result = executor_.InitialTableTwoNode(two_node_plan, -1, id_caches);
+    auto initial_result = executor_.InitialTableTwoNode(two_node_plan, max_output, id_caches);
     leaf_table = get<1>(initial_result);
     auto node1 = two_node_plan->node_to_join_1_;
     auto node2 = two_node_plan->node_to_join_2_;
@@ -1070,7 +1071,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bg
     PrintTimeOpRange(operation,range,t1);
   }
   else if (range == StepOperation::OpRangeType::GetAllTriples) {
-    auto all_triple_result = executor_.GetAllTriple(-1, step_operation->join_node_);
+    auto all_triple_result = executor_.GetAllTriple(max_output, step_operation->join_node_);
     leaf_table = get<1>(all_triple_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
     PrintTimeOpRange(operation,range,t1);
@@ -1091,10 +1092,16 @@ tuple<bool,IntermediateResult> Optimizer::UpdateCandidates(IDCachesSharePtr &id_
   return make_tuple(true,IntermediateResult());
 }
 
+/**
+ * Add a column into the left_table, or just check a column (which may enlarge the result)
+ * @param left_table the table operated on
+ * @param max_output the limited size new table should be
+ */
 tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &bgp_query,
                                                           shared_ptr<StepOperation> &step_operation,
                                                           const IDCachesSharePtr &id_caches,
-                                                          IntermediateResult &left_table) {
+                                                          IntermediateResult &left_table,
+                                                          size_t max_output) {
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
   auto remain_old = step_operation->remain_old_result_;
@@ -1104,7 +1111,7 @@ tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &
   long t1 = GetTimeDebug();
   auto step_result =
       executor_.AffectANode(left_table, id_caches, operation == StepOperation::StepOpType::Satellite ,
-                            step_operation->distinct_, remain_old,-1, one_node_plan);
+                            step_operation->distinct_, remain_old,max_output, one_node_plan);
   PrintDebugInfoLine(g_format("result size: %d", get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation, range, t1);
   return step_result;
@@ -1113,7 +1120,8 @@ tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &
 tuple<bool, IntermediateResult> Optimizer::ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
                                                          shared_ptr<StepOperation> &step_operation,
                                                          const IDCachesSharePtr &id_caches,
-                                                         IntermediateResult& left_table) {
+                                                         IntermediateResult& left_table,
+                                                         size_t max_output) {
   auto join_two_plan = step_operation->GetTwoNodePlan();
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
@@ -1123,8 +1131,7 @@ tuple<bool, IntermediateResult> Optimizer::ExtendTwoNode(shared_ptr<BGPQuery> &b
   PrintDebugInfoLine(g_format("join two nodes [ %s, %s ] ",
                               bgp_query->get_var_name_by_id(node1).c_str(),
                               bgp_query->get_var_name_by_id(node2).c_str()));
-
-  auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_,-1);
+  auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_,max_output);
   PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation,range,t1);
   return step_result;

@@ -55,7 +55,7 @@ class Executor {
                                                            PositionValueSharedPtr id_posing_mapping,
                                                            bool remain_old);
 
-  TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list, size_t max_output = static_cast<size_t>(-1));
+  TableContentShardPtr ConvertToTable(std::shared_ptr<IDList> id_list, size_t max_output = NO_LIMIT_OUTPUT);
 
   bool AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITERAL_ID targetID,bool distinct,IDCachesSharePtr id_caches);
 
@@ -85,6 +85,8 @@ class Executor {
   shared_ptr<IDList> CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector,bool distinct) const;
 
  public:
+  static constexpr auto NO_LIMIT_OUTPUT = static_cast<size_t>(-1);
+
   Executor(KVstore *kv_store,std::shared_ptr<Transaction> txn,TYPE_PREDICATE_ID limitID_predicate,
            TYPE_ENTITY_LITERAL_ID limitID_literal,TYPE_ENTITY_LITERAL_ID limitID_entity):
            kv_store_(kv_store),txn_(txn),limitID_predicate_(limitID_predicate),limitID_literal_(limitID_literal),
