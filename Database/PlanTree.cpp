@@ -56,7 +56,7 @@ PlanTree::PlanTree(unsigned first_node, BGPQuery *bgpquery) {
 
 	if(!edge_info->empty()){
 		auto join_node = make_shared<AffectOneNode>(first_node, edge_info, edge_constant_info);
-		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode, join_node, nullptr, nullptr, bgpquery->distinct_query));
 	}
 
 	if(!need_join_two_nodes_edge_index.empty()){
@@ -68,8 +68,8 @@ PlanTree::PlanTree(unsigned first_node, BGPQuery *bgpquery) {
                                                                                   EdgeInfo(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
 																					   get_join_strategy(bgpquery, var_descrip, need_join_two_nodes_edge_index[0])),
                                                                                   EdgeConstantInfo(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]));
-			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes,
-																				nullptr, join_two_nodes, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode,
+																				nullptr, join_two_nodes, nullptr, bgpquery->distinct_query));
 			new_tree_node->left_node = root_node;
 			root_node = new_tree_node;
 			already_joined_pre_var.emplace_back(bgpquery->p_id_[edge_index]);
@@ -97,8 +97,8 @@ PlanTree::PlanTree(unsigned first_node, BGPQuery *bgpquery) {
 					edges_const->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 				}
 				shared_ptr<AffectOneNode> join_pre_node = make_shared<AffectOneNode>(pre_var_descrip->id_, edges_info, edges_const);
-				Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																					  join_pre_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+				Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																					  join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
 
 				new_join_a_node->left_node = root_node;
 				root_node = new_join_a_node;
@@ -109,7 +109,7 @@ PlanTree::PlanTree(unsigned first_node, BGPQuery *bgpquery) {
 
 	if(edge_info->empty() and need_join_two_nodes_edge_index.empty()){
 		auto join_node = make_shared<AffectOneNode>(first_node, make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>());
-		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode, join_node, nullptr, nullptr, bgpquery->distinct_query));
 
 	}
 	already_so_var = {first_node};
@@ -178,8 +178,8 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 	if(!join_a_node_edge_info->empty()){
 		shared_ptr<AffectOneNode> join_a_node = make_shared<AffectOneNode>(next_node, join_a_node_edge_info, join_a_node_edge_const_info);
-		Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_a_node,
-																			nullptr, nullptr, nullptr, bgpquery->distinct_query));
+		Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																			join_a_node, nullptr, nullptr, bgpquery->distinct_query));
 		new_tree_node->left_node = root_node;
 		root_node = new_tree_node;
 	}
@@ -194,8 +194,8 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
                                                                                   EdgeInfo(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
 																					   get_join_strategy(bgpquery, var_descrip, need_join_two_nodes_index[0])),
                                                                                   EdgeConstantInfo(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]));
-			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes,
-																				nullptr, join_two_nodes, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode,
+																				nullptr, join_two_nodes, nullptr, bgpquery->distinct_query));
 			new_tree_node->left_node = root_node;
 			root_node = new_tree_node;
 			already_joined_pre_var.emplace_back(bgpquery->p_id_[edge_index]);
@@ -222,8 +222,8 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 					edges_const->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 				}
 				shared_ptr<AffectOneNode> join_pre_node = make_shared<AffectOneNode>(pre_var_descrip->id_, edges_info, edges_const);
-				Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																					  join_pre_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+				Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																					  join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
 
 				new_join_a_node->left_node = root_node;
 				root_node = new_join_a_node;
@@ -242,8 +242,8 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 											   (var_descrip->so_edge_type_[join_pre_var_index_vec[0]] == Util::EDGE_IN ? JoinMethod::s2o : JoinMethod::o2s));
 			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[index], bgpquery->p_is_constant_[index], bgpquery->o_is_constant_[index]);
 			shared_ptr<AffectOneNode> join_a_node = make_shared<AffectOneNode>(next_node, join_a_node_edge_info, join_a_node_edge_const_info);
-			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_a_node,
-																				nullptr, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																				join_a_node, nullptr, nullptr, bgpquery->distinct_query));
 			new_tree_node->left_node = root_node;
 			root_node = new_tree_node;
 			++beg;
@@ -255,8 +255,8 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 			join_satellite_pre_edge_info->emplace_back(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index], JoinMethod::so2p);
 			join_satellite_pre_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 			shared_ptr<AffectOneNode> join_satellite = make_shared<AffectOneNode>(bgpquery->p_id_[edge_index], join_satellite_pre_edge_info, join_satellite_pre_edge_const_info, false);
-			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode, join_satellite,
-																				nullptr, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_tree_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode,
+																				join_satellite, nullptr, nullptr, bgpquery->distinct_query));
 			new_tree_node->left_node = root_node;
 			root_node = new_tree_node;
 		}
@@ -291,8 +291,8 @@ void PlanTree::add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_f
 									var_descrip->so_edge_type_[need_check_pre_var_edge_index[i]] == Util::EDGE_IN ? JoinMethod::sp2o : JoinMethod::po2s);
 			edge_constant_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 			auto edge_check = make_shared<AffectOneNode>(node_id, edge_info, edge_constant_info);
-			Tree_node* edge_check_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::EdgeCheck, nullptr,
-																				  nullptr, nullptr, edge_check, bgpquery->distinct_query));
+			Tree_node* edge_check_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Check, StepOperation::OpRangeType::OneNode,
+																				  edge_check, nullptr, nullptr,bgpquery->distinct_query));
 			edge_check_node->left_node = root_node;
 			root_node = edge_check_node;
 		}
@@ -308,21 +308,24 @@ void PlanTree::add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_f
 										var_descrip->so_edge_type_[need_check_pre_var_edge_index[i]] == Util::EDGE_IN ? JoinMethod::sp2o : JoinMethod::po2s);
 				edge_constant_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 				auto edge_check = make_shared<AffectOneNode>(node_id, edge_info, edge_constant_info);
-				Tree_node* edge_check_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::EdgeCheck, nullptr,
-																					  nullptr, nullptr, edge_check, bgpquery->distinct_query));
+				Tree_node* edge_check_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Check, StepOperation::OpRangeType::OneNode,
+																					  edge_check, nullptr, nullptr, bgpquery->distinct_query));
 				edge_check_node->left_node = root_node;
 				root_node = edge_check_node;
-			}else{
+			} else {
 				auto pre_var_descrip = bgpquery->get_vardescrip_by_id(var_descrip->so_edge_pre_id_[need_join_pre_var_edge_index[i]]);
 				shared_ptr<vector<EdgeInfo>> edges_info = make_shared<vector<EdgeInfo>>();
 				shared_ptr<vector<EdgeConstantInfo>> edges_const = make_shared<vector<EdgeConstantInfo>>();
 				edges_info->emplace_back(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index], JoinMethod::so2p);
 				edges_const->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 				shared_ptr<AffectOneNode> join_pre_node = make_shared<AffectOneNode>(pre_var_descrip->id_, edges_info, edges_const);
+				Tree_node *new_join_a_node;
 				if(!pre_var_descrip->selected_ and pre_var_descrip->degree_ == 1)
-					join_pre_node->Set_node_should_be_added_into_table(false);
-				Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																					  join_pre_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+					new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode,
+																					  join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
+				else
+					new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																			   join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
 
 				new_join_a_node->left_node = root_node;
 				root_node = new_join_a_node;
@@ -358,23 +361,23 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
                                                                                    EdgeInfo(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index],
 																						JoinMethod::p2so),
                                                                                    EdgeConstantInfo(false, true, false));
-		shared_ptr<StepOperation> first_node = make_shared<StepOperation>(StepOperation::JoinType::JoinTwoNodes,
-																		  nullptr, first_join_two_node, nullptr, nullptr, bgpquery->distinct_query);
+		shared_ptr<StepOperation> first_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode,
+																		  nullptr, first_join_two_node, nullptr, bgpquery->distinct_query);
 		root_node = new Tree_node(first_node);
 
-		for(unsigned index = 1; index < linked_edge_pre_const_vec.size(); ++index){
+		if (linked_edge_pre_const_vec.size() > 1) {
 			shared_ptr<vector<EdgeInfo>> edge_check_edge_vec = make_shared<vector<EdgeInfo>>();
 			shared_ptr<vector<EdgeConstantInfo>> edge_check_edge_const_vec = make_shared<vector<EdgeConstantInfo>>();
 
-			unsigned edge_check_index = var1_descrip->so_edge_index_[linked_edge_pre_const_vec[index]];
-			edge_check_edge_vec->emplace_back(bgpquery->s_id_[edge_check_index], bgpquery->p_id_[edge_check_index], bgpquery->o_id_[edge_check_index],
-											  JoinMethod::sp2o);
-			edge_check_edge_const_vec->emplace_back(false, true, false);
+			for (unsigned index = 1; index < linked_edge_pre_const_vec.size(); ++index) {
+				unsigned edge_check_index = var1_descrip->so_edge_index_[linked_edge_pre_const_vec[index]];
+				edge_check_edge_vec->emplace_back(bgpquery->s_id_[edge_check_index], bgpquery->p_id_[edge_check_index], bgpquery->o_id_[edge_check_index],
+												  (bgpquery->o_id_[edge_check_index] == node_1_id ? JoinMethod::sp2o : JoinMethod::po2s));
+				edge_check_edge_const_vec->emplace_back(false, true, false);
+			}
 
-			shared_ptr<StepOperation> edge_check_node = make_shared<StepOperation>(StepOperation::JoinType::EdgeCheck,
-                                                                                   nullptr, nullptr, nullptr,
-                                                                                   make_shared<AffectOneNode>(bgpquery->o_id_[edge_check_index], edge_check_edge_vec, edge_check_edge_const_vec), bgpquery->distinct_query);
-
+			shared_ptr<StepOperation> edge_check_node = make_shared<StepOperation>(StepOperation::StepOpType::Check, StepOperation::OpRangeType::OneNode,
+																				   make_shared<AffectOneNode>(node_1_id, edge_check_edge_vec, edge_check_edge_const_vec), nullptr, nullptr, bgpquery->distinct_query);
 			Tree_node* new_edge_check = new Tree_node(edge_check_node);
 			new_edge_check->left_node = root_node;
 			root_node = new_edge_check;
@@ -392,18 +395,20 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
 			edges_const->emplace_back(bgpquery->s_is_constant_[join_a_node_edge_index], bgpquery->p_is_constant_[join_a_node_edge_index], bgpquery->o_is_constant_[join_a_node_edge_index]);
 
 			shared_ptr<AffectOneNode> join_pre_node = make_shared<AffectOneNode>(pre_var_descrip->id_, edges_info, edges_const);
+			Tree_node *new_join_a_node;
 			if (pre_var_descrip->degree_ == 1 and !pre_var_descrip->selected_)
-				join_pre_node->Set_node_should_be_added_into_table(false);
-
-			Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																				  join_pre_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+				new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode,
+																				  join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
+			else
+				new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																		   join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
 
 			new_join_a_node->left_node = root_node;
 			root_node = new_join_a_node;
 			if (pre_var_descrip->degree_ != 1 || pre_var_descrip->selected_)
 				already_joined_pre_var.emplace_back(pre_var_descrip->id_);
 		}
-	} else{
+	} else {
 		unsigned edge_index = var1_descrip->so_edge_index_[linked_edge_pre_var_vec[0]];
 
 		shared_ptr<vector<EdgeInfo>> edges_info = make_shared<vector<EdgeInfo>>();
@@ -413,8 +418,8 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
 		edges_const->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 		shared_ptr<AffectOneNode> get_all_triple_node = make_shared<AffectOneNode>(node_1_id, edges_info, edges_const);
 
-		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::GetAllTriples,
-																			get_all_triple_node, nullptr, nullptr,nullptr, bgpquery->distinct_query));
+		root_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::GetAllTriples,
+															 get_all_triple_node, nullptr, nullptr, bgpquery->distinct_query));
 		already_joined_pre_var.emplace_back(bgpquery->p_id_[edge_index]);
 
 		for(unsigned i = 1; i < linked_edge_pre_var_vec.size(); ++i){
@@ -428,11 +433,14 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
 			edges_const->emplace_back(bgpquery->s_is_constant_[join_a_node_edge_index], bgpquery->p_is_constant_[join_a_node_edge_index], bgpquery->o_is_constant_[join_a_node_edge_index]);
 
 			shared_ptr<AffectOneNode> join_pre_node = make_shared<AffectOneNode>(pre_var_descrip->id_, edges_info, edges_const);
-			if(pre_var_descrip->degree_ == 1 and !pre_var_descrip->selected_)
-				join_pre_node->Set_node_should_be_added_into_table( false);
 
-			Tree_node *new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																				  join_pre_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_join_a_node;
+			if (pre_var_descrip->degree_ == 1 and !pre_var_descrip->selected_)
+				new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode,
+																		   join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
+			else
+				new_join_a_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																		   join_pre_node, nullptr, nullptr, bgpquery->distinct_query));
 
 			new_join_a_node->left_node = root_node;
 			root_node = new_join_a_node;
@@ -473,8 +481,8 @@ PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery
 		}
 	}
 
-	root_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinTable,
-												nullptr, nullptr, make_shared<JoinTwoTable>(public_variables), nullptr, bgpquery->distinct_query));
+	root_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::TableJoin, StepOperation::OpRangeType::TwoTable,
+												nullptr, nullptr, make_shared<JoinTwoTable>(public_variables), bgpquery->distinct_query));
 
 	root_node->left_node = new Tree_node(left_plan->root_node);
 	root_node->right_node = new Tree_node(right_plan->root_node);
@@ -506,9 +514,8 @@ void PlanTree::AddSatelliteNode(BGPQuery *bgpquery, unsigned int satellite_node_
 		join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
 		auto join_node = make_shared<AffectOneNode>(satellite_node_id, join_a_node_edge_info, join_a_node_edge_const_info, false);
-		Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																			join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
-
+		Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode, join_node,
+																			nullptr, nullptr, bgpquery->distinct_query));
 		new_join_node->left_node = root_node;
 		root_node = new_join_node;
 	} else{
@@ -522,8 +529,8 @@ void PlanTree::AddSatelliteNode(BGPQuery *bgpquery, unsigned int satellite_node_
 			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
 			auto join_node = make_shared<AffectOneNode>(satellite_node_id, join_a_node_edge_info, join_a_node_edge_const_info, false);
-			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Satellite, StepOperation::OpRangeType::OneNode, join_node,
+																				nullptr, nullptr, bgpquery->distinct_query));
 			new_join_node->left_node = root_node;
 			root_node = new_join_node;
 		} else{
@@ -535,8 +542,8 @@ void PlanTree::AddSatelliteNode(BGPQuery *bgpquery, unsigned int satellite_node_
 			join_a_node_edge_const_info->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
 
 			auto join_node = make_shared<AffectOneNode>(bgpquery->p_id_[edge_index], join_a_node_edge_info, join_a_node_edge_const_info, true);
-			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::JoinType::JoinNode,
-																	join_node, nullptr, nullptr, nullptr, bgpquery->distinct_query));
+			Tree_node *new_join_node = new Tree_node(make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
+																	join_node, nullptr, nullptr, bgpquery->distinct_query));
 
 			new_join_node->left_node = root_node;
 			root_node = new_join_node;
