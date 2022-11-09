@@ -768,7 +768,7 @@ BGPQuery::resultPositionToId()
 	return result_position_to_id;
 }
 
-std::tuple<bool, bool, bool> BGPQuery::GetOccurPosition(int var_id) const {
+std::tuple<bool, bool, bool> BGPQuery::GetOccurPosition(int var_id) {
   bool is_entity = false;
   bool is_literal = false;
   bool is_predicate = false;
