@@ -275,7 +275,7 @@ public:
     /* tells if the var_id appears in the position of
      * subject / predicate / object
      * @returns (is_entity,is_literal,is_predicate)*/
-    std::tuple<bool,bool,bool> GetOccurPosition(int var_id) const;
+    std::tuple<bool,bool,bool> GetOccurPosition(int var_id);
 private:
 	vector<Triple> triple_vt;
     vector<unsigned*> result_list;
