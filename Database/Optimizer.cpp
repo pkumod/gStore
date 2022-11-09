@@ -6,7 +6,6 @@
 
 #include "Optimizer.h"
 
-#include <utility>
 // #define FEED_PLAN
 
 Optimizer::Optimizer(KVstore *kv_store,
@@ -55,12 +54,12 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   auto &tables = *table_template;
   auto &dfs_operation = *query_plan->join_order_;
 
-  auto join_type = dfs_operation[0].join_type_;
+  auto join_type = dfs_operation[0]->join_type_;
   if(join_type==StepOperation::JoinType::JoinNode)
-    tables[0].AddNewNode(dfs_operation[0].join_node_->node_to_join_);
+    tables[0].AddNewNode(dfs_operation[0]->join_node_->node_to_join_);
   else if(join_type==StepOperation::JoinType::JoinTwoNodes) {
-    tables[0].AddNewNode(dfs_operation[0].join_two_node_->node_to_join_1_);
-    tables[0].AddNewNode(dfs_operation[0].join_two_node_->node_to_join_2_);
+    tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_1_);
+    tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_2_);
   }
 
   auto it = dfs_operation.begin();
@@ -68,19 +67,25 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   while(it!=dfs_operation.end())
   {
     tables.emplace_back( IntermediateResult::OnlyPositionCopy(tables.back()));
-    if(it->join_type_==StepOperation::JoinType::JoinNode)
-      tables.back().AddNewNode( it->join_node_->node_to_join_);
-    else if(it->join_type_==StepOperation::JoinType::JoinTwoNodes) {
-      tables.back().AddNewNode(it->join_two_node_->node_to_join_1_);
-      tables.back().AddNewNode(it->join_two_node_->node_to_join_2_);
+    if( (*it)->GetRange() == StepOperation::OpRangeType::OneNode)
+      tables.back().AddNewNode( (*it)->GetOneNodePlan()->node_to_join_);
+    else if((*it)->GetRange() == StepOperation::OpRangeType::TwoNode) {
+      tables.back().AddNewNode( (*it)->GetTwoNodePlan()->node_to_join_1_);
+      tables.back().AddNewNode( (*it)->GetTwoNodePlan()->node_to_join_2_);
+    }
+    else if((*it)->GetRange() == StepOperation::OpRangeType::GetAllTriples){
+      auto &the_only_edge = (*((*it)->GetOneNodePlan()->edges_))[0];
+      tables.back().AddNewNode(the_only_edge.s_);
+      tables.back().AddNewNode(the_only_edge.p_);
+      tables.back().AddNewNode(the_only_edge.o_);
     }
     it++;
   }
   return table_template;
 }
 
-tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(const shared_ptr<BGPQuery>& bgp_query,
-                                                               const shared_ptr<QueryPlan>& query_plan,
+tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQuery>& bgp_query,
+                                                               shared_ptr<QueryPlan>& query_plan,
                                                                const QueryInfo& query_info,
                                                                const IDCachesSharePtr& id_caches) {
   auto limit_num = query_info.limit_num_;
@@ -88,23 +93,13 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(const shared_ptr
   auto &first_operation = (*query_plan->join_order_)[0];
   tuple<bool, IntermediateResult> step_result;
   IntermediateResult first_table;
-  if(first_operation.join_type_==StepOperation::JoinType::JoinNode)
+  if(first_operation->op_type_ ==StepOperation::StepOpType::Extend)
   {
-    auto property_array = PrepareInitial(bgp_query,first_operation.join_node_);
-    auto is_entity = get<0>(property_array);
-    auto is_literal = get<1>(property_array);
-    auto is_predicate = get<2>(property_array);
-    step_result = executor_.InitialTableOneNode(first_operation.join_node_,is_entity,
-                                                is_literal,is_predicate,first_operation.distinct_ ,-1, id_caches);
-    first_table = get<1>(step_result);
+    auto first_result = InitialTable(bgp_query,id_caches,first_operation, limit_num);
+    first_table = get<1>(first_result);
+    if( query_plan->join_order_->size()==1 || first_table.values_->empty())
+      return make_tuple(true, first_table);
   }
-  else // Two Nodes
-  {
-    step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,-1,id_caches);
-    first_table = get<1>(step_result);
-  }
-  if( query_plan->join_order_->size()==1 || first_table.values_->empty())
-    return make_tuple(true, first_table);
 
   auto first_candidates_list = first_table.values_;
   int now_result = 0;
@@ -162,7 +157,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(const shared_ptr
  * @param id_caches
  * @return
  */
-tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
+tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<QueryPlan>& query_plan,
                                                               int layer_count,
                                                               int &result_number_till_now,
                                                               int limit_number,
@@ -180,9 +175,9 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(const shared_ptr<Q
 
   auto one_step = (*(query_plan->join_order_))[layer_count];
   TableContentShardPtr step_table;
-  switch (one_step.join_type_) {
+  switch (one_step->join_type_) {
     case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step.distinct_, false, -1, one_step.GetOneNodePlan());
+      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -193,12 +188,12 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(const shared_ptr<Q
       throw string("Optimizer::DepthSearchOneLayer not suitable for GenerateCandidates");
     }
     case StepOperation::JoinType::EdgeCheck: {
-      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step.edge_filter_, old_table,false);
+      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step->edge_filter_, old_table,false);
       step_table = get<1>(step_result).values_;
       break;
     }
     case StepOperation::JoinType::JoinTwoNodes: {
-      auto step_result = executor_.JoinTwoNode(one_step.join_two_node_, old_table,id_caches,false,-1);
+      auto step_result = executor_.JoinTwoNode(one_step->join_two_node_, old_table,id_caches,false,-1);
       step_table = get<1>(step_result).values_;
       break;
     }
@@ -293,7 +288,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	  cout << "execution, used " << (t4 - t3) << "ms." << endl;
 	}
 	else {
-      auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+      auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
       for (auto &constant_generating_step : *const_candidates)
       	executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
@@ -348,13 +343,13 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   {
     ranked = true;
 #ifdef TOPK_SUPPORT
-    auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+    auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step: *const_candidates) {
       executor_.CacheConstantCandidates(constant_generating_step, distinct,var_candidates_cache);
     };
     if(const_candidates->empty())
     {
-      auto predicate_filter = QueryPlan::PredicateFilter(bgp_query,this->kv_store_);
+      auto predicate_filter = FilterPlan::PredicateFilter(bgp_query,this->kv_store_);
       for (auto &predicate_step: *predicate_filter) {
         executor_.CacheConstantCandidates(predicate_step,distinct, var_candidates_cache);
       }
@@ -397,7 +392,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	}
 	else{
-	  auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
+	  auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query,this->kv_store_);
 	  for (auto &constant_generating_step: *const_candidates)
 			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
@@ -423,7 +418,8 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     cout << "plan print done" << endl;
 
     long t_ = Util::get_cur_time();
-    auto dfs_result = this->ExecutionDepthFirst(bgp_query, make_shared<QueryPlan>(best_plan_tree->root_node),
+    auto dfs_query_plan = make_shared<QueryPlan>(best_plan_tree->root_node);
+    auto dfs_result = this->ExecutionDepthFirst(bgp_query, dfs_query_plan,
                                                 query_info,var_candidates_cache);
 
     // todo: Destructor of PlanGenerator here
@@ -828,7 +824,6 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     return make_tuple(true,IntermediateResult());
   }
 
-
   //inner node
   tuple<bool,IntermediateResult> left_r;
   tuple<bool,IntermediateResult> right_r;
@@ -1035,7 +1030,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 }
 
 
-tuple<bool,IntermediateResult> Optimizer::InitialTable( shared_ptr<BGPQuery> &bgp_query,
+tuple<bool,IntermediateResult> Optimizer::InitialTable(shared_ptr<BGPQuery> &bgp_query,
                                             const IDCachesSharePtr &id_caches,
                                             shared_ptr<StepOperation> &step_operation,
                                             size_t max_output) {

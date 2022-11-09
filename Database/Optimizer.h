@@ -22,6 +22,8 @@
 #include <cmath>
 #include <random>
 #include "./OptimizerDebug.h"
+#include "../Query/FilterPlan.h"
+
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
@@ -61,13 +63,13 @@ class Optimizer
 
   static std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(const shared_ptr<QueryPlan>& query_plan);
 
-  tuple<bool,IntermediateResult> ExecutionDepthFirst(const shared_ptr<BGPQuery>&  bgp_query,
-                                                     const shared_ptr<QueryPlan>& query_plan,
+  tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>&  bgp_query,
+                                                     shared_ptr<QueryPlan>& query_plan,
                                                      const QueryInfo& query_info,
                                                      const IDCachesSharePtr& id_caches);
 
 
-  tuple<bool,IntermediateResult> DepthSearchOneLayer(const shared_ptr<QueryPlan>& query_plan,
+  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan>& query_plan,
                                                      int layer_count,
                                                      int &result_number_till_now,
                                                      int limit_number,
@@ -104,6 +106,8 @@ class Optimizer
 
   tuple<bool,bool,bool> PrepareInitial(const shared_ptr<BGPQuery> &bgp_query,
                             shared_ptr<AffectOneNode> join_a_node_plan) const;
+
+
   tuple<bool,IntermediateResult> InitialTable(shared_ptr<BGPQuery> &bgp_query,
                                   const IDCachesSharePtr &id_caches,
                                   shared_ptr<StepOperation> &step_operation,

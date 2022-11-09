@@ -99,7 +99,7 @@ topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir
 
 queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
-		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o
+		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o $(objdir)FilterPlan.o
 
 #signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -400,7 +400,8 @@ $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(filter $(FIRST_
 
 $(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h Database/OptimizerDebug.h \
 	$(filter $(FIRST_BUILD), $(objdir)Executor.o) $(filter $(FIRST_BUILD),$(objdir)QueryPlan.o) \
-	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o)
+	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o) \
+	$(filter $(FIRST_BUILD),$(objdir)FilterPlan.o)
 	$(CXX) $(CFLAGS) Database/Optimizer.cpp $(inc) $(inc_log) -o $(objdir)Optimizer.o $(openmp) ${ldl}
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(filter $(FIRST_BUILD),$(objdir)Util.o) \
@@ -448,6 +449,9 @@ $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h
 $(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h   $(filter $(FIRST_BUILD),$(objdir)Util.o) \
  	$(filter $(FIRST_BUILD),$(objdir)Triple.o)  $(filter $(FIRST_BUILD),$(objdir)KVstore.o)
 	$(CXX) $(CFLAGS) Query/BGPQuery.cpp $(inc) $(inc_log) -o $(objdir)BGPQuery.o $(openmp)
+
+$(objdir)FilterPlan.o: Query/FilterPlan.cpp Query/FilterPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+	$(CXX) $(CFLAGS) Query/FilterPlan.cpp $(inc) $(inc_log) -o $(objdir)FilterPlan.o $(openmp)
 
 #objects in Query/topk/ begin
 
