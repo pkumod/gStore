@@ -154,7 +154,7 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const 
                                                   id2,
                                                   empty_record);
   auto valid_size = record_two_node_list->size()/2;
-  if( max_output != static_cast<size_t>(-1))
+  if( max_output != NO_LIMIT_OUTPUT)
     valid_size = min(valid_size,max_output);
   /* write to the new table */
   for (decltype(valid_size) i =0;i<valid_size;i++) {
@@ -468,7 +468,7 @@ TableContentShardPtr gstore::Executor::ConvertToTable(std::shared_ptr<IDList> id
   auto result = make_shared<TableContent>();
   auto id_candidate_vec = id_list->getList();
   auto min_size = id_candidate_vec->size();
-  if(max_output != static_cast<size_t>(-1))
+  if(max_output != NO_LIMIT_OUTPUT)
     min_size = min(min_size, max_output);
   for (size_t i = 0;i<min_size;i++)
   {
@@ -944,7 +944,7 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
     auto entity_str = this->kv_store_->getEntityByID(i);
     if(entity_str!="") {
       ids.insert(i);
-      if(max_output!= static_cast<size_t>(-1) && --max_output == 0)
+      if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
         break;
     }
   }
@@ -953,7 +953,7 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
       auto entity_str = this->kv_store_->getLiteralByID(i);
       if (entity_str != "") {
         ids.insert(i);
-        if(max_output!= static_cast<size_t>(-1) && --max_output == 0)
+        if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
           break;
       }
     }
@@ -975,7 +975,7 @@ std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId(size_t max_
     auto pre_str = this->kv_store_->getPredicateByID(i);
     if(pre_str!="") {
       ids.insert(i);
-      if(max_output!= static_cast<size_t>(-1) && --max_output == 0)
+      if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
         break;
     }
   }
@@ -1680,7 +1680,7 @@ void gstore::Executor::CheckedInsert(TableContentShardPtr& new_records,
                                      bool remain_old,
                                      shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& inserted_output) {
   // limited output is enabled
-  if(max_output != static_cast<size_t>(-1)) {
+  if(max_output != NO_LIMIT_OUTPUT) {
     // no more result is needed
     if (max_output == 0) {
       return;
@@ -1692,5 +1692,5 @@ void gstore::Executor::CheckedInsert(TableContentShardPtr& new_records,
   else
     new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*inserted_output));
 
-  if(max_output != static_cast<size_t>(-1)) max_output--;
+  if(max_output != NO_LIMIT_OUTPUT) max_output--;
 }
