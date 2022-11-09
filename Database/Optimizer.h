@@ -7,7 +7,7 @@
 #ifndef _DATABASE_OPTIMIZER_H
 #define _DATABASE_OPTIMIZER_H
 
-#include "../Query/QueryPlan.h"
+#include "../Query/DFSPlan.h"
 #include "./PlanGenerator.h"
 #include "./Executor.h"
 
@@ -61,15 +61,15 @@ class Optimizer
 
   BasicQueryStrategy ChooseStrategy(const std::shared_ptr<BGPQuery>& bgp_query,QueryInfo *query_info);
 
-  static std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(const shared_ptr<QueryPlan>& query_plan);
+  static std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(const shared_ptr<DFSPlan>& query_plan);
 
   tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>&  bgp_query,
-                                                     shared_ptr<QueryPlan>& query_plan,
+                                                     shared_ptr<DFSPlan>& query_plan,
                                                      const QueryInfo& query_info,
                                                      const IDCachesSharePtr& id_caches);
 
 
-  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan>& query_plan,
+  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<DFSPlan>& query_plan,
                                                      int layer_count,
                                                      int &result_number_till_now,
                                                      int limit_number,
