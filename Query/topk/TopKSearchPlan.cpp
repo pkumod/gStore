@@ -553,6 +553,7 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
   auto d_string = bgp_query->get_var_name_by_id(d_id);
   auto &edges = c_var->so_edge_index_;
 
+  shared_ptr<AffectOneNode> post_check_plan;
   for(auto edge_id:edges) {
     auto triple = bgp_query->get_triple_by_index(edge_id);
     auto &s_string = triple.subject;
@@ -580,12 +581,14 @@ bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
     }
     edge_info.join_method_ = JoinMethod::so2p;
     EdgeConstantInfo edge_constant_info(false, predicate_constant, false);
-    this->non_tree_edges_.edge_filter_ = make_shared<AffectOneNode>();
-    this->non_tree_edges_.edge_filter_->edges_->push_back(edge_info);
-    this->non_tree_edges_.edge_filter_->edges_constant_info_->push_back(edge_constant_info);
+    post_check_plan->edges_->push_back(edge_info);
+    post_check_plan->edges_constant_info_->push_back(edge_constant_info);
   }
-  this->non_tree_edges_.edge_filter_->node_to_join_ = c_id;
-  this->non_tree_edges_.join_type_ = StepOperation::JoinType::EdgeCheck;
+
+  post_check_plan->node_to_join_ = c_id;
+  this->non_tree_edges_.~StepOperation();
+  new (&this->non_tree_edges_) StepOperation(StepOperation::StepOpType::Check,StepOperation::OpRangeType::OneNode,
+                                        post_check_plan, nullptr, nullptr);
   return true;
 }
 

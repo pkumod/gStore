@@ -85,7 +85,6 @@ class Optimizer
 
   void GetResultListByEdgeInfo(const EdgeInfo &edge_info, unsigned* &result_list_pointer,
 							   unsigned &result_list_len, bool distinct);
-  bool SpecialOneTuplePlanExecution(PlanTree* plan_tree, shared_ptr<BGPQuery> bgp_query, IDCachesSharePtr &id_caches, bool distinct);
 
   tuple<bool,IntermediateResult> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
                                                       QueryInfo query_info,
