@@ -54,12 +54,19 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   auto &tables = *table_template;
   auto &dfs_operation = *query_plan->join_order_;
 
-  auto join_type = dfs_operation[0]->join_type_;
-  if(join_type==StepOperation::JoinType::JoinNode)
-    tables[0].AddNewNode(dfs_operation[0]->join_node_->node_to_join_);
-  else if(join_type==StepOperation::JoinType::JoinTwoNodes) {
-    tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_1_);
-    tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_2_);
+  if(dfs_operation[0]->op_type_==StepOperation::StepOpType::Extend){
+    if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::OneNode)
+      tables[0].AddNewNode(dfs_operation[0]->join_node_->node_to_join_);
+    else if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::TwoNode){
+      tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_1_);
+      tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_2_);
+    }
+    else if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::GetAllTriples){
+      auto &the_only_edge = (*dfs_operation[0]->GetOneNodePlan()->edges_)[0];
+      tables[0].AddNewNode(the_only_edge.s_);
+      tables[0].AddNewNode(the_only_edge.p_);
+      tables[0].AddNewNode(the_only_edge.o_);
+    }
   }
 
   auto it = dfs_operation.begin();
@@ -67,6 +74,8 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
   while(it!=dfs_operation.end())
   {
     tables.emplace_back( IntermediateResult::OnlyPositionCopy(tables.back()));
+    if(dfs_operation[0]->op_type_ != StepOperation::StepOpType::Extend)
+      continue;
     if( (*it)->GetRange() == StepOperation::OpRangeType::OneNode)
       tables.back().AddNewNode( (*it)->GetOneNodePlan()->node_to_join_);
     else if((*it)->GetRange() == StepOperation::OpRangeType::TwoNode) {
@@ -175,34 +184,30 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan
 
   auto one_step = (*(query_plan->join_order_))[layer_count];
   TableContentShardPtr step_table;
-  switch (one_step->join_type_) {
-    case StepOperation::JoinType::JoinNode: {
-      auto step_result = executor_.AffectANode(old_table, id_caches,true, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
-      step_table = get<1>(step_result).values_;
-      break;
-    }
-    case StepOperation::JoinType::JoinTable: {
-      throw string("Optimizer::DepthSearchOneLayer not suitable for JoinTable");
-    }
-    case StepOperation::JoinType::GenerateCandidates : {
-      throw string("Optimizer::DepthSearchOneLayer not suitable for GenerateCandidates");
-    }
-    case StepOperation::JoinType::EdgeCheck: {
-      auto step_result = executor_.ANodeEdgesConstraintFilter(one_step->edge_filter_, old_table,false);
-      step_table = get<1>(step_result).values_;
-      break;
-    }
-    case StepOperation::JoinType::JoinTwoNodes: {
-      auto step_result = executor_.JoinTwoNode(one_step->join_two_node_, old_table,id_caches,false,-1);
-      step_table = get<1>(step_result).values_;
-      break;
-    }
-	default: {
-		cout << "Error in Optimizer::DepthSearchOneLayer, unknown join type" << endl;
-		assert(false);
-	}
-  }
 
+  if(one_step->op_type_ == StepOperation::StepOpType::Extend) {
+    switch (one_step->GetRange()) {
+      case StepOperation::OpRangeType::OneNode: {
+            auto step_result = executor_.AffectANode(old_table, id_caches, true, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
+            step_table = get<1>(step_result).values_;
+            break;
+        }
+
+        case StepOperation::OpRangeType::TwoNode: {
+            auto step_result = executor_.JoinTwoNode(one_step->join_two_node_, old_table, id_caches, false, -1);
+            step_table = get<1>(step_result).values_;
+            break;
+        }
+    }
+  }
+  else if (one_step->op_type_ == StepOperation::StepOpType::Check){
+    auto step_result = executor_.ANodeEdgesConstraintFilter(one_step->edge_filter_, old_table,false);
+    step_table = get<1>(step_result).values_;
+  }
+  else if (one_step->op_type_ == StepOperation::StepOpType::Satellite){
+    auto step_result = executor_.AffectANode(old_table, id_caches, false, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
+    step_table = get<1>(step_result).values_;
+  }
 
   if(step_table->empty())
     return make_tuple(false, layer_result);
@@ -283,7 +288,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	  long t3 = Util::get_cur_time();
 	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
 	  best_plan_tree->print(bgp_query.get());
-	  this->SpecialOneTuplePlanExecution(best_plan_tree, bgp_query, var_candidates_cache, distinct);
+	  // this->SpecialOneTuplePlanExecution(best_plan_tree, bgp_query, var_candidates_cache, distinct);
 	  long t4 = Util::get_cur_time();
 	  cout << "execution, used " << (t4 - t3) << "ms." << endl;
 	}
@@ -625,167 +630,6 @@ void Optimizer::GetResultListByEdgeInfo(const EdgeInfo &edge_info,
 		default:
 			throw "ExtendRecordOneNode only support add 1 node each time";
 	}
-}
-
-// todo: consider candidate
-bool Optimizer::SpecialOneTuplePlanExecution(PlanTree *plan_tree, shared_ptr<BGPQuery> bgp_query, IDCachesSharePtr &id_caches, bool distinct) {
-	auto target = bgp_query->get_result_list_pointer();
-	assert(target->empty());
-	shared_ptr<StepOperation> node_operation = plan_tree->root_node->node;
-
-	unsigned* result_list_pointer = nullptr;
-	unsigned result_list_len;
-	switch (node_operation->join_type_) {
-		case StepOperation::JoinType::JoinNode: {
-			GetResultListByEdgeInfo((*node_operation->join_node_->edges_)[0],
-									result_list_pointer, result_list_len, distinct);
-			if (id_caches->find(node_operation->join_node_->node_to_join_) != id_caches->end()) {
-				auto record_candidate_list = make_shared<IDList>();
-				record_candidate_list->reserve(result_list_len);
-				for (unsigned i = 0; i < result_list_len; ++i)
-					record_candidate_list->addID(result_list_pointer[i]);
-				auto caches_ptr = (*(id_caches->find(node_operation->join_node_->node_to_join_))).second;
-				record_candidate_list->intersectList(caches_ptr->getList()->data(), caches_ptr->size(), distinct);
-				target->reserve(record_candidate_list->size());
-				for (unsigned index = 0; index < record_candidate_list->size(); ++index) {
-					unsigned *new_record = new unsigned[1];
-					new_record[0] = record_candidate_list->getID(index);
-					target->emplace_back(new_record);
-				}
-			} else {
-				target->reserve(result_list_len);
-				for (unsigned index = 0; index < result_list_len; ++index) {
-					unsigned *new_record = new unsigned[1];
-					new_record[0] = result_list_pointer[index];
-					target->emplace_back(new_record);
-				}
-			}
-			delete[] result_list_pointer;
-			result_list_pointer = nullptr;
-			break;
-		}
-		case StepOperation::JoinType::GetAllTriples: {
-			// select distinct ?p where { ?s ?p ?o. }
-			if (distinct && bgp_query->total_selected_var_num == 1 &&
-				bgp_query->selected_var_id[0] == bgp_query->p_id_[0]) {
-				unsigned pre_var_id = bgp_query->p_id_[0];
-				target->reserve(limitID_predicate_);
-				if (id_caches->find(pre_var_id) == id_caches->end()) {
-					for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
-						unsigned* record = new unsigned[1];
-						record[0] = (unsigned)i;
-						target->emplace_back(record);
-					}
-				} else {
-					for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
-						if ((*id_caches)[pre_var_id]->bsearch_uporder(i) != INVALID) {
-							unsigned *record = new unsigned[1];
-							record[0] = (unsigned)i;
-							target->emplace_back(record);
-						}
-					}
-				}
-				return true;
-			}
-
-			unsigned select_var_num = bgp_query->total_selected_var_num;
-			unsigned s_var_id = bgp_query->s_id_[0];
-			unsigned p_var_id = bgp_query->p_id_[0];
-			unsigned o_var_id = bgp_query->o_id_[0];
-
-			vector<int> position_map(3, -1);
-			const auto &position_2_id = bgp_query->resultPositionToId();
-			for (unsigned i = 0; i < select_var_num; ++i) {
-				if (position_2_id[i] == s_var_id) {
-					position_map[0] = i;
-					break;
-				}
-			}
-			for (unsigned i = 0; i < select_var_num; ++i) {
-				if (position_2_id[i] == p_var_id) {
-					position_map[1] = i;
-					break;
-				}
-			}
-			for (unsigned i = 0; i < select_var_num; ++i) {
-				if (position_2_id[i] == o_var_id) {
-					position_map[2] = i;
-					break;
-				}
-			}
-
-			bool s_selected = bgp_query->get_vardescrip_by_id(s_var_id)->selected_;
-			bool p_selected = bgp_query->get_vardescrip_by_id(p_var_id)->selected_;
-			bool o_selected = bgp_query->get_vardescrip_by_id(o_var_id)->selected_;
-
-			// bool var_s_not_pred = id_caches->find(s_var_id) == id_caches->end();
-			// bool var_p_not_pred = id_caches->find(p_var_id) == id_caches->end();
-			// bool var_o_not_pred = id_caches->find(o_var_id) == id_caches->end();
-
-			// bool var_not_pred = (var_s_not_pred && var_p_not_pred && var_o_not_pred);
-
-			target->reserve(triples_num_);
-			for(TYPE_PREDICATE_ID pid = 0; pid < this->limitID_predicate_; ++pid)
-			{
-				this->kv_store_->getsubIDobjIDlistBypreID(pid, result_list_pointer, result_list_len, distinct, txn_);
-
-				// todo: enable `if (var_not_pred)` and write codes for !var_not_pred
-				{
-				// if (var_not_pred) {
-					for (unsigned index = 0; index < result_list_len; index+=2) {
-						unsigned *new_record = new unsigned[select_var_num];
-						if (s_selected)
-							new_record[position_map[0]] = result_list_pointer[index];
-						if (p_selected)
-							new_record[position_map[1]] = pid;
-						if (o_selected)
-							new_record[position_map[2]] = result_list_pointer[index+1];
-						target->emplace_back(new_record);
-					}
-				}
-				delete[] result_list_pointer;
-			}
-			break;
-		}
-		case StepOperation::JoinType::JoinTwoNodes: {
-			GetResultListByEdgeInfo(node_operation->join_two_node_->edges_,
-									result_list_pointer, result_list_len, distinct);
-			unsigned var_1_id = node_operation->join_two_node_->node_to_join_1_;
-			unsigned var_2_id = node_operation->join_two_node_->node_to_join_2_;
-			const auto &position_2_id = bgp_query->resultPositionToId();
-			unsigned result_var_1_position = (position_2_id[0] == var_1_id ? (unsigned) 0 : (unsigned) 1);
-			unsigned result_var_2_position = (unsigned) 1 - result_var_1_position;
-			bool var_1_candidate_not_pred = id_caches->find(var_1_id) == id_caches->end();
-			bool var_2_candidate_not_pred = id_caches->find(var_2_id) == id_caches->end();
-			target->reserve(result_list_len);
-			if (var_1_candidate_not_pred && var_2_candidate_not_pred) {
-				for (unsigned index = 0; index < result_list_len; index+=2) {
-					unsigned *new_record = new unsigned[2];
-					new_record[0] = result_list_pointer[index + result_var_1_position];
-					new_record[1] = result_list_pointer[index + result_var_2_position];
-					target->emplace_back(new_record);
-				}
-			} else {
-				for (unsigned index = 0; index < result_list_len; index+=2) {
-					if ((var_1_candidate_not_pred ||
-						(*id_caches)[var_1_id]->bsearch_uporder(result_list_pointer[index]) != INVALID) &&
-						(var_2_candidate_not_pred ||
-							(*id_caches)[var_2_id]->bsearch_uporder(result_list_pointer[index + 1]) != INVALID)) {
-						unsigned *new_record = new unsigned[2];
-						new_record[0] = result_list_pointer[index + result_var_1_position];
-						new_record[1] = result_list_pointer[index + result_var_2_position];
-						target->emplace_back(new_record);
-					}
-				}
-			}
-			break;
-		}
-		default: {
-			cout << "Error in Optimizer::SpecialOneTuplePlanExecution, illegal join_type!" << endl;
-			assert(false);
-		}
-	}
-	return true;
 }
 
 /**

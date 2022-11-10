@@ -351,35 +351,11 @@ class StepOperation{
   std::shared_ptr<JoinTwoTable> join_table_;
   std::shared_ptr<AffectOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this field
 
-  // ConstCandidatesCheck
-  enum class JoinType{
-    // join a node to table, or create a table with one node
-    JoinNode,
-    // change the candidates list for one node
-    GenerateCandidates,
-    // join two table together
-    JoinTable,
-    // check if an edge exist. the nodes in the edge should already in the table
-    EdgeCheck,
-    // join two node to table,instead of joining twice
-    JoinTwoNodes,
-    // get all triples in the dataset
-    GetAllTriples
-  };
-
-  JoinType join_type_;
   bool distinct_;
   bool remain_old_result_;
 
   StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr),distinct_(false),remain_old_result_(false){};
 
-  StepOperation(JoinType join_type, shared_ptr<AffectOneNode> join_node, shared_ptr<AffectTwoNode> join_two_nodes,
-                shared_ptr<JoinTwoTable> join_table, shared_ptr<AffectOneNode> edge_filter, bool distinct = false, bool remain_old_result=false):
-			  join_node_(join_node), join_two_node_(join_two_nodes),
-			  join_table_(join_table), edge_filter_(edge_filter),
-			  join_type_(join_type), distinct_(distinct),
-			  remain_old_result_(remain_old_result)
-              {};
 
   StepOperation(StepOpType op_type, OpRangeType range_type, shared_ptr<AffectOneNode> join_node, shared_ptr<AffectTwoNode> join_two_nodes,
                 shared_ptr<JoinTwoTable> join_table, bool distinct = false, bool remain_old_result=false):
@@ -387,17 +363,6 @@ class StepOperation{
                                                 std::move(join_table)), distinct_(distinct),remain_old_result_(remain_old_result){};
 
   inline OpRangeType GetRange() {return this->step_effect_.range;}
-  std::string static JoinTypeToString(JoinType x){
-    switch (x) {
-      case JoinType::JoinNode: return "JoinType::JoinNode";
-      case JoinType::JoinTable: return "JoinType::JoinTable";
-      case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
-      case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
-      case JoinType::JoinTwoNodes: return "JoinType::JoinTwoNodes";
-      case JoinType::GetAllTriples: return "JoinType::GetAllTriples";
-    }
-    return "err in JoinTypeToString";
-  };
   string GetString();
 };
 
