@@ -345,16 +345,10 @@ class StepOperation{
   std::shared_ptr<AffectOneNode> GetOneNodePlan();
   std::shared_ptr<AffectTwoNode> GetTwoNodePlan();
   std::shared_ptr<JoinTwoTable> GetTwoTablePlan();
-
-  std::shared_ptr<AffectOneNode> join_node_; // GetAllTriples uses this field
-  std::shared_ptr<AffectTwoNode> join_two_node_;
-  std::shared_ptr<JoinTwoTable> join_table_;
-  std::shared_ptr<AffectOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this field
-
   bool distinct_;
   bool remain_old_result_;
 
-  StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr),distinct_(false),remain_old_result_(false){};
+  StepOperation(): distinct_(false),remain_old_result_(false){};
 
 
   StepOperation(StepOpType op_type, OpRangeType range_type, shared_ptr<AffectOneNode> join_node, shared_ptr<AffectTwoNode> join_two_nodes,
