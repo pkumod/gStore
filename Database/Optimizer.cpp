@@ -98,7 +98,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
                                                                const QueryInfo& query_info,
                                                                const IDCachesSharePtr& id_caches) {
   auto limit_num = query_info.limit_num_;
-  cout<<"Optimizer::ExecutionDepthFirst query_info.limit_num_="<<query_info.limit_num_<<endl;
+  PrintDebugInfoLine(g_format("Optimizer::ExecutionDepthFirst query_info.limit_num_= %d", query_info.limit_num_));
   auto &first_operation = (*query_plan->join_order_)[0];
   tuple<bool, IntermediateResult> step_result;
   IntermediateResult first_table;
@@ -109,11 +109,12 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
     if( query_plan->join_order_->size()==1 || first_table.values_->empty())
       return make_tuple(true, first_table);
   }
+  else
+    throw "The First Operation in DepthFirst Must Be StepOperation::StepOpType::Extend";
 
   auto first_candidates_list = first_table.values_;
   int now_result = 0;
   vector<TableContentShardPtr> result_container;
-
   auto table_template = GenerateResultTemplate(query_plan);
 
   while (now_result <= limit_num) {
@@ -139,7 +140,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
   final_result.pos_id_map = table_template->back().pos_id_map;
   final_result.id_pos_map = table_template->back().id_pos_map;
 
-  cout<<"Optimizer::ExecutionDepthFirst result_container.size()="<<result_container.size()<<endl;
+  PrintDebugInfoLine(g_format("Optimizer::ExecutionDepthFirst result_container.size()= %d", result_container.size()));
   if(result_container.empty())
     return make_tuple(true,final_result);
   int counter = 0;
@@ -151,7 +152,6 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
       if( ++counter == limit_num)
         break;
     }
-  cout<<"Optimizer::ExecutionDepthFirst final_result.size()="<<final_result.values_->size()<<endl;
   return make_tuple(true,final_result);
 }
 
@@ -185,19 +185,26 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan
   auto one_step = (*(query_plan->join_order_))[layer_count];
   TableContentShardPtr step_table;
 
+  bool the_last_op = (unsigned )layer_count + 1 == query_plan->join_order_->size();
+  size_t max_output_num = the_last_op? limit_number - result_number_till_now : gstore::Executor::NO_LIMIT_OUTPUT;
+
   if(one_step->op_type_ == StepOperation::StepOpType::Extend) {
     switch (one_step->GetRange()) {
       case StepOperation::OpRangeType::OneNode: {
-            auto step_result = executor_.AffectANode(old_table, id_caches, true, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
+            auto step_result = executor_.AffectANode(old_table, id_caches, true, one_step->distinct_, false,
+                                                     max_output_num, one_step->GetOneNodePlan());
             step_table = get<1>(step_result).values_;
             break;
         }
 
         case StepOperation::OpRangeType::TwoNode: {
-            auto step_result = executor_.JoinTwoNode(one_step->GetTwoNodePlan(), old_table, id_caches, false, -1);
+            auto step_result = executor_.JoinTwoNode(one_step->GetTwoNodePlan(), old_table, id_caches, false,
+                                                     max_output_num);
             step_table = get<1>(step_result).values_;
             break;
         }
+        default:
+          throw "Err StepOperation::OpRangeType in Depth First Search in StepOpType::Extend";
     }
   }
   else if (one_step->op_type_ == StepOperation::StepOpType::Check){
@@ -205,7 +212,8 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan
     step_table = get<1>(step_result).values_;
   }
   else if (one_step->op_type_ == StepOperation::StepOpType::Satellite){
-    auto step_result = executor_.AffectANode(old_table, id_caches, false, one_step->distinct_, false, -1, one_step->GetOneNodePlan());
+    auto step_result = executor_.AffectANode(old_table, id_caches, false, one_step->distinct_, false,
+                                             max_output_num, one_step->GetOneNodePlan());
     step_table = get<1>(step_result).values_;
   }
 
@@ -215,14 +223,14 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan
   auto& all_result = layer_result.values_;
 
   /* deep in bottom, update the 'result_number_till_now' */
-  if( (unsigned )layer_count + 1 == query_plan->join_order_->size()) {
+  if( the_last_op ) {
     result_number_till_now += step_table->size();
     for(auto it = step_table->begin();it!=step_table->end();it++)
       all_result->push_back(std::move(*it));
     return make_tuple(true, layer_result);
   }
 
-  /*  go deeper by filling a node */
+  /*  go deeper by doing the next operation */
   for(const auto& one_result:*step_table) {
     auto one_record_table = make_shared<TableContent>();
     one_record_table->push_back(one_result);
