@@ -56,10 +56,10 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
 
   if(dfs_operation[0]->op_type_==StepOperation::StepOpType::Extend){
     if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::OneNode)
-      tables[0].AddNewNode(dfs_operation[0]->join_node_->node_to_join_);
+      tables[0].AddNewNode(dfs_operation[0]->GetOneNodePlan()->node_to_join_);
     else if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::TwoNode){
-      tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_1_);
-      tables[0].AddNewNode(dfs_operation[0]->join_two_node_->node_to_join_2_);
+      tables[0].AddNewNode(dfs_operation[0]->GetTwoNodePlan()->node_to_join_1_);
+      tables[0].AddNewNode(dfs_operation[0]->GetTwoNodePlan()->node_to_join_2_);
     }
     else if( dfs_operation[0]->GetRange() == StepOperation::OpRangeType::GetAllTriples){
       auto &the_only_edge = (*dfs_operation[0]->GetOneNodePlan()->edges_)[0];
@@ -194,14 +194,14 @@ tuple<bool,IntermediateResult> Optimizer::DepthSearchOneLayer(shared_ptr<DFSPlan
         }
 
         case StepOperation::OpRangeType::TwoNode: {
-            auto step_result = executor_.JoinTwoNode(one_step->join_two_node_, old_table, id_caches, false, -1);
+            auto step_result = executor_.JoinTwoNode(one_step->GetTwoNodePlan(), old_table, id_caches, false, -1);
             step_table = get<1>(step_result).values_;
             break;
         }
     }
   }
   else if (one_step->op_type_ == StepOperation::StepOpType::Check){
-    auto step_result = executor_.ANodeEdgesConstraintFilter(one_step->edge_filter_, old_table,false);
+    auto step_result = executor_.ANodeEdgesConstraintFilter(one_step->GetOneNodePlan(), old_table,false);
     step_table = get<1>(step_result).values_;
   }
   else if (one_step->op_type_ == StepOperation::StepOpType::Satellite){
@@ -819,7 +819,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
       auto temp_content_ptr = make_shared<TableContent>();
       temp_content_ptr->push_back(record);
       temp_table.values_ = temp_content_ptr;
-      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.edge_filter_,temp_table,false);
+      auto filter_result = this->executor_.ANodeEdgesConstraintFilter(non_tree_edge.GetOneNodePlan(),temp_table,false);
       auto filter_result_size = get<1>(filter_result).values_->size();
       success = filter_result_size != 0;
     }
@@ -885,12 +885,12 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable(shared_ptr<BGPQuery> &bgp
   IntermediateResult leaf_table;
   if(range == StepOperation::OpRangeType::OneNode)
   {
-    auto r = PrepareInitial(bgp_query, step_operation->join_node_);
+    auto r = PrepareInitial(bgp_query, step_operation->GetOneNodePlan());
     bool is_entity = get<0>(r);
     bool is_literal = get<1>(r);
     bool is_predicate = get<2>(r);
     auto initial_result =
-        executor_.InitialTableOneNode(step_operation->join_node_, is_entity, is_literal, is_predicate,
+        executor_.InitialTableOneNode(step_operation->GetOneNodePlan(), is_entity, is_literal, is_predicate,
                                       step_operation->distinct_,max_output, id_caches);
     leaf_table = get<1>(initial_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
@@ -910,7 +910,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable(shared_ptr<BGPQuery> &bgp
     PrintTimeOpRange(operation,range,t1);
   }
   else if (range == StepOperation::OpRangeType::GetAllTriples) {
-    auto all_triple_result = executor_.GetAllTriple(max_output, step_operation->join_node_);
+    auto all_triple_result = executor_.GetAllTriple(max_output, step_operation->GetOneNodePlan());
     leaf_table = get<1>(all_triple_result);
     PrintDebugInfoLine(g_format("result size: %d", leaf_table.values_->size()));
     PrintTimeOpRange(operation,range,t1);
