@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 20:14:02
- * @LastEditTime: 2022-11-04 11:15:31
+ * @LastEditTime: 2022-11-10 09:50:59
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: batch insert data tool
  * @FilePath: /gstore/Main/gadd.cpp
@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
 		if (filename.empty() == false)
 		{
 			total_num = Util::count_lines(error_log);
+			success_num = _db.batch_insert(filename, false, nullptr);
 			// exclude Info line
 			parse_error_num = Util::count_lines(error_log) - total_num - 1;
-			success_num = _db.batch_insert(filename, false, nullptr);
 		} 
 		else if (dirname.empty() == false)
 		{
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 				dirname.push_back('/');
 			}
 			Util::dir_files(dirname, "", files);
-			total_num += Util::count_lines(error_log);
+			total_num = Util::count_lines(error_log);
 			for (string rdf_file : files)
 			{
 				cout << "begin insert data from " << dirname << rdf_file << endl;
