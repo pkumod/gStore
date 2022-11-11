@@ -133,7 +133,7 @@ IDList::copy(const IDList* _new_idlist)
  * @return how many items have been removed
  */
 unsigned
-IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinct)
+IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
 	if (_id_list == nullptr || _list_len == 0)
 	{
@@ -161,7 +161,6 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 	{
 		k = (double)_list_len / (double)n;
 		method = 1;
-		if (!distinct) method = 2;
 	}
 	if (n <= 2)
 		method = 0;
@@ -197,7 +196,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 			{
 				(this->id_list)[index_move_forward] = can_id;
 				index_move_forward++;
-				// id_i++;
+				id_i++;
 			}
 
 			it++;

@@ -61,12 +61,6 @@ class Executor {
 
   std::tuple<bool, TableContentShardPtr> GetAllSubObjId(bool need_literal,size_t max_output);
   std::tuple<bool, TableContentShardPtr> GetAllPreId(size_t max_output);
-  std::shared_ptr<IDList> ExtendRecordFirstNode(shared_ptr<AffectOneNode> one_step_join_node_,
-											    PositionValueSharedPtr id_pos_mapping,
-											    IDCachesSharePtr id_caches,
-											    TYPE_ENTITY_LITERAL_ID new_id,
-											    bool distinct,
-											    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const;
 
   std::shared_ptr<IDList> ExtendRecordOneNode(shared_ptr<AffectOneNode> one_step_join_node_,
                                               PositionValueSharedPtr id_pos_mapping,
