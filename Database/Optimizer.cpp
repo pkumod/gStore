@@ -283,55 +283,41 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   auto distinct = bgp_query->distinct_query;
   if(strategy == BasicQueryStrategy::Normal)
   {
-
-    PlanTree* best_plan_tree;
 	PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
 								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
     long t1 =Util::get_cur_time();
-
     auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step : *const_candidates)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
-
     long t2 = Util::get_cur_time();
     cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
     cout << "id_list.size = " << var_candidates_cache->size() << endl;
-
     cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
     auto second_run_candidates_plan = plan_generator.CompleteCandidate();
     long t3 = Util::get_cur_time();
     cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
-
     for(const auto& constant_generating_step: second_run_candidates_plan)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
     long t4 = Util::get_cur_time();
-    best_plan_tree = plan_generator.GetPlan(true);
+    PlanTree* best_plan_tree = plan_generator.GetPlan(true);
     long t5 = Util::get_cur_time();
     cout << "plan get, used " << (t5 - t4) + (t3 - t2) << "ms." << endl;
-      // }
-
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 
     long t6 = Util::get_cur_time();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
-
-    // todo: Destructor of PlanGenerator here
     long t7 = Util::get_cur_time();
     cout << "execution, used " << (t7 - t6) << "ms." << endl;
 
     auto bfs_table = get<1>(bfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
     auto var_pos_mapping = bfs_table.id_pos_map;
-
     long t8 = Util::get_cur_time();
     CopyToResult(bgp_query, bfs_table);
-#ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
-#endif
     long t9 = Util::get_cur_time();
     cout << "copy to result, used " << (t9 - t8) <<"ms." <<endl;
     cout << "total execution, used " << (t9 - t1) <<"ms."<<endl;
@@ -379,65 +365,46 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
   }
   else if(strategy == BasicQueryStrategy::limitK)
   {
-    PlanTree* best_plan_tree;
-	PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
-								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
+    PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
+                                 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
-	long t1 =Util::get_cur_time();
+    long t1 =Util::get_cur_time();
+    auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
+    for (auto &constant_generating_step : *const_candidates)
+      executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+    long t2 = Util::get_cur_time();
+    cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+    cout << "id_list.size = " << var_candidates_cache->size() << endl;
+    cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
 
-	if(bgp_query->get_triple_num()==1) {
-	  long t2 = Util::get_cur_time();
-	  best_plan_tree = plan_generator.GetSpecialOneTriplePlan();
-	  long t3 = Util::get_cur_time();
-	  cout << "plan get, used " << (t3 - t2) << "ms." << endl;
-	}
-	else{
-	  auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query,this->kv_store_);
-	  for (auto &constant_generating_step: *const_candidates)
-			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+    auto second_run_candidates_plan = plan_generator.CompleteCandidate();
+    long t3 = Util::get_cur_time();
+    cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
+    for(const auto& constant_generating_step: second_run_candidates_plan)
+      executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
-	  long t2 = Util::get_cur_time();
-	  cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
-	  long t3 = Util::get_cur_time();
-	  cout << "id_list.size = " << var_candidates_cache->size() << endl;
-
-	  auto second_run_candidates_plan = plan_generator.CompleteCandidate();
-	  long t3_ = Util::get_cur_time();
-	  cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
-
-	  for(const auto& constant_generating_step: second_run_candidates_plan)
-			  executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
-
-	  long t4_ = Util::get_cur_time();
-	  best_plan_tree = plan_generator.GetPlan(false);
-	  long t4 = Util::get_cur_time();
-	  cout << "plan get, used " << (t4 - t4_) + (t3_ - t3) << "ms." << endl;
-	}
-
+    long t4 = Util::get_cur_time();
+    PlanTree* best_plan_tree = plan_generator.GetPlan(false);
+    long t5 = Util::get_cur_time();
+    cout << "plan get, used " << (t5 - t4) + (t3 - t2) << "ms." << endl;
     best_plan_tree->print(bgp_query.get());
     cout << "plan print done" << endl;
 
-    long t_ = Util::get_cur_time();
+    long t6 = Util::get_cur_time();
     auto dfs_query_plan = make_shared<DFSPlan>(best_plan_tree->root_node);
     auto dfs_result = this->ExecutionDepthFirst(bgp_query, dfs_query_plan,
                                                 query_info,var_candidates_cache);
-
-    // todo: Destructor of PlanGenerator here
-    long t5 = Util::get_cur_time();
-    cout << "execution, used " << (t5 - t_) << "ms." << endl;
-
-    auto dfs_table = get<1>(dfs_result);
-    auto pos_var_mapping = dfs_table.pos_id_map;
-    auto var_pos_mapping = dfs_table.id_pos_map;
-
-    long t6 = Util::get_cur_time();
-    CopyToResult(bgp_query, dfs_table);
-#ifdef OPTIMIZER_DEBUG_INFO
-    cout<<"after copy bfs result size "<<bgp_query->get_result_list_pointer()->size()<<endl;
-#endif
     long t7 = Util::get_cur_time();
-    cout << "copy to result, used " << (t7 - t6) <<"ms." <<endl;
-    cout << "total execution, used " << (t7 - t1) <<"ms."<<endl;
+    cout << "execution, used " << (t7 - t6) << "ms." << endl;
+
+    auto bfs_table = get<1>(dfs_result);
+    auto pos_var_mapping = bfs_table.pos_id_map;
+    auto var_pos_mapping = bfs_table.id_pos_map;
+    long t8 = Util::get_cur_time();
+    CopyToResult(bgp_query, bfs_table);
+    long t9 = Util::get_cur_time();
+    cout << "copy to result, used " << (t9 - t8) <<"ms." <<endl;
+    cout << "total execution, used " << (t9 - t1) <<"ms."<<endl;
   }
   else if(strategy ==BasicQueryStrategy::Special){
     // if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
