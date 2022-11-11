@@ -804,6 +804,7 @@ long long PlanGenerator::CostModelForp2soOptimization(unsigned int node_1_id, un
  */
 vector<shared_ptr<AffectOneNode>> PlanGenerator::CompleteCandidate() {
 	vector<shared_ptr<AffectOneNode>> need_candidate;
+    if (bgpquery->get_triple_num() == 1) return need_candidate;
 	for (unsigned var_index = 0 ; var_index < bgpquery->get_total_var_num(); ++ var_index) {
 		if (bgpquery->is_var_satellite_by_index(var_index)) {
 			satellite_nodes.emplace_back(bgpquery->get_var_id_by_index(var_index));
@@ -1197,6 +1198,7 @@ PlanTree *PlanGenerator::DPPlan(bool use_binary_join) {
 // 如果有谓词变量，感觉一定会有s_o_var连接上，不然会被拆分开。
 // 是这样吗？
 PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
+	if (bgpquery->get_triple_num() == 1) return GetSpecialOneTriplePlan();
 	switch (PlanStrategy(use_binary_join)) {
 		case BGPQueryStrategy::Heuristic:
 			return HeuristicPlan(use_binary_join);

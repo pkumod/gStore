@@ -165,6 +165,7 @@ shared_ptr<AffectOneNode> FilterPlan::FilterNodeOnConstantPredicate(shared_ptr<B
 std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>>
 FilterPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
                             KVstore *kv_store) {
+  if (bgp_query->get_triple_num() == 1) return make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto result = make_shared<FilterPlan>();
   auto constant_generating_lists = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();
