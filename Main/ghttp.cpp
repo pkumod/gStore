@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-11-10 09:47:07
+ * @LastEditTime: 2022-11-11 16:33:20
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -30,7 +30,7 @@
 using namespace rapidjson;
 using namespace std;
 // Added for the json-example:
-using namespace boost::property_tree;
+// using namespace boost::property_tree;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
@@ -39,7 +39,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define HTTP_TYPE "ghttp"
 APIUtil *apiUtil = nullptr;
 //! init the ghttp server
-int initialize(int argc, char *argv[]);
+int initialize(unsigned short port, std::string db_name, bool load_src);
 
 // Added for the default_resource example
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
@@ -438,60 +438,22 @@ ThreadPool pool;
 
 int main(int argc, char *argv[])
 {
+	// check grpc thread
+	string running_pid = Util::getSystemOutput("pidof " + Util::getExactPath(argv[0]));
+	string current_pid = to_string(getpid());
+	std::cout << "running_pid: " << running_pid << endl;
+	std::cout << "current_pid: " << current_pid << endl;
+	
+	if (running_pid != current_pid)
+	{
+		cout << "ghttp server already running." << endl;
+		return 0;
+	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
-
-	// Notice that current_database is assigned in the child process, not in the father process
-	// when used as endpoint, or when the database is indicated in command line, we can assign
-	// current_database in father process(but this is resource consuming)
-	// TODO+DEBUG: when will the restarting error?
-	while (true)
-	{
-		// NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
-		// Child process is used to deal with web requests, can also has many threads
-		pid_t fpid = fork();
-
-		if (fpid == 0)
-		{
-			int ret = initialize(argc, argv);
-			std::cout.flush();
-			_exit(ret);
-		}
-		else if (fpid > 0)
-		{
-			int status;
-			waitpid(fpid, &status, 0);
-			if (WIFEXITED(status))
-			{
-				return 0;
-			}
-			else
-			{
-				if (Util::file_exist("system.db/port.txt"))
-				{
-					string cmd = "rm system.db/port.txt";
-					system(cmd.c_str());
-				}
-				SLOG_WARN("Stopped abnormally, restarting server...");
-			}
-		}
-		else
-		{
-			SLOG_ERROR("Failed to start server: deamon fork failure.");
-			return -1;
-		}
-	}
-	return 0;
-}
-
-int initialize(int argc, char *argv[])
-{
-	// Server restarts to use the original database
-	// current_database = NULL;
-	HttpServer server;
 	string db_name = "";
 	string port_str = apiUtil->get_default_port();
-	int port;
+	unsigned short port = 9000;
 	bool loadCSR = 0; // DO NOT load CSR by default
 
 	if (argc < 2)
@@ -542,17 +504,90 @@ int initialize(int argc, char *argv[])
 		port = Util::string2int(port_str);
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
 	}
-	// check port.txt exist
-	if (Util::file_exist("system.db/port.txt"))
+
+	// check port
+	int max_try = 30;
+	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+	sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
+	if (bind_return == -1)
 	{
-		SLOG_ERROR("Server port " + port_str + " is already in use.");
+		cout<<"Server port "<< port_str <<" is already in use."<<endl;
 		return -1;
+	} 
+	else // relase bind
+	{
+		int close_status;
+		do {
+			close_status = close(sock);
+			// shutdown_status = shutdown(sock, SHUT_RDWR);
+			if (close_status != 0)
+			{
+				SLOG_DEBUG("close I/O result:" + to_string(close_status));
+				sleep(1);
+			}
+			max_try --;
+		} while (close_status != 0 && max_try > 0);
+		sock = -1;
+		std::memset(&addr, 0, sizeof(addr));
 	}
+
+	// Notice that current_database is assigned in the child process, not in the father process
+	// when used as endpoint, or when the database is indicated in command line, we can assign
+	// current_database in father process(but this is resource consuming)
+	// TODO+DEBUG: when will the restarting error?
+	while (true)
+	{
+		// NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
+		// Child process is used to deal with web requests, can also has many threads
+		pid_t fpid = fork();
+
+		if (fpid == 0)
+		{
+			int ret = initialize(port, db_name, loadCSR);
+			std::cout.flush();
+			_exit(ret);
+		}
+		else if (fpid > 0)
+		{
+			int status;
+			waitpid(fpid, &status, 0);
+			if (WIFEXITED(status))
+			{
+				return 0;
+			}
+			else
+			{
+				if (Util::file_exist("system.db/port.txt"))
+				{
+					string cmd = "rm system.db/port.txt";
+					system(cmd.c_str());
+				}
+				SLOG_WARN("Stopped abnormally, restarting server...");
+			}
+		}
+		else
+		{
+			SLOG_ERROR("Failed to start server: deamon fork failure.");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int initialize(unsigned short port, std::string db_name, bool load_src)
+{	
 	// call apiUtil initialized
-	if (apiUtil->initialize(HTTP_TYPE, port_str, db_name, loadCSR) == -1)
+	if (apiUtil->initialize(HTTP_TYPE, to_string(port), db_name, load_src) == -1)
 	{
 		return -1;
 	}
+	// Server restarts to use the original database
+	// current_database = NULL;
+	HttpServer server;
 
 	server.config.port = port;
 	server.config.thread_pool_size = apiUtil->get_thread_pool_num();
