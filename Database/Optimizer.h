@@ -31,8 +31,7 @@ using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
 using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
 
 enum class BasicQueryStrategy{
-  Normal, // method 0
-  Special,// method 1-5
+  Normal,
   limitK,
   TopK
 };
