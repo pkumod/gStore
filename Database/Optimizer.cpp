@@ -322,9 +322,6 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     cout << "copy to result, used " << (t9 - t8) <<"ms." <<endl;
     cout << "total execution, used " << (t9 - t1) <<"ms."<<endl;
   }
-  else if(strategy ==BasicQueryStrategy::Special){
-    printf("BasicQueryStrategy::Special not supported yet\n");
-  }
   else if(strategy == BasicQueryStrategy::TopK)
   {
     ranked = true;
@@ -405,13 +402,6 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     long t9 = Util::get_cur_time();
     cout << "copy to result, used " << (t9 - t8) <<"ms." <<endl;
     cout << "total execution, used " << (t9 - t1) <<"ms."<<endl;
-  }
-  else if(strategy ==BasicQueryStrategy::Special){
-    // if(bgp_query->get_triple_num() == 1 && bgp_query->get_total_var_num() == 3){
-    // todo: get all triples in database
-    //;
-
-    printf("BasicQueryStrategy::Special not supported yet\n");
   }
   return make_tuple<bool, bool>(true,std::move(ranked));
 
