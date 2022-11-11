@@ -14,7 +14,7 @@ static WFFacilities::WaitGroup wait_group(1);
 
 APIUtil *apiUtil = nullptr;
 
-int initialize(int argc, char *argv[]);
+int initialize(unsigned short port, std::string db_name, bool load_src);
 
 void register_service(GRPCServer &grpcServer);
 
@@ -130,15 +130,107 @@ void sig_handler(int signo)
 
 int main(int argc, char *argv[])
 {
+	// check grpc thread
+	string running_pid = Util::getSystemOutput("pidof " + Util::getExactPath(argv[0]));
+	string current_pid = to_string(getpid());
+	std::cout << "running_pid: " << running_pid << endl;
+	std::cout << "current_pid: " << current_pid << endl;
+	
+	if (running_pid != current_pid)
+	{
+		cout << "grpc server already running." << endl;
+		return 0;
+	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
+	unsigned short port = 9000;
+	string db_name = "";
+	string port_str = apiUtil->get_default_port();
+	bool loadCSR = 0; // DO NOT load CSR by default
+	stringstream ss;
+	if (argc < 2)
+	{
+		SLOG_DEBUG("Server will use the default port: " + port_str);
+		SLOG_DEBUG("Not load any database!");
+		port = atoi(port_str.c_str());
+	}
+	else if (argc == 2)
+	{
+		string command = argv[1];
+		if (command == "-h" || command == "--help")
+		{
+			cout << endl;
+			cout << "gStore RPC Server(grpc)" << endl;
+			cout << endl;
+			cout << "Usage:\tbin/grpc -p [port]" << endl;
+			cout << endl;
+			cout << "Options:" << endl;
+			cout << "\t-h,--help\t\tDisplay this message." << endl;
+			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with .db" << endl;
+			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
+			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+			cout << endl;
+			return 0;
+		}
+		else
+		{
+			cout << "Invalid arguments! Input \"bin/grpc -h\" for help." << endl;
+			return 0;
+		}
+	}
+	else
+	{
+		db_name = Util::getArgValue(argc, argv, "db", "database");
+		if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
+		{
+			SLOG_ERROR("Your db name to be built should not end with \".db\".");
+			return -1;
+		}
+		else if (db_name == "system")
+		{
+			SLOG_ERROR("You can not load system files.");
+			return -1;
+		}
+		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
+		port = atoi(port_str.c_str());
+		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
+	}
+	// check port
+	int max_try = 30;
+	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+	sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
+	if (bind_return == -1)
+	{
+		cout<<"Server port "<< port_str <<" is already in use."<<endl;
+		return -1;
+	} 
+	else // relase bind
+	{
+		int close_status;
+		do {
+			close_status = close(sock);
+			// shutdown_status = shutdown(sock, SHUT_RDWR);
+			if (close_status != 0)
+			{
+				SLOG_DEBUG("close I/O result:" + to_string(close_status));
+				sleep(1);
+			}
+			max_try --;
+		} while (close_status != 0 && max_try > 0);
+		sock = -1;
+		std::memset(&addr, 0, sizeof(addr));
+	}
 	while (true)
 	{
 		pid_t fpid = fork();
 		// cout << "fpid:" << fpid << endl;
 		if (fpid == 0)
 		{
-			int ret = initialize(argc, argv);
+			int ret = initialize(port, db_name, loadCSR);
 			std::cout.flush();
 			_exit(ret);
 		}
@@ -170,70 +262,11 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-int initialize(int argc, char *argv[])
+int initialize(unsigned short port, std::string db_name, bool load_src)
 {
-	unsigned short port = 9000;
-	string db_name = "";
-	string port_str = apiUtil->get_default_port();
-	bool loadCSR = 0; // DO NOT load CSR by default
-	stringstream ss;
-	if (argc < 2)
-	{
-		SLOG_DEBUG("Server will use the default port: " + port_str);
-		SLOG_DEBUG("Not load any database!");
-		port = atoi(port_str.c_str());
-	}
-	else if (argc == 2)
-	{
-		string command = argv[1];
-		if (command == "-h" || command == "--help")
-		{
-			cout << endl;
-			cout << "gStore RPC Server(grpc)" << endl;
-			cout << endl;
-			cout << "Usage:\tbin/grpc -p [port]" << endl;
-			cout << endl;
-			cout << "Options:" << endl;
-			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with .db" << endl;
-			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
-			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
-
-			cout << endl;
-			return 0;
-		}
-		else
-		{
-			cout << "Invalid arguments! Input \"bin/grpc -h\" for help." << endl;
-			return 0;
-		}
-	}
-	else
-	{
-		db_name = Util::getArgValue(argc, argv, "db", "database");
-		if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
-		{
-			SLOG_ERROR("Your db name to be built should not end with \".db\".");
-			return -1;
-		}
-		else if (db_name == "system")
-		{
-			SLOG_ERROR("You can not load system files.");
-			return -1;
-		}
-		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
-		port = atoi(port_str.c_str());
-		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
-	}
-	// check port.txt exist
-	if (Util::file_exist("system.db/port.txt"))
-	{
-		SLOG_ERROR("Server port " + port_str + " is already in use.");
-		return -1;
-	}
 
 	// call apiUtil initialized
-	if (apiUtil->initialize("grpc", port_str, db_name, loadCSR) == -1)
+	if (apiUtil->initialize("grpc", to_string(port), db_name, load_src) == -1)
 	{
 		return -1;
 	}
@@ -241,12 +274,24 @@ int initialize(int argc, char *argv[])
 	GRPCServer grpcServer;
 	// register rest service
 	register_service(grpcServer);
-
-	if(grpcServer.start(port) == 0)
+	int max_try = 30;
+	int start_status = -1;
+	do
 	{
-		SLOG_DEBUG("grpc server port " + port_str);
-	}
-	else
+		start_status = grpcServer.start(port);
+		if(start_status == 0)
+		{
+			SLOG_DEBUG("grpc server port " + to_string(port));
+		}
+		else
+		{
+			SLOG_DEBUG("grpc server start..." + to_string(start_status));
+			sleep(1);
+		}
+		max_try--;
+	} while (start_status == -1 && max_try > 0);
+	
+	if(start_status != 0)
 	{
 		SLOG_ERROR("grpc server start failed.");
 		delete apiUtil;
