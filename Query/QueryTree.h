@@ -89,6 +89,7 @@ public:
 	enum QueryForm {Select_Query, Ask_Query};
 	enum ProjectionModifier {Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates};
 	enum UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};
+	enum VarType {Entity, Predicate, EntityPredicate};
 	// typedef ::GroupPattern GroupPattern;
 	// typedef ::ProjectionVar ProjectionVar;
 	// typedef ::CompTreeNode CompTreeNode;
@@ -108,6 +109,8 @@ private:
 	GroupPattern group_pattern;
 
 	bool singleBGP;
+
+	std::unordered_map<std::string, VarType> var2type;
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -182,6 +185,8 @@ public:
 	int getLimit();
 
 	GroupPattern& getGroupPattern();
+
+	std::unordered_map<std::string, VarType>& getVar2Type();
 
 	void setUpdateType(UpdateType _updatetype);
 	UpdateType getUpdateType();
