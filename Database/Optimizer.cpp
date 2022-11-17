@@ -417,15 +417,7 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
   auto target = bgp_query->get_result_list_pointer1();
   assert(target->empty());
   target->reserve(result.values_->size());
-#ifdef OPTIMIZER_DEBUG_INFO
-  cout << "position to var des size: " << result.pos_id_map->size() << endl;
-  cout << "total var_num: " << bgp_query->get_total_var_num()<<endl;
-  cout << "selected var num: " << bgp_query->selected_so_var_num<<endl;
-  cout<<"Before Copy, result size:"<<result.values_->size()<<endl;
-  for(auto &pos_id:*result.pos_id_map)
-    cout<<"pos["<<pos_id.first<<"] "<<pos_id.second<<"\t";
-  cout<<endl;
-#endif
+  PrintTableDebug(result,bgp_query);
   auto record_len = bgp_query->selected_so_var_num + bgp_query->selected_pre_var_num;
   auto id_position_map_ptr = result.id_pos_map;
   // position_map[i] means in the new table, the i-th column
@@ -654,12 +646,12 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionBreathFirst(shared_ptr<BGPQue
     }
   }
   else if(operation==StepOperation::StepOpType::Check){
-    return TableCheck(step_operation, left_table);
+    return TableCheck(bgp_query,step_operation, left_table);
   }
 
   auto right_table = get<1>(right_r);
   if(operation==StepOperation::StepOpType::TableJoin){
-    return JoinTable(step_operation, left_table, right_table);
+    return JoinTable(bgp_query,step_operation, left_table, right_table);
   }
   else
     throw string("unexpected StepOperation::StepOpType");
@@ -869,6 +861,7 @@ tuple<bool,IntermediateResult> Optimizer::InitialTable(shared_ptr<BGPQuery> &bgp
   }
   else
     throw string("StepOperation::StepOpType::Extend: invalid range type");
+  PrintTableDebug(leaf_table,bgp_query);
   return make_tuple(true,std::move(leaf_table));
 }
 
@@ -903,8 +896,8 @@ tuple<bool, IntermediateResult> Optimizer::OperateOneNode(shared_ptr<BGPQuery> &
   auto step_result =
       executor_.AffectANode(left_table, id_caches, operation == StepOperation::StepOpType::Satellite ,
                             step_operation->distinct_, remain_old,max_output, one_node_plan);
-  PrintDebugInfoLine(g_format("result size: %d", get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation, range, t1);
+  PrintTableDebug(get<1>(step_result),bgp_query);
   return step_result;
 }
 
@@ -923,34 +916,76 @@ tuple<bool, IntermediateResult> Optimizer::ExtendTwoNode(shared_ptr<BGPQuery> &b
                               bgp_query->get_var_name_by_id(node1).c_str(),
                               bgp_query->get_var_name_by_id(node2).c_str()));
   auto step_result = executor_.JoinTwoNode(join_two_plan, left_table, id_caches, step_operation->remain_old_result_,max_output);
-  PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
   PrintTimeOpRange(operation,range,t1);
+  PrintTableDebug(get<1>(step_result),bgp_query);
   return step_result;
 }
 
-tuple<bool, IntermediateResult> Optimizer::TableCheck(shared_ptr<StepOperation> &step_operation,
+tuple<bool, IntermediateResult> Optimizer::TableCheck(shared_ptr<BGPQuery> &bgp_query,
+                                                      shared_ptr<StepOperation> &step_operation,
                                                       IntermediateResult &left_table) {
   auto edge_filter = step_operation->GetOneNodePlan();
   long t1 = GetTimeDebug();
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
-
-  auto step_result = executor_.ANodeEdgesConstraintFilter(edge_filter, left_table, step_operation->remain_old_result_);
-  PrintDebugInfoLine(g_format("result size: %d",get<1>(step_result).values_->size()));
+  auto step_result = executor_.ANodeEdgesConstraintFilter(edge_filter,
+                                                          left_table,
+                                                          step_operation->remain_old_result_);
   PrintTimeOpRange(operation,range,t1);
+  PrintTableDebug(get<1>(step_result),bgp_query);
   return step_result;
 }
 
-tuple<bool, IntermediateResult> Optimizer::JoinTable(shared_ptr<StepOperation> &step_operation,
+tuple<bool, IntermediateResult> Optimizer::JoinTable(shared_ptr<BGPQuery> &bgp_query,
+                                                     shared_ptr<StepOperation> &step_operation,
                                                      IntermediateResult &left_table,
                                                      IntermediateResult &right_table) {
   long t1 = GetTimeDebug();
   auto operation = step_operation->op_type_;
   auto range = step_operation->GetRange();
-  auto join_result =  executor_.JoinTable(step_operation->GetTwoTablePlan(), left_table, right_table, step_operation->remain_old_result_);
-  PrintDebugInfoLine(g_format("result size: %d",get<1>(join_result).values_->size()));
+  auto join_result =  executor_.JoinTable(step_operation->GetTwoTablePlan(),
+                                          left_table, right_table, step_operation->remain_old_result_);
   PrintTimeOpRange(operation,range,t1);
+  PrintTableDebug(get<1>(join_result),bgp_query);
   return join_result;
 }
+#ifdef OPTIMIZER_DEBUG_INFO
+void Optimizer::PrintTable(IntermediateResult& result,
+                                shared_ptr<BGPQuery> &bgp_query){
+  auto &table = *result.values_;
+  auto result_size = result.values_->size();
+  PrintDebugInfoLine(g_format("Print Table of size %d ",result_size));
+  auto pos_id = result.pos_id_map;
+  auto col_size = pos_id->size();
+  vector<bool> pos_predicate(col_size,false);
+  for(auto &pos_id:*result.pos_id_map) {
+    auto var_desc = bgp_query->get_vardescrip_by_index(pos_id.second);
+    auto var_name = var_desc->var_name_;
+    auto var_type = VarDescriptor::GetString(var_desc->var_type_);
+    PrintDebugInfoLine(g_format("pos2id[%d]=%d %s %s", pos_id.first,
+                                pos_id.second,var_name.c_str(),var_type.c_str()));
+    if(var_desc->var_type_==VarDescriptor::VarType::Predicate)
+      pos_predicate[pos_id.first] = true;
+  }
+  PrintDebugInfoLine("The first 10 records:");
+  size_t c = 0;
+  for(auto it = table.begin();it !=table.end() ;c++,it++)
+  {
+    cout<<"    record["<<c<<"] ";
+    auto& record = **it;
+    for(size_t j = 0;j < col_size;j++)
+    {
+      string s;
+      if(pos_predicate[j])
+        s = kv_store_->getPredicateByID(record[j]);
+      else
+        s = kv_store_->getEntityByID(record[j]);
+      cout<<s<<"\t";
+    }
+    cout<<endl;
+  }
+  return;
+}
+#endif // OPTIMIZER_DEBUG_INFO
 
 #endif

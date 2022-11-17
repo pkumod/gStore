@@ -118,6 +118,21 @@ void VarDescriptor::print(KVstore *kvstore) {
 		}
 	}
 }
+std::string VarDescriptor::GetString(VarType t) {
+   // VarType{Entity, Predicate, NotDecided
+  switch(t){
+    case VarType::Entity:
+      return "VarType::Entity";
+      break;
+    case VarType::Predicate:
+      return "VarType::Predicate";
+      break;
+    case VarType::NotDecided:
+      return "VarType::NotDecided";
+      break;
+  }
+  return "VarType::Fault";
+}
 
 BGPQuery::BGPQuery() {
 	this->initial();
