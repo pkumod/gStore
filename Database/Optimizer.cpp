@@ -961,7 +961,7 @@ void Optimizer::PrintTable(IntermediateResult& result,
   auto col_size = pos_id->size();
   vector<bool> pos_predicate(col_size,false);
   for(auto &pos_id:*result.pos_id_map) {
-    auto var_desc = bgp_query->get_vardescrip_by_index(pos_id.second);
+    auto var_desc = bgp_query->get_vardescrip_by_id(pos_id.second);
     auto var_name = var_desc->var_name_;
     auto var_type = VarDescriptor::GetString(var_desc->var_type_);
     PrintDebugInfoLine(g_format("pos2id[%d]=%d %s %s", pos_id.first,
