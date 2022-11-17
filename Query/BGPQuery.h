@@ -35,6 +35,7 @@ public:
 	// cannot descriminate literal with entity
 	// note: NotDecided only used in PlanGenerator
 	enum class VarType{Entity, Predicate, NotDecided};
+	static std::string GetString(VarType t);
 	enum class EntiType{VarEntiType, ConEntiType};
 	enum class ItemType{SubType, PreType, ObjType};
 	enum class PreType{VarPreType, ConPreType};

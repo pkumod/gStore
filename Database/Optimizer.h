@@ -126,12 +126,20 @@ class Optimizer
                                                 IntermediateResult &left_table,
                                                 size_t max_output);
 
-  tuple<bool, IntermediateResult> TableCheck(shared_ptr<StepOperation> &step_operation,
+  tuple<bool, IntermediateResult> TableCheck(shared_ptr<BGPQuery> &bgp_query,
+                                             shared_ptr<StepOperation> &step_operation,
                                              IntermediateResult &left_table);
 
-  tuple<bool, IntermediateResult> JoinTable(shared_ptr<StepOperation> &step_operation,
+  tuple<bool, IntermediateResult> JoinTable(shared_ptr<BGPQuery> &bgp_query,
+                                            shared_ptr<StepOperation> &step_operation,
                                             IntermediateResult &left_table,
                                             IntermediateResult &right_table);
+  void PrintTable(IntermediateResult& result, shared_ptr<BGPQuery> &bgp_query);
+#ifdef OPTIMIZER_DEBUG_INFO
+#define PrintTableDebug(x,y) PrintTable(x,y)
+#else
+  #define PrintTableDebug(x,y) {}
+#endif // OPTIMIZER_DEBUG_INFO
 };
 
 

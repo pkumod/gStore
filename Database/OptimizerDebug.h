@@ -38,7 +38,7 @@ inline void PrintTimeDebug(std::string description, long old_time){
 #endif
 }
 
-#define DebugWithLine(x)  (GetLineDescription()+x)
+#define DebugWithLine(x)  (GetLineDescription()+ ": " + x)
 
 #ifdef OPTIMIZER_DEBUG_INFO
   #define PrintDebugInfoLine(x) {std::cout<< DebugWithLine(x)  <<std::endl;}
@@ -46,7 +46,7 @@ inline void PrintTimeDebug(std::string description, long old_time){
   #define PrintDebugInfoLine(x) {}
 #endif
 
-#define PrintTimeOpRange(x,y,t)  PrintTimeDebug( \
-     StepOperation::GetString(x)+ std::string(" ") + StepOperation::GetString(y), t)
+#define PrintTimeOpRange(x,y,t)  PrintTimeDebug( GetLineDescription()+ ": " + \
+  StepOperation::GetString(x)+ std::string(" ") + StepOperation::GetString(y), t)
 
 #endif //GSTORE_DATABASE_OPTIMIZERDEBUG_H_
