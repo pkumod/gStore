@@ -673,7 +673,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer());
+						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[j]->get_result_list_pointer());
+						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer1());
 						#endif
 						int basicquery_result_num = (int)basicquery_result.size();
 
@@ -682,7 +683,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						{
 							temp->results[0].result.emplace_back();
 							temp->results[0].result.back().id = new unsigned[varnum];
-							memcpy(temp->results[0].result.back().id, basicquery_result[k], sizeof(int) * varnum);
+							// memcpy(temp->results[0].result.back().id, basicquery_result[k].data(), sizeof(int) * varnum);
+							// temp->results[0].result.back().id = std::move(basicquery_result[k].data());
+							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), temp->results[0].result.back().id);
 							temp->results[0].result.back().sz = varnum;
 						}
 
@@ -987,7 +990,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(l).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result = *(bgp_query_vec[l]->get_result_list_pointer());
+						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[l]->get_result_list_pointer());
+						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[l]->get_result_list_pointer1());
 						#endif
 						int basicquery_result_num = (int)basicquery_result.size();
 
@@ -995,7 +999,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						for (int k = 0; k < basicquery_result_num; k++)
 						{
 							unsigned *v = new unsigned[varnum];
-							memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
+							// memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
+							// v = std::move(basicquery_result[k].data());
+							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), v);
 							temp->results[0].result.emplace_back();
 							temp->results[0].result.back().id = v;
 							temp->results[0].result.back().sz = varnum;
