@@ -762,6 +762,11 @@ GroupPattern& QueryTree::getGroupPattern()
 	return this->group_pattern;
 }
 
+std::unordered_map<std::string, QueryTree::VarType>& QueryTree::getVar2Type()
+{
+	return this->var2type;
+}
+
 /**
 	Set the update type of this query.
 */
