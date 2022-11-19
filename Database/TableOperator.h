@@ -264,7 +264,7 @@ class StepOperation{
                      new (&effect_pointer_.two_node) std::shared_ptr<AffectTwoNode>(std::move(_two_node));
                      break;
                    case OpRangeType::GetAllTriples:
-                     new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+                     new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(std::move(_one_node));
                      break;
                    case OpRangeType::TwoTable:
                      new (&effect_pointer_.two_table) std::shared_ptr<JoinTwoTable>(std::move(_two_table));
