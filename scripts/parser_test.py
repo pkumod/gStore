@@ -10,7 +10,7 @@ import string
 os.system("bin/gdrop -db " + db_name + " > /dev/null")
 
 for i in range(1, query_num + 1):
-    print(".....Running Query #" + str(i) + ".....")
+    print(".....Running Test #" + str(i) + ".....")
     data_path = data_dir + "parser_d" + str(i) + ".ttl"
     query_path = data_dir + "parser_q" + str(i) + ".sql"
     result_path = data_dir + "parser_r" + str(i) + ".txt"
@@ -37,11 +37,7 @@ for i in range(1, query_num + 1):
                     curr_start = 0
                     curr_idx = 0    # For optional (inconsistent col num)
                     while curr_start < len(line):
-                        skip = False
                         while line[curr_start] in [' ', '\t'] and curr_start < len(line):
-                            if not skip:
-                                skip = True
-                                curr_idx += 1
                             curr_start += 1
                         if curr_start >= len(line):
                             break
@@ -69,10 +65,15 @@ for i in range(1, query_num + 1):
                             if line[curr_end] != '>':
                                 print(result_path + " ERROR: IRI unclosed in Line " + str(num_line))
                                 break
+                        elif line[curr_start] == '-':
+                            # NULL caused by OPTIONAL
+                            curr_end = curr_start
+                            curr_start += 1
                         else:
                             print(result_path + " ERROR: unrecognized character in Line " + str(num_line))
                             break
                         correct_results[-1][curr_idx] = line[curr_start:curr_end + 1]
+                        curr_idx += 1
                         curr_start = curr_end + 1
                 num_line += 1
                 if len(correct_results[-1]) != len(query_vars):
@@ -85,7 +86,7 @@ for i in range(1, query_num + 1):
     query_out = child.stdout.read().decode()
     res_start = query_out.find("final result is")
     if res_start == -1:
-        print(".....Query #" + str(i) + " ERROR.....")
+        print(".....Test #" + str(i) + " ERROR.....")
         print("query_vars:", query_vars)
         print("correct_results:", correct_results)
         print("query_out:")
