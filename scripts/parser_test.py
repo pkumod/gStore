@@ -129,9 +129,9 @@ for i in range(1, query_num + 1):
     correct_results.sort()
     output_results.sort()
     if correct_results == output_results:
-        print(".....Query #" + str(i) + " Correct.....")
+        print(".....Test #" + str(i) + " Correct.....")
     else:
-        print(".....Query #" + str(i) + " ERROR.....")
+        print(".....Test #" + str(i) + " ERROR.....")
         print("query_vars:", query_vars)
         print("correct_results:", correct_results)
         print("query_out:", query_out)
