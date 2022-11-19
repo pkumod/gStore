@@ -381,7 +381,8 @@ string StepOperation::StepEffect::GetString() {
 
 
 std::shared_ptr<AffectOneNode> StepOperation::StepEffect::GetOneNodePlan() {
-  if(this->range == StepOperation::OpRangeType::OneNode)
+  if(this->range == StepOperation::OpRangeType::OneNode
+  || this->range == StepOperation::OpRangeType::GetAllTriples)
     return this->effect_pointer_.one_node;
   else
     return nullptr;
