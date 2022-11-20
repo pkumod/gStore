@@ -971,7 +971,7 @@ void Optimizer::PrintTable(IntermediateResult& result,
   }
   PrintDebugInfoLine("The first 10 records:");
   size_t c = 0;
-  for(auto it = table.begin();it !=table.end() ;c++,it++)
+  for(auto it = table.begin();it !=table.end() && c<10 ;c++,it++)
   {
     cout<<"    record["<<c<<"] ";
     auto& record = **it;
