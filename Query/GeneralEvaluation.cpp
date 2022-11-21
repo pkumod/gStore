@@ -673,21 +673,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[j]->get_result_list_pointer());
-						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer1());
+						copyBgpResult2TempResult(bgp_query_vec[j], varnum, temp->results[0]);
 						#endif
-						int basicquery_result_num = (int)basicquery_result.size();
-
-						temp->results[0].result.reserve(basicquery_result_num);
-						for (int k = 0; k < basicquery_result_num; k++)
-						{
-							temp->results[0].result.emplace_back();
-							temp->results[0].result.back().id = new unsigned[varnum];
-							// memcpy(temp->results[0].result.back().id, basicquery_result[k].data(), sizeof(int) * varnum);
-							// temp->results[0].result.back().id = std::move(basicquery_result[k].data());
-							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), temp->results[0].result.back().id);
-							temp->results[0].result.back().sz = varnum;
-						}
 
 						if (this->query_cache != NULL)
 						{
@@ -990,22 +977,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(l).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[l]->get_result_list_pointer());
-						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[l]->get_result_list_pointer1());
+						copyBgpResult2TempResult(bgp_query_vec[l], varnum, temp->results[0]);
 						#endif
-						int basicquery_result_num = (int)basicquery_result.size();
-
-						temp->results[0].result.reserve(basicquery_result_num);
-						for (int k = 0; k < basicquery_result_num; k++)
-						{
-							unsigned *v = new unsigned[varnum];
-							// memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
-							// v = std::move(basicquery_result[k].data());
-							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), v);
-							temp->results[0].result.emplace_back();
-							temp->results[0].result.back().id = v;
-							temp->results[0].result.back().sz = varnum;
-						}
+						
 						// cout << "Use count = " << bgp_query_vec[l].use_count() << endl;
 						bgp_query_vec[l] = nullptr;
 
@@ -4373,5 +4347,20 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 				}
 			}
 		}
+	}
+}
+
+void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_query, int varnum, TempResult &tr)
+{
+	vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query->get_result_list_pointer1());
+	int basicquery_result_num = (int)basicquery_result.size();
+
+	tr.result.reserve(basicquery_result_num);
+	for (int k = 0; k < basicquery_result_num; k++)
+	{
+		tr.result.emplace_back();
+		tr.result.back().id = new unsigned[varnum];
+		std::move(basicquery_result[k].begin(), basicquery_result[k].end(), tr.result.back().id);
+		tr.result.back().sz = varnum;
 	}
 }
