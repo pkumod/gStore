@@ -102,3 +102,20 @@ def GetOutputResult(query_out, query_vars):
         for j in range(len(output_vars)):
             output_results[-1][output2query[j]] = output_results_unmapped[j]
     return output_results, output_vars
+
+def WriteResultToFile(data_dir, output_vars, output_results, case_idx: int):
+    with open(data_dir + "parser_r" + str(case_idx) + ".txt", 'w') as f:
+        f.write('\t'.join(output_vars) + '\n')
+        for output_result in output_results:
+            first_output = True
+            for tok in output_result:
+                if first_output:
+                    first_output = False
+                else:
+                    f.write('\t')
+                if tok == "":
+                    f.write('-')
+                else:
+                    f.write(tok)
+            f.write('\n')
+    return
