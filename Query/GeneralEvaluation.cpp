@@ -673,21 +673,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(j).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[j]->get_result_list_pointer());
-						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[j]->get_result_list_pointer1());
+						copyBgpResult2TempResult(bgp_query_vec[j], varnum, temp->results[0]);
 						#endif
-						int basicquery_result_num = (int)basicquery_result.size();
-
-						temp->results[0].result.reserve(basicquery_result_num);
-						for (int k = 0; k < basicquery_result_num; k++)
-						{
-							temp->results[0].result.emplace_back();
-							temp->results[0].result.back().id = new unsigned[varnum];
-							// memcpy(temp->results[0].result.back().id, basicquery_result[k].data(), sizeof(int) * varnum);
-							// temp->results[0].result.back().id = std::move(basicquery_result[k].data());
-							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), temp->results[0].result.back().id);
-							temp->results[0].result.back().sz = varnum;
-						}
 
 						if (this->query_cache != NULL)
 						{
@@ -990,22 +977,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#ifndef TEST_BGPQUERY
 						vector<unsigned*> &basicquery_result = sparql_query.getBasicQuery(l).getResultList();
 						#else
-						vector<unsigned*> &basicquery_result_old = *(bgp_query_vec[l]->get_result_list_pointer());
-						vector<vector<TYPE_ENTITY_LITERAL_ID>> &basicquery_result = *(bgp_query_vec[l]->get_result_list_pointer1());
+						copyBgpResult2TempResult(bgp_query_vec[l], varnum, temp->results[0]);
 						#endif
-						int basicquery_result_num = (int)basicquery_result.size();
-
-						temp->results[0].result.reserve(basicquery_result_num);
-						for (int k = 0; k < basicquery_result_num; k++)
-						{
-							unsigned *v = new unsigned[varnum];
-							// memcpy(v, basicquery_result[k], sizeof(unsigned) * varnum);
-							// v = std::move(basicquery_result[k].data());
-							std::move(basicquery_result[k].begin(), basicquery_result[k].end(), v);
-							temp->results[0].result.emplace_back();
-							temp->results[0].result.back().id = v;
-							temp->results[0].result.back().sz = varnum;
-						}
+						
 						// cout << "Use count = " << bgp_query_vec[l].use_count() << endl;
 						bgp_query_vec[l] = nullptr;
 
@@ -4374,4 +4348,54 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 			}
 		}
 	}
+}
+
+void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_query, int varnum, TempResult &tr)
+{
+	auto &bgpquery_result = *(bgp_query->get_result_list_pointer1());
+	int bgpquery_result_num = (int)bgpquery_result.size();
+
+    Varset new_id_varset,new_str_varset;
+    vector<bool> is_EntityPredicate(varnum, false);
+    auto &qVar2Type = this->query_tree.getVar2Type();
+    for (int i = 0; i < varnum; i++){
+        string tr_id_var = tr.id_varset.vars[i];
+        if(qVar2Type.find(tr_id_var) != qVar2Type.end() && qVar2Type[tr_id_var] == QueryTree::EntityPredicate){
+            is_EntityPredicate[i]=true;
+            new_str_varset.addVar(tr_id_var);
+        }
+        else
+            new_id_varset.addVar(tr_id_var);
+    }
+    int new_id_cols=new_id_varset.getVarsetSize();
+
+	tr.result.reserve(bgpquery_result_num);
+	for (int k = 0; k < bgpquery_result_num; k++)
+	{
+		tr.result.emplace_back();
+        tr.result.back().id = new unsigned[new_id_cols];
+        tr.result.back().sz = new_id_cols;
+
+        if(new_id_cols == varnum){
+            std::move(bgpquery_result[k].begin(), bgpquery_result[k].end(), tr.result.back().id);
+            continue;
+        }
+
+        int new_id_pos=0;
+        for(int i=0; i < varnum; i++){
+            if(is_EntityPredicate[i]){
+                string str;
+                const shared_ptr<VarDescriptor> &var_descrip = bgp_query->get_vardescrip_by_id(bgpquery_result[k][i]);
+                if (var_descrip->var_type_ == VarDescriptor::VarType::Predicate)
+                    this->stringindex->randomAccess(bgpquery_result[k][i], &str, false);
+                else
+                    this->stringindex->randomAccess(bgpquery_result[k][i], &str, true);
+                tr.result.back().str.push_back(str);
+            }
+            else
+                tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
+        }
+    }
+    tr.id_varset = new_id_varset;
+    tr.str_varset =  new_str_varset;
 }
