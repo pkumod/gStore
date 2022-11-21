@@ -50,9 +50,9 @@ def ParseTest():
         case_passed = TestCase(db_name, cast_name, data_path, query_path, result_path)
         all_passed = all_passed and case_passed
     if all_passed:
-        print("All test case have passed")
+        print("All test cases have passed")
     else:
-        print("Some Error Exist!")
+        print("Some Errors Exist!")
 
 
 if __name__ == '__main__':
