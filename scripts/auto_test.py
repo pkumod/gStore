@@ -1,23 +1,16 @@
-query_num = 47
-data_dir = "scripts/parser_test/"
-all_passed = True
-db_name = "parser_test"
-
 import os
 import subprocess
-import string
 
-os.system("bin/gdrop -db " + db_name + " > /dev/null")
 
-for i in range(1, query_num + 1):
-    print(".....Running Test #" + str(i) + ".....")
-    data_path = data_dir + "parser_d" + str(i) + ".ttl"
-    query_path = data_dir + "parser_q" + str(i) + ".sql"
-    result_path = data_dir + "parser_r" + str(i) + ".txt"
+def ResultAllSameChecker(correct_results, output_results):
+    correct_results.sort()
+    output_results.sort()
+    return correct_results == output_results
 
-    # Read correct result from file
-    query_vars = []
+
+def GetResultFromFile(result_path: str):
     correct_results = []
+    query_vars = []
     with open(result_path, 'r') as f:
         var_line = True
         num_line = 1
@@ -35,7 +28,7 @@ for i in range(1, query_num + 1):
                     correct_results[-1][0] = line[line.find('"'):line.rfind('"') + 1]
                 else:
                     curr_start = 0
-                    curr_idx = 0    # For optional (inconsistent col num)
+                    curr_idx = 0  # For optional (inconsistent col num)
                     while curr_start < len(line):
                         while line[curr_start] in [' ', '\t'] and curr_start < len(line):
                             curr_start += 1
@@ -52,7 +45,7 @@ for i in range(1, query_num + 1):
                                 break
                             if curr_end + 1 < len(line):
                                 if line[curr_end + 1] == '@':
-                                    curr_end += 3   # lang suffix
+                                    curr_end += 3  # lang suffix
                                 elif line[curr_end + 1] == '^':
                                     while line[curr_end] != '>' and curr_end < len(line):
                                         curr_end += 1
@@ -78,25 +71,19 @@ for i in range(1, query_num + 1):
                 num_line += 1
                 if len(correct_results[-1]) != len(query_vars):
                     print(result_path + " ERROR: column num inconsistent in Line " + str(num_line))
+    return correct_results, query_vars
 
-    # Run query
-    os.system("bin/gbuild -db " + db_name + " -f " + data_path + " > /dev/null")
-    child = subprocess.Popen(["bin/gquery", "-db", db_name, "-q", query_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    
-    query_out = child.stdout.read().decode()
-    res_start = query_out.find("final result is")
-    if res_start == -1:
-        print(".....Test #" + str(i) + " ERROR.....")
-        print("query_vars:", query_vars)
-        print("correct_results:", correct_results)
-        print("query_out:")
-        print("output_vars:")
-        print("output_results:")
-        os.system("bin/gdrop -db " + db_name + " > /dev/null")
-        continue
-    query_out = query_out[query_out.find("final result is"):]
-    query_out = query_out.split('\n')
 
+def PrintError(case_name, query_vars, correct_results, query_out, output_vars, output_results):
+    print("..... " + case_name + " ERROR.....")
+    print("query_vars:", query_vars)
+    print("correct_results:", correct_results)
+    print("query_out:", query_out)
+    print("output_vars:", output_vars)
+    print("output_results:", output_results)
+
+
+def GetOutputResult(query_out, query_vars):
     # Get output vars
     output_vars_line = query_out[2].split()
     output_vars = []
@@ -113,7 +100,6 @@ for i in range(1, query_num + 1):
         if query_out[j][0] != '|':
             continue
         tmp = query_out[j].split('|')
-        idx = 0
         output_results_unmapped = []
         for tok in tmp:
             if len(tok) == 0:
@@ -124,18 +110,59 @@ for i in range(1, query_num + 1):
         output_results.append(["" for j in range(len(output_vars))])
         for j in range(len(output_vars)):
             output_results[-1][output2query[j]] = output_results_unmapped[j]
+    return output_results, output_vars
 
-    # Compare correct and output results
-    correct_results.sort()
-    output_results.sort()
-    if correct_results == output_results:
-        print(".....Test #" + str(i) + " Correct.....")
-    else:
-        print(".....Test #" + str(i) + " ERROR.....")
-        print("query_vars:", query_vars)
-        print("correct_results:", correct_results)
-        print("query_out:", query_out)
-        print("output_vars:", output_vars)
-        print("output_results:", output_results)
-    
+
+def TestCase(db_name: str, case_name: str, data_path: str,
+             query_path: str, result_path: str, ResultChecker=ResultAllSameChecker):
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
+    print(".....Running " + case_name + ".....")
+    # Read correct result from file
+    correct_results, query_vars = GetResultFromFile(result_path)
+
+    # Run query
+    os.system("bin/gbuild -db " + db_name + " -f " + data_path + " > /dev/null")
+    child = subprocess.Popen(["bin/gquery", "-db", db_name, "-q", query_path], stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+    query_out = child.stdout.read().decode()
+    res_start = query_out.find("final result is")
+    if res_start == -1:
+        PrintError(case_name, query_vars, correct_results, query_out, [], [])
+        os.system("bin/gdrop -db " + db_name + " > /dev/null")
+        return False
+    query_out = query_out[query_out.find("final result is"):]
+    query_out = query_out.split('\n')
+
+    output_results, output_vars = GetOutputResult(query_out, query_vars)
+    # Compare correct and output results
+    passed = ResultChecker(correct_results, output_results)
+
+    if passed:
+        print("..... " + case_name + " Correct.....")
+    else:
+        PrintError(case_name, query_vars, correct_results, query_out, output_vars, output_results)
+    os.system("bin/gdrop -db " + db_name + " > /dev/null")
+    return passed
+
+
+def ParseTest():
+    query_num = 47
+    data_dir = "scripts/parser_test/"
+    all_passed = True
+    db_name = "parser_test"
+    for i in range(1, query_num + 1):
+        cast_name = "Test #%d" % i
+        data_path = data_dir + "parser_d" + str(i) + ".ttl"
+        query_path = data_dir + "parser_q" + str(i) + ".sql"
+        result_path = data_dir + "parser_r" + str(i) + ".txt"
+        case_passed = TestCase(db_name, cast_name, data_path, query_path, result_path)
+        all_passed = all_passed and case_passed
+    if all_passed:
+        print("All test case have passed")
+    else:
+        print("Some Error Exist!")
+
+
+if __name__ == '__main__':
+    ParseTest()
