@@ -1,0 +1,2 @@
+?s1	?s2	?o1	?o2
+<point0>	<point3>	<point1>	<point1>
