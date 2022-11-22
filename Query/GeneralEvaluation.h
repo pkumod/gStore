@@ -112,6 +112,7 @@ class GeneralEvaluation
 		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
 			vector<vector<GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 		void getAllPattern(const GroupPattern &group_pattern, vector<GroupPattern::Pattern> &vp);
+		void copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_query, int varnum, TempResult &tr);
 		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 
 		void kleeneClosure(TempResultSet *temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);

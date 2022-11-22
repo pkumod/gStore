@@ -50,9 +50,9 @@ def ParseTest():
         all_passed = all_passed and case_passed
         os.system("bin/gdrop -db " + db_name + " > /dev/null")
     if all_passed:
-        print("All test case have passed")
+        print("All test cases have passed")
     else:
-        print("Some Error Exist!")
+        print("Some Errors Exist!")
 
 def BFSTest():
     data_set = ['bbug','lubm','num']
