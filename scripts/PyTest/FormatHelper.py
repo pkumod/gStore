@@ -1,3 +1,5 @@
+import re
+
 
 def GetResultFromFile(result_path: str):
     correct_results = []
@@ -103,8 +105,19 @@ def GetOutputResult(query_out, query_vars):
             output_results[-1][output2query[j]] = output_results_unmapped[j]
     return output_results, output_vars
 
-def WriteResultToFile(data_dir, output_vars, output_results, case_idx: int):
-    with open(data_dir + "parser_r" + str(case_idx) + ".txt", 'w') as f:
+
+def GetSelectVar(file_path):
+    with open(file_path) as f:
+        sql = f.read().replace('  ', ' ')
+        select_phase = re.match("((select)|(SELECT)).*((where)|(WHERE))", sql)
+        if select_phase is None:
+            return False, []
+        select_phase = select_phase.group(0)
+        return True, list(filter(lambda x: '?' in x, set(select_phase.split())))
+
+
+def WriteResultToFile(file_path, output_vars, output_results):
+    with open(file_path, 'w') as f:
         f.write('\t'.join(output_vars) + '\n')
         for output_result in output_results:
             first_output = True
@@ -118,4 +131,3 @@ def WriteResultToFile(data_dir, output_vars, output_results, case_idx: int):
                 else:
                     f.write(tok)
             f.write('\n')
-    return
