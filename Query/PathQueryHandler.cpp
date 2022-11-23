@@ -1526,12 +1526,13 @@ vector<int> PathQueryHandler::kHopReachablePath(int uid, int vid, bool directed,
 
 	@param uid the vertex u's ID.
 	@param vid the vertex v's ID.
+	@param retNum the maximum number of paths to return (if -1, then return all paths).
 	@param directed if false, treat all edges in the graph as bidirectional.
 	@param k the hop constraint.
 	@param pred_set the set of edge labels allowed.
 	@return a vector of all paths from u to v; the format of each path is the same as in shortestPath.
 */
-vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set)
+vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int retNum, bool directed, int k, const std::vector<int> &pred_set)
 {
 	vector<vector<int>> ret;
 	vector<pair<int, int>> s;
@@ -1575,12 +1576,13 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, bool d
 	}
 
 	s.push_back(make_pair(uid, -1));	// (vertex_id, pred_id that precedes it)
-	bc_dfs(uid, vid, directed, k, pred_set, s, bar, ret);
+	int retBudget = retNum;
+	bc_dfs(uid, vid, retBudget, directed, k, pred_set, s, bar, ret);
 	cout << "ret.size() = " << ret.size() << endl;
 	return ret;
 }
 
-int PathQueryHandler::bc_dfs(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set, vector<pair<int, int>> &s, vector<int> &bar, vector<vector<int>> &paths)
+int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, int k, const std::vector<int> &pred_set, vector<pair<int, int>> &s, vector<int> &bar, vector<vector<int>> &paths)
 {
 	int f = k + 1;
 
@@ -1602,6 +1604,8 @@ int PathQueryHandler::bc_dfs(int uid, int vid, bool directed, int k, const std::
 			cout << ele << ' ';
 		cout << endl;
 		s.pop_back();
+		if (retBudget > 0)
+			retBudget--;
 		return 0;
 	}
 	else if ((int)s.size() - 1 < k)
@@ -1625,10 +1629,13 @@ int PathQueryHandler::bc_dfs(int uid, int vid, bool directed, int k, const std::
 
 				if ((int)s.size() + bar[to] <= k)
 				{
-					s.push_back(make_pair(to, pred));
-					int next_f = bc_dfs(to, vid, directed, k, pred_set, s, bar, paths);
-					if (next_f != k + 1 && f < next_f + 1)
-						f = next_f + 1;
+					if (retBudget != 0)
+					{
+						s.push_back(make_pair(to, pred));
+						int next_f = bc_dfs(to, vid, retBudget, directed, k, pred_set, s, bar, paths);
+						if (next_f != k + 1 && f < next_f + 1)
+							f = next_f + 1;
+					}
 				}
 
 			}
@@ -1650,10 +1657,13 @@ int PathQueryHandler::bc_dfs(int uid, int vid, bool directed, int k, const std::
 
 				if ((int)s.size() + bar[to] <= k)
 				{
-					s.push_back(make_pair(to, pred));
-					int next_f = bc_dfs(to, vid, directed, k, pred_set, s, bar, paths);
-					if (next_f != k + 1 && f < next_f + 1)
-						f = next_f + 1;
+					if (retBudget != 0)
+					{
+						s.push_back(make_pair(to, pred));
+						int next_f = bc_dfs(to, vid, retBudget, directed, k, pred_set, s, bar, paths);
+						if (next_f != k + 1 && f < next_f + 1)
+							f = next_f + 1;
+					}
 				}
 			}
 		}
