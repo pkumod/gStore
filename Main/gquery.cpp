@@ -67,14 +67,22 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		int len = db_folder.length();
-			if (db_folder.length() > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
-			{
-				cout << "The database name can not end with "<< _db_suffix << endl;
-				return 0;
-			}
+		if (db_folder.length() > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
+		{
+			cout << "The database name can not end with "<< _db_suffix << endl;
+			return 0;
+		}
+
+		if (Util::dir_exist(_db_home + "/system" + _db_suffix) == false)
+		{
+			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
+			return 0;
+		}
+
+		if (db_folder != "system")
+		{
 			Database system_db("system");
 			system_db.load();
-
 			string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
 			ResultSet ask_rs;
 			FILE *ask_ofp = stdout;
@@ -84,7 +92,8 @@ int main(int argc, char *argv[])
 				cout << "The database does not exist." << endl;
 				return 0;
 			}
-		
+		}
+
 		Database _db(db_folder);
 		// test
 		if (argc > 3)
