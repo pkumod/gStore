@@ -56,7 +56,7 @@ def ParseTest():
 
 def BFSTest():
     data_set = ['bbug','lubm','num']
-    data_dir = "scripts/bfs_test1/"
+    data_dir = "scripts/bfs_test/"
     all_passed = True
     db_name = "bfs_test1"
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
