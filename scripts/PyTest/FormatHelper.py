@@ -70,10 +70,18 @@ def GetResultFromFile(result_path: str):
 def PrintError(case_name, query_vars, correct_results, query_out, output_vars, output_results):
     print("..... " + case_name + " ERROR.....")
     print("query_vars:", query_vars)
-    print("correct_results:", correct_results)
-    print("query_out:", query_out)
+    if len(correct_results) < 10 :
+        print("correct_results:", correct_results)
+    else:
+        print("correct_results:", correct_results[:10])
+
+    # print("query_out:", query_out)
     print("output_vars:", output_vars)
-    print("output_results:", output_results)
+    if len(output_results) < 10 :
+        print("output_results:", output_results)
+    else:
+        print("output_results:", output_results[:10])
+
 
 
 def GetOutputResult(query_out, query_vars):
