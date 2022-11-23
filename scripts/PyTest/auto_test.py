@@ -58,23 +58,23 @@ def BFSTest():
     data_set = ['bbug','lubm','num']
     data_dir = "scripts/bfs_test/"
     all_passed = True
-    db_name = "bfs_test"
-    os.system("bin/gdrop -db " + db_name + " > /dev/null")
+    db_name_gstore = "bfs_test"
+    os.system("bin/gdrop -db " + db_name_gstore + " > /dev/null")
     for db_name in data_set:
         db_path = os.path.join(data_dir,db_name)
         files = os.listdir(db_path)
         nt_file = 'data/%s/%s.nt'%(db_name,db_name)
         query_files = list(filter(lambda x: '.sql' in x, files))
         print(nt_file)
-        os.system("bin/gbuild -db " + db_name + " -f " + nt_file
+        os.system("bin/gbuild -db " + db_name_gstore + " -f " + nt_file
                   + " > /dev/null")
         for query_file in query_files:
             query_file = os.path.join(db_path,query_file)
             result_path = query_file.replace('.sql','r.txt')
             cast_name = db_name + ' ' + query_file[:-4]
-            case_passed = TestCase(db_name, cast_name, query_file, result_path)
+            case_passed = TestCase(db_name_gstore, cast_name, query_file, result_path)
             all_passed = all_passed and case_passed
-        os.system("bin/gdrop -db " + db_name + " > /dev/null")
+        os.system("bin/gdrop -db " + db_name_gstore + " > /dev/null")
     if all_passed:
         print("All test case have passed")
     else:
