@@ -442,6 +442,7 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
     for (int column_index = 0; column_index < record_len; ++column_index){
       (*record_ptr)[column_index] = tmp_record[column_index];
     }
+    record_ptr->resize(record_len);
     target->emplace_back(std::move(*record_ptr));
   }
   delete[] tmp_record;
