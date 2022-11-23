@@ -11,7 +11,6 @@ def generateStdAnswer(db_path, out_path):
     files = os.listdir(db_path)
     nt_file = list(filter(lambda x: 'nt' in x, files))[0]
     query_files = list(filter(lambda x: '.sql' in x, files))
-    os.system(f"cp {os.path.join(db_path,nt_file)} {os.path.join(out_path,nt_file) }")
     db_name = 'test_data'
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
     os.system("bin/gbuild -db " + db_name + " -f " + os.path.join(db_path,nt_file) + " > /dev/null")
@@ -39,8 +38,8 @@ def generateStdAnswer(db_path, out_path):
         FormatHelper.WriteResultToFile(out_file_path, output_vars, output_results)
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
 
-os.system('rm -r bfs_test1')
-os.system('mkdir -p bfs_test1')
+os.system('rm -r bfs_test')
+os.system('mkdir -p bfs_test')
 for db_name in db_list:
-    os.system('mkdir -p bfs_test1/%s'%db_name)
-    generateStdAnswer('data/%s/' % db_name, 'bfs_test1/%s'% db_name)
+    os.system('mkdir -p bfs_test/%s'%db_name)
+    generateStdAnswer('data/%s/' % db_name, 'bfs_test/%s'% db_name)

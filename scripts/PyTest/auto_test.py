@@ -58,7 +58,7 @@ def BFSTest():
     data_set = ['bbug','lubm','num']
     data_dir = "scripts/bfs_test/"
     all_passed = True
-    db_name = "bfs_test1"
+    db_name = "bfs_test"
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
     for db_name in data_set:
         db_path = os.path.join(data_dir,db_name)
