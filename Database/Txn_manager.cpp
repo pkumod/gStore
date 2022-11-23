@@ -5,8 +5,8 @@ Txn_manager::Txn_manager(Database *db, string db_name)
 {
 	this->db = db;
 	this->db_name = db_name;
-	this->log_path = "./" + db_name + ".db/" + "update.log";
-	this->all_log_path = "./" + db_name + ".db/" + "update_since_backup.log";
+	this->log_path = Util::global_config["db_home"] + "/" + db_name +  Util::global_config["db_suffix"] + "/update.log";
+	this->all_log_path = Util::global_config["db_home"] + "/" + db_name +  Util::global_config["db_suffix"] + "/update_since_backup.log";
 	out.open(this->log_path.c_str(), ios::out | ios::app);
 	out_all.open(this->all_log_path.c_str(), ios::out | ios::app);
 	cnt.store(1);

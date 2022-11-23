@@ -87,18 +87,18 @@ in the sparql query can point to the same node in data graph)
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
-//#include <boost/spirit.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+// #include <boost/spirit.hpp>
+// #include <boost/property_tree/ptree.hpp>
+// #include <boost/property_tree/json_parser.hpp>
 
-//Added for the default_resource example
-//#include <boost/filesystem.hpp>
-//#include <boost/regex.hpp>
-//#include <boost/thread/thread.hpp>
-//#include <boost/bind.hpp>
-#include <boost/asio.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/algorithm/string/predicate.hpp>
+// Added for the default_resource example
+// #include <boost/filesystem.hpp>
+// #include <boost/regex.hpp>
+// #include <boost/thread/thread.hpp>
+// #include <boost/bind.hpp>
+// #include <boost/asio.hpp>
+// #include <boost/utility/string_ref.hpp>
+// #include <boost/algorithm/string/predicate.hpp>
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -352,6 +352,7 @@ public:
 #endif
 	
 	static std::string backup_path;
+	static std::string system_path;
 	static const long gserver_backup_interval = 120;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 
@@ -378,6 +379,7 @@ public:
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
     static void dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list);
 	static bool dir_exist(const std::string _dir);
+    static bool is_file(const string _file);
     static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
 	static bool create_dirs(const std:: string _dirs);

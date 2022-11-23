@@ -15,6 +15,9 @@ main(int argc, char * argv[])
 {
 	Util util;
 	//Log.init("slog.properties");
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	size_t _len_suffix = _db_suffix.length();
 	string db_name;
 	string filepath;
 	if (argc < 2)
@@ -57,9 +60,9 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		int len = db_name.length();
-		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		if (db_name.length() > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout<<"The database name can not end with .db"<<endl;
+			cout<<"The database name can not end with "<<_db_suffix<<endl;
 			return 0;
 		}
 		filepath= Util::getArgValue(argc, argv, "f", "file");
@@ -71,10 +74,9 @@ main(int argc, char * argv[])
 		{
 			if (filepath[filepath.length() - 1] != '/')
 				filepath = filepath + "/";
-			if (!Util::file_exist(filepath))
-				Util::create_dir(filepath);
+			if (!Util::dir_exist(filepath))
+				Util::create_dirs(filepath);
 			filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
-			
 		}
 		cout << "gexport..." << endl;
 
@@ -118,15 +120,10 @@ main(int argc, char * argv[])
 		fclose(ofp);
 		ofp = NULL;
 		long tv_end = Util::get_cur_time();
-		cout << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
-		cout << db_name << ".db export path: " << filepath << endl;
+		cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+		cout << db_name << _db_suffix + " export path: " << filepath << endl;
 
 		return 0;
-
-		
-
-
-
 	}
 	/*if (argc == 1)
 	{

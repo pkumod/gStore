@@ -1,7 +1,7 @@
 /*
  * @Author: zhe zhang, liwenjie
  * @Date: 2021-08-22 23:31:50
- * @LastEditTime: 2022-10-31 11:10:52
+ * @LastEditTime: 2022-11-23 14:43:00
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: restore a database by copy its backup files to root location
  * @FilePath: /gstore/Main/grestore.cpp
@@ -12,20 +12,18 @@
 //#include "../Util/Slog.h"
 
 using namespace std;
-#define DEFALUT_BUILD_PATH "."
-#define DEFALUT_BACKUP_PATH "./backups"
 
 int copy(string src_path, string dest_path)
 {
-	if(!Util::file_exist(src_path)){
+	if(!Util::dir_exist(src_path)){
 		//check the source path
 		cout << "Source Path Error, Please Check It Again!" << endl;
 		return 1;
 	}
-	if(!Util::file_exist(dest_path)){
+	if(!Util::dir_exist(dest_path)){
 		//check the destnation path
-		cout << "Destnation Path Error, Please Check It Again!" << endl;
-		return -1;
+		cout << "Destnation path \"" + dest_path + "\" is not exist, system will create it." << endl;
+		Util::create_dirs(dest_path);
 	}
 	string sys_cmd;
 	sys_cmd = "cp -r " + src_path + ' ' +  dest_path ;
@@ -37,17 +35,17 @@ int
 main(int argc, char * argv[])
 {
 	Util util;
-	string db_name, backup_path, db_path, path;
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	string _db_backup_path = util.backup_path;
+	size_t _len_suffix = _db_suffix.length();
+	string db_name, backup_path, db_path;
 
 	if (argc < 2)
 	{
-		/*cout << "please input the complete command:\t" << endl;
-		cout << "\t bin/gadd -h" << endl;*/
-		//Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
 		cout << "Invalid arguments! Input \"bin/grestore -h\" for help." << endl;
 		return 0;
 	}
-
 	else if (argc == 2)
 	{
 		string command = argv[1];
@@ -81,10 +79,15 @@ main(int argc, char * argv[])
 		if (db_name.empty() == false)
 		{
 			std::vector<std::string> file_list;
-			Util::dir_files(DEFALUT_BACKUP_PATH, db_name, file_list);
+			if (_db_backup_path[_db_backup_path.length() - 1] != '/')
+			{
+				_db_backup_path.push_back('/');
+			}
+			
+			Util::dir_files(_db_backup_path, db_name, file_list);
 			for (size_t i = 0; i < file_list.size(); i++)
 			{
-				cout << DEFALUT_BACKUP_PATH << "/" << file_list[i] << endl; 
+				cout << _db_backup_path << file_list[i] << endl; 
 			}
 			return 0;
 		}
@@ -92,23 +95,18 @@ main(int argc, char * argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.empty())
 		{
-			/*		cout << "please input the database name " << endl;*/
-			//Log.Error("the database name is empty! Input \"bin/gbackup -h\" for help.");
 			cout << "the database name is empty! Input \"bin/grestore -h\" for help." << endl;
 			return 0;
 		}
-		int len = db_name.length();
-		if (len <= 3 || (len > 3 && db_name.substr(len - 3, 3) == ".db"))
+		size_t len = db_name.length();
+		if (len > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
         {
-            cout << "your database can not end with .db or less than 3 characters! Input \"bin/grestore -h\" for help." << endl;
-            return -1;
+            cout << "the database name can not end with " + _db_suffix + "! Input \"bin/grestore -h\" for help."<< endl;
+            return 0;
         }
 		backup_path = Util::getArgValue(argc, argv, "p", "path");
 		if (backup_path.empty())
 		{
-			//cout << "please input the file path." << endl;
-			//Util::formatPrint("please input the file path.", "Error");
-			//Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
 			cout << "the backup path is empty! Input \"bin/grestore -h\" for help." << endl;
 			return 0;
 		}
@@ -120,7 +118,7 @@ main(int argc, char * argv[])
 
 		if (!Util::dir_exist(backup_path))
 		{
-			cout << "Backup Path Error, Restore Failed" << endl;
+			cout << "the backup path error, restore failed." << endl;
 			return 0;
 		}
 		//system.db
@@ -147,7 +145,7 @@ main(int argc, char * argv[])
 			int ret = system_db.query(sparql, _rs, ofp);
 
 			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
+				msg = "update num: " + Util::int2string(ret);
 			else
 			{
 				//update error
@@ -158,27 +156,24 @@ main(int argc, char * argv[])
 			Util::add_backuplog(db_name);
 		}
 
-		int ret = copy(backup_path, DEFALUT_BUILD_PATH);
+		int ret = copy(backup_path, _db_home);
+
 
 		if (ret == 1)
 		{
-			cout << "Backup Path Error, Restore Failed!" << endl;
-		}
-		else
-		{
-			//TODO update the in system.db
-			string time = Util::get_date_time();
-			cout << "Time:" + time << endl;
-			cout << "DB:" + db_name + " Restore done!" << endl;
+			return 0;
 		}
 
-		db_path = db_name + ".db";
+		db_path = _db_home + "/" + db_name + _db_suffix;
 		string sys_cmd = "rm -rf " + db_path;
 		system(sys_cmd.c_str());
 
-		path = Util::get_folder_name(backup_path, db_name);
-		sys_cmd = "mv " + path + ' ' + db_path;
+		string folder_name = Util::get_folder_name(backup_path, db_name);
+		sys_cmd = "mv " + _db_home + "/" + folder_name + ' ' + db_path;
 		system(sys_cmd.c_str());
+
+		cout << "Time: " << Util::get_date_time() << endl;
+		cout << "Database " + db_name + " restore done!" << endl;
 
 		return 0;
 	}

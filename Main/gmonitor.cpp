@@ -14,6 +14,8 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	Util util;
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	size_t _len_suffix = _db_suffix.length();
 	// Log.init("slog.properties");
 	string db_name;
 	if (argc < 2)
@@ -35,7 +37,7 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database,\t\t the database name. Notice that the name can not end with .db" << endl;
+			cout << "\t-db,--database,\t\t the database name. Notice that the name can not end with "<< _db_suffix << endl;
 			cout << endl;
 			return 0;
 		}
@@ -55,9 +57,9 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		int len = db_name.length();
-		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		if (db_name.length() > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout << "The database name can not end with .db" << endl;
+			cout << "The database name can not end with " << _db_suffix << endl;
 			return 0;
 		}
 		Database system_db("system");

@@ -124,7 +124,7 @@ COMMAND commands[] =
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
 		{"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
 		{"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
-		{"export", export_handler, "Export a database to .nt file.", "export <database_name> <file_path>;", EXPORT_PRIVILEGE_BIT},
+		{"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
 
 		// id and usr manage
@@ -248,7 +248,7 @@ unsigned current_privilege_bitset = 0;	 // when no current_database: 0, i.e. no 
 int current_cmd_offset = -1;			 // current_cmd offset in commands
 unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, avoiding fetch from sysdb everytime
 
-string db_home = ".";
+string db_home, db_suffix, default_backup_path;
 string gstore_version, root_username, root_password;
 
 int main(int argc, char **argv)
@@ -302,7 +302,8 @@ int main(int argc, char **argv)
 	}
 
 	db_home = Util::global_config["db_home"];
-
+	db_suffix = Util::global_config["db_suffix"];
+	default_backup_path = Util::backup_path;
 	/* parse options */
 	if (argc == 3)
 	{
@@ -1029,7 +1030,7 @@ unsigned read_priv(string usr, string db_name)
 unsigned get_priv(string usr, string db_name)
 {
 	// db not exist
-	if (access(string(db_name + ".db").c_str(), F_OK))
+	if (access(string(db_home + "/" + db_name + db_suffix).c_str(), F_OK))
 	{
 		cout << "Database " << db_name << " does not exist." << endl;
 		return -1u;
@@ -1405,7 +1406,7 @@ int flushpriv_handler(const vector<string> &args)
 		unsigned priv = read_priv(usrname, p.first);
 		if (priv == -1u)
 		{
-			cout << "Warn: update priv on " << p.first << ".db failed." << endl;
+			cout << "Warn: update priv on " << p.first << db_suffix << " failed." << endl;
 		}
 		else
 		{
@@ -1905,18 +1906,19 @@ int create_handler(const vector<string> &args)
 		return -1;
 	}
 	int len = db_name.length();
-    if (len <= 3 || (len > 3 && db_name.substr(len - 3, 3) == ".db"))
-    {
-        cout << "your database can not end with .db or less than 3 characters." << endl;
-        return -1;
-    }
+    int len_suffix = db_suffix.length();
+	if (len <= len_suffix || (len > len_suffix && db_name.substr(len - len_suffix, len_suffix) == db_suffix))
+	{
+		cout << "your database can not end with "+db_suffix+" or less than "<< len_suffix <<" characters." << endl;
+		return -1;
+	}
 	/* int access(const char *pathname, int mode);
 	   On success (all requested permissions granted, or mode is F_OK
 	   and the file exists), zero is returned.  On error (at least one
 	   bit in mode asked for a permission that is denied, or mode is
 	   F_OK and the file does not exist, or some other error occurred),
 	   -1 is returned, and errno is set to indicate the error.*/
-	if (access(string(db_name + ".db").c_str(), F_OK) == 0)
+	if (access(string(db_home + "/" + db_name + db_suffix).c_str(), F_OK) == 0)
 	{
 		cout << "Database " << db_name << " has been created. Database create failed." << endl;
 		return -1;
@@ -1947,7 +1949,7 @@ int create_handler(const vector<string> &args)
 	if (flag == 0)
 	{
 		cout << "Database create failed. " << endl;
-		system(string("rm -rf " + db_name + ".db").c_str());
+		system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
 		return -1;
 	}
 
@@ -1958,8 +1960,8 @@ int create_handler(const vector<string> &args)
 		ResultSet rs;
 		if (silence_sysdb_query(record_newdb_sparql, rs))
 		{
-			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system.db." << endl;
-			system(string("rm -rf " + db_name + ".db").c_str());
+			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system"+db_suffix+"." << endl;
+			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
 			return -1;
 		}
 	}
@@ -1981,9 +1983,9 @@ int create_handler(const vector<string> &args)
 		ResultSet rs;
 		if (silence_sysdb_query(add_priv_sparql, rs))
 		{
-			cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system.db." << endl;
+			cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system"+db_suffix+"." << endl;
 			db2priv.erase(db_name);
-			system(string("rm -rf " + db_name + ".db").c_str());
+			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
 			return -1;
 		}
 	}
@@ -2013,16 +2015,18 @@ int drop_handler(const vector<string> &args)
 		return -1;
 	}
 
-	string sparql = "DELETE WHERE { <" + db_name + "> ?x ?y. }; DELETE WHERE { ?x ?y <" + db_name + ">. }";
+	//! REMARK: will delete the user who has same name
+	// string sparql = "DELETE WHERE { <" + db_name + "> ?x ?y. }; DELETE WHERE { ?x ?y <" + db_name + ">. }";
 	//! NOTE to Main/gdrop.cpp: DELETE WHERE { ?x ?y \"" + db_name + "\" is needed too! But gdrop.cpp doesn't contain it
-	vector<ResultSet> rs(2);
+	string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}; DELETE WHERE {<" + db_name + "> <built_time> ?y.}; DELETE WHERE {<" + db_name + "> <database_status> ?y.}";
+	vector<ResultSet> rs(3);
 	vector<int> ret = silence_sysdb_query(sparql, rs);
-	if (ret[0] || ret[1])
+	if (ret[0] || ret[1] || ret[2])
 	{
-		cout << "Warn: Drop info about database " << db_name << " failed! Please check system db. \nNote that " << db_name << ".db and backlog are removed." << endl;
+		cout << "Warn: Drop info about database " << db_name << " failed! Please check system db. \nNote that " << db_name << db_suffix << " and backlog are removed." << endl;
 	}
 
-	string cmd = "rm -r " + db_name + ".db";
+	string cmd = "rm -r " + db_home + "/" + db_name + db_suffix;
 	system(cmd.c_str());
 	Util::delete_backuplog(db_name);
 
@@ -2040,6 +2044,13 @@ int export_handler(const vector<string> &args)
 	}
 
 	string filepath = args[0];
+	// export file name: db_name_yyyyMMddHHmmss.nt
+	if (filepath[filepath.length() - 1] != '/')
+		filepath = filepath + "/";
+	if (!Util::dir_exist(filepath))
+		Util::create_dirs(filepath);
+	filepath = filepath + current_database->getName()  + "_" + Util::get_timestamp() +  ".nt";
+	
 	FILE *ofp = fopen(filepath.c_str(), "w");
 	current_database->export_db(ofp);
 	fflush(ofp);
@@ -2064,22 +2075,16 @@ int backup_handler(const vector<string> &args)
 		backup_path = args[0];
 	string db_name = current_database->getName();
 
-	string default_backup_path = "./backups";
 	if (backup_path.empty())
 	{
 		backup_path = default_backup_path;
 	}
-	if (backup_path == "." || backup_path == "./")
+	if (backup_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(db_home.c_str()))
 	{
 		cout << "<backup_path> is the same as current storage. Please choose another <backup_path>." << endl;
 		cout << "Database " << current_database->getName() << " backup failed." << endl;
 		return -1;
 	}
-	if (backup_path[0] == '/')
-		backup_path = '.' + backup_path;
-	if (backup_path[backup_path.length() - 1] == '/')
-		backup_path = backup_path.substr(0, backup_path.length() - 1);
-	Util::backup_path = backup_path + "/";
 
 	// string db_path = current_database->getDBInfoFile();
 	// {
@@ -2097,9 +2102,8 @@ int backup_handler(const vector<string> &args)
 
 	// rename backup folder with current timestamp
 	string timestamp = Util::get_timestamp();
-	backup_path = backup_path + "/" + db_name + ".db";
-	string _backup_path = backup_path + "_" + timestamp;
-	string sys_cmd = "mv " + backup_path + " " + _backup_path;
+	string new_folder =  db_name + db_suffix + "_" + timestamp;
+	string sys_cmd = "mv " + default_backup_path + "/" + db_name + db_suffix + " " + backup_path + "/" + new_folder;
 	system(sys_cmd.c_str());
 
 	cout << "Database " << current_database->getName() << " backup successfully." << endl;
@@ -2127,7 +2131,6 @@ int restore_handler(const vector<string> &args)
 	string backup_path = args[1];
 
 	// from grestore.cpp
-	Util util;
 	if (backup_path[0] == '/')
 		backup_path = '.' + backup_path;
 	if (backup_path[backup_path.length() - 1] == '/')
@@ -2171,7 +2174,7 @@ int restore_handler(const vector<string> &args)
 	// cp -r backups/eg.db_220929114732 .
 	// rm -rf eg.db
 	// mv eg.db_220929114732 eg.db
-	string sys_cmd = "cp -r " + backup_path + " .";
+	string sys_cmd = "cp -r " + backup_path + " " + db_home;
 	cout << "[" << sys_cmd << "]" << std::endl;
 	if (system(sys_cmd.c_str()))
 	{
@@ -2179,7 +2182,7 @@ int restore_handler(const vector<string> &args)
 		return -1;
 	}
 
-	string db_path = db_name + ".db";
+	string db_path = db_home + "/" + db_name + db_suffix;
 	sys_cmd = "rm -rf " + db_path;
 	cout << "[" << sys_cmd << "]" << std::endl;
 	if (system(sys_cmd.c_str()))
@@ -2188,12 +2191,12 @@ int restore_handler(const vector<string> &args)
 		return -1;
 	}
 
-	string path = Util::get_folder_name(backup_path, db_name);
+	string folder_name = Util::get_folder_name(backup_path, db_name);
 	// {
 	// 	size_t idx = backup_path.find_last_of('/');
 	// 	path = backup_path.substr(idx + 1);
 	// }
-	sys_cmd = "mv " + path + ' ' + db_path;
+	sys_cmd = "mv " + db_home + "/" + folder_name + ' ' + db_path;
 	// sys_cmd = "cp -r " + path + ' ' + db_path;
 	cout << "[" << sys_cmd << "]" << std::endl;
 	if (system(sys_cmd.c_str()))
@@ -2473,7 +2476,7 @@ int setpriv_handler(const vector<string> &args)
 		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
 		return -1;
 	}
-	if (access(string(db + ".db").c_str(), F_OK))
+	if (access(string(db_home + db + db_suffix).c_str(), F_OK))
 	{
 		cout << "Database " << db << " does not exist. \nPrivilege set failed." << endl;
 		return -1;

@@ -17,6 +17,9 @@ int main(int argc, char * argv[])
 {
 	Util util;
 	//Log.init("slog.properties");
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	int _len_suffix = _db_suffix.length();
 	string db_name;
 	if (argc < 2)
 	{
@@ -37,7 +40,7 @@ int main(int argc, char * argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database,\t\t the database name. Notice that the name not end with .db " << endl;
+			cout << "\t-db,--database,\t\t the database name. Notice that the name not end with "<<_db_suffix<< endl;
 			cout << endl;
 			return 0;
 		}
@@ -45,40 +48,49 @@ int main(int argc, char * argv[])
 		{
 			cout<<"Invalid arguments! Input \"bin/gdrop -h\" for help."<<endl;
 			return 0;
-
 		}
 	}
 	else
 	{
-
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.empty())
 		{
 			cout<<"The database name can not been empty! Input \"bin/gdrop -h\" for help."<<endl;
-			return -1;
+			return 0;
 		}
 		else
 		{
 			int len = db_name.length();
-			if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+			if (db_name.length() > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 			{
-				cout<<"The database name can not end with .db"<<endl;
-				return -1;
+				cout<<"The database name can not end with "<< _db_suffix <<endl;
+				return 0;
 			}
-			if (!Util::dir_exist(db_name + ".db"))
+			if (db_name == "system")
+			{
+				cout << "the database name can not be system." << endl;
+				return 0;
+			}
+			string db_path = _db_home + "/" + db_name + _db_suffix;
+			if (!Util::dir_exist(db_path))
 			{
 				cout<<"The database that you want to drop does not exist."<<endl;
-				return -1;
+				return 0;
 			}
 			cout<<"Begin to drop database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database system_db("system");
 			system_db.load();
-			string sparql = "DELETE WHERE {<" + db_name + "> ?x ?y.}";
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
-			int ret = system_db.query(sparql, _rs, ofp);
+			int ret;
+			string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}";
+			ret = system_db.query(sparql, _rs, ofp);
+			sparql = "DELETE WHERE {<" + db_name + "> <built_time> ?y.}";
+			ret += system_db.query(sparql, _rs, ofp);
+			sparql = "DELETE WHERE {<" + db_name + "> <database_status> ?y.}";
+			ret += system_db.query(sparql, _rs, ofp);
 			if (ret <= -100) // select query
 			{
 				if (ret == -100)
@@ -94,18 +106,14 @@ int main(int argc, char * argv[])
 					msg = "update failed.";
 			}
 			cout<<"Delete the database info from system database successfully!"<<endl;
-			string cmd = "rm -r " + db_name + ".db";
+			string cmd = "rm -rf " + db_path;
 			system(cmd.c_str());
 			Util::delete_backuplog(db_name);
 			long tv_end = Util::get_cur_time();
 			//stringstream ss;
-			cout << db_name << ".db is dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			cout << db_name << _db_suffix + " is dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			//Log.Info(ss.str().c_str());
 			return 0;
 		}
-		
 	}
-
-
-	
 }

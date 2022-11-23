@@ -2599,7 +2599,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
-		cout << "sub2id&pre2id&obj2id: Fail to open : " << _rdf_file << endl;
+		cout << "sub2id&pre2id&obj2id: Fail to rdf open : " << _rdf_file << endl;
 		// exit(0);
 		return false;
 	}
@@ -2608,7 +2608,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	ofstream _six_tuples_fout(_six_tuples_file.c_str());
 	if (!_six_tuples_fout)
 	{
-		cout << "sub2id&pre2id&obj2id: Fail to open: " << _six_tuples_file << endl;
+		cout << "sub2id&pre2id&obj2id: Fail to tuples open: " << _six_tuples_file << endl;
 		// exit(0);
 		return false;
 	}
@@ -2913,7 +2913,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
-		cout << "sub2id&pre2id&obj2id: Fail to open : " << _rdf_file << endl;
+		cout << "sub2id&pre2id&obj2id: Fail to rdf open : " << _rdf_file << endl;
 		// exit(0);
 		return false;
 	}
@@ -2922,7 +2922,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	ofstream _six_tuples_fout(_six_tuples_file.c_str());
 	if (!_six_tuples_fout)
 	{
-		cout << "sub2id&pre2id&obj2id: Fail to open: " << _six_tuples_file << endl;
+		cout << "sub2id&pre2id&obj2id: Fail to tuples open: " << _six_tuples_file << endl;
 		// exit(0);
 		return false;
 	}
@@ -4236,9 +4236,9 @@ bool Database::backup()
 	{
 		Util::create_dir(Util::backup_path);
 	}
-	string backup_path = Util::backup_path + this->store_path;
+	string backup_path = Util::backup_path + this->name + Util::global_config["db_suffix"];
 
-	cout << "Beginning backup." << endl;
+	cout << "Beginning backup, path is: "<< backup_path << endl;
 
 	string sys_cmd;
 	if (Util::dir_exist(backup_path))
@@ -4277,7 +4277,7 @@ bool Database::restore()
 	{
 		this->clear();
 
-		string backup_path = Util::backup_path + this->store_path;
+		string backup_path = Util::backup_path + this->name + Util::global_config["db_suffix"];
 		if (!Util::dir_exist(Util::backup_path))
 		{
 			cerr << "Failed to restore!" << endl;
