@@ -33,9 +33,9 @@ def generateStdAnswer(db_path, out_path):
             continue
         query_out = query_out[query_out.find("final result is"):]
         query_out = query_out.split('\n')
-        output_results, output_vars = FormatHelper.GetOutputResult(query_out, query_vars)
+        output_results , _ = FormatHelper.GetOutputResult(query_out, query_vars)
         out_file_path = os.path.join(out_path,query_file).replace('.sql','r.txt')
-        FormatHelper.WriteResultToFile(out_file_path, output_vars, output_results)
+        FormatHelper.WriteResultToFile(out_file_path, query_vars, output_results)
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
 
 os.system('rm -r bfs_test')
