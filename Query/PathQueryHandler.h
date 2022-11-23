@@ -370,8 +370,8 @@ public:
 	bool kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	bool kHopReachableTest(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	std::vector<int> kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
-    std::vector<std::vector<int>> kHopEnumeratePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
-    int bc_dfs(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set, std::vector<std::pair<int, int>> &s, std::vector<int> &bar, std::vector<std::vector<int>> &paths);
+    std::vector<std::vector<int>> kHopEnumeratePath(int uid, int vid, int retNum, bool directed, int k, const std::vector<int> &pred_set);
+    int bc_dfs(int uid, int vid, int &retBudget, bool directed, int k, const std::vector<int> &pred_set, std::vector<std::pair<int, int>> &s, std::vector<int> &bar, std::vector<std::vector<int>> &paths);
     void updateBarrier(int uid, bool directed, const std::vector<int> &pred_set, std::vector<int> &bar, int l);
     // std::vector<std::pair<std::pair<int, int>, int>> kHopSubgraph(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	void SSPPR(int uid, int retNum, int k, const std::vector<int> &pred_set, std::vector< std::pair<int ,double> > &topkV2ppr);

@@ -2456,8 +2456,10 @@ public:
     antlr4::tree::TerminalNode *K_KHOPREACHABLE();
     std::vector<Num_integerContext *> num_integer();
     Num_integerContext* num_integer(size_t i);
-    Integer_positiveContext *integer_positive();
-    Integer_negativeContext *integer_negative();
+    std::vector<Integer_positiveContext *> integer_positive();
+    Integer_positiveContext* integer_positive(size_t i);
+    std::vector<Integer_negativeContext *> integer_negative();
+    Integer_negativeContext* integer_negative(size_t i);
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
     antlr4::tree::TerminalNode *K_KHOPREACHABLEPATH();
     antlr4::tree::TerminalNode *K_PPR();
