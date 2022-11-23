@@ -1767,7 +1767,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								int hopConstraint = proj[0].path_args.k;
 								if (hopConstraint < 0)
 									hopConstraint = 999;
-								vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[0].path_args.retNum, \
+									proj[0].path_args.directed, hopConstraint, pred_id_set);
 								if (!paths.empty())
 								{
 									for (auto path : paths)
@@ -3134,7 +3135,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									int hopConstraint = proj[i].path_args.k;
 									if (hopConstraint < 0)
 										hopConstraint = 999;
-									vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[i].path_args.retNum, proj[i].path_args.directed, hopConstraint, pred_id_set);
 									if (!paths.empty())
 									{
 										for (auto path : paths)
