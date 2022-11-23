@@ -283,9 +283,9 @@ Server::init()
 	/**
 	* @brief Load the system database.
 	*/
-	if (access("system.db", 00) != 0)
+	if (access((db_home + "/system" + db_suffix).c_str(), 00) != 0)
 	{
-		cerr << Util::getTimeString() << "Can not find system.db." << endl;
+		cerr << Util::getTimeString() << "Can not find system"+db_suffix+"." << endl;
 		return;
 	}
 	localDBs.insert(pair<std::string, int>("system", 1));
@@ -293,7 +293,7 @@ Server::init()
 	bool flag = system_database->load();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "Failed to load the database system.db." << endl;
+		cerr << Util::getTimeString() << "Failed to load the database system"+db_suffix+"." << endl;
 		delete system_database;
 		system_database = NULL;
 		return;
@@ -349,9 +349,10 @@ std::string Server::checkparamValue(std::string param, std::string value)
 			result = "You can not operate the system database.";
 			return result;
 		}
-		if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+		int len_suffix = db_suffix.length();
+		if (database.length() > len_suffix && database.substr(database.length() - len_suffix, len_suffix) == db_suffix)
 		{
-			result = "Your db_name to be built should not end with \".db\".";
+			result = "Your db_name to be built should not end with \""+db_suffix+"\".";
 			return result;
 		}
 	}
@@ -569,7 +570,7 @@ Server::drop(std::string _db_name, Socket& _socket)
 		return false;
 	}
 
-	std::string cmd = "rm -rf " + _db_name + ".db";
+	std::string cmd = "rm -rf " + db_home + "/" + _db_name + db_suffix;
 	int ret = system(cmd.c_str());
 	if (ret == 0) {
 		localDBs.erase(_db_name);
@@ -788,7 +789,7 @@ Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 	{
 		std::string error = "Import RDF file to database failed.";
 		this->response(1005, error, _socket);
-		std::string cmd = "rm -rf " + _db_name + ".db";
+		std::string cmd = "rm -rf " + db_home + "/" + _db_name + db_suffix;
 		system(cmd.c_str());
 		return false;
 	}
@@ -797,7 +798,7 @@ Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 	* @brief Create a success flag file.
 	*/
 	ofstream fsuc;
-	fsuc.open("./" + _db_name + ".db/success.txt");
+	fsuc.open(db_home + "/" + _db_name + db_suffix + "/success.txt");
 	fsuc.close();
 
 	localDBs.insert(pair<std::string, int>(_db_name, 1));

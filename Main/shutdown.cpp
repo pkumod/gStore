@@ -46,16 +46,15 @@ string gc_getUrl(string _type, string _port)
 
 int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
-    std::string strUrl = gc_getUrl(_type, _port).append("/api");
+    std::string strUrl = gc_getUrl(_type, _port);
 	std::string strPost;
 	if (_type == "grpc")
-    {
-        strUrl.append("/grpc");
+	{
+		strUrl.append("/api");
 		strPost = "operation=check";
-    }
+	}
 	else
 	{
-		strUrl.append("/");
 		strPost = "{\"operation\": \"check\"}";
 	}
     int ret = gc.Post(strUrl, strPost, res);
@@ -66,6 +65,8 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 int main(int argc, char *argv[])
 {
 	Util util;
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
 	if (argc == 2)
 	{
 		string command = argv[1];
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Shutdown the http server" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/shutdown -t [type]" << endl;
+			cout << "Usage:\tbin/shutdown" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
@@ -92,8 +93,8 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		// port = Util::getArgValue(argc, argv, "p", "port");
-		if (Util::file_exist("system.db/port.txt") == false)
+		string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
+		if (Util::file_exist(system_port_path) == false)
 		{
 			cout << "http server is not running!" << endl;
 			return 0;
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
 
 		string type_port;
 		fstream ofp;
-		ofp.open("system.db/port.txt", ios::in);
+		ofp.open(system_port_path, ios::in);
 		ofp >> type_port;
 		ofp.close();
 		if (type_port.find(":") != string::npos)
@@ -144,9 +145,9 @@ int main(int argc, char *argv[])
 				} 
 				else
 				{
-					string cmd = "rm system.db/password*.txt";;
+					string cmd = "rm -rf " + _db_home + "system" +_db_suffix + "/password*.txt";;
 					system(cmd.c_str());
-					cmd = "rm system.db/port.txt";
+					cmd = "rm -rf " + system_port_path;
 					system(cmd.c_str());
 					cout << "http server is not running!" << endl;
 					return 0;
@@ -160,7 +161,13 @@ int main(int argc, char *argv[])
 		}
 		
 		cout << "server type: " << type << ", port: " << port << endl;
-		ofp.open("system.db/password" + port + ".txt", ios::in);
+		string system_password_path = _db_home + "/system" +_db_suffix + "/password" + port + ".txt";
+		if (util.file_exist(system_password_path) == false)
+		{
+			cout << "password file missed, shutdown fail!" << endl;
+			return 0;
+		}
+		ofp.open(system_password_path, ios::in);
 		ofp >> system_password;
 		ofp.close();
 		
@@ -173,38 +180,25 @@ int main(int argc, char *argv[])
 		if (type == "grpc")
 		{
 			postdata = "username=" + system_user + "&password=" + system_password;
-			gc.Post(strUrl, postdata, res);
-			cout << "Result: " << res << endl;
-			rapidjson::Document jsonRes;
-			jsonRes.Parse(res.c_str());
-			if (jsonRes.HasParseError())
-			{
-				cout << "the server stop fail." << endl;
-			}
-			if (jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
-			{
-				if (Util::file_exist("system.db/port.txt"))
-				{
-					string cmd = "rm system.db/password*.txt";;
-					system(cmd.c_str());
-					cmd = "rm system.db/port.txt";
-					system(cmd.c_str());
-				}
-				cout << "the Server is stopped successfully!" << endl;
-			}
 		} 
 		else
 		{
 			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
-			gc.Post(strUrl, postdata, res);
-			if (Util::file_exist("system.db/port.txt"))
-			{
-				string cmd = "rm system.db/password*.txt";
-				system(cmd.c_str());
-				cmd = "rm system.db/port.txt";
-				system(cmd.c_str());
-			}
+		}
+		gc.Post(strUrl, postdata, res);
+		rapidjson::Document jsonRes;
+		jsonRes.Parse(res.c_str());
+		if (jsonRes.HasParseError())
+		{
+			cout << "the server stop fail." << endl;
+		}
+		if (jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
+		{
 			cout << "the Server is stopped successfully!" << endl;
+		}
+		else
+		{
+			cout << "the server stop fail." << endl;
 		}
 		return 0;
 	}

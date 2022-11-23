@@ -14,7 +14,11 @@ static WFFacilities::WaitGroup wait_group(1);
 
 APIUtil *apiUtil = nullptr;
 
-int initialize(int argc, char *argv[]);
+std::string _db_home;
+
+std::string _db_suffix;
+
+int initialize(unsigned short port, std::string db_name, bool load_src);
 
 void register_service(GRPCServer &grpcServer);
 
@@ -130,48 +134,22 @@ void sig_handler(int signo)
 
 int main(int argc, char *argv[])
 {
+	// check grpc thread
+	string running_pid = Util::getSystemOutput("pidof " + Util::getExactPath(argv[0]));
+	string current_pid = to_string(getpid());
+	std::cout << "running_pid: " << running_pid << endl;
+	std::cout << "current_pid: " << current_pid << endl;
+	
+	if (running_pid != current_pid)
+	{
+		cout << "grpc server already running." << endl;
+		return 0;
+	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
-	while (true)
-	{
-		pid_t fpid = fork();
-		// cout << "fpid:" << fpid << endl;
-		if (fpid == 0)
-		{
-			int ret = initialize(argc, argv);
-			std::cout.flush();
-			_exit(ret);
-		}
-		else if (fpid > 0)
-		{
-			int status;
-			waitpid(fpid, &status, 0);
-			if (WIFEXITED(status))
-			{
-				return 0;
-			}
-			else
-			{
-				if (Util::file_exist("system.db/port.txt"))
-				{
-					string cmd = "rm system.db/port.txt";
-					system(cmd.c_str());
-				}
-				SLOG_WARN("Stopped abnormally, restarting server...");
-			}
-		}
-		else
-		{
-			SLOG_ERROR("Failed to start server: deamon fork failure.");
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-int initialize(int argc, char *argv[])
-{
+ 	_db_home = apiUtil->get_Db_path();
+	_db_suffix = apiUtil->get_Db_suffix();
+	size_t _len_suffix = _db_suffix.length();
 	unsigned short port = 9000;
 	string db_name = "";
 	string port_str = apiUtil->get_default_port();
@@ -195,10 +173,9 @@ int initialize(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with .db" << endl;
+			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with "<< _db_suffix<< endl;
 			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
 			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
-
 			cout << endl;
 			return 0;
 		}
@@ -211,29 +188,93 @@ int initialize(int argc, char *argv[])
 	else
 	{
 		db_name = Util::getArgValue(argc, argv, "db", "database");
-		if (db_name.length() > 3 && db_name.substr(db_name.length() - 3, 3) == ".db")
+		if (db_name.length() > _len_suffix && db_name.substr(db_name.length() - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			SLOG_ERROR("Your db name to be built should not end with \".db\".");
+			SLOG_ERROR("The database name can not end with \""+_db_suffix+"\".");
 			return -1;
 		}
 		else if (db_name == "system")
 		{
-			SLOG_ERROR("You can not load system files.");
+			SLOG_ERROR("The database name can not be system.");
 			return -1;
 		}
 		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
 		port = atoi(port_str.c_str());
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
 	}
-	// check port.txt exist
-	if (Util::file_exist("system.db/port.txt"))
+	// check port
+	int max_try = 30;
+	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+	sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
+	if (bind_return == -1)
 	{
-		SLOG_ERROR("Server port " + port_str + " is already in use.");
+		cout<<"Server port "<< port_str <<" is already in use."<<endl;
 		return -1;
+	} 
+	else // relase bind
+	{
+		int close_status;
+		do {
+			close_status = close(sock);
+			// shutdown_status = shutdown(sock, SHUT_RDWR);
+			if (close_status != 0)
+			{
+				SLOG_DEBUG("close I/O result:" + to_string(close_status));
+				sleep(1);
+			}
+			max_try --;
+		} while (close_status != 0 && max_try > 0);
+		sock = -1;
+		std::memset(&addr, 0, sizeof(addr));
+	}
+	
+	while (true)
+	{
+		pid_t fpid = fork();
+		// cout << "fpid:" << fpid << endl;
+		if (fpid == 0)
+		{
+			int ret = initialize(port, db_name, loadCSR);
+			std::cout.flush();
+			_exit(ret);
+		}
+		else if (fpid > 0)
+		{
+			int status;
+			waitpid(fpid, &status, 0);
+			if (WIFEXITED(status))
+			{
+				return 0;
+			}
+			else
+			{
+				string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
+				if (Util::file_exist(system_port_path))
+				{
+					string cmd = "rm -f " + system_port_path;
+					system(cmd.c_str());
+				}
+				SLOG_WARN("Stopped abnormally, restarting server...");
+			}
+		}
+		else
+		{
+			SLOG_ERROR("Failed to start server: deamon fork failure.");
+			return -1;
+		}
 	}
 
+	return 0;
+}
+
+int initialize(unsigned short port, std::string db_name, bool load_src)
+{
 	// call apiUtil initialized
-	if (apiUtil->initialize("grpc", port_str, db_name, loadCSR) == -1)
+	if (apiUtil->initialize("grpc", to_string(port), db_name, load_src) == -1)
 	{
 		return -1;
 	}
@@ -241,12 +282,24 @@ int initialize(int argc, char *argv[])
 	GRPCServer grpcServer;
 	// register rest service
 	register_service(grpcServer);
-
-	if(grpcServer.start(port) == 0)
+	int max_try = 30;
+	int start_status = -1;
+	do
 	{
-		SLOG_DEBUG("grpc server port " + port_str);
-	}
-	else
+		start_status = grpcServer.start(port);
+		if(start_status == 0)
+		{
+			SLOG_DEBUG("grpc server port " + to_string(port));
+		}
+		else
+		{
+			SLOG_DEBUG("grpc server start..." + to_string(start_status));
+			sleep(1);
+		}
+		max_try--;
+	} while (start_status == -1 && max_try > 0);
+	
+	if(start_status != 0)
 	{
 		SLOG_ERROR("grpc server start failed.");
 		delete apiUtil;
@@ -384,12 +437,12 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		rpc_task->add_callback([](GRPCTask *grpcTask){
 			SLOG_DEBUG("Server stopped successfully.");
 			std::cout.flush();
+			// free apiUtil
+			delete apiUtil;
 			_exit(1);
 		});
 		std::string msg = "Server stopped successfully.";
 		apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
-		// free apiUtil
-		delete apiUtil;
 		response->Success(msg);
 	}
 	else
@@ -1171,7 +1224,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Socket socket;
+		string _db_path = _db_home + "/" + db_name + _db_suffix;
 		string dataset = db_path;
 		string database = db_name;
 		SLOG_DEBUG("Import dataset to build database...");
@@ -1184,14 +1237,14 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		if (!flag)
 		{
 			error = "Import RDF file to database failed.";
-			std::string cmd = "rm -r " + database + ".db";
+			std::string cmd = "rm -r " + _db_path;
 			system(cmd.c_str());
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
 
 		ofstream f;
-		f.open("./" + database + ".db/success.txt");
+		f.open(_db_path + "/success.txt");
 		f.close();
 
 		// by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
@@ -1213,7 +1266,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		if (apiUtil->build_db_user_privilege(db_name, username))
 		{
 			string success = "Import RDF file to database done.";
-			string error_log = "./" + database + ".db/parse_error.log";
+			string error_log = _db_path + "/parse_error.log";
 			size_t parse_error_num = Util::count_lines(error_log);
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
@@ -1224,7 +1277,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			if (parse_error_num > 0)
 			{
 				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
-				SLOG_ERROR("See log file for details " + database + ".db/parse_error.log");
+				SLOG_ERROR("See log file for details " + error_log);
 			}
 			response->Json(resp_data);
 			Util::add_backuplog(db_name);
@@ -1296,10 +1349,11 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
 
 			std::string cmd;
+			string db_path = _db_home + "/" + db_name + _db_suffix;
 			if (is_backup == "false")
-				cmd = "rm -r " + db_name + ".db";
+				cmd = "rm -r " + db_path;
 			else
-				cmd = "mv " + db_name + ".db " + db_name + ".bak";
+				cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
 			SLOG_DEBUG(cmd);
 			system(cmd.c_str());
 			Util::delete_backuplog(db_name);
@@ -1341,6 +1395,14 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
+
+		Database* current_db = apiUtil->get_database(db_name);
+		if (current_db == NULL)
+		{
+			error = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
 		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -1350,44 +1412,39 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		// begin backup database
 		string path = backup_path;
+		string default_backup_path = apiUtil->get_backup_path();
 		if (path.empty())
 		{
-			path = apiUtil->get_backup_path();
+			path = default_backup_path;
 			SLOG_DEBUG("backup_path is empty, set to default path: " + path);
 		}
-		if (path == ".")
+		if (path == "." || Util::getExactPath(path.c_str()) == Util::getExactPath(_db_home.c_str()))
 		{
-			string error = "Failed to backup the database. Backup Path Can not be root or empty.";
+			error = "Failed to backup the database. Backup path can not be root or \"" + _db_home + "\" .";
 			apiUtil->unlock_databaseinfo(db_info);
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
-		if (path[path.length() - 1] == '/')
+		bool flag = current_db->backup();
+		if(flag == false)
 		{
-			path = path.substr(0, path.length() - 1);
-		}
-		SLOG_DEBUG("backup path: " + path);
-		string db_path = db_name + ".db";
-		apiUtil->rw_wrlock_database_map();
-		int ret = apiUtil->db_copy(db_path, path);
-		apiUtil->unlock_database_map();
-		string timestamp = "";
-		if (ret == 1)
-		{
-			string error = "Failed to backup the database. Database Folder Misssing.";
+			error = "Failed to backup the database.";
 			apiUtil->unlock_databaseinfo(db_info);
 			response->Error(StatusOperationFailed, error);
 		}
 		else
 		{
-			timestamp = Util::get_timestamp();
-			path = path + "/" + db_path;
-			string _path = path + "_" + timestamp;
-			string sys_cmd = "mv " + path + " " + _path;
+			string timestamp = Util::get_timestamp();
+			string new_folder =  db_name + _db_suffix + "_" + timestamp;
+			string sys_cmd, _path;
+			apiUtil->string_suffix(path, '/');
+			_path = path + new_folder;
+			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
 			system(sys_cmd.c_str());
 
 			SLOG_DEBUG("database backup done: " + db_name);
 			string success = "Database backup successfully.";
+			current_db = NULL;
 			apiUtil->unlock_databaseinfo(db_info);
 
 			Document resp_data;
@@ -1427,6 +1484,7 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 		}
 		std::vector<std::string> file_list;
 		string backup_path = apiUtil->get_backup_path();
+		apiUtil->string_suffix(backup_path, '/');
 		Util::dir_files(backup_path, db_name, file_list);
 		Document resp_data;
 		Document pathsDoc;
@@ -1435,7 +1493,7 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 		Document::AllocatorType &allocator = resp_data.GetAllocator();
 		for (size_t i = 0; i < file_list.size(); i++)
 		{
-			pathsDoc.PushBack(Value().SetString((backup_path + "/" + file_list[i]).c_str(), allocator), allocator);
+			pathsDoc.PushBack(Value().SetString((backup_path + file_list[i]).c_str(), allocator), allocator);
 		}
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
@@ -1487,7 +1545,7 @@ try
 		SLOG_DEBUG("restore database:" + database);
 		if (apiUtil->check_already_build(db_name) == false)
 		{
-			error = "Database not built yet. Rebuild Now";
+			error = "Database not built yet, rebuild now.";
 			string time = Util::get_backup_time(path, db_name);
 			if (time.size() == 0)
 			{
@@ -1526,15 +1584,12 @@ try
 			return;
 		}
 
-		// restore
-		std::string sys_cmd = "rm -rf " + db_name + ".db";
-		std::system(sys_cmd.c_str());
-
 		// TODO why need lock the database_map?
 		// apiUtil->trywrlock_database_map();
-		int ret = apiUtil->db_copy(path, apiUtil->get_Db_path());
+		int ret = apiUtil->db_copy(path, _db_home);
 		// apiUtil->unlock_database_map();
 
+		// copy failed
 		if (ret == 1)
 		{
 			error = "Failed to restore the database. Backup path error";
@@ -1543,11 +1598,16 @@ try
 		}
 		else
 		{
-			// update the in system.db
-			path = Util::get_folder_name(path, db_name);
-			sys_cmd = "mv " + path + " " + db_name + ".db";
+			// remove old folder
+			string db_path = _db_home + "/" + db_name + _db_suffix;
+			string sys_cmd = "rm -rf " + db_path;
+			std::system(sys_cmd.c_str());
+			// mv backup folder to database folder
+			string folder_name = Util::get_folder_name(path, db_name);
+			sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
 			std::system(sys_cmd.c_str());
 			apiUtil->unlock_databaseinfo(db_info);
+
 			std::string success = "Database " + db_name + " restore successfully.";
 			response->Success(success);
 		}
@@ -1877,15 +1937,6 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		if (db_path[db_path.length() - 1] != '/')
-		{
-			db_path = db_path + "/";
-		}
-		if (Util::dir_exist(db_path) == false)
-		{
-			Util::create_dirs(db_path);
-		}
-		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
 		// check if database named [db_name] is already load
 		Database *current_database = apiUtil->get_database(db_name);
 		if (current_database == NULL)
@@ -1894,6 +1945,12 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
+		apiUtil->string_suffix(db_path, '/');
+		if (Util::dir_exist(db_path) == false)
+		{
+			Util::create_dirs(db_path);
+		}
+		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
 		apiUtil->rdlock_database(db_name); // lock database
 		SLOG_DEBUG("export_path: " + db_path);
 		FILE *ofp = fopen(db_path.c_str(), "w");
@@ -2422,29 +2479,31 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			string success = "Batch insert data successfully.";
 			unsigned success_num = 0;
 			unsigned total_num = 0;
+			unsigned parse_error_num = 0;
+			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
 			if (is_file)
 			{
-				total_num = Util::count_lines(file);
+				total_num = Util::count_lines(error_log);
 				success_num = current_database->batch_insert(file, false, nullptr);
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - 1;
 			}
 			else
 			{
 				vector<string> files;
-				if (dir[dir.length() - 1] != '/')
-				{
-					dir.push_back('/');
-				}
+				apiUtil->string_suffix(dir, '/');
 				Util::dir_files(dir, "", files);
+				total_num = Util::count_lines(error_log);
 				for (string rdf_file : files)
 				{
 					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-					total_num += Util::count_lines(dir + rdf_file);
 					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
 				}
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
-			unsigned parse_error_num = total_num - success_num;
 
 			Json resp_data;
 			resp_data.SetObject();
