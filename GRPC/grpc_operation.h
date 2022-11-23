@@ -1,3 +1,11 @@
+/*
+ * @Author: wangjian 2606583267@qq.com
+ * @Date: 2022-11-23 15:53:59
+ * @LastEditors: wangjian 2606583267@qq.com
+ * @LastEditTime: 2022-11-23 15:53:59
+ * @FilePath: /gstore/GRPC/grpc_operation.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #ifndef _GRPC_OPERATION_H
 #define _GRPC_OPERATION_H
 
@@ -46,7 +54,9 @@ namespace grpc
     OP(OP_FUN_QUERY,                        funquery) \
     OP(OP_FUN_CUDB,                          funcudb) \
     OP(OP_FUN_REVIEW,                      funreview) \
-    OP(OP_SHUTDOWN,                         shutdown)
+    OP(OP_SHUTDOWN,                         shutdown) \
+    OP(OP_UPLOADFILE,                     uploadfile) \
+    OP(OP_DOWNLOADFILE,                 downloadfile) 
 }
 
 enum operation_type

@@ -114,7 +114,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
 grpcobj = $(objdir)grpc_server.o $(objdir)grpc_server_task.o $(objdir)grpc_message.o \
 		  $(objdir)grpc_router.o $(objdir)grpc_routetable.o $(objdir)grpc_content.o \
-		  $(objdir)grpc_status_code.o ${objdir}APIUtil.o
+		  $(objdir)grpc_status_code.o $(objdir)grpc_multipart_parser.o ${objdir}APIUtil.o
 
 databaseobj =  $(objdir)Database.o $(objdir)Join.o \
 			   $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
@@ -642,7 +642,10 @@ $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database
 $(objdir)grpc_status_code.o: GRPC/grpc_status_code.cpp GRPC/grpc_status_code.h $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_status_code.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_status_code.o $(def64IO) $(openmp)
 
-$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_multipart_parser.o: GRPC/grpc_multipart_parser.cpp GRPC/grpc_multipart_parser.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_multipart_parser.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_multipart_parser.o $(def64IO) $(openmp)
+
+$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h GRPC/grpc_stringpiece.h $(objdir)grpc_multipart_parser.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_content.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_content.o $(def64IO) $(openmp)
 
 $(objdir)grpc_message.o: GRPC/grpc_message.cpp GRPC/grpc_message.h GRPC/grpc_noncopyable.h $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)
