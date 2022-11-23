@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-11-23 10:17:29
+ * @LastEditTime: 2022-11-23 17:28:37
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -145,6 +145,14 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             ipBlackList = new IPBlackList();
             ipBlackList->Load(ipBlackFile);
         }
+
+        // init upload conf
+        upload_path = get_configure_value("upload_path", upload_path);
+        string_suffix(upload_path, '/');
+        util.create_dirs(upload_path);
+        upload_max_body_size = get_configure_value("upload_max_body_size", upload_max_body_size);
+        string configure_extensions = get_configure_value("upload_allow_extensions",  "nt|ttl|n3|rdf|txt");
+        Util::split(configure_extensions, "|", upload_allow_extensions);
         
         // load system db
         if(!util.dir_exist(get_Db_path() + "/system" + get_Db_suffix()))
@@ -2677,4 +2685,29 @@ size_t APIUtil::get_configure_value(const string& key, size_t default_value)
     {
         return default_value;
     }
+}
+
+std::string 
+APIUtil::get_upload_path()
+{
+    return upload_path;
+}
+
+size_t
+APIUtil::get_upload_max_body_size()
+{
+    return upload_max_body_size;
+}
+
+bool
+APIUtil::check_upload_allow_extensions(const string& suffix)
+{
+    for (std::string item : upload_allow_extensions)
+    {
+        if (item == suffix)
+        {
+            return true;
+        }
+    }
+    return false;
 }
