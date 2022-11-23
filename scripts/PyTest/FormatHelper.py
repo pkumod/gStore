@@ -75,7 +75,7 @@ def PrintError(case_name, query_vars, correct_results, query_out, output_vars, o
     else:
         print("correct_results:", correct_results[:10])
 
-    # print("query_out:", query_out)
+    print("query_out:", query_out)
     print("output_vars:", output_vars)
     if len(output_results) < 10 :
         print("output_results:", output_results)
