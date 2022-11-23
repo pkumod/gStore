@@ -2,7 +2,7 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2022-11-04 11:16:53
+ * @LastEditTime: 2022-11-22 21:26:45
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
@@ -21,7 +21,9 @@ main(int argc, char * argv[])
 	//chdir(dirname(argv[0]));
 //#ifdef DEBUG
 	Util util;
-
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	int _suffix_len = _db_suffix.length();
 //#endif
 	//Log.init("slog.properties");
 	if (argc < 2)
@@ -58,22 +60,22 @@ main(int argc, char * argv[])
 	}
 	else
 	{
-		string _db_path = Util::getArgValue(argc, argv, "db", "database");
-		int len = _db_path.length();
-		if (_db_path.empty())
+		string db_name = Util::getArgValue(argc, argv, "db", "database");
+		
+		if (db_name.empty())
 		{
 			cout<<"You must input the database name for building database!"<<endl;
 			return -1;
 		}
-		if (len <= 3 || (len > 3 && _db_path.substr(len - 3, 3) == ".db"))
+		int len = db_name.length();
+		if (len <= _suffix_len || (len > _suffix_len && db_name.substr(len - _suffix_len, _suffix_len) == _db_suffix))
 		{
-			
-			cout << "your database can not end with .db or less than 3 characters" << endl;
+			cout << "your database can not end with " + _db_suffix + " or less than "<< _suffix_len <<" characters" << endl;
 			return -1;
 		}
 
 		//check if the db_name is system
-		if (_db_path == "system")
+		if (db_name == "system")
 		{
 			cout<<"Your database's name can not be system."<<endl;
 			return -1;
@@ -82,9 +84,8 @@ main(int argc, char * argv[])
 		string _rdf = Util::getArgValue(argc, argv, "f", "file");
 
 		//check if the db_path is the path of system.nt
-		util.configure_new();
-		string system_path = util.getConfigureValue("system_path");
-		if (_rdf == system_path)
+		// util.configure_new();
+		if (_rdf == Util::system_path)
 		{
 			cout<<"You have no rights to access system files"<<endl;
 			return -1;
@@ -96,35 +97,38 @@ main(int argc, char * argv[])
 		}
 
 		int isbuilt;
-		if (Util::file_exist(_db_path + ".db"))
+		string _db_path = _db_home + "/" + db_name + _db_suffix;
+		cout << "database path: " << _db_path << endl;
+		
+		if (Util::file_exist(_db_path))
 			isbuilt = 1;
 		else
 			isbuilt = 0;
 		if(isbuilt == 1)
 		{
-			cout<<"the database "+_db_path+" has been built. please use bin/gdrop to remove it at first."<<endl;
+			cout<<"the database " << db_name <<" has been built. please use bin/gdrop to remove it at first."<<endl;
 			return -1;
 		}
 		else
 		{
 			long tv_begin = Util::get_cur_time();
-			Database _db(_db_path);
+			Database _db(db_name);
 			bool flag = _db.build(_rdf);
 			if (flag)
 			{
 				cout<<"Build Database Successfully!"<<endl;
 				ofstream f;
-				f.open("./" + _db_path + ".db/success.txt");
+				f.open(_db_path + "/success.txt");
 				f.close();
 			}
 			else //if fails, drop database and return
 			{
 				cout<<"Build Database Failed!"<<endl;
-				string cmd = "rm -r " + _db_path + ".db";
+				string cmd = "rm -r " + _db_path;
 				system(cmd.c_str());
 				return 0;
 			}
-			if (!Util::dir_exist("system.db"))
+			if (!Util::dir_exist(_db_home + "/system" + _db_suffix))
 				return 0;
 			//system("clock");
 			cout<<"Save the database info to system database...."<<endl;
@@ -135,8 +139,8 @@ main(int argc, char * argv[])
 			if (isbuilt == 0)
 			{
 				string time = Util::get_date_time();
-				string sparql = "INSERT DATA {<" + _db_path + "> <database_status> \"already_built\"." + "<" + _db_path + "> <built_by> <root>."
-					+ "<" + _db_path + "> <built_time> \"" + time + "\".}";
+				string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>."
+					+ "<" + db_name + "> <built_time> \"" + time + "\".}";
 				cout<<"sparql:"<<sparql<<endl;
 				ResultSet _rs;
 				FILE* ofp = stdout;
@@ -158,19 +162,19 @@ main(int argc, char * argv[])
 					/*if (ret != -100)
 						cout << msg << endl;*/
 				}
-				Util::add_backuplog(_db_path);
+				Util::add_backuplog(db_name);
 				cout<<"Saving database info: " + msg<<endl;
 			}
 			long tv_end = Util::get_cur_time();
 			//stringstream ss;
-			cout<< "Build RDF database "<<_db_path<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
-			string error_log = "./" + _db_path + ".db/parse_error.log";
+			cout<< "Build RDF database "<<db_name<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			string error_log = _db_path + "/parse_error.log";
 			// exclude Info line
 			size_t parse_error_num = Util::count_lines(error_log) - 1;
 			if (parse_error_num > 0)
 			{
 				cout<< "RDF parse error num "<< parse_error_num << endl;
-				cout<< "See log file for details " << _db_path <<".db/parse_error.log" << endl;
+				cout<< "See log file for details " << error_log << endl;
 			}
 			
 			return 0;

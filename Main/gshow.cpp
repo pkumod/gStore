@@ -32,15 +32,24 @@ public:
 int main(int argc, char *argv[])
 {
     Util util;
+    string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	string system_db_name = "system";
+	string system_db_path = _db_home + "/" + system_db_name + _db_suffix;
+    if (Util::dir_exist(system_db_path) == false)
+    {
+        cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
+        return 0;
+    }
 
-    Database system_db("system");
+    Database system_db(system_db_name);
     system_db.load();
     string sparql = "select ?s where{?s <database_status> \"already_built\".}";
     ResultSet _rs;
     FILE *ofp = nullptr;
     system_db.query(sparql, _rs, ofp);
     DBInfo *databases = new DBInfo[_rs.ansNum + 1];
-    databases[0].db_name = "system";
+    databases[0].db_name = system_db_name;
     for (unsigned i = 0; i < _rs.ansNum; i++)
     {
         databases[i + 1].db_name = Util::clear_angle_brackets(_rs.answer[i][0]);
