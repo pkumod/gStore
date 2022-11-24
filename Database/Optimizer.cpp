@@ -417,7 +417,6 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
   auto target = bgp_query->get_result_list_pointer1();
   assert(target->empty());
   target->reserve(result.values_->size());
-  PrintTableDebug(result,bgp_query);
   auto record_len = bgp_query->selected_so_var_num + bgp_query->selected_pre_var_num;
   auto id_position_map_ptr = result.id_pos_map;
   // position_map[i] means in the new table, the i-th column
@@ -443,6 +442,7 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
     for (int column_index = 0; column_index < record_len; ++column_index){
       (*record_ptr)[column_index] = tmp_record[column_index];
     }
+    record_ptr->resize(record_len);
     target->emplace_back(std::move(*record_ptr));
   }
   delete[] tmp_record;
