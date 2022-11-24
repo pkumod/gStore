@@ -214,9 +214,6 @@ PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_no
 
 				for(unsigned j = i; j < need_join_two_nodes_index.size(); ++j){
 					// need_join_two_nodes_index include only edges with pre_var
-					if(var_descrip->so_edge_pre_id_[j] != pre_var_descrip->id_){// or var_descrip->so_edge_pre_type_[j] == VarDescriptor::PreType::ConPreType){
-						continue;
-					}
 					edge_index = var_descrip->so_edge_index_[j];
 					edges_info->emplace_back(bgpquery->s_id_[edge_index], bgpquery->p_id_[edge_index], bgpquery->o_id_[edge_index], JoinMethod::so2p);
 					edges_const->emplace_back(bgpquery->s_is_constant_[edge_index], bgpquery->p_is_constant_[edge_index], bgpquery->o_is_constant_[edge_index]);
