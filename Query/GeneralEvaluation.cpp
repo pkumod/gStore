@@ -4355,47 +4355,54 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
 	auto &bgpquery_result = *(bgp_query->get_result_list_pointer1());
 	int bgpquery_result_num = (int)bgpquery_result.size();
 
-    Varset new_id_varset,new_str_varset;
-    vector<bool> is_EntityPredicate(varnum, false);
+    Varset new_id_varset;
+    vector<bool> global_EntityPredicate(varnum, false);
+    vector<bool> local_Entity(varnum, true);
     auto &qVar2Type = this->query_tree.getVar2Type();
     for (int i = 0; i < varnum; i++){
-        string tr_id_var = tr.id_varset.vars[i];
+        string &tr_id_var = tr.id_varset.vars[i];
         if(qVar2Type.find(tr_id_var) != qVar2Type.end() && qVar2Type[tr_id_var] == QueryTree::EntityPredicate){
-            is_EntityPredicate[i]=true;
-            new_str_varset.addVar(tr_id_var);
+            global_EntityPredicate[i]=true;
+            tr.str_varset.addVar(tr_id_var);
+
+            int var_id = bgp_query->get_var_id_by_name(tr_id_var);
+            const shared_ptr<VarDescriptor> &var_descrip = bgp_query->get_vardescrip_by_id(var_id);
+            if(var_descrip->var_type_ == VarDescriptor::VarType::Predicate)
+                local_Entity[i]= false;
         }
         else
             new_id_varset.addVar(tr_id_var);
     }
-    int new_id_cols=new_id_varset.getVarsetSize();
+    tr.id_varset=new_id_varset;
+    int new_id_cols=tr.id_varset.getVarsetSize();
 
 	tr.result.reserve(bgpquery_result_num);
-	for (int k = 0; k < bgpquery_result_num; k++)
-	{
-		tr.result.emplace_back();
-        tr.result.back().id = new unsigned[new_id_cols];
-        tr.result.back().sz = new_id_cols;
-
-        if(new_id_cols == varnum){
+    if(new_id_cols == varnum){
+        for (int k = 0; k < bgpquery_result_num; k++){
+            tr.result.emplace_back();
+            tr.result.back().id = new unsigned[new_id_cols];
+            tr.result.back().sz = new_id_cols;
             std::move(bgpquery_result[k].begin(), bgpquery_result[k].end(), tr.result.back().id);
-            continue;
-        }
-
-        int new_id_pos=0;
-        for(int i=0; i < varnum; i++){
-            if(is_EntityPredicate[i]){
-                string str;
-                const shared_ptr<VarDescriptor> &var_descrip = bgp_query->get_vardescrip_by_id(bgpquery_result[k][i]);
-                if (var_descrip->var_type_ == VarDescriptor::VarType::Predicate)
-                    this->stringindex->randomAccess(bgpquery_result[k][i], &str, false);
-                else
-                    this->stringindex->randomAccess(bgpquery_result[k][i], &str, true);
-                tr.result.back().str.push_back(str);
-            }
-            else
-                tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
         }
     }
-    tr.id_varset = new_id_varset;
-    tr.str_varset =  new_str_varset;
+    else{
+        for (int k = 0; k < bgpquery_result_num; k++)
+        {
+            tr.result.emplace_back();
+            tr.result.back().id = new unsigned[new_id_cols];
+            tr.result.back().sz = new_id_cols;
+
+            int new_id_pos=0;
+            for(int i=0; i < varnum; i++){
+                if(global_EntityPredicate[i]){
+                    string str;
+                    this->stringindex->addRequest(bgpquery_result[k][i], &str);
+                    this->stringindex->trySequenceAccess(local_Entity[i]);
+                    tr.result.back().str.push_back(str);
+                }
+                else
+                    tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
+            }
+        }
+    }
 }
