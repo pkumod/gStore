@@ -1,3 +1,5 @@
+import re
+
 
 def GetResultFromFile(result_path: str):
     correct_results = []
@@ -68,10 +70,18 @@ def GetResultFromFile(result_path: str):
 def PrintError(case_name, query_vars, correct_results, query_out, output_vars, output_results):
     print("..... " + case_name + " ERROR.....")
     print("query_vars:", query_vars)
-    print("correct_results:", correct_results)
+    if len(correct_results) < 10 :
+        print("correct_results:", correct_results)
+    else:
+        print("correct_results:", correct_results[:10])
+
     print("query_out:", query_out)
     print("output_vars:", output_vars)
-    print("output_results:", output_results)
+    if len(output_results) < 10 :
+        print("output_results:", output_results)
+    else:
+        print("output_results:", output_results[:10])
+
 
 
 def GetOutputResult(query_out, query_vars):
@@ -103,8 +113,19 @@ def GetOutputResult(query_out, query_vars):
             output_results[-1][output2query[j]] = output_results_unmapped[j]
     return output_results, output_vars
 
-def WriteResultToFile(data_dir, output_vars, output_results, case_idx: int):
-    with open(data_dir + "parser_r" + str(case_idx) + ".txt", 'w') as f:
+
+def GetSelectVar(file_path):
+    with open(file_path) as f:
+        sql = f.read().replace('  ', ' ')
+        select_phase = re.match("((select)|(SELECT)).*((where)|(WHERE))", sql)
+        if select_phase is None:
+            return False, []
+        select_phase = select_phase.group(0)
+        return True, list(filter(lambda x: '?' in x, set(select_phase.split())))
+
+
+def WriteResultToFile(file_path, output_vars, output_results):
+    with open(file_path, 'w') as f:
         f.write('\t'.join(output_vars) + '\n')
         for output_result in output_results:
             first_output = True
@@ -118,4 +139,3 @@ def WriteResultToFile(data_dir, output_vars, output_results, case_idx: int):
                 else:
                     f.write(tok)
             f.write('\n')
-    return
