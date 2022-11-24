@@ -308,11 +308,11 @@ bool GeneralEvaluation::doQuery()
 		return false;
 	}
 
-	if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().group_pattern_predicate_maximal_varset))
-	{
-		printf("[ERROR]	There are some vars occur both in subject/object and predicate.\n");
-		return false;
-	}
+	//if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().group_pattern_predicate_maximal_varset))
+	//{
+	//	printf("[ERROR]	There are some vars occur both in subject/object and predicate.\n");
+	//	return false;
+	//}
 
 	// Gather and encode all triples
 	if (!this->bgp_query_total)
