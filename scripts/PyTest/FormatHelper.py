@@ -117,11 +117,20 @@ def GetOutputResult(query_out, query_vars):
 def GetSelectVar(file_path):
     with open(file_path) as f:
         sql = f.read().replace('  ', ' ')
-        select_phase = re.match("((select)|(SELECT)).*((where)|(WHERE))", sql)
+        select_phase = re.search("((select)|(SELECT)).*((where)|(WHERE))", sql)
         if select_phase is None:
             return False, []
         select_phase = select_phase.group(0)
         return True, list(filter(lambda x: '?' in x, set(select_phase.split())))
+
+def GetLimitNum(file_path):
+    with open(file_path) as f:
+        sql = f.read().replace('  ', ' ')
+        limit_phase = re.search("((limit)|(LIMIT)) *\d*", sql)
+        if limit_phase is None:
+            return -1
+        select_phase = limit_phase.group(0).split()[-1]
+        return int(select_phase)
 
 
 def WriteResultToFile(file_path, output_vars, output_results):
