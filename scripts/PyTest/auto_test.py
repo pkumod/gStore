@@ -34,7 +34,7 @@ def TestCase(db_name: str, case_name: str, query_path: str,
 
 
 def ParseTest():
-    query_num = 49
+    query_num = 50
     data_dir = "scripts/parser_test/"
     all_passed = True
     db_name = "parser_test"

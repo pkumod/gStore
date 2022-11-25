@@ -4395,14 +4395,13 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
             int new_id_pos=0;
             for(int i=0; i < varnum; i++){
                 if(global_EntityPredicate[i]){
-                    string str;
-                    this->stringindex->addRequest(bgpquery_result[k][i], &str);
-                    this->stringindex->trySequenceAccess(local_Entity[i]);
-                    tr.result.back().str.push_back(str);
+                    tr.result.back().str.push_back(string());
+                    this->stringindex->addRequest(bgpquery_result[k][i], &tr.result.back().str.back(), local_Entity[i]);
                 }
                 else
                     tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
             }
         }
+        this->stringindex->trySequenceAccess();
     }
 }
