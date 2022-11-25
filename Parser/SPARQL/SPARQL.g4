@@ -209,7 +209,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_LABELPROP '(' booleanLiteral ',' predSet ')'
 |   K_WCC '(' predSet ')'
 |   K_CLUSTERCOEFF '(' (varOrIri ',')? booleanLiteral ',' predSet ')'
-|   K_MAXIMUMCLIQUE '(' '{' varOrIri (',' varOrIri)* '}' ',' predSet ')'
+|   K_MAXIMUMCLIQUE '(' '{' varOrIri (',' varOrIri)* '}' ',' predSet (',' num_integer)? ')'
 |   K_PFN '(' varOrIriSet ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' string ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;

@@ -474,7 +474,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					}
 				}
 
-				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR")
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
+					|| tmp == "MAXIMUMCLIQUE")
 				{
 					if (bicCtx->integer_positive(0))
 					{
@@ -490,7 +491,10 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					}
 					else
 					{
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
+						if (bicCtx->num_integer(0))
+							proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
+						else
+							proj_var.path_args.k = 1;	// maximumClique
 						if (bicCtx->num_integer(1))
 							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
 					}

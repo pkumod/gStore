@@ -2618,7 +2618,7 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 	@param pred_set the set of edge labels allowed.
 	@return the vertices in the maximal clique containing the input vertices.
 **/
-vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set)
+vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set, int k)
 {
 	int verNum = getVertNum();
 	set<int> cands;
