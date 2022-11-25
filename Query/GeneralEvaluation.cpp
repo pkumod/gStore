@@ -1648,7 +1648,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						for (auto seeds : uid_ls_ls)
 						{
-							auto clique = pqHandler->maximumClique(seeds, pred_id_set);
+							auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[0].path_args.k);
 							bool localFirstOutput = true;
 							if (notFirstOutput)
 								ss << ',';
@@ -2965,7 +2965,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (auto seeds : uid_ls_ls)
 							{
-								auto clique = pqHandler->maximumClique(seeds, pred_id_set);
+								auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[0].path_args.k);
 								bool localFirstOutput = true;
 								if (notFirstOutput)
 									ss << ',';
