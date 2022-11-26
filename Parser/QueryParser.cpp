@@ -1224,21 +1224,21 @@ void QueryParser::addTriple(string subject, string predicate, string object, boo
 		if (qVar2Type.find(subject) == qVar2Type.end())
 			qVar2Type[subject] = QueryTree::Entity;
 		else if (qVar2Type[subject] == QueryTree::Predicate)
-			qVar2Type[subject] == QueryTree::EntityPredicate;
+			qVar2Type[subject] = QueryTree::EntityPredicate;
 	}
 	if (predicate[0] == '?')
 	{
 		if (qVar2Type.find(predicate) == qVar2Type.end())
 			qVar2Type[predicate] = QueryTree::Predicate;
 		else if (qVar2Type[predicate] == QueryTree::Entity)
-			qVar2Type[predicate] == QueryTree::EntityPredicate;
+			qVar2Type[predicate] = QueryTree::EntityPredicate;
 	}
 	if (object[0] == '?')
 	{
 		if (qVar2Type.find(object) == qVar2Type.end())
 			qVar2Type[object] = QueryTree::Entity;
 		else if (qVar2Type[object] == QueryTree::Predicate)
-			qVar2Type[object] == QueryTree::EntityPredicate;
+			qVar2Type[object] = QueryTree::EntityPredicate;
 	}
 
 	// Scope of filter
