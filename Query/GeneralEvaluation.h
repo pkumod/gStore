@@ -22,6 +22,15 @@
 #include <dlfcn.h>
 #include "PathQueryHandler.h"
 
+struct hashFunction
+{
+  size_t operator()(const pair<int , 
+                    int> &x) const
+  {
+    return x.first ^ x.second;
+  }
+};
+
 class GeneralEvaluation
 {
 	private:

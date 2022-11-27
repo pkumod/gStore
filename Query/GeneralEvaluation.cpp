@@ -1638,6 +1638,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 
 					// For each u-v pair, query
+					unordered_set<pair<int, int>, hashFunction> unique_pairs;
 					bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 					stringstream ss;
 					bool notFirstOutput = 0;	// For outputting commas
@@ -1680,6 +1681,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						for (int vid : vid_ls)
 						{
+							auto uvpair = make_pair(uid, vid);
+							if (unique_pairs.find(uvpair) != unique_pairs.end())
+								continue;
+							unique_pairs.insert(uvpair);
 							if (proj[0].aggregate_type == ProjectionVar::cyclePath_type)
 							{
 								if (uid == vid)
@@ -2740,6 +2745,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 
 						// For each u-v pair, query
+						unordered_set<pair<int, int>, hashFunction> unique_pairs;
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
@@ -2749,6 +2755,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (int vid : vid_ls)
 							{
+								auto uvpair = make_pair(uid, vid);
+								if (unique_pairs.find(uvpair) != unique_pairs.end())
+									continue;
+								unique_pairs.insert(uvpair);
 								prepPathQuery();
 								int hopConstraint = proj[i].path_args.k;
 								bool directed = proj[i].path_args.directed;
@@ -2956,6 +2966,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 
 						// For each u-v pair, query
+						unordered_set<pair<int, int>, hashFunction> unique_pairs;
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
@@ -2997,6 +3008,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (int vid : vid_ls)
 							{
+								auto uvpair = make_pair(uid, vid);
+								if (unique_pairs.find(uvpair) != unique_pairs.end())
+									continue;
+								unique_pairs.insert(uvpair);
 								if (proj[i].aggregate_type == ProjectionVar::cyclePath_type)
 								{
 									if (uid == vid)
