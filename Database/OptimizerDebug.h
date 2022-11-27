@@ -21,7 +21,7 @@
 #include <random>
 
 //#define FEED_PLAN
-#define OPTIMIZER_DEBUG_INFO
+// #define OPTIMIZER_DEBUG_INFO
 
 inline long GetTimeDebug(){
 #ifdef OPTIMIZER_DEBUG_INFO
