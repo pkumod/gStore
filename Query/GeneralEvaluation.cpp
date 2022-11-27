@@ -834,66 +834,64 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// Retrieve current BGP's result if query cache hit, or else save into sparql_query //
 					for (int l = 0; l < (int)triple_pattern.sub_group_pattern.size(); l++)
 						if (triple_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Pattern_type \
-							&& !triple_pattern.sub_group_pattern[l].pattern.kleene)
+							&& !triple_pattern.sub_group_pattern[l].pattern.kleene \
+							&& triple_pattern.getRootPatternBlockID(l) == l)
 						{
 							/// Process only the root triples of each BGP ///
-							if (triple_pattern.getRootPatternBlockID(l) == l)
-							{
-								//// Construct occur: all vars that occur in this BGP ////
-								//// Construct basic_query: vector of triples in this block ////
-								Varset occur;
-								vector<GroupPattern::Pattern> basic_query;
-								for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
-									if (triple_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type)
-										if (triple_pattern.getRootPatternBlockID(k) == l)
-										{
-											if (k < group_pattern_triple_num)
-												occur += triple_pattern.sub_group_pattern[k].pattern.varset;
-
-											basic_query.push_back(triple_pattern.sub_group_pattern[k].pattern);
-										}
-
-								//// Reduce useful: return result vars ////
-								if (!this->query_tree.checkProjectionAsterisk() && useful.hasCommonVar(occur))
-									useful = useful * occur;	// Only the common vars remain
-								else
-									useful = occur;
-
-								//// Print useful vars and triple patterns ////
-								printf("useful vars (SELECT + GROUPBY + ORDERBY): ");
-								useful.print();
-								printf("triple patterns: \n");
-								for (int k = 0; k < (int)basic_query.size(); k++)
-									printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
-										basic_query[k].predicate.value.c_str(),
-										basic_query[k].object.value.c_str()
-									);
-								bool success = false;
-								// if (this->query_cache != NULL && dep == 0)
-								// 	success = checkBasicQueryCache(basic_query, sub_result, useful);
-								//// If query cache not hit, save the current BGP to sparql_query for later processing ////
-								//// QUESTION: Is basic_query_handle a redundant variable? ////
-								if (!success)
+							//// Construct occur: all vars that occur in this BGP ////
+							//// Construct basic_query: vector of triples in this block ////
+							Varset occur, local_useful = useful;
+							vector<GroupPattern::Pattern> basic_query;
+							for (int k = 0; k < (int)triple_pattern.sub_group_pattern.size(); k++)
+								if (triple_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type \
+									&& triple_pattern.getRootPatternBlockID(k) == l)
 								{
-									#ifndef TEST_BGPQUERY
-									sparql_query.addBasicQuery();
-									for (int k = 0; k < (int)basic_query.size(); k++)
-										sparql_query.addTriple(Triple(basic_query[k].subject.value,
+									if (k < group_pattern_triple_num)
+										occur += triple_pattern.sub_group_pattern[k].pattern.varset;
+
+									basic_query.push_back(triple_pattern.sub_group_pattern[k].pattern);
+								}
+
+							//// Reduce useful: return result vars ////
+							if (!this->query_tree.checkProjectionAsterisk() && local_useful.hasCommonVar(occur))
+								local_useful = local_useful * occur;	// Only the common vars remain
+							else
+								local_useful = occur;
+
+							//// Print useful vars and triple patterns ////
+							printf("useful vars (SELECT + GROUPBY + ORDERBY): ");
+							local_useful.print();
+							printf("triple patterns: \n");
+							for (int k = 0; k < (int)basic_query.size(); k++)
+								printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
+									basic_query[k].predicate.value.c_str(),
+									basic_query[k].object.value.c_str()
+								);
+							bool success = false;
+							// if (this->query_cache != NULL && dep == 0)
+							// 	success = checkBasicQueryCache(basic_query, sub_result, useful);
+							//// If query cache not hit, save the current BGP to sparql_query for later processing ////
+							//// QUESTION: Is basic_query_handle a redundant variable? ////
+							if (!success)
+							{
+								#ifndef TEST_BGPQUERY
+								sparql_query.addBasicQuery();
+								for (int k = 0; k < (int)basic_query.size(); k++)
+									sparql_query.addTriple(Triple(basic_query[k].subject.value,
+										basic_query[k].predicate.value,
+										basic_query[k].object.value));
+								#else
+								bgp_query_vec.push_back(make_shared<BGPQuery>());
+								for (int k = 0; k < (int)basic_query.size(); k++)
+								{
+									bgp_query_vec[bgp_query_vec.size() - 1]->AddTriple(Triple(basic_query[k].subject.value,
 											basic_query[k].predicate.value,
 											basic_query[k].object.value));
-									#else
-									bgp_query_vec.push_back(make_shared<BGPQuery>());
-									for (int k = 0; k < (int)basic_query.size(); k++)
-									{
-										bgp_query_vec[bgp_query_vec.size() - 1]->AddTriple(Triple(basic_query[k].subject.value,
-												basic_query[k].predicate.value,
-												basic_query[k].object.value));
-									}
-									#endif
-
-									encode_varset.push_back(useful.vars);
-									basic_query_handle.push_back(basic_query);
 								}
+								#endif
+
+								encode_varset.push_back(local_useful.vars);
+								basic_query_handle.push_back(basic_query);
 							}
 						}
 
