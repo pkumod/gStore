@@ -15,21 +15,22 @@ using namespace std;
  * @param feed_plan
  * @return the new created table
  */
-tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult old_table,
-                                                    const IDCachesSharePtr id_caches,
-                                                    bool distinct,
-                                                    bool remain_old,
-                                                    const shared_ptr<FeedOneNode> feed_plan)
+tuple<bool, IntermediateResult> gstore::Executor::AffectANode(IntermediateResult old_table,
+                                                              const IDCachesSharePtr id_caches,
+                                                              bool node_added_into_table,
+                                                              bool distinct,
+                                                              bool remain_old,
+                                                              size_t max_output,
+                                                              const shared_ptr<AffectOneNode> feed_plan)
 {
   auto new_id = feed_plan->node_to_join_;
   auto table_content_ptr = old_table.values_;
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
   auto new_records = new_table.values_;
   auto id_pos_map = new_table.id_pos_map;
-  if (feed_plan->node_should_be_added_into_table)
+  if (node_added_into_table)
     new_table.AddNewNode(new_id);
   auto edges_info = feed_plan->edges_;
-
   /* : each record */
   for (auto record_iterator = table_content_ptr->begin();
        record_iterator != table_content_ptr->end();)
@@ -42,36 +43,27 @@ tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult o
                                                                    record_iterator);
     if(record_candidate_list->size()>0)
     {
-      if (feed_plan->node_should_be_added_into_table) {
+      if (node_added_into_table) {
         /* write to the new table, first copy the n-1 records
          * and move the last */
         for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++) {
-          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+          CheckedInsert(new_records,max_output,true,*record_iterator);
           auto new_element = record_candidate_list->getID(i);
           new_records->back()->push_back(new_element);
         }
-        if(!remain_old) { // move and delete
-          new_records->push_back(std::move(*record_iterator));}
-        else
-          new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+        CheckedInsert(new_records,max_output, remain_old,*record_iterator);
         auto new_element = record_candidate_list->getID(record_candidate_list->size() - 1);
         new_records->back()->push_back(new_element);
       }
       else // node_should NOT be_added_into_table
       {
         if(distinct){
-          if (!remain_old)
-            new_records->push_back(std::move(*record_iterator));
-          else
-            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+          CheckedInsert(new_records,max_output,remain_old,*record_iterator);
         }
         else {
           for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++)
-            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
-          if (!remain_old)
-            new_records->push_back(std::move(*record_iterator));
-          else
-            new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(**record_iterator));
+            CheckedInsert(new_records,max_output,true,*record_iterator);
+          CheckedInsert(new_records,max_output,remain_old,*record_iterator);
         }
       }
     }
@@ -79,6 +71,14 @@ tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult o
       record_iterator = table_content_ptr->erase(record_iterator);
     else
       record_iterator++;
+    if(max_output==0)
+      break;
+  }
+  if(!remain_old && max_output==0) {
+    auto record_iterator = table_content_ptr->begin();
+    while(record_iterator != table_content_ptr->end()) {
+      record_iterator = table_content_ptr->erase(record_iterator);
+    }
   }
   return make_tuple(true, new_table);
 }
@@ -92,11 +92,12 @@ tuple<bool, IntermediateResult> gstore::Executor::JoinANode(IntermediateResult o
  * @param id_caches
  * @return
  */
-std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const std::shared_ptr<FeedOneNode> feed_plan,
+std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const std::shared_ptr<AffectOneNode> feed_plan,
                                                                   bool is_entity,
                                                                   bool is_literal,
                                                                   bool is_predicate,
                                                                   bool distinct,
+                                                                  size_t max_output,
                                                                   const IDCachesSharePtr id_caches)
 {
   IntermediateResult init_table;
@@ -109,32 +110,31 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableOneNode(const 
   if(feed_plan->edges_->size()!=0) {
     // we assert that the plan will not visit contents from empty record
     auto empty_record = records->begin();
-    first_candidate_list = ExtendRecordFirstNode(feed_plan, id_position_map, id_caches,
+    first_candidate_list = ExtendRecordOneNode(feed_plan, id_position_map, id_caches,
                                                node_added,distinct, empty_record);
-    records = ConvertToTable(first_candidate_list);
+    records = ConvertToTable(first_candidate_list, max_output);
     return make_tuple(true, init_table);
   }
 
   auto id_cache_it = id_caches->find(node_added);
   if (id_cache_it != id_caches->end()) {
-    records = ConvertToTable(id_cache_it->second);
+    records = ConvertToTable(id_cache_it->second, max_output);
     return make_tuple(true, init_table);
   }
   else // No Constant Constraint, Return All IDs
   {
     if(is_predicate)
-      records = get<1>(this->GetAllPreId());
+      records = get<1>(this->GetAllPreId(max_output));
     else if(is_entity)
-    {
-      records = get<1>(this->GetAllSubObjId(is_literal));
-    }
+      records = get<1>(this->GetAllSubObjId(is_literal,max_output));
     return make_tuple(true, init_table);
   }
 }
 
 
-std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const std::shared_ptr<FeedTwoNode> join_plan,
-                                                                  const IDCachesSharePtr id_caches)
+std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const std::shared_ptr<AffectTwoNode> join_plan,
+                                                                          size_t max_output,
+                                                                          const IDCachesSharePtr id_caches)
 {
   IntermediateResult init_table;
 
@@ -154,6 +154,8 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const 
                                                   id2,
                                                   empty_record);
   auto valid_size = record_two_node_list->size()/2;
+  if( max_output != NO_LIMIT_OUTPUT)
+    valid_size = min(valid_size,max_output);
   /* write to the new table */
   for (decltype(valid_size) i =0;i<valid_size;i++) {
     auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
@@ -168,10 +170,11 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const 
 
 
 
-std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_ptr<FeedTwoNode> join_two_node_,
-                                                           IntermediateResult old_table,
-                                                           const IDCachesSharePtr id_caches,
-                                                           bool remain_old)
+std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_ptr<AffectTwoNode> join_two_node_,
+                                                                   IntermediateResult old_table,
+                                                                   const IDCachesSharePtr id_caches,
+                                                                   bool remain_old,
+                                                                   size_t max_output)
 {
   auto new_table=IntermediateResult::OnlyPositionCopy(old_table);
   auto id1 = join_two_node_->node_to_join_1_;
@@ -194,25 +197,27 @@ std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_
                                                                    record_iterator);
     auto valid_size = record_two_node_list->size()/2;
     /* write to the new table */
-    auto record = *record_iterator;
-    for (decltype(valid_size) i =0;i<valid_size;i++) {
-      shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> new_record(nullptr);
-      if(!remain_old && i == (valid_size-1) )
-        new_record = record;
-      else
-        new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record);
-      auto id1_this_record = (*record_two_node_list)[i*2];
-      auto id2_this_record = (*record_two_node_list)[i*2+1];
-      new_record->push_back(id1_this_record);
-      new_record->push_back(id2_this_record);
-      new_records->push_back(std::move(new_record));
+    auto &record = *record_iterator;
+    if(valid_size!=0){
+      decltype(valid_size) i;
+      for (i = 0;i<valid_size;i++) {
+        bool remain_this = (i != valid_size-1) || remain_old;
+        CheckedInsert(new_records,max_output,remain_this,record);
+        auto id1_this_record = (*record_two_node_list)[i*2];
+        auto id2_this_record = (*record_two_node_list)[i*2+1];
+        new_records->back()->push_back(id1_this_record);
+        new_records->back()->push_back(id2_this_record);
+        if(max_output==0)
+          break;
+      }
     }
     if(!remain_old)
       record_iterator = old_records->erase(record_iterator);
     else
       record_iterator++;
+    if(max_output==0)
+      break;
   }
-
   return make_tuple(true, new_table);
 }
 
@@ -380,7 +385,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
  * @param id_caches
  * @return a new IntermediateResult, changing the return one will not change the old table
  */
-tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shared_ptr<FeedOneNode> check_plan,
+tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shared_ptr<AffectOneNode> check_plan,
                                                                     IntermediateResult old_table,
                                                                     bool remain_old) {
   auto new_table = IntermediateResult::OnlyPositionCopy(old_table);
@@ -402,7 +407,7 @@ tuple<bool,IntermediateResult> gstore::Executor::ANodeEdgesConstraintFilter(shar
   return make_tuple(true,new_table);
 }
 
-bool gstore::Executor::CacheConstantCandidates(shared_ptr<FeedOneNode> one_step,bool distinct, IDCachesSharePtr id_caches) {
+bool gstore::Executor::CacheConstantCandidates(shared_ptr<AffectOneNode> one_step, bool distinct, IDCachesSharePtr id_caches) {
   auto node_t = one_step->node_to_join_;
   auto edges = one_step->edges_;
   auto edges_constant = one_step->edges_constant_info_;
@@ -441,12 +446,10 @@ gstore::Executor::UpdateIDList(const shared_ptr<IDList>& valid_id_list, unsigned
  * @param id_caches
  * @return bool
  */
-bool gstore::Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operation,IDCachesSharePtr id_caches) {
-  //
-  auto feed_plan = step_operation->edge_filter_;
-  auto var_node_id = feed_plan->node_to_join_;
+bool gstore::Executor::UpdateIDCache(shared_ptr<AffectOneNode> affect_one_node, IDCachesSharePtr id_caches, bool distinct) {
+  auto var_node_id = affect_one_node->node_to_join_;
   auto candidate_list_it = id_caches->find(var_node_id);
-  auto candidate_generated = this->CandidatesWithConstantEdge( feed_plan->edges_,step_operation->distinct_);
+  auto candidate_generated = this->CandidatesWithConstantEdge(affect_one_node->edges_,distinct);
   if(candidate_list_it==id_caches->end())
     (*id_caches)[var_node_id] = candidate_generated;
   else
@@ -457,10 +460,19 @@ bool gstore::Executor::UpdateIDCache(std::shared_ptr<StepOperation> step_operati
   return true;
 }
 
-TableContentShardPtr gstore::Executor::ConvertToTable(std::shared_ptr<IDList> id_list) {
+TableContentShardPtr gstore::Executor::ConvertToTable(std::shared_ptr<IDList> id_list,
+                                                      size_t max_output)
+                                                      {
+
+
   auto result = make_shared<TableContent>();
   auto id_candidate_vec = id_list->getList();
-  for (auto var_id: *id_candidate_vec) {
+  auto min_size = id_candidate_vec->size();
+  if(max_output != NO_LIMIT_OUTPUT)
+    min_size = min(min_size, max_output);
+  for (size_t i = 0;i<min_size;i++)
+  {
+    auto var_id = id_candidate_vec->at(i);
     auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
     record->push_back(var_id);
     result->push_back(record);
@@ -925,19 +937,25 @@ bool gstore::Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITE
   return true;
 }
 
-tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_literal)
+tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_literal,size_t max_output)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_ENTITY_LITERAL_ID i = 0; i < this->limitID_entity_; ++i) {
     auto entity_str = this->kv_store_->getEntityByID(i);
-    if(entity_str!="")
+    if(entity_str!="") {
       ids.insert(i);
+      if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
+        break;
+    }
   }
   if(need_literal) {
     for (unsigned i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_ + Util::LITERAL_FIRST_ID; ++i) {
       auto entity_str = this->kv_store_->getLiteralByID(i);
-      if (entity_str != "")
+      if (entity_str != "") {
         ids.insert(i);
+        if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
+          break;
+      }
     }
   }
   auto result = make_shared<TableContent>();
@@ -950,13 +968,16 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
   return make_tuple(true,result);
 }
 
-std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId()
+std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId(size_t max_output)
 {
   set<TYPE_ENTITY_LITERAL_ID> ids;
   for (TYPE_PREDICATE_ID i = 0; i < this->limitID_predicate_; ++i) {
     auto pre_str = this->kv_store_->getPredicateByID(i);
-    if(pre_str!="")
+    if(pre_str!="") {
       ids.insert(i);
+      if(max_output!= NO_LIMIT_OUTPUT && --max_output == 0)
+        break;
+    }
   }
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
@@ -968,217 +989,7 @@ std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId()
   return make_tuple(true,result);
 }
 
-// The only difference between this func and ExtendRecordOneNode is:
-// In this func, we guarantee the duplicate elements in result_list will not be removed by Deduplicated candidate set.
-std::shared_ptr<IDList> gstore::Executor::ExtendRecordFirstNode(shared_ptr<FeedOneNode> one_step_join_node_,
-															    PositionValueSharedPtr id_pos_mapping,
-															    IDCachesSharePtr id_caches,
-															    TYPE_ENTITY_LITERAL_ID new_id,
-															    bool distinct,
-															    list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
-	auto record_candidate_list= make_shared<IDList>();
-	auto record_candidate_prepared = false;
-	auto edges_info = one_step_join_node_->edges_;
-	auto edge_constant_info_vec = one_step_join_node_->edges_constant_info_;
-	/* for each edge */
-	for (unsigned edge_i = 0;edge_i<edges_info->size();edge_i++) {
-		auto edge_info = (*edges_info)[edge_i];
-		auto edge_constant_info = (*edge_constant_info_vec)[edge_i];
-		if (record_candidate_prepared && record_candidate_list->empty())
-			continue;
-		TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
-		TYPE_ENTITY_LITERAL_ID edge_list_len;
-/* through this edge get candidate */
-		switch (edge_info.join_method_) {
-			case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
-				TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
-				if(edge_constant_info.s_constant_)
-					s_var_id_this_record = edge_info.s_;
-				else {
-					auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-					s_var_id_this_record = (**record_iterator)[s_var_position];
-				}
-				this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::s2o: {
-				TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
-				if(edge_constant_info.s_constant_)
-					s_var_id_this_record = edge_info.s_;
-				else {
-					auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-					s_var_id_this_record = (**record_iterator)[s_var_position];
-				}
-				this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::p2s: {
-				TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
-				if(edge_constant_info.p_constant_)
-					p_var_id_this_record = edge_info.p_;
-				else {
-					auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-					p_var_id_this_record = (**record_iterator)[p_var_position];
-				}
-				this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::p2o: {
-				TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
-				if(edge_constant_info.p_constant_)
-					p_var_id_this_record = edge_info.p_;
-				else {
-					auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-					p_var_id_this_record = (**record_iterator)[p_var_position];
-				}
-				this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::o2s: {
-				TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
-				if(edge_constant_info.o_constant_)
-					o_var_id_this_record = edge_info.o_;
-				else {
-					auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-					o_var_id_this_record = (**record_iterator)[o_var_position];
-				}
-				this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::o2p: {
-				TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
-				if(edge_constant_info.o_constant_)
-					o_var_id_this_record = edge_info.o_;
-				else {
-					auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-					o_var_id_this_record = (**record_iterator)[o_var_position];
-				}
-				this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
-													 edge_candidate_list,
-													 edge_list_len,
-													 distinct,
-													 this->txn_);
-				break;
-			}
-			case JoinMethod::so2p: {
-				TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
-				if(edge_constant_info.s_constant_)
-					s_var_id_this_record = edge_info.s_;
-				else {
-					auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-					s_var_id_this_record = (**record_iterator)[s_var_position];
-				}
-
-				TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
-				if(edge_constant_info.o_constant_)
-					o_var_id_this_record = edge_info.o_;
-				else {
-					auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-					o_var_id_this_record = (**record_iterator)[o_var_position];
-				}
-
-				this->kv_store_->getpreIDlistBysubIDobjID(s_var_id_this_record,
-														  o_var_id_this_record,
-														  edge_candidate_list,
-														  edge_list_len,
-														  distinct,
-														  this->txn_);
-				break;
-			}
-			case JoinMethod::sp2o: {
-				TYPE_ENTITY_LITERAL_ID s_var_id_this_record;
-				if(edge_constant_info.s_constant_)
-					s_var_id_this_record = edge_info.s_;
-				else {
-					auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-					s_var_id_this_record = (**record_iterator)[s_var_position];
-				}
-
-				TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
-				if(edge_constant_info.p_constant_)
-					p_var_id_this_record = edge_info.p_;
-				else {
-					auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-					p_var_id_this_record = (**record_iterator)[p_var_position];
-				}
-				this->kv_store_->getobjIDlistBysubIDpreID(s_var_id_this_record,
-														  p_var_id_this_record,
-														  edge_candidate_list,
-														  edge_list_len,
-														  distinct,
-														  this->txn_);
-				break;
-			}
-			case JoinMethod::po2s: {
-				TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
-				if(edge_constant_info.o_constant_)
-					o_var_id_this_record = edge_info.o_;
-				else {
-					auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-					o_var_id_this_record = (**record_iterator)[o_var_position];
-				}
-
-				TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
-				if(edge_constant_info.p_constant_)
-					p_var_id_this_record = edge_info.p_;
-				else {
-					auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-					p_var_id_this_record = (**record_iterator)[p_var_position];
-				}
-
-				this->kv_store_->getsubIDlistByobjIDpreID(o_var_id_this_record,
-														  p_var_id_this_record,
-														  edge_candidate_list,
-														  edge_list_len,
-														  distinct,
-														  this->txn_);
-				break;
-			}
-
-			default: // s2po p2so o2sp
-				throw "ExtendRecordOneNode only support add 1 node each time";
-		}
-
-		UpdateIDList(record_candidate_list,
-					 edge_candidate_list,
-					 edge_list_len,
-					 record_candidate_prepared);
-		delete [] edge_candidate_list;
-/* If candidate is not prepared, then we ues the first edge as candidate */
-		record_candidate_prepared = true;
-	}
-
-	if(id_caches->find(new_id)!=id_caches->end())
-	{
-		auto caches_ptr = (*(id_caches->find(new_id))).second;
-		record_candidate_list->intersectList(caches_ptr->getList()->data(),caches_ptr->size(), distinct);
-	}
-
-	return record_candidate_list;
-}
-
-
-std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<FeedOneNode> one_step_join_node_,
+std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectOneNode> one_step_join_node_,
                                                       PositionValueSharedPtr id_pos_mapping,
                                                       IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
@@ -1397,7 +1208,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<FeedOne
  * @return a vector of [id1 id2]_1 [id1 id2]_2  [id1 id2]_3 [id1 id2]_4
  */
 std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>
-gstore::Executor::ExtendRecordTwoNode(shared_ptr<FeedTwoNode> one_step_join_node_,
+gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_node_,
                               PositionValueSharedPtr id_pos_mapping,
                               IDCachesSharePtr id_caches,
                               TYPE_ENTITY_LITERAL_ID new_id1,
@@ -1617,7 +1428,8 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
   return id_candidate;
 }
 
-std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(std::shared_ptr<FeedOneNode> feed_one_node)
+std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(size_t max_output,
+                                                                   std::shared_ptr<AffectOneNode> feed_one_node)
 {
   IntermediateResult init_table;
   auto &records = init_table.values_;
@@ -1642,9 +1454,33 @@ std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(std::shared_p
       row->push_back(s_id);
       row->push_back(p_id);
       row->push_back(o_id);
-      records->push_back(std::move(row));
+      CheckedInsert(records,max_output,false,row);
+      if(max_output==0)
+        break;
     }
     delete[] id_list;
+    if(max_output==0)
+      break;
   }
   return make_tuple(true,std::move(init_table));
+}
+
+void gstore::Executor::CheckedInsert(TableContentShardPtr& new_records,
+                                     size_t &max_output,
+                                     bool remain_old,
+                                     shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& inserted_output) {
+  // limited output is enabled
+  if(max_output != NO_LIMIT_OUTPUT) {
+    // no more result is needed
+    if (max_output == 0) {
+      return;
+    }
+  }
+
+  if(!remain_old) { // move and delete
+    new_records->push_back(std::move(inserted_output));}
+  else
+    new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*inserted_output));
+
+  if(max_output != NO_LIMIT_OUTPUT) max_output--;
 }

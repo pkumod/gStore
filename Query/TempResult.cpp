@@ -238,6 +238,7 @@ void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, 
 
 		delete[] this->result[i].id;
 		this->result[i].id = v;
+        this->result[i].sz = new_id_cols;
 	}
 
 	this->id_varset = new_id_varset;

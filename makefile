@@ -97,9 +97,9 @@ utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(ob
 
 topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)DPBTopKUtil.o $(objdir)TopKSearchPlan.o
 
-queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)QueryPlan.o\
+queryobj = $(objdir)SPARQLquery.o $(objdir)BasicQuery.o $(objdir)ResultSet.o  $(objdir)IDList.o $(objdir)DFSPlan.o\
 		   $(objdir)Varset.o $(objdir)QueryTree.o $(objdir)TempResult.o $(objdir)QueryCache.o $(objdir)GeneralEvaluation.o \
-		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o
+		   $(objdir)PathQueryHandler.o $(objdir)BGPQuery.o $(objdir)FilterPlan.o
 
 #signatureobj = $(objdir)SigEntry.o $(objdir)Signature.o
 
@@ -398,9 +398,10 @@ $(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(filter $(FIRST_
 	$(filter $(FIRST_BUILD),$(objdir)TableOperator.o) $(filter $(FIRST_BUILD), $(objdir)DPBTopKUtil.o)
 	$(CXX) $(CFLAGS) Database/Executor.cpp $(inc) $(inc_log) -o $(objdir)Executor.o $(openmp) ${ldl}
 
-$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h \
-	$(filter $(FIRST_BUILD), $(objdir)Executor.o) $(filter $(FIRST_BUILD),$(objdir)QueryPlan.o) \
-	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o)
+$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h Database/OptimizerDebug.h \
+	$(filter $(FIRST_BUILD), $(objdir)Executor.o) $(filter $(FIRST_BUILD),$(objdir)DFSPlan.o) \
+	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o) \
+	$(filter $(FIRST_BUILD),$(objdir)FilterPlan.o)
 	$(CXX) $(CFLAGS) Database/Optimizer.cpp $(inc) $(inc_log) -o $(objdir)Optimizer.o $(openmp) ${ldl}
 
 $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(filter $(FIRST_BUILD),$(objdir)Util.o) \
@@ -427,8 +428,8 @@ $(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(filter $(FIRST_BUI
 $(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
 	$(CXX) $(CFLAGS) Query/Varset.cpp $(inc) $(inc_log) -o $(objdir)Varset.o $(openmp)
 
-$(objdir)QueryPlan.o: Query/QueryPlan.cpp Query/QueryPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
-	$(CXX) $(CFLAGS) Query/QueryPlan.cpp $(inc) $(inc_log) -o $(objdir)QueryPlan.o $(openmp)
+$(objdir)DFSPlan.o: Query/DFSPlan.cpp Query/DFSPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+	$(CXX) $(CFLAGS) Query/DFSPlan.cpp $(inc) $(inc_log) -o $(objdir)DFSPlan.o $(openmp)
 
 $(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(filter $(FIRST_BUILD),$(objdir)Varset.o)
 	$(CXX) $(CFLAGS) Query/QueryTree.cpp $(inc) $(inc_log) -o $(objdir)QueryTree.o $(openmp)
@@ -448,6 +449,9 @@ $(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h
 $(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h   $(filter $(FIRST_BUILD),$(objdir)Util.o) \
  	$(filter $(FIRST_BUILD),$(objdir)Triple.o)  $(filter $(FIRST_BUILD),$(objdir)KVstore.o)
 	$(CXX) $(CFLAGS) Query/BGPQuery.cpp $(inc) $(inc_log) -o $(objdir)BGPQuery.o $(openmp)
+
+$(objdir)FilterPlan.o: Query/FilterPlan.cpp Query/FilterPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+	$(CXX) $(CFLAGS) Query/FilterPlan.cpp $(inc) $(inc_log) -o $(objdir)FilterPlan.o $(openmp)
 
 #objects in Query/topk/ begin
 

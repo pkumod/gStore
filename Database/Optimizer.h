@@ -7,9 +7,10 @@
 #ifndef _DATABASE_OPTIMIZER_H
 #define _DATABASE_OPTIMIZER_H
 
-#include "../Query/QueryPlan.h"
+#include "../Query/DFSPlan.h"
 #include "./PlanGenerator.h"
 #include "./Executor.h"
+
 #ifdef TOPK_SUPPORT
 #include "../Query/topk/DPBTopKUtil.h"
 #endif // TOPK_SUPPORT
@@ -20,20 +21,17 @@
 #include <cstdlib>
 #include <cmath>
 #include <random>
-
-//#define FEED_PLAN
-#define OPTIMIZER_DEBUG_INFO
+#include "./OptimizerDebug.h"
+#include "../Query/FilterPlan.h"
 
 using namespace std;
 using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
 using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
 using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
-using QueryPlanSharedPtr = shared_ptr<QueryPlan>;
 
 enum class BasicQueryStrategy{
-  Normal, // method 0
-  Special,// method 1-5
+  Normal,
   limitK,
   TopK
 };
@@ -44,28 +42,12 @@ struct QueryInfo{
   bool is_distinct_;
   shared_ptr<vector<Order>> ordered_by_expressions_;
 };
-/*
- *
- * 还差一个 copyToResult 的操作
- *
-1. Optimizer类在generalevaluation里面初始化，并且在generalevaluation调用do_query()
-----------
-2. do_query()首先判断handler0或者handler1-5
-3. 在handler0里面首先调用enum_query_plan()，按照BFS或者DFS生成所有执行计划
-4. 生成完执行计划后调用choose_exec_plan()选择一个计划执行
-5. 在choose_exec_plan()中每一个执行计划需要层次调用cost_model()->cardinality_estimator()->update_cardinality_cache()
- ----------
-6. 按照点的顺序首先需要对起始点调用gen_filter获得该点的候选集 [done]
-    而后的每一个点调用join_one_step()
-7. 在每一步的join_one_step()中需要根据queryplan调用三种基本join之一，同时需要update中间结果，并且每一步的开始需要check一下中间结果能不能利用
-8. 每一步都做完之后，copytoResult()
-*/
 
 class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, TYPE_TRIPLE_NUM* pre2num, __attribute__((unused)) __attribute__((unused)) TYPE_TRIPLE_NUM* pre2sub,
 			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
 			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
@@ -76,23 +58,23 @@ class Optimizer
  private:
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 
-  BasicQueryStrategy ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query,QueryInfo *query_info);
+  BasicQueryStrategy ChooseStrategy(const std::shared_ptr<BGPQuery>& bgp_query,QueryInfo *query_info);
 
-  std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(shared_ptr<QueryPlan> query_plan);
+  static std::shared_ptr<std::vector<IntermediateResult>> GenerateResultTemplate(const shared_ptr<DFSPlan>& query_plan);
 
-  tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>  bgp_query,
-                                                     shared_ptr<QueryPlan> query_plan,
-                                                     QueryInfo query_info,
-                                                     IDCachesSharePtr id_caches);
+  tuple<bool,IntermediateResult> ExecutionDepthFirst(shared_ptr<BGPQuery>&  bgp_query,
+                                                     shared_ptr<DFSPlan>& query_plan,
+                                                     const QueryInfo& query_info,
+                                                     const IDCachesSharePtr& id_caches);
 
 
-  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<QueryPlan> query_plan,
+  tuple<bool,IntermediateResult> DepthSearchOneLayer(shared_ptr<DFSPlan>& query_plan,
                                                      int layer_count,
                                                      int &result_number_till_now,
                                                      int limit_number,
                                                      TableContentShardPtr table_content_ptr,
-                                                     IDCachesSharePtr id_caches,
-                                                     shared_ptr<vector<IntermediateResult>> table_template);
+                                                     const IDCachesSharePtr& id_caches,
+                                                     const shared_ptr<vector<IntermediateResult>>& table_template);
 
 #ifdef TOPK_SUPPORT
   tuple<bool,IntermediateResult> ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,
@@ -102,7 +84,6 @@ class Optimizer
 
   void GetResultListByEdgeInfo(const EdgeInfo &edge_info, unsigned* &result_list_pointer,
 							   unsigned &result_list_len, bool distinct);
-  bool SpecialOneTuplePlanExecution(PlanTree* plan_tree, shared_ptr<BGPQuery> bgp_query, IDCachesSharePtr &id_caches, bool distinct);
 
   tuple<bool,IntermediateResult> ExecutionBreathFirst(shared_ptr<BGPQuery> bgp_query,
                                                       QueryInfo query_info,
@@ -110,10 +91,6 @@ class Optimizer
                                                       IDCachesSharePtr id_caches);
  private:
   KVstore* kv_store_;
-
-  shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
-  TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size
-
   TYPE_TRIPLE_NUM* pre2num_;
   TYPE_TRIPLE_NUM* pre2sub_;
   TYPE_TRIPLE_NUM* pre2obj_;
@@ -125,8 +102,44 @@ class Optimizer
 
   gstore::Executor executor_;
 
-  tuple<bool,bool,bool> PrepareInitial(shared_ptr<BGPQuery> bgp_query,
-                            shared_ptr<FeedOneNode> join_a_node_plan) const;
+  tuple<bool,bool,bool> PrepareInitial(const shared_ptr<BGPQuery> &bgp_query,
+                            shared_ptr<AffectOneNode> join_a_node_plan) const;
+
+
+  tuple<bool,IntermediateResult> InitialTable(shared_ptr<BGPQuery> &bgp_query,
+                                  const IDCachesSharePtr &id_caches,
+                                  shared_ptr<StepOperation> &step_operation,
+                                  size_t max_output);
+
+  tuple<bool,IntermediateResult> UpdateCandidates(IDCachesSharePtr &id_caches,
+                                      shared_ptr<StepOperation> &step_operation);
+
+  tuple<bool, IntermediateResult> OperateOneNode(shared_ptr<BGPQuery> &bgp_query,
+                                                 shared_ptr<StepOperation> &step_operation,
+                                                 const IDCachesSharePtr &id_caches,
+                                                 IntermediateResult &left_table,
+                                                 size_t max_output);
+
+  tuple<bool, IntermediateResult> ExtendTwoNode(shared_ptr<BGPQuery> &bgp_query,
+                                                shared_ptr<StepOperation> &step_operation,
+                                                const IDCachesSharePtr &id_caches,
+                                                IntermediateResult &left_table,
+                                                size_t max_output);
+
+  tuple<bool, IntermediateResult> TableCheck(shared_ptr<BGPQuery> &bgp_query,
+                                             shared_ptr<StepOperation> &step_operation,
+                                             IntermediateResult &left_table);
+
+  tuple<bool, IntermediateResult> JoinTable(shared_ptr<BGPQuery> &bgp_query,
+                                            shared_ptr<StepOperation> &step_operation,
+                                            IntermediateResult &left_table,
+                                            IntermediateResult &right_table);
+  void PrintTable(IntermediateResult& result, shared_ptr<BGPQuery> &bgp_query);
+#ifdef OPTIMIZER_DEBUG_INFO
+#define PrintTableDebug(x,y) PrintTable(x,y)
+#else
+  #define PrintTableDebug(x,y) {}
+#endif // OPTIMIZER_DEBUG_INFO
 };
 
 

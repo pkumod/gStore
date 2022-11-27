@@ -168,45 +168,49 @@ std::string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo e
 /* Extend One Table, add a new Node.
  * The Node can have a candidate list
  * or to check if a variable has a certain edge */
-class FeedOneNode{
+class AffectOneNode{
  public:
   TYPE_ENTITY_LITERAL_ID node_to_join_;
-  bool node_should_be_added_into_table;
   std::shared_ptr<std::vector<EdgeInfo>> edges_;
   std::shared_ptr<std::vector<EdgeConstantInfo>> edges_constant_info_;
-  FeedOneNode():node_to_join_(-1),node_should_be_added_into_table(true){
+  AffectOneNode(): node_to_join_(-1){
     edges_ = std::make_shared<std::vector<EdgeInfo>>();
     edges_constant_info_ = std::make_shared<std::vector<EdgeConstantInfo>>();
   };
-
-  FeedOneNode(unsigned join_node_id,
-              EdgeInfo edge_info,
-              EdgeConstantInfo edge_constant,
-              bool added_into_table=true):
-      node_to_join_(join_node_id),node_should_be_added_into_table(added_into_table)
+  // tmp function,  should be deleted soon
+  inline void Set_node_should_be_added_into_table(bool t){};
+  inline bool Get_node_should_be_added_into_table(){return true;};
+  AffectOneNode(unsigned join_node_id,
+                EdgeInfo edge_info,
+                EdgeConstantInfo edge_constant,
+                bool added_into_table=true):
+      node_to_join_(join_node_id)
   {
     edges_ = make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{edge_info});
     edges_constant_info_ = make_shared<vector<EdgeConstantInfo>>(vector<EdgeConstantInfo>{edge_constant});
   };
-  FeedOneNode(unsigned join_node_id,
-              shared_ptr<vector<EdgeInfo>> edge_info,
-              shared_ptr<vector<EdgeConstantInfo>> edge_constant,
-              bool added_into_table=true):
-      node_to_join_(join_node_id),node_should_be_added_into_table(added_into_table),edges_(edge_info), edges_constant_info_(edge_constant)
+  AffectOneNode(unsigned join_node_id,
+                shared_ptr<vector<EdgeInfo>> edge_info,
+                shared_ptr<vector<EdgeConstantInfo>> edge_constant,
+                bool added_into_table=true):
+      node_to_join_(join_node_id),edges_(edge_info), edges_constant_info_(edge_constant)
   {};
 
   void ChangeOrder(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> already_in);
+
+  string GetString();
 };
 
-class FeedTwoNode{
+class AffectTwoNode{
 public:
 	TYPE_ENTITY_LITERAL_ID node_to_join_1_;
 	TYPE_ENTITY_LITERAL_ID node_to_join_2_;
 	EdgeInfo edges_;
 	EdgeConstantInfo edges_constant_info_;
-	FeedTwoNode()=default;
-	FeedTwoNode(unsigned node_1, unsigned node_2, EdgeInfo edge_info, EdgeConstantInfo edge_constant):
+	AffectTwoNode()=default;
+	AffectTwoNode(unsigned node_1, unsigned node_2, EdgeInfo edge_info, EdgeConstantInfo edge_constant):
 		node_to_join_1_(node_1), node_to_join_2_(node_2), edges_(edge_info), edges_constant_info_(edge_constant){};
+	string GetString();
 };
 
 /* Join Two Table on Public Variables*/
@@ -216,56 +220,144 @@ class JoinTwoTable{
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables_;
   JoinTwoTable(std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> public_variables): public_variables_(public_variables){};
   JoinTwoTable(){ this->public_variables_=std::make_shared<std::vector<TYPE_ENTITY_LITERAL_ID>>();};
+  string GetString();
 };
 
 class StepOperation{
  public:
-  // TODO merge the four together
-  std::shared_ptr<FeedOneNode> join_node_; // GetAllTriples uses this field
-  std::shared_ptr<FeedTwoNode> join_two_node_;
-  std::shared_ptr<JoinTwoTable> join_table_;
-  std::shared_ptr<FeedOneNode> edge_filter_; // GenerateCandidates & EdgeCheck use this field
+  enum class StepOpType{
+    Filter, Extend, Check, TableJoin, Satellite
+  } op_type_;
 
-  // ConstCandidatesCheck
-  enum class JoinType{
-    // join a node to table, or create a table with one node
-    JoinNode,
-    // change the candidates list for one node
-    GenerateCandidates,
-    // join two table together
-    JoinTable,
-    // check if an edge exist. the nodes in the edge should already in the table
-    EdgeCheck,
-    // join two node to table,instead of joining twice
-    JoinTwoNodes,
-    // get all triples in the dataset
-    GetAllTriples
+  enum class OpRangeType{
+    OneNode, TwoNode, GetAllTriples, TwoTable, NullRange
   };
 
-  JoinType join_type_;
+  static bool AllowedOpRange (StepOpType op,OpRangeType range);
+
+  static std::string GetString(StepOpType op);
+  static std::string GetString(OpRangeType op);
+
+ private:
+  class StepEffect {
+    union EffectUnionType {
+      std::shared_ptr<AffectOneNode> one_node;
+      std::shared_ptr<AffectTwoNode> two_node;
+      std::shared_ptr<JoinTwoTable> two_table;
+      EffectUnionType() {}
+      ~EffectUnionType() {}
+    } effect_pointer_;
+   public:
+    OpRangeType range;
+    StepEffect(OpRangeType _range,
+               std::shared_ptr<AffectOneNode> _one_node,
+               std::shared_ptr<AffectTwoNode> _two_node,
+               std::shared_ptr<JoinTwoTable> _two_table):
+               range(_range)
+               {
+                 // based on _range , call in-place construction
+                 switch (_range) {
+                   case OpRangeType::OneNode:
+                     new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(std::move(_one_node));
+                     break;
+                   case OpRangeType::TwoNode:
+                     new (&effect_pointer_.two_node) std::shared_ptr<AffectTwoNode>(std::move(_two_node));
+                     break;
+                   case OpRangeType::GetAllTriples:
+                     new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(std::move(_one_node));
+                     break;
+                   case OpRangeType::TwoTable:
+                     new (&effect_pointer_.two_table) std::shared_ptr<JoinTwoTable>(std::move(_two_table));
+                     break;
+                   case OpRangeType::NullRange:
+                     new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+                     break;
+                 }
+               };
+
+    StepEffect(): StepEffect(OpRangeType::NullRange,nullptr,nullptr,nullptr) {}
+    StepEffect(const StepEffect& other):range(other.range){
+      // based on other's range , call in-place copy construction
+      switch (other.range) {
+        case OpRangeType::OneNode:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(other.effect_pointer_.one_node);
+          break;
+        case OpRangeType::TwoNode:
+          new (&effect_pointer_.two_node) std::shared_ptr<AffectTwoNode>(other.effect_pointer_.two_node);
+          break;
+        case OpRangeType::GetAllTriples:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+          break;
+        case OpRangeType::TwoTable:
+          new (&effect_pointer_.two_table) std::shared_ptr<JoinTwoTable>(other.effect_pointer_.two_table);
+          break;
+        case OpRangeType::NullRange:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+          break;
+      }
+    }
+    StepEffect(StepEffect&& other):range(other.range){
+      // based on other's range , call in-place move construction
+      switch (other.range) {
+        case OpRangeType::OneNode:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(std::move(other.effect_pointer_.one_node));
+          break;
+        case OpRangeType::TwoNode:
+          new (&effect_pointer_.two_node) std::shared_ptr<AffectTwoNode>(std::move(other.effect_pointer_.two_node));
+          break;
+        case OpRangeType::GetAllTriples:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+          break;
+        case OpRangeType::TwoTable:
+          new (&effect_pointer_.two_table) std::shared_ptr<JoinTwoTable>(std::move(other.effect_pointer_.two_table));
+          break;
+        case OpRangeType::NullRange:
+          new (&effect_pointer_.one_node) std::shared_ptr<AffectOneNode>(nullptr);
+          break;
+      }
+    }
+    ~StepEffect(){
+      // based on range ,manually destroy
+      switch (range) {
+        case OpRangeType::OneNode:
+          effect_pointer_.one_node.~shared_ptr();
+          break;
+        case OpRangeType::TwoNode:
+          effect_pointer_.two_node.~shared_ptr();
+          break;
+        case OpRangeType::GetAllTriples:
+          effect_pointer_.one_node.~shared_ptr();
+          break;
+        case OpRangeType::TwoTable:
+          effect_pointer_.two_table.~shared_ptr();
+          break;
+        case OpRangeType::NullRange:
+          effect_pointer_.one_node.~shared_ptr();
+          break;
+      }
+    }
+    std::shared_ptr<AffectOneNode> GetOneNodePlan();
+    std::shared_ptr<AffectTwoNode> GetTwoNodePlan();
+    std::shared_ptr<JoinTwoTable> GetTwoTablePlan();
+	string GetString();
+  }step_effect_;
+ public:
+  std::shared_ptr<AffectOneNode> GetOneNodePlan();
+  std::shared_ptr<AffectTwoNode> GetTwoNodePlan();
+  std::shared_ptr<JoinTwoTable> GetTwoTablePlan();
   bool distinct_;
   bool remain_old_result_;
 
-  StepOperation(): join_node_(nullptr), join_two_node_(nullptr), join_table_(nullptr), edge_filter_(nullptr),distinct_(false),remain_old_result_(false){};
+  StepOperation(): distinct_(false),remain_old_result_(false){};
 
-  StepOperation(JoinType join_type, shared_ptr<FeedOneNode> join_node, shared_ptr<FeedTwoNode> join_two_nodes,
-			  shared_ptr<JoinTwoTable> join_table, shared_ptr<FeedOneNode> edge_filter, bool distinct = false,bool remain_old_result=false):
-			  join_node_(join_node), join_two_node_(join_two_nodes),
-			  join_table_(join_table), edge_filter_(edge_filter),
-			  join_type_(join_type), distinct_(distinct),
-			  remain_old_result_(remain_old_result){};
 
-  std::string static JoinTypeToString(JoinType x){
-    switch (x) {
-      case JoinType::JoinNode: return "JoinType::JoinNode";
-      case JoinType::JoinTable: return "JoinType::JoinTable";
-      case JoinType::GenerateCandidates: return "JoinType::GenerateCandidates";
-      case JoinType::EdgeCheck: return "JoinType::EdgeCheck";
-      case JoinType::JoinTwoNodes: return "JoinType::JoinTwoNodes";
-      case JoinType::GetAllTriples: return "JoinType::GetAllTriples";
-    }
-    return "err in JoinTypeToString";
-  };
+  StepOperation(StepOpType op_type, OpRangeType range_type, shared_ptr<AffectOneNode> join_node, shared_ptr<AffectTwoNode> join_two_nodes,
+                shared_ptr<JoinTwoTable> join_table, bool distinct = false, bool remain_old_result=false):
+                op_type_(op_type), step_effect_(range_type,std::move(join_node),std::move(join_two_nodes),
+                                                std::move(join_table)), distinct_(distinct),remain_old_result_(remain_old_result){};
+
+  inline OpRangeType GetRange() {return this->step_effect_.range;}
+  string GetString();
 };
 
 /**

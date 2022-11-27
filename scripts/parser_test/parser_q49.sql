@@ -1,0 +1,5 @@
+select distinct ?x where
+{
+    ?x ?a1 ?a2 .
+    ?a3 ?x ?a4 .
+}
