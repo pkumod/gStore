@@ -35,6 +35,7 @@ public:
 	// cannot descriminate literal with entity
 	// note: NotDecided only used in PlanGenerator
 	enum class VarType{Entity, Predicate, NotDecided};
+	static std::string GetString(VarType t);
 	enum class EntiType{VarEntiType, ConEntiType};
 	enum class ItemType{SubType, PreType, ObjType};
 	enum class PreType{VarPreType, ConPreType};
@@ -269,7 +270,8 @@ public:
 	shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> get_all_candidates();
 
 
-		vector<unsigned*>* get_result_list_pointer();
+	vector<unsigned*>* get_result_list_pointer();
+    vector<vector<TYPE_ENTITY_LITERAL_ID>>* get_result_list_pointer1();
     unique_ptr<unsigned[]>& resultPositionToId();
     /* tells if the var_id appears in the position of
      * subject / predicate / object
@@ -278,6 +280,7 @@ public:
 private:
 	vector<Triple> triple_vt;
     vector<unsigned*> result_list;
+    vector<vector<TYPE_ENTITY_LITERAL_ID>> result_list1;
     unique_ptr<unsigned[]> result_position_to_id;
 };
 
