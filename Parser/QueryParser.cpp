@@ -477,56 +477,30 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					}
 				}
 
-				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR")
+				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
+					|| tmp == "KHOPENUMERATE")
 				{
-					if (bicCtx->integer_positive(0))
-					{
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive(0)));
-						if (bicCtx->num_integer(0))
-							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
-					}
-					else if (bicCtx->integer_negative(0))
-					{
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative(0)));
-						if (bicCtx->num_integer(0))
-							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(0)));
-					}
+					if (bicCtx->integerLiteral(0))
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
+					if (bicCtx->integerLiteral(1))
+						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integerLiteral(1)));
 					else
-					{
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
-						if (bicCtx->num_integer(1))
-							proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
-					}
-
-					if (!(bicCtx->numericLiteral()).empty())
-						proj_var.path_args.confidence = stof(bicCtx->numericLiteral(0)->getText());
-					else
-						proj_var.path_args.confidence = 1;
+						proj_var.path_args.retNum = -1;
 				}
-				else if (tmp == "KHOPENUMERATE")
-				{
-					if (bicCtx->num_integer(0))
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
-					else if (bicCtx->integer_positive(0))
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive(0)));
-					else if (bicCtx->integer_negative(0))
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative(0)));
-
-					if (bicCtx->num_integer(1))
-						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->num_integer(1)));
-					else if (bicCtx->integer_positive(1))
-						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integer_positive(1)));
-					else if (bicCtx->integer_negative(1))
-						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integer_negative(1)));
+				else if (tmp == "MAXIMUMCLIQUE") {
+					if (bicCtx->num_integer())
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
+					else
+						proj_var.path_args.k = 1;
 				}
 				else if (tmp == "PR")
 				{
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
-					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
+					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer()->getText()));	// maxiter
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol
 				}
 
-				if (tmp != "PPR")
+				if (bicCtx->booleanLiteral())
 				{
 					if (bicCtx->booleanLiteral()->getText() == "true")
 						proj_var.path_args.directed = true;
@@ -566,18 +540,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.pred_set.push_back(prefixedPred);
 				}
 				// set k
-				if (bicCtx->integer_positive(0))
-				{
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_positive(0)));
-				}
-				else if (bicCtx->integer_negative(0))
-				{
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integer_negative(0)));
-				}
-				else
-				{
-					proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
-				}
+				proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
 				// set directed
 				if (bicCtx->booleanLiteral()->getText() == "true")
 					proj_var.path_args.directed = true;
@@ -819,7 +782,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Que
 				if (funcName == "KHOPREACHABLE")
 				{
 					(curr_node.path_args).k = \
-						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
 					(curr_node.path_args).confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral(0)->getText());
 				}
