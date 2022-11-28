@@ -1,0 +1,28 @@
+?o	?s1	?s2
+"Bookug Lobert"	<root>	<root>
+<node0>	<root>	<root>
+<node1>	<root>	<root>
+<node2>	<root>	<root>
+<node3>	<root>	<root>
+<node4>	<root>	<root>
+<point0>	<node1>	<node1>
+<point1>	<node1>	<node1>
+<point2>	<node2>	<node2>
+<point3>	<node2>	<node2>
+<point4>	<node2>	<node2>
+<point5>	<node3>	<node3>
+<point6>	<node4>	<node4>
+<point7>	<node4>	<node4>
+<point1>	<point0>	<point0>
+"Bookug Lobert"	<point0>	<point0>
+"sbsb 12.879"	<point1>	<point1>
+<point3>	<point1>	<point1>
+<point2>	<point1>	<point1>
+<point7>	<point3>	<point3>
+<point7>	<point3>	<point6>
+<point5>	<point4>	<point4>
+"tobe NO1."	<point5>	<point5>
+<point6>	<point5>	<point5>
+<point7>	<point6>	<point3>
+<point7>	<point6>	<point6>
+"sadhjb wdhcbd sdcjhdsjkc1"	<point7>	<point7>

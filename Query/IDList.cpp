@@ -127,13 +127,15 @@ IDList::copy(const IDList* _new_idlist)
 }
 
 /**
- * Intersect With other List and change this IDList
+ * Intersect With other List and change this IDList.
+ * Attention: This Method process two non-distinct list
+ * intersection as the way multiset dose
  * @param _id_list the other(will not change)
  * @param _list_len the length of the other(will not change)
  * @return how many items have been removed
  */
 unsigned
-IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinct)
+IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
 {
 	if (_id_list == nullptr || _list_len == 0)
 	{
@@ -141,6 +143,45 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 		this->id_list.clear();
 		return remove_number;
 	}
+
+    auto BSearchMerge = [](vector<unsigned>& my_id_vector,
+                           const unsigned* _list_small, unsigned _list_small_len,
+                           const unsigned* _list_large, unsigned _list_large_len
+    ){
+      unsigned int remove_number, n = my_id_vector.size();
+      vector<unsigned> new_id_list;
+      //  to avoid '_list_small_len - 1' reaches -1
+      if(_list_small_len == 0)
+      {
+        my_id_vector.clear();
+        return n;
+      }
+      auto CheckSizeInsert = [](unsigned int target, unsigned &same_value_counter,vector<unsigned>& new_id_list,
+                                const unsigned* _list_large, unsigned _list_large_len){
+        auto lower_p = lower_bound(_list_large,_list_large+_list_large_len,target);
+        auto upper_p = upper_bound(_list_large,_list_large+_list_large_len,target);
+        unsigned int larger_size = upper_p - lower_p;
+        same_value_counter = min(same_value_counter, larger_size);
+        for(unsigned j = 0; j < same_value_counter ;j++)
+          new_id_list.push_back(target);
+        same_value_counter = 0;
+      };
+
+      unsigned int same_value_counter = 0;
+      for (unsigned i = 0; i < _list_small_len - 1; ++i)
+      {
+        same_value_counter++;
+        if (_list_small[i]==_list_small[i+1])
+          continue;
+        CheckSizeInsert(_list_small[i],same_value_counter,new_id_list,
+                        _list_large,_list_large_len);
+      }
+      CheckSizeInsert(_list_small[_list_small_len - 1],++same_value_counter,new_id_list,
+                      _list_large,_list_large_len);
+      my_id_vector = new_id_list;
+      remove_number = n - my_id_vector.size();
+      return remove_number;
+    };
 
 	//when size is almost the same, intersect O(n)
 	//when one size is small ratio, search in the larger one O(mlogn)
@@ -161,7 +202,6 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 	{
 		k = (double)_list_len / (double)n;
 		method = 1;
-		if (!distinct) method = 2;
 	}
 	if (n <= 2)
 		method = 0;
@@ -197,7 +237,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 			{
 				(this->id_list)[index_move_forward] = can_id;
 				index_move_forward++;
-				// id_i++;
+				id_i++;
 			}
 
 			it++;
@@ -209,28 +249,13 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len, bool distinc
 	}
 	case 1:
 	{
-		vector<unsigned> new_id_list;
-		for (unsigned i = 0; i < _list_len; ++i)
-		{
-			if (Util::bsearch_vec_uporder(_id_list[i], this->getList()) != INVALID)
-				new_id_list.push_back(_id_list[i]);
-		}
-		this->id_list = new_id_list;
-		remove_number = n - this->id_list.size();
-		break;
+        return BSearchMerge(this->id_list,_id_list,_list_len,
+                   this->id_list.data(),this->id_list.size());
 	}
 	case 2:
 	{
-		vector<unsigned> new_id_list;
-		unsigned m = this->id_list.size(), i;
-		for (i = 0; i < m; ++i)
-		{
-			if (Util::bsearch_int_uporder(this->id_list[i], _id_list, _list_len) != INVALID)
-				new_id_list.push_back(this->id_list[i]);
-		}
-		this->id_list = new_id_list;
-		remove_number = m - this->id_list.size();
-		break;
+        return BSearchMerge(this->id_list,this->id_list.data(),this->id_list.size(),
+                          _id_list,_list_len);
 	}
 	default:
 		cout << "no such method in IDList::intersectList()" << endl;
@@ -497,6 +522,10 @@ IDList::eraseAt(std::vector<unsigned>::iterator  it){
 
 void IDList::reserve(size_t size) {
   id_list.reserve(size);
+}
+
+void IDList::resize(size_t size) {
+  id_list.resize(size);
 }
 
 void IDListWithAppending::Init(const TYPE_ENTITY_LITERAL_ID* id_list, size_t records_num, size_t one_record_len, size_t main_key_position)
