@@ -567,6 +567,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitIntegerLiteral(SPARQLParser::IntegerLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitNum_integer(SPARQLParser::Num_integerContext *ctx) override {
     return visitChildren(ctx);
   }

@@ -295,6 +295,8 @@ public:
 
     virtual antlrcpp::Any visitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext *context) = 0;
 
+    virtual antlrcpp::Any visitIntegerLiteral(SPARQLParser::IntegerLiteralContext *context) = 0;
+
     virtual antlrcpp::Any visitNum_integer(SPARQLParser::Num_integerContext *context) = 0;
 
     virtual antlrcpp::Any visitNum_decimal(SPARQLParser::Num_decimalContext *context) = 0;
