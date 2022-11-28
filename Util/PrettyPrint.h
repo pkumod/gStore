@@ -49,11 +49,13 @@ public:
    */
   PrettyPrint(std::vector<std::string> headers,
                 unsigned int static_column_size = 0,
-                unsigned int cell_padding = 1)
+                unsigned int cell_padding = 1,
+                unsigned int max_column_size = 100)
     : _headers(headers),
       _num_columns(headers.size()),
       _static_column_size(static_column_size),
-      _cell_padding(cell_padding)
+      _cell_padding(cell_padding),
+      _max_column_size(max_column_size)
   {
 
   }
@@ -149,7 +151,7 @@ protected:
   {
     for (size_t i = 0; i < t.size(); i++)
     {
-      sizes[i] = t[i].size();
+      sizes[i] = std::min(t[i].size(), _max_column_size);
     }
   }
 
@@ -188,6 +190,9 @@ protected:
 
   /// Size of the cell padding
   unsigned int _cell_padding;
+
+  /// Max size of columns
+  long unsigned int _max_column_size;
 
   /// The actual data
   std::vector<std::vector<std::string>> _data;
