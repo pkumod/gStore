@@ -21,7 +21,7 @@ def TestCase(db_name: str, case_name: str, query_path: str,
     if res_start == -1:
         FormatHelper.PrintError(case_name, query_vars, correct_results, query_out, [], [])
         return False
-    query_out = query_out[query_out.find("final result is"):]
+    query_out = query_out[query_out.rfind("final result is"):]
     query_out = query_out.split('\n')
 
     output_results, output_vars = FormatHelper.GetOutputResult(query_out, query_vars)
