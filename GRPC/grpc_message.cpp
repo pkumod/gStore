@@ -2,7 +2,7 @@
  * @Author: wangjian 2606583267@qq.com
  * @Date: 2022-08-18 18:31:53
  * @LastEditors: wangjian 2606583267@qq.com
- * @LastEditTime: 2022-11-23 15:53:30
+ * @LastEditTime: 2022-11-30 15:40:19
  * @FilePath: /gstore/GRPC/grpc_message.cpp
  * @Description: grp message
  */
@@ -44,7 +44,7 @@ void pread_callback(WFFileIOTask *pread_task)
     FileIOArgs *args = pread_task->get_args();
     long ret = pread_task->get_retval();
     auto *resp = static_cast<GRPCResp *>(pread_task->user_data);
-
+    resp->headers["Access-Control-Allow-Origin"] = "*";
     if (pread_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
     {
         resp->Error(StatusFileReadError);
@@ -60,7 +60,7 @@ void pwrite_callback(WFFileIOTask *pwrite_task)
     GRPCServerTask *server_task = task_of(pwrite_task);
     GRPCResp *resp = server_task->get_resp();
     auto *save_context = static_cast<SaveFileContext *>(pwrite_task->user_data);
-
+    resp->headers["Access-Control-Allow-Origin"] = "*";
     if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
     {
         resp->Error(StatusFileWriteError);
