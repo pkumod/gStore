@@ -567,10 +567,19 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	json_data.SetObject();
 	Json::AllocatorType &allocator = json_data.GetAllocator();
 	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
-	if (request->contentType() == APPLICATION_JSON) //for application/json
+	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
 	{
-		Json &json = request->json();
-		json_data.CopyFrom(json, allocator, true);
+		Form &form = request->form();
+		if (form.empty())
+		{   
+			response->Error(StatusFileReadError, "Form data is empty");
+			return;
+		}
+		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
+		{
+			string v = form.at(iter->first).second;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+		}
 	}
 	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
 	{
@@ -623,6 +632,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	std::string error;
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
+	std::string filepath = jsonParam(json_data, "filepath");
 	error = apiUtil->check_param_value("username", username);
 	if (error.empty() == false)
 	{
@@ -635,7 +645,12 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
-	std::string filepath = jsonParam(json_data, "filepath");
+	error = apiUtil->check_param_value("filepath", filepath);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
 	if (Util::is_file(filepath))
 	{
 		// the file must in the gstore home dir
