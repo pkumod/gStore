@@ -78,7 +78,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,cha
             token+=c;
             if (!read(c)) return Integer;
          }
-         if (issep(c)) {
+         if (c!='.' && issep(c)) {
             unread();
             return Integer;
          }
@@ -456,7 +456,7 @@ void TurtleParser::parseDirective()
 inline bool TurtleParser::isName(Lexer::Token token)
    // Is a (generalized) name token?
 {
-   return (token==Lexer::Name)||(token==Lexer::A)||(token==Lexer::True)||(token==Lexer::False);
+   return (token==Lexer::Name)||(token==Lexer::A)||(token==Lexer::True)||(token==Lexer::False)||(token==Lexer::Decimal)||(token==Lexer::Double)||(token==Lexer::Integer);
 }
 //---------------------------------------------------------------------------
 void TurtleParser::parseQualifiedName(const string& prefix,string& name)
