@@ -95,7 +95,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			errorMsg = errorMsg.substr(0, num_l - 9) + errorMsg.substr(num_r);
 
 			// TODO: get the actual corresponding line
-			cout << "Line " << numLines << " (<" << rawSubject << "...> ...): " << errorMsg << endl;
+			cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << ">...> ...): " << errorMsg << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}
