@@ -98,8 +98,6 @@ class TurtleParser
       unsigned getLine() const { return line; }
 
       void discardLine() { char c; while (read(c) && c!='\n'); }
-
-      Token getBlankNode(std::string& token);
    };
    /// A triple
    struct Triple {
