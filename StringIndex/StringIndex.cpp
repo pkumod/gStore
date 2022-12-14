@@ -306,6 +306,8 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 
 	fseek(this->value_file, (*this->index_table)[id].offset, SEEK_SET);
 	fwrite(str.c_str(), sizeof(char), (*this->index_table)[id].length, this->value_file);
+    fflush(this->index_file);
+	fflush(this->value_file);
 	//if(id == 9)
 	//{
 		//cout<<"check in change():9 "<<str<<endl;
