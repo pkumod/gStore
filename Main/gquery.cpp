@@ -16,24 +16,6 @@
 
 using namespace std;
 
-// WARN:cannot support soft links!
-
-void help()
-{
-	printf("\
-			/*=============================================================================\n\
-# Filename: gquery.cpp\n\
-# Author: Bookug Lobert\n\
-# Mail: 1181955272@qq.com\n\
-# Last Modified: 2015-10-20 12:23\n\
-# Description: query a database, there are several ways to use this program:\n\
-1. ./gquery                                        print the help message\n\
-2. ./gquery --help                                 simplified as -h, equal to 1\n\
-3. ./gquery db_folder query_path                   load query from given path fro given database\n\
-4. ./gquery db_folder                              load the given database and open console\n\
-=============================================================================*/\n");
-}
-
 int main(int argc, char *argv[])
 {
 	// chdir(dirname(argv[0]));
@@ -41,6 +23,9 @@ int main(int argc, char *argv[])
 	Util util;
 	//#endif
 	// Log.init("slog.properties");
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	size_t _len_suffix = _db_suffix.length();
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
@@ -60,7 +45,7 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database,\t\t the database name. Notice that the name can not end with .db " << endl;
+			cout << "\t-db,--database,\t\t the database name. Notice that the name can not end with " << _db_suffix << endl;
 			cout << "\t-q,--queryfile ,\t\tthe query file path" << endl;
 			cout << "\t-f,--resultfile [option] ,\t\tthe result file path" << endl;
 			cout << endl;
@@ -82,17 +67,33 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		int len = db_folder.length();
-		if (db_folder.length() > 3 && db_folder.substr(len - 3, 3) == ".db")
+		if (db_folder.length() > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout << "The database name can not end with .db" << endl;
+			cout << "The database name can not end with "<< _db_suffix << endl;
 			return 0;
 		}
-		if (Util::dir_exist(db_folder + ".db") == false)
+
+		if (Util::dir_exist(_db_home + "/system" + _db_suffix) == false)
 		{
-			cout << "the db path is " << db_folder << endl;
-			cout << "The database is not exist!" << endl;
+			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;
 		}
+
+		if (db_folder != "system")
+		{
+			Database system_db("system");
+			system_db.load();
+			string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
+			ResultSet ask_rs;
+			FILE *ask_ofp = stdout;
+			system_db.query(sparql, ask_rs, ask_ofp);
+			if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+			{
+				cout << "The database does not exist." << endl;
+				return 0;
+			}
+		}
+
 		Database _db(db_folder);
 		// test
 		if (argc > 3)

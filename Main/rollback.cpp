@@ -6,10 +6,9 @@
 using namespace std;
 using namespace rapidjson;
 
-const string BACKUP_PATH = "./backups";
 const string USERNAME = "root";
 
-int get_all_folders(string path, vector<string> &folders)
+int get_all_folders(string path, string folder_name, vector<string> &folders)
 {
     DIR *dp = NULL;
 
@@ -24,7 +23,10 @@ int get_all_folders(string path, vector<string> &folders)
         if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
             continue;
         string folder = dirp->d_name;
-        folders.push_back(folder);
+        if (folder.find(folder_name.c_str()) != string::npos)
+        {
+            folders.push_back(folder);
+        }
     }
     closedir(dp);
 
@@ -109,7 +111,15 @@ string gc_getUrl(string _type, string _port)
 int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
-    std::string strPost = "{\"operation\": \"check\", \"username\": \"" + USERNAME + "\", \"password\": \"\"}";
+    std::string strPost;
+    if (_type == "grpc")
+	{
+		strPost = "operation=check";
+	}
+	else
+	{
+		strPost = "{\"operation\": \"check\"}";
+	}
     int ret = gc.Post(strUrl, strPost, res);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
@@ -138,6 +148,10 @@ main(int argc, char * argv[])
     //     return 0;
     // }
     // ofp.close();
+    string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+    string _default_backup_path = util.backup_path;
+	size_t _len_suffix = _db_suffix.length();
     string db_name, backup_date, backup_time, restore_time;
     if (argc < 2 || (2 < argc && argc < 7))
 	{
@@ -173,16 +187,15 @@ main(int argc, char * argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		backup_date = Util::getArgValue(argc, argv, "d", "date");
 		backup_time = Util::getArgValue(argc, argv, "t", "time");
-		int len = db_name.length();
-		if (db_name.length() > 3 && db_name.substr(len - 3, 3) == ".db")
+		size_t len = db_name.length();
+		if (len > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout<<"your database name can not end with .db! Input \"bin/rollback -h\" for help."<<endl;
+			cout<<"your database name can not end with " + _db_suffix + "! Input \"bin/rollback -h\" for help."<<endl;
 			return -1;
 		}
 		if (db_name == "system")
 		{
 			cout << "Your database's name can not be system." << endl;
-			/*Log.Error("Your database's name can not be system!");*/
 			return -1;
 		}
 
@@ -213,9 +226,10 @@ main(int argc, char * argv[])
     restore_time = backup_date + ' ' + backup_time;
 
     vector<string> folders;
-    get_all_folders(BACKUP_PATH, folders);
+    string folder_name = db_name +_db_suffix + "_";
+    get_all_folders(_default_backup_path, folder_name, folders);
     if(folders.size() == 0){
-        cout << "Backups Folder Empty,Please check ./backups" << endl;
+        cout << "Backups Folder Empty, Please check " + _default_backup_path << endl;
         return 0;
     }
     cout << restore_time << endl;
@@ -225,25 +239,26 @@ main(int argc, char * argv[])
         cout << "Restore Time Error, Rollback Failed." << endl;
         return 0;
     }
-    string backup_name = db_name + ".db" + "_" + get_postfix(restore_time);
+    string backup_name = db_name + _db_suffix + "_" + get_postfix(restore_time);
     cout << backup_name << endl;
     sort(folders.begin(), folders.end());
-    int inx = lower_bound(folders.begin(), folders.end(), backup_name) - folders.begin();
+    size_t inx = lower_bound(folders.begin(), folders.end(), backup_name) - folders.begin();
     cout << "match folder is: " << folders[inx] << endl;
-    if(inx >= folders.size() || folders[inx].find(db_name + ".db_") == string::npos){
+    if(inx >= folders.size() || folders[inx].find(db_name + _db_suffix) == string::npos){
         cout << "No Backups for Database " + db_name << "!" << endl;
         return 0;
     }
 
     // check http server status
-    if (Util::file_exist("system.db/port.txt"))
+    string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
+    if (Util::file_exist(system_port_path))
     {
         cout << "http server is running!" << endl;
         string port;
         string type;
         string type_port;
         GstoreConnector gc;
-        ofp.open("./system.db/port.txt", ios::in);
+        ofp.open(system_port_path, ios::in);
         ofp >> type_port;
         ofp.close();
         if (type_port.find(":") != string::npos)
@@ -307,7 +322,7 @@ main(int argc, char * argv[])
                 res = document["StatusMsg"].GetString();
                 if (res != "the database not load yet.")
                 {   
-                    cout << "Rollback Failed: please unload the database from ghttp" << endl;
+                    cout << "Rollback Failed: please unload the database from "<< type << endl;
                     return 0;
                 }
             }
@@ -316,20 +331,23 @@ main(int argc, char * argv[])
         
     //cover the old
     string cmd;
-    cmd = "rm -rf " + db_name + ".db";
+    string db_path = _db_home + "/" + db_name + _db_suffix;
+    cmd = "cp -r " + _default_backup_path + "/" + folders[inx] + " " + _db_home;
     system(cmd.c_str());
-    cmd = "cp -r " + BACKUP_PATH + '/' + folders[inx] + " ./";
+    cout << cmd << endl;
+    cmd = "rm -rf " + db_path;
     system(cmd.c_str());
-    cmd = "mv " + folders[inx] + ' ' + db_name + ".db";
+    cout << cmd << endl;
+    cmd = "mv " + _db_home + "/" + folders[inx] + " " + db_path;
     system(cmd.c_str());
+    cout << cmd << endl;
 
     //load
     // gc.load(db_name);
     Database* current_database = new Database(db_name);
     current_database->load();
 
-    string log_path = db_name + ".db/" + "update_since_backup.log";
-    cout << log_path << endl;
+    string log_path = db_path + "/update_since_backup.log";
     ofp.open(log_path, ios::in);
     int flag = 0; int undo_point;
     string rec;
@@ -354,15 +372,14 @@ main(int argc, char * argv[])
     // save databse
     current_database->save();
     delete current_database;
-    cout << flag << endl;
     //undo updates according to log
     if(flag == 1)
-    cout << "Database " << db_name << " has restored to time: " 
-    << stamp2time(undo_point) << endl;
+        cout << "Database " << db_name << " has restored to time: " 
+             << stamp2time(undo_point) << endl;
     else
-    cout << "Database " << db_name << " has restored to time: " 
-    << folders[inx] << endl;
-    // gc.unload(db_name);
+        cout << "Database " << db_name << " has restored to time: " 
+             << folders[inx] << endl;
+    //gc.unload(db_name);
     //gc.load(db_name);
     return 0;
 }

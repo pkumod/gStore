@@ -1528,6 +1528,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 
 					// For each u-v pair, query
+					unordered_set<pair<int, int>, hashFunction> unique_pairs;
 					bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 					stringstream ss;
 					bool notFirstOutput = 0;	// For outputting commas
@@ -1538,7 +1539,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						for (int vid : vid_ls)
 						{
-						
+							auto uvpair = make_pair(uid, vid);
+							if (unique_pairs.find(uvpair) != unique_pairs.end())
+								continue;
+							unique_pairs.insert(uvpair);
 							if (proj[0].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
 							{
 								if (uid == vid)
@@ -1612,6 +1616,35 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									pathVec2JSON(uid, vid, path, ss);
 								}
 							}
+							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
+							{
+								if (uid == vid)
+								{
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									vector<int> path; // Empty path
+									pathVec2JSON(uid, vid, path, ss);
+									continue;
+								}
+								int hopConstraint = proj[0].path_args.k;
+								if (hopConstraint < 0)
+									hopConstraint = 999;
+								vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[0].path_args.retNum, \
+									proj[0].path_args.directed, hopConstraint, pred_id_set);
+								if (!paths.empty())
+								{
+									for (auto path : paths)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path, ss);
+									}
+								}
+							}
 							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::shortestPathLen_type)
 							{
 								if (uid == vid)
@@ -1662,34 +1695,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else
 									ss << "\"false\"}";
 								// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
-							}
-							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopEnumerate_type)
-							{
-								if (uid == vid)
-								{
-									if (notFirstOutput)
-										ss << ",";
-									else
-										notFirstOutput = 1;
-									vector<int> path; // Empty path
-									pathVec2JSON(uid, vid, path, ss);
-									continue;
-								}
-								int hopConstraint = proj[0].path_args.k;
-								if (hopConstraint < 0)
-									hopConstraint = 999;
-								vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
-								if (!paths.empty())
-								{
-									for (auto path : paths)
-									{
-										if (notFirstOutput)
-											ss << ",";
-										else
-											notFirstOutput = 1;
-										pathVec2JSON(uid, vid, path, ss);
-									}
-								}
 							}
 							else if (proj[0].aggregate_type == QueryTree::ProjectionVar::ppr_type)
 							{
@@ -2716,6 +2721,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 
 						// For each u-v pair, query
+						unordered_set<pair<int, int>, hashFunction> unique_pairs;
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
@@ -2725,6 +2731,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (int vid : vid_ls)
 							{
+								auto uvpair = make_pair(uid, vid);
+								if (unique_pairs.find(uvpair) != unique_pairs.end())
+									continue;
+								unique_pairs.insert(uvpair);
 								prepPathQuery();
 								int hopConstraint = proj[i].path_args.k;
 								bool directed = proj[i].path_args.directed;
@@ -2900,6 +2910,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						}
 
 						// For each u-v pair, query
+						unordered_set<pair<int, int>, hashFunction> unique_pairs;
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
@@ -2909,6 +2920,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (int vid : vid_ls)
 							{
+								auto uvpair = make_pair(uid, vid);
+								if (unique_pairs.find(uvpair) != unique_pairs.end())
+									continue;
+								unique_pairs.insert(uvpair);
 								if (proj[i].aggregate_type == QueryTree::ProjectionVar::cyclePath_type)
 								{
 									if (uid == vid)
@@ -3007,7 +3022,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else
 										ss << "\"false\"}";
 								}
-								else if (proj[0].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
+								else if (proj[i].aggregate_type == QueryTree::ProjectionVar::kHopReachablePath_type)
 								{
 									cout << "begin run kHopReachablePath " << endl;
 									if (uid == vid)
@@ -3048,7 +3063,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									int hopConstraint = proj[i].path_args.k;
 									if (hopConstraint < 0)
 										hopConstraint = 999;
-									vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									vector<vector<int>> paths = pqHandler->kHopEnumeratePath(uid, vid, proj[i].path_args.retNum, proj[i].path_args.directed, hopConstraint, pred_id_set);
 									if (!paths.empty())
 									{
 										for (auto path : paths)

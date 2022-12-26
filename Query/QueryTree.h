@@ -145,6 +145,7 @@ class QueryTree
 			int k;
 			float confidence;
 			int retNum;
+			std::vector<double> misc;	// Miscellaneous args (first introduced for PageRank)
 		};
 
 		class CompTreeNode

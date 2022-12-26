@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-10-25 10:10:35
+ * @LastEditTime: 2022-11-23 18:15:25
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -77,7 +77,7 @@ APIUtil::~APIUtil()
 
     string cmd = "rm " + system_password_path;
     system(cmd.c_str());
-    cmd = "rm system.db/port.txt";
+    cmd = "rm " + system_port_path;
     system(cmd.c_str());
 }
 
@@ -86,9 +86,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
     try
     {
         SLOG_DEBUG("--------initialization start--------");
-        system_path = get_configure_value("system_path", system_path);
-        backup_path = get_configure_value("backup_path", backup_path);
-        DB_path = get_configure_value("db_path", DB_path);
+        backup_path = util.backup_path;
         default_port = get_configure_value("default_port", default_port);
         thread_pool_num = get_configure_value("thread_num", thread_pool_num);
         system_username = get_configure_value("system_username", system_username);
@@ -147,11 +145,11 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             ipBlackList = new IPBlackList();
             ipBlackList->Load(ipBlackFile);
         }
-        
+     
         // load system db
-        if(!util.dir_exist("system.db"))
+        if(!util.dir_exist(get_Db_path() + "/system" + get_Db_suffix()))
         {
-           SLOG_ERROR("Can not find system.db.");
+            SLOG_ERROR("Can not find system" + get_Db_suffix());
             return -1;
         }
         system_database = new Database(SYSTEM_DB_NAME);
@@ -269,12 +267,13 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         // create system password file
         fstream ofp;
         system_password = util.int2string(util.getRandNum());
-        system_password_path = "system.db/password" + port + ".txt";
+        system_password_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/password" + port + ".txt";
         ofp.open(system_password_path, ios::out);
         ofp << system_password;
         ofp.close();
         // create port file
-        ofp.open("system.db/port.txt", ios::out);
+        system_port_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/port.txt";
+        ofp.open(system_port_path, ios::out);
         ofp << server_type;
         ofp << ":";
         ofp << port;
@@ -287,10 +286,12 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             {
                 SLOG_ERROR(result);
                 return -1;
-            }           
-            if(util.dir_exist(db_name + ".db") == false)
+            }
+            sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+            system_database->query(sparql, rs, output);
+            if (rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
             {
-                SLOG_ERROR("Database " + db_name + ".db has not been built.");
+                SLOG_ERROR("Database " + db_name + " not built yet.");
 			    return -1;
             }
             Database* current_database = new Database(db_name);
@@ -551,7 +552,7 @@ int APIUtil::db_copy(string src_path, string dest_path)
     if (util.dir_exist(dest_path) == false)
     {
         // check the destnation path
-        log_info = "the path: " + dest_path + " is not exist ,system will create it.";
+        log_info = "the path: " + dest_path + " is not exists, system will create it.";
         SLOG_DEBUG(log_info);
         util.create_dirs(dest_path);
     }
@@ -1085,12 +1086,14 @@ std::string APIUtil::check_param_value(const string& paramname, const string& va
 			result = "you can not operate the system database";
 			return result;
 		}
-		if (database.length() > 3 && database.substr(database.length() - 3, 3) == ".db")
+        string db_suffix = get_Db_suffix();
+        int len_suffix = db_suffix.length();
+		if (database.length() > len_suffix && database.substr(database.length() - len_suffix, len_suffix) == db_suffix)
 		{
-			result = "Your db name to be built should not end with \".db\".";
+			result = "Your db name to be built should not end with \"" + db_suffix + "\".";
 			return result;
 		}
-		
+        
 	}
 	return "";
 }
@@ -2562,7 +2565,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
 
 string APIUtil::get_system_path()
 {
-    return system_path;
+    return Util::system_path;
 }
 
 string APIUtil::get_backup_path()
@@ -2572,7 +2575,12 @@ string APIUtil::get_backup_path()
 
 string APIUtil::get_Db_path()
 {
-    return DB_path;
+    return util.getConfigureValue("db_home");
+}
+
+string APIUtil::get_Db_suffix()
+{
+    return util.getConfigureValue("db_suffix");
 }
 
 string APIUtil::get_query_result_path()
@@ -2590,7 +2598,7 @@ int APIUtil::get_thread_pool_num()
     return thread_pool_num;
 }
 
-unsigned int APIUtil::get_max_output_size()
+int APIUtil::get_max_output_size()
 {
     return max_output_size;
 }
@@ -2605,14 +2613,14 @@ string APIUtil::get_system_username()
     return system_username;
 }
 
-unsigned int APIUtil::get_connection_num()
+int APIUtil::get_connection_num()
 {
     return connection_num;
 }
 
 void APIUtil::increase_connection_num()
 {
-    if (connection_num < UINT32_MAX)
+    if (connection_num < INT32_MAX)
     {
         connection_num += 1;
     }
@@ -2637,7 +2645,7 @@ string APIUtil::get_configure_value(const string& key, string default_value)
     
 }
 
-unsigned int APIUtil::get_configure_value(const string& key, unsigned int default_value)
+int APIUtil::get_configure_value(const string& key, int default_value)
 {
     string value = util.getConfigureValue(key);
     if (value.empty())
@@ -2646,7 +2654,25 @@ unsigned int APIUtil::get_configure_value(const string& key, unsigned int defaul
     } 
     else if (util.is_number(value))
     {
-        return util.string2int(value);
+        return atoi(value.c_str());
+    }
+    else
+    {
+        return default_value;
+    }
+}
+
+size_t 
+APIUtil::get_configure_value(const string& key, size_t default_value)
+{
+    string value = util.getConfigureValue(key);
+    if (value.empty())
+    {
+       return default_value;
+    } 
+    else if (util.is_number(value))
+    {
+        return strtoul(value.c_str(), (char **) NULL, 20);
     }
     else
     {

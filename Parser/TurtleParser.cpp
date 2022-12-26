@@ -100,27 +100,37 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,cha
       }
 
       // Exponent
-      if ((c!='e')&&(c!='E')) break;
-      token+=c;
-      if (!read(c)) break;
-      if ((c=='-')||(c=='+')) {
-         token+=c;
-         if (!read(c)) break;
-      }
-      if ((c<'0')||(c>'9')) break;
-      while ((c>='0')&&(c<='9')) {
-         token+=c;
-         if (!read(c)) return Double;
-      }
-      if (issep(c)) {
-         unread();
-         return Double;
-      }
+      // if ((c!='e')&&(c!='E')) break;
+      // token+=c;
+      // if (!read(c)) break;
+      // if ((c=='-')||(c=='+')) {
+      //    token+=c;
+      //    if (!read(c)) break;
+      // }
+      // if ((c<'0')||(c>'9')) break;
+      // while ((c>='0')&&(c<='9')) {
+      //    token+=c;
+      //    if (!read(c)) return Double;
+      // }
+      // if (issep(c)) {
+      //    unread();
+      //    return Double;
+      // }
       break;
    }
-   stringstream msg;
-   msg << "lexer error in line " << line << ": invalid number " << token << c;
-   throw Exception(msg.str());
+   // REMARK: the string that start with number will throw exception: invalid Number   
+   if (((c>='A')&&(c<='Z'))||((c>='a')&&(c<='z'))||(c=='_')) { // XXX unicode!
+      token+=c;
+      while (read(c)) {
+         if (issep(c)) { unread(); break; }
+         token+=c;
+      }
+      return Name;
+   } else {
+      stringstream msg;
+      msg << "lexer error in line " << line << ": invalid number " << token << c;
+      throw Exception(msg.str());
+   }
 }
 //---------------------------------------------------------------------------
 unsigned TurtleParser::Lexer::lexHexCode(unsigned len)
@@ -349,33 +359,6 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
    return Eof;
 }
 //---------------------------------------------------------------------------
-TurtleParser::Lexer::Token TurtleParser::Lexer::getBlankNode(std::string& token)
-{
-    if (putBack!=Eof) {
-      Token result=putBack;
-      token=putBackValue;
-      putBack=Eof;
-      return result;
-   }
-   char c;
-   read(c);
-   if (((c>='A')&&(c<='Z'))||((c>='a')&&(c<='z'))||(c=='_')||((c>='0')&&(c<='9'))) { // XXX unicode!
-      token=c;
-      while (read(c)) {
-         if (issep(c)) { unread(); break; }
-         token+=c;
-      }
-      if (token=="a") return A;
-      if (token=="true") return True;
-      if (token=="false") return False;
-      return Name;
-   } else {
-      stringstream msg;
-      msg << "lexer error in line " << line << ": unexpected character " << c;
-      throw Exception(msg.str());
-   }
-}
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TurtleParser::TurtleParser(istream& in)
    : lexer(in),triplesReader(0),nextBlank(0)
@@ -456,7 +439,7 @@ void TurtleParser::parseDirective()
 inline bool TurtleParser::isName(Lexer::Token token)
    // Is a (generalized) name token?
 {
-   return (token==Lexer::Name)||(token==Lexer::A)||(token==Lexer::True)||(token==Lexer::False);
+   return (token==Lexer::Name)||(token==Lexer::A)||(token==Lexer::True)||(token==Lexer::False)||(token==Lexer::Integer);
 }
 //---------------------------------------------------------------------------
 void TurtleParser::parseQualifiedName(const string& prefix,string& name)
@@ -483,7 +466,7 @@ void TurtleParser::parseBlank(std::string& entry)
    Lexer::Token token=lexer.next(entry);
    switch (token) {
       case Lexer::Name:
-         if ((entry!="_")||(lexer.next()!=Lexer::Colon)||(!isName(lexer.getBlankNode(entry))))
+         if ((entry!="_")||(lexer.next()!=Lexer::Colon)||(!isName(lexer.next(entry))))
             parseError("blank nodes must start with '_:'");
          entry="_:"+entry;
          return;

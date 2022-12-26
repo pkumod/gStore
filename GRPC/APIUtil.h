@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-09-30 10:05:54
+ * @LastEditTime: 2022-11-23 18:27:46
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -880,11 +880,9 @@ private:
     string default_port = "9000";
     int thread_pool_num = 30;
     
-    unsigned int max_output_size = 10000000;
-    int max_database_num = 100;
-    int max_user_num = 1000;
-    string system_path = "data/system/system.nt";
-    string DB_path = ".";
+    int max_output_size = 10000000;
+    size_t max_database_num = 100;
+    size_t max_user_num = 1000;
     string backup_path = "./backups";
     string query_log_mode = "0";
     string query_log_path = "logs/endpoint/";
@@ -910,7 +908,8 @@ private:
     string system_username = "system";
     string system_password;
     string system_password_path;
-    unsigned int connection_num = 0;
+    string system_port_path;
+    int connection_num = 0;
     int blackList = 0;
     int whiteList = 0;
     string ipBlackFile = "ipDeny.config";
@@ -1019,15 +1018,17 @@ public:
     string get_system_path();
     string get_backup_path();
     string get_Db_path();
+    string get_Db_suffix();
     string get_query_result_path();
     string get_default_port();
     int get_thread_pool_num();
-    unsigned int get_max_output_size();
+    int get_max_output_size();
     string get_root_username();
     string get_system_username();
-    unsigned int get_connection_num();
+    int get_connection_num();
     void increase_connection_num();
     void string_suffix(string& str, const char suffix);
     string get_configure_value(const string& key, string default_value);
-    unsigned int get_configure_value(const string& key, unsigned int default_value);
+    int get_configure_value(const string& key, int default_value);
+    size_t get_configure_value(const string& key, size_t default_value);
 };

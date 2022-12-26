@@ -237,12 +237,25 @@ ResultSet::to_JSON()
 				{
 					if (ans_str.find("\"^^<") == string::npos)
 					{
-						//no has type string
-						ans_type = "literal";
-						ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-						_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-						_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-						list_empty = false;
+						if (ans_str.find("\"@") != string::npos)
+						{
+							//for language string
+							ans_type = "literal";
+							string data_type = ans_str.substr(ans_str.rfind("@")+1, ans_str.length());
+							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"lang\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							list_empty = false;
+						} 
+						else
+						{
+							//no has type string
+							ans_type = "literal";
+							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
+							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
+							_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
+							list_empty = false;
+						}
 					}
 					else
 					{

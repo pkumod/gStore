@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 20:14:02
- * @LastEditTime: 2022-11-09 17:13:11
+ * @LastEditTime: 2022-11-22 20:58:48
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: batch insert data tool
  * @FilePath: /gstore/Main/gadd.cpp
@@ -22,7 +22,6 @@ int main(int argc, char *argv[])
 	Util util;
 	//#endif
 	// Log.init("slog.properties");
-
 	if (argc < 2)
 	{
 		/*cout << "please input the complete command:\t" << endl;
@@ -60,31 +59,45 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		string _db_home = util.getConfigureValue("db_home");
+		string _db_suffix = util.getConfigureValue("db_suffix");
+		int _len_suffix = _db_suffix.length();
 		string db_folder = Util::getArgValue(argc, argv, "db", "database");
 		if (db_folder.empty())
 		{
-			/*		cout << "please input the database name " << endl;*/
-			// Log.Error("the database name is empty! Input \"bin/gbackup -h\" for help.");
 			cout << "the database name is empty! Input \"bin/gadd -h\" for help." << endl;
 			return 0;
 		}
 		int len = db_folder.length();
-
-		if (db_folder.substr(len - 3, 3) == ".db")
+		if (len > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			/*cout << "your database can not end with .db" << endl;*/
-			// Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
-			cout << "your database can not end with .db.! Input \"bin/gadd -h\" for help." << endl;
-			return -1;
+			cout << "The database name can not end with " +_db_suffix +"! Input \"bin/gadd -h\" for help." << endl;
+			return 0;
 		}
+		//check the db_name is system
+		if (db_folder == "system")
+		{
+			cout<<"The database name can not be system."<<endl;
+			return 0;
+		}
+
 		string filename = Util::getArgValue(argc, argv, "f", "file");
 		string dirname = Util::getArgValue(argc, argv, "dir", "directory");
 		if (filename.empty() && dirname.empty())
 		{
-			// cout << "please input the file path." << endl;
-			// Util::formatPrint("please input the file path.", "Error");
-			// Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
 			cout << "the add data file is empty! Input \"bin/gadd -h\" for help." << endl;
+			return 0;
+		}
+		Database system_db("system");
+		system_db.load();
+
+		string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		FILE *ask_ofp = stdout;
+		system_db.query(sparql, ask_rs, ask_ofp);
+		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+		{
+			cout << "The database does not exist." << endl;
 			return 0;
 		}
 
@@ -99,7 +112,7 @@ int main(int argc, char *argv[])
 		unsigned success_num = 0;
 		unsigned total_num = 0;
 		unsigned parse_error_num = 0 ;
-		string error_log = "./" + db_folder + ".db/parse_error.log";
+		string error_log = _db_home + "/" + db_folder + _db_suffix + "/parse_error.log";
 		if (filename.empty() == false)
 		{
 			total_num = Util::count_lines(error_log);
@@ -129,7 +142,7 @@ int main(int argc, char *argv[])
 		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num <<",used " << (tv_end - tv_begin) << " ms" << endl;
 		if (parse_error_num > 0)
 		{
-			cout<< "See parse error log file for details " << db_folder <<".db/parse_error.log" << endl;
+			cout<< "See parse error log file for details " << error_log << endl;
 		}
 		_db.save();
 

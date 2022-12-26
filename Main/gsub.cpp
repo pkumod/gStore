@@ -1,8 +1,8 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 18:00:17
- * @LastEditTime: 2021-08-23 13:12:31
- * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-11-23 11:37:46
+ * @LastEditors: wangjian 2606583267@qq.com
  * @Description: Batch delete data from database
  * @FilePath: /gstore/Main/gsub.cpp
  */
@@ -67,14 +67,20 @@ main(int argc, char * argv[])
 			cout << "the database name is empty! Input \"bin/gsub -h\" for help." << endl;
 			return 0;
 		}
-		int len = db_folder.length();
+		string _db_suffix = util.getConfigureValue("db_suffix");
+		size_t _len_suffix = _db_suffix.length();
+		size_t len = db_folder.length();
 
-		if (db_folder.substr(len - 3, 3) == ".db")
+		if (len > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			/*cout << "your database can not end with .db" << endl;*/
-			//Log.Error("your database can not end with .db.! Input \"bin/gadd -h\" for help.");
-			cout << "your database can not end with .db.! Input \"bin/gsub -h\" for help." << endl;
-			return -1;
+			cout << "your database can not end with " + _db_suffix + "! Input \"bin/gsub -h\" for help." << endl;
+			return 0;
+		}
+		//check the db_name is system
+		if (db_folder == "system")
+		{
+			cout<<"The database name can not be system."<<endl;
+			return 0;
 		}
 		string filename = Util::getArgValue(argc, argv, "f", "file");
 		if (filename.empty())
@@ -85,9 +91,16 @@ main(int argc, char * argv[])
 			cout << "the delete data file is empty! Input \"bin/gsub -h\" for help." << endl;
 			return 0;
 		}
-		if (Util::file_exist(filename) == false)
+		Database system_db("system");
+		system_db.load();
+
+		string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		FILE *ask_ofp = stdout;
+		system_db.query(sparql, ask_rs, ask_ofp);
+		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
-			cout << "the delete data file is not exist! Input \"bin/gsub -h\" for help." << endl;
+			cout << "The database does not exist." << endl;
 			return 0;
 		}
 		Database _db(db_folder);

@@ -196,10 +196,10 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_CYCLEBOOLEAN '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_SHORTESTPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_SHORTESTPATHLEN '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
-|   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ')'
-|   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ')'
-|   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ')'
-|   K_PPR '(' varOrIri ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' num_integer ')'
+|   K_KHOPREACHABLE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
+|   K_KHOPENUMERATE '(' varOrIri ',' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet (',' integerLiteral)? ')'
+|   K_KHOPREACHABLEPATH '(' varOrIri ',' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
+|   K_PPR '(' varOrIri ',' integerLiteral ',' predSet ',' integerLiteral ')'
 |   K_TRIANGLECOUNTING '(' booleanLiteral ',' predSet ')'
 |   K_CLOSENESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_BFSCOUNT '(' varOrIri ',' booleanLiteral ',' predSet ')'
@@ -210,7 +210,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_WCC '(' predSet ')'
 |   K_CLUSTERCOEFF '(' (varOrIri ',')? booleanLiteral ',' predSet ')'
 |   K_MAXIMUMCLIQUE '(' '{' varOrIri (',' varOrIri)* '}' ',' predSet ')'
-|   K_PFN '(' varOrIriSet ',' booleanLiteral ',' (num_integer | integer_positive | integer_negative) ',' predSet ',' string ')'
+|   K_PFN '(' varOrIriSet ',' booleanLiteral ',' integerLiteral ',' predSet ',' string ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -230,6 +230,7 @@ numericLiteral : numericLiteralUnsigned | numericLiteralPositive | numericLitera
 numericLiteralUnsigned : num_integer | num_decimal | num_double ;
 numericLiteralPositive : integer_positive | decimal_positive | double_positive ;
 numericLiteralNegative : integer_negative | decimal_negative | double_negative ;
+integerLiteral : num_integer | integer_positive | integer_negative ;
 num_integer : INTEGER ;
 num_decimal : DECIMAL ;
 num_double : DOUBLE ;

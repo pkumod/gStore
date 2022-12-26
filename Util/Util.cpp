@@ -22,7 +22,7 @@ string Util::profile = "init.conf";
 map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;
 
-#define BACKUP_PATH "./backups"
+// #define BACKUP_PATH "./backups"
 #define BACKUP_LOG_PATH "./backup.json"
 #define BACKUP_LOG_TMEP_PATH "./temp.json"
 #define DEFALUT_BACKUP_INTERVAL "600" //hour
@@ -77,6 +77,7 @@ string Util::gserver_port_swap = "bin/.gserver_port.swap";
 string Util::gserver_log = "logs/gserver.log";
 
 string Util::backup_path = "backups/";
+string Util::system_path = "data/system/system.nt";
 
 //set hash table
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \
@@ -205,6 +206,10 @@ Util::configure()
 		cout<<it->first<<" : "<<it->second<<endl;
 	}
 	cout<<endl;*/
+    if (Util::dir_exist(Util::global_config["db_home"]) == false)
+    {
+        Util::create_dirs(Util::global_config["db_home"]);
+    }
 
 	return true;
 	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
@@ -271,12 +276,6 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
     Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
-    Util::setGlobalConfig(ini_parser, "ghttp", "root_username");
-    Util::setGlobalConfig(ini_parser, "ghttp", "root_password");
-    Util::setGlobalConfig(ini_parser, "ghttp", "system_username");
-    Util::setGlobalConfig(ini_parser, "ghttp", "system_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "db_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "backup_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "querylog_mode");
     Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
     Util::setGlobalConfig(ini_parser, "ghttp", "accesslog_path");
@@ -290,11 +289,19 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "log_mode");
     Util::setGlobalConfig(ini_parser, "system", "licensetype");
-    
+    Util::setGlobalConfig(ini_parser, "system", "root_username");
+    Util::setGlobalConfig(ini_parser, "system", "root_password");
+    Util::setGlobalConfig(ini_parser, "system", "system_username");
+    Util::setGlobalConfig(ini_parser, "system", "backup_path");
+    if (Util::getConfigureValue("backup_path").empty() == false)
+    {
+        Util::backup_path = Util::getConfigureValue("backup_path");
+    }
     // init slog
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
     slog.init(log_mode.c_str());
+    #ifdef DEBUG
     if (slog._logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
         SLOG_DEBUG("the current settings are as below (key:value): ");
@@ -305,6 +312,7 @@ bool Util::configure_new()
         }
         SLOG_DEBUG("----------------------------------");
     }
+    #endif
     return true;
 }
 
@@ -874,16 +882,8 @@ bool Util::file_exist(const string _file)
 
 bool Util::is_file(const string _file)
 {
-	struct stat buffer;
-	int rt = stat(_file.c_str(), &buffer);
-    if (rt == 0 && S_ISDIR(buffer.st_mode) == false)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+	struct stat st;
+    return stat(_file.c_str(), &st) >= 0 && S_ISREG(st.st_mode);
 }
 
 bool
@@ -1035,7 +1035,7 @@ Util::time_to_stamp(string time){
 string
 Util::get_backup_time(const string path, const string db_name)
 {
-    string _db_name = db_name + ".db";
+    string _db_name = db_name + Util::getConfigureValue("db_suffix");
     string::size_type position;
     position = path.find(_db_name);
 
@@ -1056,7 +1056,7 @@ Util::get_backup_time(const string path, const string db_name)
 
 string
 Util::get_folder_name(const string path, const string db_name){
-    string _db_name = db_name + ".db";
+    string _db_name = db_name + Util::getConfigureValue("db_suffix");
     string::size_type position;
     position = path.find(_db_name);
 

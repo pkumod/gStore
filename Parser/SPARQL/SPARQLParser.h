@@ -97,11 +97,11 @@ public:
     RuleNotexistsFunc = 130, RuleAggregate = 131, RuleIriOrFunction = 132, 
     RuleRDFLiteral = 133, RuleNumericLiteral = 134, RuleNumericLiteralUnsigned = 135, 
     RuleNumericLiteralPositive = 136, RuleNumericLiteralNegative = 137, 
-    RuleNum_integer = 138, RuleNum_decimal = 139, RuleNum_double = 140, 
-    RuleInteger_positive = 141, RuleDecimal_positive = 142, RuleDouble_positive = 143, 
-    RuleInteger_negative = 144, RuleDecimal_negative = 145, RuleDouble_negative = 146, 
-    RuleBooleanLiteral = 147, RuleString = 148, RuleIri = 149, RulePrefixedName = 150, 
-    RuleBlankNode = 151
+    RuleIntegerLiteral = 138, RuleNum_integer = 139, RuleNum_decimal = 140, 
+    RuleNum_double = 141, RuleInteger_positive = 142, RuleDecimal_positive = 143, 
+    RuleDouble_positive = 144, RuleInteger_negative = 145, RuleDecimal_negative = 146, 
+    RuleDouble_negative = 147, RuleBooleanLiteral = 148, RuleString = 149, 
+    RuleIri = 150, RulePrefixedName = 151, RuleBlankNode = 152
   };
 
   SPARQLParser(antlr4::TokenStream *input);
@@ -252,6 +252,7 @@ public:
   class NumericLiteralUnsignedContext;
   class NumericLiteralPositiveContext;
   class NumericLiteralNegativeContext;
+  class IntegerLiteralContext;
   class Num_integerContext;
   class Num_decimalContext;
   class Num_doubleContext;
@@ -2454,10 +2455,8 @@ public:
     antlr4::tree::TerminalNode *K_SHORTESTPATH();
     antlr4::tree::TerminalNode *K_SHORTESTPATHLEN();
     antlr4::tree::TerminalNode *K_KHOPREACHABLE();
-    std::vector<Num_integerContext *> num_integer();
-    Num_integerContext* num_integer(size_t i);
-    Integer_positiveContext *integer_positive();
-    Integer_negativeContext *integer_negative();
+    std::vector<IntegerLiteralContext *> integerLiteral();
+    IntegerLiteralContext* integerLiteral(size_t i);
     antlr4::tree::TerminalNode *K_KHOPENUMERATE();
     antlr4::tree::TerminalNode *K_KHOPREACHABLEPATH();
     antlr4::tree::TerminalNode *K_PPR();
@@ -2469,6 +2468,7 @@ public:
     std::vector<NumericLiteralContext *> numericLiteral();
     NumericLiteralContext* numericLiteral(size_t i);
     antlr4::tree::TerminalNode *K_MAXITER();
+    Num_integerContext *num_integer();
     antlr4::tree::TerminalNode *K_TOL();
     antlr4::tree::TerminalNode *K_SSSP();
     antlr4::tree::TerminalNode *K_SSSPLEN();
@@ -2698,6 +2698,23 @@ public:
   };
 
   NumericLiteralNegativeContext* numericLiteralNegative();
+
+  class  IntegerLiteralContext : public antlr4::ParserRuleContext {
+  public:
+    IntegerLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Num_integerContext *num_integer();
+    Integer_positiveContext *integer_positive();
+    Integer_negativeContext *integer_negative();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  IntegerLiteralContext* integerLiteral();
 
   class  Num_integerContext : public antlr4::ParserRuleContext {
   public:

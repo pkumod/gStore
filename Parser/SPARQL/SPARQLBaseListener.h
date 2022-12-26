@@ -430,6 +430,9 @@ public:
   virtual void enterNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext * /*ctx*/) override { }
   virtual void exitNumericLiteralNegative(SPARQLParser::NumericLiteralNegativeContext * /*ctx*/) override { }
 
+  virtual void enterIntegerLiteral(SPARQLParser::IntegerLiteralContext * /*ctx*/) override { }
+  virtual void exitIntegerLiteral(SPARQLParser::IntegerLiteralContext * /*ctx*/) override { }
+
   virtual void enterNum_integer(SPARQLParser::Num_integerContext * /*ctx*/) override { }
   virtual void exitNum_integer(SPARQLParser::Num_integerContext * /*ctx*/) override { }
 

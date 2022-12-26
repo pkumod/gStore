@@ -87,17 +87,17 @@ in the sparql query can point to the same node in data graph)
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
 //#include <boost/spirit.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+// #include <boost/property_tree/ptree.hpp>
+// #include <boost/property_tree/json_parser.hpp>
 
 //Added for the default_resource example
-//#include <boost/filesystem.hpp>
-//#include <boost/regex.hpp>
-//#include <boost/thread/thread.hpp>
-//#include <boost/bind.hpp>
-#include <boost/asio.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/algorithm/string/predicate.hpp>
+// #include <boost/filesystem.hpp>
+// #include <boost/regex.hpp>
+// #include <boost/thread/thread.hpp>
+// #include <boost/bind.hpp>
+// #include <boost/asio.hpp>
+// #include <boost/utility/string_ref.hpp>
+// #include <boost/algorithm/string/predicate.hpp>
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -355,6 +355,7 @@ public:
 #endif
 	
 	static std::string backup_path;
+	static std::string system_path;
 	static const long gserver_backup_interval = 120;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 
