@@ -591,6 +591,7 @@ void single_cmd()
 		{
 			msg = "gstore[" + current_database->getName() + "]> ";
 		}
+		// cout << "msg:" << msg << endl;
 		volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
 	}
 
@@ -612,6 +613,18 @@ void single_cmd()
 		gconsole_done = 1;
 		return;
 	}
+
+	// string msg = "";
+	// if (current_database == NULL)
+	// {
+	// 	msg = "gstore[no database]> ";
+	// }
+	// else
+	// {
+	// 	msg = "gstore[" + current_database->getName() + "]> ";
+	// }
+	// cout << "msg:" << msg << endl;
+	// volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
 
 	// Remove comment and leading-trailing whitespace from the line.
 	// Then, if there is anything left, add it to the history
