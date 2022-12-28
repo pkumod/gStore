@@ -506,7 +506,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				QueryInfo query_info;
 				query_info.limit_ = false;
 				query_info.limit_num_ = 0;
-				if(this->query_tree.getLimit()!=-1) {
+				if(this->query_tree.getLimit()!=-1 && this->query_tree.getSingleBGP()) {
 					query_info.limit_ = true;
 					query_info.limit_num_ = this->query_tree.getLimit();
 				}
@@ -931,7 +931,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					query_info.limit_ = false;
 					query_info.limit_num_ = -1;
-					if(this->query_tree.getLimit()!=-1) {
+					if(this->query_tree.getLimit()!=-1 && this->query_tree.getSingleBGP()) {
 						query_info.limit_ = true;
 						query_info.limit_num_ = this->query_tree.getLimit();
 					}
@@ -3378,7 +3378,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		}
 
 		ret_result.ansNum = (int)result0.result.size();
-		ret_result.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
+		if (!this->query_tree.getSingleBGP())
+			ret_result.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
 
 #ifdef STREAM_ON
 		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
