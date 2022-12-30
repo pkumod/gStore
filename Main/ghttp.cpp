@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-11-23 10:13:29
+ * @LastEditTime: 2022-12-26 17:51:59
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -16,6 +16,7 @@
 
 #include "../Server/server_http.hpp"
 #include "../Server/client_http.hpp"
+#include "../Server/MultipartParser.hpp"
 // db
 #include "../Database/Database.h"
 #include "../Database/Txn_manager.h"
@@ -58,6 +59,8 @@ void thread_sigterm_handler(int _signal_num);
 void request_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request, string request_type);
 
 void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request, string request_type);
+
+void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request);
 
 void signalHandler(int signum);
 
@@ -142,6 +145,10 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info);
 
 void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info);
+
+std::string fileSuffix(const std::string &filepath);
+
+std::string fileName(const std::string &filepath);
 
 pthread_t scheduler = 0;
 
@@ -616,6 +623,11 @@ int initialize(unsigned short port, std::string db_name, bool load_src)
 	server.resource["/shutdown"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		shutdown_handler(server, response, request, "POST");
+	};
+
+	server.resource["/upload"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		upload_handler(server, response, request);
 	};
 
 	server.default_resource["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
@@ -4156,6 +4168,184 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
 				  << resJson;
 	}
+}
+
+void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request)
+{
+	string operation = "upload";
+	string remote_ip = getRemoteIp(request);
+	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+	if (!ipCheckResult.empty())
+	{
+		sendResponseMsg(1101, ipCheckResult, operation, request, response);
+		return;
+	}
+	// "Content-Type:multipart/form-data; boundary=--------------------------617568955343916342854790"
+	auto contentType = request->header.find("Content-Type");
+	std::string boundary;
+	if (contentType != request->header.end())
+	{
+		size_t idx = contentType->second.find_last_of("boundary=");
+		if (idx != string::npos)
+		{
+			idx++;
+			size_t len = contentType->second.length()-idx;
+			boundary = "--" + contentType->second.substr(idx, len);
+		}
+	} 
+	else 
+	{
+		sendResponseMsg(9, "Content-Type not match", operation, request, response);
+		return;
+	}
+	if (boundary.empty())
+	{
+		sendResponseMsg(1005, "boundary parse error", operation, request, response);
+		return;
+	}
+	auto data = std::make_shared<std::string>(request->content.string());
+
+	#if defined(MULTIPART_PARSER_DEBUG)	
+	cout << contentType->second << endl;
+	cout << *data << endl;
+	#endif // MULTIPART_PARSER_DEBUG
+		
+	MultipartParser multipartParser(data, 0, boundary);
+	std::unique_ptr<MultipartFormData> formPtr = multipartParser.parse();
+	
+	#if defined(MULTIPART_PARSER_DEBUG)	
+	MultipartFormData::iterator formItem;
+	for (formItem = formPtr->begin(); formItem != formPtr->end(); formItem++)
+	{
+		if (formItem->first == "file")
+		{
+			cout << "filename=" << formItem->second.first << endl;
+		} 
+		else 
+		{
+			cout << formItem->second.first << "=" << formItem->second.second << endl;
+		}
+	}
+	#endif // MULTIPART_PARSER_DEBUG
+	
+	if (formPtr->empty())
+	{   
+		sendResponseMsg(9, "Form data is empty", operation, request, response);
+		return;
+	}
+	std::string error;
+	if (formPtr->find("username") == formPtr->end() || formPtr->find("password") == formPtr->end())
+	{
+		error = "username or password is empty";
+		sendResponseMsg(1003, error, operation, request, response);
+		return;
+	}
+	std::string username = formPtr->at("username").second;
+	std::string password = formPtr->at("password").second;
+	error = apiUtil->check_param_value("username", username);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, operation, request, response);
+		return;
+	}
+	error = apiUtil->check_param_value("password", password);
+	if (error.empty() == false)
+	{
+		sendResponseMsg(1003, error, operation, request, response);
+		return;
+	}
+	// filename : filecontent
+	std::pair<std::string, std::string>& fileinfo = formPtr->at("file");
+	if(fileinfo.first.empty())
+	{
+		error = "Upload file can not be empty!";
+		sendResponseMsg(1003, error, operation, request, response);
+		return;
+	}
+	if(request->header.find("Content-Length") != request->header.end())
+	{
+		size_t content_length = strtoul(request->header.find("Content-Length")->second.c_str(), (char **) NULL, 20);
+		if (content_length > apiUtil->get_upload_max_body_size())
+		{
+			error = "Upload file more than max_body_size!";
+			sendResponseMsg(1005, error, operation, request, response);
+			return;
+		}
+	}
+	std::string file_suffix = fileSuffix(fileinfo.first);
+	if (apiUtil->check_upload_allow_extensions(file_suffix) == false)
+	{
+		error = "The type of upload file is not supported!";
+		sendResponseMsg(1005, error, operation, request, response);
+		return;
+	}
+	
+	// remove path info, only return base filename
+	std::string file_name = fileName(fileinfo.first);
+	size_t pos = file_name.size() - file_suffix.size() - 1;
+	std::string file_dst = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
+	// write file
+	ofstream fout(file_dst.c_str());
+	if (fout)
+	{
+		fout << fileinfo.second;
+		fout.close();
+		formPtr.release();
+		std::string msg = "upload file success, file path: " + file_dst;
+		std::string resJson = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg);
+		
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: " 
+				  << resJson.length() << "\r\n\r\n"
+				  << resJson;
+	}
+	else
+	{
+		formPtr.release();
+		SLOG_ERROR("open file error: " + file_dst);
+		error = "Upload file fail: can not write file to dest path!";
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
+
+std::string fileSuffix(const std::string &filepath)
+{
+    std::string::size_type pos1 = filepath.find_last_of("/");
+    if (pos1 == std::string::npos)
+    {
+        pos1 = 0;
+    }
+    else
+    {
+        pos1++;
+    }
+    std::string file = filepath.substr(pos1, -1);
+
+    std::string::size_type pos2 = file.find_last_of(".");
+    if (pos2 == std::string::npos)
+    {
+        return "";
+    }
+    return file.substr(pos2 + 1, -1);
+}
+
+std::string fileName(const std::string &filepath)
+{
+    std::string::size_type pos1 = filepath.find_last_not_of("/");
+    if (pos1 == std::string::npos)
+    {
+        return "/";
+    }
+    std::string::size_type pos2 = filepath.find_last_of("/", pos1);
+    if (pos2 == std::string::npos)
+    {
+        pos2 = 0;
+    } else
+    {
+        pos2++;
+    }
+
+    return filepath.substr(pos2, pos1 - pos2 + 1);
 }
 
 std::string CreateJson(int StatusCode, string StatusMsg, bool body, string ResponseBody)
