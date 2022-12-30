@@ -2019,7 +2019,7 @@ bool Database::build(const string &_rdf_file)
 	this->resetIDinfo();
 
 	string ret = Util::getExactPath(_rdf_file.c_str());
-	long tv_build_begin = Util::get_cur_time();
+	// long tv_build_begin = Util::get_cur_time();
 
 	// string store_path = this->name;
 	Util::create_dir(this->store_path);
@@ -2112,7 +2112,7 @@ bool Database::checkIsTypePredicate(string &predicate)
 {
 	vector<string> names;
 	Util::split(this->type_predicate_name, "@@", names);
-	for (int i = 0; i < names.size(); i++)
+	for (size_t i = 0; i < names.size(); i++)
 	{
 		// cout<<"temp is "<<names[i]<<endl;
 		if (Util::iscontain(predicate, names[i]))
@@ -2368,7 +2368,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	ID_TUPLE *_p_id_tuples = NULL;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
-	long t1 = Util::get_cur_time();
+	// long t1 = Util::get_cur_time();
 
 	// NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system
 	// while literal is another system

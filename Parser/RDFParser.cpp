@@ -95,7 +95,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			errorMsg = errorMsg.substr(0, num_l - 9) + errorMsg.substr(num_r);
 
 			// TODO: get the actual corresponding line
-			cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << ">...> ...): " << errorMsg << endl;
+			cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}
@@ -119,10 +119,9 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
 			else if (_objectType == Type::Integer)
 			{
-				long long ll;
 				try
 				{
-					ll = stoll(rawObject);
+					stoll(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
@@ -144,10 +143,9 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
 			else if (_objectType == Type::Double)
 			{
-				double d;
 				try
 				{
-					d = stod(rawObject);
+					stod(rawObject);
 				}
 				catch (invalid_argument& e)
 				{
@@ -172,10 +170,9 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			{
 				if (_objectSubType == "http://www.w3.org/2001/XMLSchema#long")
 				{
-					long long ll;
 					try
 					{
-						ll = stoll(rawObject);
+						stoll(rawObject);
 					}
 					catch (invalid_argument& e)
 					{
@@ -281,10 +278,9 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				}
 				else if (_objectSubType == "http://www.w3.org/2001/XMLSchema#float")
 				{
-					float f;
 					try
 					{
-						f = stof(rawObject);
+						stof(rawObject);
 					}
 					catch (invalid_argument& e)
 					{

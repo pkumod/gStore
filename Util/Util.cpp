@@ -2774,7 +2774,7 @@ std::string Util::urlDecode(const std::string& str)
                 assert(0);
 
             x = (unsigned char)str[++i];
-            unsigned char low;
+            unsigned char low = 0;
             if (x >= 'A' && x <= 'Z')
                 low = x - 'A' + 10;
             else if (x >= 'a' && x <= 'z')
