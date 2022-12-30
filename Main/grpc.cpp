@@ -503,6 +503,12 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	std::string error;
+	if (form.find("username") == form.end() || form.find("password") == form.end())
+	{
+		error = "username or password is empty";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
 	std::string username = form.at("username").second;
 	std::string password = form.at("password").second;
 	error = apiUtil->check_param_value("username", username);
