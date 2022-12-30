@@ -350,7 +350,7 @@ std::string Server::checkparamValue(std::string param, std::string value)
 			result = "You can not operate the system database.";
 			return result;
 		}
-		int len_suffix = db_suffix.length();
+		size_t len_suffix = db_suffix.length();
 		if (database.length() > len_suffix && database.substr(database.length() - len_suffix, len_suffix) == db_suffix)
 		{
 			result = "Your db_name to be built should not end with \""+db_suffix+"\".";
