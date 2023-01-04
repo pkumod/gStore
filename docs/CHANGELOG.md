@@ -1,18 +1,10 @@
-<!--
- * @Author: wangjian 2606583267@qq.com
- * @Date: 2023-01-04 10:10:12
- * @LastEditors: wangjian 2606583267@qq.com
- * @LastEditTime: 2023-01-04 10:10:12
- * @FilePath: /gstore/docs/CHANGELOG.md
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
--->
 > gStore Version:1.0
 >
 > Last Modification Data:2022-12-31
 >
 > Modified by:JiuhuaQi
 >
-> Modification description:
+> Modification description: We have described in detail the update functions of the versions 0.9.0, 0.9.1 and 1.0 of gstore, so that you can quickly understand the update process of different versions.
 
 ### **gStore 1.0 Version**
 

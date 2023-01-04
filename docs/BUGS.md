@@ -4,7 +4,7 @@
 >
 > Modified by: JianWang
 >
-> Modification description: 
+> Modification description: Update bug information
 
 **This file maintains details of the bugs not solved currently.**
 

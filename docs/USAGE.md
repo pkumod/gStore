@@ -679,14 +679,14 @@ For bug reports and suggestions, see https://github.com/pkumod/gStore
 - Supports command completion, file name completion, line editing and history commands viewing
 - Abandon the current command (end execution or abandon editing) with `ctrl+C`, exit the command line with `ctrl+D`
 - To enter gconsole, you need to log in; only commands that meet the current user permissions will be executed, and only the content that meets the current user permissions will be displayed.
-    - 7 types of permissions: `query`, `load`, `unload`, `update`, `backup`, `restore`, `export`
+- 7 types of permissions: `query`, `load`, `unload`, `update`, `backup`, `restore`, `export`
 - Command keywords are case-insensitive. Command-line options, database names, user names, and passwords are case-sensitive. Command keywords as follows:
-    - Database management: `sparql`, `create`, `use`, `drop`, `show`, `showdbs`, `backup`, `restore`, `export`, `pdb`
-    - Identity: `flushpriv`, `pusr`, `setpswd`
-    - Configuration information viewing: `settings`, `version`
-    - Permissions management: `setpriv`, `showusrs`, `pusr`
-    - User management: `addusr`, `delusr`, `setpswd`, `showusrs`
-    - Help and miscellaneous: `quit`, `help/?`, `pwd`, `clear`
+- Database management: `sparql`, `create`, `use`, `drop`, `show`, `showdbs`, `backup`, `restore`, `export`, `pdb`
+- Identity: `flushpriv`, `pusr`, `setpswd`
+- Configuration information viewing: `settings`, `version`
+- Permissions management: `setpriv`, `showusrs`, `pusr`
+- User management: `addusr`, `delusr`, `setpswd`, `showusrs`
+- Help and miscellaneous: `quit`, `help/?`, `pwd`, `clear`
 
 #### 11.2 Database management
 

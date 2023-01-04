@@ -4,7 +4,7 @@
 >
 > Modified by:JiuhuaQi
 >
-> Modification description:
+> Modification description: We have added some key questions of concern.
 
 #### 1. What is the data model of gStore?
 

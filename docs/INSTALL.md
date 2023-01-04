@@ -4,7 +4,7 @@
 >
 > Modified by: JianWang
 >
-> Modification description: 
+> Modification description: Add grpc module
 
 You are advised to read init.conf and conf.init files, and modify it as you wish. (this file will configure the basic options of gStore system)
 
@@ -36,5 +36,5 @@ Use `make clean` command to clean all objects, executables, and use `make dist` 
 
 You are free to modify the source code of gStore and create your own project while respecting our work, and type `make tarball` command to compress all useful files into a .tar.gz file, which is easy to carry.
 
-Type `make gtest` to compile the gtest program if you want to use this test utility. You can see the [HOW TO USE](USAGE.md) for details of gtest program.
+You can see the [HOW TO USE](USAGE.md) for details of gtest program.
 

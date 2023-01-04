@@ -4,7 +4,7 @@
 >
 > Modified by: JianWang
 >
-> Modification description: 
+> Modification description: Update source codes struct
 
 **This chapter introduce the whole structure of the gStore system project.**
 

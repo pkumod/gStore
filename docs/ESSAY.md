@@ -4,7 +4,7 @@
 >
 >Modified by:JiuhuaQi
 >
->Modification description: Update
+>Modification description: We have added important papers related to gstore published in recent years.
 
 #### Essays and publications related with gStore are listed here:
 

@@ -4,7 +4,7 @@
 >
 > Modified by: JianWang
 >
-> Modification description: 
+> Modification description: Update requirement version
 
 *We have tested on linux server with CentOS 7.4 x86_64 and CentOS 7.6 x86_64 and CentOS 7.9 x86_64. The version of GCC should be 5.4 or later.*
 

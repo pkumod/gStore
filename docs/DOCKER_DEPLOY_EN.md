@@ -4,7 +4,7 @@
 >
 > Modified by: JianWang
 >
-> Modification description: 
+> Modification description: Update docker mirror URL
 
 # Deploy gStore by Docker
 

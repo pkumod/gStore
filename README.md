@@ -98,7 +98,7 @@ If you want to use code from other branches instead of master branch, like 'dev'
 You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
 
 ### Run
-To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
+To run gStore, please type `bin/gbuild -db database_name -f dataset_path` to build a database named by yourself. And you can use `bin/gquery -db database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
 - - -
 
