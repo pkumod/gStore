@@ -9,7 +9,7 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 ## Change log
 
-**1.0：2022-10-01**
+**1.0（stable）：2022-10-01**
 
 New features in gStore 1.0 are listed as follows:
 
@@ -28,7 +28,7 @@ New features in gStore 1.0 are listed as follows:
 
 
 
-**0.9.1（beta）：2021-11-25**
+**0.9.1：2021-11-25**
 
 New features in gStore 0.9.1 are listed as follows:
 
@@ -41,7 +41,7 @@ New features in gStore 0.9.1 are listed as follows:
 - Unification of the format of command line arguments of executive components. The `--help` option is uniformly introduced (e.g., `$ bin/gbuild --help` or `$ bin/gbuild -h`), by which users can view the command manual including the meaning of each option.
 - A number of bug fixes.
 
-**0.9（beta）：2021-02-10**
+**0.9：2021-02-10**
 
 New features in version 0.9 include:
 
@@ -61,7 +61,7 @@ The version is a beta version, you can get it by :
 git clone https://github.com/pkumod/gStore.git
 ```
 
-**0.8（Stable）**
+**0.8**
 
 The version is a stable version ,you can get it by 
 ```
