@@ -1,3 +1,11 @@
+> gstore version: 1.0
+>
+> Last modification date: 2022-12-31
+>
+> Modified by: JianWang
+>
+> Modification description: 
+
 **This chapter introduce the whole structure of the gStore system project.**
 
 #### Figures
@@ -12,17 +20,95 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - Database/ (calling other core parts to deal with requests from interface part)
 	
+	- CSR.cpp
+
+	- CSR.h
+
 	- Database.cpp (achieve functions)
 
 	- Database.h (class, members and functions definitions)
 	
+	- Executor.cpp
+
+	- Executor.h
+
 	- Join.cpp (join the node candidates to get results)
 
 	- Join.h (class, members and functions definitions)
 
+	- Optimizer.cpp
+  
+	- Optimizer.h
+  
+	- PlanGenerator.cpp
+
+	- PlanGenerator.h
+  
+	- PlanTree.cpp
+	
+	- PlanTree.h
+	
+	- ResultTrigger.cpp
+	
+	- ResultTrigger.h
+	
+	- Statistics.cpp
+	
+	- Statistics.h 
+
 	- Strategy.cpp 
 
 	- Strategy.h
+	
+	- TableOperator.cpp
+	
+	- TableOperator.h
+	
+	- Txn_manager.cpp
+	
+	- Txn_manager.h
+
+- GRPC/ (RPC server mode to use gStore)
+
+	- APIUtil.cpp
+	
+	- APIUtil.h
+	
+	- grpc_content.cpp
+	
+	- grpc_content.h
+	
+	- grpc_message.cpp
+	
+	- grpc_message.h
+	
+	- grpc_noncopyable.h
+	
+	- grpc_operation.h
+	
+	- grpc_request_handler.h
+	
+	- grpc_router.cpp
+	
+	- grpc_router.h
+	
+	- grpc_routetable.cpp
+	
+	- grpc_routetable.h
+	
+	- grpc_server_task.cpp
+	
+	- grpc_server_task.h
+	
+	- grpc_server.cpp
+	
+	- grpc_server.h
+	
+	- grpc_status_code.cpp
+	
+	- grpc_status_code.h
+	
+	- grpc_stringpiece.h 
 
 - KVstore/ (a key-value store to swap between memory and disk)
 	
@@ -99,6 +185,8 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 		- IVTree.cpp
 
 		- IVTree.h
+		
+		- Tree.h 
 
 		- heap/ (a heap of nodes whose content are in memory)
 		
@@ -159,14 +247,64 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 			- SIStorage.h
 
 - Query/ (needed to answer SPARQL query)
+    
+	- topk/
+    	- DPB/
+        	- DynamicTrie.cpp
+        	
+			- DynamicTrie.h
+        	
+			- OrderedList.cpp
+			
+			- OrderedList.h
+			
+			- Pool.cpp
+			
+			- Pool.h
+			
+    	- DPBTopKUtil.cpp
+    	
+		- DPBTopKUtil.h
+		
+		- MinMaxHeap.hpp
+		
+		- TopKSearchPlan.cpp
+		
+		- TopKSearchPlan.h
+		
+		- TopKUtil.cpp
+		
+		- TopKUtil.h      
 
 	- BasicQuery.cpp (basic type of queries without aggregate operations)
 
 	- BasicQuery.h
+	
+	- BGPQuery.cpp
+	
+	- BGPQuery.h
+	
+	- GeneralEvaluation.cpp
+	
+	- GeneralEvaluation.h
 
 	- IDList.cpp (candidate list of a node/variable in query)
 
 	- IDList.h 
+	
+	- PathQueryHandler.cpp
+	
+	- PathQueryHandler.h
+	
+	- QueryCache.cpp
+	
+	- QueryCache.h
+	
+	- QueryTree.cpp
+	
+	- QueryTree.h
+	
+	- RegexExpression.h
 
 	- ResultFilter.cpp
 
@@ -180,27 +318,13 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 	- SPARQLquery.h
 
-	- Varset.cpp
-
-	- Varset.h
-
-	- QueryCache.cpp
-
-	- QueryCache.h
-
-	- QueryTree.cpp
-
-	- QueryTree.h
-
-	- GeneralEvaluation.cpp
-
-	- GeneralEvaluation.h
-
 	- TempResult.cpp
 
 	- TempResult.h
 
-	- RegexExpression.h
+	- Varset.cpp
+
+	- Varset.h
 
 - Signature/ (assign signatures for nodes and edges, but not for literals)
 
@@ -211,6 +335,12 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 	- Signature.cpp
 
 	- Signature.h
+
+- StringIndex/
+
+	- StringIndex.cpp
+	
+	- StringIndex.h
 
 - VSTree/ (an tree index to prune more efficiently)
 
@@ -236,6 +366,32 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - Parser/
 	
+	- SPARQL/
+
+		- SPARQLBaseListener.cpp (auto-generated, subtle modified manually, compressed)
+
+    	- SPARQLBaseListener.h (auto-generated, subtle modified manually, compressed)
+
+    	- SPARQLBaseVisitor.cpp (auto-generated, subtle modified manually, compressed)
+
+    	- SPARQLBaseVisitor.h (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLLexer.cpp (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLLexer.h (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLListener.cpp (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLListener.h (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLParser.cpp (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLParser.h (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLVisitor.cpp (auto-generated, subtle modified manually, compressed)
+    	
+		- SPARQLVisitor.h (auto-generated, subtle modified manually, compressed)
+
 	- DBParser.cpp
 
 	- DBParser.h
@@ -243,14 +399,6 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 	- RDFParser.cpp
 
 	- RDFParser.h
-
-	- SparqlParser.c (auto-generated, subtle modified manually, compressed)
-
-	- SparqlParser.h (auto-generated, subtle modified manually, compressed)
-
-	- SparqlLexer.c (auto-generated, subtle modified manually, compressed)
-
-	- SparqlLexer.h (auto-generated, subtle modified manually, compressed)
 
 	- TurtleParser.cpp
 
@@ -268,41 +416,91 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - Util/
 
-	- Util.cpp (headers, macros, typedefs, functions...)
-	
-	- Util.h
-
 	- Bstr.cpp (represent strings of arbitrary length)
 	
 	- Bstr.h (class, members and functions definitions)
+
+	- ClassForVlistCache.h
+
+	- EvalMultitypeValue.cpp
+
+	- EvalMultitypeValue.h
+	
+	- GraphLock.cpp
+	
+	- GraphLock.h
+	
+	- IDTriple.cpp
+	
+	- IDTriple.h
+	
+	- INIParser.cpp
+	
+	- INIParser.h
+	
+	- IPBlackList.cpp
+	
+	- IPBlackList.h
+	
+	- IPWhiteList.cpp
+	
+	- IPWhiteList.h
+	
+	- Latch.cpp
+	
+	- Latch.h
+	
+	- MD5.h
+	
+	- OrderedVector.cpp
+	
+	- OrderedVector.h
+	
+	- PrettyPrint.h
+	
+	- Slog.cpp
+	
+	- Slog.h
+	
+	- SpinLock.cpp
+	
+	- SpinLock.h
 	
 	- Stream.cpp (store and use temp results, which may be very large)
 	
 	- Stream.h
+	
+	- Transaction.cpp
+	
+	- Transaction.h
 
 	- Triple.cpp (deal with triples, a triple can be divided as subject(entity), predicate(entity), object(entity or literal))
 
 	- Triple.h
+	
+	- Util.cpp (headers, macros, typedefs, functions...)
+	
+	- Util.h
 
-	- BloomFilter.cpp
+	- Version.cpp
 
-	- BloomFilter.h
-
-	- ClassForVlistCache.h
+	- Version.h
 
 	- VList.cpp
 
 	- VList.h
+	
+	- WebUrl.cpp
+	
+	- WebUrl.h
 
 - - -
 
 #### The interface part is listed below:
 
 - Server/ (client and server mode to use gStore)
-
-	- Client.cpp
-
-	- Client.h
+  
+    - web/
 
 	- Operation.cpp
 
@@ -319,10 +517,6 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 	- client_http.hpp
 
 	- server_http.hpp
-
-- web/
-	
-	-
 
 - - -
 

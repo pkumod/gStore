@@ -1,3 +1,19 @@
+<!--
+ * @Author: wangjian 2606583267@qq.com
+ * @Date: 2023-01-04 10:12:47
+ * @LastEditors: wangjian 2606583267@qq.com
+ * @LastEditTime: 2023-01-04 10:12:48
+ * @FilePath: /gstore/docs/INTRO.md
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+>gStore Version:1.0
+>
+>Last Modification Data:2022-12-31
+>
+>Modified by:JiuhuaQi
+>
+>Modification description:
+
 **The first essay to come up with Gstore System is [gStore_VLDBJ](pdf/gStoreVLDBJ.pdf), and You can find related essays and publications in [Related Essays](ESSAY.md).**
 
 ## What Is gStore
@@ -14,23 +30,33 @@ We represent a given [SPARQL](http://www.w3.org/TR/sparql11-overview/) query by 
 
 ## What Is New In gStore
 
-There are three important features in gStore:
+There are four important features in gStore:
 
-- gStore manages RDF repository from a graph database perspective.
+- **RDF Graph Storage **
 
-- gStore supports both query and update efficiently.
+  gStore employs a native graph model to store and maintain very large RDF datasets. A single gStore instance on a single machine can store up to 5 billion RDF triples. gStore supports scale-out deployment with massive scaling capabilities to more than hundreds of billions of triples.
 
-- gStore can handle, in a uniform manner, different data types (strings and numerical data) and SPARQL queries with wild cards, aggregate, range operators(only theoretically, not achieved so far)
+-  **Efficient Query Engine **
+
+  gStore supports SPARQL 1.1, the standard RDF query language. gStore employs the subgraph matching-based query strategy as well as a series of query optimization techniques and structure-aware index to build an efficient graph-native SPARQL query engine..
+
+- **Full RDF Graph Management Functionality **
+
+  gStore supports full set of database operations, including insertion, deletion, updates, backup and restore. Transactional support is provided with three isolation levels to adapt to different requirements. gStore provides a series of APIs in multiple programming languages, including C++, Java, Python, NodeJS and PHP. 
+
+-  **RDF Graph Analysis **
+
+  gStore has various built-in graph analysis algorithms including path enumeration, cycle detection, PageRank, triangle counting and k-hop reachability. Also, gStore provides programable interfaces for users to implement their own graph analysis algorithms, which can be integrated seamlessly with SPARQL in gStore system. 
 
 - - -
 
 ## Why gStore
 
-After a series of test, we analyse and keep the result in [Test Results](TEST.md). gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work well. 
-	
-In addition, now is the big data era and more and more structured data is coming, while the original relational database systems(or database systems based on relational tables) cannot deal with them efficiently. In contrast, gStore can utilize the features of data structures, and improve the performance. 
-	
-What is more, gStore is a high-extensible project. Many new ideas of graph database have be proposed, and most of them can be used in gStore. For example, some members of our group are designing a distributed gstore system.
+With the advent of the era of big data, enterprises and institutions will have a large number of data, through the correlation between the data to mine the value of the data becomes more and more important, and the original relational database system (or database systems based on relational tables) can not effectively deal with the association relationship. In contrast, gStore can take advantage of the data association feature, and gStore has over a thousand times performance improvement over traditional relational databases in multi-hop association processing. 
+
+In addition, after a series of test, we analyse and keep the result in [Test Results](TEST.md). gStore runs faster to answer complicated queries(for example, contain circles) than other database systems. For simple queries, both gStore and other database systems work well. 
+		
+What is more, gStore supports scale-out deployment with massive scaling capabilities to more than hundreds of billions of triples. Moreover, it has been applied in many scenarios such as finance, public security and the Internet, and has achieved good benefits.
 
 - - -
 
