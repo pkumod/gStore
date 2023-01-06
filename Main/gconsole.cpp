@@ -632,7 +632,7 @@ void single_cmd()
 	// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
 	string strline(line);
 	free(line);
-	strline = rm_comment(std::move(strline));
+	// strline = rm_comment(std::move(strline));
 	strline = stripwhite(std::move(strline));
 	replace_cr(strline);
 
@@ -1490,7 +1490,7 @@ int raw_sparql_handler(string query)
 	}
 	catch (const std::exception &e)
 	{
-		cout << "Exception: " << e.what() << endl;
+		cout << "raw sparql Exception: " << e.what() << endl;
 		return -1;
 	}
 	current_database->save();
