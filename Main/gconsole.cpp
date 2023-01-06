@@ -1485,7 +1485,7 @@ int raw_sparql_handler(string query)
 	long tv_begin = Util::get_cur_time();
 	int ret;
 	// cout << "old sparql:" << query << endl;
-	query = stripwhite(query);
+	// query = stripwhite(query);
 	// cout << "new sparql" << query << endl;
 	try
 	{
