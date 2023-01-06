@@ -28,9 +28,9 @@ using namespace std;
 /*                            config                                */
 /*                                                                  */
 /* **************************************************************** */
-//#define _GCONSOLE_TRACE
-//#define _GCONSOLE_DEBUG
-//#define _GCONSOLE_SHOW_SYSDB_QUERY
+// #define _GCONSOLE_TRACE
+// #define _GCONSOLE_DEBUG
+// #define _GCONSOLE_SHOW_SYSDB_QUERY
 
 #define INIT_CONF_FILE "conf.ini"
 #define MAX_WRONG_PSWD_TIMES 7
@@ -304,7 +304,6 @@ int main(int argc, char **argv)
 	db_home = Util::global_config["db_home"];
 	db_suffix = Util::global_config["db_suffix"];
 	default_backup_path = Util::backup_path;
-
 	/* parse options */
 	if (argc == 3)
 	{
@@ -374,7 +373,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, ctrlc_handler);
 #ifdef _GCONSOLE_DEBUG
 	cout << "[main_th_id:]" << pthread_self() << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 
 	initialize_readline(); // set completer and readline end char(;)
 	rl_catch_signals = 0;  // If this variable is non-zero, Readline will install signal handlers for SIGINT, SIGQUIT, SIGTERM, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU.
@@ -579,7 +578,7 @@ void single_cmd()
 	char *line;
 #ifdef _GCONSOLE_DEBUG
 	cout << "[in single_cmd]" << pthread_self() << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 
 	{
 		string msg = "";
@@ -736,7 +735,7 @@ int execute_line(char *line)
 
 #ifdef _GCONSOLE_TRACE
 	cout << "[cmdword:]" << word << endl;
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 	// cmd raw query
 	if ((current_cmd_offset = find_command(word)) == RAW_QUERY_CMD_OFFSET)
@@ -865,7 +864,7 @@ bool parse_arguments(char *word, vector<string> &args)
 
 #ifdef _GCONSOLE_TRACE
 	cout << "[search args with:]" << word << "\t[args:]";
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 	while (*word)
 	{
@@ -907,7 +906,7 @@ bool parse_arguments(char *word, vector<string> &args)
 		args.push_back(string(word));
 #ifdef _GCONSOLE_TRACE
 		cout << word << " ";
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 		word[i] = tmp;
 		while (word[i] && whitespace(word[i]))
@@ -918,7 +917,7 @@ bool parse_arguments(char *word, vector<string> &args)
 	}
 #ifdef _GCONSOLE_TRACE
 	cout << endl;
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 	return true;
 }
 
@@ -1250,7 +1249,7 @@ void ctrlc_handler(int signo)
 #ifdef _GCONSOLE_DEBUG
 	cout << "[exec ctrl+c handler:]" << pthread_self() << endl;
 	cout << "[pthread_cancel:]" << child_th << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 	if (child_th)
 	{ // quit current cmd exec
 		if (in_readline)
@@ -2043,6 +2042,7 @@ int drop_handler(const vector<string> &args)
 		cout << "Database drop failed." << endl;
 		return -1;
 	}
+
 	//! REMARK: will delete the user who has same name
 	// string sparql = "DELETE WHERE { <" + db_name + "> ?x ?y. }; DELETE WHERE { ?x ?y <" + db_name + ">. }";
 	//! NOTE to Main/gdrop.cpp: DELETE WHERE { ?x ?y \"" + db_name + "\" is needed too! But gdrop.cpp doesn't contain it
@@ -2197,8 +2197,8 @@ int restore_handler(const vector<string> &args)
 		Util::add_backuplog(db_name);
 	}
 
-	//!单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
-	//!可能和文件复制的落盘有关系
+	//! 单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
+	//! 可能和文件复制的落盘有关系
 	// cp -r backups/eg.db_220929114732 .
 	// rm -rf eg.db
 	// mv eg.db_220929114732 eg.db
