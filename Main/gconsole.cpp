@@ -199,7 +199,7 @@ COMMAND commands[] =
 	cout << "System db query failed. The query is: " << sparql << endl; \
 	return -1;
 #define PRINT_VERSION                                                               \
-	cout << "Gstore version: " << gstore_version << " Source distribution" << endl; \
+	cout << "gStore version: " << gstore_version << " Source distribution" << endl; \
 	cout << "Copyright (c) 2016, 2022, pkumod and/or its affiliates." << endl;
 #define CHECK_CURRENT_DB_LOADED                                                                                    \
 	if (current_database == 0)                                                                                     \
@@ -573,7 +573,7 @@ dupstr(const char *s)
 }
 
 // thread routine: parse command and exec; set gconsole_done if quit is needed
-void single_cmd()
+void quitsingle_cmd()
 {
 	char *line;
 #ifdef _GCONSOLE_DEBUG
@@ -632,7 +632,7 @@ void single_cmd()
 	// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
 	string strline(line);
 	free(line);
-	strline = rm_comment(std::move(strline));
+	// strline = rm_comment(std::move(strline));
 	strline = stripwhite(std::move(strline));
 	replace_cr(strline);
 
@@ -1484,13 +1484,16 @@ int raw_sparql_handler(string query)
 	// }
 	long tv_begin = Util::get_cur_time();
 	int ret;
+	// cout << "old sparql:" << query << endl;
+	query = stripwhite(query);
+	// cout << "new sparql" << query << endl;
 	try
 	{
 		ret = current_database->query(query, _rs, ofp, true, export_flag, nullptr);
 	}
 	catch (const std::exception &e)
 	{
-		cout << "Exception: " << e.what() << endl;
+		cout << "raw sparql Exception: " << e.what() << endl;
 		return -1;
 	}
 	current_database->save();
@@ -1538,6 +1541,7 @@ string stripwhite(const string &s)
 // rm # comment from line
 string rm_comment(string line)
 {
+	// cout << "rm_comment:" << line << endl;
 #ifdef _GCONSOLE_TRACE
 	cout << "[before rm comment the line is:]\n"
 		 << line << endl;
