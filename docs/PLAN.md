@@ -8,6 +8,10 @@
 
 - typedef all frequently used types, to avoid inconsistence and high modify cost
 
+- support the ACID transactions
+
+- research and develop the distributed version of gStore
+
 - - -
 
 ## Better Interface
@@ -27,4 +31,8 @@
 - mmap to speedup KVstore?
 
 - the strategy for Stream:is 85% valid? consider sampling, analyse the size of result set and decide strategy? how to support order by: sort in memory if not put in file; otherwise, partial sort in memory, then put into file, then proceed external sorting
+
+- support the cypher language in gStore
+
+- support the Property Graph Model
 

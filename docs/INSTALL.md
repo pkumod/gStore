@@ -1,4 +1,12 @@
-You are advised to read init.conf file, and modify it as you wish. (this file will configure the basic options of gStore system)
+> gstore version: 1.0
+>
+> Last modification date: 2022-12-31
+>
+> Modified by: JianWang
+>
+> Modification description: Add grpc module
+
+You are advised to read init.conf and conf.init files, and modify it as you wish. (this file will configure the basic options of gStore system)
 
 gStore is a green software, and you just need to compile it with three commands. Please run
 
@@ -8,7 +16,7 @@ make pre
 make
 
 ```
-in the gStore home directory to prepare the dependency, link the ANTLR lib, compile the gStore code, and build executable "gbuild", "gquery", "gadd", "gsub", "gmonitor", "gshow", "ghttp", "ginit", "gdrop", "shutdown", "gserver", "gclient", "gconsole". 
+in the gStore home directory to prepare the dependency, link the ANTLR lib, compile the gStore code, and build executable "gbuild", "gquery", "gadd", "gsub", "gmonitor", "gshow", "ghttp", "ginit", "gdrop", "shutdown", "gserver", "grpc", "gconsole". 
 
 (Please substitute the $(ARCH) with your system version, like setup_archlinux.sh, setup_centos.sh and setup_ubuntu.sh)
 
@@ -28,5 +36,5 @@ Use `make clean` command to clean all objects, executables, and use `make dist` 
 
 You are free to modify the source code of gStore and create your own project while respecting our work, and type `make tarball` command to compress all useful files into a .tar.gz file, which is easy to carry.
 
-Type `make gtest` to compile the gtest program if you want to use this test utility. You can see the [HOW TO USE](USAGE.md) for details of gtest program.
+You can see the [HOW TO USE](USAGE.md) for details of gtest program.
 

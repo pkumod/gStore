@@ -1,3 +1,12 @@
+> gstore 版本: v1.0
+> 
+> 最后更新时间：2022-12-31
+> 
+> 更新人：王剑
+> 
+> 更新描述：更新Docker镜像地址
+
+
 # Docker方式部署gStore
 
 
@@ -8,21 +17,23 @@
 >
 > 另一种是直接下载已经自动构建完成的镜像，然后直接运行.
 
-## 0x00.环境准备
+## 1.环境准备
 
 关于安装使用Docker，官方针对常见Linux发行版文档已经写得很详细，就直接给出参考地址：[英文文档](https://docs.docker.com/install/linux/docker-ce/ubuntu/)，[中文文档](https://docs.docker-cn.com/engine/installation/linux/docker-ce/centos/#%E5%85%88%E5%86%B3%E6%9D%A1%E4%BB%B6) 。
 
-## 0x01.通过Dockerfile构建镜像（推荐）
+## 2.直接拉取镜像运行（推荐）
+
+无需下载项目或自己构建，直接输入 `docker pull pkumodlab/gstore-docker:latest` 拉取已经在 docker hub 上自动构建完成的镜像。拉取完成后 `docker run -p 9000:80 -it pkumodlab/gstore-docker:latest` 即可直接启动并进入容器使用。
+
+
+## 3.通过Dockerfile构建镜像
 
 假设已经拥有正常的Docker环境跟网络后，首先通过 `git clone` 下载项目。然后进入项目根目录，输入命令`docker build -t gstore .` 即可开始构建。关于具体说明请参见 Dockerfile 文件内容。
 
 构建完成后，直接通过 `docker run -p 9000:80 -it gstore` 即可启动并进入容器执行其他操作。
 
-## 0x02.直接拉取镜像运行
 
-无需下载项目或自己构建，直接输入 `docker pull pkumodlab/gstore:latest` 拉取已经在 docker hub 上自动构建完成的镜像。拉取完成后 `docker run -p 9000:80 -it pkumodlab/gstore:latest` 即可直接启动并进入容器使用。
- 
-## 0x03.后续工作
+## 4.后续工作
 
 #### A.性能测试
 

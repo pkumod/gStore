@@ -4,13 +4,31 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 **The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_ZH.pdf).**
 
-**The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
-**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore.cn).**
+**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore(ZH)](https://www.gstore.cn) or [the homepage of gStore(EN)](https://en.gstore.cn).**
 
 ## Change log
 
-**0.9.1（beta）：2021-11-25**
+**1.0（stable）：2022-10-01**
+
+New features in gStore 1.0 are listed as follows:
+
+  - Support of user-defined graph analysis functions: users can manage their own graph analysis functions through the API interfaces or the visual management platform gStore-workbench. Users can obtain the number of nodes and edges of the graph and neighbors of any given node, etc. through interface functions and use them as basic units to implement their own graph analysis functions. Dynamic compilation and execution of user-defined graph analysis functions are supported.
+
+  - The gRPC network interface service: gRPC is a high-performance network interface service based on HTTP protocol implemented based on the open source library `workflow`, which further improves the efficiency and stability of the interface service. Experiments show that gRPC achieves a great improvement in concurrent access performance compared with ghttp, the previous network interface; for example, in the case of **2000/QPS**, the rate of denied access is **0%**.
+  - gConsole module: in gStore 1.0, we launched the gConsole module, which enables the long-session operation of gStore with contextual information.
+  - Decoupling of the optimizer and executor: gStore 1.0 decouples the optimizer and executor, converting from the original deeply coupled greedy strategy to a query optimizer based on dynamic programming and a query executor based on breadth-first traversal.
+  - Optimization of Top-K queries: We implemented a Top-K SPARQL processing framework based on the DP-B algorithm in gStore, including query segmentation and sub-result aggregation.
+  - Support of ACID transactions: by introducing the multi-version management mechanism, gStore 1.0 can start ACID transactions for insert and delete operations, which users can open, commit, and roll back. Currently gStore 1.0 supports four isolation levels: read-uncommitted, read-committed, repeatable read and serializable.
+  - Reconstruction of database kernel and optimization of the plan tree generation logic: in gStore 1.0, two types of join operations (worst-case-optimal joins and binary joins) are introduced to optimize query execution and further improve query efficiency.
+  - Optimized logging module: based on the log4cplus library, the system logs can be output in a unified format. Users can configure the log output mode (console output or file output), output format, and output level.
+  - New built-in advanced functions: gStore 1.0 supports four new advanced functions, namely triangleCounting, closenessCentrality, bfsCount and kHopEnumeratePath.
+  - Extended support for BIND statements: gStore 1.0 supports assigning values to variables using algebraic or logical expressions in BIND statements.
+  - Optimization of some local commands and API interfaces (e.g., the shutdown command), and fixing a series of bugs (e.g., more accurate gmonitor statistics).
+
+
+
+**0.9.1：2021-11-25**
 
 New features in gStore 0.9.1 are listed as follows:
 
@@ -23,7 +41,7 @@ New features in gStore 0.9.1 are listed as follows:
 - Unification of the format of command line arguments of executive components. The `--help` option is uniformly introduced (e.g., `$ bin/gbuild --help` or `$ bin/gbuild -h`), by which users can view the command manual including the meaning of each option.
 - A number of bug fixes.
 
-**0.9（beta）：2021-02-10**
+**0.9：2021-02-10**
 
 New features in version 0.9 include:
 
@@ -43,7 +61,7 @@ The version is a beta version, you can get it by :
 git clone https://github.com/pkumod/gStore.git
 ```
 
-**0.8（Stable）**
+**0.8**
 
 The version is a stable version ,you can get it by 
 ```
@@ -80,7 +98,7 @@ If you want to use code from other branches instead of master branch, like 'dev'
 You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
 
 ### Run
-To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
+To run gStore, please type `bin/gbuild -db database_name -f dataset_path` to build a database named by yourself. And you can use `bin/gquery -db database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
 - - -
 
