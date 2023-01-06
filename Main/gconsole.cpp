@@ -28,9 +28,9 @@ using namespace std;
 /*                            config                                */
 /*                                                                  */
 /* **************************************************************** */
-//#define _GCONSOLE_TRACE
-//#define _GCONSOLE_DEBUG
-//#define _GCONSOLE_SHOW_SYSDB_QUERY
+// #define _GCONSOLE_TRACE
+// #define _GCONSOLE_DEBUG
+// #define _GCONSOLE_SHOW_SYSDB_QUERY
 
 #define INIT_CONF_FILE "conf.ini"
 #define MAX_WRONG_PSWD_TIMES 7
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, ctrlc_handler);
 #ifdef _GCONSOLE_DEBUG
 	cout << "[main_th_id:]" << pthread_self() << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 
 	initialize_readline(); // set completer and readline end char(;)
 	rl_catch_signals = 0;  // If this variable is non-zero, Readline will install signal handlers for SIGINT, SIGQUIT, SIGTERM, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU.
@@ -578,10 +578,20 @@ void single_cmd()
 	char *line;
 #ifdef _GCONSOLE_DEBUG
 	cout << "[in single_cmd]" << pthread_self() << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 
 	{
-		volatile ReadlineWrapper rl(in_readline, line, "gstore> ");
+		string msg = "";
+		if (current_database == NULL)
+		{
+			msg = "gstore[no database]> ";
+		}
+		else
+		{
+			msg = "gstore[" + current_database->getName() + "]> ";
+		}
+		// cout << "msg:" << msg << endl;
+		volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
 	}
 
 #ifdef _GCONSOLE_TRACE
@@ -602,6 +612,18 @@ void single_cmd()
 		gconsole_done = 1;
 		return;
 	}
+
+	// string msg = "";
+	// if (current_database == NULL)
+	// {
+	// 	msg = "gstore[no database]> ";
+	// }
+	// else
+	// {
+	// 	msg = "gstore[" + current_database->getName() + "]> ";
+	// }
+	// cout << "msg:" << msg << endl;
+	// volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
 
 	// Remove comment and leading-trailing whitespace from the line.
 	// Then, if there is anything left, add it to the history
@@ -713,7 +735,7 @@ int execute_line(char *line)
 
 #ifdef _GCONSOLE_TRACE
 	cout << "[cmdword:]" << word << endl;
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 	// cmd raw query
 	if ((current_cmd_offset = find_command(word)) == RAW_QUERY_CMD_OFFSET)
@@ -842,7 +864,7 @@ bool parse_arguments(char *word, vector<string> &args)
 
 #ifdef _GCONSOLE_TRACE
 	cout << "[search args with:]" << word << "\t[args:]";
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 	while (*word)
 	{
@@ -884,7 +906,7 @@ bool parse_arguments(char *word, vector<string> &args)
 		args.push_back(string(word));
 #ifdef _GCONSOLE_TRACE
 		cout << word << " ";
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 
 		word[i] = tmp;
 		while (word[i] && whitespace(word[i]))
@@ -895,7 +917,7 @@ bool parse_arguments(char *word, vector<string> &args)
 	}
 #ifdef _GCONSOLE_TRACE
 	cout << endl;
-#endif //#ifdef _GCONSOLE_TRACE
+#endif // #ifdef _GCONSOLE_TRACE
 	return true;
 }
 
@@ -1227,7 +1249,7 @@ void ctrlc_handler(int signo)
 #ifdef _GCONSOLE_DEBUG
 	cout << "[exec ctrl+c handler:]" << pthread_self() << endl;
 	cout << "[pthread_cancel:]" << child_th << endl;
-#endif //#ifdef _GCONSOLE_DEBUG
+#endif // #ifdef _GCONSOLE_DEBUG
 	if (child_th)
 	{ // quit current cmd exec
 		if (in_readline)
@@ -1462,9 +1484,12 @@ int raw_sparql_handler(string query)
 	// }
 	long tv_begin = Util::get_cur_time();
 	int ret;
-	try {
+	try
+	{
 		ret = current_database->query(query, _rs, ofp, true, export_flag, nullptr);
-	} catch (const std::exception &e) {
+	}
+	catch (const std::exception &e)
+	{
 		cout << "Exception: " << e.what() << endl;
 		return -1;
 	}
@@ -1800,14 +1825,14 @@ int show_handler(const vector<string> &args)
 	// do query here: because query would output MUCH process info to stdout
 	ResultSet _db_rs;
 	int ret = silence_sysdb_query("select ?x ?y where{<" + db->getName() + "> <built_by> ?x. <" + db->getName() + "> <built_time> ?y.}", _db_rs);
-	if (ret != 0)															  // select query failed
+	if (ret != 0) // select query failed
 	{
-		cout << "Show database " << db->getName() << " failed: return " << ret <<" ." << endl;
+		cout << "Show database " << db->getName() << " failed: return " << ret << " ." << endl;
 		return -1;
 	}
 	ResultSet re;
 	ret = db->query("SELECT ?x ?y ?z WHERE{ ?x ?y ?z. } LIMIT " + lines, re, nullptr); // limit query result to lines
-	if (ret != -100)															  // select query failed
+	if (ret != -100)																   // select query failed
 	{
 		cout << "Show database " << db->getName() << " failed: Query this database failed." << endl;
 		return -1;
@@ -1817,13 +1842,16 @@ int show_handler(const vector<string> &args)
 	rows.push_back({"database", db->getName()});
 	if (_db_rs.ansNum > 0)
 	{
-		string creator = Util::clear_angle_brackets(_db_rs.answer[0][0]); //remove <>
+		string creator = Util::clear_angle_brackets(_db_rs.answer[0][0]); // remove <>
 		string built_time = Util::replace_all(_db_rs.answer[0][1], "\"", "");
 		rows.push_back({"creator", creator});
 		rows.push_back({"built_time", built_time});
 	}
 	rows.push_back({"triple_num", Util::int2string(db->getTripleNum())});
-	rows.push_back({"entity_num", Util::int2string(db->getEntityNum()),});
+	rows.push_back({
+		"entity_num",
+		Util::int2string(db->getEntityNum()),
+	});
 	rows.push_back({"literal_num", Util::int2string(db->getLiteralNum())});
 	rows.push_back({"subject_num", Util::int2string(db->getSubNum())});
 	rows.push_back({"predicate_num", Util::int2string(db->getPreNum())});
@@ -1834,7 +1862,7 @@ int show_handler(const vector<string> &args)
 	unsigned ed = min(re.ansNum, unsigned(stoi(lines)));
 	for (unsigned i = 0; i < ed; ++i)
 	{
-		rows.emplace_back(std::forward<std::vector<std::string>>({re.answer[i][0],re.answer[i][1],re.answer[i][2]}));
+		rows.emplace_back(std::forward<std::vector<std::string>>({re.answer[i][0], re.answer[i][1], re.answer[i][2]}));
 	}
 	Util::printConsole(header, rows);
 	if (db_name.empty() == 0)
@@ -1906,10 +1934,10 @@ int create_handler(const vector<string> &args)
 		return -1;
 	}
 	int len = db_name.length();
-    int len_suffix = db_suffix.length();
+	int len_suffix = db_suffix.length();
 	if (len <= len_suffix || (len > len_suffix && db_name.substr(len - len_suffix, len_suffix) == db_suffix))
 	{
-		cout << "your database can not end with "+db_suffix+" or less than "<< len_suffix <<" characters." << endl;
+		cout << "your database can not end with " + db_suffix + " or less than " << len_suffix << " characters." << endl;
 		return -1;
 	}
 	/* int access(const char *pathname, int mode);
@@ -1960,7 +1988,7 @@ int create_handler(const vector<string> &args)
 		ResultSet rs;
 		if (silence_sysdb_query(record_newdb_sparql, rs))
 		{
-			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system"+db_suffix+"." << endl;
+			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
 			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
 			return -1;
 		}
@@ -1983,7 +2011,7 @@ int create_handler(const vector<string> &args)
 		ResultSet rs;
 		if (silence_sysdb_query(add_priv_sparql, rs))
 		{
-			cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system"+db_suffix+"." << endl;
+			cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
 			db2priv.erase(db_name);
 			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
 			return -1;
@@ -2049,8 +2077,8 @@ int export_handler(const vector<string> &args)
 		filepath = filepath + "/";
 	if (!Util::dir_exist(filepath))
 		Util::create_dirs(filepath);
-	filepath = filepath + current_database->getName()  + "_" + Util::get_timestamp() +  ".nt";
-	
+	filepath = filepath + current_database->getName() + "_" + Util::get_timestamp() + ".nt";
+
 	FILE *ofp = fopen(filepath.c_str(), "w");
 	current_database->export_db(ofp);
 	fflush(ofp);
@@ -2102,7 +2130,7 @@ int backup_handler(const vector<string> &args)
 
 	// rename backup folder with current timestamp
 	string timestamp = Util::get_timestamp();
-	string new_folder =  db_name + db_suffix + "_" + timestamp;
+	string new_folder = db_name + db_suffix + "_" + timestamp;
 	string sys_cmd = "mv " + default_backup_path + "/" + db_name + db_suffix + " " + backup_path + "/" + new_folder;
 	system(sys_cmd.c_str());
 
@@ -2169,8 +2197,8 @@ int restore_handler(const vector<string> &args)
 		Util::add_backuplog(db_name);
 	}
 
-	//!单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
-	//!可能和文件复制的落盘有关系
+	//! 单独命令行执行以下命令可以实现恢复效果，而执行restore_handler则会出现db_info_file.dat稳定为备份后修改后的版本
+	//! 可能和文件复制的落盘有关系
 	// cp -r backups/eg.db_220929114732 .
 	// rm -rf eg.db
 	// mv eg.db_220929114732 eg.db
