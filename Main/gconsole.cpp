@@ -573,7 +573,7 @@ dupstr(const char *s)
 }
 
 // thread routine: parse command and exec; set gconsole_done if quit is needed
-void quitsingle_cmd()
+void single_cmd()
 {
 	char *line;
 #ifdef _GCONSOLE_DEBUG
