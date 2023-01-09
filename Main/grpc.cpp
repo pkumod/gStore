@@ -1332,6 +1332,15 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			if (apiUtil->check_already_load(db_name))
 			{
+				bool rt = apiUtil->remove_txn_managers(db_name);
+				if (!rt)
+				{
+					SLOG_DEBUG("remove " + db_name + " from the txn managers fail.");
+					error = "the operation can not been excuted due to can not release txn manager.";
+					response->Error(StatusOperationFailed, error);
+					return;
+				}
+				SLOG_DEBUG("remove " + db_name + " from the txn managers.");
 				//@ the database has loaded, unload it firstly
 				apiUtil->delete_from_databases(db_name);
 				SLOG_DEBUG("remove " + db_name + " from loaded database list");
