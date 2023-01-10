@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2022-11-23 17:28:37
+ * @LastEditTime: 2023-01-09 15:45:48
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -658,6 +658,21 @@ bool APIUtil::insert_txn_managers(Database* current_database, std::string databa
     }
     SLOG_ERROR("add txn manager for " + database + " error!");
     return false;
+}
+
+bool APIUtil::remove_txn_managers(std::string db_name)
+{
+    pthread_rwlock_wrlock(&txn_m_lock);
+	if (txn_managers.find(db_name) == txn_managers.end())
+	{
+		string error = "get " + db_name + " txn error!";
+        SLOG_ERROR(error);
+		pthread_rwlock_unlock(&txn_m_lock);
+		return false;
+	}
+	txn_managers.erase(db_name);
+    pthread_rwlock_unlock(&txn_m_lock);
+    return true;
 }
 
 bool APIUtil::find_txn_managers(std::string db_name)

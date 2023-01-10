@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2022-11-23 16:47:44
+ * @LastEditTime: 2023-01-09 15:43:51
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -972,6 +972,7 @@ public:
     bool build_db_user_privilege(std::string db_name, std::string username);
     txn_id_t get_txn_id(string db_name, string user);
     bool insert_txn_managers(Database* current_database, std::string database);
+    bool remove_txn_managers(std::string db_name);
     bool find_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
     bool db_checkpoint_all();

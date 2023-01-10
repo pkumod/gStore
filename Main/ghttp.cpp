@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2022-12-26 17:51:59
+ * @LastEditTime: 2023-01-09 15:46:33
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -1211,6 +1211,15 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 		{
 			if (apiUtil->check_already_load(db_name))
 			{
+				bool rt = apiUtil->remove_txn_managers(db_name);
+				if (!rt)
+				{
+					SLOG_DEBUG("remove " + db_name + " from the txn managers fail.");
+					error = "the operation can not been excuted due to can not release txn manager.";
+					sendResponseMsg(1005, error, operation, request, response);
+					return;
+				}
+				SLOG_DEBUG("remove " + db_name + " from the txn managers.");
 				//@ the database has loaded, unload it firstly
 				apiUtil->delete_from_databases(db_name);
 				SLOG_DEBUG("remove " + db_name + " from loaded database list");
