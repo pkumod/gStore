@@ -1505,7 +1505,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			string success = "Import RDF file to database done.";
 			string error_log = _db_path + "/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log);
+			size_t parse_error_num = Util::count_lines(error_log) - 1;
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
@@ -1570,6 +1570,15 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			if (apiUtil->check_already_load(db_name))
 			{
+				bool rt = apiUtil->remove_txn_managers(db_name);
+				if (!rt)
+				{
+					SLOG_DEBUG("remove " + db_name + " from the txn managers fail.");
+					error = "the operation can not been excuted due to can not release txn manager.";
+					response->Error(StatusOperationFailed, error);
+					return;
+				}
+				SLOG_DEBUG("remove " + db_name + " from the txn managers.");
 				//@ the database has loaded, unload it firstly
 				apiUtil->delete_from_databases(db_name);
 				SLOG_DEBUG("remove " + db_name + " from loaded database list");
