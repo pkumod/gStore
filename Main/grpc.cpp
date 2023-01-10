@@ -1267,7 +1267,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			string success = "Import RDF file to database done.";
 			string error_log = _db_path + "/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log);
+			size_t parse_error_num = Util::count_lines(error_log) - 1;
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
