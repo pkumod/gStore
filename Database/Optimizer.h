@@ -24,9 +24,8 @@
 #include "./OptimizerDebug.h"
 #include "../Query/FilterPlan.h"
 
-using namespace std;
-using TableContent = list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>;
-using TableContentShardPtr = shared_ptr<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>;
+using TableContent = list<shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>;
+using TableContentShardPtr = shared_ptr<list<shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>;
 using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
 using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
 
@@ -40,7 +39,7 @@ struct QueryInfo{
   bool limit_;
   int limit_num_;
   bool is_distinct_;
-  shared_ptr<vector<Order>> ordered_by_expressions_;
+  shared_ptr<std::vector<Order>> ordered_by_expressions_;
 };
 
 class Optimizer
@@ -74,7 +73,7 @@ class Optimizer
                                                      int limit_number,
                                                      TableContentShardPtr table_content_ptr,
                                                      const IDCachesSharePtr& id_caches,
-                                                     const shared_ptr<vector<IntermediateResult>>& table_template);
+                                                     const shared_ptr<std::vector<IntermediateResult>>& table_template);
 
 #ifdef TOPK_SUPPORT
   tuple<bool,IntermediateResult> ExecutionTopK(shared_ptr<BGPQuery> bgp_query, shared_ptr<TopKSearchPlan> &tree_search_plan,

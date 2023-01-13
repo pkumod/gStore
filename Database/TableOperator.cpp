@@ -344,7 +344,7 @@ string AffectTwoNode::GetString() {
 	stringstream oss;
 	oss << "\tedge " << JoinMethodToString(edges_.join_method_) << endl;
 	oss << "\t\t" << edges_.toString() << endl << "\t\t" << edges_constant_info_.toString() << endl;
-	cout << "\tnodes id: " << node_to_join_1_ << "    " << node_to_join_2_;
+	oss << "\tnodes id: " << node_to_join_1_ << "    " << node_to_join_2_;
 	return oss.str();
 }
 
@@ -356,7 +356,7 @@ string JoinTwoTable::GetString() {
 	return oss.str();
 }
 
-string StepOperation::StepEffect::GetString() {
+string StepOperation::StepEffect::GetString() const {
 	stringstream oss;
 	oss << "\t" << StepOperation::GetString(range) << endl;
 	switch (range) {
