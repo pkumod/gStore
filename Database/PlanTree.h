@@ -9,7 +9,6 @@
 
 #include "./TableOperator.h"
 
-using namespace std;
 
 struct Tree_node{
     shared_ptr<StepOperation> node;
@@ -58,8 +57,8 @@ class PlanTree {
 
  public:
     Tree_node *root_node = nullptr;
-    vector<unsigned> already_joined_pre_var;
-    vector<unsigned> already_so_var;
+    std::vector<unsigned> already_joined_pre_var;
+    std::vector<unsigned> already_so_var;
     long long plan_cost;
 
  public:

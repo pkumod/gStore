@@ -339,7 +339,7 @@ class StepOperation{
     std::shared_ptr<AffectOneNode> GetOneNodePlan();
     std::shared_ptr<AffectTwoNode> GetTwoNodePlan();
     std::shared_ptr<JoinTwoTable> GetTwoTablePlan();
-	string GetString();
+	string GetString() const;
   }step_effect_;
  public:
   std::shared_ptr<AffectOneNode> GetOneNodePlan();
