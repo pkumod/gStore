@@ -2280,8 +2280,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										}
 									}
 								}
-								for (auto elem : count_set)
-									cout << elem << ' ';
+								// for (auto elem : count_set)
+								// 	cout << elem << ' ';
 								cout << endl;
 								count = (int)count_set.size();
 								if (proj[i].aggregate_type == ProjectionVar::Sum_type
