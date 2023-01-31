@@ -293,7 +293,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   for(auto big_table_it = big_table->begin();big_table_it!=big_table->end();)
   {
     auto& big_record = *big_table_it;
-    vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
+    vector<TYPE_ENTITY_LITERAL_ID> result_index;
     for(auto common_position:common_variables_position_big)
     {
       result_index.push_back(big_record[common_position]);
@@ -308,10 +308,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
       tmp_vector->push_back(&big_record);
       indexed_result[result_index] = std::move(tmp_vector);
     }
-    if(!remain_old)
-      big_table_it= big_table->erase(big_table_it);
-    else
-      big_table_it++;
+    big_table_it++;
   }
 
 
@@ -335,7 +332,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   for(auto small_table_it = small_table->begin();small_table_it!=small_table->end();)
   {
     auto& small_record = *small_table_it;
-    vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
+    vector<TYPE_ENTITY_LITERAL_ID> result_index;
     for(auto common_position:common_variables_position_small)
       result_index.push_back(small_record[common_position]);
 
@@ -360,6 +357,9 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
       small_table_it= small_table->erase(small_table_it);
     else
       small_table_it++;
+  }
+  if (!remain_old) {
+    big_table->clear();
   }
   result_table.pos_id_map = new_position_id_mapping;
   auto id_pos_map = result_table.id_pos_map;
