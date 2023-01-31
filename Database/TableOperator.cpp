@@ -66,7 +66,7 @@ IntermediateResult::JoinTwoStructure(const shared_ptr<IntermediateResult>& resul
     (*r_id_to_position)[kv.second] = kv.first;
   }
   auto r_dealed_triple = make_shared<vector<bool>>();
-  return make_shared<IntermediateResult>(r_id_to_position,r_position_to_id,make_shared<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>());
+  return make_shared<IntermediateResult>(r_id_to_position,r_position_to_id,make_shared<std::list<std::vector<TYPE_ENTITY_LITERAL_ID>>>());
 }
 
 /**
