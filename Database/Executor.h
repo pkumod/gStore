@@ -67,14 +67,14 @@ class Executor {
                                               IDCachesSharePtr id_caches,
                                               TYPE_ENTITY_LITERAL_ID new_id,
                                               bool distinct,
-                                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const;
+                                              list<vector<TYPE_ENTITY_LITERAL_ID>>::iterator record_iterator) const;
 
   std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_node_,
                                                                            PositionValueSharedPtr id_pos_mapping,
                                                                            IDCachesSharePtr id_caches,
                                                                            TYPE_ENTITY_LITERAL_ID new_id1,
                                                                            TYPE_ENTITY_LITERAL_ID new_id2,
-                                                                           list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const;
+                                                                           list<vector<TYPE_ENTITY_LITERAL_ID>>::iterator record_iterator) const;
 
   shared_ptr<IDList> CandidatesWithConstantEdge(shared_ptr<vector<EdgeInfo>> edge_info_vector,bool distinct) const;
 
@@ -89,7 +89,7 @@ class Executor {
   void CheckedInsert(TableContentShardPtr& new_records,
                      size_t &max_output,
                      bool remain_old,
-                     shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& inserted_output);
+                     vector<TYPE_ENTITY_LITERAL_ID>& inserted_output);
   tuple<bool, IntermediateResult> AffectANode(IntermediateResult old_table,
                                               const IDCachesSharePtr id_caches,
                                               bool node_added_into_table,

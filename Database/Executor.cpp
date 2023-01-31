@@ -48,12 +48,10 @@ tuple<bool, IntermediateResult> gstore::Executor::AffectANode(IntermediateResult
          * and move the last */
         for (unsigned int i = 0; i < record_candidate_list->size() - 1; i++) {
           CheckedInsert(new_records,max_output,true,*record_iterator);
-          auto new_element = record_candidate_list->getID(i);
-          new_records->back()->push_back(new_element);
+          new_records->back().push_back(record_candidate_list->getID(i));;
         }
         CheckedInsert(new_records,max_output, remain_old,*record_iterator);
-        auto new_element = record_candidate_list->getID(record_candidate_list->size() - 1);
-        new_records->back()->push_back(new_element);
+        new_records->back().push_back(record_candidate_list->getID(record_candidate_list->size() - 1));
       }
       else // node_should NOT be_added_into_table
       {
@@ -158,12 +156,12 @@ std::tuple<bool,IntermediateResult> gstore::Executor::InitialTableTwoNode(const 
     valid_size = min(valid_size,max_output);
   /* write to the new table */
   for (decltype(valid_size) i =0;i<valid_size;i++) {
-    auto new_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
+    auto new_record = vector<TYPE_ENTITY_LITERAL_ID>();
     auto id1_this_record = (*record_two_node_list)[i*2];
     auto id2_this_record = (*record_two_node_list)[i*2+1];
-    new_record->push_back(id1_this_record);
-    new_record->push_back(id2_this_record);
-    records->push_back(std::move(new_record));
+    new_record.push_back(id1_this_record);
+    new_record.push_back(id2_this_record);
+    records->emplace_back(std::move(new_record));
   }
   return make_tuple(true, init_table);
 }
@@ -205,8 +203,8 @@ std::tuple<bool, IntermediateResult> gstore::Executor::JoinTwoNode(const shared_
         CheckedInsert(new_records,max_output,remain_this,record);
         auto id1_this_record = (*record_two_node_list)[i*2];
         auto id2_this_record = (*record_two_node_list)[i*2+1];
-        new_records->back()->push_back(id1_this_record);
-        new_records->back()->push_back(id2_this_record);
+        new_records->back().push_back(id1_this_record);
+        new_records->back().push_back(id2_this_record);
         if(max_output==0)
           break;
       }
@@ -264,7 +262,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   auto indexed_result = unordered_map<
       /*key*/ vector<TYPE_ENTITY_LITERAL_ID>,
-      /*value*/ shared_ptr<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>,
+      /*value*/ shared_ptr<vector<vector<TYPE_ENTITY_LITERAL_ID>>>,
       /*hash function*/ container_hash<vector<TYPE_ENTITY_LITERAL_ID>>
   >();
 
@@ -294,11 +292,11 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   for(auto big_table_it = big_table->begin();big_table_it!=big_table->end();)
   {
-    auto big_record = *big_table_it;
+    auto& big_record = *big_table_it;
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_big)
     {
-      result_index.push_back((*big_record)[common_position]);
+      result_index.push_back(big_record[common_position]);
     }
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
@@ -309,7 +307,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
     }
     else
     {
-      auto tmp_vector = make_shared<vector<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
+      auto tmp_vector = make_shared<vector<vector<TYPE_ENTITY_LITERAL_ID>>>();
       if(!remain_old)
         tmp_vector->push_back(std::move(big_record));
       else
@@ -342,24 +340,24 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   /* do the matching */
   for(auto small_table_it = small_table->begin();small_table_it!=small_table->end();)
   {
-    auto small_record = *small_table_it;
+    auto& small_record = *small_table_it;
     vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
     for(auto common_position:common_variables_position_small)
-      result_index.push_back((*small_record)[common_position]);
+      result_index.push_back(small_record[common_position]);
 
     /* the index is in the big table */
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
       vector<TYPE_ENTITY_LITERAL_ID> small_record_inserted;
       for(auto small_position:small_table_inserted_variables_position)
-        small_record_inserted.push_back((*small_record)[small_position]);
+        small_record_inserted.push_back(small_record[small_position]);
       auto matched_content = indexed_result[result_index];
       for(const auto& matched_big_record:*matched_content)
       {
-        auto result_record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*matched_big_record);
+        auto result_record = vector<TYPE_ENTITY_LITERAL_ID>(matched_big_record);
         for(auto small_inserted_element:small_record_inserted)
-          result_record->push_back(small_inserted_element);
-        result_records->push_back(result_record);
+          result_record.push_back(small_inserted_element);
+        result_records->emplace_back(std::move(result_record));
       }
     }
     /* if not found, ignore */
@@ -472,10 +470,7 @@ TableContentShardPtr gstore::Executor::ConvertToTable(std::shared_ptr<IDList> id
     min_size = min(min_size, max_output);
   for (size_t i = 0;i<min_size;i++)
   {
-    auto var_id = id_candidate_vec->at(i);
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->push_back(var_id);
-    result->push_back(record);
+    result->emplace_back(vector<unsigned>{id_candidate_vec->at(i)});
   }
   return result;
 }
@@ -602,7 +597,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
     switch (edge_info.join_method_) {
       case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
         auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        auto s_var_id_this_record = (*record_iterator)[s_var_position];
         this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -613,7 +608,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
       }
       case JoinMethod::s2o: {
         auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-        auto s_var_id_this_record = (**record_iterator)[s_var_position];
+        auto s_var_id_this_record = (*record_iterator)[s_var_position];
         this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -623,7 +618,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
       }
       case JoinMethod::p2s: {
         auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        auto p_var_id_this_record = (*record_iterator)[p_var_position];
         this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -633,7 +628,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
       }
       case JoinMethod::p2o: {
         auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-        auto p_var_id_this_record = (**record_iterator)[p_var_position];
+        auto p_var_id_this_record = (*record_iterator)[p_var_position];
         this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -643,7 +638,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
       }
       case JoinMethod::o2s: {
         auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        auto o_var_id_this_record = (*record_iterator)[o_var_position];
         this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -653,7 +648,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
       }
       case JoinMethod::o2p: {
         auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-        auto o_var_id_this_record = (**record_iterator)[o_var_position];
+        auto o_var_id_this_record = (*record_iterator)[o_var_position];
         this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
                                              edge_list_len,
@@ -674,7 +669,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
 
         if(edge_table_info.o_constant_)
@@ -683,7 +678,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
 
         this->kv_store_->getpreIDlistBysubIDobjID(s_var_id_this_record,
@@ -703,7 +698,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
 
         if(edge_table_info.p_constant_)
@@ -712,7 +707,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
 
         this->kv_store_->getobjIDlistBysubIDpreID(s_var_id_this_record,
@@ -733,7 +728,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
 
         if(edge_table_info.p_constant_)
@@ -742,7 +737,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         }
         else{
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
 
         this->kv_store_->getsubIDlistByobjIDpreID(o_var_id_this_record,
@@ -769,7 +764,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
     if(!var_const)
     {
       auto var_to_filter_position = (*id_pos_mapping)[var_to_filter];
-      var_to_filter_id_this_record = (**record_iterator)[var_to_filter_position];
+      var_to_filter_id_this_record = (*record_iterator)[var_to_filter_position];
     }
     else
       var_to_filter_id_this_record = var_id;
@@ -801,14 +796,14 @@ tuple<bool,TableContentShardPtr> gstore::Executor::FilterAVariableOnIDList(share
 
   /* : each record */
   for (auto table_it = table_content_ptr->begin();table_it!=table_content_ptr->end();){
-    auto record_sp = *table_it;
-    auto var_to_filter_id_this_record=(*record_sp)[var_position];
+    auto& record_sp = *table_it;
+    auto var_to_filter_id_this_record=record_sp[var_position];
     if(binary_search(candidate_list->begin(),candidate_list->end(),var_to_filter_id_this_record))
     {
       if(!remain_old)
-        new_intermediate_table->push_back(std::move(record_sp));
+        new_intermediate_table->emplace_back(std::move(record_sp));
       else
-        new_intermediate_table->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*record_sp));
+        new_intermediate_table->push_back(record_sp);
     }
     if(!remain_old)
       table_it= table_content_ptr->erase(table_it);
@@ -961,9 +956,7 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
   {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->push_back(var_id);
-    result->push_back(record);
+    result->push_back(std::move(vector<unsigned>{var_id}));
   }
   return make_tuple(true,result);
 }
@@ -982,9 +975,7 @@ std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId(size_t max_
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
   {
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->push_back(var_id);
-    result->push_back(record);
+    result->push_back(std::move(vector<unsigned>{var_id}));
   }
   return make_tuple(true,result);
 }
@@ -994,7 +985,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
                                                       IDCachesSharePtr id_caches,
                                                       TYPE_ENTITY_LITERAL_ID new_id,
                                                       bool distinct,
-                                                      list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
+                                                      list<vector<TYPE_ENTITY_LITERAL_ID>>::iterator record_iterator) const{
   auto record_candidate_list= make_shared<IDList>();
   auto record_candidate_prepared = false;
   auto edges_info = one_step_join_node_->edges_;
@@ -1015,7 +1006,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           s_var_id_this_record = edge_info.s_;
         else {
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
         this->kv_store_->getpreIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
@@ -1030,7 +1021,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           s_var_id_this_record = edge_info.s_;
         else {
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
         this->kv_store_->getobjIDlistBysubID(s_var_id_this_record,
                                              edge_candidate_list,
@@ -1045,7 +1036,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           p_var_id_this_record = edge_info.p_;
         else {
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
         this->kv_store_->getsubIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
@@ -1060,7 +1051,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           p_var_id_this_record = edge_info.p_;
         else {
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
         this->kv_store_->getobjIDlistBypreID(p_var_id_this_record,
                                              edge_candidate_list,
@@ -1075,7 +1066,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           o_var_id_this_record = edge_info.o_;
         else {
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
         this->kv_store_->getsubIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
@@ -1090,7 +1081,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           o_var_id_this_record = edge_info.o_;
         else {
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
         this->kv_store_->getpreIDlistByobjID(o_var_id_this_record,
                                              edge_candidate_list,
@@ -1105,7 +1096,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           s_var_id_this_record = edge_info.s_;
         else {
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
 
         TYPE_ENTITY_LITERAL_ID o_var_id_this_record;
@@ -1113,7 +1104,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           o_var_id_this_record = edge_info.o_;
         else {
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
 
         this->kv_store_->getpreIDlistBysubIDobjID(s_var_id_this_record,
@@ -1130,7 +1121,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           s_var_id_this_record = edge_info.s_;
         else {
           auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-          s_var_id_this_record = (**record_iterator)[s_var_position];
+          s_var_id_this_record = (*record_iterator)[s_var_position];
         }
 
         TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
@@ -1138,7 +1129,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           p_var_id_this_record = edge_info.p_;
         else {
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
         this->kv_store_->getobjIDlistBysubIDpreID(s_var_id_this_record,
                                                   p_var_id_this_record,
@@ -1154,7 +1145,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           o_var_id_this_record = edge_info.o_;
         else {
           auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-          o_var_id_this_record = (**record_iterator)[o_var_position];
+          o_var_id_this_record = (*record_iterator)[o_var_position];
         }
 
         TYPE_ENTITY_LITERAL_ID p_var_id_this_record;
@@ -1162,7 +1153,7 @@ std::shared_ptr<IDList> gstore::Executor::ExtendRecordOneNode(shared_ptr<AffectO
           p_var_id_this_record = edge_info.p_;
         else {
           auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-          p_var_id_this_record = (**record_iterator)[p_var_position];
+          p_var_id_this_record = (*record_iterator)[p_var_position];
         }
 
         this->kv_store_->getsubIDlistByobjIDpreID(o_var_id_this_record,
@@ -1213,7 +1204,7 @@ gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_no
                               IDCachesSharePtr id_caches,
                               TYPE_ENTITY_LITERAL_ID new_id1,
                               TYPE_ENTITY_LITERAL_ID new_id2,
-                              list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>::iterator record_iterator) const{
+                              list<vector<TYPE_ENTITY_LITERAL_ID>>::iterator record_iterator) const{
 
   auto two_node_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
 
@@ -1232,7 +1223,7 @@ gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_no
       else
       {
         auto s_var_position = (*id_pos_mapping)[edge_info.s_];
-        s_var_id_this_record = (**record_iterator)[s_var_position];
+        s_var_id_this_record = (*record_iterator)[s_var_position];
       }
       this->kv_store_->getpreIDobjIDlistBysubID(s_var_id_this_record,
                                                 edge_candidate_list,
@@ -1248,7 +1239,7 @@ gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_no
       else
       {
         auto p_var_position = (*id_pos_mapping)[edge_info.p_];
-        p_var_id_this_record = (**record_iterator)[p_var_position];
+        p_var_id_this_record = (*record_iterator)[p_var_position];
       }
       this->kv_store_->getsubIDobjIDlistBypreID(p_var_id_this_record,
                                                 edge_candidate_list,
@@ -1264,7 +1255,7 @@ gstore::Executor::ExtendRecordTwoNode(shared_ptr<AffectTwoNode> one_step_join_no
       else
       {
         auto o_var_position = (*id_pos_mapping)[edge_info.o_];
-        o_var_id_this_record = (**record_iterator)[o_var_position];
+        o_var_id_this_record = (*record_iterator)[o_var_position];
       }
       this->kv_store_->getpreIDsubIDlistByobjID(o_var_id_this_record,
                                                 edge_candidate_list,
@@ -1450,10 +1441,10 @@ std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(size_t max_ou
     {
       auto s_id = id_list[j];
       auto o_id  = id_list[j + 1];
-      auto row = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-      row->push_back(s_id);
-      row->push_back(p_id);
-      row->push_back(o_id);
+      auto row = vector<TYPE_ENTITY_LITERAL_ID>();
+      row.push_back(s_id);
+      row.push_back(p_id);
+      row.push_back(o_id);
       CheckedInsert(records,max_output,false,row);
       if(max_output==0)
         break;
@@ -1468,7 +1459,7 @@ std::tuple<bool,IntermediateResult> gstore::Executor::GetAllTriple(size_t max_ou
 void gstore::Executor::CheckedInsert(TableContentShardPtr& new_records,
                                      size_t &max_output,
                                      bool remain_old,
-                                     shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>& inserted_output) {
+                                     vector<TYPE_ENTITY_LITERAL_ID>& inserted_output) {
   // limited output is enabled
   if(max_output != NO_LIMIT_OUTPUT) {
     // no more result is needed
@@ -1478,9 +1469,9 @@ void gstore::Executor::CheckedInsert(TableContentShardPtr& new_records,
   }
 
   if(!remain_old) { // move and delete
-    new_records->push_back(std::move(inserted_output));}
+    new_records->emplace_back(std::move(inserted_output));}
   else
-    new_records->push_back(make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(*inserted_output));
+    new_records->push_back(inserted_output);
 
   if(max_output != NO_LIMIT_OUTPUT) max_output--;
 }

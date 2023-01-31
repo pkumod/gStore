@@ -24,11 +24,6 @@
 #include "./OptimizerDebug.h"
 #include "../Query/FilterPlan.h"
 
-using TableContent = list<shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>;
-using TableContentShardPtr = shared_ptr<list<shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>;
-using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
-using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
-
 enum class BasicQueryStrategy{
   Normal,
   limitK,
