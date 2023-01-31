@@ -41,7 +41,7 @@ class OrderedList{
   // FQs and FRs will use this field.
   virtual OrderedListType Type(){return OrderedListType::UnDefined;};
   virtual void TryGetNext(unsigned int k)=0;
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+  virtual void GetResult(int i_th,std::vector<TYPE_ENTITY_LITERAL_ID>& record,
                          NodeOneChildVarPredicatesPtr predicate_information = nullptr)=0;
   virtual ~OrderedList(){};
 };
@@ -64,7 +64,7 @@ class FRIterator:public OrderedList {
 
   static double DeltaCost(std::shared_ptr<OrderedList> node_pointer, int index);
   static bool NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+  virtual void GetResult(int i_th,std::vector<TYPE_ENTITY_LITERAL_ID>& record,
                          NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
 };
 
@@ -81,7 +81,7 @@ class OWIterator: public OrderedList{
   // Insert a bulk of gStore Node ids and their scores
   void Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids, const std::vector<double>& scores);
   void Insert(const std::vector<TYPE_ENTITY_LITERAL_ID>& ids);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+  virtual void GetResult(int i_th,std::vector<TYPE_ENTITY_LITERAL_ID>& record,
                          NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
 };
 
@@ -110,7 +110,7 @@ class FQIterator: public OrderedList{
   void Insert(std::shared_ptr<OrderedList> FR_OW_iterator);
   static bool NextEPoolElement(unsigned int k, std::shared_ptr<OrderedList> node_pointer, unsigned int index);
   static double DeltaCost(std::shared_ptr<OrderedList> FR_OW_iterator, int index);
-  virtual void GetResult(int i_th,std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>> record,
+  virtual void GetResult(int i_th,std::vector<TYPE_ENTITY_LITERAL_ID>& record,
                          NodeOneChildVarPredicatesPtr predicate_information = nullptr) override;
   virtual OrderedListType Type() override {return OrderedListType::FQ;};
 };

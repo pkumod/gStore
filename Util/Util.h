@@ -247,8 +247,8 @@ static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = UINT_MAX;
 //static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = -1;
 //#define INVALID_ENTITY_LITERAL_ID UINT_MAX
 
-using TableContent = std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>;
-using TableContentShardPtr = std::shared_ptr<std::list<std::shared_ptr<std::vector<TYPE_ENTITY_LITERAL_ID>>>>;
+using TableContent = std::list<std::vector<TYPE_ENTITY_LITERAL_ID>>;
+using TableContentShardPtr = std::shared_ptr<TableContent>;
 using PositionValue = std::map<TYPE_ENTITY_LITERAL_ID, TYPE_ENTITY_LITERAL_ID>;
 using PositionValueSharedPtr = std::shared_ptr<PositionValue>;
 
