@@ -433,17 +433,17 @@ bool Optimizer::CopyToResult(shared_ptr<BGPQuery> bgp_query,
   // Data flows from record_ptr to tmp_record and then back to record_ptr
   // all vector in result.values_ are moved to target
   auto tmp_record = new unsigned[record_len];
-  for (const auto&  record_ptr : *(result.values_))
+  for (auto&  record_ref : *(result.values_))
   {
     for (int column_index = 0; column_index < record_len; ++column_index){
       auto old_position = position_map[column_index];
-      tmp_record[column_index] = (*record_ptr)[old_position];
+      tmp_record[column_index] = record_ref[old_position];
     }
     for (int column_index = 0; column_index < record_len; ++column_index){
-      (*record_ptr)[column_index] = tmp_record[column_index];
+      record_ref[column_index] = tmp_record[column_index];
     }
-    record_ptr->resize(record_len);
-    target->emplace_back(std::move(*record_ptr));
+    record_ref.resize(record_len);
+    target->emplace_back(std::move(record_ref));
   }
   delete[] tmp_record;
   delete[] position_map;
@@ -706,7 +706,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   auto root_fr = DPBUtil::BuildIteratorTree(tree_search_plan, env);
 
   decltype(query_info.limit_num_) deleted_num = 0;
-  auto result_list = make_shared<list<shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>>>>();
+  auto result_list = make_shared<list<vector<TYPE_ENTITY_LITERAL_ID>>>();
 
   auto result_table = IntermediateResult();
   result_table.values_ = result_list;
@@ -752,8 +752,8 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
 
     auto var_num = pos_var_mapping->size();
 
-    auto record = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>();
-    record->reserve(var_num);
+    auto record = vector<TYPE_ENTITY_LITERAL_ID>();
+    record.reserve(var_num);
     root_fr->GetResult(i-1,record);
 
     bool success = true;
@@ -771,7 +771,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
     {
       vector<TYPE_ENTITY_LITERAL_ID> select_id;
       for_each(select_position.begin(),select_position.end(),[&select_id,&record](unsigned int pos){
-        select_id.push_back(record->at(pos));
+        select_id.push_back(record.at(pos));
       });
       if(selected_id_set.count(select_id))
         success = false;
@@ -800,14 +800,14 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   auto it = result_list->begin();
   for(decltype(result_list->size()) i =0;i<result_list->size();i++)
   {
-    auto rec = *it;
+    auto& rec = *it;
     cout<<" record["<<i<<"]"<<" score:"<<score_list[i];
 
     for(unsigned j =0;j<var_num;j++)
       if(is_predicate_var[(*pos_var_mapping)[j]])
-        cout<<" "<<kv_store_->getPredicateByID((*rec)[j])<<"["<<(*rec)[j]<<"]";
+        cout<<" "<<kv_store_->getPredicateByID(rec[j])<<"["<<rec[j]<<"]";
       else
-        cout<<" "<<kv_store_->getStringByID((*rec)[j])<<"["<<(*rec)[j]<<"]";;
+        cout<<" "<<kv_store_->getStringByID(rec[j])<<"["<<rec[j]<<"]";;
     cout<<endl;
     it++;
   }
