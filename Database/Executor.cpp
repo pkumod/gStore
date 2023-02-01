@@ -262,7 +262,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   auto indexed_result = unordered_map<
       /*key*/ vector<TYPE_ENTITY_LITERAL_ID>,
-      /*value*/ shared_ptr<vector<vector<TYPE_ENTITY_LITERAL_ID>>>,
+      /*value*/ shared_ptr<vector<vector<TYPE_ENTITY_LITERAL_ID>*>>,
       /*hash function*/ container_hash<vector<TYPE_ENTITY_LITERAL_ID>>
   >();
 
@@ -293,31 +293,22 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   for(auto big_table_it = big_table->begin();big_table_it!=big_table->end();)
   {
     auto& big_record = *big_table_it;
-    vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
+    vector<TYPE_ENTITY_LITERAL_ID> result_index;
     for(auto common_position:common_variables_position_big)
     {
       result_index.push_back(big_record[common_position]);
     }
     if(indexed_result.find(result_index)!=indexed_result.end())
     {
-      if(!remain_old)
-        indexed_result[result_index]->push_back(std::move(big_record));
-      else
-        indexed_result[result_index]->push_back(big_record);
+        indexed_result[result_index]->push_back(&big_record);
     }
     else
     {
-      auto tmp_vector = make_shared<vector<vector<TYPE_ENTITY_LITERAL_ID>>>();
-      if(!remain_old)
-        tmp_vector->push_back(std::move(big_record));
-      else
-        tmp_vector->push_back(big_record);
+      auto tmp_vector = make_shared<vector<vector<TYPE_ENTITY_LITERAL_ID>*>>();
+      tmp_vector->push_back(&big_record);
       indexed_result[result_index] = std::move(tmp_vector);
     }
-    if(!remain_old)
-      big_table_it= big_table->erase(big_table_it);
-    else
-      big_table_it++;
+    big_table_it++;
   }
 
 
@@ -341,7 +332,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   for(auto small_table_it = small_table->begin();small_table_it!=small_table->end();)
   {
     auto& small_record = *small_table_it;
-    vector<TYPE_ENTITY_LITERAL_ID> result_index(common_variables_size);
+    vector<TYPE_ENTITY_LITERAL_ID> result_index;
     for(auto common_position:common_variables_position_small)
       result_index.push_back(small_record[common_position]);
 
@@ -354,7 +345,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
       auto matched_content = indexed_result[result_index];
       for(const auto& matched_big_record:*matched_content)
       {
-        auto result_record = vector<TYPE_ENTITY_LITERAL_ID>(matched_big_record);
+        auto result_record = vector<TYPE_ENTITY_LITERAL_ID>(*matched_big_record);
         for(auto small_inserted_element:small_record_inserted)
           result_record.push_back(small_inserted_element);
         result_records->emplace_back(std::move(result_record));
@@ -366,6 +357,9 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
       small_table_it= small_table->erase(small_table_it);
     else
       small_table_it++;
+  }
+  if (!remain_old) {
+    big_table->clear();
   }
   result_table.pos_id_map = new_position_id_mapping;
   auto id_pos_map = result_table.id_pos_map;
@@ -470,7 +464,7 @@ TableContentShardPtr gstore::Executor::ConvertToTable(std::shared_ptr<IDList> id
     min_size = min(min_size, max_output);
   for (size_t i = 0;i<min_size;i++)
   {
-    result->emplace_back(vector<unsigned>{id_candidate_vec->at(i)});
+    result->emplace_back(vector<TYPE_ENTITY_LITERAL_ID>{id_candidate_vec->at(i)});
   }
   return result;
 }
@@ -956,7 +950,7 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
   {
-    result->push_back(std::move(vector<unsigned>{var_id}));
+    result->push_back(vector<TYPE_ENTITY_LITERAL_ID>{var_id});
   }
   return make_tuple(true,result);
 }
@@ -975,7 +969,7 @@ std::tuple<bool, TableContentShardPtr> gstore::Executor::GetAllPreId(size_t max_
   auto result = make_shared<TableContent>();
   for(auto var_id: ids)
   {
-    result->push_back(std::move(vector<unsigned>{var_id}));
+    result->push_back(vector<TYPE_ENTITY_LITERAL_ID>{var_id});
   }
   return make_tuple(true,result);
 }
