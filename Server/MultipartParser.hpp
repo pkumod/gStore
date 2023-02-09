@@ -2,7 +2,7 @@
  * @Author: wangjian 2606583267@qq.com
  * @Date: 2022-12-22 15:07:36
  * @LastEditors: wangjian 2606583267@qq.com
- * @LastEditTime: 2022-12-26 16:22:35
+ * @LastEditTime: 2023-02-09 13:38:29
  * @FilePath: /gstore/Server/MultipartParser.hpp
  * @Description: Multipart/form-data Parser
  */
@@ -14,7 +14,7 @@
 #include <iostream>
 #include <map>
 
-#define MULTIPART_PARSER_DEBUG
+// #define MULTIPART_PARSER_DEBUG
 
 using MultipartFormData = std::map<std::string, std::pair<std::string, std::string>>;
 
@@ -90,6 +90,7 @@ MultipartParser::MultipartParser(const std::shared_ptr<std::string> data,
     _data = data;
     _pos = pos;
     _boundary = boundary;
+    _lastBoundaryFound = false;
 }
 
 std::unique_ptr<MultipartFormData> MultipartParser::parse()
@@ -110,6 +111,9 @@ std::unique_ptr<MultipartFormData> MultipartParser::parse()
         // if at end of data then break
         if (atEndOfData())
         {
+            #if defined(MULTIPART_PARSER_DEBUG)
+            std::cout << "at end of data" << std::endl;
+            #endif // MULTIPART_PARSER_DEBUG
             break;
         }
         // parse form-data
