@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2023-01-09 15:43:51
+ * @LastEditTime: 2023-02-09 13:38:24
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -23,6 +23,8 @@ using namespace rapidjson;
 #define PFN_HEADER "#include \"../../Query/PathQueryHandler.h\"\n\nusing namespace std;\n\n"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
+
+// #define APIUTIL_DEBUG
 
 struct DatabaseInfo
 {
