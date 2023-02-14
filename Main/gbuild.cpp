@@ -2,7 +2,7 @@
  * 
  * @Author: Bookug Lobert suxunbin liwenjie
  * @Date: 2021-08-20 10:29:41
- * @LastEditTime: 2022-11-22 21:23:29
+ * @LastEditTime: 2023-02-14 14:27:01
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: The build database tool 
  * @FilePath: /gstore/Main/gbuild.cpp
@@ -68,9 +68,9 @@ main(int argc, char * argv[])
 			return -1;
 		}
 		int len = db_name.length();
-		if (len <= _suffix_len || (len > _suffix_len && db_name.substr(len - _suffix_len, _suffix_len) == _db_suffix))
+		if (len < _suffix_len || (len >= _suffix_len && db_name.substr(len - _suffix_len, _suffix_len) == _db_suffix))
 		{
-			cout << "your database can not end with " + _db_suffix + " or less than "<< _suffix_len <<" characters" << endl;
+			cout << "your database can not end with " + _db_suffix + " or less than "<< _suffix_len <<" characters! Input \"bin/gbuild -h\" for help." << endl;
 			return -1;
 		}
 
