@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-08-22 18:00:17
- * @LastEditTime: 2022-11-23 11:58:46
+ * @LastEditTime: 2023-02-14 14:09:19
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: Batch delete data from database
  * @FilePath: /gstore/Main/gsub.cpp
@@ -73,7 +73,7 @@ main(int argc, char * argv[])
 
 		if (len > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout << "your database can not end with .db.! Input \"bin/gsub -h\" for help." << endl;
+			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gsub -h\" for help." << endl;
 			return -1;
 		}
 		//check the db_name is system

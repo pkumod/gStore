@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
 		if (len > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout << "your database can not end with .db.! Input \"bin/gadd -h\" for help." << endl;
+			cout << "your database can not end with " + _db_suffix + "! Input \"bin/gadd -h\" for help." << endl;
 			return 0;
 		}
 		//check the db_name is system

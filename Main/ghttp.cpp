@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2023-02-09 11:15:20
+ * @LastEditTime: 2023-02-14 14:07:47
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.length() > _len_suffix && db_name.substr(db_name.length() - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			SLOG_ERROR("The database name can not end with \""+_db_suffix+"\".");
+			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/ghttp -h\" for help." << endl;
 			return -1;
 		}
 		else if (db_name == "system")
