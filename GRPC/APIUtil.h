@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:35:18
- * @LastEditTime: 2023-01-09 14:59:29
+ * @LastEditTime: 2023-02-13 16:15:50
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/grpcUtil.h
@@ -891,6 +891,9 @@ private:
     std::string pfn_file_path = "fun/";
     std::string pfn_lib_path = "lib/";
     std::string pfn_include_header = "";
+    std::string upload_path = "./upload";
+    size_t upload_max_body_size = 104857600; // 100M
+    std::vector<std::string> upload_allow_extensions;
 
     std::map<std::string, Database *> databases;
     std::map<std::string, struct DBUserInfo *> users;
@@ -1032,4 +1035,7 @@ public:
     string get_configure_value(const string& key, string default_value);
     int get_configure_value(const string& key, int default_value);
     size_t get_configure_value(const string& key, size_t default_value);
+    string get_upload_path();
+    size_t get_upload_max_body_size();
+    bool check_upload_allow_extensions(const string& suffix);
 };
