@@ -62,7 +62,7 @@ main(int argc, char * argv[])
 		int len = db_name.length();
 		if (db_name.length() > _len_suffix && db_name.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout<<"The database name can not end with "<<_db_suffix<<endl;
+			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gexport -h\" for help." << endl;
 			return 0;
 		}
 		filepath= Util::getArgValue(argc, argv, "f", "file");

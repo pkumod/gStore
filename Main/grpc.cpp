@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		if (db_name.length() > _len_suffix && db_name.substr(db_name.length() - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			SLOG_ERROR("The database name can not end with \""+_db_suffix+"\".");
+			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/grpc -h\" for help." << endl;
 			return -1;
 		}
 		else if (db_name == "system")
