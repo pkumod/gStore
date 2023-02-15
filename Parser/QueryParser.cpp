@@ -395,7 +395,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
-				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX")	// Path calls
+				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
+				|| tmp == "CORETRUSS")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -440,6 +441,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::clusterCoeff_type;
 				else if (tmp == "MAXIMUMKPLEX")
 					proj_var.aggregate_type = ProjectionVar::maximumClique_type;
+				else if (tmp == "CORETRUSS")
+					proj_var.aggregate_type = ProjectionVar::coreTruss_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -485,15 +488,18 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 						proj_var.path_args.retNum = -1;
 				}
 				else if (tmp == "MAXIMUMKPLEX") {
-					if (bicCtx->num_integer())
-						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
+					if (!bicCtx->num_integer().empty())
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer(0)));
 					else
 						proj_var.path_args.k = 1;
+				} else if (tmp == "CORETRUSS") {
+					for (auto x : bicCtx->num_integer())
+						proj_var.path_args.misc.emplace_back(stoi(getTextWithRange(x)));
 				}
 				else if (tmp == "PR")
 				{
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
-					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer()->getText()));	// maxiter
+					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol
 				}
 
@@ -779,7 +785,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				if (funcName == "KHOPREACHABLE")
 				{
 					(curr_node.path_args).k = \
-						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer()->getText());
+						stoi(((SPARQLParser::BuiltInCallContext *)root)->num_integer(0)->getText());
 					(curr_node.path_args).confidence = \
 						stof(((SPARQLParser::BuiltInCallContext *)root)->numericLiteral(0)->getText());
 				}

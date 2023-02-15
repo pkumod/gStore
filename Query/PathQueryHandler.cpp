@@ -2709,6 +2709,8 @@ vector<int> PathQueryHandler::maximumClique(std::vector<int> uid_ls, const std::
 	return res;
 }
 
+
+
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
 void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred_set, vector<pair<int, double>> &topkV2ppr)
 {
@@ -3292,4 +3294,8 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 	}
 
 	return ret;
+}
+
+vector<int> PathQueryHandler::coreTruss(const std::vector<int> &pred_set, int alpha, int beta) {
+	return vector<int>();
 }
