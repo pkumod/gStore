@@ -439,7 +439,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				else if (tmp == "CLUSTERCOEFF")
 					proj_var.aggregate_type = ProjectionVar::clusterCoeff_type;
 				else if (tmp == "MAXIMUMKPLEX")
-					proj_var.aggregate_type = ProjectionVar::maximumClique_type;
+					proj_var.aggregate_type = ProjectionVar::maximumKplex_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
