@@ -533,9 +533,11 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 	}
 	if(request->has_content_length_header())
 	{
-		size_t content_length = strtoul(request->header("Content-Length").c_str(), (char **) NULL, 20);
-		if (content_length > apiUtil->get_upload_max_body_size())
+		size_t content_length = stoul(request->header("Content-Length"), nullptr, 0);
+		size_t max_body_size = apiUtil->get_upload_max_body_size();
+		if (content_length > max_body_size)
 		{
+			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");
 			error = "Upload file more than max_body_size!";
 			response->Error(StatusOperationFailed, error);
 			return;
