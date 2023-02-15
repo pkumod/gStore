@@ -1,7 +1,7 @@
 /*
  * @Author: wangjian
  * @Date: 2021-12-20 16:38:46
- * @LastEditTime: 2023-02-08 15:24:35
+ * @LastEditTime: 2023-02-15 10:12:09
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: api util
  * @FilePath: /gstore/GRPC/APIUtil.cpp
@@ -2801,7 +2801,7 @@ size_t APIUtil::get_configure_value(const string& key, size_t default_value)
     } 
     else if (util.is_number(value))
     {
-        return strtoul(value.c_str(), (char **) NULL, 20);
+        return stoul(value, nullptr, 0);
     }
     else
     {
