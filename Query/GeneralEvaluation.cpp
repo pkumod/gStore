@@ -1633,7 +1633,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << ',';
 							else
 								notFirstOutput = true;
-							ss << "{\"seeds\":\"[";
+							ss << "{\"seeds\":[";
 							for (int uid : seeds)
 							{
 								if (localFirstOutput)
@@ -1643,7 +1643,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << kvstore->getStringByID(uid);
 							}
 							localFirstOutput = true;
-							ss << "], \"clique\":\"[";
+							ss << "], \"clique\":[";
 							for (int vid : clique)
 							{
 								if (localFirstOutput)
@@ -1654,6 +1654,18 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 							ss << "]}";
 						}
+					} else if (proj[0].aggregate_type == ProjectionVar::coreTruss_type) {
+						auto clique = pqHandler->coreTruss(pred_id_set, proj[0].path_args.misc[0], proj[0].path_args.misc[1]);
+						ss << "{\"coreTruss\":[";
+						bool localFirstOutput = true;
+						for (int vid : clique) {
+							if (localFirstOutput)
+								localFirstOutput = false;
+							else
+								ss << ',';
+							ss << kvstore->getStringByID(vid);
+						}
+						ss << "]}";
 					}
 					for (int uid : uid_ls)
 					{
@@ -2954,7 +2966,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							for (auto seeds : uid_ls_ls)
 							{
-								auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[0].path_args.k);
+								auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[i].path_args.k);
 								bool localFirstOutput = true;
 								if (notFirstOutput)
 									ss << ',';
@@ -2981,6 +2993,18 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								}
 								ss << "]}";
 							}
+						} else if (proj[i].aggregate_type == ProjectionVar::coreTruss_type) {
+							auto clique = pqHandler->coreTruss(pred_id_set, proj[i].path_args.misc[i], proj[i].path_args.misc[1]);
+							ss << "{\"coreTruss\":[";
+							bool localFirstOutput = true;
+							for (int vid : clique) {
+								if (localFirstOutput)
+									localFirstOutput = false;
+								else
+									ss << ',';
+								ss << kvstore->getStringByID(vid);
+							}
+							ss << "]}";
 						}
 						for (int uid : uid_ls)
 						{
@@ -3027,7 +3051,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 										continue;
 									}
-									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
+									vector<int> path = pqHandler->shortestPath(uid, vid, proj[i].path_args.directed, pred_id_set);
 									if (path.size() != 0)
 									{
 										if (notFirstOutput)
@@ -3050,7 +3074,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											<< "\",\"length\":0}";
 										continue;
 									}
-									vector<int> path = pqHandler->shortestPath(uid, vid, proj[0].path_args.directed, pred_id_set);
+									vector<int> path = pqHandler->shortestPath(uid, vid, proj[i].path_args.directed, pred_id_set);
 									if (path.size() != 0)
 									{
 										if (notFirstOutput)
@@ -3076,10 +3100,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											<< "\",\"value\":\"true\"}";
 										continue;
 									}
-									int hopConstraint = proj[0].path_args.k;
+									int hopConstraint = proj[i].path_args.k;
 									if (hopConstraint < 0)
 										hopConstraint = 999;
-									bool reachRes = pqHandler->kHopReachable(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+									bool reachRes = pqHandler->kHopReachable(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
 										<< kvstore->getStringByID(vid) << "\",\"value\":";
 									cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
@@ -3100,10 +3124,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										pathVec2JSON(uid, vid, path, ss);
 										continue;
 									}
-									int hopConstraint = proj[0].path_args.k;
+									int hopConstraint = proj[i].path_args.k;
 									if (hopConstraint < 0)
 										hopConstraint = 999;
-									vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+									vector<int> path = pqHandler->kHopReachablePath(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
 									if (path.size() != 0)
 									{
 										if (notFirstOutput)
@@ -3144,7 +3168,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else if (proj[i].aggregate_type == ProjectionVar::ppr_type)
 								{
 									vector< pair<int ,double> > v2ppr;
-									pqHandler->SSPPR(uid, proj[0].path_args.retNum, proj[0].path_args.k, pred_id_set, v2ppr);
+									pqHandler->SSPPR(uid, proj[i].path_args.retNum, proj[i].path_args.k, pred_id_set, v2ppr);
 									if (notFirstOutput)
 										ss << ",";
 									else
