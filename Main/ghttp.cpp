@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2023-02-14 14:30:17
+ * @LastEditTime: 2023-02-15 10:27:42
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -4265,9 +4265,11 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	}
 	if(request->header.find("Content-Length") != request->header.end())
 	{
-		size_t content_length = strtoul(request->header.find("Content-Length")->second.c_str(), (char **) NULL, 20);
-		if (content_length > apiUtil->get_upload_max_body_size())
+		size_t content_length = stoul(request->header.find("Content-Length")->second, nullptr, 0);
+		size_t max_body_size = apiUtil->get_upload_max_body_size();
+		if (content_length > max_body_size)
 		{
+			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");
 			error = "Upload file more than max_body_size!";
 			sendResponseMsg(1005, error, operation, request, response);
 			formPtr.release();
