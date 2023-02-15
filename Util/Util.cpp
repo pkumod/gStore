@@ -293,6 +293,9 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "system", "root_password");
     Util::setGlobalConfig(ini_parser, "system", "system_username");
     Util::setGlobalConfig(ini_parser, "system", "backup_path");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_path");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
     if (Util::getConfigureValue("backup_path").empty() == false)
     {
         Util::backup_path = Util::getConfigureValue("backup_path");
