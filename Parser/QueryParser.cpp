@@ -395,7 +395,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "KHOPREACHABLE" || tmp == "KHOPENUMERATE" || tmp == "KHOPREACHABLEPATH" \
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
-				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMCLIQUE")	// Path calls
+				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -438,7 +438,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::wcc_type;
 				else if (tmp == "CLUSTERCOEFF")
 					proj_var.aggregate_type = ProjectionVar::clusterCoeff_type;
-				else if (tmp == "MAXIMUMCLIQUE")
+				else if (tmp == "MAXIMUMKPLEX")
 					proj_var.aggregate_type = ProjectionVar::maximumClique_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
@@ -484,7 +484,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					else
 						proj_var.path_args.retNum = -1;
 				}
-				else if (tmp == "MAXIMUMCLIQUE") {
+				else if (tmp == "MAXIMUMKPLEX") {
 					if (bicCtx->num_integer())
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->num_integer()));
 					else
