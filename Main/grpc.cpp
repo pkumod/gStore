@@ -24,6 +24,8 @@ void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void api(const GRPCReq *request, GRPCResp *response);
+void upload_file(const GRPCReq *request, GRPCResp *response);
+void download_file(const GRPCReq *request, GRPCResp *response);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
 void login_task(const GRPCReq *request, GRPCResp *response);
@@ -331,6 +333,18 @@ void register_service(GRPCServer &svr)
 			api(request, response);
 		},
 		methods);
+	svr.ROUTE(
+		"/grpc/file/upload", [](const GRPCReq *request, GRPCResp *response)
+		{
+			upload_file(request, response);
+		},
+		ReqMethod::POST);
+	svr.ROUTE(
+		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
+		{
+			download_file(request, response);
+		},
+		ReqMethod::POST);
 }
 
 void shutdown(const GRPCReq *request, GRPCResp *response)
@@ -449,6 +463,232 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	{
 		error = "Server stopped failed.";
 		apiUtil->write_access_log("shutdown", ip_addr, StatusOperationFailed, error);
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
+void upload_file(const GRPCReq *request, GRPCResp *response)
+{
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+	if (ipCheckResult.empty() == false)
+	{
+		SLOG_DEBUG(ipCheckResult);
+		response->Error(StatusIPBlocked, ipCheckResult);
+		return;
+	}
+	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
+	if (request->contentType() != MULTIPART_FORM_DATA) //for application/json
+	{
+		response->Error(StatusFileReadError, "Content-Type not match");
+		return;
+	}
+	
+	std::stringstream ss;
+	ss << "\n------------------------ grpc-api ------------------------";
+	ss << "\nremote_ip: " << ip_addr;
+	ss << "\noperation: uploadfile";
+	ss << "\nmethod: " << request->get_method();
+	ss << "\nhttp_version: " << request->get_http_version();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	ss << "\ncontent-length: " << request->header("Content-Length");
+	ss << "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss.str());
+	Form &form = request->form();
+	if (form.empty())
+	{   
+		response->Error(StatusFileReadError, "Form data is empty");
+		return;
+	}
+	std::string error;
+	if (form.find("username") == form.end() || form.find("password") == form.end())
+	{
+		error = "username or password is empty";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	std::string username = form.at("username").second;
+	std::string password = form.at("password").second;
+	error = apiUtil->check_param_value("username", username);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	error = apiUtil->check_param_value("password", password);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	// filename : filecontent
+	std::pair<std::string, std::string>& fileinfo = form.at("file");
+	if(fileinfo.first.empty())
+	{
+		error = "Upload file can not be empty!";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	if(request->has_content_length_header())
+	{
+		size_t content_length = stoul(request->header("Content-Length"), nullptr, 0);
+		size_t max_body_size = apiUtil->get_upload_max_body_size();
+		if (content_length > max_body_size)
+		{
+			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");
+			error = "Upload file more than max_body_size!";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
+	}
+	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	if (apiUtil->check_upload_allow_extensions(file_suffix) == false)
+	{
+		error = "The type of upload file is not supported!";
+		response->Error(StatusOperationFailed, error);
+		return;
+	}
+	
+	// remove path info, only return base filename
+	std::string file_name = GRPCUtil::fileName(fileinfo.first);
+	size_t pos = file_name.size() - file_suffix.size() - 1;
+	std::string file_dst = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
+	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
+	response->Save(file_dst, std::move(fileinfo.second), notify_msg);
+}
+
+void download_file(const GRPCReq *request, GRPCResp *response)
+{
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+	if (ipCheckResult.empty() == false)
+	{
+		SLOG_DEBUG(ipCheckResult);
+		response->Error(StatusIPBlocked, ipCheckResult);
+		return;
+	}
+	Json json_data;
+	json_data.SetObject();
+	Json::AllocatorType &allocator = json_data.GetAllocator();
+	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
+	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
+	{
+		Form &form = request->form();
+		if (form.empty())
+		{   
+			response->Error(StatusFileReadError, "Form data is empty");
+			return;
+		}
+		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
+		{
+			string v = form.at(iter->first).second;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+		}
+	}
+	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
+	{
+		std::map<std::string, std::string> &form_data = request->formData();
+		std::map<std::string, std::string>::iterator iter = form_data.begin();
+		std::string v;
+		while (iter != form_data.end())
+		{
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
+			{
+				StringUtil::url_decode(v);
+			}
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			iter++;
+		}
+	}
+	else // for get
+	{
+		std::map<std::string, std::string> params = request->queryList();
+		if (params.empty() == false)
+		{
+			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::string v;
+			while (iter != params.end())
+			{
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					StringUtil::url_decode(v);
+				}
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+				iter++;
+			}
+		}
+	}
+	std::stringstream ss;
+	ss << "\n------------------------ grpc-api ------------------------";
+	ss << "\nremote_ip: " << ip_addr;
+	ss << "\noperation: downloadfile";
+	ss << "\nmethod: " << request->get_method();
+	ss << "\nhttp_version: " << request->get_http_version();
+	ss << "\nrequest_uri: " << request->get_request_uri();
+	if (!request->body().empty())
+	{
+		ss << "\nrequest_body: \n" << request->body();
+	}
+	ss << "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss.str());
+	std::string error;
+	std::string username = jsonParam(json_data, "username");
+	std::string password = jsonParam(json_data, "password");
+	std::string filepath = jsonParam(json_data, "filepath");
+	error = apiUtil->check_param_value("username", username);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	error = apiUtil->check_param_value("password", password);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	error = apiUtil->check_param_value("filepath", filepath);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	if (Util::is_file(filepath))
+	{
+		// the file must in the gstore home dir
+		std::string exact_path = Util::getExactPath(filepath.c_str());
+		std::string cur_path = Util::get_cur_path();
+		SLOG_DEBUG("download file path: " + filepath);
+		SLOG_DEBUG("file exact path: " + exact_path);
+		if (StringUtil::start_with(exact_path, cur_path) == false)
+		{
+			error = "Download file must in the gstore home dir";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
+		// std::string compress = jsonParam(json_data, "compress", "0");
+		// if (compress == "1") // compress to zip file
+		// {
+		// 	string filename = GRPCUtil::fileName(exact_path);
+		// 	string zipfile = exact_path + ".zip";
+		// 	string cmd = "zip " + zipfile + " " + exact_path;
+		// 	system(cmd.c_str());
+		// 	response->File(zipfile);
+		// }
+		// else 
+		// {
+		response->File(exact_path);
+		// }
+	}
+	else
+	{
+		error = "Download file not exists";
 		response->Error(StatusOperationFailed, error);
 	}
 }
