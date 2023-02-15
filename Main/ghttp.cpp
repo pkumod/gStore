@@ -1,7 +1,7 @@
 /*
  * @Author: liwenjie
  * @Date: 2021-09-23 16:55:53
- * @LastEditTime: 2023-02-14 14:07:47
+ * @LastEditTime: 2023-02-15 10:26:59
  * @LastEditors: wangjian 2606583267@qq.com
  * @Description: In User Settings Edit
  * @FilePath: /gstore/Main/ghttp.cpp
@@ -4196,6 +4196,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request)
 {
 	string operation = "uploadfile";
+	string thread_id = Util::getThreadID();
 	string remote_ip = getRemoteIp(request);
 	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
 	if (!ipCheckResult.empty())
@@ -4203,6 +4204,17 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 		sendResponseMsg(1101, ipCheckResult, operation, request, response);
 		return;
 	}
+	stringstream ss;
+	ss << "\n------------------------ ghttp-api ------------------------";
+	ss << "\nthread_id: " << thread_id;
+	ss << "\nremote_ip: " << remote_ip;
+	ss << "\noperation: " << operation;
+	ss << "\nmethod: " << "GET";
+	ss << "\nrequest_path: " << request->path;
+	ss << "\nhttp_version: " << request->http_version;
+	ss << "\nrequest_time: " << Util::get_date_time();
+	ss << "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss.str());
 	// "Content-Type:multipart/form-data; boundary=--------------------------617568955343916342854790"
 	auto contentType = request->header.find("Content-Type");
 	std::string boundary;
@@ -4293,9 +4305,11 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	}
 	if(request->header.find("Content-Length") != request->header.end())
 	{
-		size_t content_length = strtoul(request->header.find("Content-Length")->second.c_str(), (char **) NULL, 20);
-		if (content_length > apiUtil->get_upload_max_body_size())
+		size_t content_length = stoul(request->header.find("Content-Length")->second, nullptr, 0);
+		size_t max_body_size = apiUtil->get_upload_max_body_size();
+		if (content_length > max_body_size)
 		{
+			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");
 			error = "Upload file more than max_body_size!";
 			sendResponseMsg(1005, error, operation, request, response);
 			formPtr.release();
