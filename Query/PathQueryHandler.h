@@ -385,8 +385,8 @@ public:
     std::vector<std::vector<int>> WCC(const std::vector<int> &pred_set);
     double clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
-    std::vector<int> maximumClique(std::vector<int> uid_ls, const std::vector<int> &pred_set, int k);
     std::vector<int> coreTruss(const std::vector<int> &pred_set, int alpha, int beta);
+    std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
     

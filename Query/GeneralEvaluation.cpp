@@ -1623,37 +1623,24 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 					ss << "\"{\"paths\":[";
 					cout<<"proj[0].aggregate_type :"<<proj[0].aggregate_type <<endl;
-					if (proj[0].aggregate_type == ProjectionVar::maximumClique_type)
+					if (proj[0].aggregate_type == ProjectionVar::maximumKplex_type)
 					{
-						for (auto seeds : uid_ls_ls)
+						auto kplex = pqHandler->maximumKplex(pred_id_set, proj[0].path_args.k);
+						bool localFirstOutput = true;
+						if (notFirstOutput)
+							ss << ',';
+						else
+							notFirstOutput = true;
+						ss << "{\"kplex\":[";
+						for (int vid : kplex)
 						{
-							auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[0].path_args.k);
-							bool localFirstOutput = true;
-							if (notFirstOutput)
-								ss << ',';
+							if (localFirstOutput)
+								localFirstOutput = false;
 							else
-								notFirstOutput = true;
-							ss << "{\"seeds\":[";
-							for (int uid : seeds)
-							{
-								if (localFirstOutput)
-									localFirstOutput = false;
-								else
-									ss << ',';
-								ss << kvstore->getStringByID(uid);
-							}
-							localFirstOutput = true;
-							ss << "], \"clique\":[";
-							for (int vid : clique)
-							{
-								if (localFirstOutput)
-									localFirstOutput = false;
-								else
-									ss << ',';
-								ss << kvstore->getStringByID(vid);
-							}
-							ss << "]}";
+								ss << ',';
+							ss << kvstore->getStringByID(vid);
 						}
+						ss << "]}";
 					} else if (proj[0].aggregate_type == ProjectionVar::coreTruss_type) {
 						auto clique = pqHandler->coreTruss(pred_id_set, proj[0].path_args.misc[0], proj[0].path_args.misc[1]);
 						ss << "{\"coreTruss\":[";
@@ -2962,37 +2949,24 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						bool notFirstOutput = 0;	// For outputting commas
 						bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 						ss << "\"{\"paths\":[";
-						if (proj[i].aggregate_type == ProjectionVar::maximumClique_type)
+						if (proj[i].aggregate_type == ProjectionVar::maximumKplex_type)
 						{
-							for (auto seeds : uid_ls_ls)
+							auto kplex = pqHandler->maximumKplex(pred_id_set, proj[0].path_args.k);
+							bool localFirstOutput = true;
+							if (notFirstOutput)
+								ss << ',';
+							else
+								notFirstOutput = true;
+							ss << "{\"kplex\":[";
+							for (int vid : kplex)
 							{
-								auto clique = pqHandler->maximumClique(seeds, pred_id_set, proj[i].path_args.k);
-								bool localFirstOutput = true;
-								if (notFirstOutput)
-									ss << ',';
+								if (localFirstOutput)
+									localFirstOutput = false;
 								else
-									notFirstOutput = true;
-								ss << "{\"seeds\":\"[";
-								for (int uid : seeds)
-								{
-									if (localFirstOutput)
-										localFirstOutput = false;
-									else
-										ss << ',';
-									ss << kvstore->getStringByID(uid);
-								}
-								localFirstOutput = true;
-								ss << "], \"clique\":\"[";
-								for (int vid : clique)
-								{
-									if (localFirstOutput)
-										localFirstOutput = false;
-									else
-										ss << ',';
-									ss << kvstore->getStringByID(vid);
-								}
-								ss << "]}";
+									ss << ',';
+								ss << kvstore->getStringByID(vid);
 							}
+							ss << "]}";
 						} else if (proj[i].aggregate_type == ProjectionVar::coreTruss_type) {
 							auto clique = pqHandler->coreTruss(pred_id_set, proj[i].path_args.misc[i], proj[i].path_args.misc[1]);
 							ss << "{\"coreTruss\":[";
