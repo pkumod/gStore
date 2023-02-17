@@ -43,12 +43,7 @@ BasicQueryStrategy Optimizer::ChooseStrategy(std::shared_ptr<BGPQuery> bgp_query
     }
     else if (query_info->ordered_by_expressions_->size() > 1)
       return BasicQueryStrategy::Normal;
-    else {
-      if (bgp_query->get_triple_num() == 1)
-        return BasicQueryStrategy::Normal;
-      else
-        return BasicQueryStrategy::limitK;
-    }
+    return BasicQueryStrategy::limitK;
   }
 }
 
@@ -107,13 +102,21 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
                                                 is_literal,is_predicate,first_operation.distinct_ , id_caches);
     first_table = get<1>(step_result);
   }
-  else // Two Nodes
+  else if(first_operation.join_type_ == StepOperation::JoinType::JoinTwoNodes)
   {
     step_result  = executor_.InitialTableTwoNode(first_operation.join_two_node_,id_caches);
     first_table = get<1>(step_result);
   }
-  if( query_plan->join_order_->size()==1 || first_table.values_->empty())
+  else if(first_operation.join_type_ == StepOperation::JoinType::GetAllTriples)
+  {
+    step_result = executor_.GetAllTriple(first_operation.join_node_);
+    first_table = get<1>(step_result);
+  }
+  if( query_plan->join_order_->size()==1 || first_table.values_->empty()){
+    if(first_table.values_->size()>query_info.limit_num_)
+      first_table.values_->resize(query_info.limit_num_);
     return make_tuple(true, first_table);
+  }
 
   auto first_candidates_list = first_table.values_;
   int now_result = 0;
