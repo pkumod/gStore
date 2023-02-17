@@ -78,7 +78,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,cha
             token+=c;
             if (!read(c)) return Integer;
          }
-         if (issep(c)) {
+         if (c != '.' && issep(c)) {
             unread();
             return Integer;
          }
