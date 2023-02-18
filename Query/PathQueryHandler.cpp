@@ -4299,6 +4299,95 @@ namespace MaxKPX
             delete[] seq;
         }
 
+        vector<int> peel(int alpha, int beta)
+        {
+            int oldn = n;
+            int *seq = new int[n];
+            int *core = new int[n];
+            int *degree = new int[n];
+            char *vis = new char[n];
+
+            LinearHeap *heap = new LinearHeap(n, n - 1);
+            kplex.resize(alpha);
+			degen(n, seq, core, pstart, edges, degree, vis, heap, true);
+			kplex.resize(alpha);
+
+            delete heap;
+            delete[] vis;
+
+			int *out_mapping = new int[n];
+			int *rid = new int[n];
+			
+			assert(n>0 && m>0);
+			shrink_graph(n, m, seq, core, out_mapping, NULL, rid, pstart, edges, true);
+			// delete[] core; core = NULL;
+
+			degree = new int[n];
+			for (int i = 0; i < n; i++)
+				degree[i] = pstart[i + 1] - pstart[i];
+
+			LinearHeap *linear_heap = new LinearHeap(n, n - 1);
+			linear_heap->init(n, n - 1, seq, degree);
+
+			assert(pend == nullptr);
+			pend = new ept[n];
+
+			int *edgelist_pointer = new int[m];
+			oriented_triangle_counting(n, m, seq, pstart, pend, edges, edgelist_pointer, rid); // edgelist_pointer currently stores triangle_counts
+
+			// delete[] seq; seq = NULL;
+
+			pend_buf = new ept[n];
+			int *edge_list = new int[m];
+			int *tri_cnt = new int[m / 2];
+			reorganize_oriented_graph(n, tri_cnt, edge_list, pstart, pend, pend_buf, edges, edgelist_pointer, rid);
+
+			for (int i = 0; i < n; i++)
+				pend[i] = pstart[i + 1];
+
+			int *active_edgelist = new int[m >> 1];
+			int active_edgelist_n = m >> 1;
+			for (int i = 0; i < (m >> 1); i++)
+				active_edgelist[i] = i;
+
+			int *Qe = new int[m >> 1];
+			char *deleted = new char[m >> 1];
+			memset(deleted, 0, sizeof(char) * (m >> 1));
+			char *exists = new char[n];
+			memset(exists, 0, sizeof(char) * n);
+
+			int *Qv = new int[n];
+			int Qv_n = 0;
+
+			m -= 2 * peeling(n, linear_heap, Qv, Qv_n, alpha, Qe, true, beta, tri_cnt, active_edgelist, active_edgelist_n, edge_list, edgelist_pointer, deleted, degree, pstart, pend, edges, exists);
+
+			int max_n = n - Qv_n;
+
+			vector<int> res;
+			for (int i = 0; i < n; i++)
+			{
+				int u, key;
+				linear_heap->pop_min(u, key);
+				if(degree[u]) res.push_back(out_mapping[u]);
+			}
+
+			delete linear_heap;
+			delete[] exists;
+			delete[] out_mapping;
+			delete[] rid;
+			delete[] degree;
+			delete[] edgelist_pointer;
+			delete[] tri_cnt;
+			delete[] active_edgelist;
+			delete[] Qe;
+			delete[] Qv;
+			delete[] deleted;
+            delete[] core;
+            delete[] seq;
+
+			return res;
+        }
+
         void subgraph_prune(int *ids, int &_n, vector<pair<int, int>> &edge_list, int *rid, int *Qv, int *Qe, char *exists)
         {
             int s_n;
@@ -4848,7 +4937,7 @@ namespace MaxKPX
                     ++cnt;
                 }
 
-            if (cnt != n)
+            if (true)
             {
                 cnt = 0;
                 ept pos = 0;
@@ -4867,8 +4956,8 @@ namespace MaxKPX
                 pstart[cnt] = pos;
 
                 // printf("%u %u %u %u\n", n, cnt, core[peel_sequence[n-cnt-1]], core[peel_sequence[n-cnt]]);
-                assert(core[peel_sequence[n - cnt - 1]] == 0 || core[peel_sequence[n - cnt - 1]] + K <= kplex.size());
-                assert(cnt == 0 || core[peel_sequence[n - cnt]] + K > kplex.size());
+                // assert(core[peel_sequence[n - cnt - 1]] == 0 || core[peel_sequence[n - cnt - 1]] + K <= kplex.size());
+                // assert(cnt == 0 || core[peel_sequence[n - cnt]] + K > kplex.size());
                 for (int i = 0; i < cnt; i++)
                 {
                     peel_sequence[i] = rid[peel_sequence[n - cnt + i]];
@@ -4901,7 +4990,7 @@ namespace MaxKPX
             long long sum = 0;
             for (int i = 0; i < n; i++)
                 sum += pend[i] - pstart[i];
-            // printf("%lld %lld\n", sum, m);
+            printf("%lld %lld\n", sum, m);
             assert(sum * 2 == m);
 #endif
 
@@ -5250,6 +5339,11 @@ vector<int> PathQueryHandler::maximumKplex(const std::vector<int> &pred_set, int
 	return graph.kplex;
 }
 
+vector<int> PathQueryHandler::coreTruss(const std::vector<int> &pred_set, int alpha, int beta) {
+	MaxKPX::Graph graph(*this, pred_set, 1);
+	graph.read(); 
+	return graph.peel(alpha,beta);
+}
 
 
 // retNum is the number of top nodes to return; k is the hop constraint -- don't mix them up!
@@ -5837,6 +5931,3 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 	return ret;
 }
 
-vector<int> PathQueryHandler::coreTruss(const std::vector<int> &pred_set, int alpha, int beta) {
-	return vector<int>();
-}
