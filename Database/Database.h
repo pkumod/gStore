@@ -105,6 +105,10 @@ public:
 	void VersionClean(vector<unsigned> &sub_ids, vector<unsigned> &obj_ids, vector<unsigned> &obj_literal_ids, vector<unsigned> &pre_ids);
 	std::string CreateJson(int StatusCode, std::string StatusMsg, std::string ResponseBody);
 
+	// all entity id
+	const BlockInfo* getfreelist_entity()const {return freelist_entity;}
+	TYPE_ENTITY_LITERAL_ID getentity_num() const {return entity_num;}
+
 private:
 	string name;
 	string store_path;

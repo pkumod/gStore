@@ -117,10 +117,10 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 									 TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
-									 shared_ptr<Transaction> _txn):
+									 shared_ptr<Transaction> _txn, const BlockInfo *const freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):
 	temp_result(NULL), query_parser(make_shared<QueryParser>()), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),
 	pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate),
-	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), fp(NULL), export_flag(false)
+	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), all_entity_id(freelist_entity,entity_num), fp(NULL), export_flag(false)
 {
 	if (csr)
 		pqHandler = new PathQueryHandler(csr);
@@ -4179,55 +4179,66 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		vars.push_back(object);
 		temp->results[0].id_varset = Varset(vars);
 		
+		set<unsigned> sid_set, tid_set;
 		if (!cand || cand->result.size() == 0)
 		{
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
-			return;
+			// // cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
+			// all entity -> sid_set/tid_set 
+			for(TYPE_ENTITY_LITERAL_ID id = all_entity_id.init(); id!=INVALID_ENTITY_LITERAL_ID; id=all_entity_id.next())
+				sid_set.insert(id);
+			// tid_set = sid_set;
 		}
-
-		unsigned subjectIdx = 0, objectIdx = 0;
-		bool subjectInId = true, objectInId = true;
-		while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
-			subjectIdx++;
-		while (objectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[objectIdx] != object)
-			objectIdx++;
-		if (subjectIdx == cand->id_varset.vars.size() && objectIdx == cand->id_varset.vars.size())
-		{
-			subjectIdx = 0;
-			objectIdx = 0;
-			while (subjectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[subjectIdx] != subject)
+		else{
+			unsigned subjectIdx = 0, objectIdx = 0;
+			bool subjectInId = true, objectInId = true, not_case2 = true;
+			while (subjectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[subjectIdx] != subject)
 				subjectIdx++;
-			while (objectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[objectIdx] != object)
+			while (objectIdx < cand->id_varset.vars.size() && cand->id_varset.vars[objectIdx] != object)
 				objectIdx++;
-			if (subjectIdx < cand->str_varset.vars.size())
-				subjectInId = false;
-			else if (objectIdx < cand->str_varset.vars.size())
-				objectInId = false;
-			else
-				cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
-				return;
-		}
-		// prepPathQuery();
-		set<unsigned> sid_set, tid_set;
-		if (subjectInId && subjectIdx < cand->id_varset.vars.size())
-		{
-			for (size_t i = 0; i < cand->result.size(); i++)
-				sid_set.insert(cand->result[i].id[subjectIdx]);
-		}
-		else if (subjectIdx < cand->str_varset.vars.size())
-		{
-			for (size_t i = 0; i < cand->result.size(); i++)
-				sid_set.insert(kvstore->getIDByString(cand->result[i].str[subjectIdx]));
-		}
-		if (objectInId && objectIdx < cand->id_varset.vars.size())
-		{
-			for (size_t i = 0; i < cand->result.size(); i++)
-				tid_set.insert(cand->result[i].id[objectIdx]);
-		}
-		else if (objectIdx < cand->str_varset.vars.size())
-		{
-			for (size_t i = 0; i < cand->result.size(); i++)
-				tid_set.insert(kvstore->getIDByString(cand->result[i].str[objectIdx]));
+			if (subjectIdx == cand->id_varset.vars.size() && objectIdx == cand->id_varset.vars.size())
+			{
+				subjectIdx = 0;
+				objectIdx = 0;
+				while (subjectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[subjectIdx] != subject)
+					subjectIdx++;
+				while (objectIdx < cand->str_varset.vars.size() && cand->str_varset.vars[objectIdx] != object)
+					objectIdx++;
+				if (subjectIdx < cand->str_varset.vars.size())
+					subjectInId = false;
+				else if (objectIdx < cand->str_varset.vars.size())
+					objectInId = false;
+				else{
+					not_case2 = false;
+					// // cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
+					// all entity -> sid_set/tid_set 
+					for(TYPE_ENTITY_LITERAL_ID id = all_entity_id.init(); id!=INVALID_ENTITY_LITERAL_ID; id=all_entity_id.next())
+						sid_set.insert(id);
+					// tid_set = sid_set; 
+				}
+			}
+			if(not_case2){
+				// prepPathQuery();
+				if (subjectInId && subjectIdx < cand->id_varset.vars.size())
+				{
+					for (size_t i = 0; i < cand->result.size(); i++)
+						sid_set.insert(cand->result[i].id[subjectIdx]);
+				}
+				else if (subjectIdx < cand->str_varset.vars.size())
+				{
+					for (size_t i = 0; i < cand->result.size(); i++)
+						sid_set.insert(kvstore->getIDByString(cand->result[i].str[subjectIdx]));
+				}
+				if (objectInId && objectIdx < cand->id_varset.vars.size())
+				{
+					for (size_t i = 0; i < cand->result.size(); i++)
+						tid_set.insert(cand->result[i].id[objectIdx]);
+				}
+				else if (objectIdx < cand->str_varset.vars.size())
+				{
+					for (size_t i = 0; i < cand->result.size(); i++)
+						tid_set.insert(kvstore->getIDByString(cand->result[i].str[objectIdx]));
+				}
+			}
 		}
 		if (sid_set.size() > 0 && (sid_set.size() <= tid_set.size() || tid_set.size() == 0))
 		{
