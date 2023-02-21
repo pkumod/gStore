@@ -339,12 +339,29 @@ void register_service(GRPCServer &svr)
 			upload_file(request, response);
 		},
 		ReqMethod::POST);
+
+	svr.ROUTE(
+		"/grpc/file/upload", [](const GRPCReq *request, GRPCResp *response)
+		{
+			response->add_header_pair("Access-Control-Allow-Origin", "*");
+			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->String("ok");
+		},
+		ReqMethod::OPTIONS);
 	svr.ROUTE(
 		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
 		{
 			download_file(request, response);
 		},
 		ReqMethod::POST);
+	svr.ROUTE(
+		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
+		{
+			response->add_header_pair("Access-Control-Allow-Origin", "*");
+			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->String("ok");
+		},
+		ReqMethod::OPTIONS);
 }
 
 void shutdown(const GRPCReq *request, GRPCResp *response)

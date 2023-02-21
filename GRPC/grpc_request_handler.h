@@ -12,11 +12,12 @@ namespace grpc
 #define ReqMethodAny		"ANY"
 #define ReqMethodGet		"GET"
 #define ReqMethodPost		"POST"
+#define ReqMethodOptions	"OPTIONS"
 #define ReqMethodUnknown    "[UNKNOWN]"
 
 enum class ReqMethod
 {
-    ANY, GET, POST,
+    ANY, GET, POST, OPTIONS
 };
 
 inline ReqMethod str_to_method(const std::string &method)
@@ -25,6 +26,8 @@ inline ReqMethod str_to_method(const std::string &method)
         return ReqMethod::GET;
     if (strcasecmp(method.c_str(), ReqMethodPost) == 0)
         return ReqMethod::POST;
+    if (strcasecmp(method.c_str(), ReqMethodOptions) == 0)
+        return ReqMethod::OPTIONS;
     return ReqMethod::ANY;
 }
 
@@ -38,6 +41,8 @@ inline const char *method_to_str(const ReqMethod &method)
             return ReqMethodGet;
         case ReqMethod::POST:
             return ReqMethodPost;
+        case ReqMethod::OPTIONS:
+            return ReqMethodOptions;
         default:
             return ReqMethodUnknown;
     }
