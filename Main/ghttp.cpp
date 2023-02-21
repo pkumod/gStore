@@ -639,9 +639,29 @@ int initialize(unsigned short port, std::string db_name, bool load_src)
 		upload_handler(server, response, request);
 	};
 
+	server.resource["/file/upload"]["OPTIONS"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		cout << "fileupload options request" << endl;
+		std::string resJson = "ok";
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: text/plain"
+			  <<"\r\nAccess-Control-Allow-Methods: POST\r\nAccess-Control-Allow-Origin: *"
+			  <<"\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
+			  << resJson;
+	};
+
 	server.resource["/file/download"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
 		download_handler(server, response, request);
+	};
+
+	server.resource["/file/download"]["OPTIONS"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		cout << "filedownload options request" << endl;
+		std::string resJson = "ok";
+		*response << "HTTP/1.1 200 OK\r\nContent-Type: text/plain"
+			  <<"\r\nAccess-Control-Allow-Methods: POST\r\nAccess-Control-Allow-Origin: *"
+			  <<"\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
+			  << resJson;
 	};
 
 	server.default_resource["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
