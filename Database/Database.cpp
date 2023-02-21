@@ -1700,7 +1700,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->kvstore, this->stringindex, this->query_cache, this->csr,
 										 this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
-										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn);
+										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn, this->getfreelist_entity(), this->getentity_num());
 	if (txn != nullptr)
 		cout << "query in transaction............................................" << endl;
 	long tv_begin = Util::get_cur_time();

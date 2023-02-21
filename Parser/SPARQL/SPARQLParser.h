@@ -42,18 +42,18 @@ public:
     K_PPR = 140, K_TRIANGLECOUNTING = 141, K_CLOSENESSCENTRALITY = 142, 
     K_BFSCOUNT = 143, K_PR = 144, K_ALPHA = 145, K_MAXITER = 146, K_TOL = 147, 
     K_SSSP = 148, K_SSSPLEN = 149, K_LABELPROP = 150, K_WCC = 151, K_CLUSTERCOEFF = 152, 
-    K_MAXIMUMKPLEX = 153, K_PFN = 154, KK_INSERTDATA = 155, KK_DELETEDATA = 156, 
-    KK_DELETEWHERE = 157, KK_ENCODE_FOR_URI = 158, KK_MD5 = 159, KK_SHA1 = 160, 
-    KK_SHA256 = 161, KK_SHA384 = 162, KK_SHA512 = 163, KK_GROUP_CONCAT = 164, 
-    IRIREF = 165, PNAME_NS = 166, PNAME_LN = 167, BLANK_NODE_LABEL = 168, 
-    VAR1 = 169, VAR2 = 170, LANGTAG = 171, INTEGER = 172, DECIMAL = 173, 
-    DOUBLE = 174, INTEGER_POSITIVE = 175, DECIMAL_POSITIVE = 176, DOUBLE_POSITIVE = 177, 
-    INTEGER_NEGATIVE = 178, DECIMAL_NEGATIVE = 179, DOUBLE_NEGATIVE = 180, 
-    EXPONENT = 181, STRING_LITERAL1 = 182, STRING_LITERAL2 = 183, STRING_LITERAL_LONG1 = 184, 
-    STRING_LITERAL_LONG2 = 185, ECHAR = 186, NIL = 187, WS = 188, ANON = 189, 
-    PN_CHARS_BASE = 190, PN_CHARS_U = 191, VARNAME = 192, PN_CHARS = 193, 
-    PN_PREFIX = 194, PN_LOCAL = 195, PLX = 196, PERCENT = 197, HEX = 198, 
-    PN_LOCAL_ESC = 199, COMMENT = 200
+    K_MAXIMUMKPLEX = 153, K_CORETRUSS = 154, K_PFN = 155, KK_INSERTDATA = 156, 
+    KK_DELETEDATA = 157, KK_DELETEWHERE = 158, KK_ENCODE_FOR_URI = 159, 
+    KK_MD5 = 160, KK_SHA1 = 161, KK_SHA256 = 162, KK_SHA384 = 163, KK_SHA512 = 164, 
+    KK_GROUP_CONCAT = 165, IRIREF = 166, PNAME_NS = 167, PNAME_LN = 168, 
+    BLANK_NODE_LABEL = 169, VAR1 = 170, VAR2 = 171, LANGTAG = 172, INTEGER = 173, 
+    DECIMAL = 174, DOUBLE = 175, INTEGER_POSITIVE = 176, DECIMAL_POSITIVE = 177, 
+    DOUBLE_POSITIVE = 178, INTEGER_NEGATIVE = 179, DECIMAL_NEGATIVE = 180, 
+    DOUBLE_NEGATIVE = 181, EXPONENT = 182, STRING_LITERAL1 = 183, STRING_LITERAL2 = 184, 
+    STRING_LITERAL_LONG1 = 185, STRING_LITERAL_LONG2 = 186, ECHAR = 187, 
+    NIL = 188, WS = 189, ANON = 190, PN_CHARS_BASE = 191, PN_CHARS_U = 192, 
+    VARNAME = 193, PN_CHARS = 194, PN_PREFIX = 195, PN_LOCAL = 196, PLX = 197, 
+    PERCENT = 198, HEX = 199, PN_LOCAL_ESC = 200, COMMENT = 201
   };
 
   enum {
@@ -2468,7 +2468,8 @@ public:
     std::vector<NumericLiteralContext *> numericLiteral();
     NumericLiteralContext* numericLiteral(size_t i);
     antlr4::tree::TerminalNode *K_MAXITER();
-    Num_integerContext *num_integer();
+    std::vector<Num_integerContext *> num_integer();
+    Num_integerContext* num_integer(size_t i);
     antlr4::tree::TerminalNode *K_TOL();
     antlr4::tree::TerminalNode *K_SSSP();
     antlr4::tree::TerminalNode *K_SSSPLEN();
@@ -2476,6 +2477,7 @@ public:
     antlr4::tree::TerminalNode *K_WCC();
     antlr4::tree::TerminalNode *K_CLUSTERCOEFF();
     antlr4::tree::TerminalNode *K_MAXIMUMKPLEX();
+    antlr4::tree::TerminalNode *K_CORETRUSS();
     antlr4::tree::TerminalNode *K_PFN();
     VarOrIriSetContext *varOrIriSet();
     StringContext *string();

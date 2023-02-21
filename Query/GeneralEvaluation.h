@@ -56,6 +56,35 @@ class GeneralEvaluation
 		shared_ptr<Transaction> txn;
 
 		shared_ptr<BGPQuery> bgp_query_total;
+
+		// freelist_entity+entity_num: used for getting all entity id as sources in kleeneClosure evaluation
+		class AllEntityId
+		{
+			const BlockInfo *const freelist_entity,*head; // deleted entity id
+			const TYPE_ENTITY_LITERAL_ID entity_num;
+			TYPE_ENTITY_LITERAL_ID next_id, iter_cnt; 
+		public:
+			AllEntityId(const BlockInfo *const freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):freelist_entity(freelist_entity),head(freelist_entity),entity_num(entity_num),next_id(0),iter_cnt(0){}
+			// return next entity_id, or INVALID_ENTITY_LITERAL_ID if there's no such 
+			TYPE_ENTITY_LITERAL_ID next(){
+				if(iter_cnt>=entity_num)
+					return INVALID_ENTITY_LITERAL_ID;
+				++iter_cnt;
+				while(head && head->num==next_id){
+					++next_id;
+					head=head->next;
+				}
+				++next_id;
+				return next_id-1;
+			}
+			TYPE_ENTITY_LITERAL_ID init(){
+				next_id=0;
+				iter_cnt=0;
+				head=freelist_entity;
+				return next();
+			}
+		} all_entity_id;
+		
     public:
     	FILE* fp;
     	bool export_flag;
@@ -65,13 +94,14 @@ class GeneralEvaluation
 						  TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 						  TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
-						  shared_ptr<Transaction> txn = nullptr);
+						  shared_ptr<Transaction> txn = nullptr, const BlockInfo *const freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0);
 		// Note that query_tree, well_designed, ranked, bgp_query_total not copied
 		GeneralEvaluation(const GeneralEvaluation& _ge): query_parser(_ge.query_parser), well_designed(-1), \
 			kvstore(_ge.kvstore), stringindex(_ge.stringindex), optimizer_(_ge.optimizer_), \
 			query_cache(_ge.query_cache), pqHandler(_ge.pqHandler), csr(_ge.csr), ranked(false), pre2num(_ge.pre2num), \
 			pre2sub(_ge.pre2sub), pre2obj(_ge.pre2obj), limitID_predicate(_ge.limitID_predicate), \
 			limitID_literal(_ge.limitID_literal), limitID_entity(_ge.limitID_entity), txn(_ge.txn), \
+			all_entity_id(_ge.all_entity_id), \
 			fp(_ge.fp), export_flag(_ge.export_flag){}
 
 		~GeneralEvaluation();

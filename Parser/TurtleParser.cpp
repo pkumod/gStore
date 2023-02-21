@@ -78,7 +78,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,cha
             token+=c;
             if (!read(c)) return Integer;
          }
-         if (issep(c)) {
+         if (c != '.' && issep(c)) {
             unread();
             return Integer;
          }
@@ -100,22 +100,22 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,cha
       }
 
       // Exponent
-      // if ((c!='e')&&(c!='E')) break;
-      // token+=c;
-      // if (!read(c)) break;
-      // if ((c=='-')||(c=='+')) {
-      //    token+=c;
-      //    if (!read(c)) break;
-      // }
-      // if ((c<'0')||(c>'9')) break;
-      // while ((c>='0')&&(c<='9')) {
-      //    token+=c;
-      //    if (!read(c)) return Double;
-      // }
-      // if (issep(c)) {
-      //    unread();
-      //    return Double;
-      // }
+      if ((c!='e')&&(c!='E')) break;
+      token+=c;
+      if (!read(c)) break;
+      if ((c=='-')||(c=='+')) {
+         token+=c;
+         if (!read(c)) break;
+      }
+      if ((c<'0')||(c>'9')) break;
+      while ((c>='0')&&(c<='9')) {
+         token+=c;
+         if (!read(c)) return Double;
+      }
+      if (issep(c)) {
+         unread();
+         return Double;
+      }
       break;
    }
    // REMARK: the string that start with number will throw exception: invalid Number   
