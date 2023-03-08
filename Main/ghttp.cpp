@@ -106,7 +106,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 
 void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username);
 
-void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
+void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string remote_ip);
 
 void check_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
@@ -2351,7 +2351,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
  * @param {*}
  * @return {*}
  */
-void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string remote_ip)
 {
 	string operation = "login";
 	try
@@ -2368,6 +2368,7 @@ void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		string cur_path = Util::get_cur_path();
 		resDoc.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
 		resDoc.AddMember("type", HTTP_TYPE, allocator);
+		apiUtil->reset_access_ip_error_num(remote_ip);
 		sendResponseMsg(resDoc, operation, request, response);
 	}
 	catch (const std::exception &e)
@@ -3130,12 +3131,6 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 					const shared_ptr<HttpServer::Request> &request, string request_type)
 {
 	string remote_ip = getRemoteIp(request);
-	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
-	if (!ipCheckResult.empty())
-	{
-		sendResponseMsg(1101, ipCheckResult, "ipcheck", request, response);
-		return;
-	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	string username;
@@ -3208,6 +3203,15 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		string msg = "The method type " + request_type + " is not support";
 		sendResponseMsg(1004, msg, "methodcheck", request, response);
 		return;
+	}
+	if (operation != "login" && operation != "testConnect")
+	{	
+		string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+		if (!ipCheckResult.empty())
+		{
+			sendResponseMsg(1101, ipCheckResult, "ipcheck", request, response);
+			return;
+		}
 	}
 	stringstream ss;
 	ss << "\n------------------------ ghttp-api ------------------------";
@@ -3603,7 +3607,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	}
 	else if (operation == "login")
 	{
-		login_thread_new(request, response);
+		login_thread_new(request, response, remote_ip);
 	}
 	else if (operation == "begin")
 	{
