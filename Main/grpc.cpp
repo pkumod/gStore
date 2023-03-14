@@ -28,7 +28,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response);
 void download_file(const GRPCReq *request, GRPCResp *response);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
-void login_task(const GRPCReq *request, GRPCResp *response);
+void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip);
 void test_connect_task(const GRPCReq *request, GRPCResp *response);
 void core_version_task(const GRPCReq *request, GRPCResp *response);
 void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -714,13 +714,6 @@ void api(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
-	if (ipCheckResult.empty() == false)
-	{
-		SLOG_DEBUG(ipCheckResult);
-		response->Error(StatusIPBlocked, ipCheckResult);
-		return;
-	}
 
 	Json json_data;
 	json_data.SetObject();
@@ -770,6 +763,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
 	std::string operation = jsonParam(json_data, "operation", "");
 	operation_type op_type = OperationType::to_enum(operation);
+	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
+	{	
+		std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+		if (ipCheckResult.empty() == false)
+		{
+			SLOG_DEBUG(ipCheckResult);
+			response->Error(StatusIPBlocked, ipCheckResult);
+			return;
+		}
+	}
+	
 	std::stringstream ss;
 	ss << "\n------------------------ grpc-api ------------------------";
 	ss << "\nremote_ip: " << ip_addr;
@@ -833,7 +837,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	switch (op_type)
 	{
 	case OP_LOGIN:
-		login_task(request, response);
+		login_task(request, response, ip_addr);
 		break;
 	case OP_TEST_CONNECT:
 		test_connect_task(request, response);
@@ -959,7 +963,7 @@ void check_task(const GRPCReq *request, GRPCResp *response)
  * @param request 
  * @param response 
  */
-void login_task(const GRPCReq *request, GRPCResp *response)
+void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip)
 {
 	try
 	{
@@ -975,6 +979,7 @@ void login_task(const GRPCReq *request, GRPCResp *response)
 		string cur_path = Util::get_cur_path();
 		resp_data.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
 		resp_data.AddMember("type", HTTP_TYPE, allocator);
+		apiUtil->reset_access_ip_error_num(ip);
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
