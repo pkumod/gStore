@@ -368,7 +368,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
 	if (ipCheckResult.empty() == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
@@ -488,7 +488,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
 	if (ipCheckResult.empty() == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
@@ -580,7 +580,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
 	if (ipCheckResult.empty() == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
@@ -714,7 +714,13 @@ void api(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-
+	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 1);
+	if (ipCheckResult.empty() == false)
+	{
+		SLOG_DEBUG(ipCheckResult);
+		response->Error(StatusIPBlocked, ipCheckResult);
+		return;
+	}
 	Json json_data;
 	json_data.SetObject();
 	Json::AllocatorType &allocator = json_data.GetAllocator();
@@ -765,7 +771,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	operation_type op_type = OperationType::to_enum(operation);
 	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
 	{	
-		std::string ipCheckResult = apiUtil->check_access_ip(ip_addr);
+		ipCheckResult = apiUtil->check_access_ip(ip_addr, 2);
 		if (ipCheckResult.empty() == false)
 		{
 			SLOG_DEBUG(ipCheckResult);

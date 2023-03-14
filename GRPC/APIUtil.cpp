@@ -536,19 +536,19 @@ void APIUtil::reset_access_ip_error_num(const string& ip)
     if (it != ips.end())
     {
         it->second->setErrorNum(0);
-        pthread_rwlock_unlock(&ips_map_lock);
     }
+    pthread_rwlock_unlock(&ips_map_lock);
 }
 
-string APIUtil::check_access_ip(const string& ip)
+string APIUtil::check_access_ip(const string& ip, int check_level)
 {
     string result = "";
-    if(!ip_check(ip))
+    if(check_level < 2 && !ip_check(ip))
     {
         result = "IP Blocked!";
         return result;
     }
-    if(!ip_error_num_check(ip))
+    if(check_level !=1 && check_level < 3 && !ip_error_num_check(ip))
     {
         result = "The ip has too many error during accessing server, the ip has been locked until the server restart!";
         return result;
