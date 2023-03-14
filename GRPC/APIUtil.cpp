@@ -529,6 +529,17 @@ void APIUtil::update_access_ip_error_num(const string& ip)
     }
 }
 
+void APIUtil::reset_access_ip_error_num(const string& ip)
+{
+    pthread_rwlock_rdlock(&ips_map_lock);
+    std::map<std::string, struct IpInfo *>::iterator it = ips.find(ip);
+    if (it != ips.end())
+    {
+        it->second->setErrorNum(0);
+        pthread_rwlock_unlock(&ips_map_lock);
+    }
+}
+
 string APIUtil::check_access_ip(const string& ip)
 {
     string result = "";

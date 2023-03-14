@@ -993,6 +993,7 @@ public:
     int clear_user_privilege(string username);
     string check_access_ip(const string& ip);
     void update_access_ip_error_num(const string& ip);
+    void reset_access_ip_error_num(const string& ip);
     bool ip_save(string ip_type, vector<string> ipVector);
     vector<string> ip_list(string type);
     string ip_enabled_type();
