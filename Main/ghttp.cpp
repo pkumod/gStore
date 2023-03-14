@@ -3131,6 +3131,12 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 					const shared_ptr<HttpServer::Request> &request, string request_type)
 {
 	string remote_ip = getRemoteIp(request);
+	string ipCheckResult = apiUtil->check_access_ip(remote_ip, 1);
+	if (!ipCheckResult.empty())
+	{
+		sendResponseMsg(1101, ipCheckResult, "ipcheck", request, response);
+		return;
+	}
 	string thread_id = Util::getThreadID();
 	string log_prefix = "thread " + thread_id + " -- ";
 	string username;
@@ -3206,7 +3212,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	}
 	if (operation != "login" && operation != "testConnect")
 	{	
-		string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+		ipCheckResult = apiUtil->check_access_ip(remote_ip, 2);
 		if (!ipCheckResult.empty())
 		{
 			sendResponseMsg(1101, ipCheckResult, "ipcheck", request, response);
@@ -4121,7 +4127,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 {
 	string operation = "shutdown";
 	string remote_ip = getRemoteIp(request);
-	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+	string ipCheckResult = apiUtil->check_access_ip(remote_ip, 0);
 	if (!ipCheckResult.empty())
 	{
 		sendResponseMsg(1101, ipCheckResult, operation, request, response);
@@ -4221,7 +4227,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	string operation = "uploadfile";
 	string thread_id = Util::getThreadID();
 	string remote_ip = getRemoteIp(request);
-	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+	string ipCheckResult = apiUtil->check_access_ip(remote_ip, 0);
 	if (!ipCheckResult.empty())
 	{
 		sendResponseMsg(1101, ipCheckResult, operation, request, response);
@@ -4381,7 +4387,7 @@ void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	string operation = "downloadfile";
 	string thread_id = Util::getThreadID();
 	string remote_ip = getRemoteIp(request);
-	string ipCheckResult = apiUtil->check_access_ip(remote_ip);
+	string ipCheckResult = apiUtil->check_access_ip(remote_ip, 0);
 	if (!ipCheckResult.empty())
 	{
 		sendResponseMsg(1101, ipCheckResult, operation, request, response);

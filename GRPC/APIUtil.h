@@ -993,7 +993,7 @@ public:
     bool user_pwd_alert(const string& username, const string& password);
     void get_user_info(vector<struct DBUserInfo *> *_users);
     int clear_user_privilege(string username);
-    string check_access_ip(const string& ip);
+    string check_access_ip(const string& ip, int check_level);
     void update_access_ip_error_num(const string& ip);
     void reset_access_ip_error_num(const string& ip);
     bool ip_save(string ip_type, vector<string> ipVector);
