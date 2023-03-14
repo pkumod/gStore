@@ -106,3 +106,8 @@ node_modules
 
 # query results
 *.info
+.vscode
+backups
+data
+fun
+scripts
