@@ -2805,3 +2805,149 @@ std::string Util::get_cur_path()
         return cur_path;
     }
 }
+
+const char* Util::get_cpu_items(const char* buffer, unsigned int item)
+{
+    const char* p = buffer;
+
+    int len = strlen(buffer);
+    unsigned int count = 0;
+    for (int i = 0; i < len; i++)
+    {
+        if (' ' == *p)
+        {
+            count++;
+            if (count == item)
+            {
+                p++;
+                break;
+            }
+        }
+        p++;
+    }
+    return p;
+}
+
+inline unsigned long Util::get_cpu_total()
+{
+    // different mode cpu occupy time
+    unsigned long user_time;
+    unsigned long nice_time;
+    unsigned long system_time;
+    unsigned long idle_time;
+ 
+    FILE* fd;
+    char buff[1024] = { 0 };
+ 
+    fd = fopen("/proc/stat", "r");
+    if (nullptr == fd)
+        return 0;
+ 
+    fgets(buff, sizeof(buff), fd);
+    char name[64] = { 0 };
+    sscanf(buff, "%s %ld %ld %ld %ld", name, &user_time, &nice_time, &system_time, &idle_time);
+    fclose(fd);
+ 
+    return (user_time + nice_time + system_time + idle_time);
+}
+
+inline unsigned long Util::get_cpu_proc(int pid)
+{
+    // get specific pid cpu use time
+    unsigned int tmp_pid;
+    unsigned long utime;  // user time
+    unsigned long stime;  // kernel time
+    unsigned long cutime; // all user time
+    unsigned long cstime; // all dead time
+ 
+    char file_name[64] = { 0 };
+    FILE* fd;
+    char line_buff[1024] = { 0 };
+    sprintf(file_name, "/proc/%d/stat", pid);
+ 
+    fd = fopen(file_name, "r");
+    if (nullptr == fd)
+        return 0;
+ 
+    fgets(line_buff, sizeof(line_buff), fd);
+ 
+    sscanf(line_buff, "%u", &tmp_pid);
+    const char* q = Util::get_cpu_items(line_buff, PROCESS_ITEM);
+    sscanf(q, "%ld %ld %ld %ld", &utime, &stime, &cutime, &cstime);
+    fclose(fd);
+ 
+    return (utime + stime + cutime + cstime);
+}
+
+float Util::get_cpu_usage(int pid)
+{
+    unsigned long totalcputime1, totalcputime2;
+    unsigned long procputime1, procputime2;
+    totalcputime1 = get_cpu_total();
+    procputime1 = get_cpu_proc(pid);
+    // FIXME: the 200ms is a magic number, works well
+    usleep(200000); // sleep 200ms to fetch two time point cpu usage snapshots sample for later calculation
+    totalcputime2 = get_cpu_total();
+    procputime2 = get_cpu_proc(pid);
+    float pcpu = 0.0;
+    if (0 != totalcputime2 - totalcputime1)
+        pcpu = (procputime2 - procputime1) / float(totalcputime2 - totalcputime1); // float number
+    int cpu_num = get_nprocs();
+    pcpu *= cpu_num; // should multiply cpu num in multiple cpu machine
+    return pcpu;
+}
+
+float Util::get_memory_usage(int pid)
+{
+    char file_name[64] = {0};
+    FILE *fd;
+    char line_buff[512] = {0};
+    sprintf(file_name, "/proc/%d/status", pid);
+    fd = fopen(file_name, "r");
+    if (nullptr == fd)
+        return 0;
+    char name[64];
+    int vmrss = 0;
+    for (int i = 0; i < VMRSS_LINE - 1; i++)
+        fgets(line_buff, sizeof(line_buff), fd);
+    fgets(line_buff, sizeof(line_buff), fd);
+    sscanf(line_buff, "%s %d", name, &vmrss);
+    fclose(fd);
+    // cnvert VmRSS from KB to MB
+    return vmrss / 1024.0;
+}
+
+ unsigned long long Util::get_disk_free()
+{
+    char* p = NULL;
+    const int len = 256;
+    char arr_tmp[len] = {0};
+    int n = readlink("/proc/self/exe", arr_tmp, len);
+    if (n == -1)
+    {
+        return 0;
+    }
+    if (NULL != (p = strrchr(arr_tmp, '/')))
+    {
+        *p = '\0';
+    }
+    std::string cur_path = std::string(arr_tmp);
+    struct statfs disk_info;
+    statfs(cur_path.c_str(), &disk_info);
+    // byte num of block
+    unsigned long long block_size = disk_info.f_bsize;
+    // total = block_size * block_num
+    unsigned long long total_size = block_size * disk_info.f_blocks;
+    #ifdef DEBUG
+    printf("Total_size = %llu B = %llu KB = %llu MB = %llu GB\n", total_size, total_size>>10, total_size>>20, total_size>>30);
+    #endif
+    // free = block_size * free_block_num
+    unsigned long long free_disk = block_size * disk_info.f_bfree;
+    // available = block_size * available_block_num
+    unsigned long long available_disk = block_size * disk_info.f_bavail;
+    #ifdef DEBUG
+    printf("Disk_free = %llu MB = %llu GB\nDisk_available = %llu MB = %llu GB\n", free_disk>>20, free_disk>>30, available_disk>>20, available_disk>>30);
+    #endif
+    // return MB
+    return available_disk>>20;
+}
