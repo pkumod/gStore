@@ -42,6 +42,7 @@ namespace grpc
     OP(OP_CHECKPOINT,                     checkpoint) \
     OP(OP_BATCH_INSERT,                  batchInsert) \
     OP(OP_BATCH_REMOVE,                  batchRemove) \
+    OP(OP_RENAME,                             rename) \
     OP(OP_USER_MANAGE,                    usermanage) \
     OP(OP_USER_SHOW,                        showuser) \
     OP(OP_USER_PRIVILEGE,        userprivilegemanage) \
@@ -56,7 +57,8 @@ namespace grpc
     OP(OP_FUN_REVIEW,                      funreview) \
     OP(OP_SHUTDOWN,                         shutdown) \
     OP(OP_UPLOADFILE,                     uploadfile) \
-    OP(OP_DOWNLOADFILE,                 downloadfile) 
+    OP(OP_DOWNLOADFILE,                 downloadfile) \
+    OP(OP_STAT,                                 stat)
 }
 
 enum operation_type
