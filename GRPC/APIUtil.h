@@ -951,7 +951,7 @@ public:
     bool unlock_databaseinfo(DatabaseInfo* dbinfo);
     bool check_already_load(const std::string& db_name);
     shared_ptr<Txn_manager> get_Txn_ptr(string db_name);
-    bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time, bool try_lock);
+    bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time);
     std::string get_already_build(const std::string& db_name);
     void get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array);
     bool check_already_build(const std::string& db_name);
@@ -968,6 +968,8 @@ public:
     bool add_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool del_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool check_privilege(const std::string& username, const std::string& type, const std::string& db_name);
+    bool init_privilege(const std::string& username, const std::string& db_name);
+    bool copy_privilege(const std::string& src_db_name, const std::string& dst_db_name);
     bool update_sys_db(string query);
     bool refresh_sys_db();
     std::string query_sys_db(const std::string& sparql);
