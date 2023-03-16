@@ -14,6 +14,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	Util util;
+	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	size_t _len_suffix = _db_suffix.length();
 	// Log.init("slog.properties");
@@ -77,8 +78,9 @@ int main(int argc, char *argv[])
 
 		cout << "start loading the database......" << endl;
 		Database _db(db_name);
-		_db.load();
-		cout << "finish loading...." << endl;
+		// _db.load();
+		_db.loadDBInfoFile();
+		cout << "finish load database info...."<< endl;
 
 		sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
 		ResultSet _rs;
@@ -91,19 +93,23 @@ int main(int argc, char *argv[])
 			creator = Util::clear_angle_brackets(_rs.answer[0][0]); // remove <>
 			built_time = Util::replace_all(_rs.answer[0][1], "\"", "");
 		}
+		string db_path = _db_home + "/" + db_name + _db_suffix;
+		db_path = Util::getExactPath(db_path.c_str());
+		long long unsigned count_size_byte = Util::count_dir_size(db_path.c_str());
+		// byte to MB
+		unsigned diskUsed = count_size_byte>>20;
+
 		std::vector<std::string> header = {"name", "value"};
 		std::vector<std::vector<std::string>> rows;
 		rows.push_back({"database", db_name});
 		rows.push_back({"creator", creator});
 		rows.push_back({"built_time", built_time});
 		rows.push_back({"triple_num", Util::int2string(_db.getTripleNum())});
-		rows.push_back({
-			"entity_num",
-			Util::int2string(_db.getEntityNum()),
-		});
+		rows.push_back({"entity_num", Util::int2string(_db.getEntityNum())});
 		rows.push_back({"literal_num", Util::int2string(_db.getLiteralNum())});
 		rows.push_back({"subject_num", Util::int2string(_db.getSubNum())});
 		rows.push_back({"predicate_num", Util::int2string(_db.getPreNum())});
+		rows.push_back({"disk_used", to_string(diskUsed) + " MB"});
 		Util::printConsole(header, rows);
 
 		return 0;
