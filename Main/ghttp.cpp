@@ -146,6 +146,10 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 
 void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, struct PFNInfo &pfn_info);
 
+void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string new_name);
+
+void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
+
 void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info);
 
 std::map<std::string, std::string> parse_post_body(const std::string &body);
@@ -851,18 +855,13 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		f.close();
 
 		// by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
-		if (apiUtil->add_privilege(username, "query", db_name) == 0 ||
-			apiUtil->add_privilege(username, "load", db_name) == 0 ||
-			apiUtil->add_privilege(username, "unload", db_name) == 0 ||
-			apiUtil->add_privilege(username, "backup", db_name) == 0 ||
-			apiUtil->add_privilege(username, "restore", db_name) == 0 ||
-			apiUtil->add_privilege(username, "export", db_name) == 0)
+		if (apiUtil->init_privilege(username, db_name) == 0)
 		{
-			string error = "add query or load or unload privilege failed.";
+			string error = "init privilege failed.";
 			sendResponseMsg(1006, error, operation, request, response);
 			return;
 		}
-		SLOG_DEBUG("add query and load and unload privilege succeed after build.");
+		SLOG_DEBUG("init privilege succeed after build.");
 
 		// add database information to system.db
 		if (apiUtil->build_db_user_privilege(db_name, username))
@@ -1876,14 +1875,9 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 				sendResponseMsg(1003, error, operation, request, response);
 				return;
 			}
-			if (apiUtil->add_privilege(username, "query", db_name) == 0 ||
-				apiUtil->add_privilege(username, "load", db_name) == 0 ||
-				apiUtil->add_privilege(username, "unload", db_name) == 0 ||
-				apiUtil->add_privilege(username, "backup", db_name) == 0 ||
-				apiUtil->add_privilege(username, "restore", db_name) == 0 ||
-				apiUtil->add_privilege(username, "export", db_name) == 0)
+			if (apiUtil->init_privilege(username, db_name) == 0)
 			{
-				error = "add query or load or unload or backup or restore or export privilege failed.";
+				error = "init privilege failed.";
 				sendResponseMsg(1006, error, operation, request, response);
 				return;
 			}
@@ -4051,6 +4045,36 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		}
 		fun_review_thread_new(request, response, username, pfn_info);
 	}
+	else if (operation == "rename")
+	{
+		string new_name = "";
+		try
+		{
+			if (request_type == "GET")
+			{
+				new_name = WebUrl::CutParam(url, "new_name");
+				new_name = UrlDecode(new_name);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("new_name") && document["new_name"].IsString())
+				{
+					new_name = document["new_name"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		rename_thread_new(request, response, db_name, new_name);
+	}
+	else if (operation == "stat")
+	{
+		stat_thread_new(request, response);
+	}
 	else
 	{
 		string error = "the operation " + operation + " has not match handler function";
@@ -5124,5 +5148,113 @@ void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info)
 	if (fun_info.HasMember("funReturn") && fun_info["funReturn"].IsString())
 	{
 		pfn_info.setFunReturn(fun_info["funReturn"].GetString());
+	}
+}
+
+void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string new_name)
+{
+	string operation = "rename";
+	try
+	{
+		std::string error = apiUtil->check_param_value("db_name", db_name);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		error = apiUtil->check_param_value("new_name", new_name);
+		if (error.empty() == false)
+		{
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		if (apiUtil->check_db_exist(db_name) == false)
+		{
+			error = "Database not built yet.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		if (apiUtil->check_already_load(db_name) == true)
+		{
+			error = "Database is loaded, need unload first.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		// check new_name available
+		if (apiUtil->check_db_exist(new_name) == true)
+		{
+			error = "Database name " + new_name + " already exists.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+
+		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+
+		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		{
+			error = "Unable to rename due to loss of lock";
+			sendResponseMsg(1007, error, operation, request, response);
+			return;
+		}
+		string new_db_path = _db_home + "/" + new_name + _db_suffix;
+		// check new_db_path.
+		if (Util::dir_exist(new_db_path))
+		{
+			error = "Database local path " + new_db_path + " already exists.";
+			sendResponseMsg(1004, error, operation, request, response);
+			apiUtil->unlock_databaseinfo(db_info);
+			return;
+		}
+		
+		// mv old folder to new folder
+		string db_path = _db_home + "/" + db_name + _db_suffix;
+		string sys_cmd = "mv " + db_path + " " + new_db_path;
+		std::system(sys_cmd.c_str());
+		apiUtil->unlock_databaseinfo(db_info);
+		// insert new_name
+		apiUtil->add_already_build(new_name, db_info->getCreator(), db_info->getTime());
+		// copy privileges
+		apiUtil->copy_privilege(db_name, new_name);
+		// add backuplog
+		Util::add_backuplog(new_name);
+
+		// remove old_name
+		apiUtil->delete_from_already_build(db_name);
+		// remove backuplog
+		Util::delete_backuplog(db_name);
+
+		std::string success = "Database rename successfully.";
+		sendResponseMsg(0, success, operation, request, response);
+	}
+	catch (const std::exception &e)
+	{
+		string msg = "rename fail:" + string(e.what());
+		sendResponseMsg(1005, msg, operation, request, response);
+	}
+}
+
+void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+{
+	string operation = "stat";
+	try
+	{
+		int pid = getpid();
+		float cup_usage = Util::get_cpu_usage(pid) * 100; // %
+		float mem_usage = Util::get_memory_usage(pid); // MB
+		unsigned long long disk_available = Util::get_disk_free(); // MB
+		Document resp_data;
+		Document::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.SetObject();
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "success", allocator);
+		resp_data.AddMember("cup_usage", StringRef(to_string(cup_usage).c_str()), allocator);
+		resp_data.AddMember("mem_usage", StringRef(to_string(mem_usage).c_str()), allocator);
+		resp_data.AddMember("disk_available", StringRef(to_string(disk_available).c_str()), allocator);
+		sendResponseMsg(resp_data, operation, request, response);
+	}
+	catch (const std::exception &e)
+	{
+		string msg = "stat fail:" + string(e.what());
+		sendResponseMsg(1005, msg, operation, request, response);
 	}
 }
