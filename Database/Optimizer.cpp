@@ -18,7 +18,7 @@ Optimizer::Optimizer(KVstore *kv_store,
                      TYPE_ENTITY_LITERAL_ID limitID_entity,
                      shared_ptr<Transaction> txn
 ):
-    kv_store_(kv_store), pre2num_(pre2num), pre2sub_(pre2obj),pre2obj_(pre2obj),triples_num_(triples_num),
+    kv_store_(kv_store), pre2num_(pre2num), pre2sub_(pre2sub),pre2obj_(pre2obj),triples_num_(triples_num),
     limitID_predicate_(limitID_predicate), limitID_literal_(limitID_literal),limitID_entity_(limitID_entity),
     txn_(std::move(txn)), executor_(kv_store,txn,limitID_predicate,limitID_literal,limitID_entity_){}
 
