@@ -1026,18 +1026,21 @@ bool APIUtil::check_already_load(const std::string &db_name)
     }
 }
 
-bool APIUtil::add_already_build(const std::string &db_name, const std::string &creator, const std::string &build_time, bool try_lock)
+bool APIUtil::add_already_build(const std::string &db_name, const std::string &creator, const std::string &build_time)
 {
-    if (try_lock && !APIUtil::trywrlock_already_build_map())
-    {
-        return false;
-    }
-    struct DatabaseInfo *temp_db = new DatabaseInfo(db_name, creator, build_time);
-    already_build.insert(pair<std::string, struct DatabaseInfo *>(db_name, temp_db));
-    if (try_lock)
-    {
-        APIUtil::unlock_already_build_map();
-    }
+    pthread_rwlock_wrlock(&already_build_map_lock);
+    #if defined(APIUTIL_DEBUG)
+	SLOG_DEBUG("already_build_map_lock acquired.");
+    #endif
+    struct DatabaseInfo* temp_db = new DatabaseInfo(db_name, creator, build_time);
+    already_build.insert(pair<std::string, struct DatabaseInfo*>(db_name, temp_db));
+    pthread_rwlock_unlock(&already_build_map_lock);
+    string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
+		"<" + db_name + "> <built_by> <" + creator + "> ." + "<" + db_name + "> <built_time> \"" + build_time + "\".}";
+    update_sys_db(update);
+    #if defined(APIUTIL_DEBUG)
+    SLOG_DEBUG("database add done.");
+    #endif
     return true;
 }
 
@@ -1438,21 +1441,8 @@ std::string APIUtil::query_sys_db(const std::string& sparql)
 
 bool APIUtil::build_db_user_privilege(std::string db_name, std::string username)
 {
-    pthread_rwlock_wrlock(&already_build_map_lock);
-    #if defined(APIUTIL_DEBUG)
-	SLOG_DEBUG("already_build_map_lock acquired.");
-    #endif
 	string time = util.get_date_time();
-    struct DatabaseInfo* temp_db = new DatabaseInfo(db_name, username, time);
-    already_build.insert(pair<std::string, struct DatabaseInfo*>(db_name, temp_db));
-    pthread_rwlock_unlock(&already_build_map_lock);
-    string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
-		"<" + db_name + "> <built_by> <" + username + "> ." + "<" + db_name + "> <built_time> \"" + time + "\".}";
-    update_sys_db(update);
-    #if defined(APIUTIL_DEBUG)
-    SLOG_DEBUG("database add done.");
-    #endif
-    return true;
+    return add_already_build(db_name, username, time);
 }
 
 bool APIUtil::user_add(const string& username, const string& password)
@@ -1627,7 +1617,7 @@ bool APIUtil::del_privilege(const std::string& username, const std::string& type
 		}
 		else if(type == "unload" && it->second->unload_priv.find(db_name) != it->second->unload_priv.end())
 		{
-			string update = "DELETE DATA {<" + username + "> <has_load_priv> <" + db_name + ">.}";
+			string update = "DELETE DATA {<" + username + "> <has_unload_priv> <" + db_name + ">.}";
 			update_sys_db(update);
 			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
 			it->second->unload_priv.erase(db_name);
@@ -1754,6 +1744,172 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 	pthread_rwlock_unlock(&users_map_lock);
 	return check_result;
 }
+
+bool APIUtil::init_privilege(const std::string& username, const std::string& db_name)
+{
+    if(username == ROOT_USERNAME)
+	{
+		return 1;
+	}
+    pthread_rwlock_rdlock(&users_map_lock);
+    std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
+	if(it != users.end() && db_name != SYSTEM_DB_NAME)
+	{
+        string update = "INSERT DATA {<" + username + "> <has_query_priv> <" + db_name 
+            + ">.<" + username + "> <has_update_priv> <" + db_name 
+            + ">.<" + username + "> <has_load_priv> <" + db_name 
+            + ">.<" + username + "> <has_unload_priv> <" + db_name 
+            + ">.<" + username + "> <has_restore_priv> <" + db_name 
+            + ">.<" + username + "> <has_backup_priv> <" + db_name 
+            + ">.<" + username + "> <has_export_priv> <" + db_name + ">.}";
+        bool rt = update_sys_db(update);
+		if(rt)
+		{
+			pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
+			it->second->query_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
+			it->second->update_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
+			it->second->load_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
+			it->second->unload_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+			it->second->restore_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+			it->second->backup_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+
+			pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+			it->second->export_priv.insert(db_name);
+			pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+		}
+        pthread_rwlock_unlock(&users_map_lock);
+		return 1;
+	}
+	else
+	{
+		pthread_rwlock_unlock(&users_map_lock);
+		return 0;
+	}
+}
+
+ bool APIUtil::copy_privilege(const std::string& src_db_name, const std::string& dst_db_name)
+ {
+    std::vector<std::string> privileges = {"query", "update", "load", "unload", "restore", "backup","export"};
+    ResultSet rs;
+    FILE *output = nullptr;
+    std::string sparql;
+    stringstream ss;
+    ss << "INSERT DATA {";
+    unsigned int total_privilegs = 0;
+    std::map<std::string, std::vector<std::string>> priv_user_map;
+    for (std::string type:privileges)
+    {
+        sparql = "select ?x where {?x <has_" + type + "_priv> <" + src_db_name + ">.}";
+        int ret_val = system_database->query(sparql, rs, output);
+        total_privilegs += rs.ansNum;
+        if (ret_val == -100 && rs.ansNum > 0) //copy privilege to dst_db_name
+        {
+            std::map<std::string, std::vector<std::string>>::iterator it = priv_user_map.find(type);
+            if (it == priv_user_map.end())
+            {
+                priv_user_map.insert(std::pair<std::string, std::vector<std::string>>(type, {}));
+                it = priv_user_map.find(type);
+            }
+            
+            for (unsigned int i = 0; i < rs.ansNum; i++)
+            {
+                ss << rs.answer[i][0] + " <has_" + type + "_priv> <" + dst_db_name + ">.";
+                it->second.push_back(util.clear_angle_brackets(rs.answer[i][0]));
+            }
+        }
+    }
+    ss << "}";
+    if (total_privilegs > 0)
+    {
+        std::string insert_sparql = ss.str();
+        bool rt = update_sys_db(insert_sparql);
+        if(rt)
+		{
+            pthread_rwlock_rdlock(&users_map_lock);
+            std::map<std::string, std::vector<std::string>>::iterator iter_priv;
+            for (iter_priv = priv_user_map.begin(); iter_priv != priv_user_map.end(); iter_priv++)
+            {
+                std::string type = iter_priv->first;
+                for (std::string username: iter_priv->second)
+                {
+                    std::map<std::string, struct DBUserInfo *>::iterator it = users.find(username);
+                    if(it != users.end()) 
+                    {
+                        if (type == "query")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->query_priv_set_lock));
+                            it->second->query_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
+                        }
+                        else if(type == "update")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->update_priv_set_lock));
+                            it->second->update_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->update_priv_set_lock));
+                        }
+                        else if(type == "load")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->load_priv_set_lock));
+                            it->second->load_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->load_priv_set_lock));
+                        }
+                        else if(type == "unload")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->unload_priv_set_lock));
+                            it->second->unload_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->unload_priv_set_lock));
+                        }
+                        else if(type == "restore")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->restore_priv_set_lock));
+                            it->second->restore_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->restore_priv_set_lock));
+                        }
+                        else if(type == "backup")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->backup_priv_set_lock));
+                            it->second->backup_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->backup_priv_set_lock));
+                        }
+                        else if(type == "export")
+                        {
+                            pthread_rwlock_wrlock(&(it->second->export_priv_set_lock));
+                            it->second->export_priv.insert(dst_db_name);
+                            pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
+                        }
+                    }
+                }
+            }
+            pthread_rwlock_unlock(&users_map_lock);
+            return 1;
+        }
+        else
+        {
+            SLOG_WARN("excuse sparql return error: " + insert_sparql);
+            return 0;
+        }
+    }
+    #if defined(APIUTIL_DEBUG)
+	SLOG_WARN("no privileges to copy");
+    #endif
+    return 1;
+ }
 
 void APIUtil::get_user_info(vector<struct DBUserInfo *> *_users)
 {
