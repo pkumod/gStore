@@ -4778,19 +4778,18 @@ bool Database::loadStatisticsInfoFile()
 	string line;
 	vector<string> lines;
 
-	stringstream str;
 	unsigned long long value;
 	if (file)
 	{
 		this->umap.clear();
 		while (getline(file, line))
 		{
-
+			// cout << line << endl;
+			lines.clear();
 			Util::split(line, "@@", lines);
 			if (lines.size() == 2)
 			{
-				str << lines[1];
-				str >> value;
+				value = stoull(lines[1].c_str(), nullptr, 0);
 				this->umap.insert(pair<string, unsigned long long>(lines[0], value));
 			}
 		}
@@ -4798,4 +4797,9 @@ bool Database::loadStatisticsInfoFile()
 	}
 	else
 		return false;
+}
+
+unordered_map<string, unsigned long long> Database::getStatisticsInfo()
+{
+	return this->umap;
 }
