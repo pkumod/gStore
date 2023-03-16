@@ -1659,7 +1659,7 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 				{
 					if (retBudget != 0)
 					{
-						s.push_back(make_pair(to, pred));
+						s.push_back(make_pair(to, -pred - 1));
 						int next_f = bc_dfs(to, vid, retBudget, directed, k, pred_set, s, bar, paths);
 						if (next_f != k + 1 && f < next_f + 1)
 							f = next_f + 1;
