@@ -2932,9 +2932,13 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->add_already_build(new_name, db_info->getCreator(), db_info->getTime());
 		// copy privileges
 		apiUtil->copy_privilege(db_name, new_name);		
+		// add backuplog
+		Util::add_backuplog(new_name);
 
 		// remove old_name
 		apiUtil->delete_from_already_build(db_name);
+		// remove backuplog
+		Util::delete_backuplog(db_name);
 
 		std::string success = "Database rename successfully.";
 		response->Success(success);
