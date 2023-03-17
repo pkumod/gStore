@@ -3537,8 +3537,12 @@ GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringst
 			nodeIRI[v[i]] = kvstore->getStringByID(v[i]);
 		else	// Edge
 		{
-			ss << "{\"fromNode\":" << v[i - 1] << ",\"toNode\":" << v[i + 1] \
-				<< ",\"predIRI\":\"" << kvstore->getPredicateByID(v[i]) << "\"}";
+			if (v[i] >= 0)
+				ss << "{\"fromNode\":" << v[i - 1] << ",\"toNode\":" << v[i + 1] \
+					<< ",\"predIRI\":\"" << kvstore->getPredicateByID(v[i]) << "\"}";
+			else	// Reverse edge
+				ss << "{\"fromNode\":" << v[i + 1] << ",\"toNode\":" << v[i - 1] \
+					<< ",\"predIRI\":\"" << kvstore->getPredicateByID(-v[i] - 1) << "\"}";
 			if (i != vLen - 2)	// Not the last edge
 				ss << ",";
 		}
