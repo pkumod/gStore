@@ -984,6 +984,51 @@ Util::count_lines(const std::string _file, unsigned int _mode)
     return count;
 }
 
+unsigned long long Util::count_dir_size(const char *_dir_path)
+{
+    DIR *dirp = opendir(_dir_path);
+    unsigned long long total_size = 0;
+    if (dirp == NULL)
+    {
+        if (Slog::_logger.getAllAppenders().size() > 0)
+        {
+            SLOG_WARN("dir is not exist.");
+        }
+        else
+        {
+            cout << "dir is not exist." << endl;
+        }
+        return total_size;
+    }
+    // calc dir self size
+    struct stat statbuf;
+    lstat(_dir_path, &statbuf);
+    total_size += statbuf.st_size;
+
+    struct dirent *dir_entry = NULL;
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        char subdir[256];
+        sprintf(subdir, "%s/%s", _dir_path, dir_entry->d_name);
+        lstat(subdir, &statbuf);
+
+        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+        if (S_ISDIR(statbuf.st_mode))
+        {
+            total_size += count_dir_size(subdir);
+        }
+        else
+        {
+            total_size += statbuf.st_size;
+        }
+    }
+    closedir(dirp);
+    return total_size;
+}
+
 long
 Util::get_cur_time()
 {
@@ -2246,7 +2291,7 @@ Util::empty_file(const char* _fname)
 
 //require that _base>=1
 unsigned 
-ceiling(unsigned _val, unsigned _base)
+Util::ceiling(unsigned _val, unsigned _base)
 {
 	//WARN: we donot check overflow here
 	return (_val+_base-1) / _base * _base;
