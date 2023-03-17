@@ -1402,13 +1402,13 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
-		if (current_database == NULL)
-		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
+		// Database *current_database = apiUtil->get_database(db_name);
+		// if (current_database == NULL)
+		// {
+		// 	error = "Database not load yet.";
+		// 	response->Error(StatusOperationConditionsAreNotSatisfied, error);
+		// 	return;
+		// }
 		DatabaseInfo *database_info = apiUtil->get_databaseinfo(db_name);
 		if (apiUtil->tryrdlock_databaseinfo(database_info) == false)
 		{
@@ -1419,9 +1419,30 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string creator = database_info->getCreator();
 		std::string time = database_info->getTime();
 		apiUtil->unlock_databaseinfo(database_info);
+		Database* current_database = new Database(db_name);
+		current_database->loadDBInfoFile();
+		current_database->loadStatisticsInfoFile();
+		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
+		rapidjson::Document subjectList;
+		subjectList.SetArray();
+		std::stringstream str_stream;
+		str_stream << "[";
+		int i=0;
+		for (auto &kv : umap)
+		{
+			if (i>0)
+			{
+				str_stream << ",";
+			}
+			str_stream << "{\"name\":\""<<Util::clear_angle_brackets(kv.first)<<"\",\"value\":"<<kv.second<<"}";
+			i++;
+		}
+		str_stream << "]";
 		// /use JSON format to send message
 		Json resp_data;
+		Json data_array;
 		resp_data.SetObject();
+		data_array.SetArray();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
@@ -1436,7 +1457,15 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		resp_data.AddMember("subjectNum", current_database->getSubNum(), allocator);
 		resp_data.AddMember("predicateNum", current_database->getPreNum(), allocator);
 		resp_data.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
-
+		string db_path = _db_home + "/" + db_name + _db_suffix;
+		db_path = Util::getExactPath(db_path.c_str());
+		long long unsigned count_size_byte = Util::count_dir_size(db_path.c_str());
+		// byte to MB
+		unsigned diskUsed = count_size_byte>>20;
+		resp_data.AddMember("diskUsed", diskUsed, allocator);
+		// parse subjectcount
+		data_array.Parse(str_stream.str().c_str());
+		resp_data.AddMember("subjectList", data_array, allocator);
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
