@@ -82,7 +82,8 @@ in the sparql query can point to the same node in data graph)
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <exception>
-#include <sys/stat.h>
+#include <sys/sysinfo.h>
+#include <sys/statfs.h>
 //Below are for boost
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -216,6 +217,9 @@ in the sparql query can point to the same node in data graph)
 
 #define xfree(x) free(x); x = NULL;
 
+//for cpu and memory info
+#define VMRSS_LINE 22
+#define PROCESS_ITEM 14
 //===================================================================================================================
 
 //NOTICE:include Util.h and below in each main function
@@ -519,11 +523,20 @@ public:
 
     //the function of string
     static bool iscontain(const string& _parent,const string& _child);
+
+	//for cpu mem disk
+	static float get_cpu_usage(int pid);
+	static float get_memory_usage(int pid);
+	static unsigned long long get_disk_free();
  private:
 	
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);
+	//for cpu mem disk
+	static const char* get_cpu_items(const char* buffer, unsigned int item);
+	static unsigned long get_cpu_total();
+	static unsigned long get_cpu_proc(int pid);
 };
 
 //===================================================================================================================
