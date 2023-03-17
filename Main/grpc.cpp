@@ -948,6 +948,9 @@ void api(const GRPCReq *request, GRPCResp *response)
 	case OP_FUN_CUDB:
 		fun_cudb_task(request, response, json_data);
 		break;
+	case OP_FUN_REVIEW:
+		fun_review_task(request, response, json_data);
+		break;
 	case OP_STAT:
 		stat_task(request, response, json_data);
 		break;
