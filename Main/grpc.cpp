@@ -51,6 +51,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for user
 void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void user_show_task(const GRPCReq *request, GRPCResp *response);
@@ -66,6 +67,8 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response);
 void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+// for system stat
+void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 
 std::string jsonParam(const Json &json, const std::string &key)
 {
@@ -908,6 +911,9 @@ void api(const GRPCReq *request, GRPCResp *response)
 	case OP_BATCH_REMOVE:
 		batch_remove_task(request, response, json_data);
 		break;
+	case OP_RENAME:
+		rename_task(request, response, json_data);
+		break;
 	case OP_USER_MANAGE:
 		user_manage_task(request, response, json_data);
 		break;
@@ -944,6 +950,8 @@ void api(const GRPCReq *request, GRPCResp *response)
 	case OP_FUN_REVIEW:
 		fun_review_task(request, response, json_data);
 		break;
+	case OP_STAT:
+		stat_task(request, response, json_data);
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
 		response->Error(StatusOperationUndefined);
@@ -1516,18 +1524,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 
 		// by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
 		std::string username = jsonParam(json_data, "username");
-		if (apiUtil->add_privilege(username, "query", db_name) == 0 ||
-			apiUtil->add_privilege(username, "load", db_name) == 0 ||
-			apiUtil->add_privilege(username, "unload", db_name) == 0 ||
-			apiUtil->add_privilege(username, "backup", db_name) == 0 ||
-			apiUtil->add_privilege(username, "restore", db_name) == 0 ||
-			apiUtil->add_privilege(username, "export", db_name) == 0)
+		if (apiUtil->init_privilege(username, db_name) == 0)
 		{
-			error = "add query or load or unload privilege failed.";
+			error = "init privilege failed.";
 			response->Error(StatusAddPrivilegeFaied, error);
 			return;
 		}
-		SLOG_DEBUG("add query and load and unload privilege succeed after build.");
+		SLOG_DEBUG("init privilege succeed after build.");
 
 		// add database information to system.db
 		if (apiUtil->build_db_user_privilege(db_name, username))
@@ -1829,14 +1832,9 @@ try
 				response->Error(StatusParamIsIllegal, error);
 				return;
 			}
-			if (apiUtil->add_privilege(username, "query", db_name) == 0 ||
-				apiUtil->add_privilege(username, "load", db_name) == 0 ||
-				apiUtil->add_privilege(username, "unload", db_name) == 0 ||
-				apiUtil->add_privilege(username, "backup", db_name) == 0 ||
-				apiUtil->add_privilege(username, "restore", db_name) == 0 ||
-				apiUtil->add_privilege(username, "export", db_name) == 0)
+			if (apiUtil->init_privilege(username, db_name) == 0)
 			{
-				error = "add query or load or unload or backup or restore or export privilege failed.";
+				error = "init privilege failed.";
 				response->Error(StatusAddPrivilegeFaied, error);
 				return;
 			}
@@ -2872,6 +2870,97 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 	}
 }
 
+/**
+ * rename database
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+ * {db_name: "the operation database name", new_name: "the database new name"}
+ */
+void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	try
+	{
+		std::string db_name = jsonParam(json_data, "db_name");
+		std::string error = apiUtil->check_param_value("db_name", db_name);
+		if (error.empty() == false)
+		{
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
+		std::string new_name = jsonParam(json_data, "new_name");
+		error = apiUtil->check_param_value("new_name", new_name);
+		if (error.empty() == false)
+		{
+			response->Error(StatusParamIsIllegal, error);
+			return;
+		}
+		if (apiUtil->check_db_exist(db_name) == false)
+		{
+			error = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+		if (apiUtil->check_already_load(db_name) == true)
+		{
+			error = "Database is loaded, need unload first.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+		// check new_name available
+		if (apiUtil->check_db_exist(new_name) == true)
+		{
+			error = "Database name " + new_name + " already exists.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+
+		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+
+		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		{
+			error = "Unable to rename due to loss of lock";
+			response->Error(StatusLossOfLock, error);
+			return;
+		}
+		string new_db_path = _db_home + "/" + new_name + _db_suffix;
+		// check new_db_path.
+		if (Util::dir_exist(new_db_path))
+		{
+			error = "Database local path " + new_db_path + " already exists.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			apiUtil->unlock_databaseinfo(db_info);
+			return;
+		}
+		
+		// mv old folder to new folder
+		string db_path = _db_home + "/" + db_name + _db_suffix;
+		string sys_cmd = "mv " + db_path + " " + new_db_path;
+		std::system(sys_cmd.c_str());
+		apiUtil->unlock_databaseinfo(db_info);
+		// insert new_name
+		apiUtil->add_already_build(new_name, db_info->getCreator(), db_info->getTime());
+		// copy privileges
+		apiUtil->copy_privilege(db_name, new_name);
+		// add backuplog
+		Util::add_backuplog(new_name);	
+
+		// remove old_name
+		apiUtil->delete_from_already_build(db_name);
+		// remove backuplog
+		Util::delete_backuplog(db_name);
+
+		std::string success = "Database rename successfully.";
+		response->Success(success);
+	}
+	catch (const std::exception &e)
+	{
+		std::string error = "rename fail: " + string(e.what());
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
 // for user
 
 /**
@@ -3766,6 +3855,38 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	catch (const std::exception &e)
 	{
 		std::string error = "Function review fail: " + string(e.what());
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
+/**
+ * review personalized function
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+*/
+void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	try
+	{
+		int pid = getpid();
+		float cup_usage = Util::get_cpu_usage(pid) * 100; // %
+		float mem_usage = Util::get_memory_usage(pid); // MB
+		unsigned long long disk_available = Util::get_disk_free(); // MB
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.SetObject();
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "success", allocator);
+		resp_data.AddMember("cup_usage", StringRef(to_string(cup_usage).c_str()), allocator);
+		resp_data.AddMember("mem_usage", StringRef(to_string(mem_usage).c_str()), allocator);
+		resp_data.AddMember("disk_available", StringRef(to_string(disk_available).c_str()), allocator);
+		response->Json(resp_data);
+	}
+	catch (const std::exception &e)
+	{
+		std::string error = "stat fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
