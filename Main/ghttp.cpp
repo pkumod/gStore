@@ -1071,13 +1071,13 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
-		if (current_database == NULL)
-		{
-			error = "Database not load yet.";
-			sendResponseMsg(1004, error, operation, request, response);
-			return;
-		}
+		// Database *current_database = apiUtil->get_database(db_name);
+		// if (current_database == NULL)
+		// {
+		// 	error = "Database not load yet.";
+		// 	sendResponseMsg(1004, error, operation, request, response);
+		// 	return;
+		// }
 		DatabaseInfo *database_info = apiUtil->get_databaseinfo(db_name);
 		if (apiUtil->tryrdlock_databaseinfo(database_info) == false)
 		{
@@ -1088,9 +1088,31 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		string creator = database_info->getCreator();
 		string time = database_info->getTime();
 		apiUtil->unlock_databaseinfo(database_info);
+		Database* current_database = new Database(db_name);
+		current_database->loadDBInfoFile();
+		current_database->loadStatisticsInfoFile();
+		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
+		rapidjson::Document subjectList;
+		subjectList.SetArray();
+		std::stringstream str_stream;
+		str_stream << "[";
+		int i=0;
+		for (auto &kv : umap)
+		{
+			if (i>0)
+			{
+				str_stream << ",";
+			}
+			str_stream << "{\"name\":\""<<Util::clear_angle_brackets(kv.first)<<"\",\"value\":"<<kv.second<<"}";
+			i++;
+		}
+		str_stream << "]";
+
 		// /use JSON format to send message
 		rapidjson::Document doc;
+		rapidjson::Document data_array;
 		doc.SetObject();
+		data_array.SetArray();
 		Document::AllocatorType &allocator = doc.GetAllocator();
 		doc.AddMember("StatusCode", 0, allocator);
 		doc.AddMember("StatusMsg", "success", allocator);
@@ -1105,7 +1127,15 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		doc.AddMember("subjectNum", current_database->getSubNum(), allocator);
 		doc.AddMember("predicateNum", current_database->getPreNum(), allocator);
 		doc.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
-
+		string db_path = _db_home + "/" + db_name + _db_suffix;
+		db_path = Util::getExactPath(db_path.c_str());
+		long long unsigned count_size_byte = Util::count_dir_size(db_path.c_str());
+		// byte to MB
+		unsigned diskUsed = count_size_byte>>20;
+		doc.AddMember("diskUsed", diskUsed, allocator);
+		// parse subjectcount
+		data_array.Parse(str_stream.str().c_str());
+		doc.AddMember("subjectList", data_array, allocator);
 		sendResponseMsg(doc, operation, request, response);
 	}
 	catch (const std::exception &e)
