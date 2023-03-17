@@ -3085,7 +3085,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
  * @param {string} file: the remove data file
  * @return {*}
  */
-void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string IP)
+void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file)
 {
 	string error;
 	string operation = "batchremove";
@@ -3852,7 +3852,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		batchRemove_thread_new(request, response, db_name, file, remote_ip);
+		batchRemove_thread_new(request, response, db_name, file);
 	}
 	else if (operation == "querylog")
 	{
