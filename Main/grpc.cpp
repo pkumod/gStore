@@ -1634,6 +1634,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				bool rt = apiUtil->remove_txn_managers(db_name);
 				if (!rt)
 				{
+					apiUtil->unlock_databaseinfo(db_info);
 					SLOG_DEBUG("remove " + db_name + " from the txn managers fail.");
 					error = "the operation can not been excuted due to can not release txn manager.";
 					response->Error(StatusOperationFailed, error);
