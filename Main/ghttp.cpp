@@ -39,6 +39,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define TEST_IP ""
 #define HTTP_TYPE "ghttp"
 APIUtil *apiUtil = nullptr;
+Latch latch;
 //! init the ghttp server
 int initialize(unsigned short port, std::string db_name, bool load_src);
 
@@ -102,7 +103,7 @@ void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username);
 
 void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string sparql, string format,
-					  string update_flag, string log_prefix, string username);
+					  string update_flag, string log_prefix, string username, string remote_ip);
 
 void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username);
 
@@ -272,7 +273,7 @@ Task::~Task()
 void Task::run()
 {
 	// query_thread(update, db_name, format, db_query, response, request);
-	query_thread_new(request, response, db_name, db_query, format, querytype, log_prefix, username);
+	query_thread_new(request, response, db_name, db_query, format, querytype, log_prefix, username, remote_ip);
 }
 
 class Thread
@@ -333,6 +334,7 @@ void Thread::run()
 	SLOG_DEBUG("Thread: " + to_string(ID) + " run...");
 	task->run();
 	delete task;
+	task = NULL;
 	BackToFree(this);
 }
 void Thread::start()
@@ -373,7 +375,10 @@ ThreadPool::ThreadPool()
 ThreadPool::~ThreadPool()
 {
 	for (vector<Thread *>::iterator i = freethreads.begin(); i != freethreads.end(); i++)
+	{
 		delete *i;
+		*i = NULL;
+	}	
 }
 void ThreadPool::InitThreadPool(int t)
 {
@@ -594,6 +599,14 @@ int main(int argc, char *argv[])
 					system(cmd.c_str());
 				}
 				SLOG_WARN("Stopped abnormally, restarting server...");
+				latch.lockExclusive();
+				if (apiUtil)
+				{
+					delete apiUtil;
+					apiUtil = NULL;
+					apiUtil = new APIUtil();
+				}
+				latch.unlock();
 			}
 		}
 		else
@@ -698,6 +711,7 @@ void signalHandler(int signum)
 	if (apiUtil)
 	{
 		delete apiUtil;
+		apiUtil = NULL;
 	}
 	SLOG_DEBUG("ghttp server stopped.");
 	std::cout.flush();
@@ -1120,27 +1134,18 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		current_database->loadDBInfoFile();
 		current_database->loadStatisticsInfoFile();
 		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
-		rapidjson::Document subjectList;
-		subjectList.SetArray();
-		std::stringstream str_stream;
-		str_stream << "[";
-		int i=0;
+		rapidjson::Document doc;
+		doc.SetObject();
+		rapidjson::Document::AllocatorType &allocator = doc.GetAllocator();
+		rapidjson::Value subjectList(kArrayType);
 		for (auto &kv : umap)
 		{
-			if (i>0)
-			{
-				str_stream << ",";
-			}
-			str_stream << "{\"name\":\""<<Util::clear_angle_brackets(kv.first)<<"\",\"value\":"<<kv.second<<"}";
-			i++;
+			rapidjson::Value item(kObjectType);
+			item.AddMember("name", rapidjson::Value().SetString(Util::clear_angle_brackets(kv.first).c_str(), allocator), allocator);
+			item.AddMember("value", rapidjson::Value().SetUint64(kv.second), allocator);
+			subjectList.PushBack(item.Move(), allocator);
 		}
-		str_stream << "]";
 		// /use JSON format to send message
-		rapidjson::Document doc;
-		rapidjson::Document array;
-		doc.SetObject();
-		array.SetArray();
-		Document::AllocatorType &allocator = doc.GetAllocator();
 		doc.AddMember("StatusCode", 0, allocator);
 		doc.AddMember("StatusMsg", "success", allocator);
 		doc.AddMember("database", StringRef(db_name.c_str()), allocator);
@@ -1160,9 +1165,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		// byte to MB
 		unsigned diskUsed = count_size_byte>>20;
 		doc.AddMember("diskUsed", diskUsed, allocator);
-		// parse subjectcount
-		array.Parse(str_stream.str().c_str());
-		doc.AddMember("subjectList", array, allocator);
+		doc.AddMember("subjectList", subjectList, allocator);
 		sendResponseMsg(doc, operation, request, response);
 	}
 	catch (const std::exception &e)
@@ -1329,32 +1332,19 @@ void show_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 	string operation = "show";
 	try
 	{
-
-		stringstream str_stream;
-		str_stream << "[";
-
 		vector<struct DatabaseInfo *> array;
 		apiUtil->get_already_builds(username, array);
 		rapidjson::Document resDoc;
 		resDoc.SetObject();
 		Document::AllocatorType &allocator = resDoc.GetAllocator();
 		size_t count = array.size();
-		string line;
+		// string line;
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			DatabaseInfo *dbInfo = array[i];
-			line = dbInfo->toJSON();
-			str_stream << line;
+			jsonArray.PushBack(dbInfo->toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		Document jsonArray;
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
 
 		resDoc.AddMember("StatusCode", 0, allocator);
 		resDoc.AddMember("StatusMsg", "Get the database list successfully!", allocator);
@@ -1479,28 +1469,15 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			return;
 		}
 		size_t count = userList.size();
-		stringstream str_stream;
-		str_stream << "[";
-		string line;
-		for (size_t i = 0; i < count; i++)
-		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
-			line = userList[i]->toJSON();
-			// cout<< "user[" << i << "]: " << line << endl;
-			str_stream << line;
-		}
-		str_stream << "]";
-		Document jsonArray;
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
-
 		rapidjson::Document resDoc;
 		rapidjson::Document::AllocatorType &allocator = resDoc.GetAllocator();
 		resDoc.SetObject();
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
+		for (size_t i = 0; i < count; i++)
+		{
+			struct DBUserInfo *useInfo = userList[i];
+			jsonArray.PushBack(useInfo->toJSON(allocator).Move(), allocator);
+		}	
 		resDoc.AddMember("StatusCode", 0, allocator);
 		resDoc.AddMember("StatusMsg", "success", allocator);
 		resDoc.AddMember("ResponseBody", jsonArray, allocator);
@@ -1978,7 +1955,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
  */
 void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response,
 					  string db_name, string sparql, string format,
-					  string update_flag, string log_prefix, string username)
+					  string update_flag, string log_prefix, string username, string remote_ip)
 {
 	string error = "";
 	string operation = "query";
@@ -2096,7 +2073,6 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			// record each query operation, including the sparql and the answer number
 			// accurate down to microseconds
 			// filter the IP from the test server
-			string remote_ip = getRemoteIp(request);
 			long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
 			long rs_outputlimit = (long)rs.output_limit;
 			if (rs_outputlimit != -1)
@@ -2214,8 +2190,8 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				outfile.close();
 
 				Document resDoc;
+				resDoc.SetObject();
 				Document::AllocatorType &allocator = resDoc.GetAllocator();
-				/* code */
 				resDoc.Parse(success.c_str());
 				if (resDoc.HasParseError())
 				{
@@ -2812,28 +2788,15 @@ void txnlog_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		apiUtil->get_transactionlog(page_no, page_size, &transactionLogs);
 		vector<struct TransactionLogInfo> logList = transactionLogs.getTransactionLogInfoList();
 		size_t count = logList.size();
-		string line = "";
-		stringstream str_stream;
-		str_stream << "[";
+		rapidjson::Document all;
+		all.SetObject();
+		rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			TransactionLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
+			jsonArray.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Document all;
-		Document jsonArray;
-		Document::AllocatorType &allocator = all.GetAllocator();
-		all.SetObject();
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
 
 		int totalSize = transactionLogs.getTotalSize();
 		int totalPage = transactionLogs.getTotalPage();
@@ -3243,17 +3206,17 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			return;
 		}
 	}
-	stringstream ss;
-	ss << "\n------------------------ ghttp-api ------------------------";
-	ss << "\nthread_id: " << thread_id;
-	ss << "\nremote_ip: " << remote_ip;
-	ss << "\noperation: " << operation;
-	ss << "\nmethod: " << request_type;
-	ss << "\nrequest_path: " << request->path;
-	ss << "\nhttp_version: " << request->http_version;
-	ss << "\nrequest_time: " << Util::get_date_time();
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	string ss;
+	ss += "\n------------------------ ghttp-api ------------------------";
+	ss += "\nthread_id: " + thread_id;
+	ss += "\nremote_ip: " + remote_ip;
+	ss += "\noperation: " + operation;
+	ss += "\nmethod: " + request_type;
+	ss += "\nrequest_path: " + request->path;
+	ss += "\nhttp_version: " + request->http_version;
+	ss += "\nrequest_time: " + Util::get_date_time();
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	if (operation == "check")
 	{
 		check_thread_new(request, response);
@@ -4248,32 +4211,20 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 		sendResponseMsg(1001, checkidentityresult, operation, request, response);
 		return;
 	}
-	bool flag = apiUtil->db_checkpoint_all();
-	if (flag)
-	{
-		string msg = "Server stopped successfully.";
-		string resJson = CreateJson(0, msg, 0);
-		SLOG_DEBUG("response result:\n" + resJson);
-		// register callback for exit
-		response->register_callback([](std::ios_base::event __e, ios_base& __b, int __i){
-			SLOG_DEBUG("Server stopped successfully.");
-			delete apiUtil;
-			std::cout.flush();
-			_exit(1);
-		}, 0);
-		apiUtil->write_access_log(operation, remote_ip, 0, msg);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
-				  << resJson;
-	}
-	else
-	{
-		string msg = "Server stopped failed.";
-		string resJson = CreateJson(1005, msg, 0);
-		SLOG_DEBUG("response result:\n" + resJson);
-		apiUtil->write_access_log(operation, remote_ip, 1005, msg);
-		*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
-				  << resJson;
-	}
+	string msg = "Server stopped successfully.";
+	string resJson = CreateJson(0, msg, 0);
+	SLOG_DEBUG("response result:\n" + resJson);
+	// register callback for exit
+	response->register_callback([](std::ios_base::event __e, ios_base& __b, int __i){
+		SLOG_DEBUG("Server stopped successfully.");
+		delete apiUtil;
+		apiUtil = NULL;
+		std::cout.flush();
+		_exit(1);
+	}, 0);
+	apiUtil->write_access_log(operation, remote_ip, 0, msg);
+	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
+				<< resJson;
 }
 
 void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request)
@@ -4287,17 +4238,17 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 		sendResponseMsg(1101, ipCheckResult, operation, request, response);
 		return;
 	}
-	stringstream ss;
-	ss << "\n------------------------ ghttp-api ------------------------";
-	ss << "\nthread_id: " << thread_id;
-	ss << "\nremote_ip: " << remote_ip;
-	ss << "\noperation: " << operation;
-	ss << "\nmethod: " << "GET";
-	ss << "\nrequest_path: " << request->path;
-	ss << "\nhttp_version: " << request->http_version;
-	ss << "\nrequest_time: " << Util::get_date_time();
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	string ss;
+	ss += "\n------------------------ ghttp-api ------------------------";
+	ss += "\nthread_id: " + thread_id;
+	ss += "\nremote_ip: " + remote_ip;
+	ss += "\noperation: " + operation;
+	ss += "\nmethod: GET";
+	ss += "\nrequest_path: " + request->path;
+	ss += "\nhttp_version: " + request->http_version;
+	ss += "\nrequest_time: " + Util::get_date_time();
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	// "Content-Type:multipart/form-data; boundary=--------------------------617568955343916342854790"
 	auto contentType = request->header.find("Content-Type");
 	std::string boundary;
@@ -4452,18 +4403,18 @@ void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	string encryption;
 	string filepath;
 	auto strParams = request->content.string();
-	stringstream ss;
-	ss << "\n------------------------ ghttp-api ------------------------";
-	ss << "\nthread_id: " << thread_id;
-	ss << "\nremote_ip: " << remote_ip;
-	ss << "\noperation: " << operation;
-	ss << "\nmethod: " << "POST";
-	ss << "\nrequest_path: " << request->path;
-	ss << "\nhttp_version: " << request->http_version;
-	ss << "\nrequest_time: " << Util::get_date_time();
-	ss << "\nrequest_body: \n" << strParams;
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	string ss;
+	ss += "\n------------------------ ghttp-api ------------------------";
+	ss += "\nthread_id: " + thread_id;
+	ss += "\nremote_ip: " + remote_ip;
+	ss += "\noperation: " + operation;
+	ss += "\nmethod: POST";
+	ss += "\nrequest_path: " + request->path;
+	ss += "\nhttp_version: " + request->http_version;
+	ss += "\nrequest_time: " + Util::get_date_time();
+	ss += "\nrequest_body: \n" + strParams;
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 
 	std::map<std::string, std::string> form_data = parse_post_body(strParams);
 	username = "";
@@ -4711,27 +4662,16 @@ void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
 		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
 		size_t count = logList.size();
-		string line = "";
-		stringstream str_stream;
-		str_stream << "[";
+		rapidjson::Document all;
+		rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
+		all.SetObject();
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			DBQueryLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
+			jsonArray.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		Document all;
-		Document jsonArray;
-		Document::AllocatorType &allocator = all.GetAllocator();
-		all.SetObject();
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
+		
 		int totalSize = dbQueryLogs.getTotalSize();
 		int totalPage = dbQueryLogs.getTotalPage();
 		all.AddMember("StatusCode", 0, allocator);
@@ -4766,31 +4706,22 @@ void querylogdate_thread_new(const shared_ptr<HttpServer::Request> &request, con
 		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
 			return a > b;
 		});
-		std::stringstream str_stream;
-		str_stream << "[";
 		size_t count = logfiles.size();
 		std::string item;
+		rapidjson::Document all;
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
+		all.SetObject();
+		rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			item = logfiles[i];
 			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
-			str_stream << "\"" << item << "\"";
+			jsonArray.PushBack(rapidjson::Value().SetString(item.c_str(), allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		rapidjson::Document resp_data;
-		rapidjson::Document array_data;
-		resp_data.SetObject();
-		array_data.SetArray();
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-		array_data.Parse(str_stream.str().c_str());
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "Get query log date success", allocator);
-		resp_data.AddMember("list", array_data, allocator);
-		sendResponseMsg(resp_data, operation, request, response);
+		all.AddMember("StatusCode", 0, allocator);
+		all.AddMember("StatusMsg", "Get query log date success", allocator);
+		all.AddMember("list", jsonArray, allocator);
+		sendResponseMsg(all, operation, request, response);
 	}
 	catch(const std::exception& e)
 	{
@@ -4817,31 +4748,17 @@ void accesslog_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 		apiUtil->get_access_log(date, page_no, page_size, &dbAccessLogs);
 		vector<struct DBAccessLogInfo> logList = dbAccessLogs.getAccessLogInfoList();
 		size_t count = logList.size();
-		string line = "";
-		stringstream str_stream;
-		str_stream << "[";
+		rapidjson::Document all;
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
+		Document::AllocatorType &allocator = all.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			DBAccessLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
+			jsonArray.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Document all;
-		Document jsonArray;
-		Document::AllocatorType &allocator = all.GetAllocator();
-		all.SetObject();
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
-
 		int totalSize = dbAccessLogs.getTotalSize();
 		int totalPage = dbAccessLogs.getTotalPage();
+		all.SetObject();
 		all.AddMember("StatusCode", 0, allocator);
 		all.AddMember("StatusMsg", "Get access log success", allocator);
 		all.AddMember("totalSize", totalSize, allocator);
@@ -4874,31 +4791,22 @@ void accesslogdate_thread_new(const shared_ptr<HttpServer::Request> &request, co
 		sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
 			return a > b;
 		});
-		std::stringstream str_stream;
-		str_stream << "[";
 		size_t count = logfiles.size();
 		std::string item;
+		rapidjson::Document all;
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
+		all.SetObject();
+		rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			item = logfiles[i];
 			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
-			str_stream << "\"" << item << "\"";
+			jsonArray.PushBack(rapidjson::Value().SetString(item.c_str(), allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		rapidjson::Document resp_data;
-		rapidjson::Document array_data;
-		resp_data.SetObject();
-		array_data.SetArray();
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-		array_data.Parse(str_stream.str().c_str());
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "Get access log date success", allocator);
-		resp_data.AddMember("list", array_data, allocator);
-		sendResponseMsg(resp_data, operation, request, response);
+		all.AddMember("StatusCode", 0, allocator);
+		all.AddMember("StatusMsg", "Get access log date success", allocator);
+		all.AddMember("list", jsonArray, allocator);
+		sendResponseMsg(all, operation, request, response);
 	}
 	catch(const std::exception& e)
 	{
@@ -4921,9 +4829,6 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 	string operation = "ipmanage";
 	try
 	{
-		Document all;
-		Document::AllocatorType &allocator = all.GetAllocator();
-		all.SetObject();
 		if (type == "1")
 		{
 			string IPtype = apiUtil->ip_enabled_type();
@@ -4934,25 +4839,19 @@ void ipmanage_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			}
 			vector<string> ip_list = apiUtil->ip_list(IPtype);
 			size_t count = ip_list.size();
-			stringstream str_stream;
-			str_stream << "[";
+			rapidjson::Document all;
+			rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
+			rapidjson::Value responseBody(kObjectType);
+			rapidjson::Value ips(kArrayType);
 			for (size_t i = 0; i < count; i++)
 			{
-				if (i > 0)
-				{
-					str_stream << ",";
-				}
-				str_stream << "\"" << ip_list[i] << "\"";
+				ips.PushBack(rapidjson::Value().SetString(ip_list[i].c_str(), allocator).Move(), allocator);
 			}
-			str_stream << "]";
-			Document responseBody;
-			Document listDoc;
-			responseBody.SetObject();
-			listDoc.SetArray();
-			listDoc.Parse(str_stream.str().c_str());
-			responseBody.AddMember("ip_type", StringRef(IPtype.c_str()), allocator);
-			responseBody.AddMember("ips", listDoc, allocator);
 
+			responseBody.AddMember("ip_type", rapidjson::Value().SetString(IPtype.c_str(), allocator).Move(), allocator);
+			responseBody.AddMember("ips", ips, allocator);
+
+			all.SetObject();
 			all.AddMember("StatusCode", 0, allocator);
 			all.AddMember("StatusMsg", "success", allocator);
 			all.AddMember("ResponseBody", responseBody, allocator);
@@ -5013,29 +4912,15 @@ void fun_query_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
 		size_t count = list.size();
-		string line = "";
-		stringstream str_stream;
-		str_stream << "[";
+		rapidjson::Document all;
+		rapidjson::Document::AllocatorType &allocator = all.GetAllocator();
+		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			PFNInfo pfn_info = list[i];
-			line = pfn_info.toJSON();
-			str_stream << line;
+			jsonArray.PushBack(pfn_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Document all;
-		Document jsonArray;
-		Document::AllocatorType &allocator = all.GetAllocator();
 		all.SetObject();
-		jsonArray.SetArray();
-		line = str_stream.str();
-		jsonArray.Parse(line.c_str());
-
 		all.AddMember("StatusCode", 0, allocator);
 		all.AddMember("StatusMsg", "success", allocator);
 		all.AddMember("list", jsonArray, allocator);
