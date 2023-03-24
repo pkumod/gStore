@@ -33,10 +33,10 @@ class TempResult
 		Varset id_varset, str_varset;
 		std::vector<ResultPair> result;
 
-		TempResult() { }
+		TempResult();
 		TempResult(const TempResult& that);
 		TempResult& operator=(const TempResult& that);
-		~TempResult() { }
+		~TempResult();
 
 		Varset getAllVarset();
 
@@ -60,6 +60,9 @@ class TempResult
 		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset);
 
 		void print(int no=-1);
+	private:
+		char* string_index_buffer;
+		unsigned string_index_buffer_size;
 };
 
 class TempResultSet
