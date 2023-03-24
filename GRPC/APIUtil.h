@@ -24,8 +24,6 @@ using namespace rapidjson;
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 
-// #define APIUTIL_DEBUG
-
 struct DatabaseInfo
 {
 private:
@@ -85,20 +83,15 @@ public:
     {
         status = _status;
     }
-    std::string toJSON()
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+        rapidjson::Value doc(rapidjson::kObjectType);
+        // doc.SetObject();
         doc.AddMember("database", rapidjson::Value().SetString(db_name.c_str(), allocator).Move(), allocator);
         doc.AddMember("creator", rapidjson::Value().SetString(creator.c_str(), allocator).Move(), allocator);
         doc.AddMember("built_time", rapidjson::Value().SetString(build_time.c_str(), allocator).Move(), allocator);
         doc.AddMember("status", rapidjson::Value().SetString(status.c_str(), allocator).Move(), allocator);
-        rapidjson::StringBuffer strBuf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
-	    string json_str = strBuf.GetString();
-        return json_str;
+        return doc;
     }
 };
 
@@ -269,10 +262,8 @@ public:
         }
         return export_db;
     }
-    std::string toJSON() {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator) {
+        rapidjson::Value doc(kObjectType);
         doc.AddMember("username", rapidjson::Value().SetString(this->username.c_str(),allocator).Move(), allocator);
         doc.AddMember("password", rapidjson::Value().SetString(this->password.c_str(),allocator).Move(), allocator);
         doc.AddMember("query_privilege", rapidjson::Value().SetString(this->getQuery().c_str(),allocator).Move(), allocator);
@@ -282,11 +273,7 @@ public:
         doc.AddMember("backup_privilege", rapidjson::Value().SetString(this->getBackup().c_str(),allocator).Move(), allocator);
         doc.AddMember("restore_privilege", rapidjson::Value().SetString(this->getRestore().c_str(),allocator).Move(), allocator);
         doc.AddMember("export_privilege", rapidjson::Value().SetString(this->getExport().c_str(),allocator).Move(), allocator);
-        rapidjson::StringBuffer strBuf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
-	    string json_str = strBuf.GetString();
-        return json_str;
+        return doc;
     }
 };
 
@@ -443,11 +430,9 @@ public:
     int getStatusCode() {return statusCode;}
     int getQueryTime() {return queryTime;}
     std::string getDbName() {return dbName;}
-    std::string toJSON()
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+        rapidjson::Value doc(kObjectType);
         doc.AddMember("QueryDateTime", rapidjson::Value().SetString(queryDateTime.c_str(), allocator).Move(), allocator);
         doc.AddMember("RemoteIP", rapidjson::Value().SetString(remoteIP.c_str(), allocator).Move(), allocator);
         doc.AddMember("Sparql", rapidjson::Value().SetString(sparql.c_str(), allocator).Move(), allocator);
@@ -457,9 +442,17 @@ public:
         doc.AddMember("StatusCode", statusCode, allocator);
         doc.AddMember("QueryTime", queryTime, allocator);
         doc.AddMember("DbName", rapidjson::Value().SetString(dbName.c_str(), allocator).Move(), allocator);
+        return doc;
+    }
+    std::string toJSON()
+    {
+        rapidjson::Document doc;
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+        rapidjson::Value jsonValue = toJSON(allocator);
+
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
+        jsonValue.Accept(writer);
 	    string json_str = strBuf.GetString();
         return json_str;
     }
@@ -550,19 +543,25 @@ public:
     int getCode() {return code;}
     std::string getMsg() {return msg;}
     std::string getCreateTime() {return createtime;}
-    std::string toJSON()
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+        rapidjson::Value doc(kObjectType);
         doc.AddMember("ip", rapidjson::Value().SetString(ip.c_str(), allocator).Move(), allocator);
         doc.AddMember("operation", rapidjson::Value().SetString(operation.c_str(), allocator).Move(), allocator);
         doc.AddMember("code", code, allocator);
         doc.AddMember("msg", rapidjson::Value().SetString(msg.c_str(), allocator).Move(), allocator);
         doc.AddMember("createtime", rapidjson::Value().SetString(createtime.c_str(), allocator).Move(), allocator);
+        return doc;
+    }
+    std::string toJSON()
+    {
+        rapidjson::Document doc;
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+        rapidjson::Value jsonValue = toJSON(allocator);
+
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
+        jsonValue.Accept(writer);
 	    string json_str = strBuf.GetString();
         return json_str;
     }
@@ -661,20 +660,26 @@ public:
     std::string getEndTime() {return end_time;}
     void setState(string value) {state = value;}
     void setEndTime(string value) {end_time = value;}
-    std::string toJSON()
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+        rapidjson::Value doc(rapidjson::kObjectType);
         doc.AddMember("db_name", rapidjson::Value().SetString(db_name.c_str(), allocator).Move(), allocator);
         doc.AddMember("TID", rapidjson::Value().SetString(TID.c_str(), allocator).Move(), allocator);
         doc.AddMember("user", rapidjson::Value().SetString(user.c_str(), allocator).Move(), allocator);
         doc.AddMember("state", rapidjson::Value().SetString(state.c_str(), allocator).Move(), allocator);
         doc.AddMember("begin_time", rapidjson::Value().SetString(begin_time.c_str(), allocator).Move(), allocator);
         doc.AddMember("end_time", rapidjson::Value().SetString(end_time.c_str(), allocator).Move(), allocator);
+        return doc;
+    }
+    std::string toJSON()
+    {
+        rapidjson::Document doc;
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+        rapidjson::Value jsonValue = toJSON(allocator);
+
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
+        jsonValue.Accept(writer);
 	    string json_str = strBuf.GetString();
         return json_str;
     }
@@ -799,11 +804,9 @@ public:
     void setFunStatus(string value) {fun_status = value;}
     void setFunReturn(string value) {fun_return = value;}
     void setLastTime(string value) {last_time = value;}
-    string toJSON()
+    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        doc.SetObject();
+        rapidjson::Value doc(kObjectType);
         doc.AddMember("funName", rapidjson::Value().SetString(fun_name.c_str(), allocator).Move(), allocator);
         doc.AddMember("funDesc", rapidjson::Value().SetString(fun_desc.c_str(), allocator).Move(), allocator);
         doc.AddMember("funArgs", rapidjson::Value().SetString(fun_args.c_str(), allocator).Move(), allocator);
@@ -812,9 +815,17 @@ public:
         doc.AddMember("funStatus", rapidjson::Value().SetString(fun_status.c_str(), allocator).Move(), allocator);
         doc.AddMember("funReturn", rapidjson::Value().SetString(fun_return.c_str(), allocator).Move(), allocator);
         doc.AddMember("lastTime", rapidjson::Value().SetString(last_time.c_str(), allocator).Move(), allocator);
+        return doc;
+    }
+    string toJSON()
+    {
+        rapidjson::Document doc;
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+        rapidjson::Value jsonValue = toJSON(allocator);
+
         rapidjson::StringBuffer strBuf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        doc.Accept(writer);
+        jsonValue.Accept(writer);
 	    string json_str = strBuf.GetString();
         return json_str;
     }
@@ -952,7 +963,7 @@ public:
     bool check_already_load(const std::string& db_name);
     shared_ptr<Txn_manager> get_Txn_ptr(string db_name);
     bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time);
-    std::string get_already_build(const std::string& db_name);
+    // std::string get_already_build(const std::string& db_name);
     void get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array);
     bool check_already_build(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name);
@@ -979,7 +990,7 @@ public:
     bool remove_txn_managers(std::string db_name);
     bool find_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
-    bool db_checkpoint_all();
+    // bool db_checkpoint_all();
     bool delete_from_databases(string db_name);
     bool delete_from_already_build(string db_name);
     //used by drop
