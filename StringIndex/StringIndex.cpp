@@ -92,7 +92,7 @@ void StringIndexFile::load()
 	//	trie->LoadTrie(dictionary_path);
 }
 
-bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
+bool StringIndexFile::randomAccess(unsigned id, string *str, char* buffer, unsigned &buffer_size, bool real)
 {
 	if (id >= this->num)
 		return false;
@@ -104,19 +104,19 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 	//cout<<"check: "<<offset<<" "<<length<<endl;
 	//}
 
-	allocBuffer(length);
+	allocBuffer(buffer, buffer_size, length);
 
 	//DEBUG: here a bug exists if we use pread instead of fread, the details are in BUG_StringIndex_pread of docs/BUGS.md
 	//fseek(this->value_file, offset, SEEK_SET);
 	// fread(this->buffer, sizeof(char), length, this->value_file);
-	pread(fileno(value_file), this->buffer, sizeof(char)*length, offset);
-	this->buffer[length] = '\0';
-
+	pread(fileno(value_file), buffer, sizeof(char)*length, offset);
+	buffer[length] = '\0';
+	char* UncompressBuffer = new char[MAX_BLOCK_SIZE*4];
 	if (real)
-		trie->Uncompress(this->buffer, length, *str, this->UncompressBuffer);
+		trie->Uncompress(buffer, length, *str, UncompressBuffer);
 	else
 		*str = buffer;
-
+	delete[] UncompressBuffer;
 	//*str = string(this->buffer);
 
 	//if(id == 9)
@@ -136,20 +136,20 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, bool real)
 	return true;
 }
 
-void StringIndexFile::trySequenceAccess(bool real)
+void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessRequest> request, char* buffer, unsigned &buffer_size, bool real)
 {
-	if (this->request.empty())
+	if (request.empty())
 		return;
 
 	long min_begin = -1, max_end = 0;
-	for (int i = 0; i < (int)this->request.size(); i++)
+	for (int i = 0; i < (int)request.size(); i++)
 	{
 		if (min_begin == -1)
-			min_begin = this->request[i].offset;
+			min_begin = request[i].offset;
 		else
-			min_begin = min(min_begin, this->request[i].offset);
+			min_begin = min(min_begin, request[i].offset);
 
-		max_end = max(max_end, this->request[i].offset + long(this->request[i].length));
+		max_end = max(max_end, request[i].offset + long(request[i].length));
 	}
 
 	if (this->type == Entity)
@@ -160,12 +160,12 @@ void StringIndexFile::trySequenceAccess(bool real)
 		cout << "Predicate StringIndex ";
 
 	long current_offset = 0;
-	if ((max_end - min_begin) / 800000L < (long)this->request.size())
+	if ((max_end - min_begin) / 800000L < (long)request.size())
 	{
 		cout << "sequence access." << endl;
 
 #ifndef PARALLEL_SORT
-		sort(this->request.begin(), this->request.end());
+		sort(request.begin(), request.end());
 #else
 		omp_set_num_threads(thread_num);
 		__gnu_parallel::sort(this->request.begin(), this->request.end());
@@ -181,9 +181,9 @@ void StringIndexFile::trySequenceAccess(bool real)
 		{
 			long current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
 
-			if (current_block_end <= this->request[pos].offset)
+			if (current_block_end <= request[pos].offset)
 			{
-				current_block_begin = this->request[pos].offset;
+				current_block_begin = request[pos].offset;
 				fseek(this->value_file, current_block_begin, SEEK_SET);
 				//current_offset = current_block_begin;
 				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
@@ -193,20 +193,20 @@ void StringIndexFile::trySequenceAccess(bool real)
 			pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
 			current_offset += sizeof(char)*(current_block_end-current_block_begin);
 
-			while (pos < (int)this->request.size())
+			while (pos < (int)request.size())
 			{
-				long offset = this->request[pos].offset;
-				long length = this->request[pos].length;
+				long offset = request[pos].offset;
+				long length = request[pos].length;
 
 				if (offset >= current_block_end)
 					break;
 
 				if (current_block_begin <= offset && offset + length <= current_block_end)
 				{
-					allocBuffer(length);
-					memcpy(this->buffer, &block[offset - current_block_begin], length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str = string(this->buffer);
+					allocBuffer(buffer, buffer_size, length);
+					memcpy(buffer, &block[offset - current_block_begin], length);
+					buffer[length] = '\0';
+					*request[pos].str = string(buffer);
 
 //					*this->request[pos].str = trie->Uncompress(
 //					*this->request[pos].str, this->request[pos].str->length());
@@ -216,37 +216,37 @@ void StringIndexFile::trySequenceAccess(bool real)
 				else if (current_block_begin <= offset)
 				{
 					length = current_block_end - offset;
-					allocBuffer(length);
-					memcpy(this->buffer, &block[offset - current_block_begin], length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str = string(this->buffer);
+					allocBuffer(buffer, buffer_size, length);
+					memcpy(buffer, &block[offset - current_block_begin], length);
+					buffer[length] = '\0';
+					*request[pos].str = string(buffer);
 					break;
 				}
 				else if (offset + length <= current_block_end)
 				{
 					length = offset + length - current_block_begin;
-					allocBuffer(length);
-					memcpy(this->buffer, block, length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str += string(this->buffer);
+					allocBuffer(buffer, buffer_size, length);
+					memcpy(buffer, block, length);
+					buffer[length] = '\0';
+					*request[pos].str += string(buffer);
 
 //					*this->request[pos].str = trie->Uncompress(
 //					*this->request[pos].str, this->request[pos].str->length());
 
 					pos++;
-					while (pos < (int)this->request.size() && this->request[pos - 1].offset == this->request[pos].offset)
+					while (pos < (int)request.size() && request[pos - 1].offset == request[pos].offset)
 					{
-						*this->request[pos].str = *this->request[pos - 1].str;
+						*request[pos].str = *request[pos - 1].str;
 						pos++;
 					}
 				}
 				else
 				{
 					length = current_block_end - current_block_begin;
-					allocBuffer(length);
-					memcpy(this->buffer, block, length);
-					this->buffer[length] = '\0';
-					*this->request[pos].str += string(this->buffer);
+					allocBuffer(buffer, buffer_size, length);
+					memcpy(buffer, block, length);
+					buffer[length] = '\0';
+					*request[pos].str += string(buffer);
 					break;
 				}
 			}
@@ -259,10 +259,10 @@ void StringIndexFile::trySequenceAccess(bool real)
 	{
 		cout << "random access." << endl;
 
-		for (int i = 0; i < (int)this->request.size(); i++)
-			this->randomAccess(this->request[i].id, this->request[i].str, real);
+		for (int i = 0; i < (int)request.size(); i++)
+			this->randomAccess(request[i].id, request[i].str, buffer, buffer_size, real);
 	}
-	this->request.clear();
+	request.clear();
 }
 
 
@@ -389,7 +389,7 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 	}
 }
 
-bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_literal, bool real)
+bool StringIndex::randomAccess(unsigned id, string *str, char* buffer, unsigned &buffer_size, bool is_entity_or_literal, bool real)
 {
 	if(id < 0) return false;
 
@@ -397,20 +397,20 @@ bool StringIndex::randomAccess(unsigned id, string *str, bool is_entity_or_liter
 	{
 		if (id < Util::LITERAL_FIRST_ID)
 		{
-			return this->entity.randomAccess(id, str, real);
+			return this->entity.randomAccess(id, str, buffer, buffer_size, real);
 		}
 		else
 		{
-			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str, real);
+			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str, buffer, buffer_size, real);
 		}
 	}
 	else
 	{
-		return this->predicate.randomAccess(id, str, real);
+		return this->predicate.randomAccess(id, str, buffer, buffer_size, real);
 	}
 }
 
-void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_literal)
+void StringIndex::addRequest(std::vector<StringIndexFile::AccessRequest> *requestVectors, unsigned id, std::string *str, bool is_entity_or_literal)
 {
 	if (is_entity_or_literal)
 	{
@@ -424,23 +424,27 @@ void StringIndex::addRequest(unsigned id, std::string *str, bool is_entity_or_li
 		//cout<<"found in string buffer"<<endl;
 		//return;
 		//}
-		if (id < Util::LITERAL_FIRST_ID)
-			this->entity.addRequest(id, str);
-		else
-			this->literal.addRequest(id - Util::LITERAL_FIRST_ID, str);
+		if (id < Util::LITERAL_FIRST_ID) // entity
+		{
+			this->entity.addRequest(requestVectors[0], id, str);
+		}	
+		else // literal
+		{
+			this->literal.addRequest(requestVectors[1], id - Util::LITERAL_FIRST_ID, str);
+		}	
 	}
-	else
+	else // predicate
 	{
-		this->predicate.addRequest(id, str);
+		this->predicate.addRequest(requestVectors[2], id, str);
 	}
 }
 
-void StringIndex::trySequenceAccess(bool real)
+void StringIndex::trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* buffer, unsigned &buffer_size, bool real)
 {
     latch.lockShared();
-	this->entity.trySequenceAccess(real);
-	this->literal.trySequenceAccess(real);
-	this->predicate.trySequenceAccess(real);
+	this->entity.trySequenceAccess(requestVectors[0], buffer, buffer_size, real);
+	this->literal.trySequenceAccess(requestVectors[1], buffer, buffer_size, real);
+	this->predicate.trySequenceAccess(requestVectors[2], buffer, buffer_size, real);
     latch.unlock();
 }
 

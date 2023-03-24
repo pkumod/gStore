@@ -130,12 +130,16 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 	this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
 	this->bgp_query_total = make_shared<BGPQuery>();
+	this->string_index_buffer = NULL;
+	this->string_index_buffer_size = 0;
 }
 
 GeneralEvaluation::~GeneralEvaluation()
 {
 	if (pqHandler)
 		delete pqHandler;
+	if (string_index_buffer)
+		delete[] string_index_buffer;
 }
 
 void
@@ -2550,7 +2554,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								if (pos1 >= 0)
 								{
 									if (pos1 < result0_id_cols)
-										stringindex->randomAccess(result0.result[j].id[pos1], &big_str, isel1);
+										stringindex->randomAccess(result0.result[j].id[pos1], &big_str, string_index_buffer, string_index_buffer_size, isel1);
 									else
 										big_str = result0.result[j].str[pos1 - result0_id_cols];
 									int idx = big_str.length() - 1;
@@ -2562,7 +2566,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								if (pos2 >= 0)
 								{
 									if (pos2 < result0_id_cols)
-										stringindex->randomAccess(result0.result[j].id[pos2], &small_str, isel2);
+										stringindex->randomAccess(result0.result[j].id[pos2], &small_str, string_index_buffer, string_index_buffer_size, isel2);
 									else
 										small_str = result0.result[j].str[pos2 - result0_id_cols];
 									int idx = small_str.length() - 1;
@@ -3425,6 +3429,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
       if (!ret_result.checkUseStream())
       {
+		std::vector<StringIndexFile::AccessRequest> string_index_request[3];
         for (unsigned i = 0; i < ret_result.ansNum; i++)
         {
           ret_result.answer[i] = new string [ret_result.select_var_num];
@@ -3439,7 +3444,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
                 unsigned ans_id = result0.result[i].id[k];
                 if (ans_id != INVALID)
                 {
-                  this->stringindex->addRequest(ans_id, &ret_result.answer[i][j], isel[k]);
+                  this->stringindex->addRequest(string_index_request, ans_id, &ret_result.answer[i][j], isel[k]);
                 }
               }
               else
@@ -3449,7 +3454,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
             }
           }
         }
-        this->stringindex->trySequenceAccess();
+        this->stringindex->trySequenceAccess(string_index_request, string_index_buffer, string_index_buffer_size);
 		}
 		else
 		{
@@ -3466,7 +3471,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							unsigned ans_id = result0.result[i].id[k];
 							if (ans_id != INVALID)
 							{
-								this->stringindex->randomAccess(ans_id, &ans_str, isel[k]);
+								this->stringindex->randomAccess(ans_id, &ans_str, string_index_buffer, string_index_buffer_size, isel[k]);
 							}
 							ret_result.writeToStream(ans_str);
 						}
@@ -3577,7 +3582,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 						if (subject_id != -1)
 						{
 							if (subject_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, true);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[subject_id], &subject, string_index_buffer, string_index_buffer_size, true);
 							else
 								subject = this->temp_result->results[j].result[k].str[subject_id - id_cols];
 						}
@@ -3585,7 +3590,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 						if (predicate_id != -1)
 						{
 							if (predicate_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, false);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[predicate_id], &predicate, string_index_buffer, string_index_buffer_size, false);
 							else
 								predicate = this->temp_result->results[j].result[k].str[predicate_id - id_cols];
 						}
@@ -3593,7 +3598,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 						if (object_id != -1)
 						{
 							if (object_id < id_cols)
-								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, true);
+								this->stringindex->randomAccess(this->temp_result->results[j].result[k].id[object_id], &object, string_index_buffer, string_index_buffer_size, true);
 							else
 								object = this->temp_result->results[j].result[k].str[object_id - id_cols];
 						}
@@ -4414,6 +4419,7 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
         }
     }
     else{
+		std::vector<StringIndexFile::AccessRequest> string_index_request[3];
         for (int k = 0; k < bgpquery_result_num; k++)
         {
             tr.result.emplace_back();
@@ -4425,12 +4431,12 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
             for(int i=0; i < varnum; i++){
                 if(global_EntityPredicate[i]){
                     tr.result.back().str.emplace_back();
-                    this->stringindex->addRequest(bgpquery_result[k][i], &tr.result.back().str.back(), local_Entity[i]);
+                    this->stringindex->addRequest(string_index_request, bgpquery_result[k][i], &tr.result.back().str.back(), local_Entity[i]);
                 }
                 else
                     tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
             }
         }
-        this->stringindex->trySequenceAccess();
+        this->stringindex->trySequenceAccess(string_index_request, string_index_buffer, string_index_buffer_size);
     }
 }

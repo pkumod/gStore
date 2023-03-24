@@ -1507,7 +1507,15 @@ void Database::print_data_count()
 void Database::query_stringIndex(int id)
 {
 	string str;
-	this->stringindex->randomAccess(id, &str, true);
+	char* string_index_buffer = NULL;
+	unsigned string_index_buffer_size = 0;
+	this->stringindex->randomAccess(id, &str, string_index_buffer, string_index_buffer_size, true);
+	if (string_index_buffer != NULL)
+	{
+		delete[] string_index_buffer;
+		string_index_buffer = NULL;
+	}
+	
 	cout << "thread: " << id << " " << str << endl;
 }
 

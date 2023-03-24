@@ -52,11 +52,29 @@ TempResult::ResultPair& TempResult::ResultPair::operator=(const ResultPair& that
 	return *this;
 }
 
+TempResult::TempResult()
+{
+	string_index_buffer = NULL;
+	string_index_buffer_size = 0;
+}
+
 TempResult::TempResult(const TempResult& that)
 {
 	id_varset = that.id_varset;
 	str_varset = that.str_varset;
 	result = that.result;
+	string_index_buffer = NULL;
+	string_index_buffer_size = 0;
+}
+
+TempResult::~TempResult()
+{
+	if (this->string_index_buffer != NULL)
+	{
+		delete[] this->string_index_buffer;
+		this->string_index_buffer = NULL;
+	}
+	this->string_index_buffer_size = 0;
 }
 
 TempResult& TempResult::operator=(const TempResult& that)
@@ -229,9 +247,9 @@ void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, 
 				string str;
 
 				if (entity_literal_varset.findVar(this->id_varset.vars[k]))
-					stringindex->randomAccess(this->result[i].id[k], &str, true);
+					stringindex->randomAccess(this->result[i].id[k], &str, string_index_buffer, string_index_buffer_size, true);
 				else
-					stringindex->randomAccess(this->result[i].id[k], &str, false);
+					stringindex->randomAccess(this->result[i].id[k], &str, string_index_buffer, string_index_buffer_size, false);
 
 				this->result[i].str.push_back(str);
 			}
@@ -701,7 +719,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			{
 				int id = row.id[pos];
 				bool isel = entity_literal_varset.findVar(root.val);
-				stringindex->randomAccess(id, &x.term_value, isel);
+				stringindex->randomAccess(id, &x.term_value, string_index_buffer, string_index_buffer_size, isel);			
 			}
 			else
 				x.term_value = row.str[pos - id_cols];
