@@ -1797,7 +1797,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = Util::replace_all(fun_name, "\"", "");
-					
+					#if defined(DEBUG)
 					cout<<">>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
 						<<"iri_id_set=";
 					for (size_t i = 0; i < iri_id_set.size(); i++)
@@ -1818,7 +1818,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					cout << "\nfun_name=" << fun_name 
 						<<"\n>>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
 						<< endl;
-
+					#endif
 					stringstream ss;
 					std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 					std::map<std::string, std::string>::iterator iter = rt.find("return_type");
@@ -2742,6 +2742,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								bool directed = proj[i].path_args.directed;
 								string fun_name = proj[i].path_args.fun_name;
 								fun_name = Util::replace_all(fun_name, "\"", "");
+								#if defined(DEBUG)
 								cout<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n" 
 									<< "uid=" << uid 
 									<< "\nvid=" << vid 
@@ -2757,6 +2758,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								cout << "\nfun_name=" << fun_name 
 									<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n"
 									<< endl;
+								#endif
 								vector<int> iri_id_set;
 								iri_id_set.push_back(uid);
 								iri_id_set.push_back(vid);
