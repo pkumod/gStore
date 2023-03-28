@@ -113,14 +113,14 @@ class StringIndexFile
 		// 	this->buffer = NULL;
 		// }
 
-		bool randomAccess(unsigned id, std::string *str, char* buffer, unsigned &buffer_size, bool real = true);
+		bool randomAccess(unsigned id, std::string *str, char* &buffer, unsigned &buffer_size, bool real = true);
 
         inline void addRequest(std::vector<AccessRequest> &request, unsigned id, std::string *str)
         {
         	request.push_back(AccessRequest(id, (*this->index_table)[id].offset, (*this->index_table)[id].length, str));
         }
 
-        void trySequenceAccess(std::vector<StringIndexFile::AccessRequest> request, char* buffer, unsigned &buffer_size, bool real = true);
+        void trySequenceAccess(std::vector<StringIndexFile::AccessRequest> request, char* &buffer, unsigned &buffer_size, bool real = true);
 
 		void change(unsigned id, KVstore &kv_store);
 		void disable(unsigned id);
@@ -182,9 +182,9 @@ class StringIndex
 		void save(KVstore &kv_store);
 		void load();
 
-		bool randomAccess(unsigned id, std::string *str, char* buffer, unsigned &buffer_size, bool is_entity_or_literal = true, bool real = true);
+		bool randomAccess(unsigned id, std::string *str, char* &buffer, unsigned &buffer_size, bool is_entity_or_literal = true, bool real = true);
         void addRequest(std::vector<StringIndexFile::AccessRequest> *requestVectors, unsigned id, std::string *str, bool is_entity_or_literal = true);
-        void trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* buffer, unsigned &buffer_size, bool real = true);
+        void trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* &buffer, unsigned &buffer_size, bool real = true);
 
 		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
 		void disable(std::vector<unsigned> &ids, bool is_entity_or_literal = true);
