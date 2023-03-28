@@ -3063,14 +3063,14 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 			return;
 		}
 		size_t count = userList.size();
-		rapidjson::Document resp_data;
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
 			struct DBUserInfo *useInfo = userList[i];
-			array_data.PushBack(useInfo->toJSON(allocator), allocator);
+			array_data.PushBack(useInfo->toJSON(allocator).Move(), allocator);
 		}
 
 		resp_data.AddMember("StatusCode", 0, allocator);
@@ -3374,8 +3374,8 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
 		size_t count = logList.size();
 		
-		rapidjson::Document resp_data;
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
@@ -3419,10 +3419,10 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 		});
 		size_t count = logfiles.size();
 		std::string item;
-		rapidjson::Document resp_data;
+		Json resp_data;
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		resp_data.SetObject();
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
 			item = logfiles[i];
@@ -3466,9 +3466,9 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		apiUtil->get_access_log(date, page_no, page_size, &dbAccessLogs);
 		vector<struct DBAccessLogInfo> logList = dbAccessLogs.getAccessLogInfoList();
 		size_t count = logList.size();
-		rapidjson::Document resp_data;
+		Json resp_data;
 		rapidjson::Value array_data(rapidjson::kArrayType);
-		Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
 			DBAccessLogInfo log_info = logList[i];
@@ -3510,10 +3510,10 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 		});
 		size_t count = logfiles.size();
 		std::string item;
-		rapidjson::Document resp_data;
+		Json resp_data;
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		resp_data.SetObject();
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		for (size_t i = 0; i < count; i++)
 		{
 			item = logfiles[i];
@@ -3593,8 +3593,8 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
 		size_t count = list.size();
-		rapidjson::Document resp_data;
-		rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
