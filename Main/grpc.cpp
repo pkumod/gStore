@@ -14,6 +14,8 @@ static WFFacilities::WaitGroup wait_group(1);
 
 APIUtil *apiUtil = nullptr;
 
+Latch latch;
+
 std::string _db_home;
 
 std::string _db_suffix;
@@ -130,6 +132,7 @@ void sig_handler(int signo)
 	if (apiUtil)
 	{
 		delete apiUtil;
+		apiUtil = NULL;
 	}
 	SLOG_DEBUG("grpc server stopped.");
 	wait_group.done();
@@ -264,6 +267,14 @@ int main(int argc, char *argv[])
 					system(cmd.c_str());
 				}
 				SLOG_WARN("Stopped abnormally, restarting server...");
+				latch.lockExclusive();
+				if (apiUtil)
+				{
+					delete apiUtil;
+					apiUtil = NULL;
+					apiUtil = new APIUtil();
+				}
+				latch.unlock();
 			}
 		}
 		else
@@ -422,19 +433,19 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 			}
 		}
 	}
-	std::stringstream ss;
-	ss << "\n------------------------ grpc-api ------------------------";
-	ss << "\nremote_ip: " << ip_addr;
-	ss << "\noperation: shutdown";
-	ss << "\nmethod: " << request->get_method();
-	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_uri: " << request->get_request_uri();
+	std::string ss;
+	ss += "\n------------------------ grpc-api ------------------------";
+	ss += "\nremote_ip: " + ip_addr;
+	ss += "\noperation: shutdown";
+	ss += "\nmethod: " + string(request->get_method());
+	ss += "\nhttp_version: " +  string(request->get_http_version());
+	ss += "\nrequest_uri: " +  string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss << "\nrequest_body: \n" << request->body();
+		ss += "\nrequest_body: \n" + request->body();
 	}
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	std::string error;
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
@@ -463,27 +474,17 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusAuthenticationFailed, error);
 		return;
 	}
-	bool flag = apiUtil->db_checkpoint_all();
-	if (flag)
-	{
-		// exit async
-		rpc_task->add_callback([](GRPCTask *grpcTask){
-			SLOG_DEBUG("Server stopped successfully.");
-			std::cout.flush();
-			// free apiUtil
-			delete apiUtil;
-			_exit(1);
-		});
-		std::string msg = "Server stopped successfully.";
-		apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
-		response->Success(msg);
-	}
-	else
-	{
-		error = "Server stopped failed.";
-		apiUtil->write_access_log("shutdown", ip_addr, StatusOperationFailed, error);
-		response->Error(StatusOperationFailed, error);
-	}
+	rpc_task->add_callback([](GRPCTask *grpcTask){
+		SLOG_DEBUG("Server stopped successfully.");
+		// free apiUtil
+		delete apiUtil;
+		apiUtil = NULL;
+		std::cout.flush();
+		_exit(1);
+	});
+	std::string msg = "Server stopped successfully.";
+	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
+	response->Success(msg);
 }
 
 void upload_file(const GRPCReq *request, GRPCResp *response)
@@ -505,16 +506,16 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	
-	std::stringstream ss;
-	ss << "\n------------------------ grpc-api ------------------------";
-	ss << "\nremote_ip: " << ip_addr;
-	ss << "\noperation: uploadfile";
-	ss << "\nmethod: " << request->get_method();
-	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_uri: " << request->get_request_uri();
-	ss << "\ncontent-length: " << request->header("Content-Length");
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	std::string ss;
+	ss += "\n------------------------ grpc-api ------------------------";
+	ss += "\nremote_ip: " + ip_addr;
+	ss += "\noperation: uploadfile";
+	ss += "\nmethod: " +  string(request->get_method());
+	ss += "\nhttp_version: " +  string(request->get_http_version());
+	ss += "\nrequest_uri: " +  string(request->get_request_uri());
+	ss += "\ncontent-length: " + request->header("Content-Length");
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	Form &form = request->form();
 	if (form.empty())
 	{   
@@ -643,19 +644,19 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 			}
 		}
 	}
-	std::stringstream ss;
-	ss << "\n------------------------ grpc-api ------------------------";
-	ss << "\nremote_ip: " << ip_addr;
-	ss << "\noperation: downloadfile";
-	ss << "\nmethod: " << request->get_method();
-	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_uri: " << request->get_request_uri();
+	std::string ss;
+	ss += "\n------------------------ grpc-api ------------------------";
+	ss += "\nremote_ip: " + ip_addr;
+	ss += "\noperation: downloadfile";
+	ss += "\nmethod: " +  string(request->get_method());
+	ss += "\nhttp_version: " +  string(request->get_http_version());
+	ss += "\nrequest_uri: " + string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss << "\nrequest_body: \n" << request->body();
+		ss += "\nrequest_body: \n" + request->body();
 	}
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	std::string error;
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
@@ -783,19 +784,19 @@ void api(const GRPCReq *request, GRPCResp *response)
 		}
 	}
 	
-	std::stringstream ss;
-	ss << "\n------------------------ grpc-api ------------------------";
-	ss << "\nremote_ip: " << ip_addr;
-	ss << "\noperation: " << operation;
-	ss << "\nmethod: " << request->get_method();
-	ss << "\nhttp_version: " << request->get_http_version();
-	ss << "\nrequest_uri: " << request->get_request_uri();
+	std::string ss;
+	ss += "\n------------------------ grpc-api ------------------------";
+	ss += "\nremote_ip: " + ip_addr;
+	ss += "\noperation: " + operation;
+	ss += "\nmethod: " +  string(request->get_method());
+	ss += "\nhttp_version: " +  string(request->get_http_version());
+	ss += "\nrequest_uri: " +  string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss << "\nrequest_body: \n" << request->body();
+		ss += "\nrequest_body: \n" + request->body();
 	}
-	ss << "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss.str());
+	ss += "\n----------------------------------------------------------";
+	SLOG_DEBUG(ss);
 	// add callback task for access log start
 	auto *operation_ptr = new std::string(operation);
 	auto *ip_ptr = new std::string(ip_addr);
@@ -1083,29 +1084,19 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			vector<string> ip_list = apiUtil->ip_list(IPtype);
 			size_t count = ip_list.size();
-			stringstream str_stream;
-			str_stream << "[";
+			Json resp_data;
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			rapidjson::Value responseBody(kObjectType);
+			rapidjson::Value ips(kArrayType);
 			for (size_t i = 0; i < count; i++)
 			{
-				if (i > 0)
-				{
-					str_stream << ",";
-				}
-				str_stream << "\"" << ip_list[i] << "\"";
+				ips.PushBack(rapidjson::Value().SetString(ip_list[i].c_str(), allocator).Move(), allocator);
 			}
-			str_stream << "]";
-			Json listDoc;
-			listDoc.SetArray();
-			listDoc.Parse(str_stream.str().c_str());
-			
-			Json responseBody;
-			responseBody.SetObject();
-			responseBody.AddMember("ip_type", StringRef(IPtype.c_str()), responseBody.GetAllocator());
-			responseBody.AddMember("ips", listDoc, responseBody.GetAllocator());
 
-			Json resp_data;
+			responseBody.AddMember("ip_type", rapidjson::Value().SetString(IPtype.c_str(), allocator).Move(), allocator);
+			responseBody.AddMember("ips", ips, allocator);
+
 			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", "success", allocator);
 			resp_data.AddMember("ResponseBody", responseBody, allocator);
@@ -1184,25 +1175,13 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		resp_data.SetObject();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		size_t count = array.size();
-		std::string line;
-		std::stringstream str_stream;
-		str_stream << "[";
+		
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			DatabaseInfo *dbInfo = array[i];
-			line = dbInfo->toJSON();
-			str_stream << line;
+			array_data.PushBack(dbInfo->toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		Json array_data;
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
-
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get the database list successfully!", allocator);
 		resp_data.AddMember("ResponseBody", array_data, allocator);
@@ -1423,27 +1402,18 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		current_database->loadDBInfoFile();
 		current_database->loadStatisticsInfoFile();
 		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
-		rapidjson::Document subjectList;
-		subjectList.SetArray();
-		std::stringstream str_stream;
-		str_stream << "[";
-		int i=0;
+		Json resp_data;
+		resp_data.SetObject();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value subjectList(kArrayType);
 		for (auto &kv : umap)
 		{
-			if (i>0)
-			{
-				str_stream << ",";
-			}
-			str_stream << "{\"name\":\""<<Util::clear_angle_brackets(kv.first)<<"\",\"value\":"<<kv.second<<"}";
-			i++;
+			rapidjson::Value item(kObjectType);
+			item.AddMember("name", rapidjson::Value().SetString(Util::clear_angle_brackets(kv.first).c_str(), allocator), allocator);
+			item.AddMember("value", rapidjson::Value().SetUint64(kv.second), allocator);
+			subjectList.PushBack(item.Move(), allocator);
 		}
-		str_stream << "]";
 		// /use JSON format to send message
-		Json resp_data;
-		Json data_array;
-		resp_data.SetObject();
-		data_array.SetArray();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
 		resp_data.AddMember("database", StringRef(db_name.c_str()), allocator);
@@ -1463,9 +1433,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// byte to MB
 		unsigned diskUsed = count_size_byte>>20;
 		resp_data.AddMember("diskUsed", diskUsed, allocator);
-		// parse subjectcount
-		data_array.Parse(str_stream.str().c_str());
-		resp_data.AddMember("subjectList", data_array, allocator);
+		resp_data.AddMember("subjectList", subjectList, allocator);
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -3103,27 +3071,16 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 			return;
 		}
 		size_t count = userList.size();
-		std::stringstream str_stream;
-		str_stream << "[";
-		std::string line;
-		for (size_t i = 0; i < count; i++)
-		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
-			line = userList[i]->toJSON();
-			str_stream << line;
-		}
-		str_stream << "]";
-		Json array_data;
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
-
 		Json resp_data;
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
+		rapidjson::Value array_data(rapidjson::kArrayType);
+		for (size_t i = 0; i < count; i++)
+		{
+			struct DBUserInfo *useInfo = userList[i];
+			array_data.PushBack(useInfo->toJSON(allocator).Move(), allocator);
+		}
+
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
 		resp_data.AddMember("ResponseBody", array_data, allocator);
@@ -3233,7 +3190,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				privileges = privileges + ",";
 			}
 			Util::split(privileges, ",", privilege_vector);
-			std::stringstream result;
+			std::string result;
 			for (unsigned i = 0; i < privilege_vector.size(); i++)
 			{
 				std::string temp_privilege_int = privilege_vector[i];
@@ -3280,26 +3237,26 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				{
 					if (apiUtil->add_privilege(op_username, temp_privilege, db_name) == 0)
 					{
-						result << "add privilege " + temp_privilege + " failed. \r\n";
+						result += "add privilege " + temp_privilege + " failed. \r\n";
 					}
 					else
 					{
-						result << "add privilege " + temp_privilege + " successfully. \r\n";
+						result += "add privilege " + temp_privilege + " successfully. \r\n";
 					}
 				}
 				else if (type == "2")
 				{
 					if (apiUtil->del_privilege(op_username, temp_privilege, db_name) == 0)
 					{
-						result << "delete privilege " + temp_privilege + " failed. \r\n";
+						result += "delete privilege " + temp_privilege + " failed. \r\n";
 					}
 					else
 					{
-						result << "delete privilege " + temp_privilege + " successfully. \r\n";
+						result += "delete privilege " + temp_privilege + " successfully. \r\n";
 					}
 				}
 			}
-			response->Success(result.str());
+			response->Success(result);
 		}
 	}
 	catch (const std::exception &e)
@@ -3371,29 +3328,15 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->get_transactionlog(page_no, page_size, &transactionLogs);
 		vector<struct TransactionLogInfo> logList = transactionLogs.getTransactionLogInfoList();
 		size_t count = logList.size();
-		std::string line = "";
-		std::stringstream str_stream;
-		str_stream << "[";
+		Json resp_data;
+		resp_data.SetObject();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			TransactionLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
+			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Json resp_data;
-		Json array_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.SetObject();
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
-
 		int totalSize = transactionLogs.getTotalSize();
 		int totalPage = transactionLogs.getTotalPage();
 		resp_data.AddMember("StatusCode", 0, allocator);
@@ -3438,27 +3381,16 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
 		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
 		size_t count = logList.size();
-		std::string line = "";
-		std::stringstream str_stream;
-		str_stream << "[";
-		for (size_t i = 0; i < count; i++)
-		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
-			DBQueryLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
-		}
-		str_stream << "]";
 		Json resp_data;
-		Json array_data;
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
+		rapidjson::Value array_data(rapidjson::kArrayType);
+		for (size_t i = 0; i < count; i++)
+		{
+			DBQueryLogInfo log_info = logList[i];
+			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
+		}
+
 		int totalSize = dbQueryLogs.getTotalSize();
 		int totalPage = dbQueryLogs.getTotalPage();
 		resp_data.AddMember("StatusCode", 0, allocator);
@@ -3496,23 +3428,16 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 		str_stream << "[";
 		size_t count = logfiles.size();
 		std::string item;
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			item = logfiles[i];
 			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
-			str_stream << "\"" << item << "\"";
+			array_data.PushBack(rapidjson::Value().SetString(item.c_str(), allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		Json resp_data;
-		Json array_data;
 		resp_data.SetObject();
-		array_data.SetArray();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		array_data.Parse(str_stream.str().c_str());
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get query log date success", allocator);
 		resp_data.AddMember("list", array_data, allocator);
@@ -3550,31 +3475,17 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		apiUtil->get_access_log(date, page_no, page_size, &dbAccessLogs);
 		vector<struct DBAccessLogInfo> logList = dbAccessLogs.getAccessLogInfoList();
 		size_t count = logList.size();
-		std::string line = "";
-		std::stringstream str_stream;
-		str_stream << "[";
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			DBAccessLogInfo log_info = logList[i];
-			line = log_info.toJSON();
-			str_stream << line;
+			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Json resp_data;
-		Json array_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.SetObject();
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
-
 		int totalSize = dbAccessLogs.getTotalSize();
 		int totalPage = dbAccessLogs.getTotalPage();
+		resp_data.SetObject();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get access log success", allocator);
 		resp_data.AddMember("totalSize", totalSize, allocator);
@@ -3610,23 +3521,16 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 		str_stream << "[";
 		size_t count = logfiles.size();
 		std::string item;
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			item = logfiles[i];
 			item = item.substr(0, item.length()-4); // file_name: yyyyMMdd.log
-			str_stream << "\"" << item << "\"";
+			array_data.PushBack(rapidjson::Value().SetString(item.c_str(), allocator).Move(), allocator);
 		}
-		str_stream << "]";
-		Json resp_data;
-		Json array_data;
 		resp_data.SetObject();
-		array_data.SetArray();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		array_data.Parse(str_stream.str().c_str());
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get access log date success", allocator);
 		resp_data.AddMember("list", array_data, allocator);
@@ -3700,33 +3604,18 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
 		size_t count = list.size();
-		string line = "";
-		stringstream str_stream;
-		str_stream << "[";
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			if (i > 0)
-			{
-				str_stream << ",";
-			}
 			PFNInfo pfn_info = list[i];
-			line = pfn_info.toJSON();
-			str_stream << line;
+			array_data.PushBack(pfn_info.toJSON(allocator).Move(), allocator);
 		}
-		str_stream << "]";
-
-		Json resp_data;
-		Json array_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
-		array_data.SetArray();
-		line = str_stream.str();
-		array_data.Parse(line.c_str());
-
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
 		resp_data.AddMember("list", array_data, allocator);
-
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
