@@ -1018,6 +1018,14 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
     return ret == 0;
 }
 
+bool APIUtil::aborted_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
+{
+    string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
+    string Time_TID = begin_time + "_" + to_string(TID);
+    int ret = update_transactionlog(Time_TID, "ABORTED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    return ret == 0;
+}
+
 txn_id_t APIUtil::check_txn_id(string TID_s)
 {
     txn_id_t TID = (unsigned long long)0;
@@ -2286,11 +2294,19 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
             continue;
         }
         if (!logInfo->getState().empty() && !logInfo->getEndTime().empty()) {
-            logInfo->setState(state);
-            logInfo->setEndTime(end_time);
-            string line = logInfo->toJSON();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
+            // COMMITED is final state, dosen't be change
+            if (logInfo->getState() != "COMMITED" && logInfo->getState() != "ABORTED" && logInfo->getState() != "ROLLBACK")
+            {
+                logInfo->setState(state);
+                logInfo->setEndTime(end_time);
+                string line = logInfo->toJSON();
+                line.push_back('\n');
+                fputs(line.c_str(), fp1);
+            }
+            else
+            {
+                fputs(readBuffer, fp1);
+            }
         }
         else 
         {
