@@ -28,7 +28,9 @@ APIUtil::APIUtil()
 
 APIUtil::~APIUtil()
 {
+    #if defined(DEBUG)
     SLOG_DEBUG("call APIUtil delete");
+    #endif
     pthread_rwlock_rdlock(&databases_map_lock);
     std::map<std::string, Database *>::iterator iter;
     for (iter = databases.begin(); iter != databases.end(); iter++)
@@ -36,6 +38,8 @@ APIUtil::~APIUtil()
         string database_name = iter->first;
         if (database_name == SYSTEM_DB_NAME)
             continue;
+        // /abort all transaction
+        db_checkpoint(database_name);
         Database *current_database = iter->second;
         pthread_rwlock_rdlock(&already_build_map_lock);
         std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
@@ -50,9 +54,12 @@ APIUtil::~APIUtil()
         current_database = NULL;
         pthread_rwlock_unlock(&(it_already_build->second->db_lock));
     }
-    system_database->save();
-    delete system_database;
-    system_database = NULL;
+    if (databases.find(SYSTEM_DB_NAME) != databases.end())
+    {
+        system_database->save();
+        delete system_database;
+        system_database = NULL;
+    }
     pthread_rwlock_unlock(&databases_map_lock);
 
     pthread_rwlock_rdlock(&already_build_map_lock);
@@ -73,19 +80,30 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&transactionlog_lock);
     pthread_rwlock_destroy(&fun_data_lock);
     delete ipWhiteList;
-    delete ipBlackList;
+    ipWhiteList = NULL;
 
-    string cmd = "rm " + system_password_path;
-    system(cmd.c_str());
-    cmd = "rm " + system_port_path;
-    system(cmd.c_str());
+    delete ipBlackList;
+    ipBlackList = NULL;
+
+    if (Util::file_exist(system_password_path))
+    {
+        string cmd = "rm " + system_password_path;
+        system(cmd.c_str());
+    }
+    if (Util::file_exist(system_port_path))
+    {
+        string cmd = "rm " + system_port_path;
+        system(cmd.c_str());
+    }
 }
 
 int APIUtil::initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr)
 {
     try
     {
+        #if defined(DEBUG)
         SLOG_DEBUG("--------initialization start--------");
+        #endif
         backup_path = util.backup_path;
         default_port = get_configure_value("default_port", default_port);
         thread_pool_num = get_configure_value("thread_num", thread_pool_num);
@@ -136,12 +154,17 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             blackList = 1;
         }
         if (whiteList) {
+            #if defined(DEBUG)
             SLOG_DEBUG("IP white List enabled.");
+            #endif
             ipWhiteList = new IPWhiteList();
             ipWhiteList->Load(ipWhiteFile);
         }
-        else if (blackList) {
+        else if (blackList) 
+        {
+            #if defined(DEBUG)
             SLOG_DEBUG("IP black list enabled.");
+            #endif
             ipBlackList = new IPBlackList();
             ipBlackList->Load(ipBlackFile);
         }
@@ -168,7 +191,6 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
 
         // init already_build db
         ResultSet rs;
-        rapidjson::Document doc;
         FILE *output = nullptr;
         std::string sparql = "select ?x where{?x <database_status> \"already_built\".}";       
         int ret_val = system_database->query(sparql, rs, output);
@@ -176,6 +198,13 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         {
             ResultSet _db_rs;
             pthread_rwlock_wrlock(&already_build_map_lock);
+            #if defined(DEBUG)
+            rapidjson::Document doc;
+            rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+            rapidjson::StringBuffer jsonBuffer;
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> jsonWriter(jsonBuffer);
+            doc.SetArray();
+            #endif
             for (unsigned int i = 0; i < rs.ansNum; i++)
             {
                 string db_name = util.clear_angle_brackets(rs.answer[i][0]);
@@ -189,8 +218,10 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                     std::string built_time = util.replace_all(_db_rs.answer[0][1], "\"", "");
                     temp_db->setCreator(built_by);
                     temp_db->setTime(built_time);
-
-                    SLOG_DEBUG(to_string(i) + ": " + temp_db->toJSON());
+                    #if defined(DEBUG)
+                    rapidjson::Value jsonValue = temp_db->toJSON(allocator);
+                    doc.PushBack(jsonValue, allocator);
+                    #endif
                     already_build.insert(pair<std::string, struct DatabaseInfo *>(db_name, temp_db));
                 }
                 else
@@ -198,6 +229,10 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                     SLOG_ERROR("query dabase ["+ db_name + "] properties error: return value " + to_string(ret_val));
                 }
             }
+            #if defined(DEBUG)
+            doc.Accept(jsonWriter);
+            SLOG_DEBUG(jsonBuffer.GetString());
+            #endif
             // insert systemdb into already_build
             // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
             // already_build.insert(pair<std::string, struct DatabaseInfo *>(SYSTEM_DB_NAME, system_db));
@@ -215,6 +250,13 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         {
             ResultSet _user_rs;
             pthread_rwlock_wrlock(&users_map_lock);
+            #if defined(DEBUG)
+            rapidjson::Document doc;
+            rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+            rapidjson::StringBuffer jsonBuffer;
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> jsonWriter(jsonBuffer);
+            doc.SetArray();
+            #endif
             for (unsigned int i = 0; i < rs.ansNum; i++)
             {
                 string username = util.clear_angle_brackets(rs.answer[i][0]);
@@ -261,10 +303,16 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                         }
                     }
                 }
-                SLOG_DEBUG(to_string(i) + ": " + user->toJSON());
+                #if defined(DEBUG)
+                rapidjson::Value jsonValue = user->toJSON(allocator);
+                doc.PushBack(jsonValue, allocator);
+                #endif
                 users.insert(pair<std::string, struct DBUserInfo *>(username, user));
             }
-            
+            #if defined(DEBUG)
+            doc.Accept(jsonWriter);
+            SLOG_DEBUG(jsonBuffer.GetString());
+            #endif
             pthread_rwlock_unlock(&users_map_lock);
         }
         else
@@ -314,7 +362,9 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             insert_txn_managers(current_database,db_name);
             add_database(db_name,current_database);
         }
+        #if defined(DEBUG)
         SLOG_DEBUG("--------initialization end--------");
+        #endif
         return 1;
     }
     catch (const std::exception &e)
@@ -331,7 +381,8 @@ bool APIUtil::trywrlock_database_map()
         SLOG_DEBUG("trywrlock_database_map success");
         return true;
     }
-    else {
+    else 
+    {
         SLOG_DEBUG("trywrlock_database_map unsuccess");
         return false;
     }
@@ -714,48 +765,48 @@ bool APIUtil::db_checkpoint(string db_name)
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
 	txn_managers.erase(db_name);
 	pthread_rwlock_unlock(&txn_m_lock);
-	txn_m->abort_all_running();
-	txn_m->Checkpoint();
+	// txn_m->abort_all_running();
+	// txn_m->Checkpoint();
     SLOG_DEBUG(db_name + " txn checkpoint success!");
 	return true;
 }
 
-bool APIUtil::db_checkpoint_all()
-{
-    pthread_rwlock_rdlock(&databases_map_lock);
-    std::map<std::string, Database *>::iterator iter;
-	string return_msg = "";
-	abort_transactionlog(util.get_cur_time());
-    for(iter=databases.begin(); iter != databases.end(); iter++)
-	{
-		string database_name = iter->first;
-		if (database_name == SYSTEM_DB_NAME)
-			continue;
-		//abort all transaction
-		db_checkpoint(database_name);
-		Database *current_database = iter->second;
-		pthread_rwlock_rdlock(&already_build_map_lock);
-		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
-		pthread_rwlock_unlock(&already_build_map_lock);
-		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
-		{
-			pthread_rwlock_unlock(&databases_map_lock);
-			SLOG_ERROR(database_name + " unable to checkpoint due to loss of lock");
-            break;
-		}
-		current_database->save();
-		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
-	}
-    if (return_msg.empty())
-    {
-        system_database->save();
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
+// bool APIUtil::db_checkpoint_all()
+// {
+//     pthread_rwlock_rdlock(&databases_map_lock);
+//     std::map<std::string, Database *>::iterator iter;
+// 	string return_msg = "";
+// 	abort_transactionlog(util.get_cur_time());
+//     for(iter=databases.begin(); iter != databases.end(); iter++)
+// 	{
+// 		string database_name = iter->first;
+// 		if (database_name == SYSTEM_DB_NAME)
+// 			continue;
+// 		//abort all transaction
+// 		db_checkpoint(database_name);
+// 		Database *current_database = iter->second;
+// 		pthread_rwlock_rdlock(&already_build_map_lock);
+// 		std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
+// 		pthread_rwlock_unlock(&already_build_map_lock);
+// 		if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+// 		{
+// 			pthread_rwlock_unlock(&databases_map_lock);
+// 			SLOG_ERROR(database_name + " unable to checkpoint due to loss of lock");
+//          break;
+// 		}
+// 		current_database->save();
+// 		pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+// 	}
+//     if (return_msg.empty())
+//     {
+//         system_database->save();
+//         return true;
+//     }
+//     else
+//     {
+//         return false;
+//     }
+// }
 
 bool APIUtil::delete_from_databases(string db_name)
 {
@@ -873,7 +924,7 @@ string APIUtil::begin_process(string db_name, int level , string username)
 {
     string result = "";
     shared_ptr<Txn_manager> txn_m = APIUtil::get_Txn_ptr(db_name);
-    cerr << "Isolation Level Type:" << level << endl;
+    SLOG_DEBUG("Isolation Level Type:" + to_string(level));
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
 	// SLOG_DEBUG("Transcation Id:"<< to_string(TID));
 	// SLOG_DEBUG(to_string(txn_m->Get_Transaction(TID)->GetStartTime()));
@@ -901,6 +952,14 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
     string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
     string Time_TID = begin_time + "_" + to_string(TID);
     int ret = update_transactionlog(Time_TID, "ROLLBACK", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
+    return ret == 0;
+}
+
+bool APIUtil::aborted_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID)
+{
+    string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
+    string Time_TID = begin_time + "_" + to_string(TID);
+    int ret = update_transactionlog(Time_TID, "ABORTED", to_string(txn_m->Get_Transaction(TID)->GetEndTime()));
     return ret == 0;
 }
 
@@ -952,7 +1011,7 @@ bool APIUtil::check_already_load(const std::string &db_name)
 bool APIUtil::add_already_build(const std::string &db_name, const std::string &creator, const std::string &build_time)
 {
     pthread_rwlock_wrlock(&already_build_map_lock);
-    #if defined(APIUTIL_DEBUG)
+    #if defined(DEBUG)
 	SLOG_DEBUG("already_build_map_lock acquired.");
     #endif
     struct DatabaseInfo* temp_db = new DatabaseInfo(db_name, creator, build_time);
@@ -961,26 +1020,26 @@ bool APIUtil::add_already_build(const std::string &db_name, const std::string &c
     string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
 		"<" + db_name + "> <built_by> <" + creator + "> ." + "<" + db_name + "> <built_time> \"" + build_time + "\".}";
     update_sys_db(update);
-    #if defined(APIUTIL_DEBUG)
+    #if defined(DEBUG)
     SLOG_DEBUG("database add done.");
     #endif
     return true;
 }
 
-std::string APIUtil::get_already_build(const std::string &db_name)
-{
-    pthread_rwlock_rdlock(&already_build_map_lock);
-    std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
-    pthread_rwlock_unlock(&already_build_map_lock);
-    if (iter == already_build.end())
-    {
-        return "";
-    }
-    else
-    {
-        return iter->second->toJSON();
-    }
-}
+// std::string APIUtil::get_already_build(const std::string &db_name)
+// {
+//     pthread_rwlock_rdlock(&already_build_map_lock);
+//     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
+//     pthread_rwlock_unlock(&already_build_map_lock);
+//     if (iter == already_build.end())
+//     {
+//         return "";
+//     }
+//     else
+//     {
+//         return iter->second->toJSON();
+//     }
+// }
 
 void APIUtil::get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array)
 {
@@ -1019,8 +1078,10 @@ void APIUtil::get_already_builds(const std::string& username, vector<struct Data
 
 bool APIUtil::check_already_build(const std::string &db_name)
 {
-    string rt = APIUtil::get_already_build(db_name);
-    if (rt.empty())
+    pthread_rwlock_rdlock(&already_build_map_lock);
+    std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
+    pthread_rwlock_unlock(&already_build_map_lock);
+    if (iter == already_build.end())
     {
         return false;
     }
@@ -1975,6 +2036,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     fclose(ip_logfp);
     // SLOG_DEBUG("logSize:" + to_string(logSize);
     delete dbAccessLogInfo;
+    dbAccessLogInfo = NULL;
     pthread_rwlock_unlock(&access_log_lock);
 }
 
@@ -2138,6 +2200,7 @@ int APIUtil::add_transactionlog(std::string db_name, std::string user, std::stri
     fputs(rec.c_str(), fp);
     fclose(fp);
     delete logInfo;
+    logInfo = NULL;
     pthread_rwlock_unlock(&transactionlog_lock);
     return 0;
 }
@@ -2149,21 +2212,30 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
     FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
     char readBuffer[0xffff];
     int ret = 0;
-    struct TransactionLogInfo *logInfo = nullptr;
+    struct TransactionLogInfo *logInfo = NULL;
     while (fgets(readBuffer, 1024, fp)) {
         string rec = readBuffer;
         logInfo = new TransactionLogInfo(rec);
         if (logInfo->getTID() != TID) {
             fputs(readBuffer, fp1);
             delete logInfo;
+            logInfo = NULL;
             continue;
         }
         if (!logInfo->getState().empty() && !logInfo->getEndTime().empty()) {
-            logInfo->setState(state);
-            logInfo->setEndTime(end_time);
-            string line = logInfo->toJSON();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
+            // COMMITED is final state, dosen't be change
+            if (logInfo->getState() != "COMMITED" && logInfo->getState() != "ABORTED" && logInfo->getState() != "ROLLBACK")
+            {
+                logInfo->setState(state);
+                logInfo->setEndTime(end_time);
+                string line = logInfo->toJSON();
+                line.push_back('\n');
+                fputs(line.c_str(), fp1);
+            }
+            else
+            {
+                fputs(readBuffer, fp1);
+            }
         }
         else 
         {
@@ -2172,6 +2244,7 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
             ret = 1;
         }
         delete logInfo;
+        logInfo = NULL;
     }
     fclose(fp);
     fclose(fp1);
@@ -2284,6 +2357,7 @@ void APIUtil::abort_transactionlog(long end_time)
             fputs(readBuffer, fp1);
         }
         delete logInfo;
+        logInfo = NULL;
     }
     fclose(fp);
     fclose(fp1);
@@ -2346,20 +2420,25 @@ void APIUtil::fun_query(const string &fun_name, const string &fun_status, const 
     string temp_str;
     pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);
-    PFNInfo *temp_ptr;
+    PFNInfo *temp_ptr = NULL;
     while (getline(in, line))
     {
         temp_ptr = new PFNInfo(line);
         if (!fun_name.empty() && temp_ptr->getFunName().find(fun_name) == string::npos)
         {
+            delete temp_ptr;
+            temp_ptr = NULL;
             continue;
         }
         if (!fun_status.empty() && temp_ptr->getFunStatus() != fun_status)
         {
+            delete temp_ptr;
+            temp_ptr = NULL;
             continue;
         }
         pfn_infos->addPFNInfo(line);
         delete temp_ptr;
+        temp_ptr = NULL;
     }
     in.close();
     pthread_rwlock_unlock(&fun_data_lock);
@@ -2635,7 +2714,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
             pthread_rwlock_unlock(&fun_data_lock);
             throw std::runtime_error("open function json file error");
         }
-        PFNInfo *fun_info_tmp;
+        PFNInfo *fun_info_tmp = NULL;
         while (getline(in, line))
         {
             fun_info_tmp = new PFNInfo(line);
@@ -2665,6 +2744,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 _buf << line << '\n';
             }
             delete fun_info_tmp;
+            fun_info_tmp = NULL;
         }
         in.close();
         line = _buf.str();
@@ -2730,7 +2810,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
     string line;
     bool isMatch;
     string temp_name;
-    PFNInfo* temp_ptr = nullptr;
+    PFNInfo* temp_ptr = NULL;
     isMatch = false;
     while (getline(in, line))
     {
@@ -2742,6 +2822,7 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
             break;
         }
         delete temp_ptr;
+        temp_ptr = NULL;
     }
     in.close();
     pthread_rwlock_unlock(&fun_data_lock);
@@ -2749,10 +2830,10 @@ void APIUtil::fun_parse_from_name(const std::string& username, const std::string
     {
         fun_info->copyFrom(*temp_ptr);
         delete temp_ptr;
+        temp_ptr = NULL;
     }
     else
     {
-        delete temp_ptr;
         throw std::invalid_argument("function " + fun_name + " not exists");
     }
 }
