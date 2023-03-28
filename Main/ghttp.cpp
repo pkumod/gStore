@@ -2567,7 +2567,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		else if (ret == -20)
 		{
 			error = "Transaction query failed. This transaction is set abort due to conflict!";
-			apiUtil->rollback_process(txn_m, TID);
+			apiUtil->aborted_process(txn_m, TID);
 			sendResponseMsg(1005, error, operation, request, response);
 		}
 		else if (ret == -101)
@@ -4917,8 +4917,7 @@ void fun_query_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			PFNInfo pfn_info = list[i];
-			jsonArray.PushBack(pfn_info.toJSON(allocator).Move(), allocator);
+			jsonArray.PushBack(list[i].toJSON(allocator).Move(), allocator);
 		}
 		all.SetObject();
 		all.AddMember("StatusCode", 0, allocator);
