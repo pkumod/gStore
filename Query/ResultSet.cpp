@@ -410,6 +410,7 @@ ResultSet::to_JSON()
 		}
 		if (i >= this->output_offset)
 		{
+			rapidjson::Value json_var(rapidjson::kObjectType);
 			for(int j = 0; j < this->true_select_var_num; j++)
 			{
 				string ans_str;
@@ -516,7 +517,6 @@ ResultSet::to_JSON()
 				{
 					ans_type = "error";
 				}
-				rapidjson::Value json_var(rapidjson::kObjectType);
 				rapidjson::Value json_item(rapidjson::kObjectType);
 
 				str_value.SetString(ans_type.c_str(), ans_type.size(), allocator);
@@ -538,8 +538,8 @@ ResultSet::to_JSON()
 				}
 				
 				json_var.AddMember(rapidjson::Value().SetString(ans_key.c_str(), ans_key.size(), allocator).Move(), json_item, allocator);
-				buildings.PushBack(json_var, allocator);
 			}
+			buildings.PushBack(json_var, allocator);
 		}
 	}
 
