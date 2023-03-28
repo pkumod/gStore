@@ -2983,15 +2983,15 @@ float Util::get_memory_usage(int pid)
     // byte num of block
     unsigned long long block_size = disk_info.f_bsize;
     // total = block_size * block_num
-    unsigned long long total_size = block_size * disk_info.f_blocks;
     #ifdef DEBUG
+    unsigned long long total_size = block_size * disk_info.f_blocks;
     printf("Total_size = %llu B = %llu KB = %llu MB = %llu GB\n", total_size, total_size>>10, total_size>>20, total_size>>30);
     #endif
-    // free = block_size * free_block_num
-    unsigned long long free_disk = block_size * disk_info.f_bfree;
     // available = block_size * available_block_num
     unsigned long long available_disk = block_size * disk_info.f_bavail;
     #ifdef DEBUG
+    // free = block_size * free_block_num
+    unsigned long long free_disk = block_size * disk_info.f_bfree;
     printf("Disk_free = %llu MB = %llu GB\nDisk_available = %llu MB = %llu GB\n", free_disk>>20, free_disk>>30, available_disk>>20, available_disk>>30);
     #endif
     // return MB

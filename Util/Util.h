@@ -166,8 +166,8 @@ in the sparql query can point to the same node in data graph)
 //indicate that in debug mode
 //#define DEBUG_JOIN      
 //#define DEBUG_STREAM
-//#define DEBUG_PRECISE 1		all information
-//#define DEBUG_KVSTORE 1		//in KVstore
+//#define DEBUG_PRECISE 1	//all information
+//#define DEBUG_KVSTORE 1	//in KVstore
 //#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
