@@ -2423,7 +2423,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		else if (ret == -20)
 		{
 			error = "Transaction query failed. This transaction is set abort due to conflict!";
-			apiUtil->rollback_process(txn_m, TID);
+			apiUtil->aborted_process(txn_m, TID);
 			response->Error(StatusOperationFailed, error);
 		}
 		else if (ret == -101)
