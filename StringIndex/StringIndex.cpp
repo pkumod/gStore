@@ -92,7 +92,7 @@ void StringIndexFile::load()
 	//	trie->LoadTrie(dictionary_path);
 }
 
-bool StringIndexFile::randomAccess(unsigned id, string *str, char* buffer, unsigned &buffer_size, bool real)
+bool StringIndexFile::randomAccess(unsigned id, string *str, char* &buffer, unsigned &buffer_size, bool real)
 {
 	if (id >= this->num)
 		return false;
@@ -136,7 +136,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, char* buffer, unsig
 	return true;
 }
 
-void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessRequest> request, char* buffer, unsigned &buffer_size, bool real)
+void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessRequest> request, char* &buffer, unsigned &buffer_size, bool real)
 {
 	if (request.empty())
 		return;
@@ -389,7 +389,7 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 	}
 }
 
-bool StringIndex::randomAccess(unsigned id, string *str, char* buffer, unsigned &buffer_size, bool is_entity_or_literal, bool real)
+bool StringIndex::randomAccess(unsigned id, string *str, char* &buffer, unsigned &buffer_size, bool is_entity_or_literal, bool real)
 {
 	if(id < 0) return false;
 
@@ -439,7 +439,7 @@ void StringIndex::addRequest(std::vector<StringIndexFile::AccessRequest> *reques
 	}
 }
 
-void StringIndex::trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* buffer, unsigned &buffer_size, bool real)
+void StringIndex::trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* &buffer, unsigned &buffer_size, bool real)
 {
     latch.lockShared();
 	this->entity.trySequenceAccess(requestVectors[0], buffer, buffer_size, real);
