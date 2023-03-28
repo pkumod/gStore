@@ -552,7 +552,7 @@ ResultSet::to_JSON()
 		}
 	}
 
-	results.AddMember("buildings", buildings, allocator);
+	results.AddMember("bindings", buildings, allocator);
 
 	doc.AddMember("head", head, allocator);
 	doc.AddMember("results", results, allocator);
