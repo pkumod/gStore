@@ -1001,6 +1001,7 @@ public:
     string begin_process(string db_name, int level , string username);
     bool commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
     bool rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
+    bool aborted_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
     bool user_add(const string& username, const string& password);
     bool user_delete(const string& username);
     bool user_pwd_alert(const string& username, const string& password);
