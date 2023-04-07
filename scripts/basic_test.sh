@@ -22,14 +22,15 @@ for i in 0 1 2 3
 do
 	echo "${op[0]} -db ${db[$i]} -f ${path}${db[$i]}/${db[i]}.nt"
 	${op[0]} -db ${db[$i]} -f ${path}${db[$i]}"/"${db[$i]}".nt" > "1.txt" 2>&1
-	"rm" "1.txt"
-	if test -e ${db[$i]}.db/success.txt
+	ans=$(grep "Build RDF database ${db[$i]} successfully!" 1.txt)
+	echo "$ans"
+	if test -z "$ans"
 	then
-		
-		continue
-	else
-		echo -e "\033[43;35m build ${db[$i]}.db fails \033[0m"
+		echo -e "\e[43;35m build ${db[$i]}.db fails \e[0m"
 		exit
+	else
+		"rm" "1.txt"
+		continue
 	fi
 done
 
@@ -48,7 +49,7 @@ do
 	if [ ${ans:18:${#ans}-18} -ne ${triple_num[$i]} ]
 	then
 		echo ${ans}
-		echo -e "\033[43;35m update triples in ${db[$i]}.db has errors \033[0m"
+		echo -e "\e[43;35m update triples in ${db[$i]}.db has errors \e[0m"
 		"rm" "1.txt"
 		exit
 	fi
@@ -67,7 +68,7 @@ do
 		ans=$(grep "There has answer" 1.txt)
 		if [ ${ans:18:${#ans}-18} -ne ${bbug_ans[$i]} ]
 		then 
-			echo -e "\033[43;35m query ${db[0]}${bbug_sql[$i]}.sql in ${db[0]}.db has errors \033[0m"
+			echo -e "\e[43;35m query ${db[0]}${bbug_sql[$i]}.sql in ${db[0]}.db has errors \e[0m"
 			"rm" "1.txt"
 			exit
 		fi
@@ -83,7 +84,7 @@ do
 	ans=$(grep "There has answer" 1.txt)
 	if [ ${ans:18:${#ans}-18} -ne ${lubm_ans[$i]} ]
 	then
-		echo -e "\033[43;35m query ${db[1]}${lubm_sql[$i]}.sql in ${db[1]}.db has errors \033[0m"
+		echo -e "\e[43;35m query ${db[1]}${lubm_sql[$i]}.sql in ${db[1]}.db has errors \e[0m"
 		"rm" "1.txt"
 		exit
 	fi
@@ -98,7 +99,7 @@ do
         ans=$(grep "There has answer" 1.txt)
         if [ ${ans:18:${#ans}-18} -ne ${num_ans[$i]} ]
         then
-		echo -e "\033[43;35m query ${db[2]}${num_sql[$i]}.sql in ${db[2]}.db has errors \033[0m"
+		echo -e "\e[43;35m query ${db[2]}${num_sql[$i]}.sql in ${db[2]}.db has errors \e[0m"
 		"rm" "1.txt"
 		exit
         fi
@@ -113,7 +114,7 @@ do
         ans=$(grep "There has answer" 1.txt)
         if [ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]
         then
-		echo -e "\033[43;35m query ${db[3]}${small_sql[$i]}.sql in ${db[3]}.db has errors \033[0m"
+		echo -e "\e[43;35m query ${db[3]}${small_sql[$i]}.sql in ${db[3]}.db has errors \e[0m"
 		"rm" "1.txt"
 		exit
         fi
@@ -131,7 +132,7 @@ ${op[1]} -db ${db[3]} -q ${path}"all.sql" > "1.txt"
 ans=$(grep "There has answer" 1.txt)
 if [ ${ans:18:${#ans}-18} -ne ${triple_num[4]} ]
 then
-	echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
+	echo -e "\e[43;35m update triples in ${db[3]}.db has errors \e[0m"
 	"rm" "1.txt"
 	exit
 fi
@@ -144,7 +145,7 @@ ${op[1]} -db ${db[3]} -q ${path}"all.sql" > "1.txt"
 ans=$(grep "There has answer" 1.txt)
 if [ ${ans:18:${#ans}-18} -ne ${triple_num[3]} ]
 then
-        echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
+        echo -e "\e[43;35m update triples in ${db[3]}.db has errors \e[0m"
         "rm" "1.txt"
         exit
 fi
@@ -155,12 +156,15 @@ echo "gdrop......"
 for i in 0 1 2 3
 do
 	${op[4]} -db ${db[$i]} > "1.txt" 2>&1
-	"rm" "1.txt"
-	if test -e ${db[$i]}.db
+	ans=$(grep "${db[$i]}.db is dropped successfully!" 1.txt)
+	echo "$ans"
+	if test -z "$ans"
 	then
-		echo -e "\033[43;35m drop ${db[$i]}.db fails \033[0m"
+		echo -e "\e[43;35m drop ${db[$i]}.db fails \e[0m"
 		exit
+	else
+		"rm" "1.txt"
 	fi
 done
 
-echo "Test passed!"
+echo -e "\e[42m Test passed! \e[0m"
