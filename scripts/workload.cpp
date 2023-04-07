@@ -811,6 +811,26 @@ int main(int argc, char* argv[])
 	cerr << "finish loading" << endl;
     Txn_manager txn_m(&_db, string("lubm_1M"));
     
+
+    TID = txn_m.Begin(2);
+
+    string res;
+    int ret = txn_m.Query(TID, "select ?x where { <m> ?x <t>.}", res);
+    cerr << ret << " " << res << endl;
+
+
+    
+
+/*     select ?x where { <m> ?x <t>.}
+    insert data { <m> <s> <t>.}
+    select ?x where { <m> ?x <t>.}
+    delete data { <m> <s> <t>.}
+    select ?x where { <m> ?x <t>.}
+    insert data { <m> <s> <t>.}
+    select ?x where { <m> ?x <t>.} */
+
+    return;
+
     //threads_num = thread::hardware_concurrency()-1;
     vector<thread> pool(threads_num);
     int n = pool.size();

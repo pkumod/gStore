@@ -632,7 +632,9 @@ void TopKPlanUtil::TreeEdge::ChangeOrder() {
       // exchange i with const_end
       if(i!=const_end)
       {
-        std::swap(predicate_constant_[i],predicate_constant_[const_end]);
+        bool t = predicate_constant_[i];
+        predicate_constant_[i] = predicate_constant_[const_end];
+        predicate_constant_[const_end] = t;
         std::swap(predicate_ids_[i],predicate_ids_[const_end]);
         std::swap(directions_[i],directions_[const_end]);
       }
