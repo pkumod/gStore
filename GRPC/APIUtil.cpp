@@ -2589,6 +2589,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
             strStream << line;
         }
         error_msg = strStream.str();
+        errorFile.close();
     }
     else
     {

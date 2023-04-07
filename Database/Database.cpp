@@ -3458,6 +3458,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 				trie->Addstring(t);
 			}
 		}
+		_fin0.close();
 		cout << "Add triples to Trie to prepare for BuildPrefix" << endl;
 		trie->BuildPrefix();
 		cout << "BuildPrefix done. used" << Util::get_cur_time() - begin << endl;
@@ -4106,7 +4107,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		// some maybe invalid or duplicate
 		// triple_num += parse_triple_num;
 	}
-
+	_fin.close();
 	delete[] triple_array;
 	triple_array = NULL;
 	long tv_insert = Util::get_cur_time();
@@ -4207,7 +4208,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		// some maybe invalid or duplicate
 		// triple_num -= parse_triple_num;
 	}
-
+	_fin.close();
 	// BETTER: free this just after id_tuples are ok
 	//(only when using group insertion/deletion)
 	// or reduce the array size
@@ -5226,7 +5227,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		long tv_end = Util::get_cur_time();
 		cout << "batch insert, used " << (tv_end - tv_begin) << " ms" << endl;
 	}
-
+	_fin.close();
 	delete[] triple_array;
 	triple_array = NULL;
 	long tv_insert = Util::get_cur_time();
@@ -5276,7 +5277,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		long tv_end = Util::get_cur_time();
 		cout << "batch remove, used " << (tv_end - tv_begin) << " ms" << endl;
 	}
-
+	_fin.close();
 	delete[] triple_array;
 	triple_array = NULL;
 	long tv_remove = Util::get_cur_time();
@@ -5837,7 +5838,7 @@ int Database::read_update_log(const string _path, multiset<string> &_i, multiset
 		}
 		in.getline(buffer, buffer_size);
 	}
-
+	in.close();
 	return ret;
 }
 
@@ -6520,6 +6521,7 @@ bool Database::loadStatisticsInfoFile()
 				this->umap.insert(pair<string, unsigned long long>(lines[0], value));
 			}
 		}
+		file.close();
 		return true;
 	}
 	else

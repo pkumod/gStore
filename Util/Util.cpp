@@ -979,6 +979,7 @@ Util::count_lines(const std::string _file, unsigned int _mode)
         {
             count++;
         }
+        reader.close();
     }
     
     return count;
