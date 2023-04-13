@@ -830,7 +830,7 @@ vector<shared_ptr<AffectOneNode>> PlanGenerator::CompleteCandidate() {
 			if(pre_const && nei_var){
 				double border = size / (Util::logarithm(2, size) + 1);
 				unsigned pre_id = var_descrip->so_edge_pre_id_[i];
-				if ((double)(pre2num[pre_id]) > border) {
+				if ((!no_candidate) && (double)(pre2num[pre_id]) > border) {
 					continue;
 				}
 				if ((var_descrip->so_edge_type_[i] == Util::EDGE_IN && pre2obj[pre_id] > estimate_num) ||
@@ -841,16 +841,6 @@ vector<shared_ptr<AffectOneNode>> PlanGenerator::CompleteCandidate() {
 				candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
 												  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
 				candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
-				if ((no_candidate) || (double)(pre2num[var_descrip->so_edge_pre_id_[i]]) < border)
-				{
-					if((var_descrip->so_edge_type_[i] == Util::EDGE_IN && pre2obj[pre_id] > estimate_num) ||
-					   (var_descrip->so_edge_type_[i] == Util::EDGE_OUT && pre2sub[pre_id] > estimate_num)){
-						continue;
-					}
-					candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
-													  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
-					candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
-				}
 			}
 		}
 		if(!candidate_edge_info->empty()){
