@@ -1921,12 +1921,12 @@ void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs)
 {
-    pthread_rwlock_rdlock(&access_log_lock);
     int totalSize = 0;
     int totalPage = 0;
     string accessLog = APIUtil::access_log_path + date + ".log";
     if(util.file_exist(accessLog))
     {
+        pthread_rwlock_rdlock(&access_log_lock);
         ifstream in;
         string line;
         in.open(accessLog.c_str(), ios::in);
@@ -2064,12 +2064,12 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
-    pthread_rwlock_rdlock(&query_log_lock);
     int totalSize = 0;
     int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
     if(util.file_exist(queryLog))
     {
+        pthread_rwlock_rdlock(&query_log_lock);
         ifstream in;
         string line;
         in.open(queryLog.c_str(), ios::in);
