@@ -5154,16 +5154,22 @@ void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 	{
 		int pid = getpid();
 		float cup_usage = Util::get_cpu_usage(pid) * 100; // %
+		char cup_usage_char[32];
+		sprintf(cup_usage_char, "%f", cup_usage);
 		float mem_usage = Util::get_memory_usage(pid); // MB
+		char mem_usage_char[32];
+		sprintf(mem_usage_char, "%f", mem_usage);
 		unsigned long long disk_available = Util::get_disk_free(); // MB
+		char disk_available_char[32];
+		sprintf(disk_available_char, "%llu", disk_available);
 		Document resp_data;
 		Document::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("cup_usage", StringRef(to_string(cup_usage).c_str()), allocator);
-		resp_data.AddMember("mem_usage", StringRef(to_string(mem_usage).c_str()), allocator);
-		resp_data.AddMember("disk_available", StringRef(to_string(disk_available).c_str()), allocator);
+		resp_data.AddMember("cup_usage", StringRef(cup_usage_char), allocator);
+		resp_data.AddMember("mem_usage", StringRef(mem_usage_char), allocator);
+		resp_data.AddMember("disk_available", StringRef(disk_available_char), allocator);
 		sendResponseMsg(resp_data, operation, request, response);
 	}
 	catch (const std::exception &e)
