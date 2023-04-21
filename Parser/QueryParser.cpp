@@ -1580,13 +1580,11 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 {
 	string baseText = ctx->getText(), suffix, val;
-	if (baseText[0] != '"')
-		return baseText;
 	size_t sufIdx = baseText.find("^^");
-	if (sufIdx != string::npos) {
-		suffix = baseText.substr(sufIdx + 2);
-		val = baseText.substr(1, sufIdx - 2);
-	}
+	if (baseText.empty() || baseText[0] != '"' || sufIdx == string::npos)
+		return baseText;
+	suffix = baseText.substr(sufIdx + 2);
+	val = baseText.substr(1, sufIdx - 2);
 	replacePrefix(suffix);
 	baseText = '"' + val + "\"^^" + suffix;
 	long long ll;
