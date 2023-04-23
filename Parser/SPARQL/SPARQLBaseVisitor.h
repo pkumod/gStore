@@ -619,6 +619,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitNegIri(SPARQLParser::NegIriContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitPrefixedName(SPARQLParser::PrefixedNameContext *ctx) override {
     return visitChildren(ctx);
   }

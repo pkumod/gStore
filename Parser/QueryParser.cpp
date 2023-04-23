@@ -475,6 +475,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 						replacePrefix(prefixedPred);
 						proj_var.path_args.pred_set.push_back(prefixedPred);
 					}
+					auto negPredSet = bicCtx->predSet()->negIri();
+					for (auto pred : negPredSet)
+					{
+						string prefixedPred = pred->getText().substr(1);
+						replacePrefix(prefixedPred);
+						proj_var.path_args.neg_pred_set.push_back(prefixedPred);
+					}
 				}
 
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
@@ -541,6 +548,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
 					proj_var.path_args.pred_set.push_back(prefixedPred);
+				}
+				auto negPredSet = bicCtx->predSet()->negIri();
+				for (auto pred : negPredSet)
+				{
+					string prefixedPred = pred->getText().substr(1);
+					replacePrefix(prefixedPred);
+					proj_var.path_args.neg_pred_set.push_back(prefixedPred);
 				}
 				// set k
 				proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
@@ -780,6 +794,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
 					(curr_node.path_args).pred_set.push_back(prefixedPred);
+				}
+				auto negPredSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->negIri();
+				for (auto pred : negPredSet)
+				{
+					string prefixedPred = pred->getText().substr(1);
+					replacePrefix(prefixedPred);
+					(curr_node.path_args).neg_pred_set.push_back(prefixedPred);	// Get rid of the leading !
 				}
 
 				if (funcName == "KHOPREACHABLE")
