@@ -321,6 +321,8 @@ public:
 
     virtual antlrcpp::Any visitIri(SPARQLParser::IriContext *context) = 0;
 
+    virtual antlrcpp::Any visitNegIri(SPARQLParser::NegIriContext *context) = 0;
+
     virtual antlrcpp::Any visitPrefixedName(SPARQLParser::PrefixedNameContext *context) = 0;
 
     virtual antlrcpp::Any visitBlankNode(SPARQLParser::BlankNodeContext *context) = 0;

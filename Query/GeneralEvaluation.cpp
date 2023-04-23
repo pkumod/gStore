@@ -1606,17 +1606,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
-							{
 								pred_id_set.push_back(pred_id);
-							}
 						}
 					}
 					else
 					{
-						// Allow all predicates
+						// Allow all predicates except those in neg_pred_set
+						unordered_set<int> neg_pred_id_set;
+						for (string pred : proj[0].path_args.neg_pred_set)
+							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 						for (unsigned j = 0; j < pre_num; j++)
-							pred_id_set.push_back(j);
+							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+								pred_id_set.push_back(j);
 					}
 
 					// For each u-v pair, query
@@ -2015,17 +2017,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
-							{
 								pred_id_set.push_back(pred_id);
-							}
 						};
 					}
 					else
 					{
-						// Allow all predicates
+						// Allow all predicates except those in neg_pred_set
+						unordered_set<int> neg_pred_id_set;
+						for (string pred : proj[0].path_args.neg_pred_set)
+							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 						for (unsigned j = 0; j < pre_num; j++)
-							pred_id_set.push_back(j);
+							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+								pred_id_set.push_back(j);
 					}
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = Util::replace_all(fun_name, "\"", "");
@@ -2712,17 +2716,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
-								{
 									pred_id_set.push_back(pred_id);
-								}
 							}
 						}
 						else
 						{
-							// Allow all predicates
+							// Allow all predicates except those in neg_pred_set
+							unordered_set<int> neg_pred_id_set;
+							for (string pred : proj[i].path_args.neg_pred_set)
+								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 							for (unsigned j = 0; j < pre_num; j++)
-								pred_id_set.push_back(j);
+								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+									pred_id_set.push_back(j);
 						}
 
 						// For each u-v pair, query
@@ -2935,17 +2941,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
-								{
 									pred_id_set.push_back(pred_id);
-								}
 							}
 						}
 						else
 						{
-							// Allow all predicates
+							// Allow all predicates except those in neg_pred_set
+							unordered_set<int> neg_pred_id_set;
+							for (string pred : proj[i].path_args.neg_pred_set)
+								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 							for (unsigned j = 0; j < pre_num; j++)
-								pred_id_set.push_back(j);
+								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+									pred_id_set.push_back(j);
 						}
 
 						// For each u-v pair, query

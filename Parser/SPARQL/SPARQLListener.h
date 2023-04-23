@@ -467,6 +467,9 @@ public:
   virtual void enterIri(SPARQLParser::IriContext *ctx) = 0;
   virtual void exitIri(SPARQLParser::IriContext *ctx) = 0;
 
+  virtual void enterNegIri(SPARQLParser::NegIriContext *ctx) = 0;
+  virtual void exitNegIri(SPARQLParser::NegIriContext *ctx) = 0;
+
   virtual void enterPrefixedName(SPARQLParser::PrefixedNameContext *ctx) = 0;
   virtual void exitPrefixedName(SPARQLParser::PrefixedNameContext *ctx) = 0;
 
