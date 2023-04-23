@@ -951,7 +951,7 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				int t = getInVertID(temp, x, j);
 				if (dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
 				{
-					s.push(x);
+					s.push(-x - 1);
 					s.push(t);
 					flag0 = 1;
 					break;
@@ -1007,7 +1007,7 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				int t = getOutVertID(temp, x, j);
 				if (dis_u.find(t) != dis_u.end() && dis_u[t] == dis_u[temp] - 1)
 				{
-					s_new.push(x);
+					s_new.push(-x - 1);
 					s_new.push(t);
 					flag0 = 1;
 					break;
