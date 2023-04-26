@@ -5414,7 +5414,7 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 			rsum = 0.0;
 			fwd_idx.first.insert(uid, 1);
 			compute_ppr_with_reserve(fwd_idx, v2ppr);
-			return;
+			break;
 		}
 		else
 			forward_local_update_linear_topk(uid, rsum, rmax, lowest_delta_rmax, forward_from, fwd_idx, pred_set, alpha, k); // forward propagation, obtain reserve and residual
