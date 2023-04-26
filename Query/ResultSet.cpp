@@ -478,7 +478,7 @@ ResultSet::to_JSON()
 							{
 								data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
 							}
-							ans_str = ans_str.substr(0, pos+1);
+							ans_str = ans_str.substr(1, pos-1);
 						}
 						else
 						{
@@ -486,7 +486,7 @@ ResultSet::to_JSON()
 							ans_type = "typed-literal";
 							int pos = ans_str.find("\"^^<");
 							data_type = "http://www.w3.org/2001/XMLSchema#string-not-complete";
-							ans_str = ans_str.substr(0, pos+1);
+							ans_str = ans_str.substr(1, pos-1);
 						}
 					}
 				}
