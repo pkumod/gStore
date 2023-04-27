@@ -505,6 +505,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				}
 				else if (tmp == "PR")
 				{
+					proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
 					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol

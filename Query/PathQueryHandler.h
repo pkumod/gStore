@@ -378,7 +378,7 @@ public:
     long long triangleCounting(bool directed, const std::vector<int> &pred_set);
     double closenessCentrality(int uid, bool directed, const std::vector<int> &pred_set);
     std::vector<int> bfsCount(int uid, bool directed, const std::vector<int> &pred_set);
-    std::vector<double> PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol);
+    void PR(bool directed, const std::vector<int> &pred_set, int retNum, double alpha, int maxIter, double tol, std::vector<std::pair<int, double>> &idx2val);
     std::unordered_map<int, std::vector<int>> SSSP(int uid, bool directed, const std::vector<int> &pred_set);
     std::unordered_map<int, int> SSSPLen(int uid, bool directed, const std::vector<int> &pred_set);
     std::vector<std::vector<int>> labelProp(bool directed, const std::vector<int> &pred_set);

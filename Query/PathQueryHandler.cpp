@@ -1954,10 +1954,13 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 	@param tol the error tolerance used to check convergence in power method solver.
 	@return a vector that maps each vertex's ID to its PageRank value.
 **/
-vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol)
+void PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, int retNum, double alpha, int maxIter, double tol,
+std::vector<std::pair<int, double>> &idx2val)
 {
 	// initialize
 	int nodeNum = getVertNum();
+	if (retNum > nodeNum)
+		retNum = nodeNum;
 	vector<int> neiNum(nodeNum);
 	vector<double> oldPR(nodeNum), newPR(nodeNum);
 	for (int vid = 0; vid < nodeNum; ++vid)
@@ -2019,7 +2022,15 @@ vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_
 			newPR[vid] = offset;
 		}
 	}
-	return oldPR;
+	idx2val.clear();
+	for (int i = 0; i < nodeNum; i++)
+		idx2val.emplace_back(i, oldPR[i]);
+	// Extract top-k results
+	if (retNum != -1 && retNum < nodeNum) {
+		sort(idx2val.begin(), idx2val.end(), [](pair<size_t, double> const &l, pair<size_t, double> const &r)
+			{ return l.second > r.second; });
+		idx2val.erase(idx2val.begin() + retNum, idx2val.end());
+	}
 }
 
 /**
