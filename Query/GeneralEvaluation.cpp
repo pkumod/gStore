@@ -1606,17 +1606,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
-							{
 								pred_id_set.push_back(pred_id);
-							}
 						}
 					}
 					else
 					{
-						// Allow all predicates
+						// Allow all predicates except those in neg_pred_set
+						unordered_set<int> neg_pred_id_set;
+						for (string pred : proj[0].path_args.neg_pred_set)
+							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 						for (unsigned j = 0; j < pre_num; j++)
-							pred_id_set.push_back(j);
+							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+								pred_id_set.push_back(j);
 					}
 
 					// For each u-v pair, query
@@ -1864,18 +1866,18 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									auto ret = pqHandler->PR(proj[0].path_args.directed, pred_id_set, proj[0].path_args.misc[0], \
-										proj[0].path_args.misc[1], proj[0].path_args.misc[2]);
+									vector<pair<int, double>> idx2val;
+									pqHandler->PR(proj[0].path_args.directed, pred_id_set, proj[0].path_args.retNum, proj[0].path_args.misc[0], \
+										proj[0].path_args.misc[1], proj[0].path_args.misc[2], idx2val);
 									bool localFirstOutput = true;
 									// for (auto mp : ret)
-									for (size_t i = 0; i < ret.size(); i++)
+									for (size_t i = 0; i < idx2val.size(); i++)
 									{
 										if (localFirstOutput)
 											localFirstOutput = false;
 										else
 											ss << ",";
-										// ss << "{\"src\":\"" << kvstore->getStringByID(mp.first) << "\",\"result\":" << mp.second << "}";
-										ss << "{\"src\":\"" << kvstore->getStringByID(i) << "\",\"result\":" << ret[i] << "}";
+										ss << "{\"src\":\"" << kvstore->getStringByID(idx2val[i].first) << "\",\"result\":" << idx2val[i].second << "}";
 									}
 									doneOnceOp = true;
 								}
@@ -2015,17 +2017,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
-							{
 								pred_id_set.push_back(pred_id);
-							}
 						};
 					}
 					else
 					{
-						// Allow all predicates
+						// Allow all predicates except those in neg_pred_set
+						unordered_set<int> neg_pred_id_set;
+						for (string pred : proj[0].path_args.neg_pred_set)
+							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 						for (unsigned j = 0; j < pre_num; j++)
-							pred_id_set.push_back(j);
+							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+								pred_id_set.push_back(j);
 					}
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = Util::replace_all(fun_name, "\"", "");
@@ -2712,17 +2716,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
-								{
 									pred_id_set.push_back(pred_id);
-								}
 							}
 						}
 						else
 						{
-							// Allow all predicates
+							// Allow all predicates except those in neg_pred_set
+							unordered_set<int> neg_pred_id_set;
+							for (string pred : proj[i].path_args.neg_pred_set)
+								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 							for (unsigned j = 0; j < pre_num; j++)
-								pred_id_set.push_back(j);
+								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+									pred_id_set.push_back(j);
 						}
 
 						// For each u-v pair, query
@@ -2935,17 +2941,19 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
 								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
-								{
 									pred_id_set.push_back(pred_id);
-								}
 							}
 						}
 						else
 						{
-							// Allow all predicates
+							// Allow all predicates except those in neg_pred_set
+							unordered_set<int> neg_pred_id_set;
+							for (string pred : proj[i].path_args.neg_pred_set)
+								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
 							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 							for (unsigned j = 0; j < pre_num; j++)
-								pred_id_set.push_back(j);
+								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+									pred_id_set.push_back(j);
 						}
 
 						// For each u-v pair, query
@@ -3203,17 +3211,18 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										auto ret = pqHandler->PR(proj[i].path_args.directed, pred_id_set, proj[i].path_args.misc[0], \
-											proj[i].path_args.misc[1], proj[i].path_args.misc[2]);
+										vector<pair<int, double>> idx2val;
+										pqHandler->PR(proj[i].path_args.directed, pred_id_set, proj[i].path_args.retNum, proj[i].path_args.misc[0], \
+											proj[i].path_args.misc[1], proj[i].path_args.misc[2], idx2val);
 										bool localFirstOutput = true;
 										// for (auto mp : ret)
-										for (size_t i = 0; i < ret.size(); i++)
+										for (size_t i = 0; i < idx2val.size(); i++)
 										{
 											if (localFirstOutput)
 												localFirstOutput = false;
 											else
 												ss << ",";
-											ss << "{\"src\":\"" << kvstore->getStringByID(i) << "\",\"result\":" << ret[i] << "}";
+											ss << "{\"src\":\"" << kvstore->getStringByID(idx2val[i].first) << "\",\"result\":" << idx2val[i].second << "}";
 										}
 										doneOnceOp = true;
 									}

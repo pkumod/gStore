@@ -289,6 +289,7 @@ public:
 	std::vector<std::string> iri_set;
 	std::vector<std::string> vert_set;
 	std::vector<std::string> pred_set;
+	std::vector<std::string> neg_pred_set;
 	int k;
 	float confidence;
 	int retNum;

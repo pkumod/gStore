@@ -101,7 +101,7 @@ public:
     RuleNum_double = 141, RuleInteger_positive = 142, RuleDecimal_positive = 143, 
     RuleDouble_positive = 144, RuleInteger_negative = 145, RuleDecimal_negative = 146, 
     RuleDouble_negative = 147, RuleBooleanLiteral = 148, RuleString = 149, 
-    RuleIri = 150, RulePrefixedName = 151, RuleBlankNode = 152
+    RuleIri = 150, RuleNegIri = 151, RulePrefixedName = 152, RuleBlankNode = 153
   };
 
   SPARQLParser(antlr4::TokenStream *input);
@@ -265,6 +265,7 @@ public:
   class BooleanLiteralContext;
   class StringContext;
   class IriContext;
+  class NegIriContext;
   class PrefixedNameContext;
   class BlankNodeContext; 
 
@@ -2370,6 +2371,8 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<IriContext *> iri();
     IriContext* iri(size_t i);
+    std::vector<NegIriContext *> negIri();
+    NegIriContext* negIri(size_t i);
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -2900,6 +2903,21 @@ public:
   };
 
   IriContext* iri();
+
+  class  NegIriContext : public antlr4::ParserRuleContext {
+  public:
+    NegIriContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    IriContext *iri();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  NegIriContext* negIri();
 
   class  PrefixedNameContext : public antlr4::ParserRuleContext {
   public:
