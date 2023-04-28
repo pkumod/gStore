@@ -14,28 +14,32 @@
 class RegexExpression
 {
 	private:
-	    regex_t oRegex;
+		std::regex pattern;
 
 	public:
-		~RegexExpression()
+		bool compile(std::string &pRegexStr, std::string &flag)
 		{
-			regfree(&oRegex);
-		}
-
-		inline bool compile(std::string &pRegexStr, std::string &flag)
-		{
-			int flags = 0;
+			regex::flag_type flags;
 			for (int i = 0; i < (int)flag.length(); i++)
-				if (flag[i] == 'i')	flags |= REG_ICASE;
+				if (flag[i] == 'i')
+					flags = regex::icase;
 
-			int nErrCode = regcomp(&oRegex, pRegexStr.c_str(), flags);
-			return  (nErrCode == 0);
+			try {
+				pattern.assign(pRegexStr, flags);
+				return true;
+			} catch (regex_error& e) {
+				return false;
+			}
 		}
 
-		inline bool match(std::string &pText)
+		bool match(std::string &pText)
 		{
-			int nErrCode = regexec(&oRegex, pText.c_str(), 0, NULL, 0);
-			return (nErrCode == 0);
+			try {
+				bool ret = regex_search(pText, pattern);
+				return ret;
+			} catch (regex_error& e) {
+				return false;
+			}
 		}
 };
 
