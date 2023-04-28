@@ -174,8 +174,6 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 		char *block = new char[MAX_BLOCK_SIZE];
 
 		long current_block_begin = min_begin;
-		// fseek(this->value_file, current_block_begin, SEEK_SET);
-		current_offset = current_block_begin;
 
 		while (current_block_begin < max_end)
 		{
@@ -184,14 +182,11 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 			if (current_block_end <= request[pos].offset)
 			{
 				current_block_begin = request[pos].offset;
-				fseek(this->value_file, current_block_begin, SEEK_SET);
-				//current_offset = current_block_begin;
 				current_block_end = min(current_block_begin + MAX_BLOCK_SIZE, max_end);
 			}
 
 			// fread(block, sizeof(char), current_block_end - current_block_begin, this->value_file);
-			pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_offset);
-			current_offset += sizeof(char)*(current_block_end-current_block_begin);
+			pread(fileno(this->value_file), block, sizeof(char)*(current_block_end-current_block_begin), current_block_begin);
 
 			while (pos < (int)request.size())
 			{
