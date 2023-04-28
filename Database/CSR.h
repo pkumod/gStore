@@ -20,6 +20,7 @@ class CSR
 public:
 	unsigned pre_num;
 	unsigned w;
+	unsigned n,m;
 
 	// One for each predicate
 	std::vector<unsigned> *id2vid;	// Index to subject/object ID

@@ -877,6 +877,15 @@ bool Database::load(Socket &socket, bool loadCSR)
 			cout << this->csr[1].offset_list[i].size() << endl;
 			cout << this->csr[1].adjacency_list[i].size() << endl;
 		}
+		csr[1].n = this->entity_num;
+
+		unsigned ret = 0;
+		for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+			ret += csr[1].adjacency_list[i].size();
+		csr[1].m = ret;
+
+		cout << "total vertices " << csr[1].n << endl;
+		cout << "total edges " << csr[1].m << endl;
 		long end_time = Util::get_cur_time();
 		cout << "after creating CSR, used " << (end_time - begin_time) << "ms" << endl;
 		cout << "CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)" << endl;
@@ -1128,6 +1137,15 @@ bool Database::load(bool loadCSR)
 			cout << this->csr[1].offset_list[i].size() << endl;
 			cout << this->csr[1].adjacency_list[i].size() << endl;
 		}
+		csr[1].n = this->entity_num;
+
+		unsigned ret = 0;
+		for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+			ret += csr[1].adjacency_list[i].size();
+		csr[1].m = ret;
+
+		cout << "total vertices " << csr[1].n << endl;
+		cout << "total edges " << csr[1].m << endl;
 		long end_time = Util::get_cur_time();
 		cout << "after creating CSR, used " << (end_time - begin_time) << "ms" << endl;
 		cout << "CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)" << endl;

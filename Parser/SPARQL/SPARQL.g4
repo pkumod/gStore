@@ -135,7 +135,7 @@ unaryexpression : '!' primaryexpression|	'+' primaryexpression
  ;
 primaryexpression : brackettedexpression | builtInCall | iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var ;
 brackettedexpression : '(' expression ')' ;
-predSet : '{' iri ( ',' iri )* '}' | '{' '}' ;
+predSet : '{' iri ( ',' iri )* '}' | '{' negIri ( ',' negIri )* '}' | '{' '}' ;
 builtInCall : aggregate|	K_STR '(' expression ')' 
 |	K_LANG '(' expression ')' 
 |	K_LANGMATCHES '(' expression ',' expression ')' 
@@ -203,7 +203,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_TRIANGLECOUNTING '(' booleanLiteral ',' predSet ')'
 |   K_CLOSENESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_BFSCOUNT '(' varOrIri ',' booleanLiteral ',' predSet ')'
-|   K_PR '(' booleanLiteral ',' predSet ',' K_ALPHA '=' numericLiteral ',' K_MAXITER '=' num_integer ',' K_TOL '=' numericLiteral ')'
+|   K_PR '(' booleanLiteral ',' predSet ',' integerLiteral ',' K_ALPHA '=' numericLiteral ',' K_MAXITER '=' num_integer ',' K_TOL '=' numericLiteral ')'
 |   K_SSSP '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_SSSPLEN '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_LABELPROP '(' booleanLiteral ',' predSet ')'
@@ -244,6 +244,7 @@ double_negative : DOUBLE_NEGATIVE ;
 booleanLiteral : 'true' | 'false' ;
 string : STRING_LITERAL1 | STRING_LITERAL2 | STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2 ;
 iri : IRIREF | prefixedName ;
+negIri : '!' iri ;
 prefixedName : PNAME_LN | PNAME_NS ;
 blankNode : BLANK_NODE_LABEL | ANON
  ;

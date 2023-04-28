@@ -20,27 +20,33 @@ PathQueryHandler::~PathQueryHandler()
 
 int PathQueryHandler::getVertNum()
 {
-	if (n != -1)
-		return n; // Only consider static graphs for now
-	set<int> vertices;
-	for (int j = 0; j < 2; j++)
-	{
-		for (unsigned i = 0; i < csr[j].pre_num; i++)
-			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
-	}
-	n = vertices.size();
-	return n;
+	// if (n != -1)
+	// 	return n; // Only consider static graphs for now
+	// set<int> vertices;
+	// for (int j = 0; j < 2; j++)
+	// {
+	// 	for (unsigned i = 0; i < csr[j].pre_num; i++)
+	// 		vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
+	// }
+	// n = vertices.size();
+	// return n;
+
+	// save vertNum to CSR.n when database loadCSR 
+	return csr[1].n;
 }
 
 int PathQueryHandler::getEdgeNum()
 {
-	if (m != -1)
-		return m; // Only consider static graphs for now
-	int ret = 0;
-	for (unsigned i = 0; i < csr[1].pre_num; i++) // Same as summing that of csr[0]
-		ret += csr[1].adjacency_list[i].size();
-	m = ret;
-	return m;
+	// if (m != -1)
+	// 	return m; // Only consider static graphs for now
+	// int ret = 0;
+	// for (unsigned i = 0; i < csr[1].pre_num; i++) // Same as summing that of csr[0]
+	// 	ret += csr[1].adjacency_list[i].size();
+	// m = ret;
+	// return m;
+
+	// save edgeNum to CSR.m when database loadCSR 
+	return csr[1].m;
 }
 
 int PathQueryHandler::getSetEdgeNum(const vector<int> &pred_set)
@@ -951,7 +957,7 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				int t = getInVertID(temp, x, j);
 				if (dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
 				{
-					s.push(x);
+					s.push(-x - 1);
 					s.push(t);
 					flag0 = 1;
 					break;
@@ -1007,7 +1013,7 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				int t = getOutVertID(temp, x, j);
 				if (dis_u.find(t) != dis_u.end() && dis_u[t] == dis_u[temp] - 1)
 				{
-					s_new.push(x);
+					s_new.push(-x - 1);
 					s_new.push(t);
 					flag0 = 1;
 					break;
@@ -1948,10 +1954,13 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 	@param tol the error tolerance used to check convergence in power method solver.
 	@return a vector that maps each vertex's ID to its PageRank value.
 **/
-vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, double alpha, int maxIter, double tol)
+void PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, int retNum, double alpha, int maxIter, double tol,
+std::vector<std::pair<int, double>> &idx2val)
 {
 	// initialize
 	int nodeNum = getVertNum();
+	if (retNum > nodeNum)
+		retNum = nodeNum;
 	vector<int> neiNum(nodeNum);
 	vector<double> oldPR(nodeNum), newPR(nodeNum);
 	for (int vid = 0; vid < nodeNum; ++vid)
@@ -2013,7 +2022,15 @@ vector<double> PathQueryHandler::PR(bool directed, const std::vector<int> &pred_
 			newPR[vid] = offset;
 		}
 	}
-	return oldPR;
+	idx2val.clear();
+	for (int i = 0; i < nodeNum; i++)
+		idx2val.emplace_back(i, oldPR[i]);
+	// Extract top-k results
+	if (retNum != -1 && retNum < nodeNum) {
+		sort(idx2val.begin(), idx2val.end(), [](pair<size_t, double> const &l, pair<size_t, double> const &r)
+			{ return l.second > r.second; });
+		idx2val.erase(idx2val.begin() + retNum, idx2val.end());
+	}
 }
 
 /**
@@ -5414,7 +5431,7 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 			rsum = 0.0;
 			fwd_idx.first.insert(uid, 1);
 			compute_ppr_with_reserve(fwd_idx, v2ppr);
-			return;
+			break;
 		}
 		else
 			forward_local_update_linear_topk(uid, rsum, rmax, lowest_delta_rmax, forward_from, fwd_idx, pred_set, alpha, k); // forward propagation, obtain reserve and residual

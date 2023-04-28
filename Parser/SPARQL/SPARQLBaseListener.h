@@ -469,6 +469,9 @@ public:
   virtual void enterIri(SPARQLParser::IriContext * /*ctx*/) override { }
   virtual void exitIri(SPARQLParser::IriContext * /*ctx*/) override { }
 
+  virtual void enterNegIri(SPARQLParser::NegIriContext * /*ctx*/) override { }
+  virtual void exitNegIri(SPARQLParser::NegIriContext * /*ctx*/) override { }
+
   virtual void enterPrefixedName(SPARQLParser::PrefixedNameContext * /*ctx*/) override { }
   virtual void exitPrefixedName(SPARQLParser::PrefixedNameContext * /*ctx*/) override { }
 

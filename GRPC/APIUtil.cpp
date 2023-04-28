@@ -76,6 +76,8 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&users_map_lock);
     pthread_rwlock_destroy(&databases_map_lock);
     pthread_rwlock_destroy(&already_build_map_lock);
+    pthread_rwlock_destroy(&txn_m_lock);
+    pthread_rwlock_destroy(&ips_map_lock);
     pthread_rwlock_destroy(&query_log_lock);
     pthread_rwlock_destroy(&access_log_lock);
     pthread_rwlock_destroy(&transactionlog_lock);

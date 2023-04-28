@@ -475,6 +475,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 						replacePrefix(prefixedPred);
 						proj_var.path_args.pred_set.push_back(prefixedPred);
 					}
+					auto negPredSet = bicCtx->predSet()->negIri();
+					for (auto pred : negPredSet)
+					{
+						string prefixedPred = pred->getText().substr(1);
+						replacePrefix(prefixedPred);
+						proj_var.path_args.neg_pred_set.push_back(prefixedPred);
+					}
 				}
 
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
@@ -498,6 +505,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				}
 				else if (tmp == "PR")
 				{
+					proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
 					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol
@@ -541,6 +549,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
 					proj_var.path_args.pred_set.push_back(prefixedPred);
+				}
+				auto negPredSet = bicCtx->predSet()->negIri();
+				for (auto pred : negPredSet)
+				{
+					string prefixedPred = pred->getText().substr(1);
+					replacePrefix(prefixedPred);
+					proj_var.path_args.neg_pred_set.push_back(prefixedPred);
 				}
 				// set k
 				proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
@@ -780,6 +795,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
 					(curr_node.path_args).pred_set.push_back(prefixedPred);
+				}
+				auto negPredSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->negIri();
+				for (auto pred : negPredSet)
+				{
+					string prefixedPred = pred->getText().substr(1);
+					replacePrefix(prefixedPred);
+					(curr_node.path_args).neg_pred_set.push_back(prefixedPred);	// Get rid of the leading !
 				}
 
 				if (funcName == "KHOPREACHABLE")
@@ -1579,11 +1601,17 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 
 string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 {
-	string ret, baseText = ctx->getText();
+	string baseText = ctx->getText(), suffix, val;
+	size_t sufIdx = baseText.find("^^");
+	if (baseText.empty() || baseText[0] != '"' || sufIdx == string::npos)
+		return baseText;
+	suffix = baseText.substr(sufIdx + 2);
+	val = baseText.substr(1, sufIdx - 2);
+	replacePrefix(suffix);
+	baseText = '"' + val + "\"^^" + suffix;
 	long long ll;
-	if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
+	if (suffix == "<http://www.w3.org/2001/XMLSchema#integer>")
 	{
-		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#integer>") - 2);
 		try
 		{
 			ll = stoll(val);
@@ -1597,9 +1625,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 			throw "[ERROR] xsd:integer out of range.";
 		}
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#long>") != string::npos)
+	else if (suffix == "<http://www.w3.org/2001/XMLSchema#long>")
 	{
-		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#long>") - 2);
 		try
 		{
 			ll = stoll(val);
@@ -1613,9 +1640,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 			throw "[ERROR] xsd:long out of range.";
 		}
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#int>") != string::npos)
+	else if (suffix == "<http://www.w3.org/2001/XMLSchema#int>")
 	{
-		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#int>") - 2);
 		bool succ = 1;
 		try
 		{
@@ -1634,9 +1660,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		if (succ && (ll < (long long)INT_MIN || ll > (long long)INT_MAX))
 			throw "[ERROR] xsd:int out of range.";
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#short>") != string::npos)
+	else if (suffix == "<http://www.w3.org/2001/XMLSchema#short>")
 	{
-		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#short>") - 2);
 		bool succ = 1;
 		try
 		{
@@ -1655,9 +1680,8 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		if (succ && (ll < (long long)SHRT_MIN || ll > (long long)SHRT_MAX))
 			throw "[ERROR] xsd:short out of range.";
 	}
-	else if (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#byte>") != string::npos)
+	else if (suffix == "<http://www.w3.org/2001/XMLSchema#byte>")
 	{
-		string val = baseText.substr(1, baseText.find("^^<http://www.w3.org/2001/XMLSchema#byte>") - 2);
 		bool succ = 1;
 		try
 		{
@@ -1676,13 +1700,10 @@ string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 		if (succ && (ll < (long long)SCHAR_MIN || ll > (long long)SCHAR_MAX))	// signed char
 			throw "[ERROR] xsd:byte out of range.";
 	}
-	else if ((baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
-		|| (baseText[0] == '"' && baseText.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos))
+	else if (suffix == "<http://www.w3.org/2001/XMLSchema#float>" || suffix == "<http://www.w3.org/2001/XMLSchema#double>")
 	{
-		if (baseText.substr(1, 3) == "NaN")
+		if (val == "NaN")
 			throw "[ERROR] NaN for xsd:float or xsd:double.";
 	}
-
-	ret = baseText;
-	return ret;
+	return baseText;
 }
