@@ -46,7 +46,7 @@ APIUtil::~APIUtil()
         pthread_rwlock_unlock(&already_build_map_lock);
         if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
         {
-            SLOG_WARN(database_name + " unable to checkpoint due to loss of lock");
+            SLOG_WARN(database_name + " unable to save due to loss of lock");
             continue;
         }
         current_database->save();
