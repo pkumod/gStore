@@ -396,7 +396,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
-				|| tmp == "CORETRUSS")	// Path calls
+				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \ 
+				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -443,6 +444,14 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::maximumKplex_type;
 				else if (tmp == "CORETRUSS")
 					proj_var.aggregate_type = ProjectionVar::coreTruss_type;
+				else if (tmp == "KHOPCOUNT")
+					proj_var.aggregate_type = ProjectionVar::kHopCount_type;
+				else if (tmp == "KHOPNEIGHBOR")
+					proj_var.aggregate_type = ProjectionVar::kHopNeighbor_type;
+				else if (tmp == "SHORTESTPATHCOUNT")
+					proj_var.aggregate_type = ProjectionVar::shortestPathCount_type;
+				else if (tmp == "LOUVAIN")
+					proj_var.aggregate_type = ProjectionVar::louvain_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -485,7 +494,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				}
 
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
-					|| tmp == "KHOPENUMERATE")
+					|| tmp == "KHOPENUMERATE" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR")
 				{
 					if (bicCtx->integerLiteral(0))
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
@@ -509,6 +518,15 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// alpha
 					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
 					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// tol
+				}
+				else if (tmp == "LOUVAIN")
+				{
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// increase
+					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
+				}
+				else if (tmp == "LABELPROP")
+				{
+					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
 				}
 
 				if (bicCtx->booleanLiteral())
@@ -567,7 +585,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				// set fun_name
 				proj_var.path_args.fun_name = bicCtx->string()->getText();
 				proj_var.var = varCtx->getText();
-				cout<< "PFN fun_name: " << proj_var.path_args.fun_name << endl;
+				cout<< "call personalized function:" << proj_var.path_args.fun_name << endl;
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{

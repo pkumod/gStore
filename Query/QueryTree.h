@@ -408,7 +408,8 @@ public:
 		kHopReachablePath_type, ppr_type, triangleCounting_type, closenessCentrality_type,
 		bfsCount_type, pr_type, sssp_type, sssplen_type, labelProp_type, wcc_type, clusterCoeff_type,
 		maximumKplex_type, coreTruss_type,
-		CompTree_type, Contains_type, Custom_type, PFN_type};
+		CompTree_type, Contains_type, Custom_type, PFN_type, 
+		kHopCount_type, kHopNeighbor_type, shortestPathCount_type, louvain_type};
 	AggregateType aggregate_type;
 
 	std::string separator;	// For GROUP_CONCAT
