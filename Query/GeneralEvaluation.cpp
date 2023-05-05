@@ -1926,7 +1926,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									auto ret = pqHandler->labelProp(proj[0].path_args.directed, pred_id_set);
+									auto ret = pqHandler->labelProp(proj[0].path_args.directed, pred_id_set, proj[0].path_args.misc[0]);
 									bool localFirstOutput = true;
 									for (auto mp : ret)
 									{
@@ -1972,6 +1972,74 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									auto ret = pqHandler->clusteringCoeff(uid, proj[0].path_args.directed, pred_id_set);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"result\":";
 									ss << to_string(ret) << "}";
+								}
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::kHopCount_type)
+							{
+								int hopConstraint = proj[0].path_args.k;
+								auto ret = pqHandler->kHopCount(uid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+									<< "\",\"depth\":" << hopConstraint 
+									<< ", \"count\":" << ret << "}";
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::kHopNeighbor_type)
+							{
+								int hopConstraint = proj[0].path_args.k;
+								auto ret = pqHandler->kHopNeighbor(uid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+									<< "\",\"depth\":" << hopConstraint 
+									<< ", \"dst\":["; 
+								bool hasMore = false;
+								for (int nid : ret)
+								{
+									if (hasMore)
+										ss << ","; 
+									else 
+										hasMore = true;
+									ss << "\"" + kvstore->getStringByID(nid) + "\"";
+								}
+								ss << "]}";
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::shortestPathCount_type)
+							{
+								auto ret = pqHandler->shortestPathCount(uid, vid, proj[0].path_args.directed, pred_id_set);
+								ss << "{\"src\":\"" << kvstore->getStringByID(uid)
+									<< "\", \"dst\":\"" << kvstore->getStringByID(vid)
+									<< "\", \"count\":" << ret << "}";
+							}					
+							else if (proj[0].aggregate_type == ProjectionVar::louvain_type)
+							{
+								if (!doneOnceOp)
+								{
+									pair<size_t, map<int,set<int> > > result;
+									float min_modularity_increase = proj[0].path_args.misc[0];
+									int phase1_loop_num = proj[0].path_args.misc[1];
+									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[0].path_args.directed, result);
+									ss << "{\"count\":" << result.first << ", \"details\":[";
+									for (auto it=result.second.begin(); it != result.second.end(); it++ )
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
+										// ss << "{\"communityId\":\""<<it->first <<"\", \"menbers\": [";
+										// bool hasMore = false;
+										// for (int mid : it->second)
+										// {
+										// 	if (hasMore) {
+										// 		ss << ",";
+										// 	} 
+										// 	else 
+										// 	{
+										// 		hasMore = true;
+										// 	}
+										// 	ss << "\"" + kvstore->getStringByID(mid) + "\"";
+										// }
+										// ss << "]";
+									}
+									ss << "]}";
+									doneOnceOp = true;
 								}
 							}
 						}
@@ -3271,7 +3339,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										auto ret = pqHandler->labelProp(proj[i].path_args.directed, pred_id_set);
+										auto ret = pqHandler->labelProp(proj[i].path_args.directed, pred_id_set, proj[i].path_args.misc[0]);
 										bool localFirstOutput = true;
 										for (auto mp : ret)
 										{
@@ -3319,6 +3387,86 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										ss << to_string(ret) << "}";
 									}
 								}
+								else if (proj[i].aggregate_type == ProjectionVar::kHopCount_type)
+								{
+									int hopConstraint = proj[i].path_args.k;
+									auto ret = pqHandler->kHopCount(uid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+										<< "\",\"depth\":" << hopConstraint 
+										<< ", \"count\":" << ret << "}";
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::kHopNeighbor_type)
+								{
+									int hopConstraint = proj[i].path_args.k;
+									auto ret = pqHandler->kHopNeighbor(uid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+										<< "\",\"depth\":" << hopConstraint 
+										<< ", \"neighbor\":["; 
+									bool hasMore = false;
+									for (int nid : ret)
+									{
+										if (hasMore)
+											ss << ","; 
+										else 
+											hasMore = true;
+										ss << "\"" + kvstore->getStringByID(nid) + "\"";
+									}
+									ss << "]}";
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::shortestPathCount_type)
+								{
+									auto ret = pqHandler->shortestPathCount(uid, vid, proj[i].path_args.directed, pred_id_set);
+									if (notFirstOutput)
+										ss << ",";
+									else
+										notFirstOutput = 1;
+									ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+										<<"\", \"dst\":\"" << kvstore->getStringByID(vid)
+										<<"\", \"count\":" << ret << "}";
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::louvain_type)
+							{
+								if (!doneOnceOp)
+								{
+									pair<size_t, map<int,set<int> > > result;
+									float min_modularity_increase = proj[i].path_args.misc[0];
+									int phase1_loop_num = proj[i].path_args.misc[1];
+									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
+									ss << "{\"count\":" << result.first << ", \"details\":[";
+									for (auto it=result.second.begin(); it != result.second.end(); it++ )
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
+										// ss << "{\"communityId\":\""<<it->first <<"\", \"menbers\": [";
+										// bool hasMore = false;
+										// for (int mid : it->second)
+										// {
+										// 	if (hasMore) {
+										// 		ss << ",";
+										// 	} 
+										// 	else 
+										// 	{
+										// 		hasMore = true;
+										// 	}
+										// 	ss << "\"" + kvstore->getStringByID(mid) + "\"";
+										// }
+										// ss << "]";
+									}
+									ss << "]}";
+									doneOnceOp = true;
+								}
+							}
 							}
 							if (earlyBreak)
 								break;

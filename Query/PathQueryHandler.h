@@ -381,7 +381,7 @@ public:
     void PR(bool directed, const std::vector<int> &pred_set, int retNum, double alpha, int maxIter, double tol, std::vector<std::pair<int, double>> &idx2val);
     std::unordered_map<int, std::vector<int>> SSSP(int uid, bool directed, const std::vector<int> &pred_set);
     std::unordered_map<int, int> SSSPLen(int uid, bool directed, const std::vector<int> &pred_set);
-    std::vector<std::vector<int>> labelProp(bool directed, const std::vector<int> &pred_set);
+    std::vector<std::vector<int>> labelProp(bool directed, const std::vector<int> &pred_set, int maxIter);
     std::vector<std::vector<int>> WCC(const std::vector<int> &pred_set);
     double clusteringCoeff(int uid, bool directed, const std::vector<int> &pred_set);
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
@@ -389,7 +389,11 @@ public:
     std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
-    
+    int kHopCount(int uid, bool directed, int k, const std::vector<int> &pred_set);
+    std::vector<int> kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set);
+    int shortestPathCount(int uid, int vid, bool directed, const std::vector<int> &pred_set);
+    void louvain(int phase1_loop_num, float min_modularity_increase, std::vector<int> &pred_set, bool directed, std::pair<size_t, std::map<int, std::set<int> > > &result);
+
 	std::string getPathString(std::vector<int> &path_set);
 private:
     // Helper functions for SSPPR

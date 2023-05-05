@@ -118,7 +118,7 @@ graphNode : varOrTerm | triplesNode ;
 graphNodepath : varOrTerm | triplesNodepath ;
 varOrTerm : var | graphTerm ;
 varOrIri : var | iri ;
-varOrIriSet : '{' varOrIri ',' varOrIri ( ',' varOrIri )* '}' ;
+varOrIriSet : '{' varOrIri ( ',' varOrIri )* '}' ;
 var : VAR1 | VAR2 ;
 graphTerm : iri | rDFLiteral | numericLiteral | booleanLiteral | blankNode | NIL ;
 expression : conditionalOrexpression ;
@@ -206,12 +206,16 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_PR '(' booleanLiteral ',' predSet ',' integerLiteral ',' K_ALPHA '=' numericLiteral ',' K_MAXITER '=' num_integer ',' K_TOL '=' numericLiteral ')'
 |   K_SSSP '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_SSSPLEN '(' varOrIri ',' booleanLiteral ',' predSet ')'
-|   K_LABELPROP '(' booleanLiteral ',' predSet ')'
+|   K_LABELPROP '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ')'
 |   K_WCC '(' predSet ')'
 |   K_CLUSTERCOEFF '(' (varOrIri ',')? booleanLiteral ',' predSet ')'
 |   K_MAXIMUMKPLEX '(' predSet (',' num_integer)? ')'
 |   K_CORETRUSS '(' predSet ',' num_integer ',' num_integer ')'
 |   K_PFN '(' varOrIriSet ',' booleanLiteral ',' integerLiteral ',' predSet ',' string ')'
+|   K_KHOPCOUNT '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
+|   K_KHOPNEIGHBOR '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
+|   K_SHORTESTPATHCOUNT '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   K_LOUVAIN '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ',' K_INCREASE '=' numericLiteral ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -379,6 +383,11 @@ K_CLUSTERCOEFF : C L U S T E R C O E F F ;
 K_MAXIMUMKPLEX : M A X I M U M K P L E X ;
 K_CORETRUSS : C O R E T R U S S ;
 K_PFN : P F N ;
+K_KHOPCOUNT : K H O P C O U N T ;
+K_KHOPNEIGHBOR : K H O P N E I G H B O R ;
+K_SHORTESTPATHCOUNT : S H O R T E S T P A T H C O U N T ;
+K_LOUVAIN : L O U V A I N ;
+K_INCREASE : I N C R E A S E ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
 KK_DELETEWHERE : D E L E T E ' ' W H E R E ;
