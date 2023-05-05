@@ -291,7 +291,7 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::lexURI(std::string& token,char c
          token+=c;
          if (c=='\n') line++;
       }
-      if (!read(c)) {
+      if (c==' ' || !read(c)) {
          stringstream msg;
          msg << "lexer error in line " << line << ": invalid URI";
          throw Exception(msg.str());
