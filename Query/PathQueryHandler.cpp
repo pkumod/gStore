@@ -21,27 +21,33 @@ PathQueryHandler::~PathQueryHandler()
 
 int PathQueryHandler::getVertNum()
 {
-	if (n != -1)
-		return n;	// Only consider static graphs for now
-	set<int> vertices;
-	for (int j = 0; j < 2; j++)
-	{
-		for (int i = 0; i < csr[j].pre_num; i++)
-			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
-	}
-	n = vertices.size();
-	return n;
+	// if (n != -1)
+	// 	return n;	// Only consider static graphs for now
+	// set<int> vertices;
+	// for (int j = 0; j < 2; j++)
+	// {
+	// 	for (int i = 0; i < csr[j].pre_num; i++)
+	// 		vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
+	// }
+	// n = vertices.size();
+	// return n;
+
+	// save vertNum to CSR.n when database loadCSR 
+	return csr[1].n;
 }
 
 int PathQueryHandler::getEdgeNum()
 {
-	if (m != -1)
-		return m;	// Only consider static graphs for now
-	int ret = 0;
-	for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
-		ret += csr[1].adjacency_list[i].size();
-	m = ret;
-	return m;
+	// if (m != -1)
+	// 	return m;	// Only consider static graphs for now
+	// int ret = 0;
+	// for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+	// 	ret += csr[1].adjacency_list[i].size();
+	// m = ret;
+	// return m;
+
+	// save edgeNum to CSR.m when database loadCSR 
+	return csr[1].m;
 }
 
 int PathQueryHandler::getSetEdgeNum(const vector<int> &pred_set)
@@ -2450,7 +2456,7 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 				{
 					if (retBudget != 0)
 					{
-						s.push_back(make_pair(to, pred));
+						s.push_back(make_pair(to, -pred - 1));
 						int next_f = bc_dfs(to, vid, retBudget, directed, k, pred_set, s, bar, paths);
 						if (next_f != k + 1 && f < next_f + 1)
 							f = next_f + 1;

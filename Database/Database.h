@@ -90,6 +90,12 @@ public:
 
 	//root Path of this DB + DBInfoFile
 	string getDBInfoFile();
+	
+	bool loadDBInfoFile();
+
+	bool loadStatisticsInfoFile();
+
+	unordered_map<string, unsigned long long> getStatisticsInfo();
 
 	void setTypePredicateName(string& names);
 
@@ -271,11 +277,8 @@ private:
 	void saveIDinfo(); //write and empty the free list
 
 	bool saveDBInfoFile();
-	bool loadDBInfoFile();
 
 	bool saveStatisticsInfoFile();
-
-	bool loadStatisticsInfoFile();
 
 	string getStorePath();
 

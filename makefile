@@ -118,7 +118,7 @@ serverobj = $(objdir)Operation.o $(objdir)Server.o $(objdir)Socket.o
 
 grpcobj = $(objdir)grpc_server.o $(objdir)grpc_server_task.o $(objdir)grpc_message.o \
 		  $(objdir)grpc_router.o $(objdir)grpc_routetable.o $(objdir)grpc_content.o \
-		  $(objdir)grpc_status_code.o ${objdir}APIUtil.o
+		  $(objdir)grpc_status_code.o $(objdir)grpc_multipart_parser.o ${objdir}APIUtil.o
 
 databaseobj = $(objdir)Statistics.o $(objdir)Database.o $(objdir)Join.o $(objdir)Strategy.o \
  $(objdir)CSR.o $(objdir)Txn_manager.o $(objdir)TableOperator.o $(objdir)PlanTree.o  \
@@ -187,7 +187,7 @@ $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile)
 $(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_scheduler.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library) $(openmp) ${ldl}
 
-$(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp $(objfile) ${objdir}APIUtil.o
+$(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp ./Server/MultipartParser.hpp $(objfile) ${objdir}APIUtil.o
 	$(CXX) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) ${objdir}APIUtil.o $(library) $(inc) -DUSE_BOOST_REGEX $(openmp) ${ldl}
 
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
@@ -265,7 +265,7 @@ $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
 $(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) $(inc_log) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
-$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
+$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Server/MultipartParser.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
 	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) -o $(objdir)ghttp.o -DUSE_BOOST_REGEX $(def64IO) $(openmp)
 
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
@@ -710,7 +710,10 @@ $(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database
 $(objdir)grpc_status_code.o: GRPC/grpc_status_code.cpp GRPC/grpc_status_code.h $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_status_code.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_status_code.o $(def64IO) $(openmp)
 
-$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_multipart_parser.o: GRPC/grpc_multipart_parser.cpp GRPC/grpc_multipart_parser.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) GRPC/grpc_multipart_parser.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_multipart_parser.o $(def64IO) $(openmp)
+
+$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h GRPC/grpc_stringpiece.h $(objdir)grpc_multipart_parser.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_content.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_content.o $(def64IO) $(openmp)
 
 $(objdir)grpc_message.o: GRPC/grpc_message.cpp GRPC/grpc_message.h GRPC/grpc_noncopyable.h $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)

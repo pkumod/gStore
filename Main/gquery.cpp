@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 		int len = db_folder.length();
 		if (db_folder.length() > _len_suffix && db_folder.substr(len - _len_suffix, _len_suffix) == _db_suffix)
 		{
-			cout << "The database name can not end with "<< _db_suffix << endl;
+			cout << "The database name can not end with " + _db_suffix + "! Input \"bin/gquery -h\" for help." << endl;
 			return 0;
 		}
 

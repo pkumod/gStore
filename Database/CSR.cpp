@@ -31,6 +31,8 @@ void CSR::init(unsigned pnum)
 	this->vid2id = new map<unsigned, unsigned>[this->pre_num];
 	this->offset_list = new vector<unsigned>[this->pre_num];
 	this->adjacency_list = new vector<unsigned>[this->pre_num];
+	this->n = 0;
+	this->m = 0;
 	// this->valid = new bool[this->pre_num];
 }
 

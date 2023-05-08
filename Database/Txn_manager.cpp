@@ -167,12 +167,12 @@ int Txn_manager::Commit(txn_id_t TID)
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
 		cerr << "wrong transaction id!" << endl;
-		checkpoint_lock.unlock();
+		// checkpoint_lock.unlock();
 		return -1;
 	}
 	else if (txn->GetState() != TransactionState::RUNNING) {
 		cerr << "transaction not in running state! commit failed" << " " << (int)txn->GetState() << endl;
-		checkpoint_lock.unlock();
+		// checkpoint_lock.unlock();
 		return 1;
 	}
 	txn_id_t CID = this->ArrangeCommitID();
@@ -182,7 +182,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	else
 	{
 		cout << "error! database has been flushed or removed" << endl;
-		checkpoint_lock.unlock();
+		// checkpoint_lock.unlock();
 		return -1;
 	}
 	//writelog(log_str);

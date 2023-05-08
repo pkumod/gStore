@@ -18,6 +18,12 @@ using Json = rapidjson::Document;
 
 struct GRPCReqData;
 
+struct SaveFileContext;
+
+void pread_callback(WFFileIOTask *pread_task);
+
+void pwrite_callback(WFFileIOTask *pwrite_task);
+
 extern const std::string string_not_found;
 
 class GRPCReq : public protocol::HttpRequest, public Noncopyable
@@ -125,6 +131,8 @@ private:
     std::map<std::string, std::string> _route_params;
     std::map<std::string, std::string> _query_params;
 
+    MultiPartForm _multi_part;
+    
     ParsedURI _parsed_uri;
 };
 
@@ -136,12 +144,11 @@ public:
 
     void String(std::string &&str);
 
-    // TODO send file 
+    // send file 
     void File(const std::string &path);
 
-    void File(const std::string &path, size_t start);
-
-    void File(const std::string &path, size_t start, size_t end);
+    // save file
+    void Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg);
 
     // send json string
     void Json(const Json &json);
@@ -198,6 +205,27 @@ public:
     std::string resp_msg;
 };
 
+class GRPCUtil
+{
+public:
+    static int fileSize(const std::string &path, size_t *size);
+    
+    // path = /usr/local/upload/test.nt
+    // suffix = nt
+    static std::string fileSuffix(const std::string &path);
+
+    // path = /usr/local/upload/test.nt
+    // name = test.nt
+    static std::string fileName(const std::string &path);
+
+    static bool isFile(const std::string &path);
+
+    static bool isDir(const std::string &path);
+public:
+    static int send_file(const std::string &path, size_t start, size_t end, GRPCResp *resp);
+
+    static void saveFile(const std::string &dst_path, const std::string &content,  GRPCResp *resp, const std::string &notify_msg);
+};
 using GRPCTask = WFNetworkTask<GRPCReq, GRPCResp>;
 
 } // namespace grpc

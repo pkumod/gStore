@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 			document.SetObject();
 			document.Parse(res.c_str());
 			// ghttp server is running
-			if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+			if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
 			{
 				type = "ghttp";
 			}
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 				gc_check(gc, "grpc", port, res);
 				document.Parse(res.c_str());
 				// grpc server is running
-				if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+				if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
 				{
 					type = "grpc";
 				} 
@@ -188,11 +188,7 @@ int main(int argc, char *argv[])
 		gc.Post(strUrl, postdata, res);
 		rapidjson::Document jsonRes;
 		jsonRes.Parse(res.c_str());
-		if (jsonRes.HasParseError())
-		{
-			cout << "the server stop fail." << endl;
-		}
-		if (jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
+		if (!jsonRes.HasParseError() && jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
 		{
 			cout << "the Server is stopped successfully!" << endl;
 		}
