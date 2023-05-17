@@ -97,6 +97,24 @@ int main(int argc, char *argv[])
 			{
 				type = res[0];
 				port = res[1];
+				string res = "";
+				gc_check(gc, type, port, res);
+				rapidjson::Document document;
+				document.SetObject();
+				document.Parse(res.c_str());
+				if (document.HasParseError()) {
+					string cmd = "rm -rf " + _db_home + "/system" +_db_suffix + "/password*.txt";;
+					system(cmd.c_str());
+					cmd = "rm -rf " + system_port_path;
+					system(cmd.c_str());
+					cout << "http server is not running!" << endl;
+					return 0;
+				}
+			}
+			else
+			{
+				cout << "http server port is invalid: " << type_port << endl;
+				return 0;
 			}
 		}
 		else if (Util::is_number(type_port))
@@ -124,7 +142,7 @@ int main(int argc, char *argv[])
 				} 
 				else
 				{
-					string cmd = "rm -rf " + _db_home + "system" +_db_suffix + "/password*.txt";;
+					string cmd = "rm -rf " + _db_home + "/system" +_db_suffix + "/password*.txt";;
 					system(cmd.c_str());
 					cmd = "rm -rf " + system_port_path;
 					system(cmd.c_str());
