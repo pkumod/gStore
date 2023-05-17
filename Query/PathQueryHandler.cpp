@@ -5958,7 +5958,7 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 	@return the number of vertices reachable from u with k steps.
 **/
 int PathQueryHandler::kHopCount(int uid, bool directed, int k, const std::vector<int> &pred_set) {
-	 std::vector<int> neighbor = kHopNeighbor(uid, directed, k, pred_set);
+	 std::vector<int> neighbor = kHopNeighbor(uid, directed, k, pred_set, -1);
 	 return neighbor.size();
 }
 /**
@@ -5970,7 +5970,7 @@ int PathQueryHandler::kHopCount(int uid, bool directed, int k, const std::vector
 	@param pred_set the set of edge labels allowed.
 	@return the number of vertices reachable from u with k steps.
 **/
- std::vector<int> PathQueryHandler::kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set) {
+ std::vector<int> PathQueryHandler::kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set, int retNum) {
 	int s = uid;
 	std::vector<int> cnt;
 	std::vector<int> q[2];
@@ -6003,7 +6003,13 @@ int PathQueryHandler::kHopCount(int uid, bool directed, int k, const std::vector
 						if (visited[n] == 0)
 						{
 							if (k == 1)
+							{
 								cnt.push_back(n);
+								if (retNum >= 0 && cnt.size() >= retNum)
+								{
+									return cnt;
+								}
+							}
 							else
 							{
 								if (q[next_idx].size() <= next_qsz)

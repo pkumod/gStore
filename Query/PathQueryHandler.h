@@ -390,7 +390,7 @@ public:
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
     int kHopCount(int uid, bool directed, int k, const std::vector<int> &pred_set);
-    std::vector<int> kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set);
+    std::vector<int> kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set, int retNum);
     int shortestPathCount(int uid, int vid, bool directed, const std::vector<int> &pred_set);
     void louvain(int phase1_loop_num, float min_modularity_increase, std::vector<int> &pred_set, bool directed, std::pair<size_t, std::map<int, std::set<int> > > &result);
 
