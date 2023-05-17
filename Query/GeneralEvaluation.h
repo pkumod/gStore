@@ -57,9 +57,6 @@ class GeneralEvaluation
 
 		shared_ptr<BGPQuery> bgp_query_total;
 
-		char* string_index_buffer;
-		unsigned string_index_buffer_size;
-
 		// freelist_entity+entity_num: used for getting all entity id as sources in kleeneClosure evaluation
 		class AllEntityId
 		{

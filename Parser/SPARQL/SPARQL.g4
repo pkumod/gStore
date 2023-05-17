@@ -213,7 +213,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_CORETRUSS '(' predSet ',' num_integer ',' num_integer ')'
 |   K_PFN '(' varOrIriSet ',' booleanLiteral ',' integerLiteral ',' predSet ',' string ')'
 |   K_KHOPCOUNT '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
-|   K_KHOPNEIGHBOR '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
+|   K_KHOPNEIGHBOR '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet (',' integerLiteral)? ')'
 |   K_SHORTESTPATHCOUNT '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_LOUVAIN '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ',' K_INCREASE '=' numericLiteral ')'
  ;

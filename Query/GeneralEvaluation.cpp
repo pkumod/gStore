@@ -130,16 +130,12 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 	this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
 	this->bgp_query_total = make_shared<BGPQuery>();
-	this->string_index_buffer = NULL;
-	this->string_index_buffer_size = 0;
 }
 
 GeneralEvaluation::~GeneralEvaluation()
 {
 	if (pqHandler)
 		delete pqHandler;
-	if (string_index_buffer)
-		delete[] string_index_buffer;
 }
 
 void
@@ -1438,7 +1434,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 	{
 		return;
 	}
-
+	
+	char* string_index_buffer = NULL;
+	unsigned string_index_buffer_size = 0;
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
 		// long t0 = Util::get_cur_time();
@@ -1985,7 +1983,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							else if (proj[0].aggregate_type == ProjectionVar::kHopNeighbor_type)
 							{
 								int hopConstraint = proj[0].path_args.k;
-								auto ret = pqHandler->kHopNeighbor(uid, proj[0].path_args.directed, hopConstraint, pred_id_set);
+								int retNum = proj[0].path_args.retNum;
+								if (retNum < 0) {
+									retNum = 100;
+								}
+								auto ret = pqHandler->kHopNeighbor(uid, proj[0].path_args.directed, hopConstraint, pred_id_set, retNum);
 								ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
 									<< "\",\"depth\":" << hopConstraint 
 									<< ", \"dst\":["; 
@@ -3402,7 +3404,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else if (proj[i].aggregate_type == ProjectionVar::kHopNeighbor_type)
 								{
 									int hopConstraint = proj[i].path_args.k;
-									auto ret = pqHandler->kHopNeighbor(uid, proj[i].path_args.directed, hopConstraint, pred_id_set);
+									int retNum = proj[i].path_args.retNum;
+									if (retNum < 0) {
+										retNum = 100;
+									}
+									auto ret = pqHandler->kHopNeighbor(uid, proj[i].path_args.directed, hopConstraint, pred_id_set, retNum);
 									if (notFirstOutput)
 										ss << ",";
 									else
@@ -3670,6 +3676,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		}
 	}
 
+	if (string_index_buffer != NULL) delete[] string_index_buffer;
 	this->releaseResult();
 }
 
@@ -3709,6 +3716,9 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 	update_triple = new TripleWithObjType[update_triple_num];
 
 	int update_triple_count = 0;
+	
+	char* string_index_buffer = NULL;
+	unsigned string_index_buffer_size = 0;
 	for (int i = 0; i < (int)update_pattern.sub_group_pattern.size(); i++)
 		if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 		{
@@ -3772,6 +3782,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 				}
 			}
 		}
+	if (string_index_buffer != NULL) delete[] string_index_buffer;
 }
 
 void
@@ -4596,6 +4607,9 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
                     tr.result.back().id[new_id_pos++]=bgpquery_result[k][i];
             }
         }
+		char* string_index_buffer = NULL;
+		unsigned string_index_buffer_size = 0;
         this->stringindex->trySequenceAccess(string_index_request, string_index_buffer, string_index_buffer_size);
+		if (string_index_buffer != NULL) delete[] string_index_buffer;
     }
 }
