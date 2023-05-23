@@ -1871,6 +1871,13 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
+		// check load status: need unload if already load
+		if (apiUtil->check_already_load(db_name))
+		{
+			string error = "Database alreay load, need unload it first.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
 		SLOG_DEBUG("restore database:" + db_name);
 		if (apiUtil->check_already_build(db_name) == false)
 		{
@@ -1899,6 +1906,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 				return;
 			}
 		}
+
 		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
 
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
