@@ -1819,6 +1819,13 @@ try
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
+		// check load status: need unload if already load
+		if (apiUtil->check_already_load(db_name))
+		{
+			string error = "Database alreay load, need unload it first.";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
 		string database = db_name;
 		SLOG_DEBUG("restore database:" + database);
 		if (apiUtil->check_already_build(db_name) == false)
