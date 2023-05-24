@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
 	}
 
 	// check port
-	int max_try = 30;
+	int max_try = 20;
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -546,25 +546,35 @@ int main(int argc, char *argv[])
 	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 	if (bind_return == -1)
 	{
-		cout<<"Server port "<< port_str <<" is already in use."<<endl;
-		return -1;
-	} 
-	else // relase bind
-	{
-		int close_status;
+		cout<<"waiting.";
 		do {
-			close_status = close(sock);
-			// shutdown_status = shutdown(sock, SHUT_RDWR);
-			if (close_status != 0)
-			{
-				SLOG_DEBUG("close I/O result:" + to_string(close_status));
-				sleep(1);
-			}
+			sleep(3);
+			cout<<".";
+			bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 			max_try --;
-		} while (close_status != 0 && max_try > 0);
-		sock = -1;
-		std::memset(&addr, 0, sizeof(addr));
-	}
+		} while (bind_return != -1 && max_try > 0);
+		cout<<endl;
+		if (bind_return == -1)
+		{			
+			cout<<"Server port "<< port_str <<" is already in use."<<endl;
+			return -1;
+		}
+	} 
+	max_try = 20;
+	// relase bind
+	int close_status;
+	do {
+		close_status = close(sock);
+		// shutdown_status = shutdown(sock, SHUT_RDWR);
+		if (close_status != 0)
+		{
+			SLOG_DEBUG("close I/O result:" + to_string(close_status));
+			sleep(3);
+		}
+		max_try --;
+	} while (close_status != 0 && max_try > 0);
+	sock = -1;
+	std::memset(&addr, 0, sizeof(addr));
 
 	// Notice that current_database is assigned in the child process, not in the father process
 	// when used as endpoint, or when the database is indicated in command line, we can assign
@@ -1161,9 +1171,13 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		doc.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
 		string db_path = _db_home + "/" + db_name + _db_suffix;
 		db_path = Util::getExactPath(db_path.c_str());
-		long long unsigned count_size_byte = Util::count_dir_size(db_path.c_str());
-		// byte to MB
-		unsigned diskUsed = count_size_byte>>20;
+		string real_path = Util::getExactPath(db_path.c_str());
+		unsigned diskUsed = 0;
+		if (!real_path.empty()) {
+			long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+			// byte to MB
+			diskUsed = count_size_byte>>20;
+		}
 		doc.AddMember("diskUsed", diskUsed, allocator);
 		doc.AddMember("subjectList", subjectList, allocator);
 		sendResponseMsg(doc, operation, request, response);
