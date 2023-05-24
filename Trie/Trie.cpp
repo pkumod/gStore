@@ -301,7 +301,7 @@ Trie::saveStringPrefix()
 	{
 		fputs(iter->first.c_str(), StringPrefix);
 		fputc('\n', StringPrefix);
-		sprintf(int2c, "%d", iter->second);
+		sprintf(int2c, "%lld", iter->second);
 		fputs(int2c, StringPrefix);
 		fputc('\n', StringPrefix);
 	}
