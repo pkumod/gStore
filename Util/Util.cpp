@@ -1361,16 +1361,16 @@ Util::getSystemOutput(string cmd)
     cmd = "rm -rf " + file;
     if(ret < 0)
     {
-        fprintf(stderr, "system call failed!\n");
+        fprintf(stderr, "system call failed:%s\n", cmd.c_str());
         system(cmd.c_str());
-        return NULL;
+        return "";
     }
 
     ifstream fin(file.c_str());
     if(!fin)
     {
         cerr << "getSystemOutput: Fail to open : " << file << endl;
-        return NULL;
+        return "";
     }
 
 	string temp;
