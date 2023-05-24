@@ -94,10 +94,13 @@ int main(int argc, char *argv[])
 			built_time = Util::replace_all(_rs.answer[0][1], "\"", "");
 		}
 		string db_path = _db_home + "/" + db_name + _db_suffix;
-		db_path = Util::getExactPath(db_path.c_str());
-		long long unsigned count_size_byte = Util::count_dir_size(db_path.c_str());
-		// byte to MB
-		unsigned diskUsed = count_size_byte>>20;
+		string real_path = Util::getExactPath(db_path.c_str());
+		unsigned diskUsed = 0;
+		if (!real_path.empty()) {
+			long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+			// byte to MB
+			diskUsed = count_size_byte>>20;
+		}
 
 		std::vector<std::string> header = {"name", "value"};
 		std::vector<std::vector<std::string>> rows;
