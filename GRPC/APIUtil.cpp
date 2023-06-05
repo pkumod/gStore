@@ -1715,7 +1715,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 
     if (type == "login" || type == "testConnect" || type == "getCoreVersion" 
         || type == "funquery" || type == "funcudb" || type == "funreview"
-        || type == "check" || type == "show" || type == "userpassword")
+        || type == "check" || type == "show" || type == "userpassword" || type == "upload" || type == "download")
     {
         return 1;
     }
@@ -1733,7 +1733,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_unlock(&(it->second->query_priv_set_lock));
 	}
 	else if(type == "update" || type == "batchInsert" || type == "batchRemove" 
-        || type == "begin" || type == "tquery" || type == "commit" || type == "rollback")
+        || type == "begin" || type == "tquery" || type == "commit" || type == "rollback" || type == "checkpoint")
 	{
 		pthread_rwlock_rdlock(&(it->second->update_priv_set_lock));
 		if(it->second->update_priv.find(db_name) != it->second->update_priv.end())
