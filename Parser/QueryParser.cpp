@@ -1137,6 +1137,8 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	bool kleene = false;
 
 	subject = ctx->varOrTerm()->getText();
+	if (ctx->varOrTerm()->graphTerm() && ctx->varOrTerm()->graphTerm()->blankNode())
+		subject = "<" + subject + ">";
 	replacePrefix(subject);
 
 	// Assume triplesSameSubjectpath : varOrTerm propertyListpathNotEmpty ;
@@ -1192,6 +1194,10 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 					&& objectpath->graphNodepath()->varOrTerm()->graphTerm() \
 					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->booleanLiteral())
 					object = "\"" + (objectpath->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else if (objectpath->graphNodepath()->varOrTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm() \
+					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->blankNode())
+					object = "<" + objectpath->getText() + ">";
 				else
 					object = getTextWithRange(objectpath);
 				replacePrefix(object);
@@ -1211,6 +1217,10 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 					&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
 					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
 					object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+				else if (object_ptr->graphNode()->varOrTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->blankNode())
+					object = "<" + object_ptr->getText() + ">";
 				else
 					object = getTextWithRange(object_ptr);
 				replacePrefix(object);
@@ -1496,6 +1506,8 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 	string subject, predicate, object;
 
 	subject = ctx->varOrTerm()->getText();
+	if (ctx->varOrTerm()->graphTerm() && ctx->varOrTerm()->graphTerm()->blankNode())
+		subject = "<" + subject + ">";
 	replacePrefix(subject);
 
 	// Assume triplesSameSubject : varOrTerm propertyListNotEmpty ;
@@ -1515,6 +1527,10 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 				&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
 				&& object_ptr->graphNode()->varOrTerm()->graphTerm()->booleanLiteral())
 				object = "\"" + (object_ptr->getText()) + "\"" + "^^<http://www.w3.org/2001/XMLSchema#boolean>";
+			else if (object_ptr->graphNode()->varOrTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
+				&& object_ptr->graphNode()->varOrTerm()->graphTerm()->blankNode())
+				object = "<" + object_ptr->getText() + ">";
 			else
 				object = getTextWithRange(object_ptr);
 			replacePrefix(object);
