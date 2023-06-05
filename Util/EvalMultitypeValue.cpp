@@ -212,8 +212,10 @@ void EvalMultitypeValue::convert2Type(EvalMultitypeValue::DataType to_type)
 void EvalMultitypeValue::getSameNumericType (EvalMultitypeValue &x)
 {
 	DataType to_type = max(this->datatype, x.datatype);
-	this->convert2Type(to_type);
-	x.convert2Type(to_type);
+	if (this->datatype != to_type)
+		this->convert2Type(to_type);
+	if (x.datatype != to_type)
+		x.convert2Type(to_type);
 }
 
 EvalMultitypeValue

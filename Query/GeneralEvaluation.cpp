@@ -2243,10 +2243,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						string groupconcat;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_sum.int_value = 0;
-						numeric_min.datatype = EvalMultitypeValue::xsd_integer;
-						numeric_min.int_value = INT_MAX;
-						numeric_max.datatype = EvalMultitypeValue::xsd_integer;
-						numeric_max.int_value = INT_MIN;
+						numeric_min.datatype = EvalMultitypeValue::xsd_long;
+						numeric_min.long_value = LONG_LONG_MAX;
+						numeric_max.datatype = EvalMultitypeValue::xsd_long;
+						numeric_max.long_value = LONG_LONG_MIN;
 						datetime_min.datatype = EvalMultitypeValue::xsd_datetime;
 						datetime_max.datatype = EvalMultitypeValue::xsd_datetime;
 
@@ -2266,7 +2266,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									numeric = false;
 									datetime = false;
 									if (tmp.datatype != EvalMultitypeValue::xsd_integer && tmp.datatype != EvalMultitypeValue::xsd_decimal
-										&& tmp.datatype != EvalMultitypeValue::xsd_float && tmp.datatype != EvalMultitypeValue::xsd_double)
+										&& tmp.datatype != EvalMultitypeValue::xsd_float && tmp.datatype != EvalMultitypeValue::xsd_double
+										&& tmp.datatype != EvalMultitypeValue::xsd_long)
 									{
 										if (proj[i].aggregate_type == ProjectionVar::Sum_type
 											|| proj[i].aggregate_type == ProjectionVar::Avg_type)
@@ -2388,7 +2389,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									if (tmp.datatype != EvalMultitypeValue::xsd_integer
 										&& tmp.datatype != EvalMultitypeValue::xsd_decimal
 										&& tmp.datatype != EvalMultitypeValue::xsd_float
-										&& tmp.datatype != EvalMultitypeValue::xsd_double)
+										&& tmp.datatype != EvalMultitypeValue::xsd_double
+										&& tmp.datatype != EvalMultitypeValue::xsd_long)
 									{
 										if (proj[i].aggregate_type == ProjectionVar::Sum_type
 											|| proj[i].aggregate_type == ProjectionVar::Avg_type)
