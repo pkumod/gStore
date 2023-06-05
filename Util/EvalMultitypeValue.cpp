@@ -761,8 +761,47 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
+	if (datatype == xsd_datetime && x.datatype == xsd_datetime) {
+		std::tm t1, t2;
+		t1.tm_year = dt_value.date[0] - 1900;
+		t1.tm_mon = dt_value.date[1] - 1;
+		t1.tm_mday = dt_value.date[2];
+		t1.tm_hour = dt_value.date[3];
+		t1.tm_min = dt_value.date[4];
+		t1.tm_sec = dt_value.date[5];
+		t2.tm_year = x.dt_value.date[0] - 1900;
+		t2.tm_mon = x.dt_value.date[1] - 1;
+		t2.tm_mday = x.dt_value.date[2];
+		t2.tm_hour = x.dt_value.date[3];
+		t2.tm_min = x.dt_value.date[4];
+		t2.tm_sec = x.dt_value.date[5];
+		std::time_t time1 = std::mktime(&t1);
+		std::time_t time2 = std::mktime(&t2);
+
+		std::chrono::system_clock::time_point tp1 = std::chrono::system_clock::from_time_t(time1);
+		std::chrono::system_clock::time_point tp2 = std::chrono::system_clock::from_time_t(time2);
+
+		// Compute the duration between the two time points
+		std::chrono::duration<double> duration = tp1 - tp2;
+
+		// Extract the individual components
+		auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration) % 60;
+		auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration) % 60;
+		auto hours = std::chrono::duration_cast<std::chrono::hours>(duration) % 24;
+		auto days = std::chrono::duration_cast<std::chrono::duration<int, std::ratio<86400>>>(duration);
+
+		ret_femv.datatype = xsd_datetime;
+		ret_femv.dt_value.date[0] = 0;
+		ret_femv.dt_value.date[1] = 0;
+		ret_femv.dt_value.date[2] = days.count();
+		ret_femv.dt_value.date[3] = hours.count();
+		ret_femv.dt_value.date[4] = minutes.count();
+		ret_femv.dt_value.date[5] = seconds.count();
+		return ret_femv;
+	}
+	
 	if ((datatype != xsd_integer && datatype != xsd_decimal && datatype != xsd_float && datatype != xsd_double) \
-			|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
+		|| (x.datatype != xsd_integer && x.datatype != xsd_decimal && x.datatype != xsd_float && x.datatype != xsd_double))
 		return ret_femv;
 
 	this->getSameNumericType(x);
