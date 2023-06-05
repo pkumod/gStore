@@ -57,7 +57,7 @@ class TempResult
 		void doFilter(const CompTreeNode &filter, TempResult &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doBind(const GroupPattern::Bind &bind, KVstore *kvstore, StringIndex *stringindex, Varset &entity_literal_varset);
 
-		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset);
+		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset);
 
 		void print(int no=-1);
 	private:

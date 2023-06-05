@@ -2259,7 +2259,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								for (int j = begin; j <= end; j++)
 								{
 									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
-										result0Varset, result0Varset);
+										result0Varset);
 									if (tmp.datatype == EvalMultitypeValue::xsd_boolean && \
 										tmp.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
 										continue;
@@ -2381,7 +2381,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								for (int j = begin; j <= end; j++)
 								{
 									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
-										result0Varset, result0Varset);
+										result0Varset);
 									if (tmp.datatype == EvalMultitypeValue::xsd_boolean && \
 										tmp.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
 										continue;
@@ -2541,12 +2541,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							for (int j = begin; j <= end; j++) {
 								new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = \
 									result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
-									result0Varset, result0Varset).term_value;
+									result0Varset).term_value;
 							}
 						} else {
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
 								result0.doComp(proj[i].comp_tree_root, result0.result[begin], result0_id_cols, stringindex, \
-								result0Varset, result0Varset).term_value;
+								result0Varset).term_value;
 						}
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::Contains_type)
