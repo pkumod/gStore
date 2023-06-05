@@ -570,11 +570,15 @@ Varset QueryTree::getResultProjectionVarset()
 {
 	Varset varset;
 
-	for (int i = 0; i < (int)this->projection.size(); i++)
+	for (int i = 0; i < (int)this->projection.size(); i++) {
 		if (this->projection[i].aggregate_type == ProjectionVar::None_type)
 			varset.addVar(this->projection[i].var);
-		else if (this->projection[i].aggregate_var != "*")
-			varset += this->projection[i].comp_tree_root.getVarset();
+		else {
+			if (this->projection[i].aggregate_var != "*")
+				varset += this->projection[i].comp_tree_root.getVarset();
+			varset += this->projection[i].var;
+		}
+	}
 
 	return varset;
 }

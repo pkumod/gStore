@@ -1498,6 +1498,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			new_temp_result->results.push_back(TempResult());
 
 			TempResult &result0 = this->temp_result->results[0];
+			Varset result0Varset = result0.id_varset + result0.str_varset;
 			TempResult &new_result0 = new_temp_result->results[0];
 
 			for (int i = 0; i < (int)proj.size(); i++)
@@ -1578,8 +1579,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					new_result0.result.back().id[i] = INVALID;
 
 				// Path functions
-				if (proj[0].aggregate_type != ProjectionVar::Custom_type && \
-					proj[0].aggregate_type != ProjectionVar::PFN_type)
+				if (proj[0].aggregate_type != ProjectionVar::PFN_type)
 				{
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
@@ -2183,73 +2183,52 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					cout << "PFN.new_result0.result:\n" << new_result0.result.back().str[proj2new[0] - new_result0_id_cols] <<endl;	
 				}
 			}
-			else
-			{
-				// Custom functions
-				if (proj[0].aggregate_type == ProjectionVar::Custom_type \
-					&& proj[0].custom_func_name == "PPR")
-				{
-					prepPathQuery();
-					int uid = kvstore->getIDByString(proj[0].func_args[0]);
-					int k = stoi(proj[0].func_args[1]);
-					vector<int> pred_id_set;
-					string pred;
-					for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
-					{
-						pred = proj[0].func_args[i];
-						query_parser->replacePrefix(pred);
-						pred_id_set.push_back(kvstore->getIDByPredicate(pred));
-					}
-					if (pred_id_set.empty())
-					{
-						// Allow all predicates
-						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-						for (unsigned j = 0; j < pre_num; j++)
-							pred_id_set.push_back(j);
-					}
-					int retNum = stoi(proj[0].func_args[proj[0].func_args.size() - 1]);
-					vector< pair<int ,double> > v2ppr;
-					pqHandler->SSPPR(uid, retNum, k, pred_id_set, v2ppr);
-					stringstream ss;
-					ss << "\"{\"paths\":[{\"src\":\"" << proj[0].func_args[0] << "\",\"results\":[";
-					for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
-					{
-						if (it != v2ppr.begin())
-							ss << ",";
-						ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
-							<< it->second << "}";
-					}
-					ss << "]}]}\"";
-					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
-				}
-			}
 			// Exclusive with the if branch above
 			for (int begin = 0; begin < result0_size;)
 			{
 				// At the end of an iteration, begin will be set to end + 1
 				// The value of end will depend on GROUP BY conditions
 				int end;
-				if (group2temp.empty())
+				if (group2temp.empty()) {
 					end = result0_size - 1;
-				else
+					// Reserve all lines of results
+					new_result0.result.resize(result0_size);
+					for (size_t i = 0; i < result0_size; i++) {
+						new_result0.result[i].id = new unsigned[new_result0_id_cols];
+						for (size_t j = 0; j < new_result0_id_cols; j++)
+							new_result0.result[i].id[j] = INVALID;
+						new_result0.result[i].sz = new_result0_id_cols;
+						new_result0.result[i].str.resize(new_result0_str_cols);
+					}
+				}
+				else {
 					end = result0.findRightBounder(group2temp, result0.result[begin], result0_id_cols, group2temp);
+					new_result0.result.emplace_back();
+					new_result0.result.back().id = new unsigned[new_result0_id_cols];
+					new_result0.result.back().sz = new_result0_id_cols;
+					new_result0.result.back().str.resize(new_result0_str_cols);
+					for (int i = 0; i < new_result0_id_cols; i++)
+						new_result0.result.back().id[i] = INVALID;
+				}
 
-				new_result0.result.emplace_back();
-				new_result0.result.back().id = new unsigned[new_result0_id_cols];
-				new_result0.result.back().sz = new_result0_id_cols;
-				new_result0.result.back().str.resize(new_result0_str_cols);
-
-				for (int i = 0; i < new_result0_id_cols; i++)
-					new_result0.result.back().id[i] = INVALID;
 
 				for (int i = 0; i < (int)proj.size(); i++)
 				{
 					if (proj[i].aggregate_type == ProjectionVar::None_type)
 					{
-						if (proj2temp[i] < result0_id_cols)
-							new_result0.result.back().id[proj2new[i]] = result0.result[begin].id[proj2temp[i]];
-						else
-							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = result0.result[begin].str[proj2temp[i] - result0_id_cols];
+						if (group2temp.empty()) {
+							for (int j = begin; j <= end; j++) {
+								if (proj2temp[i] < result0_id_cols)
+									new_result0.result[j].id[proj2new[i]] = result0.result[j].id[proj2temp[i]];
+								else
+									new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = result0.result[j].str[proj2temp[i] - result0_id_cols];
+							}
+						} else {
+							if (proj2temp[i] < result0_id_cols)
+								new_result0.result.back().id[proj2new[i]] = result0.result[begin].id[proj2temp[i]];
+							else
+								new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = result0.result[begin].str[proj2temp[i] - result0_id_cols];
+						}
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::Count_type
 						|| proj[i].aggregate_type == ProjectionVar::Sum_type
@@ -2558,20 +2537,16 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::CompTree_type)
 					{
-						// Strictly speaking, not an aggregate; each original line will produce a line of results
-						for (int j = begin; j <= end; j++)
-						{
-							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
-								result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
-								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, \
-								query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset).term_value;
-							if (j < end)
-							{
-								new_result0.result.emplace_back();
-								new_result0.result.back().id = new unsigned[new_result0_id_cols];
-								new_result0.result.back().sz = new_result0_id_cols;
-								new_result0.result.back().str.resize(new_result0_str_cols);
+						if (group2temp.empty()) {
+							for (int j = begin; j <= end; j++) {
+								new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = \
+									result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+									result0Varset, result0Varset).term_value;
 							}
+						} else {
+							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+								result0.doComp(proj[i].comp_tree_root, result0.result[begin], result0_id_cols, stringindex, \
+								result0Varset, result0Varset).term_value;
 						}
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::Contains_type)
@@ -2653,78 +2628,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								cout << "big_str = " << big_str << endl;
 								cout << "small_str = " << small_str << endl;
 
-								if (big_str.find(small_str) != string::npos)
-									new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
-										"\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-								else
-									new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
-										"\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
-
-								if (j < end)
-								{
-									new_result0.result.emplace_back();
-									new_result0.result.back().id = new unsigned[new_result0_id_cols];
-									new_result0.result.back().sz = new_result0_id_cols;
-									new_result0.result.back().str.resize(new_result0_str_cols);
+								if (group2temp.empty()) {
+									if (big_str.find(small_str) != string::npos)
+										new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = \
+											"\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+									else
+										new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = \
+											"\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+								} else {
+									if (big_str.find(small_str) != string::npos)
+										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+											"\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+									else
+										new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
+											"\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
 								}
 							}
-						}
-					}
-					else if (proj[i].aggregate_type == ProjectionVar::Custom_type)
-					{
-						if (proj[i].custom_func_name == "PPR")
-						{
-							prepPathQuery();
-							vector<int> uid_ls;
-							int var2temp = Varset(proj[0].func_args[0]).mapTo(result0.getAllVarset())[0];
-							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
-							else
-							{
-								for (int j = begin; j <= end; j++)
-								{
-									if (result0.result[j].id[var2temp] != INVALID)
-										uid_ls.push_back(result0.result[j].id[var2temp]);
-								}
-							}
-							int k = stoi(proj[0].func_args[1]);
-							vector<int> pred_id_set;
-							string pred;
-							for (size_t i = 2; i < proj[0].func_args.size() - 1; i++)
-							{
-								pred = proj[0].func_args[i];
-								query_parser->replacePrefix(pred);
-								pred_id_set.push_back(kvstore->getIDByPredicate(pred));
-							}
-							if (pred_id_set.empty())
-							{
-								// Allow all predicates
-								unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-								for (unsigned j = 0; j < pre_num; j++)
-									pred_id_set.push_back(j);
-							}
-							int retNum = stoi(proj[0].func_args[proj[0].func_args.size() - 1]);
-							vector< pair<int ,double> > v2ppr;
-							stringstream ss;
-							ss << "\"{\"paths\":[";
-							for (auto uid : uid_ls)
-							{
-								pqHandler->SSPPR(uid, retNum, k, pred_id_set, v2ppr);
-								ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"results\":[";
-								for (auto it = v2ppr.begin(); it != v2ppr.end(); ++it)
-								{
-									if (it != v2ppr.begin())
-										ss << ",";
-									ss << "{\"dst\":\"" << kvstore->getStringByID(it->first) << "\",\"PPR\":" \
-										<< it->second << "}";
-								}
-								ss << "]}";
-							}
-							ss << "]}\"";
-							ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
-							string tmp;
-							ss >> tmp;
-							cout << "HERE !!!! " << tmp << endl;
 						}
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::PFN_type)
@@ -2968,13 +2887,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else
 							uid_ls.push_back(-1);	// Dummy for loop
 
-						// cout << "uid: ";
-						// for (int uid : uid_ls)
-						// 	cout << uid << ' ';
-						// cout << endl;
-
 						// vid
-						// if (proj[0].aggregate_type != ProjectionVar::ppr_type)
 						if (!proj[i].path_args.dst.empty())
 						{
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
@@ -2994,11 +2907,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 							else	// dst is an IRI
 								vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
-
-							// cout << "vid: ";
-							// for (int vid : vid_ls)
-							// 	cout << vid << ' ';
-							// cout << endl;
 						}
 						else
 							vid_ls.push_back(-1);	// Dummy for loop
@@ -3009,7 +2917,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							for (auto pred : proj[i].path_args.pred_set)
 							{
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
 									pred_id_set.push_back(pred_id);
 							}
@@ -3454,20 +3361,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										else
 											notFirstOutput = 1;
 										ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
-										// ss << "{\"communityId\":\""<<it->first <<"\", \"menbers\": [";
-										// bool hasMore = false;
-										// for (int mid : it->second)
-										// {
-										// 	if (hasMore) {
-										// 		ss << ",";
-										// 	} 
-										// 	else 
-										// 	{
-										// 		hasMore = true;
-										// 	}
-										// 	ss << "\"" + kvstore->getStringByID(mid) + "\"";
-										// }
-										// ss << "]";
 									}
 									ss << "]}";
 									doneOnceOp = true;
