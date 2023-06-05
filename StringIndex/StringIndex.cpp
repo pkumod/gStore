@@ -115,7 +115,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, char* &buffer, unsi
 	if (real)
 		trie->Uncompress(buffer, length, *str, UncompressBuffer);
 	else
-		*str = buffer;
+		str->assign(buffer, length);
 	delete[] UncompressBuffer;
 	//*str = string(this->buffer);
 

@@ -697,7 +697,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 }
 
 EvalMultitypeValue
-TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset, Varset &entity_literal_varset)
+TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, StringIndex *stringindex, Varset &this_varset)
 {
 	// Arithmetic and logical operations
 	// if (root->lchild == NULL && root->rchild == NULL)	// leaf node
@@ -718,8 +718,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			if (pos < id_cols)
 			{
 				int id = row.id[pos];
-				bool isel = entity_literal_varset.findVar(root.val);
-				stringindex->randomAccess(id, &x.term_value, string_index_buffer, string_index_buffer_size, isel);			
+				stringindex->randomAccess(id, &x.term_value, string_index_buffer, string_index_buffer_size);			
 			}
 			else
 				x.term_value = row.str[pos - id_cols];
@@ -733,7 +732,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	else if (root.children.size() == 1 && \
 		(root.oprt == "+" || root.oprt == "-" || root.oprt == "!"))	// unary operator
 	{
-		EvalMultitypeValue lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		EvalMultitypeValue lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (root.oprt == "+")
 			return lRes;
 		else if (root.oprt == "-")
@@ -748,8 +747,8 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 		|| root.oprt == "-" || root.oprt == "*" || root.oprt == "/"))	// binary operator
 	{
 		EvalMultitypeValue lRes, rRes;
-		lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
-		rRes = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		lRes = doComp(root.children[0], row, id_cols, stringindex, this_varset);
+		rRes = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 
 		if (root.oprt == "||")
 			return lRes || rRes;
@@ -787,7 +786,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 		EvalMultitypeValue x, y, z;
 		string t, p, f;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::literal || x.datatype == EvalMultitypeValue::xsd_string)
 		{
 			t = x.str_value;
@@ -795,7 +794,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 		}
 		else
 			return ret_femv;
-		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 		if (y.isSimpleLiteral())
 		{
 			p = y.str_value;
@@ -805,7 +804,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			return ret_femv;
 		if (root.children.size() >= 3)
 		{
-			z = doComp(root.children[2], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			z = doComp(root.children[2], row, id_cols, stringindex, this_varset);
 			if (z.isSimpleLiteral())
 			{
 				f = z.str_value;
@@ -827,7 +826,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::literal)
 		{
 			ret_femv.datatype = EvalMultitypeValue::literal;
@@ -853,7 +852,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::iri);
 
 		return ret_femv;
@@ -862,7 +861,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::literal ||
 							   x.datatype == EvalMultitypeValue::xsd_string ||
 							   x.datatype == EvalMultitypeValue::xsd_boolean ||
@@ -878,7 +877,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::xsd_integer ||
 							   x.datatype == EvalMultitypeValue::xsd_decimal ||
 							   x.datatype == EvalMultitypeValue::xsd_float ||
@@ -890,7 +889,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::literal)
 		{
 			ret_femv.datatype = EvalMultitypeValue::literal;
@@ -908,7 +907,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::rdf_term)
 		{
 			size_t p = x.str_value.rfind("^^");
@@ -980,7 +979,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_datetime)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -994,7 +993,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_datetime)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -1008,7 +1007,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_datetime)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -1022,7 +1021,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_datetime)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -1036,7 +1035,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_datetime)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -1050,7 +1049,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		string langTag = "";
 		if (x.datatype == EvalMultitypeValue::xsd_string)
 		{
@@ -1085,8 +1084,8 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x, y;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
-		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 		if(x.argCompatible(y))
 		{
 			string x_content = x.getStrContent(), y_content = y.getStrContent();
@@ -1103,7 +1102,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::xsd_integer)
 		{
 			ret_femv.datatype = EvalMultitypeValue::xsd_integer;
@@ -1131,10 +1130,10 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x, y;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (!x.isSimpleLiteral())
 			return ret_femv;
-		y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		y = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 		if (!y.isSimpleLiteral())
 			return ret_femv;
 
@@ -1145,7 +1144,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	else if (root.oprt == "BOUND")
 	{
 		EvalMultitypeValue x;
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		// Only return false when x is xsd_boolean and has error_value
 		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.getValue() == 2)
 			ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
@@ -1158,12 +1157,12 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		ret_femv.bool_value.value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
 		for (int i = 1; i < (int)root.children.size(); i++)
 		{
 			EvalMultitypeValue y;
-			y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			y = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 			EvalMultitypeValue equal = (x == y);
 			if (i == 1)
 				ret_femv = equal;
@@ -1180,12 +1179,12 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		ret_femv.bool_value.value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
 		for (int i = 1; i < (int)root.children.size(); i++)
 		{
 			EvalMultitypeValue y;
-			y = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			y = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 			EvalMultitypeValue inequal = (x != y);
 			if (i == 1)
 				ret_femv = inequal;
@@ -1202,14 +1201,14 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 	{
 		EvalMultitypeValue x, y, z;
 
-		x = doComp(root.children[0], row, id_cols, stringindex, this_varset, entity_literal_varset);
+		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if ((x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
 			|| x.datatype != EvalMultitypeValue::xsd_boolean)
 			return ret_femv;
 		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
-			ret_femv = doComp(root.children[1], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			ret_femv = doComp(root.children[1], row, id_cols, stringindex, this_varset);
 		else
-			ret_femv = doComp(root.children[2], row, id_cols, stringindex, this_varset, entity_literal_varset);
+			ret_femv = doComp(root.children[2], row, id_cols, stringindex, this_varset);
 		
 		return ret_femv;
 	}
@@ -1235,7 +1234,7 @@ void TempResult::doFilter(const CompTreeNode &filter, TempResult &r, StringIndex
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
 		// EvalMultitypeValue ret_femv = matchFilterTree(filter, this->result[i], this_id_cols, stringindex);
-		EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, stringindex, this_varset, entity_literal_varset);
+		EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, stringindex, this_varset);
 
 		if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 		{
@@ -1270,7 +1269,7 @@ void TempResult::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, String
 	this->str_varset.addVar(bind.var);
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		EvalMultitypeValue ret_femv = doComp(bind.bindExpr, this->result[i], this_id_cols, stringindex, this_varset, entity_literal_varset);
+		EvalMultitypeValue ret_femv = doComp(bind.bindExpr, this->result[i], this_id_cols, stringindex, this_varset);
 		this->result[i].str.push_back(ret_femv.getRep());
 	}
 	return;
