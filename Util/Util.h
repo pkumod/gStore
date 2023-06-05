@@ -37,6 +37,7 @@ in the sparql query can point to the same node in data graph)
 #include <signal.h>
 
 #include <sys/time.h>
+#include <chrono>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/stat.h>
