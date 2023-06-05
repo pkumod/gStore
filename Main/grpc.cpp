@@ -219,13 +219,13 @@ int main(int argc, char *argv[])
 	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 	if (bind_return == -1)
 	{
-		cout<<"waiting.";
-		do {
-			sleep(3);
+		cout<<"waiting";
+		while (bind_return == -1 && max_try > 0) {
 			cout<<".";
+			sleep(3);
 			bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 			max_try --;
-		} while (bind_return != -1 && max_try > 0);
+		}
 		cout<<endl;
 		if (bind_return == -1)
 		{			
@@ -235,8 +235,8 @@ int main(int argc, char *argv[])
 	} 
 	max_try = 20;
 	// relase bind
-	int close_status;
-	do {
+	int close_status = close(sock);
+	while (close_status != 0 && max_try > 0) {
 		close_status = close(sock);
 		// shutdown_status = shutdown(sock, SHUT_RDWR);
 		if (close_status != 0)
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 			sleep(3);
 		}
 		max_try --;
-	} while (close_status != 0 && max_try > 0);
+	}
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
 	while (true)
