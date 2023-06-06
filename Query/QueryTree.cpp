@@ -1200,10 +1200,13 @@ bool QueryTree::getSingleBGP()
 }
 
 void QueryTree::relabel(QueryTreeRelabeler& qtr){
-    for(vector<ProjectionVar>::iterator it=projection.begin(); it!=projection.end(); it++) it->relabel(qtr);
+    for(vector<ProjectionVar>::iterator it=projection.begin(); it!=projection.end(); it++)
+		it->relabel(qtr);	// Do nothing
     qtr.relabel(group_by);
-    for(vector<Order>::iterator it=order_by.begin(); it!=order_by.end(); it++) it->relabel(qtr);
+    for(vector<Order>::iterator it=order_by.begin(); it!=order_by.end(); it++)
+		it->relabel(qtr);
     group_pattern.relabel(qtr);
+	cout << endl;
 }
 
 void QueryTree::relabel_full(QueryTreeRelabeler& qtr){
@@ -1230,6 +1233,7 @@ void GroupPattern::SubGroupPattern::relabel(QueryTreeRelabeler& qtr){
     else if(type==Bind_type) bind.relabel(qtr);
     else if(type==Subquery_type) {
         QueryTreeRelabeler qtr1(qtr.suffix);
+		qtr1.excluding = qtr.excluding;
         subquery.relabel_full(qtr1);
     }
 }

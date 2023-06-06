@@ -19,7 +19,10 @@ class QueryTreeRelabeler
     Varset excluding;
     void relabel(std::string& str){if(!excluding.findVar(str)) str+=suffix;}
     void relabel_safe(std::string& str){if(str.length()!=0&&str[0]=='?'&&!excluding.findVar(str)) str+=suffix;}
-    void relabel(std::vector<std::string>& strs){for(std::vector<std::string>::iterator it=strs.begin(); it!=strs.end(); it++) relabel(*it);}
+    void relabel(std::vector<std::string>& strs) {
+		for(std::vector<std::string>::iterator it=strs.begin(); it!=strs.end(); it++)
+			relabel(*it);
+	}
     void relabel(Varset& var){relabel(var.vars);}
     QueryTreeRelabeler(std::string suf):suffix(suf){}
 };
@@ -430,8 +433,11 @@ public:
 		// if(aggregate_type != ProjectionVar::None_type) qtr.relabel(var);
 	}
 	void relabel_full(QueryTreeRelabeler& qtr){
-		// qtr.relabel(aggregate_var);
-		// if(aggregate_type != ProjectionVar::None_type) qtr.relabel(var);
+		qtr.relabel(var);
+		if (aggregate_type != ProjectionVar::None_type) {
+			qtr.relabel(aggregate_var);
+			comp_tree_root.relabel(qtr);
+		}
 	}
 };
 
