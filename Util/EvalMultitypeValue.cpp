@@ -959,7 +959,8 @@ void EvalMultitypeValue::deduceTermValue()
 			ss << '0';
 		ss << dt_value.date[5] << "\"^^<http://www.w3.org/2001/XMLSchema#dateTime>";
 		ss >> term_value;
-	}
+	} else
+		term_value = str_value;
 }
 
 void EvalMultitypeValue::deduceTypeValue()

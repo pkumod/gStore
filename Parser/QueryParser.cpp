@@ -595,6 +595,12 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.func_args.push_back(bicCtx->expression(0)->getText());
 				proj_var.func_args.push_back(bicCtx->expression(1)->getText());
 				proj_var.var = varCtx->getText();
+			} else if (tmp == "CONCAT") {
+				query_tree_ptr->addProjectionVar();
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = ProjectionVar::CompTree_type;
+				buildCompTree(expCtx, -1, proj_var.comp_tree_root);
+				proj_var.var = varCtx->getText();
 			}
 			else
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
@@ -626,8 +632,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		// Don't deal with DISTINCT in argList for now
 		for (auto expression : prmCtx->iriOrFunction()->argList()->expression())
 			proj_var.func_args.push_back(expression->getText());
-	}
-	else
+	} else
 	{
 		query_tree_ptr->addProjectionVar();
 		ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -700,18 +705,22 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 	{
 		string left = root->children[0]->getText();
 		transform(left.begin(), left.end(), left.begin(), ::toupper);
-		if (left != "!" && left != "+" && left != "-" && left != "NOW")
+		if (left != "!" && left != "+" && left != "-" && left != "NOW" && left != "CONCAT")
 			throw runtime_error("[ERROR]	Unary operator not supported");
 		if (((SPARQLParser::IriOrFunctionContext *)root)->argList())
 			throw runtime_error("[ERROR]	Custom function not supported");
 		curr_node.oprt = left;
-		// curr_node.lchild = new CompTreeNode;
-		curr_node.children.push_back(CompTreeNode());
-		// curr_node.rchild = NULL;
 		curr_node.val = "";
-		if (left != "NOW")
-		{
-			// buildCompTree(root->children[1], -1, curr_node.lchild);
+		if (left == "CONCAT") {
+			int numChild = 0;
+			for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expressionList()->expression())
+			{
+				curr_node.children.push_back(CompTreeNode());
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				numChild++;
+			}
+		} else if (left != "NOW") {
+			curr_node.children.push_back(CompTreeNode());
 			buildCompTree(root->children[1], -1, curr_node.children[0]);
 		}
 	}

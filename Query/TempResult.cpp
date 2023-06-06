@@ -821,6 +821,25 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			ret_femv.bool_value = re.match(t);
 
 		return ret_femv;
+	} else if (root.oprt == "CONCAT") {
+		size_t numChild = root.children.size();
+		EvalMultitypeValue x;
+		ret_femv.str_value = "";
+		for (size_t i = 0; i < numChild; i++) {
+			x = doComp(root.children[i], row, id_cols, stringindex, this_varset);
+			if (x.datatype == EvalMultitypeValue::literal 
+			|| x.datatype == EvalMultitypeValue::xsd_string) {
+				if (x.str_value[0] == '\"' && x.str_value.back() == '\"')
+					ret_femv.str_value += x.str_value.substr(1, x.str_value.size() - 2);
+				else
+					ret_femv.str_value += x.str_value;
+			}
+			else
+				return ret_femv;
+		}
+		ret_femv.datatype = EvalMultitypeValue::literal;
+		ret_femv.deduceTermValue();
+		return ret_femv;
 	}
 	else if (root.oprt == "STR")
 	{
@@ -828,25 +847,17 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 
 		x = doComp(root.children[0], row, id_cols, stringindex, this_varset);
 		if (x.datatype == EvalMultitypeValue::literal)
-		{
-			ret_femv.datatype = EvalMultitypeValue::literal;
 			ret_femv.str_value = x.str_value.substr(0, x.str_value.rfind('"') + 1);
-			return ret_femv;
-		}
 		else if (x.datatype == EvalMultitypeValue::iri)
-		{
-			ret_femv.datatype = EvalMultitypeValue::literal;
 			ret_femv.str_value = "\"" + x.str_value.substr(1, x.str_value.length() - 2) + "\"";
-			return ret_femv;
-		}
 		else if (x.datatype == EvalMultitypeValue::xsd_string)
-		{
-			ret_femv.datatype = EvalMultitypeValue::literal;
 			ret_femv.str_value = x.str_value;
-			return ret_femv;
+		else {
+			x.deduceTermValue();
+			ret_femv.str_value = x.term_value;
 		}
-		else
-			return ret_femv;
+		ret_femv.datatype = EvalMultitypeValue::literal;
+		return ret_femv;
 	}
 	else if (root.oprt == "ISIRI" || root.oprt == "ISURI")
 	{
