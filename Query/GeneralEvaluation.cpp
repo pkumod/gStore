@@ -308,48 +308,12 @@ bool GeneralEvaluation::doQuery()
 		return false;
 	}
 
-	//if (this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.hasCommonVar(this->query_tree.getGroupPattern().group_pattern_predicate_maximal_varset))
-	//{
-	//	printf("[ERROR]	There are some vars occur both in subject/object and predicate.\n");
-	//	return false;
-	//}
-
 	// Gather and encode all triples
 	if (!this->bgp_query_total)
 		this->bgp_query_total = make_shared<BGPQuery>();
 	addAllTriples(this->query_tree.getGroupPattern());
 	bgp_query_total->EncodeBGPQuery(kvstore, vector<string>(), \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
-
-	// this->strategy = Strategy(this->kvstore, this->pre2num,this->pre2sub, this->pre2obj, 
-	// 	this->limitID_predicate, this->limitID_literal, this->limitID_entity,
-	// 	this->query_tree.Modifier_Distinct== QueryTree::Modifier_Distinct, txn);
-
-    // this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
-    //                                   limitID_literal,limitID_entity,txn);
-
-	// if (this->query_tree.checkWellDesigned())
-	// if (false)
-	// {
-	// 	printf("=================\n");
-	// 	printf("||well-designed||\n");
-	// 	printf("=================\n");
-
-	// 	this->rewriting_evaluation_stack.clear();
-	// 	this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
-	// 	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
-	// 	this->rewriting_evaluation_stack.back().result = NULL;
-
-	// 	this->temp_result = this->rewritingBasedQueryEvaluation(0);
-	// }
-	// else
-	// {
-	// 	printf("=====================\n");
-	// 	printf("||not well-designed||\n");
-	// 	printf("=====================\n");
-
-	// 	this->temp_result = this->semanticBasedQueryEvaluation(this->query_tree.getGroupPattern());
-	// }
 
 	this->rewriting_evaluation_stack.clear();
 	this->rewriting_evaluation_stack.emplace_back();
