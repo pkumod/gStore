@@ -123,19 +123,13 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), all_entity_id(freelist_entity,entity_num), fp(NULL), export_flag(false)
 {
 	if (csr)
-		pqHandler = new PathQueryHandler(csr);
+		pqHandler = make_shared<PathQueryHandler>(csr);
 	else
-		pqHandler = NULL;
+		pqHandler = nullptr;
 	well_designed = -1;	// Not checked yet
 	this->optimizer_ = make_shared<Optimizer>(kvstore,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
 	this->bgp_query_total = make_shared<BGPQuery>();
-}
-
-GeneralEvaluation::~GeneralEvaluation()
-{
-	if (pqHandler)
-		delete pqHandler;
 }
 
 void
@@ -243,7 +237,7 @@ GeneralEvaluation::prepPathQuery()
 	if (!csr)
 		loadCSR();
 	if (!pqHandler)
-		pqHandler = new PathQueryHandler(csr);
+		pqHandler = make_shared<PathQueryHandler>(csr);
 }
 
 void
@@ -4045,7 +4039,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 				throw runtime_error(error_msg);
 			}
 			// call function
-			result = p_fun(iri_set, directed, pred_set, pqHandler);
+			result = p_fun(iri_set, directed, pred_set, pqHandler.get());
 			std::cout << "end with: " << result << endl;
 			std::cout << "return type: " << fun_return << endl;
 			std::cout<< "================================================\n";
@@ -4068,7 +4062,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 				throw runtime_error(error_msg);
 			}
 			// call function
-			result = p_fun(iri_set, directed, k, pred_set, pqHandler);
+			result = p_fun(iri_set, directed, k, pred_set, pqHandler.get());
 			std::cout << "end with: " << result << endl;
 			std::cout << "return type: " << fun_return << endl;
 			cout<< "================================================\n";

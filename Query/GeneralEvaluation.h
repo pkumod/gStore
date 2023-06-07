@@ -42,7 +42,7 @@ class GeneralEvaluation
 		StringIndex *stringindex;
 		shared_ptr<Optimizer> optimizer_;
 		QueryCache *query_cache;
-		PathQueryHandler *pqHandler;
+		shared_ptr<PathQueryHandler> pqHandler;
 		CSR *csr;
 		bool ranked;
 
@@ -104,7 +104,7 @@ class GeneralEvaluation
 			all_entity_id(_ge.all_entity_id), \
 			fp(_ge.fp), export_flag(_ge.export_flag){}
 
-		~GeneralEvaluation();
+		~GeneralEvaluation() {}
 
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
