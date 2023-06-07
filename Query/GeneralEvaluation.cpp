@@ -1971,18 +1971,48 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
 								int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
 								int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
+								int idPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/id>");
 								int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
 								int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
 								auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
 								if (!ret.empty())
 								{
+									size_t pathSz = ret[0].first.size();
+									unsigned* objidlist = nullptr;
+									unsigned list_len = 0;
+									bool invalid = false;
+									vector<int> pathVert;
 									for (const auto &path2W : ret)
 									{
 										if (notFirstOutput)
 											ss << ",";
 										else
 											notFirstOutput = 1;
-										pathVec2JSON(uid, vid, path2W.first, ss, path2W.second);
+										invalid = false;
+										pathVert.clear();
+										for (size_t i = 0; i < pathSz; i += 2) {
+											kvstore->getobjIDlistBysubIDpreID(path2W.first[i], idPred, objidlist, list_len);
+											if (list_len != 1) {
+												invalid = true;
+												break;
+											}
+											pathVert.emplace_back(objidlist[0]);
+											delete []objidlist;
+										}
+										if (invalid)
+											continue;
+										ss << "{\"path\":[";
+										string tmp;
+										size_t lPos = 0, rPos = 0;
+										for (size_t i = 0; i < pathVert.size(); i++) {
+											tmp = kvstore->getStringByID(pathVert[i]);
+											lPos = tmp.find('\"');
+											rPos = tmp.find('\"', lPos + 1);
+											if (i > 0)
+												ss << ",";
+											ss << tmp.substr(lPos + 1, rPos - 1 - lPos);
+										}
+										ss << "],\"weight\":" << path2W.second << "}";
 									}
 								}
 							}
@@ -3328,19 +3358,46 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
 									int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
 									int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
+									int idPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/id>");
 									int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
 									int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
 									auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
-									if (!ret.empty())
+									size_t pathSz = ret[0].first.size();
+									unsigned* objidlist = nullptr;
+									unsigned list_len = 0;
+									bool invalid = false;
+									vector<int> pathVert;
+									for (const auto &path2W : ret)
 									{
-										for (const auto &path2W : ret)
-										{
-											if (notFirstOutput)
-												ss << ",";
-											else
-												notFirstOutput = 1;
-											pathVec2JSON(uid, vid, path2W.first, ss, path2W.second);
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										invalid = false;
+										pathVert.clear();
+										for (size_t i = 0; i < pathSz; i += 2) {
+											kvstore->getobjIDlistBysubIDpreID(path2W.first[i], idPred, objidlist, list_len);
+											if (list_len != 1) {
+												invalid = true;
+												break;
+											}
+											pathVert.emplace_back(objidlist[0]);
+											delete []objidlist;
 										}
+										if (invalid)
+											continue;
+										ss << "{\"path\":[";
+										string tmp;
+										size_t lPos = 0, rPos = 0;
+										for (size_t i = 0; i < pathVert.size(); i++) {
+											tmp = kvstore->getStringByID(pathVert[i]);
+											lPos = tmp.find('\"');
+											rPos = tmp.find('\"', lPos + 1);
+											if (i > 0)
+												ss << ",";
+											ss << tmp.substr(lPos + 1, rPos - 1 - lPos);
+										}
+										ss << "],\"weight\":" << path2W.second << "}";
 									}
 								}
 								else if (proj[i].aggregate_type == ProjectionVar::louvain_type)
