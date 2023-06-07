@@ -397,7 +397,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
 				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \ 
-				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN")	// Path calls
+				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -452,6 +452,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::shortestPathCount_type;
 				else if (tmp == "LOUVAIN")
 					proj_var.aggregate_type = ProjectionVar::louvain_type;
+				else if (tmp == "IC14")
+					proj_var.aggregate_type = ProjectionVar::IC14_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{

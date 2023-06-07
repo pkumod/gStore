@@ -370,6 +370,8 @@ public:
 	bool kHopReachable(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	bool kHopReachableTest(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
 	std::vector<int> kHopReachablePath(int uid, int vid, bool directed, int k, const std::vector<int> &pred_set);
+    std::vector<std::pair<std::vector<int>, double>> IC14(int uid, int vid, int knowsPred, int hasCreatorPred,
+    int typePred, int replyPred, int postId, int commentId);
     std::vector<std::vector<int>> kHopEnumeratePath(int uid, int vid, int retNum, bool directed, int k, const std::vector<int> &pred_set);
     int bc_dfs(int uid, int vid, int &retBudget, bool directed, int k, const std::vector<int> &pred_set, std::vector<std::pair<int, int>> &s, std::vector<int> &bar, std::vector<std::vector<int>> &paths);
     void updateBarrier(int uid, bool directed, const std::vector<int> &pred_set, std::vector<int> &bar, int l);
@@ -393,6 +395,9 @@ public:
     std::vector<int> kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set, int retNum);
     int shortestPathCount(int uid, int vid, bool directed, const std::vector<int> &pred_set);
     void louvain(int phase1_loop_num, float min_modularity_increase, std::vector<int> &pred_set, bool directed, std::pair<size_t, std::map<int, std::set<int> > > &result);
+    void getPostComments(int vid, int hasCreatorPred, int typePred, int postId, int commentId,
+    std::vector<int> &postVec, std::vector<int> &commentVec);
+    void getCommReplyOf(int replyPred, const std::vector<int> &commentVec, std::unordered_set<int> &commReplyOf);
 
 	std::string getPathString(std::vector<int> &path_set);
 private:

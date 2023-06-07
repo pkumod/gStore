@@ -216,6 +216,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_KHOPNEIGHBOR '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet (',' integerLiteral)? ')'
 |   K_SHORTESTPATHCOUNT '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_LOUVAIN '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ',' K_INCREASE '=' numericLiteral ')'
+|   K_IC14 '(' varOrIri ',' varOrIri ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -387,6 +388,7 @@ K_KHOPCOUNT : K H O P C O U N T ;
 K_KHOPNEIGHBOR : K H O P N E I G H B O R ;
 K_SHORTESTPATHCOUNT : S H O R T E S T P A T H C O U N T ;
 K_LOUVAIN : L O U V A I N ;
+K_IC14 : I C '1' '4' ;
 K_INCREASE : I N C R E A S E ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;
