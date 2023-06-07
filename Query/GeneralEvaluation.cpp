@@ -1966,7 +1966,26 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << "{\"src\":\"" << kvstore->getStringByID(uid)
 									<< "\", \"dst\":\"" << kvstore->getStringByID(vid)
 									<< "\", \"count\":" << ret << "}";
-							}					
+							} else if (proj[0].aggregate_type == ProjectionVar::IC14_type) {
+								int knowsPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/directKnows>");
+								int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
+								int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
+								int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
+								int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
+								int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
+								auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
+								if (!ret.empty())
+								{
+									for (const auto &path2W : ret)
+									{
+										if (notFirstOutput)
+											ss << ",";
+										else
+											notFirstOutput = 1;
+										pathVec2JSON(uid, vid, path2W.first, ss, path2W.second);
+									}
+								}
+							}
 							else if (proj[0].aggregate_type == ProjectionVar::louvain_type)
 							{
 								if (!doneOnceOp)
@@ -3304,28 +3323,47 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
 										<<"\", \"dst\":\"" << kvstore->getStringByID(vid)
 										<<"\", \"count\":" << ret << "}";
+								} else if (proj[0].aggregate_type == ProjectionVar::IC14_type) {
+									int knowsPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/directKnows>");
+									int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
+									int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
+									int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
+									int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
+									int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
+									auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
+									if (!ret.empty())
+									{
+										for (const auto &path2W : ret)
+										{
+											if (notFirstOutput)
+												ss << ",";
+											else
+												notFirstOutput = 1;
+											pathVec2JSON(uid, vid, path2W.first, ss, path2W.second);
+										}
+									}
 								}
 								else if (proj[i].aggregate_type == ProjectionVar::louvain_type)
-							{
-								if (!doneOnceOp)
 								{
-									pair<size_t, map<int,set<int> > > result;
-									float min_modularity_increase = proj[i].path_args.misc[0];
-									int phase1_loop_num = proj[i].path_args.misc[1];
-									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
-									ss << "{\"count\":" << result.first << ", \"details\":[";
-									for (auto it=result.second.begin(); it != result.second.end(); it++ )
+									if (!doneOnceOp)
 									{
-										if (notFirstOutput)
-											ss << ",";
-										else
-											notFirstOutput = 1;
-										ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
+										pair<size_t, map<int,set<int> > > result;
+										float min_modularity_increase = proj[i].path_args.misc[0];
+										int phase1_loop_num = proj[i].path_args.misc[1];
+										pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
+										ss << "{\"count\":" << result.first << ", \"details\":[";
+										for (auto it=result.second.begin(); it != result.second.end(); it++ )
+										{
+											if (notFirstOutput)
+												ss << ",";
+											else
+												notFirstOutput = 1;
+											ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
+										}
+										ss << "]}";
+										doneOnceOp = true;
 									}
-									ss << "]}";
-									doneOnceOp = true;
 								}
-							}
 							}
 							if (earlyBreak)
 								break;
@@ -3639,7 +3677,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 }
 
 void
-GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringstream &ss)
+GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringstream &ss, double weight)
 {
 	unordered_map<int, string> nodeIRI;
 	ss << "{\"src\":\"" << kvstore->getStringByID(src) \
@@ -3671,7 +3709,10 @@ GeneralEvaluation::pathVec2JSON(int src, int dst, const vector<int> &v, stringst
 		if (next(it) != nodeIRI.end())
 			ss << ",";
 	}
-	ss << "]}";
+	ss << "]";
+	if (weight != -1)
+		ss << "\"weight\":" << weight;
+	ss << "}";
 }
 
 void

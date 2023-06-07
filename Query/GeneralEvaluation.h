@@ -140,7 +140,7 @@ class GeneralEvaluation
 	private:
 		void loadCSR();
 		void prepPathQuery();
-		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss);
+		void pathVec2JSON(int src, int dst, const std::vector<int> &v, std::stringstream &ss, double weight=-1);
 		void vertVec2JSON(const std::vector<int> &v, std::stringstream &ss);
 
 		int constructTriplePattern(GroupPattern& triple_pattern, int dep);
