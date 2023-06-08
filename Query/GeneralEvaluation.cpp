@@ -2438,13 +2438,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 									{
 										size_t bIdx = tmp.str_value.find('\"'), eIdx = tmp.str_value.rfind('\"');
-										if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
-											continue;
 										if (groupconcat.empty())
 											groupconcat += "\"";
 										else
 											groupconcat += proj[i].separator;
-										groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
+										if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
+											groupconcat += tmp.str_value;
+										else
+											groupconcat += tmp.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 									{
