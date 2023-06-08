@@ -829,14 +829,18 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			x = doComp(root.children[i], row, id_cols, stringindex, this_varset);
 			if (x.datatype == EvalMultitypeValue::literal 
 			|| x.datatype == EvalMultitypeValue::xsd_string) {
-				if (x.str_value[0] == '\"' && x.str_value.back() == '\"')
-					ret_femv.str_value += x.str_value.substr(1, x.str_value.size() - 2);
-				else
+				size_t bIdx = x.str_value.find('\"'), eIdx = x.str_value.rfind('\"');
+				if (bIdx == string::npos || eIdx == string::npos || bIdx == eIdx)
 					ret_femv.str_value += x.str_value;
+				else
+					ret_femv.str_value += x.str_value.substr(bIdx + 1, eIdx - bIdx - 1);
 			}
-			else
+			else {
+				ret_femv.str_value.clear();
 				return ret_femv;
+			}
 		}
+		ret_femv.str_value = '\"' + ret_femv.str_value + '\"';
 		ret_femv.datatype = EvalMultitypeValue::literal;
 		ret_femv.deduceTermValue();
 		return ret_femv;
