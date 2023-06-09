@@ -678,7 +678,7 @@ const Triple &BGPQuery::get_triple_by_index(unsigned int index) {
 bool BGPQuery::is_var_satellite_by_index(unsigned index) {
 	auto var_descrip = var_vector[index];
 	return (var_descrip->var_type_ == VarDescriptor::VarType::Entity and
-				var_descrip->degree_ == 1 and !var_descrip->selected_);// && var_descrip->selected_ == false);
+				var_descrip->degree_ == 1);// && var_descrip->selected_ == false);
 }
 
 bool BGPQuery::is_var_satellite_by_id(unsigned int id) {

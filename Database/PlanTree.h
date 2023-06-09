@@ -83,7 +83,7 @@ class PlanTree {
     PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);
 
 	// Function for satellite node
-    void AddSatelliteNode(BGPQuery* bgpquery, unsigned satellitenode_id);
+    void AddSatelliteNode(BGPQuery* bgpquery, unsigned satellitenode_id, bool save);
 
 	// Plan for only one triple query
     PlanTree(shared_ptr<StepOperation> &first_node);

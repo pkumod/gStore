@@ -182,8 +182,7 @@ class AffectOneNode{
   inline bool Get_node_should_be_added_into_table(){return true;};
   AffectOneNode(unsigned join_node_id,
                 EdgeInfo edge_info,
-                EdgeConstantInfo edge_constant,
-                bool added_into_table=true):
+                EdgeConstantInfo edge_constant):
       node_to_join_(join_node_id)
   {
     edges_ = make_shared<vector<EdgeInfo>>(vector<EdgeInfo>{edge_info});
@@ -191,8 +190,7 @@ class AffectOneNode{
   };
   AffectOneNode(unsigned join_node_id,
                 shared_ptr<vector<EdgeInfo>> edge_info,
-                shared_ptr<vector<EdgeConstantInfo>> edge_constant,
-                bool added_into_table=true):
+                shared_ptr<vector<EdgeConstantInfo>> edge_constant):
       node_to_join_(join_node_id),edges_(edge_info), edges_constant_info_(edge_constant)
   {};
 
