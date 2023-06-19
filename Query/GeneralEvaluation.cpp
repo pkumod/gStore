@@ -2187,7 +2187,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					ss << "\"";
 					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
-					cout << "PFN.new_result0.result:\n" << new_result0.result.back().str[proj2new[0] - new_result0_id_cols] <<endl;	
 				}
 			}
 			// Exclusive with the if branch above
@@ -4059,8 +4058,12 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		{
 			pfn_lib_path.append("/");
 		}
+		
 		string json_file_path = pfn_file_path + username + "/data.json";
+		#if defined(DEBUG)
+		cout << "pfn lib path: " << pfn_lib_path << endl;
 		cout << "open json file: " << json_file_path << endl;
+		#endif // 
 		ifstream in;
 		in.open(json_file_path, ios::in);
 		if (!in.is_open())
@@ -4126,7 +4129,9 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		char *error;
 		if (fun_args == "1")
 		{
+			#if defined(DEBUG)
 			std::cout << "begin 1 for " << fun_name << endl;
+			#endif 
 			// int uid, int vid, bool directed, vector<int> pred_set, CSR * _csr
 			typedef string (*personalized_fun)(vector<int>, bool, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
@@ -4149,7 +4154,9 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		}
 		else if (fun_args == "2")
 		{
+			#if defined(DEBUG)
 			std::cout << "begin 2 for " << fun_name << endl;
+			#endif
 			// int uid, int vid, bool directed, int k, vector<int> pred_set
 			typedef string (*personalized_fun)(vector<int>, bool, int, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
