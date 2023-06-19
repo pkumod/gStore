@@ -970,15 +970,6 @@ shared_ptr<Txn_manager> APIUtil::get_Txn_ptr(string db_name)
     return txn_m;
 }
 
-txn_id_t APIUtil::get_txn_id(shared_ptr<Txn_manager> ptr, int level)
-{
-    txn_id_t TID = ptr->Begin(static_cast<IsolationLevelType>(level));
-    #if defined(DEBUG)
-	SLOG_DEBUG("Transcation Id:" + to_string(TID));
-    #endif
-    return TID;
-}
-
 string APIUtil::get_txn_begin_time(shared_ptr<Txn_manager> ptr, txn_id_t tid)
 {
     string begin_time = to_string(ptr->Get_Transaction(tid)->GetStartTime());

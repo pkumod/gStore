@@ -985,7 +985,6 @@ public:
     bool refresh_sys_db();
     std::string query_sys_db(const std::string& sparql);
     bool build_db_user_privilege(std::string db_name, std::string username);
-    txn_id_t get_txn_id(string db_name, string user);
     bool insert_txn_managers(Database* current_database, std::string database);
     bool remove_txn_managers(std::string db_name);
     bool find_txn_managers(std::string db_name);
@@ -995,7 +994,6 @@ public:
     bool delete_from_already_build(string db_name);
     //used by drop
     int db_copy(string src_path, string dest_path);
-    txn_id_t get_txn_id(shared_ptr<Txn_manager> ptr, int level);
     txn_id_t check_txn_id(string TID);
     string get_txn_begin_time(shared_ptr<Txn_manager> ptr, txn_id_t tid);
     string begin_process(string db_name, int level , string username);
@@ -1024,7 +1022,7 @@ public:
     // for transaction log
     void init_transactionlog();
 	int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "INF");
-	int delete_transactionlog(std::string db_name, std::string TID);
+	// int delete_transactionlog(std::string db_name, std::string TID);
 	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
 	void get_transactionlog(int &page_no, int &page_size, struct TransactionLogs *dbQueryLogs);
 	void abort_transactionlog(long end_time);
