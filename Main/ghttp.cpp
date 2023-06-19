@@ -546,9 +546,9 @@ int main(int argc, char *argv[])
 	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 	if (bind_return == -1)
 	{
-		cout<<"waiting";
+		cout<<"waiting"<<std::flush;
 		while (bind_return == -1 && max_try > 0) {
-			cout<<".";
+			cout<<"."<<std::flush;
 			sleep(3);
 			bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 			max_try --;
