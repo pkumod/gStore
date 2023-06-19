@@ -21,10 +21,12 @@ int main(int argc, char *argv[])
 	// chdir(dirname(argv[0]));
 	//#ifdef DEBUG
 	Util util;
+	util.configure_new();
 	//#endif
 	// Log.init("slog.properties");
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
+	string _root_username = util.getConfigureValue("root_username");
 	size_t _len_suffix = _db_suffix.length();
 	if (argc < 2)
 	{
@@ -125,6 +127,7 @@ int main(int argc, char *argv[])
 				// cout << "the query is :" + query << endl;
 				string resultfile = Util::getArgValue(argc, argv, "f", "resultfile");
 				ResultSet _rs;
+				_rs.setUsername(_root_username);
 				FILE *ofp = stdout;
 				bool export_flag = false;
 				if (resultfile.empty() == false)
@@ -289,6 +292,7 @@ int main(int argc, char *argv[])
 				printf("query is:\n");
 				printf("%s\n\n", query.c_str());
 				ResultSet _rs;
+				_rs.setUsername(_root_username);
 				// shared_ptr<Transaction> ptxn = make_shared<Transaction>(db_folder, 1, 1);
 				int ret = _db.query(query, _rs, fp, true, false, nullptr);
 				// int ret = _db.query(query, _rs, NULL);
