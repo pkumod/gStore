@@ -10,8 +10,6 @@
 
 using namespace std;
 
-ResultCmp mycmp;
-
 //DEBUG: error when using STL::sort() to sort the Bstr[] units with mycmp, null pointer(Bstr*) 
 //reported sometimes(for example, watdiv_30.db and watdiv_200.db, query/C3.sql). 
 //Notice that sort() uses quick-sorting method when size is large, which usually 
@@ -52,7 +50,8 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     this->colnum = _colnum;
     this->needSort = _flag;
     //this->cmp = ResultCmp(this->rownum, _keys);
-    mycmp = ResultCmp(this->rownum, _keys, _desc);
+    mycmp = ResultCmp(_keys, _desc);
+    greaterElement = GreaterElement(mycmp);
 
     this->record = new Bstr[this->colnum];
     this->record_size = new unsigned[this->colnum];
@@ -126,16 +125,6 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
         this->result = file_name;
     }
     //return true;
-}
-
-bool operator < (const Element& _a, const Element& _b)
-{
-    return mycmp(_a.val, _b.val);
-}
-
-bool operator > (const Element& _a, const Element& _b)
-{
-    return !mycmp(_a.val, _b.val);
 }
 
 bool
@@ -385,7 +374,7 @@ Stream::mergeSort()
 
     unsigned valid = this->sortHeap.size();
     vector<Element>::iterator begin = this->sortHeap.begin();
-    make_heap(begin, begin + valid, greater<Element>());
+    make_heap(begin, begin + valid, greaterElement);
     while(valid > 0)
     {
 #ifdef DEBUG_STREAM
@@ -412,7 +401,7 @@ Stream::mergeSort()
 #endif
 
         //pop, read and adjust
-        pop_heap(begin, begin + valid, greater<Element>());
+        pop_heap(begin, begin + valid, greaterElement);
         bp = this->sortHeap[valid-1].val;
         bool tillEnd = false;
         for(unsigned i = 0; i < this->colnum; ++i)
@@ -439,7 +428,7 @@ Stream::mergeSort()
             bp[i].setStr(s);
         }
         if(!tillEnd)
-            push_heap(begin, begin + valid, greater<Element>());
+            push_heap(begin, begin + valid, greaterElement);
     }
 
     //fseek(fp, 0, SEEK_SET);

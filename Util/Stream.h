@@ -38,17 +38,11 @@
 
 struct ResultCmp
 {
-    int result_len;
 	std::vector<TYPE_ENTITY_LITERAL_ID> keys;
 	std::vector<bool> desc;
-    //ResultCmp(int _l):result_len(_l){}
-	ResultCmp()
+	ResultCmp() {}
+	ResultCmp(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool> &_desc)
 	{
-		this->result_len = 0;
-	}
-	ResultCmp(int _l, std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool> &_desc)
-	{
-		this->result_len = _l;
 		this->keys = std::vector<TYPE_ENTITY_LITERAL_ID>(_keys);
 		this->desc = std::vector<bool>(_desc);
 	}
@@ -131,6 +125,15 @@ typedef struct StreamElement
 //(so easy to remove duplicates)
 //However, for 'order by', the string comparision is a must, which should be done here!
 //(maybe in memory , maybe internal-external)
+struct GreaterElement {
+	ResultCmp mycmp;
+	GreaterElement() {}
+	GreaterElement(const ResultCmp &mycmp_): mycmp(mycmp_) {}
+	bool operator () (const Element& _a, const Element& _b) {
+		return mycmp(_a.val, _b.val);
+	}
+};
+
 class Stream
 {
 private:
@@ -141,7 +144,8 @@ private:
 	std::vector<Bstr*> tempst;
 	unsigned space;			//space used in disk for one file
 
-	//struct ResultCmp cmp;
+	ResultCmp mycmp;
+	GreaterElement greaterElement;
 
 	//void* ans;               //FILE* if in disk, Bstr** if in memory
 	Bstr** ansMem;
