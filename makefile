@@ -55,7 +55,7 @@ EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
-library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus
+library = -L/usr/lib64 -L./lib -L/usr/local/lib -L/usr/lib -I/usr/local/include/boost -ljemalloc -lreadline -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -lcurl -llog4cplus
 #used for parallelsort
 march = -march=native
 openmp = -fopenmp ${march}
