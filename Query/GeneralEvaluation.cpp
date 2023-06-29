@@ -1027,24 +1027,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						{
 							sub_result->doBind(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind, kvstore, stringindex, \
 								rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-
-							// TempResultSet *temp = new TempResultSet();
-							// temp->results.push_back(TempResult());
-
-							// temp->results[0].str_varset = rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind.varset;
-
-							// temp->results[0].result.push_back(TempResult::ResultPair());
-							// // temp->results[0].result[0].str.push_back(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind.str);
-
-							// TempResultSet *new_result = new TempResultSet();
-							// sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-							// temp->release();
-							// sub_result->release();
-							// delete temp;
-							// delete sub_result;
-
-							// sub_result = new_result;
 						}
 
 					// Process FILTER (with var in minimal_varset constraint) //
@@ -1202,27 +1184,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		{
 			result->doBind(group_pattern.sub_group_pattern[i].bind, kvstore, stringindex, \
 				group_pattern.group_pattern_subject_object_maximal_varset);
-			
-			// TempResultSet *temp = new TempResultSet();
-			// temp->results.push_back(TempResult());
-
-			// temp->results[0].str_varset = group_pattern.sub_group_pattern[i].bind.varset;
-
-			// temp->results[0].result.push_back(TempResult::ResultPair());
-			// // temp->results[0].result[0].str.push_back(group_pattern.sub_group_pattern[i].bind.str);
-
-			// {
-			// 	TempResultSet *new_result = new TempResultSet();
-			// 	result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-
-			// 	temp->release();
-			// 	result->release();
-			// 	delete temp;
-			// 	delete result;
-
-			// 	result = new_result;
-			// 	result->initial = false;
-			// }
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Subquery_type)
 		{ 
@@ -3901,6 +3862,12 @@ void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec
 				{
 					for (int l = 0; l < (int)result.size(); l++)
 						result_set.insert(result[l].id[pos]);
+				} else {
+					pos = Varset(basic_query_encode_varset[k]).mapTo(last_result->results[t].str_varset)[0];
+					if (pos != -1) {
+						for (int l = 0; l < (int)result.size(); l++)
+							result_set.insert(kvstore->getIDByString(result[l].str[pos]));
+					}
 				}
 			}
 
