@@ -722,6 +722,15 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			}
 			else
 				x.term_value = row.str[pos - id_cols];
+		} else if (root.oprt == "NOW")
+		{
+			cout << "IN NOW" << endl;
+			time_t now = time(0);
+			tm *lctm = localtime(&now);
+			x.datatype = EvalMultitypeValue::xsd_datetime;
+			x.dt_value = EvalMultitypeValue::DateTime(1900 + lctm->tm_year, 1 + lctm->tm_mon, \
+				lctm->tm_mday, 5+lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
+			return x;
 		}
 		else  	// literal
 			x.term_value = root.val;
@@ -977,17 +986,6 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, Strin
 			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#dateTime>";
 		}
 
-		return ret_femv;
-	}
-	else if (root.oprt == "NOW")
-	{
-		cout << "IN NOW" << endl;
-		time_t now = time(0);
-		tm *lctm = localtime(&now);
-		ret_femv.datatype = EvalMultitypeValue::xsd_datetime;
-		ret_femv.dt_value = EvalMultitypeValue::DateTime(1900 + lctm->tm_year, 1 + lctm->tm_mon, \
-			lctm->tm_mday, 5+lctm->tm_hour, lctm->tm_min, lctm->tm_sec);
-		// ret_femv.deduceTermValue();
 		return ret_femv;
 	}
 	else if (root.oprt == "YEAR")
