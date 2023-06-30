@@ -965,147 +965,230 @@ void EvalMultitypeValue::deduceTermValue()
 
 void EvalMultitypeValue::deduceTypeValue()
 {
+	datatype = EvalMultitypeValue::xsd_boolean;
+	bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
 	if (term_value.empty())
-	{
-		datatype = EvalMultitypeValue::xsd_boolean;
-		bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
 		return;
-	}
-	
-	if (term_value[0] == '<' && term_value[term_value.length() - 1] == '>')
-	{
+	char startC = term_value[0];
+	if (startC == '<') {
 		datatype = EvalMultitypeValue::iri;
 		str_value = term_value;
-	}
-
-	else if (term_value[0] == '"' && term_value.find("\"^^<") == string::npos \
-		&& term_value[term_value.length() - 1] != '>')
-	{
-		datatype = EvalMultitypeValue::literal;
-		str_value = term_value;
-
-		// Strip extraneous characters after last " for simple literals
-		int i = str_value.length() - 1;
-		while (str_value[i] != '"')
-			i--;
-		if (str_value[i + 1] != '@')	// No language tag
-			str_value = str_value.substr(0, i + 1);
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_string;
-		str_value = term_value.substr(0, term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>"));
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_boolean;
-
-		string value = term_value.substr(0, term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>"));
-		if (value == "\"true\"")
-			bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
-		else if (value == "\"false\"")
-			bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
-		else
-			bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_integer;
-
-		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") - 2);
-		stringstream ss;
-		ss << value;
-		ss >> int_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#long>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_long;
-
-		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#long>") - 2);
-		stringstream ss;
-		ss << value;
-		ss >> long_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_decimal;
-
-		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") - 2);
-		stringstream ss;
-		ss << value;
-		ss >> flt_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_float;
-
-		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") - 2);
-		stringstream ss;
-		ss << value;
-		ss >> flt_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
-	{
-		datatype = EvalMultitypeValue::xsd_double;
-
-		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") - 2);
-		stringstream ss;
-		ss << value;
-		ss >> dbl_value;
-	}
-
-	else if (term_value[0] == '"' && \
-		(term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos || \
-		term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos))
-	{
-		datatype = EvalMultitypeValue::xsd_datetime;
-
-		string value;
-		if (term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos)
-			value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") - 2);
-		if (term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos)
-			value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") - 2);
-
-		vector<int> date;
-		for (int i = 0; i < 6; i++)
-			if (value.length() > 0)
-			{
-				int p = 0;
-				stringstream ss;
-				while (p < (int)value.length() && '0' <= value[p] && value[p] <= '9')
-				{
-					ss << value[p];
-					p++;
-				}
-
-				int x;
-				ss >> x;
-				date.push_back(x);
-
-				while (p < (int)value.length() && (value[p] < '0' || value[p] > '9'))
-					p++;
-				value = value.substr(p);
+	} else if (startC == '"') {
+		size_t sufPos = term_value.find("\"^^<"), termLen = term_value.size();
+		if (sufPos == string::npos) {
+			datatype = EvalMultitypeValue::literal;
+			str_value = term_value;
+			// if (term_value.back() == '"')
+			// 	str_value = term_value;
+			// else
+			// 	str_value = term_value.substr(0, term_value.find('"', 1) + 1);
+		} else {
+			string sufStr = term_value.substr(sufPos + 4, termLen - sufPos - 5);
+			string baseUrl = "http://www.w3.org/2001/XMLSchema#";
+			size_t baseLen = baseUrl.size();
+			if (sufStr.substr(0, baseLen) != baseUrl) {
+				datatype = EvalMultitypeValue::rdf_term;
+				return;
 			}
-			else
-				date.push_back(0);
-
-		dt_value = EvalMultitypeValue::DateTime(date[0], date[1], date[2], date[3], date[4], date[5]);
+			sufStr = sufStr.substr(baseLen);
+			string contentStr = term_value.substr(0, sufPos + 1);
+			size_t contentLen = contentStr.size();
+			if (sufStr == "string") {
+				datatype = EvalMultitypeValue::xsd_string;
+				str_value = contentStr;
+			} else if (sufStr == "boolean") {
+				if (contentStr == "\"true\"")
+					bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+				else if (contentStr == "\"false\"")
+					bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+			} else if (sufStr == "dateTime" || sufStr == "date") {
+				datatype = EvalMultitypeValue::xsd_datetime;
+				vector<float> date;
+				size_t p = 0, nextP = 0;
+				bool decimal = false;
+				for (int i = 0; i < 6; i++) {
+					while (p < contentLen && (contentStr[p] < '0' || contentStr[p] > '9'))
+						p++;
+					nextP = p;
+					decimal = false;
+					while (nextP < contentLen && ('0' <= contentStr[nextP] && contentStr[nextP] <= '9'
+					|| (i == 5 && !decimal && contentStr[nextP] == '.'))) {
+						if (contentStr[nextP] == '.')
+							decimal = true;
+						nextP++;
+					}
+					date.emplace_back(stof(contentStr.substr(p, nextP - p + 1)));
+					p = nextP;
+					if (p >= contentLen && i < 5)
+						return;
+				}
+				dt_value = EvalMultitypeValue::DateTime(date);
+			} else {
+				contentStr = contentStr.substr(1, contentLen - 2);
+				if (sufStr == "integer") {
+					datatype = EvalMultitypeValue::xsd_integer;
+					int_value = stoi(contentStr);
+				} else if (sufStr == "long") {
+					datatype = EvalMultitypeValue::xsd_long;
+					long_value = stoll(contentStr);
+				} else if (sufStr == "decimal") {
+					datatype = EvalMultitypeValue::xsd_decimal;
+					flt_value = stof(contentStr);
+				} else if (sufStr == "float") {
+					datatype = EvalMultitypeValue::xsd_float;
+					flt_value = stof(contentStr);
+				} else if (sufStr == "double") {
+					datatype = EvalMultitypeValue::xsd_double;
+					dbl_value = stod(contentStr);
+				}
+			}
+		}
 	}
 }
+
+// void EvalMultitypeValue::deduceTypeValue()
+// {
+// 	if (term_value.empty())
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_boolean;
+// 		bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+// 		return;
+// 	}
+	
+// 	if (term_value[0] == '<' && term_value[term_value.length() - 1] == '>')
+// 	{
+// 		datatype = EvalMultitypeValue::iri;
+// 		str_value = term_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && term_value.find("\"^^<") == string::npos \
+// 		&& term_value[term_value.length() - 1] != '>')
+// 	{
+// 		datatype = EvalMultitypeValue::literal;
+// 		str_value = term_value;
+
+// 		// Strip extraneous characters after last " for simple literals
+// 		int i = str_value.length() - 1;
+// 		while (str_value[i] != '"')
+// 			i--;
+// 		if (str_value[i + 1] != '@')	// No language tag
+// 			str_value = str_value.substr(0, i + 1);
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_string;
+// 		str_value = term_value.substr(0, term_value.find("^^<http://www.w3.org/2001/XMLSchema#string>"));
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_boolean;
+
+// 		string value = term_value.substr(0, term_value.find("^^<http://www.w3.org/2001/XMLSchema#boolean>"));
+// 		if (value == "\"true\"")
+// 			bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+// 		else if (value == "\"false\"")
+// 			bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+// 		else
+// 			bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_integer;
+
+// 		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#integer>") - 2);
+// 		stringstream ss;
+// 		ss << value;
+// 		ss >> int_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#long>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_long;
+
+// 		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#long>") - 2);
+// 		stringstream ss;
+// 		ss << value;
+// 		ss >> long_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_decimal;
+
+// 		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#decimal>") - 2);
+// 		stringstream ss;
+// 		ss << value;
+// 		ss >> flt_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_float;
+
+// 		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#float>") - 2);
+// 		stringstream ss;
+// 		ss << value;
+// 		ss >> flt_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") != string::npos)
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_double;
+
+// 		string value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#double>") - 2);
+// 		stringstream ss;
+// 		ss << value;
+// 		ss >> dbl_value;
+// 	}
+
+// 	else if (term_value[0] == '"' && \
+// 		(term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos || \
+// 		term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos))
+// 	{
+// 		datatype = EvalMultitypeValue::xsd_datetime;
+
+// 		string value;
+// 		if (term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") != string::npos)
+// 			value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#dateTime>") - 2);
+// 		if (term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") != string::npos)
+// 			value = term_value.substr(1, term_value.find("^^<http://www.w3.org/2001/XMLSchema#date>") - 2);
+
+// 		vector<int> date;
+// 		for (int i = 0; i < 6; i++)
+// 			if (value.length() > 0)
+// 			{
+// 				int p = 0;
+// 				stringstream ss;
+// 				while (p < (int)value.length() && '0' <= value[p] && value[p] <= '9')
+// 				{
+// 					ss << value[p];
+// 					p++;
+// 				}
+
+// 				int x;
+// 				ss >> x;
+// 				date.push_back(x);
+
+// 				while (p < (int)value.length() && (value[p] < '0' || value[p] > '9'))
+// 					p++;
+// 				value = value.substr(p);
+// 			}
+// 			else
+// 				date.push_back(0);
+
+// 		dt_value = EvalMultitypeValue::DateTime(date[0], date[1], date[2], date[3], date[4], date[5]);
+// 	}
+// }
 
 string EvalMultitypeValue::getLangTag()
 {

@@ -18,6 +18,36 @@ using namespace std;
 //The error is marked by DEBUG1 and DEBUG2, and I just use STL::stable_sort() here, because I cannot find
 //the reason of the null pointer error if using STL::sort()
 
+bool ResultCmp::operator() (Bstr* const& a, Bstr* const& b)
+{
+    //for(int i = 0; i < result_len; ++i)
+    //{
+        //if (a[i] != b[i]) 
+            //return (a[i] < b[i]);
+    //}
+    unsigned size = this->keys.size();
+    EvalMultitypeValue a_emv, b_emv, res;
+    int retVal = 0;
+    for(unsigned i = 0; i < size; ++i) {
+        int t = this->keys[i];
+        if (a[t] == b[t])
+            continue;
+
+        a_emv.term_value.assign(a[t].getStr());
+        a_emv.deduceTypeValue();
+        b_emv.term_value.assign(b[t].getStr());
+        b_emv.deduceTypeValue();
+
+        if(this->desc[i])
+            res = a_emv > b_emv;
+        else
+            res = a_emv < b_emv;
+        retVal = res.bool_value.getValue();
+        return retVal;  // 1 or 2: true or error value, return true; 0: false, return false
+    }
+    return true;
+}
+
 void
 Stream::init()
 {
