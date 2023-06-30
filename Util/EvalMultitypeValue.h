@@ -33,7 +33,7 @@ class EvalMultitypeValue
 		{
 			// private:
 		public:
-				std::vector<int> date;
+				std::vector<float> date;
 				//year = date[0]
 				//month = date[1]
 				//day = date[2]
@@ -51,6 +51,9 @@ class EvalMultitypeValue
 					this->date.push_back(_hour);
 					this->date.push_back(_minute);
 					this->date.push_back(_second);
+				}
+				DateTime(const std::vector<float> &v) {
+					this->date.assign(v.begin(), v.begin() + 6);
 				}
 
 				EffectiveBooleanValue operator == (const DateTime &x);

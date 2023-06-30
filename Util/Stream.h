@@ -46,54 +46,7 @@ struct ResultCmp
 		this->keys = std::vector<TYPE_ENTITY_LITERAL_ID>(_keys);
 		this->desc = std::vector<bool>(_desc);
 	}
-    bool operator() (Bstr* const& a, Bstr* const& b)
-    {
-        //for(int i = 0; i < result_len; ++i)
-        //{
-            //if (a[i] != b[i]) 
-				//return (a[i] < b[i]);
-        //}
-		unsigned size = this->keys.size();
-		for(unsigned i = 0; i < size; ++i)
-		{
-			int t = this->keys[i];		
-
-			EvalMultitypeValue a_emv, b_emv;
-			a_emv.term_value = std::string(a[t].getStr());
-			a_emv.deduceTypeValue();
-			// printf("a_emv datatype: %d\n", a_emv.datatype);
-			b_emv.term_value = std::string(b[t].getStr());
-			b_emv.deduceTypeValue();
-			// printf("b_emv datatype: %d\n", b_emv.datatype);
-
-			// std::cout << a[t].getStr() << std::endl << b[t].getStr() << std::endl;
-
-			EvalMultitypeValue res;
-			if(a[t] != b[t])
-			{
-				if(!this->desc[i])
-				{
-					res = a_emv < b_emv;
-					// return (a[t] < b[t]);
-				}
-				else
-				{
-					res = a_emv > b_emv;
-					// return (a[t] > b[t]);
-				}
-				if (res.bool_value.getValue() == 1)
-					return true;
-				else if (res.bool_value.getValue() == 0)
-					return false;
-				else	// error_value
-				{
-					// printf("[ERROR]	Incomparable datatypes, result order is invalid.\n");
-					return true;	// Arbitrary
-				}
-			}
-		}
-        return true;
-    }
+	bool operator() (Bstr* const& a, Bstr* const& b);
 };
 
 //static ResultCmp mycmp;
