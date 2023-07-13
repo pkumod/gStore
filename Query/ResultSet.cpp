@@ -440,8 +440,8 @@ ResultSet::to_JSON()
 						{
 							//for language string
 							ans_type = "literal";
-							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
 							lang = ans_str.substr(ans_str.rfind("@")+1, ans_str.length());
+							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
 						}
 						else
 						{
