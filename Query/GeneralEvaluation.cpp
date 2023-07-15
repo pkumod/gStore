@@ -1487,7 +1487,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj[0].aggregate_type != ProjectionVar::Contains_type)
 			{
 				// Non-aggregate functions, no var (all constant) in arg list
-				// TODO: handle CONTAINS and custom functions
 
 				new_result0.result.emplace_back();
 				new_result0.result.back().id = new unsigned[new_result0_id_cols];
@@ -2158,9 +2157,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				int end;
 				if (group2temp.empty()) {
 					end = result0_size - 1;
+					int resultSz = result0_size;
+					if (proj.size() == 1 && proj[0].aggregate_type != ProjectionVar::None_type \
+					&& proj[0].aggregate_type != ProjectionVar::CompTree_type && proj[0].aggregate_type != ProjectionVar::Contains_type \
+					&& proj[0].aggregate_type != ProjectionVar::PFN_type)
+						resultSz = 1;
 					// Reserve all lines of results
-					new_result0.result.resize(result0_size);
-					for (size_t i = 0; i < result0_size; i++) {
+					new_result0.result.resize(resultSz);
+					for (size_t i = 0; i < resultSz; i++) {
 						new_result0.result[i].id = new unsigned[new_result0_id_cols];
 						for (size_t j = 0; j < new_result0_id_cols; j++)
 							new_result0.result[i].id[j] = INVALID;
@@ -4241,7 +4245,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 	temp->results.push_back(TempResult());
 	if (subject[0] != '?')
 	{
-		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, object));
 		for (size_t i = 0; i < cand->result.size(); i++)
 		{
@@ -4260,7 +4263,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 	}
 	else if (object[0] != '?')
 	{
-		// prepPathQuery();
 		temp->results[0].id_varset = Varset(vector<string>(1, subject));
 		for (size_t i = 0; i < cand->result.size(); i++)
 		{
@@ -4322,7 +4324,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 				}
 			}
 			if(not_case2){
-				// prepPathQuery();
 				if (subjectInId && subjectIdx < cand->id_varset.vars.size())
 				{
 					for (size_t i = 0; i < cand->result.size(); i++)
