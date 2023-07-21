@@ -3458,8 +3458,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		}
 
 		ret_result.ansNum = (int)result0.result.size();
-		if (!this->query_tree.getSingleBGP())
-			ret_result.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
 
 #ifdef STREAM_ON
 		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
@@ -3470,6 +3468,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		}
 #endif
 
+		if (!(query_tree.getSingleBGP() && query_tree.getLimit() != -1 && ranked))
+			ret_result.setOutputOffsetLimit(this->query_tree.getOffset(), this->query_tree.getLimit());
 		if (!ret_result.checkUseStream())
 		{
 			ret_result.answer = new string*[ret_result.ansNum];
