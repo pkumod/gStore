@@ -624,8 +624,13 @@ void APIUtil::reset_access_ip_error_num(const string& ip)
     pthread_rwlock_unlock(&ips_map_lock);
 }
 
+/// 
+/// @param ip 
+/// @param check_level =1 表示锁定IP  =2 表示判断IP地址错误 =3 不作判定
+/// @return 
 string APIUtil::check_access_ip(const string& ip, int check_level)
 {
+    
     string result = "";
     if(check_level < 2 && !ip_check(ip))
     {
