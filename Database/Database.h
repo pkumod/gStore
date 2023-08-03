@@ -51,6 +51,9 @@ public:
 	// 2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
 	// 3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
 
+	void InitEmptyDB();
+	void BuildEmptyKVstore();
+	bool BuildEmptyDB();
 	bool build(const string &_rdf_file, Socket &socket);
 	bool build(const string &_rdf_file);
 	// interfaces to insert/delete from given rdf file

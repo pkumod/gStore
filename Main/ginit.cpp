@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 	// Log.init("slog.properties");
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
+	int _suffix_len = _db_suffix.length();
 	string _db_name = "system";
 	string _db_path = _db_home + "/" + _db_name + _db_suffix;
 	string _rdf = Util::system_path;
@@ -181,68 +182,72 @@ int main(int argc, char *argv[])
 		if (db_namestr.empty())
 		{
 			cout << "You need to input the database name that you want to init. Input \"bin/ginit -h\" for help." << endl;
-			return 0;
+			return -1;
 		}
-		else
+		vector<string> db_names;
+		if (db_namestr.substr(db_namestr.length() - 1, 1) != ",")
 		{
-			vector<string> db_names;
-			if (db_namestr.substr(db_namestr.length() - 1, 1) != ",")
+			db_namestr = db_namestr + ",";
+		}
+		Util::split(db_namestr, ",", db_names);
+		string sparql = "insert data {";
+		string time = Util::get_date_time();
+		for (auto db_name : db_names)
+		{
+			if (!db_name.empty())
 			{
-				db_namestr = db_namestr + ",";
-			}
-
-			Util::split(db_namestr, ",", db_names);
-			string sparql = "insert data {";
-			string time = Util::get_date_time();
-			for (unsigned i = 0; i < db_names.size(); i++)
-			{
-				string db_name = db_names[i];
-				if (db_name.empty())
-				{
-					cout << "the database name is empty!" << endl;
-					continue;
-				}
 				string db_path = _db_home + "/" + db_name + _db_suffix;
 				if (Util::dir_exist(db_path) == false)
 				{
-					cout << "The database " + db_name + " is not exist" << endl;
-					continue;
+					cout << "The database " + db_name + " is not exist, now create it." << endl;
+					int len = db_name.length();
+					if (len < _suffix_len || (len >= _suffix_len && db_name.substr(len - _suffix_len, _suffix_len) == _db_suffix))
+					{
+						cout << "your database can not end with " + _db_suffix + " or less than "<< _suffix_len <<" characters. Skip it." << endl;
+						continue;
+					}
+					if (db_name == "system")
+					{
+						cout<<"Your database's name can not be system. Skip it."<<endl;
+						continue;
+					}
+					Database db(db_name);
+					db.BuildEmptyDB();
 				}
 				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
 				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
 				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
 				Util::add_backuplog(db_name);
 			}
-			sparql = sparql + "}";
-			FILE *ofp = stdout;
-			string msg;
-
-			ResultSet _rs;
-			Database *_db = new Database(_db_name);
-			_db->load();
-			int ret = _db->query(sparql, _rs, ofp);
-			if (ret <= -100) // select query
-			{
-				if (ret == -100)
-					msg = _rs.to_str();
-				else // query error
-					msg = "query failed";
-			}
-			else // update query
-			{
-				if (ret >= 0)
-					msg = "update num : " + Util::int2string(ret);
-				else // update error
-					msg = "update failed.";
-			}
-			delete _db;
-			_db = NULL;
-			long tv_end = Util::get_cur_time();
-			// stringstream ss;
-			cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
-			// Log.Info(ss.str().c_str());
-
-			return 0;
 		}
+		sparql = sparql + "}";
+		FILE *ofp = stdout;
+		string msg;
+
+		ResultSet _rs;
+		Database *_db = new Database(_db_name);
+		_db->load();
+		int ret = _db->query(sparql, _rs, ofp);
+		if (ret <= -100) // select query
+		{
+			if (ret == -100)
+				msg = _rs.to_str();
+			else // query error
+				msg = "query failed";
+		}
+		else // update query
+		{
+			if (ret >= 0)
+				msg = "update num : " + Util::int2string(ret);
+			else // update error
+				msg = "update failed.";
+		}
+		delete _db;
+		_db = NULL;
+		long tv_end = Util::get_cur_time();
+		// stringstream ss;
+		cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
+		// Log.Info(ss.str().c_str());
+		return 0;
 	}
 }
