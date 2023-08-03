@@ -1973,13 +1973,8 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 // In distributed gStore, each machine's graph should be based on unique encoding IDs,
 // and require that triples in each graph no more than a limit(maybe 10^9)
 
-bool Database::build(const string &_rdf_file, Socket &socket)
-{
-	this->resetIDinfo();
-
-	string ret = Util::getExactPath(_rdf_file.c_str());
-	long tv_build_begin = Util::get_cur_time();
-
+void Database::InitEmptyDB() {
+    this->resetIDinfo();
 	Util::create_dir(this->store_path);
 
 	string kv_store_path = store_path + "/kv_store";
@@ -1990,17 +1985,68 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 
 	string update_log_path = this->store_path + '/' + this->update_log;
 	Util::create_file(update_log_path);
-	string update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
+	update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
 	Util::create_file(update_log_since_backup);
 
 	string error_log = this->store_path + "/parse_error.log";
 	Util::create_file(error_log);
+    cout << "Error log file:" << error_log << endl;
+}
 
+void Database::BuildEmptyKVstore() {
+    (this->kvstore)->open_entity2id(KVstore::CREATE_MODE);
+    (this->kvstore)->open_id2entity(KVstore::CREATE_MODE);
+    (this->kvstore)->open_predicate2id(KVstore::CREATE_MODE);
+    (this->kvstore)->open_id2predicate(KVstore::CREATE_MODE);
+    (this->kvstore)->open_literal2id(KVstore::CREATE_MODE);
+    (this->kvstore)->open_id2literal(KVstore::CREATE_MODE);
+    this->kvstore->close_entity2id();
+    this->kvstore->close_id2entity();
+    this->kvstore->close_literal2id();
+    this->kvstore->close_id2literal();
+    this->kvstore->close_predicate2id();
+    this->kvstore->close_id2predicate();
+    build_s2xx(nullptr);
+    build_o2xx(nullptr);
+    build_p2xx(nullptr);
+}
+
+bool Database::BuildEmptyDB() {
+    InitEmptyDB();
+    BuildEmptyKVstore();
+    string _six_tuples_file = this->getSixTuplesFile();
+	ofstream _six_tuples_fout(_six_tuples_file.c_str());
+    _six_tuples_fout.close();
+    this->stringindex->save(*this->kvstore);
+    delete this->kvstore;
+	this->kvstore = NULL;
+
+	cout << "Finish sub2id pre2id obj2id" << endl;
+	cout << "TripleNum is " << this->triples_num << endl;
+	cout << "EntityNum is " << this->entity_num << endl;
+	cout << "PreNum is " << this->pre_num << endl;
+	cout << "LiteralNum is " << this->literal_num << endl;
+
+	if (!(this->saveDBInfoFile())) return false;
+    if (!(this->saveStatisticsInfoFile())) {
+        cout << "the statistics info file of db saved failure!" << endl;
+        return false;
+    }
+	this->writeIDinfo();
+	this->initIDinfo();
+	return true;
+}
+
+bool Database::build(const string &_rdf_file, Socket &socket)
+{
+	string ret = Util::getExactPath(_rdf_file.c_str());
+	long tv_build_begin = Util::get_cur_time();
+	InitEmptyDB();
 	string msg = "begin encode RDF from : " + ret + " ...";
 	cout << msg << endl;
 	string resJson = CreateJson(1, "building", msg);
 	socket.send(resJson);
-
+	string error_log = this->store_path + "/parse_error.log";
 	if (!this->encodeRDF_new(ret, error_log))
 	{
 		return false;
@@ -2042,32 +2088,9 @@ bool Database::build(const string &_rdf_file)
 	// Besides, build process is already very fast, able to build freebase in 12h
 
 	// manage the id for a new database
-	this->resetIDinfo();
-
 	string ret = Util::getExactPath(_rdf_file.c_str());
-	// long tv_build_begin = Util::get_cur_time();
-
-	// string store_path = this->name;
-	Util::create_dir(this->store_path);
-
-	string kv_store_path = store_path + "/kv_store";
-	Util::create_dir(kv_store_path);
-
-	// string vstree_store_path = store_path + "/vs_store";
-	// Util::create_dir(vstree_store_path);
-
-	string stringindex_store_path = store_path + "/stringindex_store";
-	Util::create_dir(stringindex_store_path);
-
-	string update_log_path = this->store_path + '/' + this->update_log;
-	Util::create_file(update_log_path);
-	string update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
-	Util::create_file(update_log_since_backup);
-	// create a file to store the parse error tuple
+	InitEmptyDB();
 	string error_log = this->store_path + "/parse_error.log";
-	Util::create_file(error_log);
-	//write build info to log
-	cout << "Error log file:" << error_log << endl;
 	FILE *fp = fopen(error_log.c_str(), "a");
 	string log_msg = "Info " + Util::get_date_time() + " build parser info, file path " + ret + "\n";
 	fputs(log_msg.c_str(), fp);
@@ -2542,7 +2565,8 @@ void Database::build_s2xx(ID_TUPLE *_p_id_tuples)
 			++j;
 		}
 	}
-	this->triples_num = j; // NOTE: triples_num set here
+	if (j < this->triples_num)
+		this->triples_num = j;
 
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 }
