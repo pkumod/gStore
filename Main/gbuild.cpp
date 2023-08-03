@@ -96,7 +96,6 @@ main(int argc, char * argv[])
 			return -1;
 		}
 
-		int isbuilt;
 		string _db_path = _db_home + "/" + db_name + _db_suffix;
 		cout << "database path: " << _db_path << endl;
 		if(Util::file_exist(_db_path)) // if the database has been built
