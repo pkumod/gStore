@@ -17,6 +17,7 @@ bool isOnlyProcess(const char* argv0);
 void checkSwap();
 bool startServer(bool _debug);
 bool stopServer();
+bool load_db(std::string dbname, bool load_csr);
 int parseJson(std::string strJson);
 
 int main(int argc, char* argv[])
@@ -33,7 +34,53 @@ int main(int argc, char* argv[])
 		mode = argv[1];
 	}
 
-	if (argc > 3 || (argc == 3 && mode != "-p" && mode != "--port")) {
+	if ((argc == 4 || argc ==6) && (mode == "-s" || mode == "--start")) {
+		mode = argv[2];
+		bool load_csr = false;
+		if (mode != "-db" && mode != "--database") {
+			cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+			return -1;
+		}
+		else if (argc == 6) {
+			mode = argv[4];
+			if (mode != "-c" && mode != "--csr") {
+				cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+				return -1;
+			}
+			else {
+				mode = argv[5];
+				if (mode == "1") {
+					load_csr = true;
+				}
+				else if (mode == "0") {
+					load_csr = false;
+				}
+				else {
+					cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
+					return -1;
+				}
+			}
+		}
+		if (!isOnlyProcess(argv[0])) {
+			cerr << "gServer already running!" << endl;
+			return -1;
+		}
+		if (startServer(false)) {
+			sleep(1);
+			if (isOnlyProcess(argv[0])) {
+				cerr << "Server stopped unexpectedly. Check for port conflicts!" << endl;
+				return -1;
+			}
+			if (!load_db(argv[3], load_csr)) {
+				return -1;
+			}
+			return 0;
+		}
+		else {
+			return -1;
+		}
+	}
+	else if (argc > 3 || (argc == 3 && mode != "-p" && mode != "--port")) {
 		cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
 		return -1;
 	}
@@ -47,6 +94,8 @@ int main(int argc, char* argv[])
 		cout << "Options:" << endl;
 		cout << "\t-h,--help\t\tDisplay this message." << endl;
 		cout << "\t-s,--start\t\tStart gServer." << endl;
+		cout << "\t-db,--database[option]\tthe database name.Default value is empty.Notice that the name can not end with .db" << endl;
+		cout << "\t-c,--csr[option]\tEnable CSR Struct or not. 9 denote that false, 1 denote that true. Default value is 0." << endl;
 		cout << "\t-t,--stop\t\tStop gServer." << endl;
 		cout << "\t-r,--restart\t\tRestart gServer." << endl;
 		cout << "\t-p,--port [PORT=" << Socket::DEFAULT_CONNECT_PORT << "]\tChange connection port configuration, takes effect after restart if gServer running." << endl;
@@ -339,6 +388,45 @@ bool stopServer() {
 	cout << "Server stopped at port " << port << '.' << endl;
 	checkSwap();
 	return true;
+}
+
+bool load_db(std::string dbname, bool load_csr) {
+	unsigned short port = Socket::DEFAULT_CONNECT_PORT;
+	ifstream in(Util::gserver_port_file.c_str());
+	if (in) {
+		in >> port;
+		in.close();
+	}
+	Socket socket;
+	std::string cmd = "{\"op\":\"login\",\"username\":\"root\",\"password\":\"123456\"}";
+	if (!socket.create() || !socket.connect("127.0.0.1", port) || !socket.send(cmd)) {
+		cerr << "Failed to load database " << dbname << '.' << endl;
+		return false;
+	}
+	std::string recv_msg;
+	socket.recv(recv_msg);
+	
+	cmd = "{\"op\":\"load\",\"db_name\":\"";
+	cmd += dbname;
+	cmd += "\",";
+	if (load_csr)
+		cmd += "\"csr\":\"1\"}";
+	else
+		cmd += "\"csr\":\"0\"}";
+	socket.send(cmd);
+	socket.recv(recv_msg);
+	if (recv_msg.find("Load database successfully.") != std::string::npos) {
+		cout << "Load database successfully. csr=";
+		if (load_csr)
+			cout << 1 << endl;
+		else
+			cout << 0 << endl;
+		return true;
+	}
+	else {
+		cerr << "Failed to load database " << dbname << '.' << endl;
+		return false;
+	}
 }
 
 int parseJson(std::string strJson)

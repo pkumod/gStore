@@ -192,7 +192,11 @@ Server::handler(Socket& _socket)
 		case CMD_LOAD:
 		{
 			std::string db_name = operation.getParameter("db_name");
-			this->load(db_name, _socket);
+			if (operation.getParameter("csr") == "1") {
+				this->load(db_name, _socket, true);
+			}
+			else
+				this->load(db_name, _socket, false);
 			break;
 		}
 		case CMD_UNLOAD:
@@ -220,12 +224,37 @@ Server::handler(Socket& _socket)
 		{
 			std::string db_name = operation.getParameter("db_name");
 			std::string sparql = operation.getParameter("sparql");
+			std::string format = "json";
+			if (operation.getParameter("format") == "file") {
+				format = "file";
+			}
+			else if (operation.getParameter("format") == "json+file") {
+				format = "json+file";
+			}
+
+			size_t pos = 0;
+			while ((pos = sparql.find("\\r\\n", pos)) != std::string::npos) {
+				sparql.replace(pos, 4, " ");
+				pos += 1;
+			}
+
+			pos = 0;
+			while ((pos = sparql.find("\\n", pos)) != std::string::npos) {
+				sparql.replace(pos, 2, " ");
+				pos += 1;
+			}
+
+			pos = 0;
+			while ((pos = sparql.find("\\'", pos)) != std::string::npos) {
+				sparql.replace(pos, 2, "\"");
+				pos += 1;
+			}
 
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
 				cerr << Util::getTimeString() << "Failed to start timer." << endl;
 			}
-			this->query(db_name, sparql, _socket);
+			this->query(db_name, sparql, format, _socket);
 			if (timer != 0 && !Server::stop_timer(timer)) {
 				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
 			}
@@ -410,6 +439,13 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 		}
 	}
 
+	for (int i = 0; i < raw_len-1; i++) {
+		if (_raw_cmd[i] == '\\' && _raw_cmd[i+1] == '"') {
+			_raw_cmd[i] = '\\';
+			_raw_cmd[i + 1] = '\'';
+		}
+	}
+
 	while (para_start_pos < raw_len && _raw_cmd[para_start_pos] == ' ') {
 		para_start_pos++;
 	}
@@ -479,9 +515,17 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	}
 	else if (cmd == "load") {
 		_ret_oprt.setCommand(CMD_LOAD);
-		if (para_num != 2)
-			return false;
-		if (paras.find("db_name") == paras.end())
+		if (para_num == 3) {
+			if ((paras.find("db_name") == paras.end())||(paras.find("csr") == paras.end()))
+				return false;
+		}
+		else if (para_num == 2) {
+			if (paras.find("db_name") == paras.end())
+				return false;
+			paras["csr"] = "0";
+			_ret_oprt.setParameter(paras);
+		}
+		else
 			return false;
 	}
 	else if (cmd == "unload") {
@@ -493,9 +537,17 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	}
 	else if (cmd == "query") {
 		_ret_oprt.setCommand(CMD_QUERY);
-		if (para_num != 3)
-			return false;
-		if ((paras.find("db_name") == paras.end()) || (paras.find("sparql") == paras.end()))
+		if (para_num == 4) {
+			if ((paras.find("db_name") == paras.end()) || (paras.find("sparql") == paras.end()) || (paras.find("format") == paras.end()))
+				return false;
+		}
+		else if (para_num == 3) {
+			if ((paras.find("db_name") == paras.end()) || (paras.find("sparql") == paras.end()))
+				return false;
+			paras["format"] = "json";
+			_ret_oprt.setParameter(paras);
+		}
+		else
 			return false;
 	}
 	else if (cmd == "show") {
@@ -616,7 +668,7 @@ Server::login(std::string _username, std::string _password, Socket& _socket)
 }
 
 bool
-Server::load(std::string _db_name, Socket& _socket)
+Server::load(std::string _db_name, Socket& _socket, bool load_csr)
 {
 	/**
 	* @brief Check if the client logins.
@@ -659,7 +711,7 @@ Server::load(std::string _db_name, Socket& _socket)
 	}
 
 	Database* database = new Database(_db_name);
-	bool flag = database->load();
+	bool flag = database->load(load_csr);
 
 	if (!flag)
 	{
@@ -671,8 +723,23 @@ Server::load(std::string _db_name, Socket& _socket)
 	}
 
 	databases.insert(pair<std::string, Database*>(_db_name, database));
-	std::string success = "Load database successfully.";
-	this->response(0, success, _socket);
+
+	Document resDoc;
+	Document::AllocatorType& allocator = resDoc.GetAllocator();
+	resDoc.SetObject();
+	resDoc.AddMember("StatusCode", 0, allocator);
+	resDoc.AddMember("StatusMsg", "Load database successfully.", allocator);
+	if (load_csr) {
+		resDoc.AddMember("csr", "1", allocator);
+	}
+	else {
+		resDoc.AddMember("csr", "0", allocator);
+	}
+	StringBuffer resBuffer;
+	PrettyWriter<StringBuffer> resWriter(resBuffer);
+	resDoc.Accept(resWriter);
+	std::string resJson = resBuffer.GetString();
+	_socket.send(resJson);
 
 	return true;
 }
@@ -810,7 +877,7 @@ Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 }
 
 bool
-Server::query(std::string _db_name, std::string _sparql, Socket& _socket)
+Server::query(std::string _db_name, std::string _sparql, std::string format, Socket& _socket)
 {
 	/**
 	* @brief Check if the client logins.
@@ -869,21 +936,93 @@ Server::query(std::string _db_name, std::string _sparql, Socket& _socket)
 	{
 		if (ret_val == -100)
 		{
-#ifdef SERVER_SEND_JSON
-			_ret_msg = res_set.to_JSON();
-#else
-			_ret_msg = res_set.to_str();
-#endif
-			Document resDoc;
-			Document::AllocatorType& allocator = resDoc.GetAllocator();
-			resDoc.Parse(_ret_msg.c_str());
-			resDoc.AddMember("StatusCode", 0, allocator);
-			resDoc.AddMember("StatusMsg", "success", allocator);
-			StringBuffer resBuffer;
-			PrettyWriter<StringBuffer> resWriter(resBuffer);
-			resDoc.Accept(resWriter);
-			std::string resJson = resBuffer.GetString();
-			_socket.send(resJson);
+// #ifdef SERVER_SEND_JSON
+			if (format == "json") {
+				_ret_msg = res_set.to_JSON();
+				Document resDoc;
+				Document::AllocatorType& allocator = resDoc.GetAllocator();
+				resDoc.Parse(_ret_msg.c_str());
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", "success", allocator);
+				StringBuffer resBuffer;
+				PrettyWriter<StringBuffer> resWriter(resBuffer);
+				resDoc.Accept(resWriter);
+				std::string resJson = resBuffer.GetString();
+				_socket.send(resJson);
+			}
+// #else
+			else if (format == "file") {
+				_ret_msg = res_set.to_str();
+				time_t now = time(0);
+				tm* ltm = localtime(&now);
+				char digit[15];
+				strftime(digit, sizeof(digit), "%Y%m%d%H%M%S", ltm);
+				std::string filename = digit;
+				filename += ".txt";
+				std::string folderPath = "./query_result/";
+				if (0 != access(folderPath.c_str(), 0)) {
+					mkdir(folderPath.c_str(), 0777);
+				}
+				std::ofstream file(folderPath + filename);
+				if (file.is_open()) {
+					file << _ret_msg;
+					file.close();
+				}
+				else {
+					std::string error = "Open file failed.";
+					this->response(1001, error, _socket);
+					return false;
+				}
+				Document resDoc;
+				Document::AllocatorType& allocator = resDoc.GetAllocator();
+				resDoc.SetObject();
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", "success", allocator);
+				resDoc.AddMember("FileName", rapidjson::Value(filename.c_str(), allocator), allocator);
+				StringBuffer resBuffer;
+				PrettyWriter<StringBuffer> resWriter(resBuffer);
+				resDoc.Accept(resWriter);
+				std::string resJson = resBuffer.GetString();
+				_socket.send(resJson);
+			}
+// #endif
+			else if (format == "json+file"||format == "file+json") {
+				_ret_msg = res_set.to_JSON();
+				Document resDoc;
+				Document::AllocatorType& allocator = resDoc.GetAllocator();
+				resDoc.Parse(_ret_msg.c_str());
+
+				_ret_msg = res_set.to_str();
+				time_t now = time(0);
+				tm* ltm = localtime(&now);
+				char digit[15];
+				strftime(digit, sizeof(digit), "%Y%m%d%H%M%S", ltm);
+				std::string filename = digit;
+				filename += ".txt";
+				std::string folderPath = "./query_result/";
+				if (0 != access(folderPath.c_str(), 0)) {
+					mkdir(folderPath.c_str(), 0777);
+				}
+				std::ofstream file(folderPath + filename);
+				if (file.is_open()) {
+					file << _ret_msg;
+					file.close();
+				}
+				else {
+					std::string error = "Open file failed.";
+					this->response(1001, error, _socket);
+					return false;
+				}
+
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", "success", allocator);
+				resDoc.AddMember("FileName", rapidjson::Value(filename.c_str(), allocator), allocator);
+				StringBuffer resBuffer;
+				PrettyWriter<StringBuffer> resWriter(resBuffer);
+				resDoc.Accept(resWriter);
+				std::string resJson = resBuffer.GetString();
+				_socket.send(resJson);
+			}
 			return true;
 		}
 		else /**< Query error. */

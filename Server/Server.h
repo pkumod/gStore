@@ -135,7 +135,7 @@ public:
 	*	true : Load the database successfully. \n
 	*	false : Load the database failed. \n
 	*/
-	bool load(std::string _db_name, Socket& socket);
+	bool load(std::string _db_name, Socket& _socket, bool load_csr);
 
 	/**
 	* @brief Unload the database named [db_name].
@@ -176,7 +176,7 @@ public:
 	*	true : Query the sparql successfully. \n
 	*	false : Query the sparql failed. \n
 	*/
-	bool query(std::string _db_name, std::string _sparql, Socket& socket);
+	bool query(std::string _db_name, std::string _sparql, std::string format, Socket& _socket);
 
 	/**
 	* @brief Handle before stopping the server.
