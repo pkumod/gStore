@@ -2506,7 +2506,13 @@ int setpriv_handler(const vector<string> &args)
 		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
 		return -1;
 	}
-	if (access(string(db_home + db + db_suffix).c_str(), F_OK))
+	Database system_db("system");
+	system_db.load();
+	string sparql = "ASK WHERE{<" + db + "> <database_status> \"already_built\".}";
+	ResultSet ask_rs;
+	FILE* ask_ofp = stdout;
+	system_db.query(sparql, ask_rs, ask_ofp);
+	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 	{
 		cout << "Database " << db << " does not exist. \nPrivilege set failed." << endl;
 		return -1;
