@@ -1,4 +1,4 @@
-# gStore System
+![image](https://github.com/pkumod/gStore/assets/43348560/f94bf9b9-33c6-4c0c-bca1-02913b0ad95e)# gStore System
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
 
@@ -9,7 +9,33 @@ Gstore System(also called gStore) is a graph database engine for managing large 
 
 ## Change log
 
-**1.0（stable）：2022-10-01**
+**1.2(stable):2023-11-11**
+
+New features in gStore 1.2 are listed as follows:
+
+ - **Optimizing ORDER BY statements**: streamlining the execution logic of ORDER BY, removing unnecessary type judgments and conversions, and significantly improving execution efficiency.
+   
+  - **Optimized Build Module**: Supports building empty libraries.
+    
+  - **Optimizing the Triple Parser**: Supports pure numeric IRIs, IRIs consisting only of numbers and letters, and IRIs starting with numbers.
+    
+  - **New API interfaces**: gStore 1.2's ghttp and gRPC services have added five interfaces for **uploading files**, **downloading files**, **counting system resources**, **renaming**, and **obtaining backup paths**.
+    
+  - **New built-in advanced functions**: gStore 1.2 version adds seven advanced functions, namely **single source shortest path (SSSP, SSSPLen)**, **label propagation (labelProp)**, **weakly connected component (WCC)**, **global/local clustering coefficient (clusteringCoeff)**, **louvain algorithm (louvain)**, **K-hop count (kHopCount)**, and **K-hop neighbor (kHopNeighbor)**.
+    
+    -* * Added support for calling CONCAT functions in SELECT statements * *.
+    
+  - **Optimizing some local commands and API interfaces**: Optimizing the local command gconsole, optimizing the interfaces for building, loading, and statistical graph databases, and fixing potential bugs that may lead to memory leaks.
+    
+  - **Support for Multiple Data Formats**: Added support for multiple formats such as **Turtle**, **TriG**, **RDF/XML**, **RDFa**, and **JSON-LD**.
+    
+  - **Optimization of custom graph analysis algorithm editing function**: Redesign the interface of the custom graph analysis algorithm editing function, optimize the dynamic compilation algorithm, and improve compilation efficiency.
+    
+  - **Bug fixes**: Fixed a series of bugs.
+
+
+
+**1.0：2022-10-01**
 
 New features in gStore 1.0 are listed as follows:
 
