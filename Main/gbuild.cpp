@@ -92,8 +92,9 @@ main(int argc, char * argv[])
 		}
 		if (_rdf.empty())
 		{
-			cout<<"You must input the rdf file path for building database!"<<endl;
-			return -1;
+			std::cout<<"will build an empty database"<<std::endl;
+			//cout<<"You must input the rdf file path for building database!"<<endl;
+			//return -1;
 		}
 
 		string _db_path = _db_home + "/" + db_name + _db_suffix;
@@ -107,7 +108,11 @@ main(int argc, char * argv[])
 		{
 			long tv_begin = Util::get_cur_time();
 			Database _db(db_name);
-			bool flag = _db.build(_rdf);
+			bool flag = true;
+			if (_rdf.empty()) 
+				flag = _db.BuildEmptyDB();
+			else
+				flag = _db.build(_rdf);
 			if (flag)
 			{
 				cout<<"Build Database Successfully!"<<endl;
@@ -132,27 +137,17 @@ main(int argc, char * argv[])
 			string time = Util::get_date_time();
 			string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>."
 				+ "<" + db_name + "> <built_time> \"" + time + "\".}";
-			cout<<"sparql:"<<sparql<<endl;
+			#ifdef DEBUG
+			cout<<"insert sparql:"<<sparql<<endl;
+			#endif
 			ResultSet _rs;
 			FILE* ofp = stdout;
 			string msg;
 			int ret = system_db.query(sparql, _rs, ofp);
-			if (ret <= -100) // select query
-			{
-				if (ret == -100)
-					msg = _rs.to_str();
-				else //query error
-					msg = "query failed";
-			}
-			else //update query
-			{
-				if (ret >= 0)
-					msg = "update num " + Util::int2string(ret);
-				else //update error
-					msg = "update failed.";
-				/*if (ret != -100)
-					cout << msg << endl;*/
-			}
+			if (ret >= 0)
+				msg = "update num " + Util::int2string(ret);
+			else //update error
+				msg = "update failed.";
 			Util::add_backuplog(db_name);
 			cout<<"Saving database info: " + msg<<endl;
 			long tv_end = Util::get_cur_time();
@@ -160,10 +155,10 @@ main(int argc, char * argv[])
 			cout<< "Build RDF database "<<db_name<<" successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			string error_log = _db_path + "/parse_error.log";
 			// exclude Info line
-			size_t parse_error_num = Util::count_lines(error_log) - 1;
-			if (parse_error_num > 0)
+			size_t parse_error_num = Util::count_lines(error_log);
+			if (parse_error_num > 1)
 			{
-				cout<< "RDF parse error num "<< parse_error_num << endl;
+				cout<< "RDF parse error num "<< parse_error_num - 1 << endl;
 				cout<< "See log file for details " << error_log << endl;
 			}
 			
