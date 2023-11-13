@@ -584,7 +584,7 @@ int main(int argc, char *argv[])
 	{
 		// NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
 		// Child process is used to deal with web requests, can also has many threads
-		pid_t fpid = fork();
+		pid_t fpid = 0;//fork();
 
 		if (fpid == 0)
 		{
@@ -802,25 +802,28 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 	string operation = "build";
 	try
 	{
-		string result = apiUtil->check_param_value("db_path", db_path);
-		if (result.empty() == false)
-		{
-			sendResponseMsg(1003, result, operation, request, response);
-			return;
+		// string result = apiUtil->check_param_value("db_path", db_path);
+		// if (result.empty() == false)
+		// {
+		// 	sendResponseMsg(1003, result, operation, request, response);
+		// 	return;
+		// }
+		if (!db_path.empty()) 
+		{		
+			if (db_path == apiUtil->get_system_path())
+			{
+				string error = "You have no rights to access system files.";
+				sendResponseMsg(1002, error, operation, request, response);
+				return;
+			}
+			if (Util::file_exist(db_path) == false)
+			{
+				string error = "RDF file not exist.";
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
 		}
-		if (db_path == apiUtil->get_system_path())
-		{
-			string error = "You have no rights to access system files.";
-			sendResponseMsg(1002, error, operation, request, response);
-			return;
-		}
-		if (Util::file_exist(db_path) == false)
-		{
-			string error = "RDF file not exist.";
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
-		}
-		result = apiUtil->check_param_value("db_name", db_name);
+		string result = apiUtil->check_param_value("db_name", db_name);
 		if (result.empty() == false)
 		{
 			sendResponseMsg(1003, result, operation, request, response);
@@ -848,20 +851,27 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		SLOG_DEBUG("Import dataset to build database...");
 		SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
 		Database *current_database = new Database(database);
-		bool flag;
+		bool flag = true;
 		if (!port.empty())
 		{
 			socket.create();
 			socket.connect(remote_ip, Util::string2int(port));
-			flag = current_database->build(dataset, socket);
+			if (dataset.empty())
+				flag = current_database->build(dataset, socket);
+			else
+				flag = current_database->BuildEmptyDB();
 			string msg = "Build database done.";
 			string resJson = CreateJson(0, msg, 0);
 			socket.send(resJson);
 			socket.close();
 		}
-		else
+		else if (!dataset.empty())
 		{
 			flag = current_database->build(dataset);
+		}
+		else
+		{
+			flag = current_database->BuildEmptyDB();
 		}
 		delete current_database;
 		current_database = NULL;
@@ -893,7 +903,9 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			string success = "Import RDF file to database done.";
 			string error_log = _db_path + "/parse_error.log";
 			// exclude Info line
-			size_t parse_error_num = Util::count_lines(error_log) - 1;
+			size_t parse_error_num = Util::count_lines(error_log);
+			if (parse_error_num > 0)
+				parse_error_num = parse_error_num - 1;
 			rapidjson::Document doc;
 			doc.SetObject();
 			Document::AllocatorType &allocator = doc.GetAllocator();
