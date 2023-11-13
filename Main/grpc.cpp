@@ -1471,23 +1471,27 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_path = jsonParam(json_data, "db_path");
-		std::string error = apiUtil->check_param_value("db_path", db_path);
-		if (error.empty() == false)
+		std::string error = "";
+		// error = apiUtil->check_param_value("db_path", db_path);
+		// if (error.empty() == false)
+		// {
+		// 	response->Error(StatusParamIsIllegal, error);
+		// 	return;
+		// }
+		if (!db_path.empty()) 
 		{
-			response->Error(StatusParamIsIllegal, error);
-			return;
-		}
-		if (db_path == apiUtil->get_system_path())
-		{
-			error = "You have no rights to access system files.";
-			response->Error(StatusCheckPrivilegeFailed, error);
-			return;
-		}
-		if (Util::file_exist(db_path) == false)
-		{
-			error = "RDF file not exist.";
-			response->Error(StatusParamIsIllegal, error);
-			return;
+			if (db_path == apiUtil->get_system_path())
+			{
+				error = "You have no rights to access system files.";
+				response->Error(StatusCheckPrivilegeFailed, error);
+				return;
+			}
+			if (Util::file_exist(db_path) == false)
+			{
+				error = "RDF file not exist.";
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		error = apiUtil->check_param_value("db_name", db_name);
@@ -1518,7 +1522,11 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
 		Database *current_database = new Database(database);
 		// TODO progress notification
-		bool flag = current_database->build(dataset);
+		bool flag = true;
+		if (!dataset.empty())
+			flag = current_database->build(dataset);
+		else 
+			flag = current_database->BuildEmptyDB();
 		delete current_database;
 		current_database = NULL;
 		if (!flag)
@@ -1549,7 +1557,9 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			string success = "Import RDF file to database done.";
 			string error_log = _db_path + "/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log) - 1;
+			size_t parse_error_num = Util::count_lines(error_log);
+			if (parse_error_num > 0)
+				parse_error_num = parse_error_num - 1;
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
