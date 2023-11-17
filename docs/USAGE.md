@@ -17,11 +17,11 @@ You can query this database using `gquery` command, but you are forbidded to mod
 
 gbuild is used to build a new database from a RDF triple format file.
 
-`# bin/gbuild db_name rdf_triple_file_path`
+`# bin/gbuild -db db_name -f rdf_triple_file_path`
 
 For example, we build a database from lubm.nt which can be found in data folder.
 
-    [bookug@localhost gStore]$ bin/gbuild lubm ./data/lubm/lubm.nt 
+    [bookug@localhost gStore]$ bin/gbuild -db lubm -f ./data/lubm/lubm.nt 
     gbuild...
     argc: 3 DB_store:lubm      RDF_data: ./data/lubm/lubm.nt  
     begin encode RDF from : ./data/lubm/lubm.nt ...
@@ -36,11 +36,11 @@ Notice:
 
 gquery is used to query an existing database with files containing SPARQL queries.(each file contains exact one SPARQL query)
 
-Type `bin/gquery db_name query_file` to execute the SPARQL query retrieved from query_file in the database named db_name.
+Type `bin/gquery -db db_name -q query_file` to execute the SPARQL query retrieved from query_file in the database named db_name.
 
 Use `bin/gquery --help` for detail information of gquery usage.
 
-To enter the gquery console, type `bin/gquery db_name`. The program shows a command prompt("gsql>"), and you can type in a command here. Use `help` to see basic information of all commands, while `help command_t` shows details of a specified command.
+To enter the gquery console, type `bin/gquery -db db_name`. The program shows a command prompt("gsql>"), and you can type in a command here. Use `help` to see basic information of all commands, while `help command_t` shows details of a specified command.
 
 Type `quit` to leave the gquery console.
 
@@ -52,7 +52,7 @@ When the program finish answering the query, it shows the command prompt again.
 
 We also take lubm.nt as an example.
 
-    [bookug@localhost gStore]$ bin/gquery lubm
+    [bookug@localhost gStore]$ bin/gquery -db lubm
     gquery...
     argc: 2 DB_store:lubm/
     loadTree...
@@ -103,7 +103,7 @@ ghttp runs gStore like HTTP server with port 9000(You need to open this port in 
 
 type:
 
-`bin/ghttp db_name serverPort` or `bin/ghttp serverPort db_name` to start server with serverPort and load database named db_name initially.
+`bin/ghttp -p serverPort -db db_name ` or `bin/ghttp -p serverPort` to start server with serverPort and load database named db_name initially.
 
 Attention: the argument serverPort or db_name can be left out
 
@@ -273,9 +273,9 @@ What we have done is enough to bring you much convenience to use gStore, just en
 
 gadd is used to insert triples in a file to an existing database.
 
-Usage: bin/gadd db_name rdf_triple_file_path
+Usage: bin/gadd -db db_name -f rdf_triple_file_path
 
-    [bookug@localhost gStore]$ bin/gadd lubm ./data/lubm/lubm.nt
+    [bookug@localhost gStore]$ bin/gadd -db lubm -f ./data/lubm/lubm.nt
     ...
     argc: 3 DB_store:lubm   insert file:./data/lubm/lubm.nt
     get important pre ID
@@ -289,7 +289,7 @@ Usage: bin/gadd db_name rdf_triple_file_path
 
 gsub is used to remove triples in a file from an existing database.
 
-Usage: bin/gsub db_name rdf_triple_file_path
+Usage: bin/gsub -db db_name -f rdf_triple_file_path
 
     [bookug@localhost gStore]$ bin/gsub lubm ./data/lubm/lubm.nt
     ...
@@ -302,45 +302,50 @@ Usage: bin/gsub db_name rdf_triple_file_path
 
 #### 9. gmonitor
 
-After starting ghttp, type `bin/gmonitor ip port db_name` to check current status of database db_name of gStore.
+After starting ghttp, type `bin/gmonitor -db db_name` to check current status of database db_name of gStore.
 
-    [bookug@localhost gStore]$ bin/gmonitor 127.0.0.1 9000 lubm
-    parameter: ?operation=monitor&db_name=lubm
-    request: http://127.0.0.1:9000/%3Foperation%3Dmonitor%26db_name%3Dlubm
-    null--->[HTTP/1.1 200 OK]
-    Content-Length--->[127]
-    database: lubm
-    triple num: 99550
-    entity num: 28413
-    literal num: 0
-    subject num: 14569
-    predicate num: 17
-    connection num: 7
+    [bookug@localhost gStore]$ bin/gmonitor -db lubm
+    ---------------------------------------
+    |     name      |        value        |
+    ---------------------------------------
+    | database      | lubm                |
+    | creator       | root                |
+    | built_time    | 2023-11-11 11:11:11 |
+    | triple_num    | 99550               |
+    | entity_num    | 28413               |
+    | literal_num   | 0                   |
+    | subject_num   | 14569               |
+    | predicate_num | 17                  |
+    | disk_used     | 12 MB               |
+    ---------------------------------------
+    
 
 - - -
 
 #### 10. gshow
 
-After starting ghttp, type `bin/gshow ip port` to check loaded database.
+After starting ghttp, type `bin/gshow` to check loaded database.
 
-    [bookug@localhost gStore]$ bin/gshow 127.0.0.1 9000
-    parameter: ?operation=show
-    request: http://127.0.0.1:9000/%3Foperation%3Dshow
-    null--->[HTTP/1.1 200 OK]
-    Content-Length--->[4]
-    database: lubm
+    [bookug@localhost gStore]$ bin/gshow
+    --------------------------------------------
+    | database | creator |     built_time      |
+    --------------------------------------------
+    | system   | root    |                     |
+    | lubm     | root    | 2023-11-11 11:11:11 |
+    --------------------------------------------
+    
 
 - - -
 
 #### 11. gdrop
 
-In order to drop the database, you should not simply type `rm -r db_name.db` because this will not update the built-in database named `system`. Instead, you should type `bin/gdrop db_name`.
+In order to drop the database, you should not simply type `rm -r db_name.db` because this will not update the built-in database named `system`. Instead, you should type `bin/gdrop -db db_name`.
 
 ---
 
 #### 12. shutdown
 
-After starting ghttp, type `bin/shutdown port` to stop the server instead of simply typing the command "Ctrl+C".
+After starting ghttp, type `bin/shutdown` to stop the server instead of simply typing the command "Ctrl+C".
     
 ---
 
