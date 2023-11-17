@@ -1140,7 +1140,7 @@ bool Database::load(bool loadCSR)
 		csr[1].n = this->entity_num;
 
 		unsigned ret = 0;
-		for (int i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+		for (auto i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
 			ret += csr[1].adjacency_list[i].size();
 		csr[1].m = ret;
 
@@ -4006,7 +4006,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_s = 0;
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
-	// unsigned update_num_subject=0;
+	unsigned update_num_subject=0;
 	unsigned update_num_triple = 0;
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	set<unsigned> sub_ids, pre_ids, obj_ids;
@@ -4092,7 +4092,8 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 				this->kvstore->subEntityByID(_sub_id);
 				this->kvstore->subIDByEntity(subject);
 				this->freeEntityID(_sub_id);
-				this->sub_num--;
+				//this->sub_num--;
+				update_num_subject = update_num_subject + 1;
 				vertices.push_back(_sub_id);
 			}
 		}
@@ -4145,6 +4146,10 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			}
 		}
 		this->triples_num = this->triples_num - update_num_triple;
+		if (this->sub_num > update_num_subject)
+			this->sub_num = this->sub_num - update_num_subject;
+		else
+			this->sub_num = 0;
 		this->stringindex->SetTrie(kvstore->getTrie());
 		// update string index
 		this->stringindex->disable(vertices, true);
