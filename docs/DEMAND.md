@@ -7,21 +7,23 @@ architecture | x86_64
 disk size | according to size of dataset 
 memory size | according to size of dataset
 glibc | version >= 2.14
-gcc | version >= 4.8
-g++ | version >= 4.8
+gcc | version >= 5.0
+g++ | version >= 5.0
 make | need to be installed
+cmake | version >= 3.6
+pkg-config | need to be installed
+uuid-devel | need to be installed
 boost | version >= 1.54
-readline | need to be installed
 readline-devel | need to be installed
-openjdk | needed if using Java api
+curl-devel | need to be installed
+openssl-devel | version >= 1.1
+jemalloc | 1.2 version and above, must be installed
 openjdk-devel | needed if using Java api
 requests | needed if using Python http api
 node | needed if using Nodejs http api and version >= 10.9.0
-pthreads | needed if using php http api 
-curl-devel | needed if using php http api
+pthreads | needed if using php http api
 realpath | needed if using gconsole
 ccache | optional, used to speed up the compilation
-libcurl-devel | needed to be installed
 
 NOTICE:
 
