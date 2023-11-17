@@ -584,7 +584,7 @@ int main(int argc, char *argv[])
 	{
 		// NOTICE: here we use 2 processes, father process is used for monitor and control(like, restart)
 		// Child process is used to deal with web requests, can also has many threads
-		pid_t fpid = 0;//fork();
+		pid_t fpid = fork();
 
 		if (fpid == 0)
 		{
