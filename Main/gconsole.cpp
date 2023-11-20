@@ -269,7 +269,9 @@ int main(int argc, char **argv)
 			if (line.find("root_username") != string::npos) // len(root_username):13
 				root_username = line.substr(15, line.size() - 16);
 			else if (line.find("root_password") != string::npos)
-				root_password = line.substr(15, line.size() - 16);
+			{
+				read_pswd(root_username, root_password);
+			}
 			else if (line.find("version") != string::npos) // len(version):7
 				gstore_version = line.substr(8, line.size() - 8);
 		}
@@ -2461,32 +2463,32 @@ int setpswd_handler(const vector<string> &args)
 		root_password = new_pswd;
 
 		// write to config file
-		string res;
-		{
-			ifstream fin(INIT_CONF_FILE);
-			if (fin.is_open() == 0)
-			{
-				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
-				return 0;
-			}
-			string line;
-			while (getline(fin, line))
-			{
-				if (line.find("root_password") != string::npos)
-					res += "root_password=\"" + new_pswd + "\"\n";
-				else
-					res += line + "\n";
-			}
-		}
-		{
-			ofstream fout(INIT_CONF_FILE);
-			if (fout.is_open() == 0)
-			{
-				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
-				return 0;
-			}
-			fout << res;
-		}
+		// string res;
+		// {
+		// 	ifstream fin(INIT_CONF_FILE);
+		// 	if (fin.is_open() == 0)
+		// 	{
+		// 		cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+		// 		return 0;
+		// 	}
+		// 	string line;
+		// 	while (getline(fin, line))
+		// 	{
+		// 		if (line.find("root_password") != string::npos)
+		// 			res += "root_password=\"" + new_pswd + "\"\n";
+		// 		else
+		// 			res += line + "\n";
+		// 	}
+		// }
+		// {
+		// 	ofstream fout(INIT_CONF_FILE);
+		// 	if (fout.is_open() == 0)
+		// 	{
+		// 		cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+		// 		return 0;
+		// 	}
+		// 	fout << res;
+		// }
 	}
 	cout << "Password set successfully." << endl;
 	return 0;
