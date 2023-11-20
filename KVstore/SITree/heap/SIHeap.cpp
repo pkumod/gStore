@@ -150,6 +150,10 @@ bool
 SIHeap::modify(SINode* _np, bool _flag)
 {
   //Search and adjust
+  if (_np->heapId < 0)
+  {
+    return false;
+  }
   unsigned i, j;
   i = _np->heapId;
   if (_flag)	//move up
