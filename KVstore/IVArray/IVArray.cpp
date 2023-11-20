@@ -354,6 +354,10 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		unsigned OldEntryNum = CurEntryNum;
 //		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
 		CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
+		while (_key > CurEntryNum)
+		{
+			CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
+		}
 
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
