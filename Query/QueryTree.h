@@ -188,6 +188,7 @@ public:
 	int getLimit();
 
 	GroupPattern& getGroupPattern();
+	const GroupPattern &getGroupPattern() const {return this->group_pattern;}
 
 	std::unordered_map<std::string, VarType>& getVar2Type();
 
