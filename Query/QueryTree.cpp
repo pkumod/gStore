@@ -273,9 +273,10 @@ void GroupPattern::getVarset()
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Subquery_type)
 		{
 			this->sub_group_pattern[i].subquery.getGroupPattern().getVarset();
-            this->group_pattern_resultset_minimal_varset += sub_group_pattern[i].subquery.getResultProjectionVarset();
-            this->group_pattern_resultset_maximal_varset += sub_group_pattern[i].subquery.getResultProjectionVarset();
-            this->group_pattern_subject_object_maximal_varset += sub_group_pattern[i].subquery.getResultProjectionVarset();
+			this->group_pattern_resultset_minimal_varset += sub_group_pattern[i].subquery.getGroupPattern().group_pattern_resultset_minimal_varset;
+			this->group_pattern_resultset_maximal_varset += sub_group_pattern[i].subquery.getGroupPattern().group_pattern_resultset_maximal_varset;
+			this->group_pattern_subject_object_maximal_varset += sub_group_pattern[i].subquery.getGroupPattern().group_pattern_subject_object_maximal_varset;
+			this->group_pattern_predicate_maximal_varset += sub_group_pattern[i].subquery.getGroupPattern().group_pattern_predicate_maximal_varset;
 		}
 }
 

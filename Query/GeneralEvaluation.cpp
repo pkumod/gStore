@@ -4180,6 +4180,10 @@ void GeneralEvaluation::addAllTriples(const GroupPattern &group_pattern)
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type \
 			|| group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
 			addAllTriples(group_pattern.sub_group_pattern[i].optional);
+		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Subquery_type) {
+			const QueryTree &subQtr = group_pattern.sub_group_pattern[i].subquery;
+			addAllTriples(subQtr.getGroupPattern());
+		}
 	}
 
 	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
