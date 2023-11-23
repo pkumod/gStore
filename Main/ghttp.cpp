@@ -27,6 +27,7 @@
 #include "../GRPC/APIUtil.h"
 #include "../Util/INIParser.h"
 #include "../Util/WebUrl.h"
+#include "../Util/CompressFileUtil.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -105,7 +106,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string sparql, string format,
 					  string update_flag, string log_prefix, string username, string remote_ip);
 
-void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username);
+void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username, string compress);
 
 void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string remote_ip);
 
@@ -844,6 +845,43 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
+
+		std::vector<std::string> zip_files;
+		std::string unz_dir_path;
+		std::string file_suffix = fileSuffix(db_path);
+		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+		if (is_zip)
+		{
+			auto code = CompressUtil::FileHelper::foreachZip(db_path,[](std::string filename)->bool
+				{
+					if (apiUtil->check_upload_allow_extensions(fileSuffix(filename)) == false)
+						return false;
+					return true;
+				});
+			if (code != CompressUtil::UnZipOK)
+			{
+				string error = "uncompress is failed error.";
+				sendResponseMsg(code, error, operation, request, response);
+				return;
+			}
+			std::string file_name = fileName(db_path);
+			size_t pos = file_name.size() - file_suffix.size() - 1;
+            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip upfile(db_path, unz_dir_path);
+			code = upfile.unCompress();
+			if (code != CompressUtil::UnZipOK)
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+				string error = "uncompress is failed error.";
+				sendResponseMsg(code, error, operation, request, response);
+				return;
+			}
+			db_path = upfile.getMaxFilePath();
+			upfile.getFileList(zip_files, db_path);
+		}
+
 		Socket socket;
 		string _db_path = _db_home + "/" + db_name + _db_suffix;
 		string dataset = db_path;
@@ -881,6 +919,11 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			string cmd = "rm -r " + _db_path;
 			system(cmd.c_str());
 			sendResponseMsg(1005, error, operation, request, response);
+			if (!unz_dir_path.empty())
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
 			return;
 		}
 
@@ -893,6 +936,11 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		{
 			string error = "init privilege failed.";
 			sendResponseMsg(1006, error, operation, request, response);
+			if (!unz_dir_path.empty())
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
 			return;
 		}
 		SLOG_DEBUG("init privilege succeed after build.");
@@ -917,8 +965,81 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
 				SLOG_ERROR("See log file for details " + error_log);
 			}
-			Util::add_backuplog(db_name);
-			sendResponseMsg(doc, operation, request, response);
+			if (is_zip)
+			{
+				auto error_responce = [operation,request,response,db_name,parse_error_num](const std::string& error)
+				{
+					rapidjson::Document doc;
+					doc.SetObject();
+					Document::AllocatorType &allocator = doc.GetAllocator();
+					doc.AddMember("StatusCode", 0, allocator);
+					doc.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+					doc.AddMember("failed_num", parse_error_num, allocator);
+					Util::add_backuplog(db_name);
+					sendResponseMsg(doc, operation, request, response);
+				};
+				if (!apiUtil->trywrlock_database(db_name))
+				{
+					std::string error = "The operation can not been excuted due to loss of lock.";
+					error_responce(error);
+				}
+				else
+				{
+					Database *cur_database = new Database(db_name);
+					bool rt  = cur_database->load(true);
+					if (!rt)
+					{
+						std::string error = "The database load faild.";
+						error_responce(error);
+						apiUtil->unlock_database(db_name);
+					}
+					else
+					{
+						apiUtil->add_database(db_name, cur_database);
+						if (apiUtil->insert_txn_managers(cur_database, db_name) == false)
+						{
+							SLOG_WARN("when load insert_txn_managers fail.");
+						}
+						unsigned success_num = 0;
+						unsigned parse_insert_error_num = 0;
+						unsigned total_num = Util::count_lines(error_log);
+						for (std::string rdf_zip : zip_files)
+						{
+							SLOG_DEBUG("begin insert data from " + rdf_zip);
+							success_num += cur_database->batch_insert(rdf_zip, false, nullptr);
+						}
+						parse_insert_error_num = Util::count_lines(error_log)-total_num-zip_files.size();
+						cur_database->save();
+						apiUtil->db_checkpoint(db_name);
+						apiUtil->delete_from_databases(db_name);
+						apiUtil->unlock_database(db_name);
+
+						rapidjson::Document doc;
+						doc.SetObject();
+						Document::AllocatorType &allocator = doc.GetAllocator();
+						doc.AddMember("StatusCode", 0, allocator);
+						doc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						doc.AddMember("failed_num", parse_error_num, allocator);
+						doc.AddMember("success_num", success_num, allocator);
+						doc.AddMember("failed_insert_num", parse_insert_error_num, allocator);
+						Util::add_backuplog(db_name);
+						sendResponseMsg(doc, operation, request, response);
+					}
+				}
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
+			else
+			{
+				rapidjson::Document doc;
+				doc.SetObject();
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				doc.AddMember("StatusCode", 0, allocator);
+				doc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+				doc.AddMember("failed_num", parse_error_num, allocator);
+				Util::add_backuplog(db_name);
+				sendResponseMsg(doc, operation, request, response);
+			}
 		}
 		else
 		{
@@ -2168,7 +2289,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-
+					
 					*response << "HTTP/1.1 200 OK"
 							  << "\r\nContent-Type: application/json"
 							  << "\r\nContent-Length: " << resJson.length()
@@ -2203,7 +2324,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				writer.String(StringRef(filename.c_str()));
 				writer.EndObject();
 				string resJson = s.GetString();
-
+				
 				//! Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
 				// beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
 				// then the following query will show the same result without sending a request to let the service run query
@@ -2250,7 +2371,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					PrettyWriter<StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-					*response << "HTTP/1.1 200 OK"
+										*response << "HTTP/1.1 200 OK"
 							  << "\r\nContent-Type: application/json"
 							  << "\r\nContent-Length: " << resJson.length()
 					          << "\r\nCache-Control: no-cache"
@@ -2262,7 +2383,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			}
 			else if (format == "sparql-results+json")
 			{
-				*response << "HTTP/1.1 200 OK"
+								*response << "HTTP/1.1 200 OK"
 						  << "\r\nContent-Type: application/sparql-results+json"
 						  << "\r\nContent-Length: " << success.length()
 						  << "\r\nCache-Control: no-cache"
@@ -2313,7 +2434,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
  * @param {string} username
  * @return {*}
  */
-void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username)
+void export_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string username, string compress)
 {
 	string error = "";
 	string operation = "export";
@@ -2367,8 +2488,29 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		Document::AllocatorType &allocator = resDoc.GetAllocator();
 		resDoc.AddMember("StatusCode", 0, allocator);
 		resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-		resDoc.AddMember("filepath", StringRef(db_path.c_str()), allocator);
-		sendResponseMsg(resDoc, operation, request, response);
+		if (compress=="0")
+		{
+			resDoc.AddMember("filepath", StringRef(db_path.c_str()), allocator);
+			sendResponseMsg(resDoc, operation, request, response);
+		}
+		else
+		{
+			std::string file_suffix = fileSuffix(db_path);
+			size_t pos = db_path.size() - file_suffix.size() - 1;
+			std::string zip_path = db_path.substr(0, pos) + ".zip";
+			if (!CompressUtil::FileHelper::compressExportZip(db_path, zip_path))
+			{
+				error = "export compress fail.";
+				sendResponseMsg(1005, error, operation, request, response);
+				std::string cmd = "rm -f " + db_path + " " + zip_path;
+				system(cmd.c_str());
+				return;
+			}
+			resDoc.AddMember("filepath", StringRef(zip_path.c_str()), allocator);
+			sendResponseMsg(resDoc, operation, request, response);
+			std::string cmd = "rm -f " + db_path;
+			system(cmd.c_str());
+		}
 	}
 	catch (const std::exception &e)
 	{
@@ -3019,6 +3161,40 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
+		std::vector<std::string> zip_files;
+		std::string unz_dir_path;
+		std::string file_suffix = fileSuffix(file);
+		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+		if (is_zip)
+		{
+			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+				{
+					if (apiUtil->check_upload_allow_extensions(fileSuffix(filename)) == false)
+						return false;
+					return true;
+				});
+			if (code != CompressUtil::UnZipOK)
+			{
+				string error = "uncompress is failed error.";
+				sendResponseMsg(code, error, operation, request, response);
+				return;
+			}
+			std::string file_name = fileName(file);
+			size_t pos = file_name.size() - file_suffix.size() - 1;
+            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+			code = upfile.unCompress();
+			if (code != CompressUtil::UnZipOK)
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+				string error = "uncompress is failed error.";
+				sendResponseMsg(code, error, operation, request, response);
+				return;
+			}
+			upfile.getFileList(zip_files, "");
+		}
 		Database *current_database = apiUtil->get_database(db_name);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -3034,10 +3210,23 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
 			if (is_file)
 			{
-				total_num = Util::count_lines(error_log);
-				success_num = current_database->batch_insert(file, false, nullptr);
-				// exclude Info line
-				parse_error_num = Util::count_lines(error_log) - total_num - 1;
+				if (!is_zip)
+				{
+					total_num = Util::count_lines(error_log);
+					success_num = current_database->batch_insert(file, false, nullptr);
+					// exclude Info line
+					parse_error_num = Util::count_lines(error_log) - total_num - 1;
+				}
+				else
+				{
+					total_num = Util::count_lines(error_log);
+					for (std::string rdf_zip : zip_files)
+					{
+						SLOG_DEBUG("begin insert data from " + rdf_zip);
+						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+					}
+					parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+				}
 			}
 			else
 			{
@@ -3055,7 +3244,6 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
-
 			Document resDoc;
 			resDoc.SetObject();
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
@@ -3065,6 +3253,11 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			resDoc.AddMember("failed_num", parse_error_num, allocator);
 			
 			sendResponseMsg(resDoc, operation, request, response);
+		}
+		if (!unz_dir_path.empty())
+		{
+			std::string cmd = "rm -r " + unz_dir_path;
+			system(cmd.c_str());
 		}
 	}
 	catch (const std::exception &e)
@@ -3609,18 +3802,25 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (operation == "export")
 	{
 		string db_path = "";
+		string compress = "0";
 		try
 		{
 			if (request_type == "GET")
 			{
 				db_path = WebUrl::CutParam(url, "db_path");
 				db_path = UrlDecode(db_path);
+				compress = WebUrl::CutParam(url, "compress");
+				compress = UrlDecode(compress);
 			}
 			else if (request_type == "POST")
 			{
 				if (document.HasMember("db_path") && document["db_path"].IsString())
 				{
 					db_path = document["db_path"].GetString();
+				}
+				if (document.HasMember("compress") && document["compress"].IsString())
+				{
+					compress = document["compress"].GetString();
 				}
 			}
 		}
@@ -3630,7 +3830,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		export_thread_new(request, response, db_name, db_path, username);
+		export_thread_new(request, response, db_name, db_path, username, compress);
 	}
 	else if (operation == "login")
 	{
@@ -4385,7 +4585,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 		}
 	}
 	std::string file_suffix = fileSuffix(fileinfo.first);
-	if (apiUtil->check_upload_allow_extensions(file_suffix) == false)
+	if (!apiUtil->check_upload_allow_compress_packages(file_suffix) && apiUtil->check_upload_allow_extensions(file_suffix) == false)
 	{
 		error = "The type of upload file is not supported!";
 		sendResponseMsg(1005, error, operation, request, response);

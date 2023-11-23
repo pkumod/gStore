@@ -14,6 +14,7 @@ CTRL+C to quit current command. CTRL+D to exit this console.
 #include "../Database/Database.h"
 #include "../Util/Util.h"
 #include <termios.h>
+#include "../Util/CompressFileUtil.h"
 
 using namespace std;
 
@@ -1937,6 +1938,11 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\". Database create failed." << endl;
 		return -1;
 	}
+	if (usrname != root_username)
+	{
+		cout << "Your user Permission denied." << endl;
+		return 0;
+	}
 	int len = db_name.length();
 	int len_suffix = db_suffix.length();
 	if (len <= len_suffix || (len > len_suffix && db_name.substr(len - len_suffix, len_suffix) == db_suffix))
@@ -1969,6 +1975,37 @@ int create_handler(const vector<string> &args)
 	else
 		nt_file = args[1];
 
+	bool is_zip = false;
+	std::string::size_type pos1 = nt_file.find_last_of("/");
+	if (pos1 == std::string::npos)
+		pos1 = 0;
+	else
+		pos1++;
+	std::string zfile = nt_file.substr(pos1, -1);
+	std::string::size_type pos2 = zfile.find_last_of(".");
+	if (pos2 != std::string::npos && zfile.substr(pos2 + 1, -1)=="zip")
+		is_zip = true;
+	std::string unz_dir_path;
+	std::vector<std::string> zip_files;
+	if (is_zip)
+	{
+		unz_dir_path = nt_file + "_" + Util::getTimeString2();
+		CompressUtil::UnCompressZip unzip(nt_file, unz_dir_path);
+		mkdir(unz_dir_path.c_str(), 0775);
+		if (unzip.unCompress() != CompressUtil::UnZipOK)
+		{
+			std::string cmd = "rm -r " + unz_dir_path;
+			system(cmd.c_str());
+			cout<<"zip file uncompress faild "<<endl;
+			return -1;
+		}
+		else
+		{
+			nt_file = unzip.getMaxFilePath();
+			unzip.getFileList(zip_files, nt_file);
+		}
+	}
+
 	Database *tmp_database = new Database(db_name);
 	int flag = tmp_database->build(nt_file);
 	delete tmp_database;
@@ -1981,7 +2018,7 @@ int create_handler(const vector<string> &args)
 	if (flag == 0)
 	{
 		cout << "Database create failed. " << endl;
-		system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
+		system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
 		return -1;
 	}
 
@@ -1993,36 +2030,61 @@ int create_handler(const vector<string> &args)
 		if (silence_sysdb_query(record_newdb_sparql, rs))
 		{
 			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
-			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
+			system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
 			return -1;
 		}
 	}
 
-	if (usrname == root_username)
+	if (is_zip)
 	{
-		return 0;
-	}
-	// assign ALL priv to current usr on this db
-	db2priv[db_name] = ALL_PRIVILEGE_BIT;
-	string add_priv_sparql = "INSERT DATA{";
-	for (auto p : privstr2bitset)
-	{
-		add_priv_sparql += ("<" + usrname + ">" + p.first + "<" + db_name + ">.");
-	}
-	add_priv_sparql += "}";
-
-	{
-		ResultSet rs;
-		if (silence_sysdb_query(add_priv_sparql, rs))
+		unsigned success_num = 0;
+		unsigned total_num = 0;
+		unsigned parse_error_num = 0 ;
+		Database _db(db_name);
+		_db.load();
+		string error_log = db_home + "/" + db_name + db_suffix + "/parse_error.log";
+		total_num = Util::count_lines(error_log);
+		for (string rdf_file : zip_files)
 		{
-			cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
-			db2priv.erase(db_name);
-			system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
-			return -1;
+			cout << "begin insert data from " << rdf_file << endl;
+			success_num += _db.batch_insert(rdf_file, false, nullptr);
 		}
+		// exclude Info line
+		parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num << endl;
+		if (parse_error_num > 0)
+		{
+			cout<< "See parse error log file for details " << error_log << endl;
+		}
+		_db.save();
+		std::string cmd = "rm -r " + unz_dir_path;
+		system(cmd.c_str());
 	}
-
 	cout << "Database " << db_name << "created successfully. " << endl;
+
+	// if (usrname == root_username)
+	// {
+	// 	return 0;
+	// }
+	// // assign ALL priv to current usr on this db
+	// db2priv[db_name] = ALL_PRIVILEGE_BIT;
+	// string add_priv_sparql = "INSERT DATA{";
+	// for (auto p : privstr2bitset)
+	// {
+	// 	add_priv_sparql += ("<" + usrname + ">" + p.first + "<" + db_name + ">.");
+	// }
+	// add_priv_sparql += "}";
+
+	// {
+	// 	ResultSet rs;
+	// 	if (silence_sysdb_query(add_priv_sparql, rs))
+	// 	{
+	// 		cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
+	// 		db2priv.erase(db_name);
+	// 		system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
+	// 		return -1;
+	// 	}
+	// }
 
 	return 0;
 }

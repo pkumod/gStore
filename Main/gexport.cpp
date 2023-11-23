@@ -7,6 +7,7 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../Util/CompressFileUtil.h"
 //#include "../Util/Slog.h"
 using namespace std;
 
@@ -41,6 +42,7 @@ main(int argc, char * argv[])
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t the database name. " << endl;
 			cout << "\t-f,--file [optional],\t\tthe export path,defalut export file path is current path,the path should not include your database's name!" << endl;
+			cout << "\t-z,--zip [optional],\t\t0:export nt file, 1:export zip file" << endl;
 			cout << endl;
 			return 0;
 		}
@@ -66,9 +68,11 @@ main(int argc, char * argv[])
 			return 0;
 		}
 		filepath= Util::getArgValue(argc, argv, "f", "file");
+		std::string zip_path;
 		if (filepath.empty())
 		{
 			filepath = db_name + "_" + Util::get_timestamp() + ".nt";
+			zip_path = db_name + "_" + Util::get_timestamp() + ".zip";
 		}
 		else
 		{
@@ -76,6 +80,7 @@ main(int argc, char * argv[])
 				filepath = filepath + "/";
 			if (!Util::dir_exist(filepath))
 				Util::create_dirs(filepath);
+			zip_path = filepath + db_name  + "_" + Util::get_timestamp() +  ".zip";
 			filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
 		}
 		cout << "gexport..." << endl;
@@ -119,10 +124,28 @@ main(int argc, char * argv[])
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;
-		long tv_end = Util::get_cur_time();
-		cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
-		cout << db_name << _db_suffix + " export path: " << filepath << endl;
-
+		std:string zip = Util::getArgValue(argc, argv, "z", "zip");
+		if (zip == "0")
+		{
+			long tv_end = Util::get_cur_time();
+			cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			cout << db_name << _db_suffix + " export path: " << filepath << endl;
+		}
+		else
+		{
+			if (!CompressUtil::FileHelper::compressExportZip(filepath, zip_path))
+			{
+				cout << db_name << _db_suffix + " export compress fail"<<endl;
+				std::string cmd = "rm -f " + filepath + " " + zip_path;
+				system(cmd.c_str());
+				return -1;
+			}
+			long tv_end = Util::get_cur_time();
+			cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
+			cout << db_name << _db_suffix + " export path: " << zip_path << endl;
+			std::string cmd = "rm -f " + filepath;
+			system(cmd.c_str());
+		}
 		return 0;
 	}
 	/*if (argc == 1)

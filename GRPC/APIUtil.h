@@ -907,6 +907,7 @@ private:
     std::string upload_path = "./upload";
     size_t upload_max_body_size = 104857600; // 100M
     std::vector<std::string> upload_allow_extensions;
+    std::vector<std::string> upload_allow_compress_packages;
 
     std::map<std::string, Database *> databases;
     std::map<std::string, struct DBUserInfo *> users;
@@ -1053,4 +1054,5 @@ public:
     string get_upload_path();
     size_t get_upload_max_body_size();
     bool check_upload_allow_extensions(const string& suffix);
+    bool check_upload_allow_compress_packages(const string& suffix);
 };

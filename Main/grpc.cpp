@@ -4,6 +4,7 @@
 #include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
 #include "../GRPC/APIUtil.h"
+#include "../Util/CompressFileUtil.h"
 
 #define HTTP_TYPE "grpc"
 
@@ -575,7 +576,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 		}
 	}
 	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
-	if (apiUtil->check_upload_allow_extensions(file_suffix) == false)
+	if (!apiUtil->check_upload_allow_compress_packages(file_suffix) && apiUtil->check_upload_allow_extensions(file_suffix) == false)
 	{
 		error = "The type of upload file is not supported!";
 		response->Error(StatusOperationFailed, error);
@@ -1515,6 +1516,41 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
+		std::vector<std::string> zip_files;
+		std::string unz_dir_path;
+		std::string file_suffix = GRPCUtil::fileSuffix(db_path);
+		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+		if (is_zip)
+		{
+			auto code = CompressUtil::FileHelper::foreachZip(db_path,[](std::string filename)->bool
+				{
+					if (apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false)
+						return false;
+					return true;
+				});
+			if (code != CompressUtil::UnZipOK)
+			{
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			std::string file_name = GRPCUtil::fileName(db_path);
+			size_t pos = file_name.size() - file_suffix.size() - 1;
+            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip upfile(db_path, unz_dir_path);
+			code = upfile.unCompress();
+			if (code != CompressUtil::UnZipOK)
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			db_path = upfile.getMaxFilePath();
+			upfile.getFileList(zip_files, db_path);
+		}
 		string _db_path = _db_home + "/" + db_name + _db_suffix;
 		string dataset = db_path;
 		string database = db_name;
@@ -1535,6 +1571,11 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			std::string cmd = "rm -r " + _db_path;
 			system(cmd.c_str());
 			response->Error(StatusOperationFailed, error);
+			if (!unz_dir_path.empty())
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
 			return;
 		}
 
@@ -1548,6 +1589,11 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			error = "init privilege failed.";
 			response->Error(StatusAddPrivilegeFaied, error);
+			if (!unz_dir_path.empty())
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
 			return;
 		}
 		SLOG_DEBUG("init privilege succeed after build.");
@@ -1571,8 +1617,81 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
 				SLOG_ERROR("See log file for details " + error_log);
 			}
-			response->Json(resp_data);
-			Util::add_backuplog(db_name);
+			if (is_zip)
+			{
+				auto error_responce = [response,db_name,parse_error_num](const std::string& error)
+				{
+					rapidjson::Document resp_data;
+					resp_data.SetObject();
+					rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+					resp_data.AddMember("failed_num", parse_error_num, allocator);
+					response->Json(resp_data);
+					Util::add_backuplog(db_name);
+				};
+				if (!apiUtil->trywrlock_database(db_name))
+				{
+					std::string error = "The operation can not been excuted due to loss of lock.";
+					error_responce(error);
+				}
+				else
+				{
+					Database *cur_database = new Database(db_name);
+					bool rt  = cur_database->load(true);
+					if (!rt)
+					{
+						std::string error = "The database load faild.";
+						error_responce(error);
+						apiUtil->unlock_database(db_name);
+					}
+					else
+					{
+						apiUtil->add_database(db_name, cur_database);
+						if (apiUtil->insert_txn_managers(cur_database, db_name) == false)
+						{
+							SLOG_WARN("when load insert_txn_managers fail.");
+						}
+						unsigned success_num = 0;
+						unsigned parse_insert_error_num = 0;
+						unsigned total_num = Util::count_lines(error_log);
+						for (std::string rdf_zip : zip_files)
+						{
+							SLOG_DEBUG("begin insert data from " + rdf_zip);
+							success_num += cur_database->batch_insert(rdf_zip, false, nullptr);
+						}
+						parse_insert_error_num = Util::count_lines(error_log)-total_num-zip_files.size();
+						cur_database->save();
+						apiUtil->db_checkpoint(db_name);
+						apiUtil->delete_from_databases(db_name);
+						apiUtil->unlock_database(db_name);
+
+						rapidjson::Document resp_data;
+						resp_data.SetObject();
+						rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+						resp_data.AddMember("StatusCode", 0, allocator);
+						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resp_data.AddMember("failed_num", parse_error_num, allocator);
+						resp_data.AddMember("success_num", success_num, allocator);
+						resp_data.AddMember("failed_insert_num", parse_insert_error_num, allocator);
+						response->Json(resp_data);
+						Util::add_backuplog(db_name);
+					}
+				}
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
+			else
+			{
+				rapidjson::Document resp_data;
+				resp_data.SetObject();
+				rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+				resp_data.AddMember("failed_num", parse_error_num, allocator);
+				response->Json(resp_data);
+				Util::add_backuplog(db_name);
+			}
 		}
 		else
 		{
@@ -2106,7 +2225,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
 					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 
-					response->set_header_pair("Cache-Control", "no-cache");
+										response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
 					response->Json(resp_data);
@@ -2129,7 +2248,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 				resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
 
-				response->set_header_pair("Cache-Control", "no-cache");
+								response->set_header_pair("Cache-Control", "no-cache");
 				response->set_header_pair("Pragma", "no-cache");
 				response->set_header_pair("Expires", "0");
 				response->Json(resp_data);
@@ -2165,7 +2284,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 					resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
 
-					response->set_header_pair("Cache-Control", "no-cache");
+										response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
 					response->Json(resp_data);
@@ -2269,8 +2388,31 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-		resp_data.AddMember("filepath", StringRef(db_path.c_str()), allocator);
-		response->Json(resp_data);
+
+		std::string compress = jsonParam(json_data, "compress");
+		if (compress=="0")
+		{
+			resp_data.AddMember("filepath", StringRef(db_path.c_str()), allocator);
+			response->Json(resp_data);
+		}
+		else
+		{
+			std::string file_suffix = GRPCUtil::fileSuffix(db_path);
+			size_t pos = db_path.size() - file_suffix.size() - 1;
+			std::string zip_path = db_path.substr(0, pos) + ".zip";
+			if (!CompressUtil::FileHelper::compressExportZip(db_path, zip_path))
+			{
+				error = "export compress fail.";
+				response->Error(StatusCompressError, error);
+				std::string cmd = "rm -f " + db_path + " " + zip_path;
+				system(cmd.c_str());
+				return;
+			}
+			resp_data.AddMember("filepath", StringRef(zip_path.c_str()), allocator);
+			response->Json(resp_data);
+			std::string cmd = "rm -f " + db_path;
+			system(cmd.c_str());
+		}
 	}
 	catch (const std::exception &e)
 	{
@@ -2770,6 +2912,41 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
+		std::vector<std::string> zip_files;
+		std::string unz_dir_path;
+		std::string file_suffix = GRPCUtil::fileSuffix(file);
+		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+		if (is_zip)
+		{
+			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+				{
+					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
+						return false;
+					return true;
+				});
+			if( code != CompressUtil::UnZipOK )
+			{
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			std::string file_name = GRPCUtil::fileName(file);
+			size_t pos = file_name.size() - file_suffix.size() - 1;
+            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+			code = upfile.unCompress();
+			if (code != CompressUtil::UnZipOK)
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			upfile.getFileList(zip_files, "");
+		}
+
 		Database *current_database = apiUtil->get_database(db_name);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -2785,10 +2962,24 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
 			if (is_file)
 			{
-				total_num = Util::count_lines(error_log);
-				success_num = current_database->batch_insert(file, false, nullptr);
-				// exclude Info line
-				parse_error_num = Util::count_lines(error_log) - total_num - 1;
+				if (!is_zip)
+				{
+					total_num = Util::count_lines(error_log);
+					success_num = current_database->batch_insert(file, false, nullptr);
+					// exclude Info line
+					parse_error_num = Util::count_lines(error_log) - total_num - 1;
+				}
+				else
+				{
+					total_num = Util::count_lines(error_log);
+					for (std::string rdf_zip : zip_files)
+					{
+						SLOG_DEBUG("begin insert data from " + rdf_zip);
+						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+					}
+					// exclude Info line
+					parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+				}
 			}
 			else
 			{
@@ -2806,7 +2997,6 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			}
 			current_database->save();
 			apiUtil->unlock_database(db_name);
-
 			Json resp_data;
 			resp_data.SetObject();
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
@@ -2816,6 +3006,11 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			resp_data.AddMember("failed_num", parse_error_num, allocator);
 			
 			response->Json(resp_data);
+		}
+		if (!unz_dir_path.empty())
+		{
+			std::string cmd = "rm -r " + unz_dir_path;
+			system(cmd.c_str());
 		}
 	}
 	catch (const std::exception &e)

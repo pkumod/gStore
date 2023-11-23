@@ -9,6 +9,7 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../Util/CompressFileUtil.h"
 //#include "../Util/Slog.h"
 #include <sstream>
 
@@ -87,6 +88,35 @@ int main(int argc, char *argv[])
 			cout << "the add data file is empty! Input \"bin/gadd -h\" for help." << endl;
 			return 0;
 		}
+		bool is_zip = false;
+		std::string::size_type pos1 = filename.find_last_of("/");
+		if (pos1 == std::string::npos)
+			pos1 = 0;
+		else
+			pos1++;
+		std::string zfile = filename.substr(pos1, -1);
+		std::string::size_type pos2 = zfile.find_last_of(".");
+		if (pos2 != std::string::npos && zfile.substr(pos2 + 1, -1)=="zip")
+			is_zip = true;
+		std::string unz_dir_path;
+		std::vector<std::string> zip_files;
+		if (is_zip)
+		{
+			unz_dir_path = filename + "_" + Util::getTimeString2();
+			CompressUtil::UnCompressZip unzip(filename, unz_dir_path);
+			mkdir(unz_dir_path.c_str(), 0775);
+			if (unzip.unCompress() != CompressUtil::UnZipOK)
+			{
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+				cout<<"zip file uncompress faild "<<endl;
+				return -1;
+			}
+			else
+			{
+				unzip.getFileList(zip_files, "");
+			}
+		}
 		Database system_db("system");
 		system_db.load();
 
@@ -113,10 +143,26 @@ int main(int argc, char *argv[])
 		string error_log = _db_home + "/" + db_folder + _db_suffix + "/parse_error.log";
 		if (filename.empty() == false)
 		{
-			total_num = Util::count_lines(error_log);
-			success_num = _db.batch_insert(filename, false, nullptr);
-			// exclude Info line
-			parse_error_num = Util::count_lines(error_log) - total_num - 1;
+			if (!is_zip)
+			{
+				total_num = Util::count_lines(error_log);
+				success_num = _db.batch_insert(filename, false, nullptr);
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - 1;
+			}
+			else
+			{
+				total_num = Util::count_lines(error_log);
+				for (string rdf_file : zip_files)
+				{
+					cout << "begin insert data from " << rdf_file << endl;
+					success_num += _db.batch_insert(rdf_file, false, nullptr);
+				}
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+				std::string cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
 		} 
 		else if (dirname.empty() == false)
 		{
