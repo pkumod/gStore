@@ -10,6 +10,7 @@
 
 
 #include "../Database/Database.h"
+#include "../Util/CompressFileUtil.h"
 //#include "../Util/Slog.h"
 
 using namespace std;
@@ -82,7 +83,9 @@ main(int argc, char * argv[])
 		}
 
 		string _rdf = Util::getArgValue(argc, argv, "f", "file");
-
+		bool is_zip = false;
+		std::string unz_dir_path;
+		std::vector<std::string> zip_files;
 		//check if the db_path is the path of system.nt
 		// util.configure_new();
 		if (_rdf == Util::system_path)
@@ -106,6 +109,34 @@ main(int argc, char * argv[])
 		}
 		else
 		{
+			std::string::size_type pos1 = _rdf.find_last_of("/");
+			if (pos1 == std::string::npos)
+				pos1 = 0;
+			else
+				pos1++;
+			std::string zfile = _rdf.substr(pos1, -1);
+			std::string::size_type pos2 = zfile.find_last_of(".");
+			if (pos2 != std::string::npos && zfile.substr(pos2 + 1, -1)=="zip")
+				is_zip = true;
+			if (is_zip)
+			{
+				unz_dir_path = _rdf + "_" + Util::getTimeString2();
+				std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
+				mkdir(unz_dir_path.c_str(), 0775);
+				CompressUtil::UnCompressZip unzip(_rdf, unz_dir_path);
+				if (unzip.unCompress() != CompressUtil::UnZipOK)
+				{
+					std::string cmd = "rm -r " + unz_dir_path;
+					system(cmd.c_str());
+					cout<<"zip file uncompress faild "<<endl;
+					return -1;
+				}
+				else
+				{
+					_rdf = unzip.getMaxFilePath();
+					unzip.getFileList(zip_files, _rdf);
+				}
+			}
 			long tv_begin = Util::get_cur_time();
 			Database _db(db_name);
 			bool flag = true;
@@ -160,6 +191,32 @@ main(int argc, char * argv[])
 			{
 				cout<< "RDF parse error num "<< parse_error_num - 1 << endl;
 				cout<< "See log file for details " << error_log << endl;
+			}
+			if (is_zip)
+			{
+				unsigned success_num = 0;
+				unsigned total_num = 0;
+				unsigned parse_error_num = 0 ;
+				Database _db(db_name);
+				_db.load();
+				total_num = Util::count_lines(error_log);
+				for (string rdf_file : zip_files)
+				{
+					cout << "begin insert data from " << rdf_file << endl;
+					success_num += _db.batch_insert(rdf_file, false, nullptr);
+				}
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+				tv_end = Util::get_cur_time();
+				cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num <<",used " << (tv_end - tv_begin) << " ms" << endl;
+				if (parse_error_num > 0)
+				{
+					cout<< "See parse error log file for details " << error_log << endl;
+				}
+				_db.save();
+				std::string cmd = "rm -rf " + unz_dir_path;
+				system(cmd.c_str());
+				cout<< "Build batch insert RDF database "<<db_name<<" successfully!"<<endl;
 			}
 			
 			return 0;

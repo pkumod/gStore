@@ -178,6 +178,8 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         upload_max_body_size = get_configure_value("upload_max_body_size", upload_max_body_size);
         string configure_extensions = get_configure_value("upload_allow_extensions",  "nt|ttl|n3|rdf|txt");
         Util::split(configure_extensions, "|", upload_allow_extensions);
+        string configure_compress_packages = get_configure_value("upload_allow_compress_packages",  "zip");
+        Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
         
         // load system db
         if(!util.dir_exist(get_Db_path() + "/system" + get_Db_suffix()))
@@ -3052,6 +3054,20 @@ bool
 APIUtil::check_upload_allow_extensions(const string& suffix)
 {
     for (std::string item : upload_allow_extensions)
+    {
+        if (item == suffix)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool
+APIUtil::check_upload_allow_compress_packages(const string& suffix)
+{
+    for (std::string item : upload_allow_compress_packages)
     {
         if (item == suffix)
         {

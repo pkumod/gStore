@@ -55,7 +55,7 @@ EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
-library = -L/usr/lib64 -L./lib -L/usr/local/lib -L/usr/lib -I/usr/local/include/boost -ljemalloc -lreadline -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -lcurl -llog4cplus
+library = -L/usr/lib64 -L./lib -L/usr/local/lib -L/usr/lib -I/usr/local/include/boost -ljemalloc -lreadline -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -lcurl -llog4cplus -lz -lminizip
 #used for parallelsort
 march = -march=native
 openmp = -fopenmp ${march}
@@ -93,7 +93,8 @@ kvstoreobj = $(objdir)KVstore.o $(sitreeobj)  $(ivarrayobj) $(isarrayobj)
 
 utilobj = $(objdir)Slog.o $(objdir)Util.o $(objdir)Bstr.o $(objdir)Stream.o $(objdir)Triple.o $(objdir)VList.o \
 			$(objdir)EvalMultitypeValue.o $(objdir)IDTriple.o $(objdir)Version.o $(objdir)Transaction.o $(objdir)Latch.o $(objdir)IPWhiteList.o \
-			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o
+			$(objdir)IPBlackList.o  $(objdir)SpinLock.o $(objdir)GraphLock.o $(objdir)WebUrl.o $(objdir)INIParser.o $(objdir)OrderedVector.o \
+			$(objdir)CompressFileUtil.o
 
 topkobj = $(objdir)DynamicTrie.o $(objdir)OrderedList.o $(objdir)Pool.o $(objdir)TopKUtil.o $(objdir)DPBTopKUtil.o $(objdir)TopKSearchPlan.o
 
@@ -128,6 +129,7 @@ objfile = $(kvstoreobj) $(stringindexobj) $(parserobj) $(serverobj) $(databaseob
 inc = -I./tools/antlr4-cpp-runtime-4/runtime/src
 inc_rpc = -I./tools/workflow/_include
 inc_log = -I./tools/log4cplus/include
+inc_zlib= -I./tools/zlib-1.3/include
 #auto generate dependencies
 # http://blog.csdn.net/gmpy_tiger/article/details/51849474
 # http://blog.csdn.net/jeffrey0000/article/details/12421317
@@ -261,14 +263,14 @@ $(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
 $(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) $(inc_log) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
-$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Server/MultipartParser.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
-	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) -o $(objdir)ghttp.o $(def64IO) $(openmp)
+$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Server/MultipartParser.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h Util/CompressFileUtil.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
+	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) $(inc_zlib) -o $(objdir)ghttp.o $(def64IO) $(openmp)
 
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CXX) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc_server.h GRPC/grpc_status_code.h GRPC/grpc_operation.h GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_log) $(inc_rpc) -o $(objdir)grpc.o $(def64IO) $(openmp)
+$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc_server.h GRPC/grpc_status_code.h GRPC/grpc_operation.h GRPC/APIUtil.h Util/CompressFileUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
+	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_log) $(inc_rpc) $(inc_zlib) -o $(objdir)grpc.o $(def64IO) $(openmp)
 
 $(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gbackup.cpp $(inc) $(inc_log) -o $(objdir)gbackup.o $(openmp)
@@ -630,6 +632,9 @@ $(objdir)Server.o: Server/Server.cpp Server/Server.h $(filter $(FIRST_BUILD),$(o
  	$(filter $(FIRST_BUILD),$(objdir)Database.o) $(filter $(FIRST_BUILD),$(objdir)Operation.o)
 	$(CXX) $(CFLAGS) Server/Server.cpp $(inc) $(inc_log) -o $(objdir)Server.o $(openmp)
 
+$(objdir)CompressFileUtil.o: Util/CompressFileUtil.cpp Util/CompressFileUtil.h Util/Util.h
+	$(CXX) $(CFLAGS)  Util/CompressFileUtil.cpp $(inc) $(inc_log) $(inc_zlib) -o $(objdir)CompressFileUtil.o $(def64IO) $(openmp)
+
 # $(objdir)client_http.o: Server/client_http.hpp
 # 	$(CXX) $(CFLAGS) Server/client_http.hpp $(inc) -o $(objdir)client_http.o
 
@@ -653,19 +658,19 @@ $(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h GRPC/grpc_str
 	$(CXX) $(CFLAGS) GRPC/grpc_content.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_content.o $(def64IO) $(openmp)
 
 $(objdir)grpc_message.o: GRPC/grpc_message.cpp GRPC/grpc_message.h GRPC/grpc_noncopyable.h $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpc_message.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_message.o $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/grpc_message.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_message.o $(def64IO) $(openmp)
 
 $(objdir)grpc_server_task.o: GRPC/grpc_server_task.cpp GRPC/grpc_server_task.h $(objdir)grpc_message.o GRPC/grpc_noncopyable.h $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpc_server_task.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_server_task.o $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/grpc_server_task.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_server_task.o $(def64IO) $(openmp)
 
 $(objdir)grpc_routetable.o: GRPC/grpc_routetable.cpp GRPC/grpc_routetable.h GRPC/grpc_request_handler.h GRPC/grpc_noncopyable.h GRPC/grpc_stringpiece.h $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpc_routetable.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_routetable.o $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/grpc_routetable.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_routetable.o $(def64IO) $(openmp)
 
 $(objdir)grpc_router.o: GRPC/grpc_router.cpp GRPC/grpc_router.h $(objdir)grpc_routetable.o GRPC/grpc_noncopyable.h $(objdir)grpc_server_task.o $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpc_router.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_router.o $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/grpc_router.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_router.o $(def64IO) $(openmp)
 
 $(objdir)grpc_server.o: GRPC/grpc_server.cpp GRPC/grpc_server.h $(objdir)grpc_message.o $(objdir)grpc_router.o $(lib_antlr) $(lib_rpc)
-	$(CXX) $(CFLAGS) GRPC/grpc_server.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_server.o $(def64IO) $(openmp)
+	$(CXX) $(CFLAGS) GRPC/grpc_server.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_server.o $(def64IO) $(openmp)
 
 #objects in GRPC/ end
 
@@ -683,15 +688,19 @@ pre:
 	rm -rf tools/workflow
 	rm -rf tools/log4cplus
 	rm -rf tools/indicators
+	rm -rf tools/zlib-1.3
 	rm -rf lib/libantlr4-runtime.a lib/libworkflow.a lib/liblog4cplus.a
+	rm -rf lib/libminizip.a;
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf indicators.tar;
 	cd tools; tar -xzvf workflow-0.10.3.tar.gz;
 	cd tools; tar -xzvf log4cplus-2.0.8.tar.gz;
+	cd tools; tar -xzvf zlib-1.3.tar.gz;
 	cd tools/antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
 	cd tools/workflow; make; cp _lib/libworkflow.a ../../lib/;
 	cd tools/log4cplus; ./configure --enable-static; make; cp .libs/liblog4cplus.a ../../lib/;
+	cd tools/zlib-1.3; ./configure; make; cp *.h ./include/; cd contrib/minizip; make; cp *.h ../../include/; cp libminizip.a ../../../../lib/;
 
 $(api_cpp): $(objdir)Socket.o
 	$(MAKE) -C api/http/cpp/src
