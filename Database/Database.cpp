@@ -4930,7 +4930,7 @@ void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoid
 		TYPE_ENTITY_LITERAL_ID objid = _pidoidlist[i+1];
 		if (type == UPDATE_TYPE::SUBJECT_INSERT)
 		{
-			std::string _obj = this->kvstore->getEntityByID(objid);
+			string _obj = this->kvstore->getEntityByID(objid);
 			string _pre = this->kvstore->getPredicateByID(preid);
 			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
 			{
@@ -4947,7 +4947,7 @@ void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoid
 		}
 		else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
 		{
-			std::string _obj = this->kvstore->getEntityByID(objid);
+			string _obj = this->kvstore->getEntityByID(objid);
 			string _pre = this->kvstore->getPredicateByID(preid);
 			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
 			{
