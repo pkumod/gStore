@@ -1925,6 +1925,11 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		{
 			this->query_cache->clear();
 			cout << "QueryCache cleared" << endl;
+			if (general_evaluation.getQueryTree().getUpdateType() != QueryTree::Not_Update)
+			{
+				this->saveStatisticsInfoFile();
+				this->saveDBInfoFile();
+			}
 		}
 		if (txn == nullptr)
 			pthread_rwlock_unlock(&(this->update_lock));
@@ -3053,6 +3058,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	this->umap.clear();
 
 	int batch_count = 0;
+	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 	while (true)
 	{
 		++batch_count;
@@ -3127,6 +3133,12 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 				this->sub_num++;
 				(this->kvstore)->setIDByEntity(_sub, _sub_id);
 				(this->kvstore)->setEntityByID(_sub_id, _sub);
+				sub_lists.insert(_sub_id);
+			}
+			else if (sub_lists.find(_sub_id) == sub_lists.end())
+			{
+				this->sub_num++;
+				sub_lists.insert(_sub_id);
 			}
 			//  For predicate
 			string _pre = triple_array[i].getPredicate();
@@ -3420,6 +3432,10 @@ bool Database::removeTriple(const TripleWithObjType &_triple, vector<unsigned> *
 			if (_vertices != NULL)
 				_vertices->push_back(_sub_id);
 		}
+		else if((this->kvstore)->getEntityOutDegree(_sub_id) == 0)
+		{
+			this->sub_num--;
+		}
 
 		bool is_obj_entity = _triple.isObjEntity();
 		int obj_degree;
@@ -3434,6 +3450,19 @@ bool Database::removeTriple(const TripleWithObjType &_triple, vector<unsigned> *
 
 				if (_vertices != NULL)
 					_vertices->push_back(_obj_id);
+			}
+			string _pre = _triple.getPredicate();
+			string _obj = _triple.getObject();
+			if (this->checkIsTypePredicate(_pre))
+			{
+				auto it = this->umap.find(_obj);
+				if (it != this->umap.end())
+				{
+					if (it->second <= 1)
+						umap.erase(it);
+					else
+						it->second = it->second - 1;
+				}
 			}
 		}
 		else
@@ -3802,6 +3831,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 	delete[] triple_array;
 	triple_array = NULL;
+	this->saveStatisticsInfoFile();
 	long tv_insert = Util::get_cur_time();
 	cout << "after batch insert, used " << (tv_insert - tv_load) << "ms." << endl;
 
@@ -3852,6 +3882,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 	delete[] triple_array;
 	triple_array = NULL;
+	this->saveStatisticsInfoFile();
 	long tv_remove = Util::get_cur_time();
 	cout << "after batch remove, used " << (tv_remove - tv_load) << "ms." << endl;
 	cout << "remove rdf triples done." << endl;
@@ -3876,6 +3907,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
 	unsigned update_num_subject = 0;
+	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 
 	if (!_is_restore)
 	{
@@ -3894,6 +3926,12 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
 			(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
 			vertices.push_back(_sub_id);
+			sub_lists.insert(_sub_id);
+		}
+		else if (sub_lists.find(_sub_id) == sub_lists.end())
+		{
+			update_num_subject = update_num_subject + 1;
+			sub_lists.insert(_sub_id);
 		}
 
 		TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
@@ -4121,7 +4159,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 				obj_degree = this->kvstore->getLiteralDegree(_obj_id);
 				if (obj_degree == 0)
 				{
-					string object = this->kvstore->getEntityByID(_obj_id);
+					string object = this->kvstore->getLiteralByID(_obj_id);
 					if (object == "")
 						continue;
 					this->kvstore->subLiteralByID(_obj_id);
@@ -4176,9 +4214,15 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 				if (txn == nullptr)
 				{
 					if (type == UPDATE_TYPE::SUBJECT_INSERT)
+					{
 						update_num += this->kvstore->updateInsert_s2values(sub_id, data);
+						updateUmap(type, data);
+					}
 					else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
+					{
 						update_num += this->kvstore->updateRemove_s2values(sub_id, data);
+						updateUmap(type, data);
+					}
 				}
 				else
 				{
@@ -4192,9 +4236,15 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 		if (txn == nullptr)
 		{
 			if (type == UPDATE_TYPE::SUBJECT_INSERT)
+			{
 				update_num += this->kvstore->updateInsert_s2values(sub_id, data);
+				updateUmap(type, data);
+			}
 			else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
+			{
 				update_num += this->kvstore->updateRemove_s2values(sub_id, data);
+				updateUmap(type, data);
+			}
 		}
 		else
 		{
@@ -4256,9 +4306,15 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 				if (txn == nullptr)
 				{
 					if (type == UPDATE_TYPE::OBJECT_INSERT)
+					{
 						update_num += this->kvstore->updateInsert_o2values(obj_id, data);
+						updateUmap(type, data);
+					}
 					else if (type == UPDATE_TYPE::OBJECT_REMOVE)
+					{
 						update_num += this->kvstore->updateRemove_o2values(obj_id, data);
+						updateUmap(type, data);
+					}
 				}
 				else
 				{
@@ -4275,9 +4331,15 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 		if (txn == nullptr)
 		{
 			if (type == UPDATE_TYPE::OBJECT_INSERT)
+			{
 				update_num += this->kvstore->updateInsert_o2values(obj_id, data);
+				updateUmap(type, data);
+			}
 			else if (type == UPDATE_TYPE::OBJECT_REMOVE)
+			{
 				update_num += this->kvstore->updateRemove_o2values(obj_id, data);
+				updateUmap(type, data);
+			}
 		}
 		else
 		{
@@ -4857,4 +4919,48 @@ bool Database::loadStatisticsInfoFile()
 unordered_map<string, unsigned long long> Database::getStatisticsInfo()
 {
 	return this->umap;
+}
+
+void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoidlist)
+{
+	umap_lock.lock();
+	for(unsigned i = 0; i < _pidoidlist.size(); i += 2)
+    {
+		TYPE_ENTITY_LITERAL_ID preid = _pidoidlist[i];
+		TYPE_ENTITY_LITERAL_ID objid = _pidoidlist[i+1];
+		if (type == UPDATE_TYPE::SUBJECT_INSERT)
+		{
+			std::string _obj = this->kvstore->getEntityByID(objid);
+			string _pre = this->kvstore->getPredicateByID(preid);
+			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
+			{
+				auto it = this->umap.find(_obj);
+				if (it != this->umap.end())
+				{
+					it->second = it->second + 1;
+				}
+				else
+				{
+					this->umap.insert(pair<string, unsigned long long>(_obj, 1));
+				}
+			}
+		}
+		else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
+		{
+			std::string _obj = this->kvstore->getEntityByID(objid);
+			string _pre = this->kvstore->getPredicateByID(preid);
+			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
+			{
+				auto it = this->umap.find(_obj);
+				if (it != this->umap.end())
+				{
+					if (it->second <= 1)
+						umap.erase(it);
+					else
+						it->second = it->second - 1;
+				}
+			}
+		}
+    }
+	umap_lock.unlock();
 }

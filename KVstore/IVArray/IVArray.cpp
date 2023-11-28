@@ -697,6 +697,10 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			//assuming one expand is enough
 			unsigned OldEntryNum = CurEntryNum;
 			CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
+			while (_key > CurEntryNum)
+			{
+				CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
+			}
 
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)

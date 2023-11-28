@@ -148,6 +148,8 @@ private:
 	mutex allocPredicateID_lock;
 	// for log file
 	mutex log_lock;
+	//for umap
+	mutex umap_lock;
 
 	KVstore *kvstore;
 	StringIndex *stringindex;
@@ -355,6 +357,7 @@ private:
 	bool restore_update(multiset<string> &_i, multiset<string> &_r);
 	void clear_update_log();
 	bool write_update_log(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
+	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoidlist);
 };
 
 #endif //_DATABASE_DATABASE_H
