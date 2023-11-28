@@ -3321,7 +3321,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		else
 		{
 			string success = "Batch remove data successfully.";
-			unsigned success_num = current_database->batch_remove(file, false, nullptr);
+			string success_num = std::to_string(current_database->batch_remove(file, false, nullptr));
 			current_database->save();
 			apiUtil->unlock_database(db_name);
 
@@ -3330,7 +3330,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			resDoc.AddMember("StatusCode", 0, allocator);
 			resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resDoc.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+			resDoc.AddMember("success_num", StringRef(success_num.c_str()), allocator);
 			sendResponseMsg(resDoc, operation, request, response);
 		}
 	}
