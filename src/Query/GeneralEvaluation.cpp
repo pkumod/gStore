@@ -1025,7 +1025,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					for (int l = 0; l < (int)(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size()); l++)
 						if (rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Bind_type)
 						{
-							sub_result->doBind(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind, kvstore, stringindex, \
+							sub_result->doBind(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].bind, kvstore, \
 								rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 						}
 
@@ -1039,14 +1039,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							{
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done = true;
 
-								TempResultSet *new_result = new TempResultSet();
-								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, *new_result, \
-									this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-
-								sub_result->release();
-								delete sub_result;
-
-								sub_result = new_result;
+                                sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+									rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 							}
 
 					// Process OPTIONAL //
@@ -1093,15 +1087,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done)
 							{
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done = true;
-
-								TempResultSet *new_result = new TempResultSet();
-								sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, *new_result, \
-									this->stringindex, rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-
-								sub_result->release();
-								delete sub_result;
-
-								sub_result = new_result;
+                                sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+									rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 								printf("IN SECOND doFilter\n");
 							}
 						}
@@ -1171,18 +1158,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Filter_type)
 		{
-			TempResultSet *new_result = new TempResultSet();
-			result->doFilter(group_pattern.sub_group_pattern[i].filter, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
-
-			result->release();
-			delete result;
-
-			result = new_result;
+            result->doFilter(group_pattern.sub_group_pattern[i].filter, kvstore, group_pattern.group_pattern_subject_object_maximal_varset);
 			result->initial = false;
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type)
 		{
-			result->doBind(group_pattern.sub_group_pattern[i].bind, kvstore, stringindex, \
+			result->doBind(group_pattern.sub_group_pattern[i].bind, kvstore, \
 				group_pattern.group_pattern_subject_object_maximal_varset);
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Subquery_type)
@@ -2229,7 +2210,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								Varset result0Varset = result0.getAllVarset();
 								for (int j = begin; j <= end; j++)
 								{
-									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, kvstore, \
 										result0Varset);
 									if (tmp.datatype == EvalMultitypeValue::xsd_boolean && \
 										tmp.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
@@ -2352,7 +2333,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								Varset result0Varset = result0.getAllVarset();
 								for (int j = begin; j <= end; j++)
 								{
-									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+									tmp = result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, kvstore, \
 										result0Varset);
 									if (tmp.datatype == EvalMultitypeValue::xsd_boolean && \
 										tmp.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
@@ -2514,12 +2495,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (group2temp.empty()) {
 							for (int j = begin; j <= end; j++) {
 								new_result0.result[j].str[proj2new[i] - new_result0_id_cols] = \
-									result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, stringindex, \
+									result0.doComp(proj[i].comp_tree_root, result0.result[j], result0_id_cols, kvstore, \
 									result0Varset).term_value;
 							}
 						} else {
 							new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = \
-								result0.doComp(proj[i].comp_tree_root, result0.result[begin], result0_id_cols, stringindex, \
+								result0.doComp(proj[i].comp_tree_root, result0.result[begin], result0_id_cols, kvstore, \
 								result0Varset).term_value;
 						}
 					}
