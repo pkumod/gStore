@@ -1380,6 +1380,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
+		std::string disk = jsonParam(json_data, "disk");
 		// check the param value is legal or not.
 		string error = apiUtil->check_param_value("db_name", db_name);
 
@@ -1440,13 +1441,16 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		resp_data.AddMember("subjectNum", current_database->getSubNum(), allocator);
 		resp_data.AddMember("predicateNum", current_database->getPreNum(), allocator);
 		resp_data.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
-		string db_path = _db_home + "/" + db_name + _db_suffix;
-		string real_path = Util::getExactPath(db_path.c_str());
 		unsigned diskUsed = 0;
-		if (!real_path.empty()) {
-			long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
-			// byte to MB
-			diskUsed = count_size_byte>>20;
+		if (disk != "0") 
+		{
+			string db_path = _db_home + "/" + db_name + _db_suffix;
+			string real_path = Util::getExactPath(db_path.c_str());
+			if (!real_path.empty()) {
+				long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+				// byte to MB
+				diskUsed = count_size_byte>>20;
+			}
 		}
 		resp_data.AddMember("diskUsed", diskUsed, allocator);
 		resp_data.AddMember("subjectList", subjectList, allocator);
