@@ -80,7 +80,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 
 void load_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string remote_ip, string port, bool load_csr);
 
-void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name);
+void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string disk);
 
 void unload_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name);
 
@@ -1237,7 +1237,7 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
  * @param {string} db_name
  * @return {*}
  */
-void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name)
+void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string disk)
 {
 	string operation = "monitor";
 	try
@@ -1302,14 +1302,16 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		doc.AddMember("subjectNum", current_database->getSubNum(), allocator);
 		doc.AddMember("predicateNum", current_database->getPreNum(), allocator);
 		doc.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
-		string db_path = _db_home + "/" + db_name + _db_suffix;
-		db_path = Util::getExactPath(db_path.c_str());
-		string real_path = Util::getExactPath(db_path.c_str());
 		unsigned diskUsed = 0;
-		if (!real_path.empty()) {
-			long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
-			// byte to MB
-			diskUsed = count_size_byte>>20;
+		if (disk != "0") {
+			string db_path = _db_home + "/" + db_name + _db_suffix;
+			db_path = Util::getExactPath(db_path.c_str());
+			string real_path = Util::getExactPath(db_path.c_str());
+			if (!real_path.empty()) {
+				long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+				// byte to MB
+				diskUsed = count_size_byte>>20;
+			}
 		}
 		doc.AddMember("diskUsed", diskUsed, allocator);
 		doc.AddMember("subjectList", subjectList, allocator);
@@ -3537,7 +3539,26 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	// monitor database
 	else if (operation == "monitor")
 	{
-		monitor_thread_new(request, response, db_name);
+		string disk = "1";
+		try
+		{
+			if (request_type == "GET")
+			{
+				disk = WebUrl::CutParam(url, "disk");
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("disk") && document["disk"].IsString())
+				{
+					disk = document["disk"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+
+		}
+		monitor_thread_new(request, response, db_name, disk);
 	}
 	// unload database
 	else if (operation == "unload")
