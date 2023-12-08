@@ -1229,24 +1229,25 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 	return ret_femv;
 }
 
-void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset) {
+void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_number) {
     unsigned original_size = this->result.size();
-    unsigned delete_num = 0;
+    unsigned delete_num = 0, save_num = 0;
 
     Varset this_varset = this->getAllVarset();
     int this_id_cols = this->id_varset.getVarsetSize();
 
-    for (unsigned i = 0; i < original_size-delete_num;) {
+    for (unsigned i = 0; save_num < limit_number && i < original_size-delete_num;) {
         EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, kvstore, this_varset);
         if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
             ++i;
+            ++save_num;
         } else {
             swap(this->result[i], this->result[original_size - 1 - delete_num]);
             ++delete_num;
         }
     }
 
-    this->result.erase(this->result.begin()+(original_size-delete_num), this->result.end());
+    this->result.erase(this->result.begin()+(save_num), this->result.end());
     this->result.shrink_to_fit();
 }
 void TempResult::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset)
@@ -1492,12 +1493,12 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *str
 	printf("after doMinus, used %ld ms.\n", tv_end - tv_begin);
 }
 
-void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset) {
+void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_num) {
     unsigned before_size = results[0].result.size();
     long tv_begin = Util::get_cur_time();
 
     for (int i = 0; i < (int) this->results.size(); i++) {
-        this->results[i].doFilter(filter, kvstore, entity_literal_varset);
+        this->results[i].doFilter(filter, kvstore, entity_literal_varset, limit_num);
     }
 
     long tv_end = Util::get_cur_time();
