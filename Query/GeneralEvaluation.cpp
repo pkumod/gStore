@@ -1038,9 +1038,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							// if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done)
 							{
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done = true;
-
-                                sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
-									rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
+								// If FILTER scope is global && no ORDER BY && is the last operation, doFilter with limit
+								if (dep == 0 && query_tree.getOrderByVarset().empty() && l == rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size() - 1) {
+									sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+										rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset, query_tree.getLimit());
+								} else
+									sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+										rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 							}
 
 					// Process OPTIONAL //
@@ -1087,8 +1091,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							if (!rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done)
 							{
 								rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter.done = true;
-                                sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
-									rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
+								// If FILTER scope is global && no ORDER BY && is the last operation, doFilter with limit
+								if (dep == 0 && query_tree.getOrderByVarset().empty() && l == rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size() - 1) {
+									sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+										rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset, query_tree.getLimit());
+								} else
+									sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
+										rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
 								printf("IN SECOND doFilter\n");
 							}
 						}
@@ -1158,7 +1167,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Filter_type)
 		{
-            result->doFilter(group_pattern.sub_group_pattern[i].filter, kvstore, group_pattern.group_pattern_subject_object_maximal_varset);
+            // If FILTER scope is global && no ORDER BY && is the last operation, doFilter with limit
+			if (dep == 0 && query_tree.getOrderByVarset().empty() && i == group_pattern.sub_group_pattern.size() - 1)
+				result->doFilter(group_pattern.sub_group_pattern[i].filter, kvstore, group_pattern.group_pattern_subject_object_maximal_varset, query_tree.getLimit());
+			else
+				result->doFilter(group_pattern.sub_group_pattern[i].filter, kvstore, group_pattern.group_pattern_subject_object_maximal_varset);
 			result->initial = false;
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Bind_type)
