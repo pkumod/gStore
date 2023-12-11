@@ -1173,6 +1173,7 @@ PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
 
     while (!neighbor_nodes.empty()) {
         unsigned this_node_id = HeuristicNextNodeFromVec(neighbor_nodes);
+        cout << "neighbor_node, this_node id = " << this_node_id << ", var = " << bgpquery->get_var_name_by_id(this_node_id) << endl;
         if (plan == nullptr)
             plan = new PlanTree(this_node_id, bgpquery);
         else {

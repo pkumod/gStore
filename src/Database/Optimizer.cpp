@@ -953,7 +953,7 @@ tuple<bool, IntermediateResult> Optimizer::JoinTable(shared_ptr<BGPQuery> &bgp_q
 #ifdef OPTIMIZER_DEBUG_INFO
 void Optimizer::PrintTable(IntermediateResult& result,
                                 shared_ptr<BGPQuery> &bgp_query){
-  cout << "\tresult size = " << result.values_->size() << endl;
+  cout << << "\tresult size = " << result.values->size() << endl;
   auto &table = *result.values_;
   auto result_size = result.values_->size();
   PrintDebugInfoLine(g_format("Print Table of size %d ",result_size));
