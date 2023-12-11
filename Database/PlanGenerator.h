@@ -129,6 +129,8 @@ public:
 	void ConsiderVarScan(BGPQueryStrategy strategy);
 	unsigned HeuristicFirstNode();
 	unsigned HeuristicNextNode(unsigned last_node_id);
+    unsigned HeuristicNextNodeFromVec(const std::set<unsigned> &neighbor_nodes);
+    void RemoveNodeAddNeighbor(unsigned node_id, std::set<unsigned> &neighbor_nodes);
 
 	PlanTree* HeuristicPlan(bool use_binary_join = true);
 	PlanTree* DPPlan(bool use_binary_join = true);
