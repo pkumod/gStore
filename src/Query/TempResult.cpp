@@ -757,6 +757,11 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 	{
 		EvalMultitypeValue lRes, rRes;
 		lRes = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		if (lRes.datatype == EvalMultitypeValue::xsd_boolean) {
+			if ((root.oprt == "||" && lRes.bool_value.getValue() == 1) || (root.oprt == "&&" && lRes.bool_value.getValue() != 1))
+				return lRes;
+		} else if (root.oprt == "&&")
+			return lRes;
 		rRes = doComp(root.children[1], row, id_cols, kvstore, this_varset);
 
 		if (root.oprt == "||")
