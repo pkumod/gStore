@@ -116,7 +116,7 @@ public:
     pthread_rwlock_t unload_priv_set_lock;
     pthread_rwlock_t backup_priv_set_lock;
     pthread_rwlock_t restore_priv_set_lock;
-    pthread_rwlock_t export_priv_set_lock;  
+    pthread_rwlock_t export_priv_set_lock;
     DBUserInfo() {}
     DBUserInfo(std::string _username, std::string _password)
     {
@@ -922,6 +922,7 @@ private:
     pthread_rwlock_t already_build_map_lock;
     pthread_rwlock_t txn_m_lock;
     pthread_rwlock_t ips_map_lock;
+    pthread_rwlock_t system_db_lock;
     string system_username = "system";
     string system_password;
     string system_password_path;
@@ -977,8 +978,8 @@ public:
     bool check_user_count();
     bool check_db_exist(const std::string& db_name);
     bool check_db_count();
-    bool add_privilege(const std::string& username, const std::string& type, const std::string& db_name);
-    bool del_privilege(const std::string& username, const std::string& type, const std::string& db_name);
+    bool add_privilege(const std::string& username, const vector<string>& types, const std::string& db_name);
+    bool del_privilege(const std::string& username, const vector<string>& types, const std::string& db_name);
     bool check_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool init_privilege(const std::string& username, const std::string& db_name);
     bool copy_privilege(const std::string& src_db_name, const std::string& dst_db_name);
