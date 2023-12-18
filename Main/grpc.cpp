@@ -3411,73 +3411,97 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				privileges = privileges + ",";
 			}
 			Util::split(privileges, ",", privilege_vector);
-			std::string result;
+			vector<string> privilegeTypes;
 			for (unsigned i = 0; i < privilege_vector.size(); i++)
 			{
 				std::string temp_privilege_int = privilege_vector[i];
-				std::string temp_privilege = "";
 				if (temp_privilege_int.empty())
 				{
 					continue;
 				}
 				if (temp_privilege_int == "1")
 				{
-					temp_privilege = "query";
+					privilegeTypes.push_back("query");
 				}
 				else if (temp_privilege_int == "2")
 				{
-					temp_privilege = "load";
+					privilegeTypes.push_back("load");
 				}
 				else if (temp_privilege_int == "3")
 				{
-					temp_privilege = "unload";
+					privilegeTypes.push_back("unload");
 				}
 				else if (temp_privilege_int == "4")
 				{
-					temp_privilege = "update";
+					privilegeTypes.push_back("update");
 				}
 				else if (temp_privilege_int == "5")
 				{
-					temp_privilege = "backup";
+					privilegeTypes.push_back("backup");
 				}
 				else if (temp_privilege_int == "6")
 				{
-					temp_privilege = "restore";
+					privilegeTypes.push_back("restore");
 				}
 				else if (temp_privilege_int == "7")
 				{
-					temp_privilege = "export";
+					privilegeTypes.push_back("export");
 				} 
 				else
 				{
 					SLOG_DEBUG("The privilege " + temp_privilege_int + " undefined.");
 					continue;
 				} 
-				
+			}
+			string result="";
+			if (privilegeTypes.size() > 0) 
+			{
+				string privilegeNames="";
+				for (size_t i = 0; i < privilegeTypes.size(); i++)
+				{
+					if (i > 0) 
+					{
+						privilegeNames = privilegeNames + ",";
+					}
+					privilegeNames = privilegeNames + privilegeTypes[i];
+				}
 				if (type == "1")
 				{
-					if (apiUtil->add_privilege(op_username, temp_privilege, db_name) == 0)
+					if (apiUtil->add_privilege(op_username, privilegeTypes, db_name) == 0)
 					{
-						result += "add privilege " + temp_privilege + " failed. \r\n";
+						result = result + "add privilege " + privilegeNames + " failed.";
+						response->Error(StatusOperationFailed, result);
 					}
 					else
 					{
-						result += "add privilege " + temp_privilege + " successfully. \r\n";
+						result = result + "add privilege " + privilegeNames + " successfully.";
+						response->Success(result);
 					}
 				}
 				else if (type == "2")
 				{
-					if (apiUtil->del_privilege(op_username, temp_privilege, db_name) == 0)
+					if (apiUtil->del_privilege(op_username, privilegeTypes, db_name) == 0)
 					{
-						result += "delete privilege " + temp_privilege + " failed. \r\n";
+						result += "delete privilege " + privilegeNames + " failed.";
+						response->Error(StatusOperationFailed, result);
 					}
 					else
 					{
-						result += "delete privilege " + temp_privilege + " successfully. \r\n";
+						result += "delete privilege " + privilegeNames + " successfully.";
+						response->Success(result);
 					}
 				}
+				else
+				{
+					result = "the operation type is not support.";
+					response->Error(StatusParamIsIllegal, result);
+				}
 			}
-			response->Success(result);
+			else
+			{
+				result = "not match any valid privilege, valid values between 1 and 7.";
+				response->Error(StatusParamIsIllegal, result);
+			}
 		}
 	}
 	catch (const std::exception &e)

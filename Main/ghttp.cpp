@@ -64,7 +64,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 
 void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request);
 
-void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request);
+void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request, string request_type);
 
 void signalHandler(int signum);
 
@@ -678,7 +678,12 @@ int initialize(unsigned short port, std::string db_name, bool load_src)
 
 	server.resource["/file/download"]["POST"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
 	{
-		download_handler(server, response, request);
+		download_handler(server, response, request, "POST");
+	};
+
+	server.resource["/file/download"]["GET"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+	{
+		download_handler(server, response, request, "GET");
 	};
 
 	server.resource["/file/download"]["OPTIONS"] = [&server](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
@@ -1733,75 +1738,96 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 			}
 
 			Util::split(privilege, ",", privileges);
+			vector<string> privilegeTypes;
 			for (unsigned i = 0; i < privileges.size(); i++)
 			{
 				string temp_privilege_int = privileges[i];
-				string temp_privilege = "";
 				if (temp_privilege_int.empty())
 				{
 					continue;
 				}
 				if (temp_privilege_int == "1")
 				{
-					temp_privilege = "query";
+					privilegeTypes.push_back("query");
 				}
 				else if (temp_privilege_int == "2")
 				{
-					temp_privilege = "load";
+					privilegeTypes.push_back("load");
 				}
 				else if (temp_privilege_int == "3")
 				{
-					temp_privilege = "unload";
+					privilegeTypes.push_back("unload");
 				}
 				else if (temp_privilege_int == "4")
 				{
-					temp_privilege = "update";
+					privilegeTypes.push_back("update");
 				}
 				else if (temp_privilege_int == "5")
 				{
-					temp_privilege = "backup";
+					privilegeTypes.push_back("backup");
 				}
 				else if (temp_privilege_int == "6")
 				{
-					temp_privilege = "restore";
+					privilegeTypes.push_back("restore");
 				}
 				else if (temp_privilege_int == "7")
 				{
-					temp_privilege = "export";
-				}
-				if (temp_privilege.empty() == false)
+					privilegeTypes.push_back("export");
+				} 
+				else
 				{
-					if (type == "1")
+					SLOG_DEBUG("The privilege " + temp_privilege_int + " undefined.");
+					continue;
+				} 
+			}
+			if (privilegeTypes.size() > 0)
+			{
+				string privilegeNames="";
+				for (size_t i = 0; i < privilegeTypes.size(); i++)
+				{
+					if (i > 0) 
 					{
-						if (apiUtil->add_privilege(username, temp_privilege, db_name) == 0)
-						{
-							result = result + "add privilege " + temp_privilege + " failed. \r\n";
-						}
-						else
-						{
-							result = result + "add privilege " + temp_privilege + " successfully. \r\n";
-						}
+						privilegeNames = privilegeNames + ",";
 					}
-					else if (type == "2")
+					privilegeNames = privilegeNames + privilegeTypes[i];
+				}
+				if (type == "1")
+				{	
+					if (apiUtil->add_privilege(username, privilegeTypes, db_name) == 0)
 					{
-						if (apiUtil->del_privilege(username, temp_privilege, db_name) == 0)
-						{
-							result = result + "delete privilege " + temp_privilege + " failed. \r\n";
-						}
-						else
-						{
-							result = result + "delete privilege " + temp_privilege + " successfully. \r\n";
-						}
+						result = result + "add privilege " + privilegeNames + " failed.";
+						sendResponseMsg(1005, result, operation, request, response);
 					}
 					else
 					{
-						result = "the operation type is not support.";
-						sendResponseMsg(1003, result, operation, request, response);
-						return;
+						result = result + "add privilege " + privilegeNames + " successfully.";
+						sendResponseMsg(0, result, operation, request, response);
 					}
 				}
-			}
-			sendResponseMsg(0, result, operation, request, response);
+				else if (type == "2")
+				{
+					if (apiUtil->del_privilege(username, privilegeTypes, db_name) == 0)
+					{
+						result = result + "delete privilege " + privilegeNames + " failed.";
+						sendResponseMsg(1005, result, operation, request, response);
+					}
+					else
+					{
+						result = result + "delete privilege " + privilegeNames + " successfully.";
+						sendResponseMsg(0, result, operation, request, response);
+					}
+				}
+				else
+				{
+					result = "the operation type is not support.";
+					sendResponseMsg(1003, result, operation, request, response);
+				}
+			} 
+			else
+			{
+				result = "not match any valid privilege, valid values between 1 and 7.";
+				sendResponseMsg(1003, result, operation, request, response);
+			} 
 		}
 	}
 	catch (const std::exception &e)
@@ -2373,7 +2399,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					PrettyWriter<StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-										*response << "HTTP/1.1 200 OK"
+					*response << "HTTP/1.1 200 OK"
 							  << "\r\nContent-Type: application/json"
 							  << "\r\nContent-Length: " << resJson.length()
 					          << "\r\nCache-Control: no-cache"
@@ -2385,7 +2411,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			}
 			else if (format == "sparql-results+json")
 			{
-								*response << "HTTP/1.1 200 OK"
+				*response << "HTTP/1.1 200 OK"
 						  << "\r\nContent-Type: application/sparql-results+json"
 						  << "\r\nContent-Length: " << success.length()
 						  << "\r\nCache-Control: no-cache"
@@ -4498,7 +4524,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	ss += "\nthread_id: " + thread_id;
 	ss += "\nremote_ip: " + remote_ip;
 	ss += "\noperation: " + operation;
-	ss += "\nmethod: GET";
+	ss += "\nmethod: POST";
 	ss += "\nrequest_path: " + request->path;
 	ss += "\nhttp_version: " + request->http_version;
 	ss += "\nrequest_time: " + Util::get_date_time();
@@ -4642,7 +4668,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	}
 }
 
-void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request)
+void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<HttpServer::Request> &request, string request_type)
 {
 	string operation = "downloadfile";
 	string thread_id = Util::getThreadID();
@@ -4657,43 +4683,75 @@ void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	string password;
 	string encryption;
 	string filepath;
-	auto strParams = request->content.string();
-	string ss;
-	ss += "\n------------------------ ghttp-api ------------------------";
-	ss += "\nthread_id: " + thread_id;
-	ss += "\nremote_ip: " + remote_ip;
-	ss += "\noperation: " + operation;
-	ss += "\nmethod: POST";
-	ss += "\nrequest_path: " + request->path;
-	ss += "\nhttp_version: " + request->http_version;
-	ss += "\nrequest_time: " + Util::get_date_time();
-	ss += "\nrequest_body: \n" + strParams;
-	ss += "\n----------------------------------------------------------";
-	SLOG_DEBUG(ss);
+	string url;
+	if (request_type == "GET")
+	{
+		url = request->path;
+		url = UrlDecode(url);
+		string ss;
+		ss += "\n------------------------ ghttp-api ------------------------";
+		ss += "\nthread_id: " + thread_id;
+		ss += "\nremote_ip: " + remote_ip;
+		ss += "\noperation: " + operation;
+		ss += "\nmethod: GET";
+		ss += "\nrequest_path: " + request->path;
+		ss += "\nhttp_version: " + request->http_version;
+		ss += "\nrequest_time: " + Util::get_date_time();
+		ss += "\n----------------------------------------------------------";
+		SLOG_DEBUG(ss);
 
-	std::map<std::string, std::string> form_data = parse_post_body(strParams);
-	username = "";
-	password = "";
-	if (form_data.find("username") != form_data.end())
-	{
-		username = UrlDecode(form_data.at("username"));
+		username = WebUrl::CutParam(url, "username");
+		password = WebUrl::CutParam(url, "password");
+		encryption = WebUrl::CutParam(url, "encryption");
+		filepath = WebUrl::CutParam(url, "filepath");
+		if (encryption.empty()) {
+			encryption = "0";
+		}
+
+		username = UrlDecode(username);
+		password = UrlDecode(password);
+		filepath = UrlDecode(filepath);
 	}
-	if (form_data.find("password") != form_data.end())
+	else if (request_type == "POST")
 	{
-		password =  UrlDecode(form_data.at("password"));
+		auto strParams = request->content.string();
+		string ss;
+		ss += "\n------------------------ ghttp-api ------------------------";
+		ss += "\nthread_id: " + thread_id;
+		ss += "\nremote_ip: " + remote_ip;
+		ss += "\noperation: " + operation;
+		ss += "\nmethod: POST";
+		ss += "\nrequest_path: " + request->path;
+		ss += "\nhttp_version: " + request->http_version;
+		ss += "\nrequest_time: " + Util::get_date_time();
+		ss += "\nrequest_body: \n" + strParams;
+		ss += "\n----------------------------------------------------------";
+		SLOG_DEBUG(ss);
+		std::map<std::string, std::string> form_data = parse_post_body(strParams);
+		username = "";
+		password = "";
+		if (form_data.find("username") != form_data.end())
+		{
+			username = UrlDecode(form_data.at("username"));
+		}
+		if (form_data.find("password") != form_data.end())
+		{
+			password =  UrlDecode(form_data.at("password"));
+		}
+		if (form_data.find("encryption") != form_data.end())
+		{
+			encryption = UrlDecode(form_data.at("encryption"));
+		}
+		else
+		{
+			encryption = "0";
+		}
+		if (form_data.find("filepath") != form_data.end())
+		{
+			filepath = UrlDecode(form_data.at("filepath"));
+		}
 	}
-	if (form_data.find("encryption") != form_data.end())
-	{
-		encryption = UrlDecode(form_data.at("encryption"));
-	}
-	else
-	{
-		encryption = "0";
-	}
-	if (form_data.find("filepath") != form_data.end())
-	{
-		filepath = UrlDecode(form_data.at("filepath"));
-	}
+
 	string error="";
 	error = apiUtil->check_param_value("username", username);
 	if (error.empty() == false)
