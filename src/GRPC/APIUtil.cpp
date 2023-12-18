@@ -57,7 +57,7 @@ APIUtil::~APIUtil()
     }
     if (databases.find(SYSTEM_DB_NAME) != databases.end())
     {
-        pthread_rwlock_wrlock(&system_db_lock);
+        pthread_rwlock_trywrlock(&system_db_lock);
         system_database->save();
         delete system_database;
         system_database = NULL;
@@ -835,8 +835,7 @@ bool APIUtil::delete_from_databases(string db_name)
 
 bool APIUtil::delete_from_already_build(string db_name)
 {
-    int rwlock_code = pthread_rwlock_wrlock(&already_build_map_lock);
-    if(rwlock_code == 0)
+    if(APIUtil::trywrlock_already_build_map())
     {
         // remove databse info from system.db
         string update = "DELETE WHERE {<" 
@@ -899,7 +898,8 @@ bool APIUtil::delete_from_already_build(string db_name)
                 pthread_rwlock_unlock(&(iter->second->export_priv_set_lock));
             }
         }
-        return unlock_already_build_map();
+        APIUtil::unlock_already_build_map();
+        return true;
     }
     else
     {
@@ -1067,6 +1067,21 @@ bool APIUtil::add_already_build(const std::string &db_name, const std::string &c
     #endif
     return update_result;
 }
+
+// std::string APIUtil::get_already_build(const std::string &db_name)
+// {
+//     pthread_rwlock_rdlock(&already_build_map_lock);
+//     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
+//     pthread_rwlock_unlock(&already_build_map_lock);
+//     if (iter == already_build.end())
+//     {
+//         return "";
+//     }
+//     else
+//     {
+//         return iter->second->toJSON();
+//     }
+// }
 
 void APIUtil::get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array)
 {
