@@ -290,4 +290,77 @@ namespace CompressUtil
         unzClose(unfile);
         return UnZipOK;
     }
+
+    int GzipHelper::compress(const std::string *data, void *compress_data, int &compress_size)
+    {
+        z_stream c_stream;
+        int err = 0;
+        unsigned int size = data->size();
+        if (data && size > 0)
+        {
+            c_stream.zalloc = (alloc_func)0;
+            c_stream.zfree  = (free_func)0;
+            c_stream.opaque = (voidpf)0;
+            if (deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAXWBITS+GZIPENCODING, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+                return -1;
+            c_stream.avail_in = size;
+            c_stream.avail_out= size;//Generally smaller than the encrypted string
+            c_stream.next_in  = (Bytef *)data->c_str();
+            c_stream.next_out = (Bytef *)compress_data;
+            while (c_stream.avail_in != 0 && c_stream.total_out < size) 
+            {
+                if (deflate(&c_stream, Z_NO_FLUSH) != Z_OK)
+                    return -1;
+            }
+            if (c_stream.avail_in != 0)
+                return c_stream.avail_in;
+            for (;;)
+            {
+                if ((err = deflate(&c_stream, Z_FINISH)) == Z_STREAM_END)
+                    break;
+                if (err != Z_OK)
+                    return -1;
+            }
+            if (deflateEnd(&c_stream) != Z_OK)
+                return -1;
+            compress_size = c_stream.total_out;
+            return 0;
+        }
+        return -1;
+    }
+
+    int GzipHelper::unCompress(const char * data, int size, char *uncompress_data, int uncompress_size)
+    {
+        z_stream strm;
+        strm.zalloc = (alloc_func)0;
+        strm.zfree  = (free_func)0;
+        strm.opaque = (voidpf)0;
+        strm.avail_in = size;
+        strm.avail_out= uncompress_size;
+        strm.next_in  = (Bytef *)data;
+        strm.next_out = (Bytef *)uncompress_data;
+        int err = -1;
+        int ret = -1;
+        err = inflateInit2(&strm, MAXWBITS+GZIPENCODING);
+        if (err == Z_OK)
+        {
+            err = inflate(&strm, Z_FINISH);
+            if (err == Z_STREAM_END)
+            {
+                ret = strm.total_out;
+            }
+            else
+            {
+                inflateEnd(&strm);
+                return err;
+            }
+        }
+        else
+        {
+            inflateEnd(&strm);
+            return err;
+        }
+        inflateEnd(&strm);
+        return err;
+    }
 }

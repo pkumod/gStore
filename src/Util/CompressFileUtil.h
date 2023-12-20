@@ -12,6 +12,8 @@
 
 #define WRITEBUFFERSIZE (8192)
 #define MAXFILENAME (512)
+#define MAXWBITS 15
+#define GZIPENCODING 16
 using namespace std;
 
 typedef std::function<bool(std::string)> foreach_cb;
@@ -56,6 +58,13 @@ namespace CompressUtil
         std::string getMaxFilePath()const; 
         void getFileList(std::vector<std::string>& files, const std::string& except)const;
         ZipCode unCompress();
+    };
+
+    class GzipHelper
+    {
+        public:
+        static int compress(const std::string *data, void *compress_data, int &compress_size);
+        static int unCompress(const char * data, int size, char *uncompress_data, int uncompress_size);
     };
 }
 
