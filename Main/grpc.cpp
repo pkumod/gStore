@@ -2232,7 +2232,15 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 										response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
-					response->Json(resp_data);
+					std::string content_encoding = (request->header("Content-Encoding").empty()) ? "gzip" : request->header("Content-Encoding");
+					if (content_encoding.find("gzip") != std::string::npos)
+					{
+						response->Gzip(resp_data);
+					}
+					else
+					{
+						response->Json(resp_data);
+					}
 				}
 			}
 			else if (format == "file")
