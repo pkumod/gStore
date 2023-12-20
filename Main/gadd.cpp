@@ -107,8 +107,7 @@ int main(int argc, char *argv[])
 			mkdir(unz_dir_path.c_str(), 0775);
 			if (unzip.unCompress() != CompressUtil::UnZipOK)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				cout<<"zip file uncompress faild "<<endl;
 				return -1;
 			}
@@ -160,8 +159,7 @@ int main(int argc, char *argv[])
 				}
 				// exclude Info line
 				parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 			}
 		} 
 		else if (dirname.empty() == false)
