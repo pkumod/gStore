@@ -296,8 +296,7 @@ main(int argc, char * argv[])
     cmd = "cp -r " + _default_backup_path + "/" + folders[inx] + " " + _db_home;
     system(cmd.c_str());
     cout << cmd << endl;
-    cmd = "rm -rf " + db_path;
-    system(cmd.c_str());
+    Util::remove_path(db_path);
     cout << cmd << endl;
     cmd = "mv " + _db_home + "/" + folders[inx] + " " + db_path;
     system(cmd.c_str());

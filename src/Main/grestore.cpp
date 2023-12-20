@@ -165,11 +165,10 @@ main(int argc, char * argv[])
 		}
 
 		db_path = _db_home + "/" + db_name + _db_suffix;
-		string sys_cmd = "rm -rf " + db_path;
-		system(sys_cmd.c_str());
+		Util::remove_path(db_path);
 
 		string folder_name = Util::get_folder_name(backup_path, db_name);
-		sys_cmd = "mv " + _db_home + "/" + folder_name + ' ' + db_path;
+		string sys_cmd = "mv " + _db_home + "/" + folder_name + ' ' + db_path;
 		system(sys_cmd.c_str());
 
 		cout << "Time: " << Util::get_date_time() << endl;
