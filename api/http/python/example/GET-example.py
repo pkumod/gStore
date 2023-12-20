@@ -32,7 +32,7 @@ filename = "res.txt"
 gc =  GstoreConnector.GstoreConnector(IP, Port, username, password, http_type=httpType)
 
 # build a database with a RDF graph
-res = gc.build("lubm", "data/lubm/lubm.nt")
+res = gc.build("lubm", "fixtures/lubm/lubm.nt")
 print(res)
 
 # load the database 

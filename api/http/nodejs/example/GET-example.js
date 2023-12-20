@@ -37,7 +37,7 @@ const gc = new GstoreConnector(
 
 (async function () {
     // build a database with a RDF graph
-    var res = await gc.build("lubm", "data/lubm/lubm.nt");
+    var res = await gc.build("lubm", "fixtures/lubm/lubm.nt");
     console.log(JSON.stringify(res, ","));
 
     // load the database

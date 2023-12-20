@@ -14,18 +14,18 @@ int main(int argc, char* argv[])
 	std::string username = "root";
 	std::string password = "123456";
 	string query = "select ?x ?y where{<gStore> ?x ?y}";
-	string insert = "insert data {<gStore> <test> <commit>.<gStore> <test> <abort>.<gStore> <test> <begin>.<gStore> <test> <all>.}";
+	string insert = "insert fixtures {<gStore> <test> <commit>.<gStore> <test> <abort>.<gStore> <test> <begin>.<gStore> <test> <all>.}";
 	string remove = "delete where {<gStore> ?x ?y}";
 	string outdegree_query1 = "select (count(?y) as ?yCount) where{<gStore> ?x ?y}";
 	string indegree_query1 = "select (count(?x) as ?yCount) where{?x ?y <gStore> }";
 	string outdegree_query2 = "select (count(?y) as ?yCount) where{<all> ?x ?y}";
 	string indegree_query2 = "select (count(?x) as ?yCount) where{?x ?y <all>  }";
-	string remove_triple = "delete data {<gStore> <test> <all>}";
+	string remove_triple = "delete fixtures {<gStore> <test> <all>}";
 
 	GstoreConnector gc(IP, Port, httpType, username, password);
 
 	// build a database with a RDF graph
-	std::string res = gc.build("lubm", "data/lubm/lubm.nt");
+	std::string res = gc.build("lubm", "fixtures/lubm/lubm.nt");
 	cout << res << endl;
 
 	// load the database
