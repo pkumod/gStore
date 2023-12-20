@@ -1029,6 +1029,102 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
     return total_size;
 }
 
+bool Util::remove_dir(const std::string dir_path)
+{
+    DIR* dirp = opendir(dir_path.c_str());    
+    if (!dirp)
+    {
+        return false;
+    }
+    struct dirent *dir;
+    struct stat st;
+    while ((dir = readdir(dirp)) != NULL)
+    {
+        if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+        {
+            continue;
+        }    
+        std::string sub_path = dir_path + '/' + dir->d_name;
+        if (lstat(sub_path.c_str(),&st) == -1)
+        {
+            SLOG_ERROR("rm_dir lstat sub_path:"+sub_path);
+            continue;
+        }    
+        if (S_ISDIR(st.st_mode))
+        {
+            if (!remove_dir(sub_path))
+            {
+                closedir(dirp);
+                return false;
+            }
+            rmdir(sub_path.c_str());
+        }
+        else if (S_ISREG(st.st_mode))
+        {
+            unlink(sub_path.c_str());
+        }
+        else
+        {
+            SLOG_ERROR("rm_dir st_mode sub_path:"+sub_path);
+            continue;
+        }
+    }
+    if (rmdir(dir_path.c_str()) == -1)
+    {
+        closedir(dirp);
+        return false;
+    }
+    closedir(dirp);
+    return true;
+}
+
+bool Util::remove_file(const std::string file_path)
+{
+    struct stat st;    
+    if (lstat(file_path.c_str(), &st) == -1 || !S_ISREG(st.st_mode))
+    {
+        return false;
+    }
+    if (unlink(file_path.c_str()) == -1)
+    {
+        return false;
+    }    
+    return true;
+}
+
+bool Util::remove_path(const std::string path)
+{
+    std::string file_path = path;
+    struct stat st;    
+    if (lstat(file_path.c_str(), &st) == -1)
+    {
+        return false;
+    }
+    if (S_ISREG(st.st_mode))
+    {
+        if(unlink(file_path.c_str()) == -1)
+        {
+            return false;
+        }    
+    }
+    else if (S_ISDIR(st.st_mode))
+    {
+        if (path == "." || path == "..")
+        {
+            return false;
+        }    
+        if (!remove_dir(file_path))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        SLOG_ERROR("rm_path st_mode error:"+path);
+    }
+    return true;
+}
+
 long
 Util::get_cur_time()
 {

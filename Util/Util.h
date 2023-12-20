@@ -393,6 +393,9 @@ public:
 	static bool create_file(const std::string _file);
     static size_t count_lines(const std::string _file, unsigned int _mode=0);
 	static unsigned long long count_dir_size(const char* _dir_path);
+	static bool remove_dir(const std::string dir_path);
+	static bool remove_file(const std::string file_path);
+	static bool remove_path(const std::string path);
 
 	static std::string getTimeName();
 	static std::string getTimeString();
