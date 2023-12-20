@@ -94,13 +94,11 @@ APIUtil::~APIUtil()
 
     if (Util::file_exist(system_password_path))
     {
-        string cmd = "rm -f " + system_password_path;
-        system(cmd.c_str());
+        Util::remove_path(system_password_path);
     }
     if (Util::file_exist(system_port_path))
     {
-        string cmd = "rm -f " + system_port_path;
-        system(cmd.c_str());
+        Util::remove_path(system_port_path);
     }
 }
 
@@ -2341,10 +2339,8 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
     }
     fclose(fp);
     fclose(fp1);
-    string cmd = "rm ";
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
+    Util::remove_path(TRANSACTION_LOG_PATH);
+    string cmd = "mv ";
     cmd += TRANSACTION_LOG_TEMP_PATH;
     cmd += ' ';
     cmd += TRANSACTION_LOG_PATH;
@@ -2454,10 +2450,8 @@ void APIUtil::abort_transactionlog(long end_time)
     }
     fclose(fp);
     fclose(fp1);
-    string cmd = "rm ";
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
+    Util::remove_path(TRANSACTION_LOG_PATH);
+    string cmd = "mv ";
     cmd += TRANSACTION_LOG_TEMP_PATH;
     cmd += ' ';
     cmd += TRANSACTION_LOG_PATH;
@@ -2472,8 +2466,6 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
     string report_path = APIUtil::pfn_file_path + username + "/report.txt";
     string check_file_path = APIUtil::pfn_file_path + username + "/" + file_name + "_temp.cpp";
     string cppcheck = "cppcheck -j 10 --force suppress=missingIncludeSystem --template=\"[line:{line}]:({severity}) {message}\" --output-file="+report_path+" "+check_file_path;     
-    string report_delete = "rm -f " + report_path;
-    string cppcheckFile_delete = "rm -f " + check_file_path;
     string lookAtfile = "cat " + check_file_path;
     ofstream fout(check_file_path.c_str());
     if (fout.is_open())
@@ -2496,8 +2488,8 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
         }
     }
     cppcheck_fin.close();
-    system(report_delete.c_str());
-    system(cppcheckFile_delete.c_str());
+    Util::remove_path(report_path);
+    Util::remove_path(check_file_path);
     return report_detail;
 }
 
@@ -2653,10 +2645,9 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     util.create_dirs(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = APIUtil::pfn_file_path + username + "/error.out";
-    string cmd = "rm -f " + targetFile;
-    system(cmd.c_str());
+    Util::remove_path(targetFile);
     string libaray = "lib/libgpathqueryhandler.so lib/libgcsr.so";
-    cmd = "g++ -std=c++11 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
+    string cmd = "g++ -std=c++11 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
     int status;
     status = system(cmd.c_str());
     string error_msg = "";
@@ -2666,8 +2657,8 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
         fun_info->setFunStatus("2");
         //delete old so
         string usingPath = APIUtil::pfn_lib_path + username ;
-        string rmOldSo = "rm -f "+ usingPath +"/lib" + file_name + "*.so";
-        system(rmOldSo.c_str());
+        string rmOldSo = usingPath +"/lib" + file_name + "*.so";
+        Util::remove_path(targetFile);
         //mv the new into using Path
         string mvCmd = "mv " +  targetFile + " " + usingPath +"/";
         system(mvCmd.c_str());
@@ -2698,8 +2689,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
     // delete
     delete fun_info;
     fun_info = NULL;
-    cmd = "rm -f " + logFile;
-    system(cmd.c_str());
+    Util::remove_path(logFile);
     // has error_msg
     if (error_msg.size() > 0)
     {
@@ -2833,10 +2823,8 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     string sourcePath = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
                     // string backPath = sourcePath + "." + util.getTimeString2();
                     string libPath = APIUtil::pfn_lib_path + username + "/lib" + file_name + "*.so";
-                    cmd = "rm -f " + sourcePath;
-                    system(cmd.c_str());
-                    cmd = "rm -f " + libPath;
-                    system(cmd.c_str());
+                    Util::remove_path(sourcePath);
+                    Util::remove_path(libPath);
                 }
             }
             else
@@ -2873,8 +2861,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
             if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
             {
                 // remove old json file
-                cmd = "rm -f " + back_path;
-                system(cmd.c_str());
+                Util::remove_path(back_path);
                 pthread_rwlock_unlock(&fun_data_lock);
                 #if defined(DEBUG)
                 SLOG_DEBUG(cmd);
