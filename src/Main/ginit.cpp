@@ -36,9 +36,7 @@ int main(int argc, char *argv[])
 		cout << "begin rebuild the system database ...." << endl;
 		if (Util::dir_exist(_db_path))
 		{
-			string cmd;
-			cmd = "rm -r " + _db_path;
-			system(cmd.c_str());
+			Util::remove_path(_db_path);
 		}
 		Database *_db = new Database(_db_name);
 		bool flag = _db->build(_rdf);
