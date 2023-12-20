@@ -126,8 +126,7 @@ main(int argc, char * argv[])
 				CompressUtil::UnCompressZip unzip(_rdf, unz_dir_path);
 				if (unzip.unCompress() != CompressUtil::UnZipOK)
 				{
-					std::string cmd = "rm -r " + unz_dir_path;
-					system(cmd.c_str());
+					Util::remove_path(unz_dir_path);
 					cout<<"zip file uncompress faild "<<endl;
 					return -1;
 				}
@@ -154,8 +153,7 @@ main(int argc, char * argv[])
 			else //if fails, drop database and return
 			{
 				cout<<"Build Database Failed!"<<endl;
-				string cmd = "rm -r " + _db_path;
-				system(cmd.c_str());
+				Util::remove_path(_db_path);
 				return 0;
 			}
 			if (!Util::dir_exist(_db_home + "/system" + _db_suffix))
@@ -214,8 +212,7 @@ main(int argc, char * argv[])
 					cout<< "See parse error log file for details " << error_log << endl;
 				}
 				_db.save();
-				std::string cmd = "rm -rf " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				cout<< "Build batch insert RDF database "<<db_name<<" successfully!"<<endl;
 			}
 			
