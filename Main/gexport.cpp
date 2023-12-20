@@ -136,15 +136,14 @@ main(int argc, char * argv[])
 			if (!CompressUtil::FileHelper::compressExportZip(filepath, zip_path))
 			{
 				cout << db_name << _db_suffix + " export compress fail"<<endl;
-				std::string cmd = "rm -f " + filepath + " " + zip_path;
-				system(cmd.c_str());
+				std::string cmd = filepath + " " + zip_path;
+				Util::remove_path(cmd);
 				return -1;
 			}
 			long tv_end = Util::get_cur_time();
 			cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			cout << db_name << _db_suffix + " export path: " << zip_path << endl;
-			std::string cmd = "rm -f " + filepath;
-			system(cmd.c_str());
+			Util::remove_path(filepath);
 		}
 		return 0;
 	}

@@ -103,10 +103,9 @@ int main(int argc, char *argv[])
 				document.SetObject();
 				document.Parse(res.c_str());
 				if (document.HasParseError()) {
-					string cmd = "rm -rf " + _db_home + "/system" +_db_suffix + "/password*.txt";;
-					system(cmd.c_str());
-					cmd = "rm -rf " + system_port_path;
-					system(cmd.c_str());
+					string cmd = _db_home + "/system" +_db_suffix + "/password*.txt";
+					Util::remove_path(cmd);
+					Util::remove_path(system_port_path);
 					cout << "http server is not running!" << endl;
 					return 0;
 				}
@@ -142,10 +141,9 @@ int main(int argc, char *argv[])
 				} 
 				else
 				{
-					string cmd = "rm -rf " + _db_home + "/system" +_db_suffix + "/password*.txt";;
-					system(cmd.c_str());
-					cmd = "rm -rf " + system_port_path;
-					system(cmd.c_str());
+					string cmd = _db_home + "/system" +_db_suffix + "/password*.txt";
+					Util::remove_path(cmd);
+					Util::remove_path(system_port_path);
 					cout << "http server is not running!" << endl;
 					return 0;
 				}
