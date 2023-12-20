@@ -150,6 +150,9 @@ public:
     // save file
     void Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg);
 
+    // compress with gzip
+    void Gzip(const Json &json);
+
     // send json string
     void Json(const Json &json);
 

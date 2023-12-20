@@ -16,6 +16,7 @@
 #include "grpc_status_code.h"
 #include "grpc_stringpiece.h"
 #include "grpc_server_task.h"
+#include "../Util/CompressFileUtil.h"
 
 using namespace grpc;
 using namespace protocol;
@@ -359,6 +360,40 @@ void GRPCResp::Json(const std::string &str)
     }
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
     this->String(str);
+}
+
+void GRPCResp::Gzip(const ::Json &json)
+{
+    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+    this->headers["Content-Encoding"] = "gzip";
+    rapidjson::StringBuffer resBuffer;
+    rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+    json.Accept(resWriter);
+    if (json.HasMember("StatusCode") && json["StatusCode"].IsInt())
+    {
+        this->resp_code = json["StatusCode"].GetInt();
+    }
+    if (json.HasMember("StatusMsg") && json["StatusMsg"].IsString())
+    {
+        this->resp_msg = json["StatusMsg"].GetString();
+    }
+    std::string data = resBuffer.GetString();
+    void* compress_ = malloc(data.size());
+    if (compress_ == nullptr)
+    {
+        std::cout<<"malloc failed Cache Not Enough:"<<std::endl;
+        return;
+    }
+    int compress_size = 0;
+    int status = CompressUtil::GzipHelper::compress(&data, compress_, compress_size);
+    if (status != 0)
+    {
+        std::cout<<"Gzip StatusMsg Error Code:"<<status<<std::endl;
+        free(compress_);
+        return;
+    }
+    this->append_output_body_nocopy(compress_, compress_size);
+    task_of(this)->add_callback([compress_](GRPCTask *) { free(compress_); });
 }
 
 void GRPCResp::set_status(int status_code)
