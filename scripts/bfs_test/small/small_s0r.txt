@@ -1,6 +1,0 @@
-?v0	?v1
-<root>	<node0>
-<root>	<node1>
-<root>	<node2>
-<root>	<node3>
-<root>	<node4>

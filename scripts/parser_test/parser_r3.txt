@@ -1,2 +1,0 @@
-?v
-<http://example.org/ns#x>

@@ -53,7 +53,7 @@ EXEFLAG = -O2 -pthread -std=c++11 -Werror=return-type
 #add -lreadline [-ltermcap] if using readline or objs contain readline
 # library = -lreadline -L./lib -L/usr/local/lib -lantlr -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -L./workflow-nossl/_lib -L./workflow-nossl/_include -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -lworkflow -llog4cplus
-#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./tools/workflow-master/_lib -L./tools/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
+#library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/  -L./3rdparty/workflow-master/_lib -L./3rdparty/workflow-master/_include  -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl  -llog4cplus -lworkflow
 #library = -lreadline -L./lib -L/usr/local/lib -L/usr/lib/ -lantlr4-runtime -lgcov -lboost_thread -lboost_filesystem -lboost_system -lboost_regex -lpthread -I/usr/local/include/boost -lcurl -llog4cplus -Wl,-rpath='/usr/local/lib'
 library = -L/usr/lib64 -L./lib -L/usr/local/lib -L/usr/lib -I/usr/local/include/boost -ljemalloc -lreadline -lantlr4-runtime -lgcov -lboost_thread -lboost_system -lboost_regex -lpthread -lcurl -llog4cplus -lz -lminizip
 #used for parallelsort
@@ -185,7 +185,7 @@ $(exedir)gserver: $(lib_antlr) $(objdir)gserver.o $(objfile)
 $(exedir)gserver_backup_scheduler: $(lib_antlr) $(objdir)gserver_backup_scheduler.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gserver_backup_scheduler $(objdir)gserver_backup_scheduler.o $(objfile) $(library) $(openmp) ${ldl}
 
-$(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o ./Server/server_http.hpp ./Server/client_http.hpp ./Server/MultipartParser.hpp $(objfile) ${objdir}APIUtil.o
+$(exedir)ghttp: $(lib_antlr) $(objdir)ghttp.o src/Server src/Server src/Server $(objfile) ${objdir}APIUtil.o
 	$(CXX) $(EXEFLAG) -o $(exedir)ghttp $(objdir)ghttp.o $(objfile) ${objdir}APIUtil.o $(library) $(inc) $(openmp) ${ldl}
 
 #$(exedir)gapiserver: $(lib_antlr) $(lib_workflow) $(objdir)gapiserver.o  $(objfile)
@@ -232,134 +232,134 @@ $(exedir)gconsole: $(lib_antlr) $(objdir)gconsole.o $(objfile)
 
 #objects in Main/ begin
 
-$(objdir)gexport.o: Main/gexport.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gexport.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gexport.cpp $(inc) $(inc_log) -o $(objdir)gexport.o $(openmp)
 
-$(objdir)gdrop.o: Main/gdrop.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gdrop.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gdrop.cpp $(inc) $(inc_log) -o $(objdir)gdrop.o $(openmp)
 
-$(objdir)ginit.o: Main/ginit.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)ginit.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/ginit.cpp $(inc) $(inc_log) -o $(objdir)ginit.o $(openmp)
 
-$(objdir)shutdown.o: Main/shutdown.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)shutdown.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/shutdown.cpp $(inc) $(inc_log) -o $(objdir)shutdown.o $(openmp)
 
-$(objdir)gmonitor.o: Main/gmonitor.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gmonitor.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gmonitor.cpp $(inc) $(inc_log) -o $(objdir)gmonitor.o $(openmp)
 
-$(objdir)gshow.o: Main/gshow.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gshow.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gshow.cpp $(inc) $(inc_log) -o $(objdir)gshow.o $(openmp)
 
-$(objdir)gbuild.o: Main/gbuild.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gbuild.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gbuild.cpp $(inc) $(inc_log) -o $(objdir)gbuild.o $(openmp)
 	
-$(objdir)gquery.o: Main/gquery.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gquery.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gquery.cpp $(inc) $(inc_log) -o $(objdir)gquery.o $(openmp) #-DREADLINE_ON
 	#add -DREADLINE_ON if using readline
 
-$(objdir)gserver.o: Main/gserver.cpp Server/Server.h Util/Util.h $(lib_antlr)
+$(objdir)gserver.o: src/Main src/Server src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gserver.cpp $(inc) $(inc_log) -o $(objdir)gserver.o $(openmp)
 
-$(objdir)gserver_backup_scheduler.o: Main/gserver_backup_scheduler.cpp Server/Server.h Util/Util.h $(lib_antlr)
+$(objdir)gserver_backup_scheduler.o: src/Main src/Server src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gserver_backup_scheduler.cpp $(inc) $(inc_log) -o $(objdir)gserver_backup_scheduler.o $(openmp)
 
-$(objdir)ghttp.o: Main/ghttp.cpp Server/server_http.hpp Server/client_http.hpp Server/MultipartParser.hpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/IPWhiteList.h Util/IPBlackList.h Util/CompressFileUtil.h $(lib_antlr) Util/INIParser.h Util/WebUrl.h GRPC/APIUtil.h
+$(objdir)ghttp.o: src/Main src/Server src/Server src/Server src/Database src/Database src/Util src/Util src/Util src/Util $(lib_antlr) src/Util src/Util src/GRPC
 	$(CXX) $(CFLAGS) Main/ghttp.cpp $(inc) $(inc_log) $(inc_zlib) -o $(objdir)ghttp.o $(def64IO) $(openmp)
 
 #$(objdir)gapiserver.o: Main/gapiserver.cpp Database/Database.h Database/Txn_manager.h Util/Util.h Util/Util_New.h Util/IPWhiteList.h Util/IPBlackList.h Util/WebUrl.h  $(lib_antlr) $(lib_workflow)
 #	$(CXX) $(CFLAGS) Main/gapiserver.cpp $(inc) $(inc_workflow) -o $(objdir)gapiserver.o $(openmp)
 
-$(objdir)grpc.o: Main/grpc.cpp GRPC/grpc_server.h GRPC/grpc_status_code.h GRPC/grpc_operation.h GRPC/APIUtil.h Util/CompressFileUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc.o: src/Main src/GRPC src/GRPC src/GRPC src/GRPC src/Util src/Database src/Database src/Util $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) Main/grpc.cpp $(inc) $(inc_log) $(inc_rpc) $(inc_zlib) -o $(objdir)grpc.o $(def64IO) $(openmp)
 
-$(objdir)gbackup.o: Main/gbackup.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gbackup.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gbackup.cpp $(inc) $(inc_log) -o $(objdir)gbackup.o $(openmp)
 
-$(objdir)grestore.o: Main/grestore.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)grestore.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/grestore.cpp $(inc) $(inc_log) -o $(objdir)grestore.o $(openmp)
 
-$(objdir)gpara.o: Main/gpara.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gpara.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gpara.cpp $(inc) $(inc_log) -o $(objdir)gpara.o $(openmp)
 
-$(objdir)rollback.o: Main/rollback.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)rollback.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/rollback.cpp $(inc) $(inc_log) -o $(objdir)rollback.o $(openmp)
 
-$(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)gconsole.o: src/Main src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) Main/gconsole.cpp $(inc) $(inc_log) -o $(objdir)gconsole.o $(openmp)
 #objects in Main/ end
 
-#objects in scripts/ begin
+#objects in tests/ begin
 
-$(objdir)update_test.o: $(testdir)update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)update_test.o: $(testdir)update_test.cpp src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
 
-$(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
+$(objdir)dataset_test.o: $(testdir)dataset_test.cpp src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) -o $(objdir)dataset_test.o $(openmp)
 
-$(objdir)transaction_test.o: $(testdir)transaction_test.cpp Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
+$(objdir)transaction_test.o: $(testdir)transaction_test.cpp src/Database src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)transaction_test.cpp $(inc) -o $(objdir)transaction_test.o $(openmp)
 
-$(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antlr)
+$(objdir)run_transaction.o: $(testdir)run_transaction.cpp src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)run_transaction.cpp $(inc) $(inc_log) -o $(objdir)run_transaction.o $(openmp)
 
-$(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
+$(objdir)workload.o: $(testdir)workload.cpp src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)workload.cpp $(inc) -o $(objdir)workload.o $(openmp)
 
-$(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
+$(objdir)debug_test.o: $(testdir)debug_test.cpp src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)debug_test.cpp $(inc) -o $(objdir)debug_test.o $(openmp)
 
-#objects in scripts/ end
+#objects in tests/ end
 
 
 #objects in kvstore/ begin
 
 #objects in sitree/ begin
-$(objdir)SITree.o: KVstore/SITree/SITree.cpp KVstore/SITree/SITree.h $(filter $(FIRST_BUILD),$(objdir)Stream.o)
+$(objdir)SITree.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Stream.o)
 	@echo $(FAST_DEPENDENCY_FLAG)
 	$(CXX) $(CFLAGS) KVstore/SITree/SITree.cpp $(inc_log) -o $(objdir)SITree.o $(openmp)
 
-$(objdir)SIStorage.o: KVstore/SITree/storage/SIStorage.cpp KVstore/SITree/storage/SIStorage.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)SIStorage.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) KVstore/SITree/storage/SIStorage.cpp $(inc_log) -o $(objdir)SIStorage.o $(def64IO) $(openmp)
 
-$(objdir)SINode.o: KVstore/SITree/node/SINode.cpp KVstore/SITree/node/SINode.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)SINode.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) KVstore/SITree/node/SINode.cpp $(inc_log) -o $(objdir)SINode.o $(openmp)
 
-$(objdir)SIIntlNode.o: KVstore/SITree/node/SIIntlNode.cpp KVstore/SITree/node/SIIntlNode.h
+$(objdir)SIIntlNode.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/SITree/node/SIIntlNode.cpp $(inc_log) -o $(objdir)SIIntlNode.o $(openmp)
 
-$(objdir)SILeafNode.o: KVstore/SITree/node/SILeafNode.cpp KVstore/SITree/node/SILeafNode.h
+$(objdir)SILeafNode.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/SITree/node/SILeafNode.cpp $(inc_log) -o $(objdir)SILeafNode.o $(openmp)
 
-$(objdir)SIHeap.o: KVstore/SITree/heap/SIHeap.cpp KVstore/SITree/heap/SIHeap.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)SIHeap.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) KVstore/SITree/heap/SIHeap.cpp $(inc_log) -o $(objdir)SIHeap.o $(openmp)
 #objects in sitree/ end
 
 #objects in isarray/ begin
-$(objdir)ISArray.o: KVstore/ISArray/ISArray.cpp KVstore/ISArray/ISArray.h $(filter $(FIRST_BUILD),$(objdir)VList.o)
+$(objdir)ISArray.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)VList.o)
 	$(CXX) $(CFLAGS) KVstore/ISArray/ISArray.cpp $(inc_log) -o $(objdir)ISArray.o
 
-$(objdir)ISBlockManager.o: KVstore/ISArray/ISBlockManager.cpp KVstore/ISArray/ISBlockManager.h 
+$(objdir)ISBlockManager.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/ISArray/ISBlockManager.cpp $(inc_log) -o $(objdir)ISBlockManager.o
 
-$(objdir)ISEntry.o: KVstore/ISArray/ISEntry.cpp KVstore/ISArray/ISEntry.h
+$(objdir)ISEntry.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/ISArray/ISEntry.cpp $(inc_log) -o $(objdir)ISEntry.o
 #objects in isarray/ end
 
 #objects in ivarray/ begin
-$(objdir)IVArray.o: KVstore/IVArray/IVArray.cpp KVstore/IVArray/IVArray.h $(filter $(FIRST_BUILD),$(objdir)VList.o) \
+$(objdir)IVArray.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)VList.o) \
 	$(filter $(FIRST_BUILD),$(objdir)Transaction.o)
 	$(CXX) $(CFLAGS) KVstore/IVArray/IVArray.cpp $(inc_log) -o $(objdir)IVArray.o
 
-$(objdir)IVBlockManager.o: KVstore/IVArray/IVBlockManager.cpp KVstore/IVArray/IVBlockManager.h 
+$(objdir)IVBlockManager.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/IVArray/IVBlockManager.cpp $(inc_log) -o $(objdir)IVBlockManager.o
 
-$(objdir)IVEntry.o: KVstore/IVArray/IVEntry.cpp KVstore/IVArray/IVEntry.h $(filter $(FIRST_BUILD),$(objdir)Version.o) \
+$(objdir)IVEntry.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Version.o) \
 	$(filter $(FIRST_BUILD),$(objdir)GraphLock.o)
 	$(CXX) $(CFLAGS) KVstore/IVArray/IVEntry.cpp $(inc_log) -o $(objdir)IVEntry.o
 
 #objects in ivarray/ end
 
-$(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h 
+$(objdir)KVstore.o: src/KVstore src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/KVstore.cpp $(inc) $(inc_log) -o $(objdir)KVstore.o $(openmp)
 
 #objects in kvstore/ end
@@ -368,45 +368,45 @@ $(objdir)KVstore.o: KVstore/KVstore.cpp KVstore/KVstore.h KVstore/Tree.h
 #objects in Database/ begin
 
 
-$(objdir)Database.o: Database/Database.cpp Database/Database.h $(filter $(FIRST_BUILD),$(objdir)RDFParser.o) \
+$(objdir)Database.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)RDFParser.o) \
 	$(filter $(FIRST_BUILD),$(objdir)GeneralEvaluation.o) $(filter $(FIRST_BUILD),$(objdir)StringIndex.o) \
 	$(filter $(FIRST_BUILD),$(objdir)Transaction.o)
 	$(CXX) $(CFLAGS) Database/Database.cpp $(inc) $(inc_log) -o $(objdir)Database.o $(openmp)
 
-$(objdir)Join.o: Database/Join.cpp Database/Join.h $(filter $(FIRST_BUILD),$(objdir)IDList.o) \
+$(objdir)Join.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)IDList.o) \
 	$(filter $(FIRST_BUILD),$(objdir)KVstore.o) $(filter $(FIRST_BUILD),$(objdir)SPARQLquery.o)  $(filter $(FIRST_BUILD),$(objdir)Transaction.o)
 	$(CXX) $(CFLAGS) Database/Join.cpp $(inc) $(inc_log) -o $(objdir)Join.o $(openmp)
 
-$(objdir)CSR.o: Database/CSR.cpp Database/CSR.h
+$(objdir)CSR.o: src/Database src/Database
 	$(CXX) $(CFLAGS) Database/CSR.cpp $(inc) -o $(objdir)CSR.o $(openmp)
 	$(CXX) -std=c++11 -fPIC -shared Database/CSR.cpp -o lib/libgcsr.so
 
-$(objdir)TableOperator.o: Database/TableOperator.cpp Database/TableOperator.h $(filter $(FIRST_BUILD),$(objdir)BGPQuery.o)
+$(objdir)TableOperator.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)BGPQuery.o)
 	$(CXX) $(CFLAGS) Database/TableOperator.cpp $(inc) $(inc_log) -o $(objdir)TableOperator.o $(openmp)
 
 #$(objdir)ResultTrigger.o: Database/ResultTrigger.cpp Database/ResultTrigger.h $(objdir)Util.o
 #	$(CXX) $(CFLAGS) Database/ResultTrigger.cpp $(inc) -o $(objdir)ResultTrigger.o $(openmp)
 
-$(objdir)PlanTree.o: Database/PlanTree.cpp Database/PlanTree.h $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+$(objdir)PlanTree.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
 	$(CXX) $(CFLAGS) Database/PlanTree.cpp $(inc) $(inc_log) -o $(objdir)PlanTree.o  $(openmp)
 
-$(objdir)PlanGenerator.o: Database/PlanGenerator.cpp Database/PlanGenerator.h \
+$(objdir)PlanGenerator.o: src/Database src/Database \
 	$(filter $(FIRST_BUILD),$(objdir)IDList.o) $(filter $(FIRST_BUILD),$(objdir)PlanTree.o) \
 	 $(filter $(FIRST_BUILD),$(objdir)OrderedVector.o)
 	$(CXX) $(CFLAGS) Database/PlanGenerator.cpp $(inc) $(inc_log) -o $(objdir)PlanGenerator.o $(openmp)
 
-$(objdir)Executor.o: Database/Executor.cpp Database/Executor.h $(filter $(FIRST_BUILD),$(objdir)IDList.o) \
+$(objdir)Executor.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)IDList.o) \
 	$(filter $(FIRST_BUILD),$(objdir)Join.o) $(filter $(FIRST_BUILD),$(objdir)Transaction.o)  \
 	$(filter $(FIRST_BUILD),$(objdir)TableOperator.o) $(filter $(FIRST_BUILD), $(objdir)DPBTopKUtil.o)
 	$(CXX) $(CFLAGS) Database/Executor.cpp $(inc) $(inc_log) -o $(objdir)Executor.o $(openmp) ${ldl}
 
-$(objdir)Optimizer.o: Database/Optimizer.cpp Database/Optimizer.h Database/OptimizerDebug.h \
+$(objdir)Optimizer.o: src/Database src/Database src/Database \
 	$(filter $(FIRST_BUILD), $(objdir)Executor.o) $(filter $(FIRST_BUILD),$(objdir)DFSPlan.o) \
 	$(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o) $(filter $(FIRST_BUILD),$(objdir)DPBTopKUtil.o) \
 	$(filter $(FIRST_BUILD),$(objdir)FilterPlan.o)
 	$(CXX) $(CFLAGS) Database/Optimizer.cpp $(inc) $(inc_log) -o $(objdir)Optimizer.o $(openmp) ${ldl}
 
-$(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(filter $(FIRST_BUILD),$(objdir)Util.o) \
+$(objdir)Txn_manager.o: src/Database src/Database $(filter $(FIRST_BUILD),$(objdir)Util.o) \
 	$(filter $(FIRST_BUILD),$(objdir)Transaction.o) $(filter $(FIRST_BUILD),$(objdir)Database.o)
 	$(CXX) $(CFLAGS) Database/Txn_manager.cpp $(inc) $(inc_log) -o $(objdir)Txn_manager.o $(openmp)
 
@@ -415,75 +415,75 @@ $(objdir)Txn_manager.o: Database/Txn_manager.cpp Database/Txn_manager.h $(filter
 
 #objects in Query/ begin
 
-$(objdir)IDList.o: Query/IDList.cpp Query/IDList.h
+$(objdir)IDList.o: src/Query src/Query
 	$(CXX) $(CFLAGS) Query/IDList.cpp $(inc) $(inc_log) -o $(objdir)IDList.o $(openmp)
 
-$(objdir)SPARQLquery.o: Query/SPARQLquery.cpp Query/SPARQLquery.h $(filter $(FIRST_BUILD),$(objdir)BasicQuery.o)
+$(objdir)SPARQLquery.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)BasicQuery.o)
 	$(CXX) $(CFLAGS) Query/SPARQLquery.cpp $(inc) $(inc_log) -o $(objdir)SPARQLquery.o $(openmp)
 
-$(objdir)BasicQuery.o: Query/BasicQuery.cpp Query/BasicQuery.h
+$(objdir)BasicQuery.o: src/Query src/Query
 	$(CXX) $(CFLAGS) Query/BasicQuery.cpp $(inc) $(inc_log) -o $(objdir)BasicQuery.o $(openmp)
 
-$(objdir)ResultSet.o: Query/ResultSet.cpp Query/ResultSet.h $(filter $(FIRST_BUILD),$(objdir)Stream.o)
+$(objdir)ResultSet.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)Stream.o)
 	$(CXX) $(CFLAGS) Query/ResultSet.cpp $(inc) $(inc_log) -o $(objdir)ResultSet.o $(openmp)
 
-$(objdir)Varset.o: Query/Varset.cpp Query/Varset.h
+$(objdir)Varset.o: src/Query src/Query
 	$(CXX) $(CFLAGS) Query/Varset.cpp $(inc) $(inc_log) -o $(objdir)Varset.o $(openmp)
 
-$(objdir)DFSPlan.o: Query/DFSPlan.cpp Query/DFSPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+$(objdir)DFSPlan.o: src/Query src/Query  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
 	$(CXX) $(CFLAGS) Query/DFSPlan.cpp $(inc) $(inc_log) -o $(objdir)DFSPlan.o $(openmp)
 
-$(objdir)QueryTree.o: Query/QueryTree.cpp Query/QueryTree.h $(filter $(FIRST_BUILD),$(objdir)Varset.o)
+$(objdir)QueryTree.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)Varset.o)
 	$(CXX) $(CFLAGS) Query/QueryTree.cpp $(inc) $(inc_log) -o $(objdir)QueryTree.o $(openmp)
 
-$(objdir)TempResult.o: Query/TempResult.cpp Query/TempResult.h Query/RegexExpression.h \
+$(objdir)TempResult.o: src/Query src/Query src/Query \
 	$(filter $(FIRST_BUILD),$(objdir)StringIndex.o) $(filter $(FIRST_BUILD),$(objdir)QueryTree.o) \
 	$(filter $(FIRST_BUILD),$(objdir)EvalMultitypeValue.o)
 	$(CXX) $(CFLAGS) Query/TempResult.cpp $(inc) $(inc_log) -o $(objdir)TempResult.o $(openmp)
 
-$(objdir)QueryCache.o: Query/QueryCache.cpp Query/QueryCache.h $(filter $(FIRST_BUILD),$(objdir)TempResult.o)
+$(objdir)QueryCache.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)TempResult.o)
 	$(CXX) $(CFLAGS) Query/QueryCache.cpp $(inc) $(inc_log) -o $(objdir)QueryCache.o $(openmp)
 
-$(objdir)PathQueryHandler.o: Query/PathQueryHandler.cpp Query/PathQueryHandler.h $(filter $(FIRST_BUILD),$(objdir)CSR.o)
+$(objdir)PathQueryHandler.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)CSR.o)
 	$(CXX) $(CFLAGS) Query/PathQueryHandler.cpp $(inc) -o $(objdir)PathQueryHandler.o $(openmp) ${ldl}
 	$(CXX) -std=c++11 -fPIC -shared Query/PathQueryHandler.cpp -o lib/libgpathqueryhandler.so lib/libgcsr.so
 
-$(objdir)BGPQuery.o: Query/BGPQuery.cpp Query/BGPQuery.h   $(filter $(FIRST_BUILD),$(objdir)Util.o) \
+$(objdir)BGPQuery.o: src/Query src/Query   $(filter $(FIRST_BUILD),$(objdir)Util.o) \
  	$(filter $(FIRST_BUILD),$(objdir)Triple.o)  $(filter $(FIRST_BUILD),$(objdir)KVstore.o)
 	$(CXX) $(CFLAGS) Query/BGPQuery.cpp $(inc) $(inc_log) -o $(objdir)BGPQuery.o $(openmp)
 
-$(objdir)FilterPlan.o: Query/FilterPlan.cpp Query/FilterPlan.h  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
+$(objdir)FilterPlan.o: src/Query src/Query  $(filter $(FIRST_BUILD),$(objdir)TableOperator.o)
 	$(CXX) $(CFLAGS) Query/FilterPlan.cpp $(inc) $(inc_log) -o $(objdir)FilterPlan.o $(openmp)
 
 #objects in Query/topk/ begin
 
-$(objdir)Pool.o: Query/topk/DPB/Pool.cpp Query/topk/DPB/Pool.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)Pool.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) Query/topk/DPB/Pool.cpp $(inc) $(inc_log) -o $(objdir)Pool.o $(openmp)
 
-$(objdir)DynamicTrie.o: Query/topk/DPB/DynamicTrie.cpp Query/topk/DPB/DynamicTrie.h \
+$(objdir)DynamicTrie.o: src/Query src/Query \
 	$(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)Pool.o)
 	$(CXX) $(CFLAGS) Query/topk/DPB/DynamicTrie.cpp $(inc) $(inc_log) -o $(objdir)DynamicTrie.o $(openmp)
 
-$(objdir)OrderedList.o: Query/topk/DPB/OrderedList.cpp Query/topk/DPB/OrderedList.h \
+$(objdir)OrderedList.o: src/Query src/Query \
 	$(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)Pool.o) \
 	$(filter $(FIRST_BUILD),$(objdir)DynamicTrie.o)
 	$(CXX) $(CFLAGS) Query/topk/DPB/OrderedList.cpp $(inc) $(inc_log) -o $(objdir)OrderedList.o $(openmp)
 
-$(objdir)TopKSearchPlan.o: Query/topk/TopKSearchPlan.cpp Query/topk/TopKSearchPlan.h \
+$(objdir)TopKSearchPlan.o: src/Query src/Query \
 	$(filter $(FIRST_BUILD),$(objdir)OrderedList.o) $(filter $(FIRST_BUILD),$(objdir)QueryTree.o) $(filter $(FIRST_BUILD),$(objdir)PlanGenerator.o)
 	$(CXX) $(CFLAGS) Query/topk/TopKSearchPlan.cpp $(inc) $(inc_log) -o $(objdir)TopKSearchPlan.o $(openmp)
 
-$(objdir)TopKUtil.o: Query/topk/TopKUtil.cpp Query/topk/TopKUtil.h $(filter $(FIRST_BUILD),$(objdir)TopKSearchPlan.o)
+$(objdir)TopKUtil.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)TopKSearchPlan.o)
 	$(CXX) $(CFLAGS) Query/topk/TopKUtil.cpp $(inc) $(inc_log) -o $(objdir)TopKUtil.o $(openmp)
 
-$(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(filter $(FIRST_BUILD),$(objdir)TopKUtil.o)
+$(objdir)DPBTopKUtil.o: src/Query src/Query $(filter $(FIRST_BUILD),$(objdir)TopKUtil.o)
 	$(CXX) $(CFLAGS) Query/topk/DPBTopKUtil.cpp $(inc) $(inc_log) -o $(objdir)DPBTopKUtil.o $(openmp)
 
 #objects in Query/topk/ end
 
 
 #no more using $(objdir)Database.o
-$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
+$(objdir)GeneralEvaluation.o: src/Query src/Query src/Query \
 	$(filter $(FIRST_BUILD),$(objdir)StringIndex.o) $(filter $(FIRST_BUILD),$(objdir)QueryParser.o) \
 	$(filter $(FIRST_BUILD),$(objdir)EvalMultitypeValue.o) $(filter $(FIRST_BUILD),$(objdir)SPARQLquery.o) \
 	$(filter $(FIRST_BUILD),$(objdir)QueryCache.o) $(filter $(FIRST_BUILD),$(objdir)ResultSet.o) \
@@ -506,63 +506,63 @@ $(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluatio
 
 #objects in Util/ begin
 
-$(objdir)Util.o:  Util/Util.cpp Util/Util.h $(objdir)Slog.o
+$(objdir)Util.o:  src/Util src/Util $(objdir)Slog.o
 	$(CXX) $(CFLAGS) Util/Util.cpp $(inc_log) -o $(objdir)Util.o $(openmp)
 
-$(objdir)WebUrl.o:  Util/WebUrl.cpp Util/WebUrl.h
+$(objdir)WebUrl.o:  src/Util src/Util
 	$(CXX) $(CFLAGS) Util/WebUrl.cpp -o $(objdir)WebUrl.o $(openmp)
 
 
 
-$(objdir)INIParser.o:  Util/INIParser.cpp Util/INIParser.h
+$(objdir)INIParser.o:  src/Util src/Util
 	$(CXX) $(CFLAGS) Util/INIParser.cpp -o $(objdir)INIParser.o $(openmp)
 
-$(objdir)Slog.o:  Util/Slog.cpp Util/Slog.h $(lib_log)
+$(objdir)Slog.o:  src/Util src/Util $(lib_log)
 	$(CXX) $(CFLAGS) Util/Slog.cpp $(inc_log) -o $(objdir)Slog.o $(openmp)
 
 #$(objdir)grpc.srpc.o:   GRPC/grpc.srpc.h $(lib_workflow)
 #	$(CXX) $(CFLAGS)  GRPC/grpc.srpc.h -o $(objdir)grpc.srpc.o $(openmp)
 
-$(objdir)Stream.o:  Util/Stream.cpp Util/Stream.h $(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)Bstr.o)
+$(objdir)Stream.o:  src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)Bstr.o)
 	$(CXX) $(CFLAGS) Util/Stream.cpp $(inc_log) -o $(objdir)Stream.o $(def64IO) $(openmp)
 
-$(objdir)Bstr.o: Util/Bstr.cpp Util/Bstr.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)Bstr.o: src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS)  Util/Bstr.cpp $(inc_log) -o $(objdir)Bstr.o $(openmp)
 
-$(objdir)Triple.o: Util/Triple.cpp Util/Triple.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)Triple.o: src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) Util/Triple.cpp $(inc_log) -o $(objdir)Triple.o $(openmp)
 
-$(objdir)VList.o:  Util/VList.cpp Util/VList.h
+$(objdir)VList.o:  src/Util src/Util
 	$(CXX) $(CFLAGS) Util/VList.cpp $(inc_log) -o $(objdir)VList.o $(openmp)
 
-$(objdir)EvalMultitypeValue.o: Util/EvalMultitypeValue.cpp Util/EvalMultitypeValue.h
+$(objdir)EvalMultitypeValue.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/EvalMultitypeValue.cpp $(inc_log) -o $(objdir)EvalMultitypeValue.o $(openmp)
 
-$(objdir)Version.o: Util/Version.cpp Util/Version.h
+$(objdir)Version.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/Version.cpp $(inc_log) -o $(objdir)Version.o $(openmp)
 
-$(objdir)SpinLock.o: Util/SpinLock.h Util/SpinLock.cpp
+$(objdir)SpinLock.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/SpinLock.cpp -o $(objdir)SpinLock.o $(openmp)
 
-$(objdir)GraphLock.o: Util/GraphLock.h Util/GraphLock.cpp
+$(objdir)GraphLock.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/GraphLock.cpp -o $(objdir)GraphLock.o $(openmp)
 
-$(objdir)Transaction.o: Util/Transaction.cpp Util/Transaction.h $(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)IDTriple.o)
+$(objdir)Transaction.o: src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o) $(filter $(FIRST_BUILD),$(objdir)IDTriple.o)
 	$(CXX) $(CFLAGS) Util/Transaction.cpp $(inc) $(inc_log) -o $(objdir)Transaction.o $(openmp)
 
-$(objdir)IDTriple.o: Util/IDTriple.cpp Util/IDTriple.h
+$(objdir)IDTriple.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/IDTriple.cpp $(inc_log) -o $(objdir)IDTriple.o $(openmp)
 
-$(objdir)Latch.o: Util/Latch.cpp Util/Latch.h
+$(objdir)Latch.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/Latch.cpp -o $(objdir)Latch.o $(openmp)
 
-$(objdir)IPWhiteList.o:  Util/IPWhiteList.cpp Util/IPWhiteList.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)IPWhiteList.o:  src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) Util/IPWhiteList.cpp $(inc_log) -o $(objdir)IPWhiteList.o $(def64IO) $(openmp)
 
-$(objdir)IPBlackList.o:  Util/IPBlackList.cpp Util/IPBlackList.h $(filter $(FIRST_BUILD),$(objdir)Util.o)
+$(objdir)IPBlackList.o:  src/Util src/Util $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) Util/IPBlackList.cpp $(inc_log) -o $(objdir)IPBlackList.o $(def64IO) $(openmp)
 
-$(objdir)OrderedVector.o: Util/OrderedVector.cpp Util/OrderedVector.h
+$(objdir)OrderedVector.o: src/Util src/Util
 	$(CXX) $(CFLAGS) Util/OrderedVector.cpp -o $(objdir)OrderedVector.o $(openmp)
 
 #objects in util/ end
@@ -586,7 +586,7 @@ $(objdir)OrderedVector.o: Util/OrderedVector.cpp Util/OrderedVector.h
 
 
 #objects in StringIndex/ begin
-$(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h \
+$(objdir)StringIndex.o: src/StringIndex src/StringIndex \
  	$(filter $(FIRST_BUILD),$(objdir)KVstore.o) $(filter $(FIRST_BUILD),$(objdir)Util.o)
 	$(CXX) $(CFLAGS) StringIndex/StringIndex.cpp $(inc) $(inc_log) -o $(objdir)StringIndex.o $(def64IO) $(openmp)
 #objects in StringIndex/ end
@@ -594,19 +594,19 @@ $(objdir)StringIndex.o: StringIndex/StringIndex.cpp StringIndex/StringIndex.h \
 
 #objects in Parser/ begin
 
-$(objdir)SPARQLParser.o: Parser/SPARQL/SPARQLParser.cpp Parser/SPARQL/SPARQLParser.h
+$(objdir)SPARQLParser.o: src/Parser src/Parser
 	$(CXX)  $(CFLAGS) Parser/SPARQL/SPARQLParser.cpp $(inc) -o $(objdir)SPARQLParser.o $(openmp)
 
-$(objdir)SPARQLLexer.o: Parser/SPARQL/SPARQLLexer.cpp Parser/SPARQL/SPARQLLexer.h
+$(objdir)SPARQLLexer.o: src/Parser src/Parser
 	$(CXX)  $(CFLAGS) Parser/SPARQL/SPARQLLexer.cpp $(inc) -o $(objdir)SPARQLLexer.o $(openmp)
 
-$(objdir)TurtleParser.o: Parser/TurtleParser.cpp Parser/TurtleParser.h Parser/Type.h
+$(objdir)TurtleParser.o: src/Parser src/Parser src/Parser
 	$(CXX)  $(CFLAGS) Parser/TurtleParser.cpp $(inc) $(inc_log) -o $(objdir)TurtleParser.o $(openmp)
 
-$(objdir)RDFParser.o: Parser/RDFParser.cpp Parser/RDFParser.h $(filter $(FIRST_BUILD),$(objdir)TurtleParser.o) $(filter $(FIRST_BUILD),$(objdir)Triple.o)
+$(objdir)RDFParser.o: src/Parser src/Parser $(filter $(FIRST_BUILD),$(objdir)TurtleParser.o) $(filter $(FIRST_BUILD),$(objdir)Triple.o)
 	$(CXX)  $(CFLAGS) Parser/RDFParser.cpp $(inc) $(inc_log) -o $(objdir)RDFParser.o $(openmp)
 
-$(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(filter $(FIRST_BUILD),$(objdir)SPARQLParser.o) \
+$(objdir)QueryParser.o: src/Parser src/Parser $(filter $(FIRST_BUILD),$(objdir)SPARQLParser.o) \
  	$(filter $(FIRST_BUILD),$(objdir)SPARQLLexer.o) $(filter $(FIRST_BUILD),$(objdir)QueryTree.o)
 	$(CXX) $(CFLAGS) Parser/QueryParser.cpp $(inc) $(inc_log) -o $(objdir)QueryParser.o $(openmp)
 
@@ -614,25 +614,25 @@ $(objdir)QueryParser.o: Parser/QueryParser.cpp Parser/QueryParser.h $(filter $(F
 
 #objects in Trie/ begin
 
-$(objdir)TrieNode.o: Trie/TrieNode.cpp Trie/TrieNode.h
+$(objdir)TrieNode.o: src/Trie src/Trie
 	$(CXX) $(CFLAGS) Trie/TrieNode.cpp -o $(objdir)TrieNode.o
 
-$(objdir)Trie.o: Trie/Trie.cpp Trie/Trie.h $(filter $(FIRST_BUILD),$(objdir)TrieNode.o) $(filter $(FIRST_BUILD),$(objdir)Triple.o) $(filter $(FIRST_BUILD),$(objdir)RDFParser.o)
+$(objdir)Trie.o: src/Trie src/Trie $(filter $(FIRST_BUILD),$(objdir)TrieNode.o) $(filter $(FIRST_BUILD),$(objdir)Triple.o) $(filter $(FIRST_BUILD),$(objdir)RDFParser.o)
 	$(CXX) $(CFLAGS) Trie/Trie.cpp $(inc) $(inc_log) -o $(objdir)Trie.o
 
 #objects in Server/ begin
 
-$(objdir)Operation.o: Server/Operation.cpp Server/Operation.h
+$(objdir)Operation.o: src/Server src/Server
 	$(CXX) $(CFLAGS) Server/Operation.cpp $(inc) $(inc_log) -o $(objdir)Operation.o $(openmp)
 
-$(objdir)Socket.o: Server/Socket.cpp Server/Socket.h
+$(objdir)Socket.o: src/Server src/Server
 	$(CXX) $(CFLAGS) Server/Socket.cpp $(inc) $(inc_log) -o $(objdir)Socket.o $(openmp)
 
-$(objdir)Server.o: Server/Server.cpp Server/Server.h $(filter $(FIRST_BUILD),$(objdir)Socket.o) \
+$(objdir)Server.o: src/Server src/Server $(filter $(FIRST_BUILD),$(objdir)Socket.o) \
  	$(filter $(FIRST_BUILD),$(objdir)Database.o) $(filter $(FIRST_BUILD),$(objdir)Operation.o)
 	$(CXX) $(CFLAGS) Server/Server.cpp $(inc) $(inc_log) -o $(objdir)Server.o $(openmp)
 
-$(objdir)CompressFileUtil.o: Util/CompressFileUtil.cpp Util/CompressFileUtil.h Util/Util.h
+$(objdir)CompressFileUtil.o: src/Util src/Util src/Util
 	$(CXX) $(CFLAGS)  Util/CompressFileUtil.cpp $(inc) $(inc_log) $(inc_zlib) -o $(objdir)CompressFileUtil.o $(def64IO) $(openmp)
 
 # $(objdir)client_http.o: Server/client_http.hpp
@@ -645,31 +645,31 @@ $(objdir)CompressFileUtil.o: Util/CompressFileUtil.cpp Util/CompressFileUtil.h U
 
 #objects in GRPC/ begin
 
-$(objdir)APIUtil.o: GRPC/APIUtil.cpp GRPC/APIUtil.h Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
+$(objdir)APIUtil.o: src/GRPC src/GRPC src/Database src/Database src/Util $(lib_antlr)
 	$(CXX) $(CFLAGS) GRPC/APIUtil.cpp $(inc) $(inc_log) -o $(objdir)APIUtil.o $(def64IO) $(openmp)
 
-$(objdir)grpc_status_code.o: GRPC/grpc_status_code.cpp GRPC/grpc_status_code.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_status_code.o: src/GRPC src/GRPC $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_status_code.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_status_code.o $(def64IO) $(openmp)
 
-$(objdir)grpc_multipart_parser.o: GRPC/grpc_multipart_parser.cpp GRPC/grpc_multipart_parser.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_multipart_parser.o: src/GRPC src/GRPC $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_multipart_parser.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_multipart_parser.o $(def64IO) $(openmp)
 
-$(objdir)grpc_content.o: GRPC/grpc_content.cpp GRPC/grpc_content.h GRPC/grpc_stringpiece.h $(objdir)grpc_multipart_parser.o $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_content.o: src/GRPC src/GRPC src/GRPC $(objdir)grpc_multipart_parser.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_content.cpp $(inc) $(inc_rpc) -o $(objdir)grpc_content.o $(def64IO) $(openmp)
 
-$(objdir)grpc_message.o: GRPC/grpc_message.cpp GRPC/grpc_message.h GRPC/grpc_noncopyable.h $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_message.o: src/GRPC src/GRPC src/GRPC $(objdir)grpc_content.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_message.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_message.o $(def64IO) $(openmp)
 
-$(objdir)grpc_server_task.o: GRPC/grpc_server_task.cpp GRPC/grpc_server_task.h $(objdir)grpc_message.o GRPC/grpc_noncopyable.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_server_task.o: src/GRPC src/GRPC $(objdir)grpc_message.o src/GRPC $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_server_task.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_server_task.o $(def64IO) $(openmp)
 
-$(objdir)grpc_routetable.o: GRPC/grpc_routetable.cpp GRPC/grpc_routetable.h GRPC/grpc_request_handler.h GRPC/grpc_noncopyable.h GRPC/grpc_stringpiece.h $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_routetable.o: src/GRPC src/GRPC src/GRPC src/GRPC src/GRPC $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_routetable.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_routetable.o $(def64IO) $(openmp)
 
-$(objdir)grpc_router.o: GRPC/grpc_router.cpp GRPC/grpc_router.h $(objdir)grpc_routetable.o GRPC/grpc_noncopyable.h $(objdir)grpc_server_task.o $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_router.o: src/GRPC src/GRPC $(objdir)grpc_routetable.o src/GRPC $(objdir)grpc_server_task.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_router.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_router.o $(def64IO) $(openmp)
 
-$(objdir)grpc_server.o: GRPC/grpc_server.cpp GRPC/grpc_server.h $(objdir)grpc_message.o $(objdir)grpc_router.o $(lib_antlr) $(lib_rpc)
+$(objdir)grpc_server.o: src/GRPC src/GRPC $(objdir)grpc_message.o $(objdir)grpc_router.o $(lib_antlr) $(lib_rpc)
 	$(CXX) $(CFLAGS) GRPC/grpc_server.cpp $(inc) $(inc_rpc) $(inc_log) -o $(objdir)grpc_server.o $(def64IO) $(openmp)
 
 #objects in GRPC/ end
@@ -680,7 +680,7 @@ $(objdir)grpc_server.o: GRPC/grpc_server.cpp GRPC/grpc_server.h $(objdir)grpc_me
 #pre1:export CXX=/usr/local/gcc-5.4.0/bin/gcc
 #pre1:export CXX=/usr/local/gcc-5.4.0/bin/g++
 #pre1:
-#	cd tools; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
+#	cd 3rdparty; tar -xvf log4cplus-1.2.0.tar;cd log4cplus-1.2.0;./configure;make;sudo make install;
 
 pre:
 	rm -rf tools/rapidjson/
@@ -756,13 +756,13 @@ APIexample: $(api_cpp) $(api_socket)
 gtest: $(objdir)gtest.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
 
-$(objdir)gtest.o: scripts/gtest.cpp
+$(objdir)gtest.o: tests
 	$(CXX) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) ${ldl}
 
-$(objdir)gadd.o: Main/gadd.cpp
+$(objdir)gadd.o: src/Main
 	$(CXX) $(CFLAGS) Main/gadd.cpp $(inc) $(inc_log) -o $(objdir)gadd.o $(openmp)
 
 #$(objdir)HttpConnector: $(objdir)HttpConnector.o $(objfile)
@@ -774,7 +774,7 @@ $(objdir)gadd.o: Main/gadd.cpp
 $(exedir)gsub: $(objdir)gsub.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gsub $(objdir)gsub.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) ${ldl}
 
-$(objdir)gsub.o: Main/gsub.cpp
+$(objdir)gsub.o: src/Main
 	$(CXX) $(CFLAGS) Main/gsub.cpp $(inc) $(inc_log) -o $(objdir)gsub.o $(openmp)
 
 sumlines:

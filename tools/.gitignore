@@ -1,7 +1,0 @@
-*
-!.gitignore
-!libantlr3c-3.4.tar.gz
-!rapidjson.tar.gz
-!workflow-0.10.3.tar.gz
-!log4cplus-2.0.8.tar.gz
-!zlib-1.3.tar.gz

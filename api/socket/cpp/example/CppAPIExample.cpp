@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 	std::string username = "root";
 	std::string password = "123456";
 	std::string db_name = "LUBM10";
-	std::string rdf_path = "data/lubm/lubm.nt";
+	std::string rdf_path = "fixtures/lubm/lubm.nt";
 	std::string sparql = "select ?x where \
                          { \
                          ?x    <rdf:type>    <ub:UndergraduateStudent>. \
