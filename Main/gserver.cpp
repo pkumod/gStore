@@ -253,8 +253,8 @@ void checkSwap() {
 	out << port;
 	out.close();
 	chmod(Util::gserver_port_file.c_str(), 0644);
-	string cmd = string("rm ") + Util::gserver_port_swap;
-	system(cmd.c_str());
+	string cmd = Util::gserver_port_swap;
+	Util::remove_path(cmd);
 }
 
 bool startServer(bool _debug) {
