@@ -4360,21 +4360,18 @@ bool Database::backup()
 	string sys_cmd;
 	if (Util::dir_exist(backup_path))
 	{
-		sys_cmd = "rm -rf " + backup_path;
-		system(sys_cmd.c_str());
+		Util::remove_path(backup_path);
 	}
 	sys_cmd = "cp -r " + this->store_path + ' ' + backup_path;
 	system(sys_cmd.c_str());
-	sys_cmd = "rm " + backup_path + '/' + this->update_log;
-	system(sys_cmd.c_str());
+	Util::remove_path(backup_path + '/' + this->update_log);
 
 	// this->vstree->saveTree();
 	this->kvstore->flush();
 
 	this->clear_update_log();
 	string update_log_path = this->store_path + '/' + this->update_log_since_backup;
-	sys_cmd = "rm " + update_log_path;
-	system(sys_cmd.c_str());
+	Util::remove_path(update_log_path);
 	Util::create_file(update_log_path);
 
 	cout << "Backup completed!" << endl;
@@ -4406,12 +4403,10 @@ bool Database::restore()
 		cout << "Failed to restore from original db file, trying to restore from backup file." << endl;
 		cout << "Your old db file will be stored at " << this->store_path << ".bad" << endl;
 
-		sys_cmd = "rm -rf " + this->store_path + ".bad";
-		system(sys_cmd.c_str());
+		Util::remove_path(this->store_path + ".bad");
 		sys_cmd = "cp -r " + this->store_path + ' ' + this->store_path + ".bad";
 		system(sys_cmd.c_str());
-		sys_cmd = "rm -rf " + this->store_path;
-		system(sys_cmd.c_str());
+		Util::remove_path(this->store_path);
 		sys_cmd = "cp -r " + backup_path + ' ' + this->store_path;
 		system(sys_cmd.c_str());
 		Util::create_file(this->store_path + '/' + this->update_log);
@@ -4549,8 +4544,7 @@ bool Database::restore_update(multiset<string> &_i, multiset<string> &_r)
 		return false;
 	}
 
-	string cmd = "rm " + tmp_path;
-	system(cmd.c_str());
+	Util::remove_path(tmp_path);
 	return true;
 }
 
