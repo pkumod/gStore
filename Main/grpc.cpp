@@ -1235,7 +1235,8 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
 			if (!apiUtil->trywrlock_database(db_name))
@@ -1335,7 +1336,8 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+		struct DatabaseInfo *db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
 			error = "the operation can not been excuted due to loss of lock.";
@@ -1344,15 +1346,6 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		else
 		{
-			if (apiUtil->find_txn_managers(db_name) == false)
-			{
-				error = "transaction manager can not find the database";
-
-				apiUtil->unlock_database_map();
-				apiUtil->unlock_databaseinfo(db_info);
-				response->Error(StatusTranscationManageFailed, error);
-				return;
-			}
 			apiUtil->db_checkpoint(db_name);
 			apiUtil->delete_from_databases(db_name);
 			apiUtil->unlock_databaseinfo(db_info);
@@ -1395,15 +1388,9 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		// Database *current_database = apiUtil->get_database(db_name);
-		// if (current_database == NULL)
-		// {
-		// 	error = "Database not load yet.";
-		// 	response->Error(StatusOperationConditionsAreNotSatisfied, error);
-		// 	return;
-		// }
-		DatabaseInfo *database_info = apiUtil->get_databaseinfo(db_name);
-		if (apiUtil->tryrdlock_databaseinfo(database_info) == false)
+		DatabaseInfo *database_info;
+		apiUtil->get_databaseinfo(db_name, database_info);
+		if (apiUtil->rdlock_databaseinfo(database_info) == false)
 		{
 			string error = "Unable to monitor due to loss of lock";
 			response->Error(StatusLossOfLock, error);
@@ -1412,9 +1399,13 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string creator = database_info->getCreator();
 		std::string time = database_info->getTime();
 		apiUtil->unlock_databaseinfo(database_info);
-		Database* current_database = new Database(db_name);
-		current_database->loadDBInfoFile();
-		current_database->loadStatisticsInfoFile();
+		Database* current_database;
+		apiUtil->get_database(db_name, current_database);
+		if (current_database == NULL) {
+			current_database = new Database(db_name);
+			current_database->loadDBInfoFile();
+			current_database->loadStatisticsInfoFile();
+		}
 		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
 		Json resp_data;
 		resp_data.SetObject();
@@ -1476,48 +1467,48 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_path = jsonParam(json_data, "db_path");
-		std::string error = "";
-		// error = apiUtil->check_param_value("db_path", db_path);
-		// if (error.empty() == false)
+		std::string result = "";
+		// result = apiUtil->check_param_value("db_path", db_path);
+		// if (result.empty() == false)
 		// {
-		// 	response->Error(StatusParamIsIllegal, error);
+		// 	response->Error(StatusParamIsIllegal, result);
 		// 	return;
 		// }
 		if (!db_path.empty()) 
 		{
 			if (db_path == apiUtil->get_system_path())
 			{
-				error = "You have no rights to access system files.";
-				response->Error(StatusCheckPrivilegeFailed, error);
+				result = "You have no rights to access system files.";
+				response->Error(StatusCheckPrivilegeFailed, result);
 				return;
 			}
 			if (Util::file_exist(db_path) == false)
 			{
-				error = "RDF file not exist.";
-				response->Error(StatusParamIsIllegal, error);
+				result = "RDF file not exist.";
+				response->Error(StatusParamIsIllegal, result);
 				return;
 			}
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		result = apiUtil->check_param_value("db_name", db_name);
+		if (result.empty() == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, result);
 			return;
 		}
 
 		// check if database named [db_name] is already built
 		if (apiUtil->check_db_exist(db_name))
 		{
-			error = "database already built.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			result = "database already built.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, result);
 			return;
 		}
 		// check databse number
 		if (apiUtil->check_db_count() == false)
 		{
-			string error = "The total number of databases more than max_databse_num.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			result = "The total number of databases more than max_databse_num.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, result);
 			return;
 		}
 		std::vector<std::string> zip_files;
@@ -1548,8 +1539,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			{
 				std::string cmd = "rm -r " + unz_dir_path;
 				system(cmd.c_str());
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+				result = "uncompress is failed error.";
+				response->Error(code, result);
 				return;
 			}
 			db_path = upfile.getMaxFilePath();
@@ -1565,142 +1556,91 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		bool flag = true;
 		if (!dataset.empty())
 			flag = current_database->build(dataset);
-		else 
+		else
 			flag = current_database->BuildEmptyDB();
 		delete current_database;
 		current_database = NULL;
-		if (!flag)
+		if (flag)
 		{
-			error = "Import RDF file to database failed.";
-			std::string cmd = "rm -r " + _db_path;
-			system(cmd.c_str());
-			response->Error(StatusOperationFailed, error);
-			if (!unz_dir_path.empty())
+			// if zip file then excuse batchInsert
+			if (is_zip && zip_files.size() > 0)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				current_database = new Database(db_name);
+				bool rt  = current_database->load(false);
+				if (!rt)
+				{
+					result = "Import RDF file to database failed: load error.";
+					string cmd = "rm -r " + _db_path;
+					system(cmd.c_str());
+					if (!unz_dir_path.empty())
+					{
+						cmd = "rm -r " + unz_dir_path;
+						system(cmd.c_str());
+					}
+					response->Error(StatusOperationFailed, result);
+					return;
+				}
+				for (std::string rdf_zip : zip_files)
+				{
+					current_database->batch_insert(rdf_zip, false, nullptr);
+				}
+				current_database->save();
+				current_database->unload();
+				delete current_database;
+				current_database = NULL;
 			}
-			return;
 		}
-
-		ofstream f;
-		f.open(_db_path + "/success.txt");
-		f.close();
-
-		// by default, one can query or load or unload the database that is built by itself, so add the database name to the privilege set of the user
+		// init database info and privilege
 		std::string username = jsonParam(json_data, "username");
-		if (apiUtil->init_privilege(username, db_name) == 0)
+		if (apiUtil->build_db_user_privilege(db_name, username) 
+			&& apiUtil->init_privilege(username, db_name))
 		{
-			error = "init privilege failed.";
-			response->Error(StatusAddPrivilegeFaied, error);
-			if (!unz_dir_path.empty())
-			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
-			}
-			return;
-		}
-		SLOG_DEBUG("init privilege succeed after build.");
-
-		// add database information to system.db
-		if (apiUtil->build_db_user_privilege(db_name, username))
-		{
-			string success = "Import RDF file to database done.";
+			ofstream f;
+			f.open(_db_path + "/success.txt");
+			f.close();
+			// add backup.log
+			Util::add_backuplog(db_name);
+			// build response result
+			result = "Import RDF file to database done.";
 			string error_log = _db_path + "/parse_error.log";
 			size_t parse_error_num = Util::count_lines(error_log);
+			// exclude Info line
 			if (parse_error_num > 0)
 				parse_error_num = parse_error_num - 1;
+			if (zip_files.size() > 0)
+				parse_error_num = parse_error_num - zip_files.size();
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+			resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
 			resp_data.AddMember("failed_num", parse_error_num, allocator);
 			if (parse_error_num > 0)
 			{
 				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
 				SLOG_ERROR("See log file for details " + error_log);
 			}
-			if (is_zip)
+			// remove unzip dir
+			if (!unz_dir_path.empty())
 			{
-				auto error_responce = [response,db_name,parse_error_num](const std::string& error)
-				{
-					rapidjson::Document resp_data;
-					resp_data.SetObject();
-					rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
-					resp_data.AddMember("failed_num", parse_error_num, allocator);
-					response->Json(resp_data);
-					Util::add_backuplog(db_name);
-				};
-				if (!apiUtil->trywrlock_database(db_name))
-				{
-					std::string error = "The operation can not been excuted due to loss of lock.";
-					error_responce(error);
-				}
-				else
-				{
-					Database *cur_database = new Database(db_name);
-					bool rt  = cur_database->load(true);
-					if (!rt)
-					{
-						std::string error = "The database load faild.";
-						error_responce(error);
-						apiUtil->unlock_database(db_name);
-					}
-					else
-					{
-						apiUtil->add_database(db_name, cur_database);
-						if (apiUtil->insert_txn_managers(cur_database, db_name) == false)
-						{
-							SLOG_WARN("when load insert_txn_managers fail.");
-						}
-						unsigned success_num = 0;
-						unsigned parse_insert_error_num = 0;
-						unsigned total_num = Util::count_lines(error_log);
-						for (std::string rdf_zip : zip_files)
-						{
-							SLOG_DEBUG("begin insert data from " + rdf_zip);
-							success_num += cur_database->batch_insert(rdf_zip, false, nullptr);
-						}
-						parse_insert_error_num = Util::count_lines(error_log)-total_num-zip_files.size();
-						cur_database->save();
-						apiUtil->db_checkpoint(db_name);
-						apiUtil->delete_from_databases(db_name);
-						apiUtil->unlock_database(db_name);
-
-						rapidjson::Document resp_data;
-						resp_data.SetObject();
-						rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("failed_num", parse_error_num, allocator);
-						resp_data.AddMember("success_num", success_num, allocator);
-						resp_data.AddMember("failed_insert_num", parse_insert_error_num, allocator);
-						response->Json(resp_data);
-						Util::add_backuplog(db_name);
-					}
-				}
-				std::string cmd = "rm -r " + unz_dir_path;
+				string cmd = "rm -r " + unz_dir_path;
 				system(cmd.c_str());
 			}
-			else
-			{
-				rapidjson::Document resp_data;
-				resp_data.SetObject();
-				rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-				resp_data.AddMember("failed_num", parse_error_num, allocator);
-				response->Json(resp_data);
-				Util::add_backuplog(db_name);
-			}
+			Util::add_backuplog(db_name);
+			response->Json(resp_data);
 		}
 		else
 		{
-			error = "add database information to system failed.";
-			response->Error(StatusOperationFailed, error);
+			result = "Import RDF file to database failed.";
+			rmdir(_db_path.c_str());
+			string cmd = "rm -r " + _db_path;
+			system(cmd.c_str());
+			if (!unz_dir_path.empty())
+			{
+				cmd = "rm -r " + unz_dir_path;
+				system(cmd.c_str());
+			}
+			response->Json(result);
 		}
 	}
 	catch (const std::exception &e)
@@ -1737,7 +1677,8 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+		struct DatabaseInfo *db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
 			error = "the operation can not been excuted due to loss of lock.";
@@ -1820,14 +1761,16 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database* current_db = apiUtil->get_database(db_name);
+		Database* current_db;
+		apiUtil->get_database(db_name, current_db);
 		if (current_db == NULL)
 		{
 			error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
+		struct DatabaseInfo *db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
 			error = "the operation can not been excuted due to loss of lock.";
@@ -2001,8 +1944,8 @@ try
 				return;
 			}
 		}
-		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
-
+		struct DatabaseInfo *db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
 			error = "Unable to restore due to loss of lock";
@@ -2091,7 +2034,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				return;
 			}
 			// check database load status
-			current_database = apiUtil->get_database(db_name);
+			apiUtil->get_database(db_name, current_database);
 			if (current_database == NULL)
 			{
 				error = "Database not load yet.";
@@ -2371,7 +2314,8 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		// check if database named [db_name] is already load
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
 			string error = "Database not load yet.";
@@ -2667,7 +2611,8 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
 			error = "Database not load yet.";
@@ -2764,7 +2709,8 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
 			error = "Database not load yet.";
@@ -2827,7 +2773,8 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
 			error = "Database not load yet.";
@@ -2959,7 +2906,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			upfile.getFileList(zip_files, "");
 		}
 
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
 			error = "The operation can not been excuted due to loss of lock.";
@@ -3076,7 +3024,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database = apiUtil->get_database(db_name);
+		Database *current_database;
+		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
 			error = "The operation can not been excuted due to loss of lock.";
@@ -3143,8 +3092,8 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 
-		struct DatabaseInfo *db_info = apiUtil->get_databaseinfo(db_name);
-
+		struct DatabaseInfo *db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
 			error = "Unable to rename due to loss of lock";
