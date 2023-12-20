@@ -950,17 +950,12 @@ public:
     APIUtil();
     ~APIUtil();
     int initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr);
-    bool trywrlock_database_map();
-    bool unlock_database_map();
-    bool trywrlock_already_build_map();
     bool unlock_already_build_map();
-    bool rw_wrlock_build_map();
-    bool rw_wrlock_database_map();
     bool add_database(const std::string& db_name, Database *& db);
-    Database* get_database(const std::string& db_name);
-    DatabaseInfo* get_databaseinfo(const std::string& db_name);
+    bool get_database(const std::string& db_name, Database *& db);
+    bool get_databaseinfo(const std::string& db_name, DatabaseInfo *& dbInfo);
     bool trywrlock_databaseinfo(DatabaseInfo* dbinfo);
-    bool tryrdlock_databaseinfo(DatabaseInfo* dbinfo);
+    bool rdlock_databaseinfo(DatabaseInfo* dbinfo);
     bool unlock_databaseinfo(DatabaseInfo* dbinfo);
     bool check_already_load(const std::string& db_name);
     shared_ptr<Txn_manager> get_Txn_ptr(string db_name);
@@ -989,7 +984,6 @@ public:
     bool build_db_user_privilege(std::string db_name, std::string username);
     bool insert_txn_managers(Database* current_database, std::string database);
     bool remove_txn_managers(std::string db_name);
-    bool find_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
     // bool db_checkpoint_all();
     bool delete_from_databases(string db_name);

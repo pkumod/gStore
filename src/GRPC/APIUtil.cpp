@@ -57,7 +57,7 @@ APIUtil::~APIUtil()
     }
     if (databases.find(SYSTEM_DB_NAME) != databases.end())
     {
-        pthread_rwlock_trywrlock(&system_db_lock);
+        pthread_rwlock_wrlock(&system_db_lock);
         system_database->save();
         delete system_database;
         system_database = NULL;
@@ -384,115 +384,19 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
     }
 }
 
-bool APIUtil::trywrlock_database_map()
-{
-    if (pthread_rwlock_trywrlock(&databases_map_lock) == 0)
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("trywrlock_database_map success");
-        #endif
-        return true;
-    }
-    else 
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("trywrlock_database_map unsuccess");
-        #endif
-        return false;
-    }
-}
-
-bool APIUtil::unlock_database_map()
-{
-    if (pthread_rwlock_unlock(&databases_map_lock) == 0)
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("unlock database_map success");
-        #endif
-        return true;
-    }
-    else
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("unlock database_map unsuccess");
-        #endif
-        return false;
-    }
-        
-}
-
-bool APIUtil::trywrlock_already_build_map()
-{
-    if (pthread_rwlock_trywrlock(&already_build_map_lock) == 0)
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("trywrlock_already_build_map success");
-        #endif
-        return true;
-    }
-        
-    else
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("trywrlock_already_build_map unsuccess");
-        #endif
-        return false;
-    }
-        
-}
-
 bool APIUtil::unlock_already_build_map()
 {
-    if (pthread_rwlock_unlock(&already_build_map_lock) == 0)
+    int rwlock_code = pthread_rwlock_unlock(&already_build_map_lock);
+    if ( rwlock_code == 0)
     {
         #if defined(DEBUG)
-        SLOG_DEBUG("unlock_already_build_map success");
-        #endif
-        return true;
-    }
-        
-    else
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("unlock_already_build_map unsuccess");
-        #endif
-        return false;
-    }
-        
-}
-
-bool APIUtil::rw_wrlock_build_map()
-{
-    if(pthread_rwlock_wrlock(&already_build_map_lock) == 0)
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("lock already_build_map success");
+        SLOG_DEBUG("already_build_map unlock ok");
         #endif
         return true;
     }
     else
     {
-        #if defined(DEBUG)
-        SLOG_ERROR("lock already_build_map fail");
-        #endif
-        return false;
-    }
-}
-
-bool APIUtil::rw_wrlock_database_map()
-{
-    if(pthread_rwlock_wrlock(&databases_map_lock) == 0)
-    {
-        #if defined(DEBUG)
-        SLOG_DEBUG("lock database_map success");
-        #endif
-        return true;
-    }
-    else
-    {
-        #if defined(DEBUG)
-        SLOG_ERROR("lock database_map fail");
-        #endif
+        SLOG_ERROR("already_build_map unlock error: " + to_string(rwlock_code));
         return false;
     }
 }
@@ -679,71 +583,87 @@ int APIUtil::db_copy(string src_path, string dest_path)
 
 bool APIUtil::add_database(const std::string &db_name, Database *&db)
 {
-    #if defined(DEBUG)
-    SLOG_DEBUG("try lock database_map");
-    #endif
-    if (!APIUtil::rw_wrlock_database_map())
+    int rwlock_code = pthread_rwlock_wrlock(&databases_map_lock);
+    if (rwlock_code != 0) 
     {
-        SLOG_ERROR("database_map lock false");
+        SLOG_ERROR("database_map write lock error: " + to_string(rwlock_code));
         return false;
     }
     #if defined(DEBUG)
-    SLOG_DEBUG("database_map lock true");
+    SLOG_DEBUG("database_map write lock ok");
     #endif
     databases.insert(pair<std::string, Database *>(db_name, db));
-    if (APIUtil::unlock_database_map())
+    rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
+    if (rwlock_code == 0)
     {
         #if defined(DEBUG)
-        SLOG_DEBUG("database_map unlock true");
+        SLOG_DEBUG("database_map unlock ok");
         #endif
+        return true;
     } 
     else
     {
-        #if defined(DEBUG)
-        SLOG_DEBUG("database_map unlock false");
-        #endif
+        SLOG_ERROR("database_map unlock error:" + to_string(rwlock_code));
+        return false;
     }
-    return true;
 }
 
-DatabaseInfo* APIUtil::get_databaseinfo(const std::string& db_name)
+bool APIUtil::get_databaseinfo(const std::string& db_name, DatabaseInfo*& dbInfo)
 {
-    pthread_rwlock_rdlock(&already_build_map_lock);
-
-    DatabaseInfo* dbinfo = NULL;
+    int rwlock_code = pthread_rwlock_rdlock(&already_build_map_lock);
+    if (rwlock_code != 0) 
+    {
+        SLOG_ERROR("already_build_map read lock error: " + to_string(rwlock_code));
+        dbInfo = NULL;
+        return false;
+    }
     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
     if (iter!=already_build.end())
     {
-        dbinfo = iter->second;
+        dbInfo = iter->second;
     }
-
-    pthread_rwlock_unlock(&already_build_map_lock);
- 
-    return dbinfo;
+    else
+    {
+        #if defined(DEBUG)
+        SLOG_WARN("can't find [" + db_name + "] database info from already_build_map");
+        #endif
+        dbInfo = NULL;
+    }
+    return unlock_already_build_map();
 }
 
 bool APIUtil::trywrlock_databaseinfo(DatabaseInfo *dbinfo)
 {
-    if (pthread_rwlock_trywrlock(&(dbinfo->db_lock)) == 0)
-        return true;
-    else
+    if (dbinfo == NULL || dbinfo == nullptr)
         return false;
-}
-
-bool APIUtil::tryrdlock_databaseinfo(DatabaseInfo* dbinfo)
-{
-    if (pthread_rwlock_tryrdlock(&(dbinfo->db_lock)) == 0)
+    int rwlock_code = pthread_rwlock_trywrlock(&(dbinfo->db_lock));
+    if (rwlock_code != 0)
+    {
+        SLOG_ERROR("try write lock database[" + dbinfo->getName() + "] error: " + to_string(rwlock_code));
+        return false;
+    }
+    else
     {
         #if defined(DEBUG)
-        SLOG_DEBUG("tryrdlock_databaseinfo success");
+        SLOG_DEBUG("try write lock database[" + dbinfo->getName() + "] ok");
+        #endif
+        return true;
+    }
+}
+
+bool APIUtil::rdlock_databaseinfo(DatabaseInfo* dbinfo)
+{
+    int rwlock_code = pthread_rwlock_rdlock(&(dbinfo->db_lock));
+    if (rwlock_code == 0)
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("read lock database[" + dbinfo->getName() + "] ok");
         #endif
         return true;
     }
     else
     {
-        #if defined(DEBUG)
-        SLOG_ERROR("tryrdlock_databaseinfo fail.");
-        #endif
+        SLOG_ERROR("read lock database[" + dbinfo->getName() + "] error: " + to_string(rwlock_code));
         return false;
     }
 }
@@ -754,22 +674,21 @@ bool APIUtil::unlock_databaseinfo(DatabaseInfo* dbinfo)
     if (dbinfo == NULL)
     {
         #if defined(DEBUG)
-        SLOG_ERROR("db_info is null");
+        SLOG_WARN("db_info is null");
         #endif
         return false;
-    } 
-    if (pthread_rwlock_unlock(&(dbinfo->db_lock)) == 0)
+    }
+    int rwlock_code = pthread_rwlock_unlock(&(dbinfo->db_lock));
+    if (rwlock_code == 0)
     {
         #if defined(DEBUG)
-        SLOG_DEBUG("unlock_databaseinfo success");
+        SLOG_DEBUG("database [" + dbinfo->getName() + "] unlock ok");
         #endif
         return true;
     }
     else
     {
-        #if defined(DEBUG)
-        SLOG_ERROR("unlock_databaseinfo fail.");
-        #endif
+        SLOG_ERROR("database [" + dbinfo->getName() + "] unlock error: " + to_string(rwlock_code));
         return false;
     }
 }
@@ -807,42 +726,41 @@ bool APIUtil::remove_txn_managers(std::string db_name)
     return true;
 }
 
-bool APIUtil::find_txn_managers(std::string db_name)
-{
-    #if defined(DEBUG)
-    SLOG_DEBUG("unload txn_manager:" + to_string(txn_managers.size()));
-    #endif
-    pthread_rwlock_rdlock(&txn_m_lock);
-    if (txn_managers.find(db_name) == txn_managers.end())
-    {
-        string error = db_name + " transaction manager not exist!";
-        SLOG_ERROR(error);
-        pthread_rwlock_unlock(&txn_m_lock);
-        return false;
-    }
-    pthread_rwlock_unlock(&txn_m_lock);
-    return true;
-}
-
 bool APIUtil::db_checkpoint(string db_name)
 {
-    pthread_rwlock_wrlock(&txn_m_lock);
+    int rwlock_code = pthread_rwlock_wrlock(&txn_m_lock);
+    if (rwlock_code != 0) 
+    {
+        SLOG_ERROR("txn_m write lock error: " + to_string(rwlock_code));
+        return false;
+    }
+    #if defined(DEBUG)
+    SLOG_DEBUG("txn_m write lock ok");
+    #endif
 	if (txn_managers.find(db_name) == txn_managers.end())
 	{
-		string error = db_name + " txn checkpoint error!";
-        SLOG_ERROR(error);
+        SLOG_WARN(db_name + " checkpoint error: can't find txn manager!");
 		pthread_rwlock_unlock(&txn_m_lock);
 		return false;
 	}
 	shared_ptr<Txn_manager> txn_m = txn_managers[db_name];
-	// txn_m->abort_all_running();
-	// txn_m->Checkpoint();
+	txn_m->abort_all_running();
+	txn_m->Checkpoint();
 	txn_managers.erase(db_name);
-	pthread_rwlock_unlock(&txn_m_lock);
-    #if defined(DEBUG)
-    SLOG_DEBUG(db_name + " txn checkpoint success!");
-    #endif
-	return true;
+	rwlock_code = pthread_rwlock_unlock(&txn_m_lock);
+    if (rwlock_code == 0)
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("txn_m unlock ok");
+        SLOG_DEBUG(db_name + " checkpoint success!");
+        #endif
+        return true;
+    }
+    else
+    {
+        SLOG_ERROR("txn_m unlock error:" + to_string(rwlock_code));
+        return false;
+    }
 }
 
 // bool APIUtil::db_checkpoint_all()
@@ -884,7 +802,15 @@ bool APIUtil::db_checkpoint(string db_name)
 
 bool APIUtil::delete_from_databases(string db_name)
 {
-    pthread_rwlock_wrlock(&databases_map_lock);
+    int rwlock_code = pthread_rwlock_wrlock(&databases_map_lock);
+    if (rwlock_code != 0) 
+    {
+        SLOG_ERROR("database_map write lock error: " + to_string(rwlock_code));
+        return false;
+    }
+    #if defined(DEBUG)
+    SLOG_DEBUG("database_map write lock ok");
+    #endif
     Database *db = NULL;
     std::map<std::string, Database *>::iterator iter = databases.find(db_name);
     if (iter != databases.end())
@@ -894,13 +820,25 @@ bool APIUtil::delete_from_databases(string db_name)
         db = NULL;
     }
     databases.erase(db_name);
-    pthread_rwlock_unlock(&databases_map_lock);
-    return true;
+    rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
+    if (rwlock_code == 0)
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("database_map unlock ok");
+        #endif
+        return true;
+    } 
+    else
+    {
+        SLOG_ERROR("database_map unlock error:" + to_string(rwlock_code));
+        return false;
+    }
 }
 
 bool APIUtil::delete_from_already_build(string db_name)
 {
-    if(APIUtil::trywrlock_already_build_map())
+    int rwlock_code = pthread_rwlock_wrlock(&already_build_map_lock);
+    if(rwlock_code == 0)
     {
         // remove databse info from system.db
         string update = "DELETE WHERE {<" 
@@ -963,11 +901,11 @@ bool APIUtil::delete_from_already_build(string db_name)
                 pthread_rwlock_unlock(&(iter->second->export_priv_set_lock));
             }
         }
-        APIUtil::unlock_already_build_map();
-        return true;
+        return unlock_already_build_map();
     }
     else
     {
+        SLOG_ERROR("already_build_map write lock error:" + to_string(rwlock_code));
         return false;
     }
 }
@@ -1054,41 +992,73 @@ txn_id_t APIUtil::check_txn_id(string TID_s)
     return TID;
 }
 
-Database *APIUtil::get_database(const std::string &db_name)
+bool APIUtil::get_database(const std::string &db_name, Database *& db)
 {
-    pthread_rwlock_rdlock(&databases_map_lock);
-    Database *db = NULL;
+    bool rwlock_code = pthread_rwlock_rdlock(&databases_map_lock);
+    if (rwlock_code != 0) 
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("database_map read lock error: " + to_string(rwlock_code));
+        #endif
+        return false;
+    }
+    #if defined(DEBUG)
+    SLOG_DEBUG("database_map read lock ok");
+    #endif
     std::map<std::string, Database *>::iterator iter = databases.find(db_name);
     if (iter != databases.end())
     {
         db = iter->second;
     }
-    pthread_rwlock_unlock(&databases_map_lock);
-    return db;
+    else
+    {
+        db = NULL;
+    }
+    rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
+    if (rwlock_code == 0)
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("database_map unlock ok");
+        #endif
+        return true;
+    } 
+    else
+    {
+        #if defined(DEBUG)
+        SLOG_DEBUG("database_map unlock error:" + to_string(rwlock_code));
+        #endif
+        return false;
+    }
 }
 
 bool APIUtil::check_already_load(const std::string &db_name)
 {
-    Database *rt = APIUtil::get_database(db_name);
-    if (rt == NULL)
+    Database *db;
+    bool rt = APIUtil::get_database(db_name, db);
+    if (rt && db != NULL)
     {
-        return false;
+        return true;
     }
     else
     {
-        return true;
+        return false;
     }
 }
 
 bool APIUtil::add_already_build(const std::string &db_name, const std::string &creator, const std::string &build_time)
 {
-    pthread_rwlock_wrlock(&already_build_map_lock);
+    int rwlock_code = pthread_rwlock_wrlock(&already_build_map_lock);
+    if (rwlock_code != 0)
+    {
+        SLOG_ERROR("already_build_map write lock error: " + to_string(rwlock_code));
+        return false;
+    }
     #if defined(DEBUG)
-	SLOG_DEBUG("already_build_map_lock acquired.");
+	SLOG_DEBUG("already_build_map write lock ok.");
     #endif
     struct DatabaseInfo* temp_db = new DatabaseInfo(db_name, creator, build_time);
     already_build.insert(pair<std::string, struct DatabaseInfo*>(db_name, temp_db));
-    pthread_rwlock_unlock(&already_build_map_lock);
+    unlock_already_build_map();
     string update = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." +
 		"<" + db_name + "> <built_by> <" + creator + "> ." + "<" + db_name + "> <built_time> \"" + build_time + "\".}";
     bool update_result = update_sys_db(update);
@@ -1100,27 +1070,9 @@ bool APIUtil::add_already_build(const std::string &db_name, const std::string &c
     return update_result;
 }
 
-// std::string APIUtil::get_already_build(const std::string &db_name)
-// {
-//     pthread_rwlock_rdlock(&already_build_map_lock);
-//     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
-//     pthread_rwlock_unlock(&already_build_map_lock);
-//     if (iter == already_build.end())
-//     {
-//         return "";
-//     }
-//     else
-//     {
-//         return iter->second->toJSON();
-//     }
-// }
-
 void APIUtil::get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array)
 {
     pthread_rwlock_rdlock(&already_build_map_lock);
-    // rapidjson::StringBuffer strBuf;
-    // rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-    // writer.StartArray();
     std::map<std::string, struct DatabaseInfo *>::iterator iter;
     for (iter = already_build.begin(); iter != already_build.end(); iter++)
     {
@@ -1143,11 +1095,8 @@ void APIUtil::get_already_builds(const std::string& username, vector<struct Data
             db_info->setStatus("unloaded");
         }
         array.push_back(db_info);
-        // writer.String(db_info->toJSON().c_str());
     }
-    // writer.EndArray();
     pthread_rwlock_unlock(&already_build_map_lock);
-    // return strBuf.GetString();
 }
 
 bool APIUtil::check_already_build(const std::string &db_name)
@@ -1171,11 +1120,7 @@ bool APIUtil::trywrlock_database(const std::string &db_name)
     pthread_rwlock_rdlock(&already_build_map_lock);
     std::map<std::string, struct DatabaseInfo *>::iterator iter = already_build.find(db_name);
     pthread_rwlock_unlock(&already_build_map_lock);
-    if (pthread_rwlock_trywrlock(&(iter->second->db_lock)) != 0)
-    {
-        result = false;
-    } 
-    else
+    if (pthread_rwlock_trywrlock(&(iter->second->db_lock)) == 0)
     {
         result = true;
     }
@@ -1537,7 +1482,7 @@ bool APIUtil::user_add(const string& username, const string& password)
     {
         #if defined(DEBUG)
         SLOG_DEBUG("user ready to add.");
-        #endif				
+        #endif
         struct DBUserInfo *temp_user = new DBUserInfo(username, password);
         users.insert(pair<std::string, struct DBUserInfo *>(username, temp_user));
         string update = "INSERT DATA {<" + username + "> <has_password> \"" + password + "\".}";
