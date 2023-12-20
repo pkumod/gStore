@@ -606,8 +606,7 @@ int main(int argc, char *argv[])
 				string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
 				if (Util::file_exist(system_port_path))
 				{
-					string cmd = "rm -f " + system_port_path;
-					system(cmd.c_str());
+					Util::remove_path(system_port_path);
 				}
 				SLOG_WARN("Stopped abnormally, restarting server...");
 				latch.lockExclusive();
@@ -876,8 +875,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			code = upfile.unCompress();
 			if (code != CompressUtil::UnZipOK)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				string error = "uncompress is failed error.";
 				sendResponseMsg(code, error, operation, request, response);
 				return;
@@ -908,12 +906,10 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				if (!rt)
 				{
 					result = "Import RDF file to database failed: load error.";
-					string cmd = "rm -r " + _db_path;
-					system(cmd.c_str());
+					Util::remove_path(_db_path);
 					if (!unz_dir_path.empty())
 					{
-						cmd = "rm -r " + unz_dir_path;
-						system(cmd.c_str());
+						Util::remove_path(unz_dir_path);
 					}
 					sendResponseMsg(1005, result, operation, request, response);
 					return;
@@ -960,8 +956,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				// remove unzip dir
 				if (!unz_dir_path.empty())
 				{
-					string cmd = "rm -r " + unz_dir_path;
-					system(cmd.c_str());
+					Util::remove_path(unz_dir_path);
 				}
 				Util::add_backuplog(db_name);
 				sendResponseMsg(resp_data, operation, request, response);
@@ -972,12 +967,10 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		{
 			result = "Import RDF file to database failed.";
 			rmdir(_db_path.c_str());
-			string cmd = "rm -r " + _db_path;
-			system(cmd.c_str());
+			Util::remove_path(_db_path);
 			if (!unz_dir_path.empty())
 			{
-				cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 			}
 			sendResponseMsg(1005, result, operation, request, response);
 		}
@@ -1375,14 +1368,18 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 				return;
 			}
 			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-			string cmd;
 			string db_path = _db_home + "/" + db_name + _db_suffix;
 			if (is_backup == "false")
-				cmd = "rm -r " + db_path;	
+			{
+				Util::remove_path(db_path);	
+				SLOG_DEBUG("delete the file: " + db_path);
+			}
 			else
-				cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
-			SLOG_DEBUG("delete the file: " + cmd);
-			system(cmd.c_str());
+			{
+				string cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
+				SLOG_DEBUG("delete the file: " + cmd);
+				system(cmd.c_str());
+			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
 			sendResponseMsg(0, success, operation, request, response);
@@ -2030,11 +2027,10 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		{
 			// remove old folder
 			string db_path = _db_home + "/" + db_name + _db_suffix;
-			string sys_cmd = "rm -rf " + db_path;
-			std::system(sys_cmd.c_str());
+			Util::remove_path(db_path);
 			// mv backup folder to database folder
 			string folder_name = Util::get_folder_name(path, db_name);
-			sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
+			string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
 			std::system(sys_cmd.c_str());
 			apiUtil->unlock_databaseinfo(db_info);
 			
@@ -2492,14 +2488,12 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			{
 				error = "export compress fail.";
 				sendResponseMsg(1005, error, operation, request, response);
-				std::string cmd = "rm -f " + db_path + " " + zip_path;
-				system(cmd.c_str());
+				Util::remove_path(db_path + " " + zip_path);
 				return;
 			}
 			resDoc.AddMember("filepath", StringRef(zip_path.c_str()), allocator);
 			sendResponseMsg(resDoc, operation, request, response);
-			std::string cmd = "rm -f " + db_path;
-			system(cmd.c_str());
+			Util::remove_path(db_path);
 		}
 	}
 	catch (const std::exception &e)
@@ -3179,8 +3173,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			code = upfile.unCompress();
 			if (code != CompressUtil::UnZipOK)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				string error = "uncompress is failed error.";
 				sendResponseMsg(code, error, operation, request, response);
 				return;
@@ -3249,8 +3242,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		if (!unz_dir_path.empty())
 		{
-			std::string cmd = "rm -r " + unz_dir_path;
-			system(cmd.c_str());
+			Util::remove_path(unz_dir_path);
 		}
 	}
 	catch (const std::exception &e)
