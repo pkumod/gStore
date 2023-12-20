@@ -272,8 +272,7 @@ int main(int argc, char *argv[])
 				string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
 				if (Util::file_exist(system_port_path))
 				{
-					string cmd = "rm -f " + system_port_path;
-					system(cmd.c_str());
+					Util::remove_path(system_port_path);
 				}
 				SLOG_WARN("Stopped abnormally, restarting server...");
 				latch.lockExclusive();
@@ -1537,8 +1536,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			code = upfile.unCompress();
 			if (code != CompressUtil::UnZipOK)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				result = "uncompress is failed error.";
 				response->Error(code, result);
 				return;
@@ -1570,12 +1568,10 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				if (!rt)
 				{
 					result = "Import RDF file to database failed: load error.";
-					string cmd = "rm -r " + _db_path;
-					system(cmd.c_str());
+					Util::remove_path(_db_path);
 					if (!unz_dir_path.empty())
 					{
-						cmd = "rm -r " + unz_dir_path;
-						system(cmd.c_str());
+						Util::remove_path(unz_dir_path);
 					}
 					response->Error(StatusOperationFailed, result);
 					return;
@@ -1623,8 +1619,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			// remove unzip dir
 			if (!unz_dir_path.empty())
 			{
-				string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 			}
 			Util::add_backuplog(db_name);
 			response->Json(resp_data);
@@ -1633,12 +1628,10 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			result = "Import RDF file to database failed.";
 			rmdir(_db_path.c_str());
-			string cmd = "rm -r " + _db_path;
-			system(cmd.c_str());
+			Util::remove_path(_db_path);
 			if (!unz_dir_path.empty())
 			{
-				cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 			}
 			response->Json(result);
 		}
@@ -1713,15 +1706,18 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				return;
 			}
 			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-
-			std::string cmd;
 			string db_path = _db_home + "/" + db_name + _db_suffix;
 			if (is_backup == "false")
-				cmd = "rm -r " + db_path;
+			{
+				Util::remove_path(db_path);
+				SLOG_DEBUG("remove_path"+db_path);
+			}
 			else
-				cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
-			SLOG_DEBUG(cmd);
-			system(cmd.c_str());
+			{
+				std::string cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
+				SLOG_DEBUG(cmd);
+				system(cmd.c_str());
+			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
 			response->Success(success);
@@ -1968,11 +1964,10 @@ try
 		{
 			// remove old folder
 			string db_path = _db_home + "/" + db_name + _db_suffix;
-			string sys_cmd = "rm -rf " + db_path;
-			std::system(sys_cmd.c_str());
+			Util::remove_path(db_path);
 			// mv backup folder to database folder
 			string folder_name = Util::get_folder_name(path, db_name);
-			sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
+			string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
 			std::system(sys_cmd.c_str());
 			apiUtil->unlock_databaseinfo(db_info);
 
@@ -2360,14 +2355,12 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			{
 				error = "export compress fail.";
 				response->Error(StatusCompressError, error);
-				std::string cmd = "rm -f " + db_path + " " + zip_path;
-				system(cmd.c_str());
+				Util::remove_path(db_path + " " + zip_path);
 				return;
 			}
 			resp_data.AddMember("filepath", StringRef(zip_path.c_str()), allocator);
 			response->Json(resp_data);
-			std::string cmd = "rm -f " + db_path;
-			system(cmd.c_str());
+			Util::remove_path(db_path);
 		}
 	}
 	catch (const std::exception &e)
@@ -2897,8 +2890,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			code = upfile.unCompress();
 			if (code != CompressUtil::UnZipOK)
 			{
-				std::string cmd = "rm -r " + unz_dir_path;
-				system(cmd.c_str());
+				Util::remove_path(unz_dir_path);
 				string error = "uncompress is failed error.";
 				response->Error(code, error);
 				return;
@@ -2969,8 +2961,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		if (!unz_dir_path.empty())
 		{
-			std::string cmd = "rm -r " + unz_dir_path;
-			system(cmd.c_str());
+			Util::remove_path(unz_dir_path);
 		}
 	}
 	catch (const std::exception &e)
