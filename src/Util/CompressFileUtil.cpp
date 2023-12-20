@@ -291,7 +291,7 @@ namespace CompressUtil
         return UnZipOK;
     }
 
-    int GzipHelper::compress(const std::string *data, void *compress_data, size_t &compress_size)
+    int GzipHelper::compress(const std::string *data, void *compress_data, int &compress_size)
     {
         z_stream c_stream;
         int err = 0;
@@ -329,7 +329,7 @@ namespace CompressUtil
         return -1;
     }
 
-    int GzipHelper::unCompress(const char * data, int size, char *uncompress_data, size_t uncompress_size)
+    int GzipHelper::unCompress(const char * data, int size, char *uncompress_data, int uncompress_size)
     {
         z_stream strm;
         strm.zalloc = (alloc_func)0;

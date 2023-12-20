@@ -2317,8 +2317,45 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-					
-					*response << "HTTP/1.1 200 OK"
+					auto content = request->header.find("Content-Encoding");
+					std::string content_encoding = (content == request->header.end()) ? "gzip" : content->second;
+					if (content_encoding.find("gzip") != std::string::npos)
+					{
+						char* compress_ = (char*)malloc(resJson.size());
+						if (compress_ == nullptr)
+						{
+							error = "Cache Not Enough";
+							sendResponseMsg(1005, error, operation, request, response);
+							return;
+						}
+						int compress_size = 0;
+						int status = CompressUtil::GzipHelper::compress(&resJson, compress_, compress_size);
+						if (status != 0)
+						{
+							error = "Gzip Compress StatusMsg Error Code:" + std::to_string(status);
+							sendResponseMsg(1005, error, operation, request, response);
+							free(compress_);
+							return;
+						}
+						*response << "HTTP/1.1 200 OK"
+							  << "\r\nContent-Type: application/json"
+							  << "\r\nContent-Length: " << compress_size
+							  << "\r\nCache-Control: no-cache"
+							  << "\r\nPragma: no-cache"
+							  << "\r\nExpires: 0"
+							  << "\r\nContent-Encoding: gzip"
+							  << "\r\n\r\n";
+						char buffer;
+						for (int i = 0; i < compress_size; ++i)
+						{
+							buffer = compress_[i];
+							*response << buffer;
+						}
+						free(compress_);
+					}
+					else
+					{
+						*response << "HTTP/1.1 200 OK"
 							  << "\r\nContent-Type: application/json"
 							  << "\r\nContent-Length: " << resJson.length()
 							  << "\r\nCache-Control: no-cache"
@@ -2326,6 +2363,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							  << "\r\nExpires: 0"
 							  << "\r\n\r\n"
 							  << resJson;
+					}
 				}
 			}
 			else if (format == "file")
