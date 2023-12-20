@@ -1,3 +1,5 @@
-*/**
+*
 !.gitignore
 !*.tar*
+!*.t[bgx]z
+!*.zip
