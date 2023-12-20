@@ -106,8 +106,7 @@ int main(int argc, char * argv[])
 					msg = "update failed.";
 			}
 			cout<<"Delete the database info from system database successfully!"<<endl;
-			string cmd = "rm -rf " + db_path;
-			system(cmd.c_str());
+			Util::remove_path(db_path);
 			Util::delete_backuplog(db_name);
 			long tv_end = Util::get_cur_time();
 			//stringstream ss;
