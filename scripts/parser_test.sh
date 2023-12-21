@@ -1,6 +1,6 @@
 #!/bin/bash
 
-query_num=47
+query_num=50
 # query_num=1
 data_dir="scripts/parser_test/"
 gbuild='bin/gbuild '
@@ -19,27 +19,28 @@ do
 
     "grep" "." $result | "sort" > "result_a.txt"
 
-    $gbuild -db parser_test -f $data > tmp.txt
-    $gquery -db parser_test -q $query | grep -A 10000 "final result is :" > tmp.txt
+    $gbuild -db parser_test -f $data > /dev/null
+    $gquery -db parser_test -q $query | grep -A 10000 "Finish Database \`parser_test\` Load" > all.txt
+    grep -A 10000 "final result is :" all.txt  > tmp.txt
     "sed" "-i" "1d" "tmp.txt"
     "sed" "-i" "\$d" "tmp.txt"
-    # "sed" "-i" "\$d" "tmp.txt"
+    "sed" "-i" "\$d" "tmp.txt"
     "grep" "." "tmp.txt" | "sort" > "result_b.txt"
     
     "diff" "result_a.txt" "result_b.txt" > "equal.txt"
     if [ -s "equal.txt" ]; then
-        echo "parser test #"$i" failed"
+        echo -e "\033[43;35m parser test #"$i" failed \033[0m"
         all_passed=false
     else
         echo "parser test #"$i" passed"
     fi
 
-	$gdrop -db parser_test > tmp.txt
-    "rm" "result_a.txt" "result_b.txt" "tmp.txt" "equal.txt" 
+	$gdrop -db parser_test > /dev/null
+    "rm" "result_a.txt" "result_b.txt" "tmp.txt" "equal.txt" "all.txt"
 done
 
 if [ $all_passed = true ]; then
     echo "All parser test cases passed!"
 else
-    echo "Some parser test cases failed!"
+    echo -e "\033[43;35m Some parser test cases failed! \033[0m"
 fi

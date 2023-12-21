@@ -1,3 +1,6 @@
-?name	?mbox
-"Johnny Lee Outlaw"	<mailto:jlow@example.com>
-"Peter Goodguy"	<mailto:peter@example.org>
+----------------------------------------------------
+|        ?name        |            ?mbox           |
+----------------------------------------------------
+| "Johnny Lee Outlaw" | <mailto:jlow@example.com>  |
+| "Peter Goodguy"     | <mailto:peter@example.org> |
+----------------------------------------------------

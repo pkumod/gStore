@@ -1,3 +1,6 @@
-?nameX	?nameY	?nickY
-"Alice"	"Bob"	-
-"Alice"	"Clare"	"CT"
+------------------------------
+| ?nameX  | ?nameY  | ?nickY |
+------------------------------
+| "Alice" | "Bob"   |        |
+| "Alice" | "Clare" | "CT"   |
+------------------------------
