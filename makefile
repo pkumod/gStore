@@ -291,22 +291,22 @@ $(objdir)gconsole.o: Main/gconsole.cpp Database/Database.h Util/Util.h $(lib_ant
 #objects in scripts/ begin
 
 $(objdir)update_test.o: $(testdir)update_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) $(testdir)update_test.cpp $(inc) -o $(objdir)update_test.o $(openmp)
+	$(CXX) $(CFLAGS) $(testdir)update_test.cpp $(inc) $(inc_log) -o $(objdir)update_test.o $(openmp)
 
 $(objdir)dataset_test.o: $(testdir)dataset_test.cpp Database/Database.h Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) -o $(objdir)dataset_test.o $(openmp)
+	$(CXX) $(CFLAGS) $(testdir)dataset_test.cpp $(inc) $(inc_log) -o $(objdir)dataset_test.o $(openmp)
 
 $(objdir)transaction_test.o: $(testdir)transaction_test.cpp Database/Database.h Database/Txn_manager.h Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) $(testdir)transaction_test.cpp $(inc) -o $(objdir)transaction_test.o $(openmp)
+	$(CXX) $(CFLAGS) $(testdir)transaction_test.cpp $(inc) $(inc_log) -o $(objdir)transaction_test.o $(openmp)
 
 $(objdir)run_transaction.o: $(testdir)run_transaction.cpp Util/Util.h $(lib_antlr)
 	$(CXX) $(CFLAGS) $(testdir)run_transaction.cpp $(inc) $(inc_log) -o $(objdir)run_transaction.o $(openmp)
 
 $(objdir)workload.o: $(testdir)workload.cpp Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) $(testdir)workload.cpp $(inc) -o $(objdir)workload.o $(openmp)
+	$(CXX) $(CFLAGS) $(testdir)workload.cpp $(inc) $(inc_log) -o $(objdir)workload.o $(openmp)
 
 $(objdir)debug_test.o: $(testdir)debug_test.cpp Util/Util.h $(lib_antlr)
-	$(CXX) $(CFLAGS) $(testdir)debug_test.cpp $(inc) -o $(objdir)debug_test.o $(openmp)
+	$(CXX) $(CFLAGS) $(testdir)debug_test.cpp $(inc) $(inc_log) -o $(objdir)debug_test.o $(openmp)
 
 #objects in scripts/ end
 
@@ -711,7 +711,7 @@ $(api_socket): $(objdir)Socket.o
 
 .PHONY: clean dist tarball api_example gtest sumlines contribution test
 
-test: $(TARGET)
+test: $(TARGET) $(testdir)update_test 
 	@echo "basic build/query/add/sub/drop test......"
 	@bash scripts/basic_test.sh
 	@echo "repeatedly insertion/deletion test......"
@@ -753,11 +753,11 @@ APIexample: $(api_cpp) $(api_socket)
 	$(MAKE) -C api/http/cpp/example
 	$(MAKE) -C api/socket/cpp/example
 
-gtest: $(objdir)gtest.o $(objfile)
-	$(CXX) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp)
+gtest: $(objdir)gtest.o $(objfile) 
+	$(CXX) $(EXEFLAG) -o $(exedir)gtest $(objdir)gtest.o $(objfile) $(library) $(openmp) ${ldl} 
 
 $(objdir)gtest.o: scripts/gtest.cpp
-	$(CXX) $(CFLAGS) scripts/gtest.cpp $(inc) -o $(objdir)gtest.o $(openmp)
+	$(CXX) $(CFLAGS) scripts/gtest.cpp $(inc) $(inc_log) -o $(objdir)gtest.o $(openmp)
 	
 $(exedir)gadd: $(objdir)gadd.o $(objfile)
 	$(CXX) $(EXEFLAG) -o $(exedir)gadd $(objdir)gadd.o $(objfile) lib/libantlr4-runtime.a $(library) $(openmp) ${ldl}
