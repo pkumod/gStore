@@ -1458,7 +1458,8 @@ Util::getSystemOutput(string cmd)
     if(ret < 0)
     {
         fprintf(stderr, "system call failed:%s\n", cmd.c_str());
-        system(cmd.c_str());
+        // system(cmd.c_str());
+        Util::remove_path(file);
         return "";
     }
 
@@ -1495,7 +1496,8 @@ Util::getSystemOutput(string cmd)
     //*find = '\0';
     //fclose(fp);
     //}
-    system(cmd.c_str());
+    // system(cmd.c_str());
+    Util::remove_path(file);
 	//cerr<<"ans: "<<ans<<endl;
     return ans;
 }
@@ -2062,8 +2064,7 @@ bool Util::checkPort(int port, std::string p_name)
 			break;
 		}
 	}
-	line = "rm -f " + out_file;
-	system(line.c_str());
+    Util::remove_path(out_file);
 	return result;
 }
 
@@ -2559,10 +2560,8 @@ Util::delete_backuplog(string db_name)
     }
     fclose(fp);
     fclose(fp1);
-    string cmd = "rm ";
-    cmd += BACKUP_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
+    Util::remove_path(BACKUP_LOG_PATH);
+    string cmd = "mv ";
     cmd += BACKUP_LOG_TMEP_PATH;
     cmd += ' ';
     cmd += BACKUP_LOG_PATH;
@@ -2610,10 +2609,8 @@ Util::update_backuplog(string db_name, string parameter, string value)
     }
     fclose(fp);
     fclose(fp1);
-    string cmd = "rm ";
-    cmd += BACKUP_LOG_PATH;
-    system(cmd.c_str());
-    cmd = "mv ";
+    Util::remove_path(BACKUP_LOG_PATH);
+    string cmd = "mv ";
     cmd += BACKUP_LOG_TMEP_PATH;
     cmd += ' ';
     cmd += BACKUP_LOG_PATH;
