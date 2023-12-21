@@ -24,7 +24,7 @@ do
     grep -A 10000 "final result is :" all.txt  > tmp.txt
     "sed" "-i" "1d" "tmp.txt"
     "sed" "-i" "\$d" "tmp.txt"
-    "sed" "-i" "\$d" "tmp.txt"
+    # "sed" "-i" "\$d" "tmp.txt"
     "grep" "." "tmp.txt" | "sort" > "result_b.txt"
     
     "diff" "result_a.txt" "result_b.txt" > "equal.txt"
