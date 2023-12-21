@@ -113,6 +113,8 @@ int main(int argc, char * argv[])
 	int test_value_region = 10;
 	string db_name = "update_test";
 	string db_path = "data/update_test.nt";
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
 	if(argc == 2)
 	{
 		string s = argv[1];
@@ -183,20 +185,20 @@ int main(int argc, char * argv[])
 	//build database
 	db = new Database(db_name);
 	bool flag = db->build(db_path);
+	string _db_path = _db_home + "/" + db_name + _db_suffix;
 	if (flag)
 	{
-		string msg = db_name + ".db is built done.";
+		string msg =  db_name + _db_suffix + " is built done.";
 		cerr << msg << endl;
 		ofstream f;
-		f.open("./" + db_name + ".db/success.txt");
+		f.open(_db_path + "/success.txt");
 		f.close();
 	}
 	else //if fails, drop database and return
 	{
-		string msg = db_name + ".db is built failed.";
+		string msg =  db_name + _db_suffix + " is built failed.";
 		cerr << msg << endl;
-		string cmd = "rm -r " + db_name + ".db";
-		system(cmd.c_str());
+		util.remove_path(_db_path);
 		delete db;
 		db = NULL;
 		return 0;
@@ -268,8 +270,7 @@ int main(int argc, char * argv[])
 				cerr << "Update triples exist errors." << endl;
 				delete db;
 				db = NULL;
-				string cmd = "rm -r " + db_name + ".db";
-				system(cmd.c_str());
+				util.remove_path(_db_path);
 				return 0;
 			}
 			std::set<triple>::iterator it1;
@@ -283,17 +284,14 @@ int main(int argc, char * argv[])
 					cerr << "Update triples exist errors." << endl;
 					delete db;
 					db = NULL;
-					string cmd = "rm -r " + db_name + ".db";
-					system(cmd.c_str());
+					util.remove_path(_db_path);
 					return 0;
 				}
 			}
 		}
-
 		delete db;
 		db = NULL;
-		string cmd = "rm -r " + db_name + ".db";
-		system(cmd.c_str());
+		util.remove_path(_db_path);
 	}
 	else
 	{
@@ -342,8 +340,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				string cmd = "rm -r " + db_name + ".db";
-				system(cmd.c_str());
+				util.remove_path(_db_path);
 				return 0;
 			}
 			TYPE_TRIPLE_NUM temp_num = triple_num - update_num;
@@ -361,8 +358,7 @@ int main(int argc, char * argv[])
 					update = NULL;
 					delete db;
 					db = NULL;
-					string cmd = "rm -r " + db_name + ".db";
-					system(cmd.c_str());
+					util.remove_path(_db_path);
 					return 0;
 				}
 			}
@@ -381,8 +377,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				string cmd = "rm -r " + db_name + ".db";
-				system(cmd.c_str());
+				util.remove_path(_db_path);
 				return 0;
 			}
 			query = "ASK WHERE{";
@@ -400,8 +395,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				string cmd = "rm -r " + db_name + ".db";
-				system(cmd.c_str());
+				util.remove_path(_db_path);
 				return 0;
 			}
 			delete[] update;
@@ -409,8 +403,7 @@ int main(int argc, char * argv[])
 		}
 		delete db;
 		db = NULL;
-		string cmd = "rm -r " + db_name + ".db";
-		system(cmd.c_str());
+		util.remove_path(_db_path);
 	}
 	cerr << "Test passed!" << endl;
 	return 0;
