@@ -18,6 +18,28 @@ After having the correct Docker environment and network, use `git clone` to down
 
 After the building, using `docker run -p 9000:80 -it gstore` directly to start and enter the container and execute other operations.
 
+### Playground Mode
+
+The docker image has been built with some sample data. You can run the following command to start the container in playground mode:
+
+```bash
+docker run --rm -it gstore sh -c "(/usr/local/bin/ghttp &); bash"
+```
+
+Press Enter to start the bash shell. Then you can play with the sample data in the container.
+
+```bash
+gquery -db small -q data/small/small_q0.sql
+```
+
+### Server Mode
+
+Expose the port 9000, persist the data and run the container in background:
+
+```bash
+docker run -d -p 9000:9000 -v /path/to/data:/app gstore
+```
+
 ## 0x02. pulling the mirror directly to run
 
 Instead of downloading project or building on your own, input `docker pull pkumodlab/gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumodlab/gstore:latest` to start and enter the container and execute other operations.
