@@ -3,3 +3,4 @@
 !*.tar*
 !*.t[bgx]z
 !*.zip
+!*.sh

@@ -5,9 +5,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <functional>
-#include "../tools/zlib-1.3/include/unzip.h"
-#include "../tools/zlib-1.3/include/zip.h"
 #include "../Util/Util.h"
+
+#include "minizip/unzip.h"
+#include "minizip/zip.h"
 
 #define WRITEBUFFERSIZE (8192)
 #define MAXFILENAME (512)

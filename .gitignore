@@ -1,3 +1,11 @@
+# Artifacts and Cache
+build/
+include/
+lib/
+gstore.tar.gz
+CMakeUserPresets.json
+!CMakeLists.txt
+
 # Executables
 *.pyc
 *.exe

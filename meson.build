@@ -3,7 +3,7 @@
 project('gStore', 'cpp',
         version: '1.2',
         license: 'BSD-3-Clause',
-        meson_version: '>= 0.51.0',
+        meson_version: '>= 0.62.0',
         default_options: ['cpp_std=c++11', 'warning_level=3', 'buildtype=debugoptimized'],
 )
 
@@ -27,19 +27,22 @@ obj_flags = ['-Wall', '-O2', '-Werror=return-type']
 exe_flags = ['-Wall', '-O2', '-Werror=return-type']
 
 
-# Dependencies
-dep_boost = dependency('boost', version: '>= 1.54.0', modules: ['system', 'regex', 'thread'])
-dep_curl = dependency('libcurl', version: '>= 7.0.0')
+### Dependencies ###
+# Managed by Conan
+dep_boost = dependency('boost', version: '>= 1.55.0', modules: ['system', 'regex', 'thread'])
+dep_curl = dependency('libcurl', version: '>= 6.5.0')
 dep_uuid = dependency('uuid')
 dep_openssl = dependency('openssl', version: '>= 1.1')
 dep_readline = dependency('readline')
 dep_zlib = dependency('zlib', version: '>= 1.2')
-dep_jemalloc = dependency('jemalloc', version: '>= 1.2')
-dep_realpath = dependency('realpath')
-dep_omp = dependency('openmp')
 dep_minizip = dependency('minizip', version: '>= 1.2')
+
+# Managed by system package manager
+# In theory we should move dependencies to Conan, but Conan is a world of quirks and imperfections :(
+# jemalloc is still breaking: https://github.com/conan-io/conan-center-index/issues/10863
+dep_jemalloc = dependency('jemalloc', version: '>= 1.2')
+dep_omp = dependency('openmp')
 dep_dl = dependency('dl')
 
-# build antlr4
 cmake = import('cmake')
            

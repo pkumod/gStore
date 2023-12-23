@@ -9,11 +9,17 @@
 #define _SERVER_SOCKET_H
 
 #include "../Util/Util.h"
-#include "../tools/rapidjson/document.h"
-#include "../tools/rapidjson/prettywriter.h"  
-#include "../tools/rapidjson/writer.h"
-#include "../tools/rapidjson/stringbuffer.h"
-#include "../tools/rapidjson/error/en.h"
+
+// #include "../tools/rapidjson/document.h"
+// #include "../tools/rapidjson/prettywriter.h"  
+// #include "../tools/rapidjson/writer.h"
+// #include "../tools/rapidjson/stringbuffer.h"
+// #include "../tools/rapidjson/error/en.h"
+#include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"  
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/error/en.h"
 
 #define BUFFER_SIZE 131072 /**<  The socket send/recv buffer size. */
 

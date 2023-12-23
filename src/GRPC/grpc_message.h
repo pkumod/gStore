@@ -4,9 +4,9 @@
 #include "workflow/HttpMessage.h"
 #include "workflow/WFTaskFactory.h"
 
-#include "../tools/rapidjson/document.h"
-#include "../tools/rapidjson/writer.h"
-#include "../tools/rapidjson/stringbuffer.h"
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 #include "grpc_noncopyable.h"
 #include "grpc_content.h"
