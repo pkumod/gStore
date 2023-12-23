@@ -107,22 +107,26 @@ in the sparql query can point to the same node in fixtures graph)
 #include <unordered_set>
 #include <random>
 #include <type_traits>
-
-
-//Added for __gnu_parallel::sort
 #include <omp.h>
 #include <parallel/algorithm>
-#include "../tools/rapidjson/document.h"
-#include "../tools/rapidjson/prettywriter.h"  
-#include "../tools/rapidjson/writer.h"
-#include "../tools/rapidjson/stringbuffer.h"
-#include "INIParser.h"
-#include "../tools/indicators/progress_bar.hpp"
+
+// #include "../tools/rapidjson/document.h"
+// #include "../tools/rapidjson/prettywriter.h"  
+// #include "../tools/rapidjson/writer.h"
+// #include "../tools/rapidjson/stringbuffer.h"
+// #include "../tools/indicators/progress_bar.hpp"
+
+#include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"  
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include "indicators/progress_bar.hpp"
 
 #include "Latch.h"
 #include "Slog.h"
 #include "MD5.h"
 #include "PrettyPrint.h"
+#include "INIParser.h"
 
 #define thread_num 1
 //below is used to control if using the parallelable sort()
