@@ -8,7 +8,7 @@
 2. common macros, functions, classes, etc
 # Notice: we only talk about sub-graph isomorphism in the essay, however, in
 # this system, the homomorphism is supported.(which means that multiple variables
-in the sparql query can point to the same node in fixtures graph)
+in the sparql query can point to the same node in data graph)
 =============================================================================*/
 
 #ifndef _UTIL_UTIL_H
@@ -344,7 +344,7 @@ public:
 	static const unsigned STORAGE_BLOCK_SIZE = 1 << 12;	//fixed size of disk-block in B+ tree storage
 	//max block num in kvstore storage, blockNum*blockSize for a B+ tree file should >= 256G
 	//static const unsigned MAX_BLOCK_NUM = 1 << 26;
-	//DEBUG:maybe the file size will over if the fixtures is too large
+	//DEBUG:maybe the file size will over if the data is too large
 
 	//type of B+ tree
 	static const int SS_TREE = 0;

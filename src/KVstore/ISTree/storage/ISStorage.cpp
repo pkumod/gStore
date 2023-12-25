@@ -293,7 +293,7 @@ ISStorage::readNode(ISNode* _np, long long* _request)
 	Bstr bstr;
 	fseek(treefp, 4, SEEK_CUR);
 	fread(&next, sizeof(unsigned), 1, treefp);
-	//read fixtures, use readBstr...
+	//read data, use readBstr...
 	//fread(treefp, "%u", &num);
 	//_np->setNum(num);
 	if (flag)

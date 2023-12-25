@@ -42,7 +42,7 @@ var __module4__ = (function() {
   return __exports__;
 })();
 
-// handlebars/utils.js
+// handlebars/scripts.js
 var __module3__ = (function(__dependency1__) {
   "use strict";
   var __exports__ = {};
@@ -1310,7 +1310,7 @@ var __module11__ = (function(__dependency1__) {
 
         var copies = "helpers = this.merge(helpers, " + namespace + ".helpers);";
         if (this.environment.usePartial) { copies = copies + " partials = this.merge(partials, " + namespace + ".partials);"; }
-        if (this.options.data) { copies = copies + " fixtures = fixtures || {};"; }
+        if (this.options.data) { copies = copies + " data = data || {};"; }
         out.push(copies);
       } else {
         out.push('');
@@ -1574,9 +1574,9 @@ var __module11__ = (function(__dependency1__) {
     // [lookupData]
     //
     // On stack, before: ...
-    // On stack, after: fixtures, ...
+    // On stack, after: data, ...
     //
-    // Push the fixtures lookup operator
+    // Push the data lookup operator
     lookupData: function() {
       this.push('data');
     },
@@ -2039,7 +2039,7 @@ var __module11__ = (function(__dependency1__) {
       }
 
       if(this.options.data) {
-        options.push("fixtures:fixtures");
+        options.push("data:data");
       }
 
       options = "{" + options.join(",") + "}";
@@ -2403,7 +2403,7 @@ var __module10__ = (function(__dependency1__, __dependency2__, __dependency3__, 
     DATA: function(data) {
       this.options.data = true;
       if (data.id.isScoped || data.id.depth) {
-        throw new Exception('Scoped fixtures references are not supported: ' + data.original);
+        throw new Exception('Scoped data references are not supported: ' + data.original);
       }
 
       this.opcode('lookupData');

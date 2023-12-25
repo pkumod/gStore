@@ -1659,7 +1659,7 @@ var Tweenable = (function () {
 // Circle shaped progress bar
 
 var Shape = require('./shape');
-var utils = require('./utils');
+var utils = require('./scripts');
 
 var Circle = function Circle(container, options) {
     // Use two arcs to form a circle
@@ -1701,7 +1701,7 @@ module.exports = Circle;
 // Line shaped progress bar
 
 var Shape = require('./shape');
-var utils = require('./utils');
+var utils = require('./scripts');
 
 var Line = function Line(container, options) {
     this._pathTemplate = 'M 0,{center} L 100,{center}';
@@ -1743,15 +1743,15 @@ module.exports = {
     // Undocumented.
     Shape: require('./shape'),
 
-    // Internal utils, undocumented.
-    utils: require('./utils')
+    // Internal scripts, undocumented.
+    utils: require('./scripts')
 };
 
 },{"./circle":2,"./line":3,"./path":5,"./semicircle":6,"./shape":7,"./utils":8}],5:[function(require,module,exports){
 // Lower level API to animate any kind of svg path
 
 var Tweenable = require('shifty');
-var utils = require('./utils');
+var utils = require('./scripts');
 
 var EASING_ALIASES = {
     easeIn: 'easeInCubic',
@@ -1921,7 +1921,7 @@ module.exports = Path;
 
 var Shape = require('./shape');
 var Circle = require('./circle');
-var utils = require('./utils');
+var utils = require('./scripts');
 
 var SemiCircle = function SemiCircle(container, options) {
     // Use one arc to form a SemiCircle
@@ -1970,7 +1970,7 @@ module.exports = SemiCircle;
 // Base object for different progress bar shapes
 
 var Path = require('./path');
-var utils = require('./utils');
+var utils = require('./scripts');
 
 var DESTROYED_ERROR = 'Object is destroyed';
 

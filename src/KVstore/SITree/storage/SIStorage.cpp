@@ -581,7 +581,7 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 }
 
 /**
- * write the whole tree back and close tree_fp_. First meta fixtures, then
+ * write the whole tree back and close tree_fp_. First meta data, then
  * free blocks bitmap and then the node content.
  * @param _np the root pointer
  */

@@ -1,4 +1,4 @@
-// TODO: Convert all IDs to unsigned to incorporate more fixtures?
+// TODO: Convert all IDs to unsigned to incorporate more data?
 
 #include "../Database/CSR.h"
 #include <bitset>

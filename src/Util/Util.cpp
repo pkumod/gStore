@@ -77,7 +77,7 @@ string Util::gserver_port_swap = "bin/.gserver_port.swap";
 string Util::gserver_log = "logs/gserver.log";
 
 string Util::backup_path = "backups/";
-string Util::system_path = "fixtures/system/system.nt";
+string Util::system_path = "data/system/system.nt";
 
 //set hash table
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \

@@ -3,7 +3,7 @@
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
 # Last Modified:    2021-08-03 15:28 CST
-# Description: defines the class for parsing RDF fixtures during build based on
+# Description: defines the class for parsing RDF data during build based on
 RDF-3X's TurtleParser
 =============================================================================*/
 
@@ -16,7 +16,7 @@ RDF-3X's TurtleParser
 
 using namespace std;
 
-/**  Parser for RDF fixtures.
+/**  Parser for RDF data.
 */
 class RDFParser
 {

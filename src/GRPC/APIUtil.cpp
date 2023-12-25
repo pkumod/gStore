@@ -2495,7 +2495,7 @@ std::string APIUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
 
 void APIUtil::fun_query(const string &fun_name, const string &fun_status, const string &username, struct PFNInfos *pfn_infos)
 {
-    string json_file_path = APIUtil::pfn_file_path + username + "/fixtures.json";
+    string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     if (util.file_exist(json_file_path) == false)
     {
         return;
@@ -2764,7 +2764,7 @@ std::string APIUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 
 void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *fun_info, std::string operation)
 {
-    string json_file_path = APIUtil::pfn_file_path + username + "/fixtures.json";
+    string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     std::string fun_name = fun_info->getFunName(); 
     std::string json_str = fun_info->toJSON();
     if (operation == "1") // create
@@ -2846,13 +2846,13 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         }
         out << line;
         out.close();
-        // mv fun/username/fixtures.json fun/username/back.json
+        // mv fun/username/data.json fun/username/back.json
         cmd = "mv -f " + json_file_path + " " + back_path;
         int status;
         status = system(cmd.c_str());
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
         {
-            // mv fun/username/temp.json fun/username/fixtures.json
+            // mv fun/username/temp.json fun/username/data.json
             cmd = "mv -f " + temp_path + " " + json_file_path;
             status = system(cmd.c_str());
             #if defined(DEBUG)
@@ -2867,7 +2867,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 SLOG_DEBUG(cmd);
                 #endif
             }
-            else // recover back.json to fixtures.json
+            else // recover back.json to data.json
             {
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
@@ -2889,7 +2889,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
 
 void APIUtil::fun_parse_from_name(const std::string& username, const std::string& fun_name, struct PFNInfo *fun_info)
 {
-    string json_file_path = APIUtil::pfn_file_path + username + "/fixtures.json";
+    string json_file_path = APIUtil::pfn_file_path + username + "/data.json";
     ifstream in;
     pthread_rwlock_rdlock(&fun_data_lock);
     in.open(json_file_path.c_str(), ios::in);

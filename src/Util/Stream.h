@@ -129,7 +129,7 @@ public:
 
 	//read/write should be based on the unit of record
 
-	//NOTICE:this function copy/save the fixtures, caller free the memory if needed
+	//NOTICE:this function copy/save the data, caller free the memory if needed
 	bool write(const Bstr* _bp);
 	bool write(const char* _str, unsigned _len);
 	//NOTICE:the memory should not be freed by user, and the latter will flush the former!

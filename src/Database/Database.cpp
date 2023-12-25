@@ -2089,7 +2089,7 @@ bool Database::build(const string &_rdf_file)
 	// NOTICE: it is not necessary to use multiple threads here, because some process may rely on others
 	// In addition, the memory is a bootleneck and it is dangerous to build serveral indices at a time
 	// For example, if we build id2string indices using different threads, they
-	// all have to scan the dataset and only use a part of the fixtures, which may be costly
+	// all have to scan the dataset and only use a part of the data, which may be costly
 	// Besides, build process is already very fast, able to build freebase in 12h
 
 	// manage the id for a new database
@@ -2310,7 +2310,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	// ID is entity or not
 	//(one way is to add a more structure to tell us which is entity, but this is costly)
 
-	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF fixtures into signature
+	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file))
 	{
 		return false;
@@ -2430,7 +2430,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	// ID is entity or not
 	//(one way is to add a more structure to tell us which is entity, but this is costly)
 
-	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF fixtures into signature
+	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log))
 	{
 		return false;

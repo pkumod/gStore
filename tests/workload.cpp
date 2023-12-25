@@ -184,7 +184,7 @@ vector<string> get_node_query(vector<MyTriple> &triples)
 
 string get_insert_sparql(MyTriple& triple)
 {
-    string ret = "insert fixtures { ";
+    string ret = "insert data { ";
     ret = ret + triple.subject + " "  + triple.predicate + " " + triple.object + " .}";
     return ret;
 }
@@ -648,10 +648,10 @@ void read_only_transaction(int isolevel, Txn_manager& txn_m)
 void create_versions(Txn_manager& txn_m)
 {
 	string query = "select ?v {<V1> <R1> ?v.}";
-	string insert1 = "insert fixtures { <V1> <R1> \"5\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string insert2 = "insert fixtures { <V1> <R1> \"15\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string delete1 = "delete fixtures { <V1> <R1> \"5\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string delete2 = "delete fixtures { <V1> <R1> \"15\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert1 = "insert data { <V1> <R1> \"5\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert2 = "insert data { <V1> <R1> \"15\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string delete1 = "delete data { <V1> <R1> \"5\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string delete2 = "delete data { <V1> <R1> \"15\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
 
 	string res;
 
@@ -692,7 +692,7 @@ void no_txn_update(Database &db)
     in.open(insert_filename, ios::in);
     while(getline(in, line))
     {
-         sparql = "insert fixtures {" + line + "}";
+         sparql = "insert data {" + line + "}";
          FILE *fp = stdout;
          db.query(sparql, rs, fp);
     }
@@ -701,7 +701,7 @@ void no_txn_update(Database &db)
     in.open(delete_filename, ios::in);
     while(getline(in, line))
     {
-         sparql = "delete fixtures {" + line + "}";
+         sparql = "delete data {" + line + "}";
          FILE *fp = stdout;
          db.query(sparql, rs, fp);
     }
@@ -717,13 +717,13 @@ bool single_txn(int threads_num, Txn_manager& txn_m)
     int num = 0;
     while(getline(in, line))
     {
-        sparql = "insert fixtures {" + line + "}";
+        sparql = "insert data {" + line + "}";
         int ret = txn_m.Query(TID, sparql, res);
         num += ret;
         //txn_m.Get_Transaction(TID)->print_all();
         //if(ret != 0) cerr << "wrong answer!" << endl;
         // getline(in, line);
-        // sparql = "insert fixtures {" + line + "}";
+        // sparql = "insert data {" + line + "}";
         // ret = txn_m.Query(TID, sparql, res);
         //txn_m.Get_Transaction(TID)->print_all();
         //if(ret != 0) cerr << "wrong answer!" << endl;
@@ -732,7 +732,7 @@ bool single_txn(int threads_num, Txn_manager& txn_m)
     in.open("./tests/delete.nt", ios::in);
     while(getline(in, line))
     {
-        sparql = "delete fixtures{" + line + "}";
+        sparql = "delete data{" + line + "}";
         int ret = txn_m.Query(TID, sparql, res);
         //if(ret == 0) cerr << "wrong answer!wrong answer!wrong answer!wrong answer!" << endl;
         num += ret;
@@ -822,11 +822,11 @@ int main(int argc, char* argv[])
     
 
 /*     select ?x where { <m> ?x <t>.}
-    insert fixtures { <m> <s> <t>.}
+    insert data { <m> <s> <t>.}
     select ?x where { <m> ?x <t>.}
-    delete fixtures { <m> <s> <t>.}
+    delete data { <m> <s> <t>.}
     select ?x where { <m> ?x <t>.}
-    insert fixtures { <m> <s> <t>.}
+    insert data { <m> <s> <t>.}
     select ?x where { <m> ?x <t>.} */
 
     return;

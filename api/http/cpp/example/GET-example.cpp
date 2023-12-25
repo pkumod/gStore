@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	GstoreConnector gc(IP, Port, httpType, username, password);
 
 	// build a database with a RDF graph
-	std::string res = gc.build("lubm", "fixtures/lubm/lubm.nt");
+	std::string res = gc.build("lubm", "data/lubm/lubm.nt");
 	cout << res << endl;
 
 	// load the database

@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string root_pwd = Util::getConfigureValue("root_password");
-			string update_sparql = "insert fixtures {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
+			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
 			cout << "version:" << version << ",update_sparql:" << update_sparql << endl;
 			ResultSet _rs;
 			FILE *ofp = stdout;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 			else // update error
 				msg = "update failed.";
 			if (ret != -100)
-				cout << "Insert fixtures result:" + msg << endl;
+				cout << "Insert data result:" + msg << endl;
 
 			delete _db;
 			_db = NULL;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 					Util::configure_new();
 					string version = Util::getConfigureValue("version");
 					string root_pwd = Util::getConfigureValue("root_password");
-					string update_sparql = "insert fixtures {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
+					string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
 
 					ResultSet _rs;
 					FILE *ofp = stdout;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 					else // update error
 						msg = "update failed.";
 					if (ret != -100)
-						cout << "Insert fixtures result:" + msg << endl;
+						cout << "Insert data result:" + msg << endl;
 
 					delete _db;
 					_db = NULL;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 			db_namestr = db_namestr + ",";
 		}
 		Util::split(db_namestr, ",", db_names);
-		string sparql = "insert fixtures {";
+		string sparql = "insert data {";
 		string time = Util::get_date_time();
 		for (auto db_name : db_names)
 		{

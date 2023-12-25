@@ -24,7 +24,7 @@ function query_sparql(num,dp) {
 	if(format != "html")
 	{
 		/*
-		$.get(encodeArgu, function(fixtures, status){
+		$.get(encodeArgu, function(data, status){
 			if(status == "success")
 		{
 			alert("success");
@@ -57,7 +57,7 @@ function query_sparql(num,dp) {
 		$.get(encodeArgu, function(data, status){
 			if(status=="success"){
 				//toTxt();
-				//alert(fixtures);
+				//alert(data);
 				var parts = data.split("+");
 				var fileName = parts[2];
 			    var lines = Number(parts[1]);
@@ -323,7 +323,7 @@ function handle14(example, query)
 {
                 if (example === "q1")
                 {
-                    document.getElementById(query).value =    "delete fixtures {         <http://dbpedia.org/resource/The_Juan_MacLean> <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .  }";
+                    document.getElementById(query).value =    "delete data {         <http://dbpedia.org/resource/The_Juan_MacLean> <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .  }";
                 }
                 if (example === "q2")
                 {
@@ -336,7 +336,7 @@ function handle15(example, query)
 {
                 if (example === "q1")
                 {
-                    document.getElementById(query).value =    "insert fixtures { <http://dbpedia.org/resource/The_Juan_MacLean> <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .   }";
+                    document.getElementById(query).value =    "insert data { <http://dbpedia.org/resource/The_Juan_MacLean> <http://dbpedia.org/ontology/associatedBand> <http://dbpedia.org/resource/LCD_Soundsystem> .   }";
 				}
                 if (example === "q2")
                 {

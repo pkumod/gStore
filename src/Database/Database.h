@@ -169,7 +169,7 @@ private:
 	// metadata of this database: sub_num, pre_num, obj_num, literal_num, etc.
 	string db_info_file;
 
-	// this Statistics fixtures  of catalog entities this database
+	// this Statistics data  of catalog entities this database
 	string statistics_info_file;
 
 	// this type predicate name
@@ -206,7 +206,7 @@ private:
 
 	QueryCache *query_cache;
 
-	// the unordered_map for store the statistic fixtures of entitys
+	// the unordered_map for store the statistic data of entitys
 	unordered_map<string, unsigned long long> umap;
 
 	// Trie *trie;
@@ -287,7 +287,7 @@ private:
 
 	string getStorePath();
 
-	// encode relative signature fixtures of all Basic Graph Query, who union together into SPARQLquery
+	// encode relative signature data of all Basic Graph Query, who union together into SPARQLquery
 	//  void buildSparqlSignature(SPARQLquery & _sparql_q);
 
 	// encode Triple into Subject EntityBitSet
@@ -305,10 +305,10 @@ private:
 	bool exist_triple(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn = nullptr);
 	bool exist_triple(const TripleWithObjType &_triple, shared_ptr<Transaction> txn = nullptr);
 
-	//* _rdf_file denotes the path of the RDF file, where stores the rdf fixtures
+	//* _rdf_file denotes the path of the RDF file, where stores the rdf data
 	//* there are many step in this function, each one responds to an sub-function
 	//* 1. map sub2id and pre2id
-	//* 2. map literal2id and encode RDF fixtures into signature,
+	//* 2. map literal2id and encode RDF data into signature,
 	//*    storing in binary file: this->getSignatureBFile(), the order responds to subID
 	//*    also, store six_tuples in file: this->getSixTuplesFile()
 	//* 3. build: subID2objIDlist, <subIDpreID>2objIDlist subID2<preIDobjID>list

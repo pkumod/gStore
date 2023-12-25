@@ -16,7 +16,7 @@ function query(dp) {
 	if(format != "html")
 	{
 		/*
-		$.get(encodeArgu, function(fixtures, status){
+		$.get(encodeArgu, function(data, status){
 			if(status == "success")
 		{
 			alert("success");
@@ -49,7 +49,7 @@ function query(dp) {
 		$.get(encodeArgu, function(data, status){
 			if(status=="success"){
 				//toTxt();
-				//alert(fixtures);
+				//alert(data);
 				var parts = data.split("+");
 				var fileName = parts[2];
 			    var lines = Number(parts[1]);

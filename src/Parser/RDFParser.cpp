@@ -3,14 +3,14 @@
 # Author: Yue Pang
 # Mail: michelle.py@pku.edu.cn
 # Last Modified:    2021-08-03 15:28 CST
-# Description: implements the class for parsing RDF fixtures during build based on
+# Description: implements the class for parsing RDF data during build based on
 RDF-3X's TurtleParser
 =============================================================================*/
 #include "RDFParser.h"
 
 /** Constructor for parseString. Passes the member stringstream to 
  * TurtleParser, which can later be fed other strings containing RDF
- * fixtures in parseString.
+ * data in parseString.
  */
 RDFParser::RDFParser():_TurtleParser(_sin)
 {}
@@ -321,7 +321,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	return numLines;
 }
 
-/** Parses a string containing RDF fixtures. Based on parseFile.
+/** Parses a string containing RDF data. Based on parseFile.
  * if you want to parse a string, you need to create a RDFParser object with 
  * no parameter, if the triple has prefix, you also need to provide it.
  * The whole string must be processed in one time of invoking parseString.
@@ -335,7 +335,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
  * _RDFParser.parseString(prefix + "\n" + triple string 1 + "\n" + \
  * triple string 2, ..); is also acceptable.
  * 
- * @param _str the input string containing RDF fixtures.
+ * @param _str the input string containing RDF data.
  * @param _triple_array stores the parsed triples.
  * @param _triple_num the number of successfully parsed triples.
  */

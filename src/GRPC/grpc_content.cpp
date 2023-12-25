@@ -214,7 +214,7 @@ void multipart_parser_userdata::handle_header()
     {
         // Content-Disposition: attachment
         // Content-Disposition: attachment; filename="filename.jpg"
-        // Content-Disposition: form-fixtures; name="avatar"; filename="user.jpg"
+        // Content-Disposition: form-data; name="avatar"; filename="user.jpg"
         StringPiece header_val_piece(header_value);
         std::vector<StringPiece> dispo_list = split_piece(header_val_piece, ';');
 

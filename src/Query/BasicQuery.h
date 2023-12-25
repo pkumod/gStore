@@ -272,7 +272,7 @@ public:
 	bool isReady(int _var) const;
 	void setReady(int _var);
 
-	// encode relative signature fixtures of the query graph
+	// encode relative signature data of the query graph
 	bool encodeBasicQuery(KVstore* _p_kvstore, const std::vector<std::string>& _query_var);
 	bool getEncodeBasicQueryResult() const;
 

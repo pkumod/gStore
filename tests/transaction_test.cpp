@@ -35,9 +35,9 @@ void print_ans(int ret, string &res)
 void txn1(Txn_manager* txn_m)
 {
 	string query1 = "select ?x where { ?x <mingzhi> ?y}";
-	string update1 = "insert fixtures { <me> <mingzhi> <zhangzhe>}";
-	string update3 = "insert fixtures { <you> <mingzhi> <SBBBBB>}";
-	string update4 = "delete fixtures { <you> <mingzhi> <SBBBBB>}";
+	string update1 = "insert data { <me> <mingzhi> <zhangzhe>}";
+	string update3 = "insert data { <you> <mingzhi> <SBBBBB>}";
+	string update4 = "delete data { <you> <mingzhi> <SBBBBB>}";
 	string update2 = "delete where {?x <mingzhi> ?y}";
 	string res;
 	txn_id_t id = txn_m->Begin();
@@ -57,13 +57,13 @@ void txn2(Txn_manager* txn_m)
 {
 	/*
 	string query = "select ?x where { ?x <born> ?y}";
-	string update1 = "insert fixtures { <me> <born> <jjjj>}";
+	string update1 = "insert data { <me> <born> <jjjj>}";
 	string update2 = "delete where {?x <born> ?y}";
 	*/
 	string query1 = "select ?x where { ?x <mingzhi> ?y}";
-	string update1 = "insert fixtures { <me> <mingzhi> <zhangzhe>}";
-	string update3 = "insert fixtures { <you> <mingzhi> <SBBBBB>}";
-	string update4 = "delete fixtures { <you> <mingzhi> <SBBBBB>}";
+	string update1 = "insert data { <me> <mingzhi> <zhangzhe>}";
+	string update3 = "insert data { <you> <mingzhi> <SBBBBB>}";
+	string update4 = "delete data { <you> <mingzhi> <SBBBBB>}";
 	string update2 = "delete where {?x <mingzhi> ?y}";
 	string res;
 	txn_id_t id = txn_m->Begin();
@@ -97,7 +97,7 @@ void txn3(Txn_manager* txn_m)
 void txn4(Txn_manager* txn_m)
 {
 	string query = "select ?x ?y where{<gStore> ?x ?y}";
-	string insert = "insert fixtures {<gStore> <test> <commit>.<gStore> <test> <abort>.<gStore> <test> <begin>.<gStore> <test> <all>.}";
+	string insert = "insert data {<gStore> <test> <commit>.<gStore> <test> <abort>.<gStore> <test> <begin>.<gStore> <test> <all>.}";
 	string remove = "delete where {<gStore> ?x ?y}";
 	txn_id_t id = txn_m->Begin();
 	string res;
@@ -113,9 +113,9 @@ void txn4(Txn_manager* txn_m)
 
 void test(Txn_manager* txn_m)
 {
-	string inc1 = "insert fixtures {<V1> <R1> \"0\".}";
-	string inc2 = "insert fixtures {<V1> <R1> \"10\".}";
-	string inc3 = "insert fixtures {<V2> <R1> \"20\".}";
+	string inc1 = "insert data {<V1> <R1> \"0\".}";
+	string inc2 = "insert data {<V1> <R1> \"10\".}";
+	string inc3 = "insert data {<V2> <R1> \"20\".}";
 	string query = "select ?x ?y where{?x <R1> ?y}";
 	string res;
 	txn_id_t id = txn_m->Begin();
@@ -136,10 +136,10 @@ void test(Txn_manager* txn_m)
 void test2(Txn_manager* txn_m)
 {
 	string query = "select ?v {<V1> <R1> ?v.}";
-	string delete1  = "delete fixtures { <V1> <R1> \"0\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string insert1 = "insert fixtures { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string delete2 = "delete fixtures { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
-	string insert2 = "insert fixtures { <V1> <R1> \"2\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string delete1  = "delete data { <V1> <R1> \"0\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert1 = "insert data { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string delete2 = "delete data { <V1> <R1> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
+	string insert2 = "insert data { <V1> <R1> \"2\"^^<http://www.w3.org/2001/XMLSchema#integer> }";
 	string res;
 	txn_id_t id = txn_m->Begin();
 	txn_m->print_txn_dataset(id);
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 	Txn_manager txn_m(&_db, db_folder);
 
 	/*string query1 = "select ?x where { ?x <born> ?y}";
-	string update1 = "insert fixtures { <me> <born> \" ";
+	string update1 = "insert data { <me> <born> \" ";
 	update1 += "jjjjj" ;
 	update1 += " \"}";
 	string update2 = "delete where {?x <born> ?y}";

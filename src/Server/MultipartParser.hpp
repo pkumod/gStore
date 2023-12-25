@@ -4,7 +4,7 @@
  * @LastEditors: wangjian 2606583267@qq.com
  * @LastEditTime: 2023-02-09 13:38:29
  * @FilePath: /gstore/Server/MultipartParser.hpp
- * @Description: Multipart/form-fixtures Parser
+ * @Description: Multipart/form-data Parser
  */
 #ifndef MULTIPART_PARSER_HPP
 #define	MULTIPART_PARSER_HPP
@@ -22,7 +22,7 @@ using MultipartFormData = std::map<std::string, std::pair<std::string, std::stri
 class MultipartParser
 {
 private:
-    /* fixtures */
+    /* data */
     std::shared_ptr<std::string> _data;
     std::string _boundary;
 
@@ -45,13 +45,13 @@ private:
      * parse header, between _boundary line and blank line
      * example:
      * ----------------------------617568955343916342854790 (_boundary line)
-     * Content-Disposition: form-fixtures; name="username"      (header)
+     * Content-Disposition: form-data; name="username"      (header)
      *                                                      (blank line)
      * root
      */
     void parseHeaders();
     /**
-     * parse form fixtures
+     * parse form data
      */
     void parseFormData();
     /**
@@ -66,7 +66,7 @@ private:
      */
     bool atBoundaryLine();
     /**
-     * at end of fixtures
+     * at end of data
      */
     inline bool atEndOfData(){
         return _pos >= _data->size() || _lastBoundaryFound;
@@ -108,15 +108,15 @@ std::unique_ptr<MultipartFormData> MultipartParser::parse()
     {
         // parse header
         parseHeaders();
-        // if at end of fixtures then break
+        // if at end of data then break
         if (atEndOfData())
         {
             #if defined(MULTIPART_PARSER_DEBUG)
-            std::cout << "at end of fixtures" << std::endl;
+            std::cout << "at end of data" << std::endl;
             #endif // MULTIPART_PARSER_DEBUG
             break;
         }
-        // parse form-fixtures
+        // parse form-data
         parseFormData();
 
         #if defined(MULTIPART_PARSER_DEBUG)        
@@ -161,7 +161,7 @@ bool MultipartParser::getNextLine()
             }
             break;
         }
-        // form-fixtures end
+        // form-data end
         if (++i == _data->size())
         {
             _lineStart = _pos;
@@ -213,7 +213,7 @@ bool MultipartParser::atBoundaryLine()
 }
 
 void MultipartParser::parseHeaders(){
-    //clear fixtures
+    //clear data
     _partFileName.clear();
     _partName.clear();
     _partContentType.clear();
@@ -241,8 +241,8 @@ std::string MultipartParser::getDispositionValue(
     const std::string source, int pos, const std::string name)
 {
     // Content-Disposition：
-    // case 1: Content-Disposition: form-fixtures; name="projectName"
-    // case 2: Content-Disposition: form-fixtures; filename="demo.nt"
+    // case 1: Content-Disposition: form-data; name="projectName"
+    // case 2: Content-Disposition: form-data; filename="demo.nt"
     // build match pattern: " name="
     std::string pattern = " " + name + "=";
     int i = source.find(pattern, pos);
@@ -297,7 +297,7 @@ void MultipartParser::parseFormData()
     {
         if (atBoundaryLine())
         {
-            // content fixtures at pre line
+            // content data at pre line
             int indexOfEnd = _lineStart - 1;
             if (_data->at(indexOfEnd) == '\n')
             {

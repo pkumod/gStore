@@ -18,20 +18,20 @@
 #include <limits>
 
 /**
- * A class for "pretty printing" a table of fixtures.
+ * A class for "pretty printing" a table of data.
  *
  * Requries C++11 (and nothing more)
  *
  * It's templated on the types that will be in each column
  * (all values in a column must have the same type)
  *
- * For instance, to use it with fixtures that looks like:  "Fred", "193.4", "35", "Sam"
+ * For instance, to use it with data that looks like:  "Fred", "193.4", "35", "Sam"
  * with header names: "Name", "Weight", "Age", "Brother"
  *
  * You would invoke the table like so:
  * PrettyPrint vt({"Name", "Weight", "Age", "Brother"});
  *
- * Then add the fixtures to the table:
+ * Then add the data to the table:
  * vt.addRow({"Fred", "193.4", "35", "Sam"});
  *
  * And finally print it:
@@ -61,17 +61,17 @@ public:
   }
 
   /**
-   * Add a row of fixtures
+   * Add a row of data
    *
    * Easiest to use like:
    * table.addRow({data1, data2, data3});
    *
-   * @param fixtures A Tuple of fixtures to add
+   * @param data A Tuple of data to add
    */
   void addRow(std::vector<std::string> row) { _data.emplace_back(row); }
 
   /**
-   * Pretty print the table of fixtures
+   * Pretty print the table of data
    */
   template <typename StreamType>
   void print(StreamType & stream)
@@ -194,7 +194,7 @@ protected:
   /// Max size of columns
   long unsigned int _max_column_size;
 
-  /// The actual fixtures
+  /// The actual data
   std::vector<std::vector<std::string>> _data;
 
   /// Holds the printable width of each column

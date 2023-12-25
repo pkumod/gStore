@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-rm -rvf ../lib/libworkflow.a
-rm -rvf ../include/workflow
-rm -rvf ./workflow/_*
+rm -rf workflow
 tar -xzvf workflow-0.10.3.tar.gz
 cd ./workflow || echo "./workflow not found"
 make -j 2

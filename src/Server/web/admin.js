@@ -37,7 +37,7 @@ function build(db, ds){
 			if(status=="success"){
 			spinner.spin();
 			setTimeout(function(){alert(data.StatusMsg);}, 300);
-			//alert(fixtures.StatusMsg);
+			//alert(data.StatusMsg);
 			}
 		});
 	}
@@ -63,7 +63,7 @@ function load(db) {
 			spinner.spin();
 			setTimeout(function(){alert(data.StatusMsg);}, 300);
 			
-				//	alert(fixtures.StatusMsg);
+				//	alert(data.StatusMsg);
 				//load database successfully, change the database name on web page
 				//document.getElementById("_db_name_3").value = db;
 			}
@@ -93,7 +93,7 @@ function query(db, dp) {
 	if(format != "html")
 	{
 		/*
-		$.get(encodeArgu, function(fixtures, status){
+		$.get(encodeArgu, function(data, status){
 			if(status == "success")
 		{
 			alert("success");
@@ -133,14 +133,14 @@ function query(db, dp) {
 			if(status=="success"){
 				if(data.StatusCode != 0)
 				{	
-				//	alert(fixtures.StatusMsg);
+				//	alert(data.StatusMsg);
 						spinner.spin();
 						setTimeout(function(){alert(data.StatusMsg);}, 300);
 				}
 				else
 				{
 				//toTxt();
-				//alert(fixtures);
+				//alert(data);
 				var obj = data;
 				var query_time = obj.QueryTime;
 				var fileName = obj.Filename;
@@ -245,10 +245,10 @@ function afterAns(file_name){
 }
 */
 /*
-	$.get(encodeArgu3, function(fixtures, status){
+	$.get(encodeArgu3, function(data, status){
 		if(status=="success"){
 			$("#queryAns").empty();
-			var res = $("<p></p>").text(fixtures);
+			var res = $("<p></p>").text(data);
 			$("#queryAns").append(res);
 			$("#queryAns").scrollTop($("#queryAns").height());
 		}
@@ -273,7 +273,7 @@ function unload(db) {
 			spinner.spin();
 			setTimeout(function(){alert(data.StatusMsg);}, 300);
 			
-				//	alert(fixtures.StatusMsg);
+				//	alert(data.StatusMsg);
 				//unload database successfully, so set the database name on web page to be NULL
 				//document.getElementById("_db_name_3").value = "NULL";
 	
@@ -288,9 +288,9 @@ function getDatabaseName(){
 	//alert("getDatabaseName");
 	var argu5 = "?operation=show&type=current";
 	var encodeArgu5 = escape(argu5);
-	$.get(encodeArgu5, function(fixtures, status){
+	$.get(encodeArgu5, function(data, status){
 		if(status=="success"){
-			document.getElementById("_db_name_3").value = fixtures;
+			document.getElementById("_db_name_3").value = data;
 		}
 		else{
 			document.getElementById("_db_name_3").value = "NULL";
@@ -327,7 +327,7 @@ function monitor() {
 				}
 			$("#monitorAns").scrollTop($("#monitorAns").height());
 	
-			//document.getElementById("monitor_text").value = fixtures;
+			//document.getElementById("monitor_text").value = data;
 		}
 	});
 	}
@@ -354,8 +354,8 @@ function addUser(username, password){
 			//setTimeout(function(){spinner.spin();}, 300);
 		
 			if(status == "success"){
-				//if(fixtures.StatusCode != 906)
-			//		alert(fixtures.StatusMsg);
+				//if(data.StatusCode != 906)
+			//		alert(data.StatusMsg);
 				//showUsers();
 			//setTimeout(function(){spinner.spin();}, 300);
 				spinner.spin();
@@ -382,8 +382,8 @@ function delUser(username){
 			//setTimeout(function(){spinner.spin();}, 300);
 		
 			if(status == "success"){
-				//if(fixtures.StatusCode != 906)
-			//		alert(fixtures.StatusMsg);
+				//if(data.StatusCode != 906)
+			//		alert(data.StatusMsg);
 				//showUsers();
 			//setTimeout(function(){spinner.spin();}, 300);
 				spinner.spin();
@@ -410,8 +410,8 @@ function changePsw(username, password){
 			//setTimeout(function(){spinner.spin();}, 300);
 		
 			if(status == "success"){
-				//if(fixtures.StatusCode != 906)
-		//			alert(fixtures.StatusMsg);
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
 				//showUsers();
 				if(username == "root")
 					setCookie('pswd',password,7);
@@ -439,8 +439,8 @@ function addPrivilege(username, type, db){
 		var encodeArgu9 = escape(argu9);
 		$.get(encodeArgu9, function(data, status){
 			if(status == "success"){
-				//if(fixtures.StatusCode != 906)
-		//			alert(fixtures.StatusMsg);
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
 				//showUsers();
 		//	setTimeout(function(){spinner.spin();}, 300);
 				spinner.spin();
@@ -468,8 +468,8 @@ function delPrivilege(username, type, db){
 			//setTimeout(function(){spinner.spin();}, 300);
 		
 			if(status == "success"){
-				//if(fixtures.StatusCode != 906)
-		//			alert(fixtures.StatusMsg);
+				//if(data.StatusCode != 906)
+		//			alert(data.StatusMsg);
 				//showUsers();
 		//	setTimeout(function(){spinner.spin();}, 300);
 				spinner.spin();
@@ -565,7 +565,7 @@ function showDatabases() {
 
 			//setTimeout(function(){spinner.spin();}, 300);
 		
-			//document.getElementById("monitor_text").value = fixtures;
+			//document.getElementById("monitor_text").value = data;
 		}
 	});
 }

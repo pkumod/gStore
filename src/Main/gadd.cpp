@@ -3,7 +3,7 @@
  * @Date: 2021-08-22 20:14:02
  * @LastEditTime: 2022-11-22 20:58:42
  * @LastEditors: wangjian 2606583267@qq.com
- * @Description: batch insert fixtures tool
+ * @Description: batch insert data tool
  * @FilePath: /gstore/Main/gadd.cpp
  */
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t the database name. " << endl;
-			cout << "\t-f,--file,\t\tthe file path for inserting fixtures." << endl;
+			cout << "\t-f,--file,\t\tthe file path for inserting data." << endl;
 			cout << "\t-dir,--directory,\t\tthe directory path for inserting datas." << endl;
 			cout << endl;
 			return 0;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 		string dirname = Util::getArgValue(argc, argv, "dir", "directory");
 		if (filename.empty() && dirname.empty())
 		{
-			cout << "the add fixtures file is empty! Input \"bin/gadd -h\" for help." << endl;
+			cout << "the add data file is empty! Input \"bin/gadd -h\" for help." << endl;
 			return 0;
 		}
 		bool is_zip = false;
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 				total_num = Util::count_lines(error_log);
 				for (string rdf_file : zip_files)
 				{
-					cout << "begin insert fixtures from " << rdf_file << endl;
+					cout << "begin insert data from " << rdf_file << endl;
 					success_num += _db.batch_insert(rdf_file, false, nullptr);
 				}
 				// exclude Info line
@@ -173,14 +173,14 @@ int main(int argc, char *argv[])
 			total_num = Util::count_lines(error_log);
 			for (string rdf_file : files)
 			{
-				cout << "begin insert fixtures from " << dirname << rdf_file << endl;
+				cout << "begin insert data from " << dirname << rdf_file << endl;
 				success_num += _db.batch_insert(dirname + rdf_file, false, nullptr);
 			}
 			// exclude Info line
 			parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 		}
 		long tv_end = Util::get_cur_time();
-		// cout << "finish insert fixtures" << endl;
+		// cout << "finish insert data" << endl;
 		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num <<",used " << (tv_end - tv_begin) << " ms" << endl;
 		if (parse_error_num > 0)
 		{
