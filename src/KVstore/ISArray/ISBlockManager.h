@@ -19,7 +19,7 @@ class ISBlockManager
 private:
 	// size of block, 4K, unit is byte
 	static const unsigned BLOCK_SIZE = 1 << 7;//1 << 12;
-	// size of fixtures stored in block, unit is byte
+	// size of data stored in block, unit is byte
 	static const unsigned BLOCK_DATA_SIZE = BLOCK_SIZE - 2 * sizeof(unsigned);
 	// minimum initial blocks
 	static const unsigned SET_BLOCK_NUM = 1 << 8;

@@ -340,7 +340,7 @@ VList::readBstr(char*& _str, unsigned& _len, unsigned* _next)
 		j = 4 - j;
 	fseek(valfp, j, SEEK_CUR);
 
-	//NOTICE+DEBUG: I think no need to align here, later no fixtures to read
+	//NOTICE+DEBUG: I think no need to align here, later no data to read
 	//(if need to read, then fseek again to find a new value)
 	//this->ReadAlign(_next);
 
@@ -376,7 +376,7 @@ VList::writeBstr(const char* _str, unsigned _len, unsigned* _curnum)
 		j = 4 - j;
 	fseek(valfp, j, SEEK_CUR);
 
-	//NOTICE+DEBUG: I think no need to align here, later no fixtures to write
+	//NOTICE+DEBUG: I think no need to align here, later no data to write
 	//(if need to write, then fseek again to write a new value)
 	//this->WriteAlign(_curnum);
 	fseek(valfp, Address(*_curnum), SEEK_SET);

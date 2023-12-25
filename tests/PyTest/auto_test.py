@@ -68,7 +68,7 @@ def BFSTest():
     for db_name in data_set:
         db_path = os.path.join(data_dir, db_name)
         files = os.listdir(db_path)
-        nt_file = 'fixtures/%s/%s.nt' % (db_name, db_name)
+        nt_file = 'data/%s/%s.nt' % (db_name, db_name)
         query_files = list(filter(lambda x: '.sql' in x, files))
         print(nt_file)
         os.system("bin/gbuild -db " + db_name_gstore + " -f " + nt_file
@@ -96,7 +96,7 @@ def DFSTest():
     for db_name in data_set:
         db_path = os.path.join(data_dir, db_name)
         files = os.listdir(db_path)
-        nt_file = 'fixtures/%s/%s.nt' % (db_name, db_name)
+        nt_file = 'data/%s/%s.nt' % (db_name, db_name)
         query_files = list(filter(lambda x: '.sql' in x, files))
         print(nt_file)
         os.system("bin/gbuild -db " + db_name_gstore + " -f " + nt_file

@@ -97,9 +97,9 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _p
 		//unsigned prime2[]={49943,49957,49991,49993,49999};
 
 		//NOTICE: more ones in the bitset(use more primes) means less conflicts, but also weakens the filtration of VSTree.
-		// when the fixtures set is big enough, cutting down the size of candidate list should come up to our primary consideration.
+		// when the data set is big enough, cutting down the size of candidate list should come up to our primary consideration.
 		// in this case we should not encode too many ones in entities' signature.
-		// also, when the fixtures set is small, hash conflicts can hardly happen.
+		// also, when the data set is small, hash conflicts can hardly happen.
 		// therefore, I think using 2 primes(set up two ones in bitset) is enough.
 		// --by hanshuo.
 		//unsigned primeSize = 2;

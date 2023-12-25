@@ -112,7 +112,7 @@ int main(int argc, char * argv[])
 	int test_group_size = 5;
 	int test_value_region = 10;
 	string db_name = "update_test";
-	string db_path = "fixtures/update_test.nt";
+	string db_path = "data/update_test.nt";
 	if(argc == 2)
 	{
 		string s = argv[1];
@@ -125,7 +125,7 @@ int main(int argc, char * argv[])
 			test_group_size = 10000;
 			test_value_region = 10000;
 			db_name = "DBpedia170M";
-			db_path = "/home/fixtures/DBpedia/database/dbpedia170M.nt";
+			db_path = "/home/data/DBpedia/database/dbpedia170M.nt";
 		}
 		else
 		{

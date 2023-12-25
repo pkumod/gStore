@@ -1034,7 +1034,7 @@ public:
     void fun_delete(const std::string &username, struct PFNInfo *pfn_info);
     string fun_build(const std::string &username, const std::string fun_name);
     void fun_review(const std::string &username, struct PFNInfo *pfn_info);
-    // for fixtures get
+    // for data get
     string get_system_path();
     string get_backup_path();
     string get_Db_path();

@@ -41,9 +41,9 @@ public:
             : ptr_(static_cast<const char *>(str)), length_(len)
     {}
 
-    // fixtures() may return a pointer to a buffer with embedded NULs, and the
+    // data() may return a pointer to a buffer with embedded NULs, and the
     // returned buffer may or may not be null terminated.  Therefore it is
-    // typically a mistake to pass fixtures() to a routine that expects a NUL
+    // typically a mistake to pass data() to a routine that expects a NUL
     // terminated std::string.  Use "as_string().c_str()" if you really need to do
     // this.  Or better yet, change your routine so it does not rely on NUL
     // termination.
@@ -157,7 +157,7 @@ public:
 //
 //        std::string to_string() const
 //        {
-//            return std::string(fixtures(), size() + 1);
+//            return std::string(data(), size() + 1);
 //        }
 
     void CopyToString(std::string *target) const

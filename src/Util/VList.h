@@ -41,8 +41,8 @@ class VList
 public:
 	//NOTICE:the border is 10^6, but the block is larger, 1M
 	//this is not choosed intuitively, we make sure that using vlist is better: transferring time>random seek time(x/40M>0.006)
-	//Also notice that if no modification on fixtures, read a node is almost sequentially in normal IVTree
-	//In VList, case is the same and using VList may bring another seek cost!(it is not easy to setup cache for IVTree due to fixtures struct)
+	//Also notice that if no modification on data, read a node is almost sequentially in normal IVTree
+	//In VList, case is the same and using VList may bring another seek cost!(it is not easy to setup cache for IVTree due to data struct)
 	static const unsigned LENGTH_BORDER = 1000000;
 	//static const unsigned LENGTH_BORDER = 100;
 	static const unsigned BLOCK_SIZE = 1 << 20;	//fixed size of disk-block

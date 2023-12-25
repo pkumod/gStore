@@ -182,9 +182,9 @@ std::string _db_suffix;
 // NOTICE: no need to close connection here due to the usage of shared_ptr
 // http://www.tuicool.com/articles/3Ub2y2
 //
-// TODO: the URL format is terrible, i.e. 127.0.0.1:9000/build/lubm/fixtures/LUBM_10.n3
+// TODO: the URL format is terrible, i.e. 127.0.0.1:9000/build/lubm/data/LUBM_10.n3
 // we should define some keys like operation, database, dataset, query, path ...
-// 127.0.0.1:9000?operation=build&database=lubm&dataset=fixtures/LUBM_10.n3
+// 127.0.0.1:9000?operation=build&database=lubm&dataset=data/LUBM_10.n3
 //
 // TODO: control the authority, check it if requesting for build/load/unload
 // for sparql endpoint, just load database when starting, and comment out all functions except for query()
@@ -731,7 +731,7 @@ void signalHandler(int signum)
 
 // QUERY: can server.send() in default_resource_send run in parallism?
 
-// TCP is slower than UDP, but more safely, and can support large fixtures transfer well
+// TCP is slower than UDP, but more safely, and can support large data transfer well
 // http://blog.csdn.net/javaniuniu/article/details/51419348
 void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
 						   const shared_ptr<ifstream> &ifs)
@@ -793,7 +793,7 @@ void thread_sigterm_handler(int _signal_num)
  * email：liwenjiehn@pku.edu.cn
  * @description: build the database
  * @param {string} db_name: the name of database that would build.
- * @param {string} db_path: the fixtures file path
+ * @param {string} db_path: the data file path
  * @param {string} username: username
  * @param {string} password: password
  * @return {*}
@@ -1005,7 +1005,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 						unsigned total_num = Util::count_lines(error_log);
 						for (std::string rdf_zip : zip_files)
 						{
-							SLOG_DEBUG("begin insert fixtures from " + rdf_zip);
+							SLOG_DEBUG("begin insert data from " + rdf_zip);
 							success_num += cur_database->batch_insert(rdf_zip, false, nullptr);
 						}
 						parse_insert_error_num = Util::count_lines(error_log)-total_num-zip_files.size();
@@ -2244,7 +2244,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				apiUtil->write_query_log(&queryLogInfo);
 			}
 
-			// to void someone downloading all the fixtures file by sparql query on purpose and to protect the fixtures
+			// to void someone downloading all the data file by sparql query on purpose and to protect the data
 			// if the ansNum too large, for example, larger than 100000, we limit the return ans.
 			if (rs_ansNum > apiUtil->get_max_output_size())
 			{
@@ -3109,7 +3109,7 @@ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, c
  * email：liwenjiehn@pku.edu.cn
  * @description:
  * @param {string} db_name: the name of target database
- * @param {string} file: the insert fixtures file
+ * @param {string} file: the insert data file
  * @return {*}
  */
 void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir)
@@ -3139,13 +3139,13 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		if (is_file && Util::file_exist(file) == false)
 		{
-			error = "The fixtures file is not exist";
+			error = "The data file is not exist";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
 		if (!is_file && Util::dir_exist(dir) == false )
 		{
-			error = "The fixtures directory is not exist";
+			error = "The data directory is not exist";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -3203,7 +3203,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		else
 		{
-			string success = "Batch insert fixtures successfully.";
+			string success = "Batch insert data successfully.";
 			unsigned success_num = 0;
 			unsigned total_num = 0;
 			unsigned parse_error_num = 0;
@@ -3222,7 +3222,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 					total_num = Util::count_lines(error_log);
 					for (std::string rdf_zip : zip_files)
 					{
-						SLOG_DEBUG("begin insert fixtures from " + rdf_zip);
+						SLOG_DEBUG("begin insert data from " + rdf_zip);
 						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
 					}
 					parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
@@ -3236,7 +3236,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 				total_num = Util::count_lines(error_log);
 				for (string rdf_file : files)
 				{
-					SLOG_DEBUG("begin insert fixtures from " + dir + rdf_file);
+					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
 					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
 				}
 				// exclude Info line
@@ -3273,7 +3273,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
  * email：liwenjiehn@pku.edu.cn
  * @description:
  * @param {string} db_name: the target database's name
- * @param {string} file: the remove fixtures file
+ * @param {string} file: the remove data file
  * @return {*}
  */
 void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file)
@@ -3296,7 +3296,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		if (Util::file_exist(file) == false)
 		{
-			error = "the fixtures file is not exist";
+			error = "the data file is not exist";
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
@@ -3320,7 +3320,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		else
 		{
-			string success = "Batch remove fixtures successfully.";
+			string success = "Batch remove data successfully.";
 			string success_num = std::to_string(current_database->batch_remove(file, false, nullptr));
 			current_database->save();
 			apiUtil->unlock_database(db_name);
@@ -4483,7 +4483,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	ss += "\nrequest_time: " + Util::get_date_time();
 	ss += "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss);
-	// "Content-Type:multipart/form-fixtures; boundary=--------------------------617568955343916342854790"
+	// "Content-Type:multipart/form-data; boundary=--------------------------617568955343916342854790"
 	auto contentType = request->header.find("Content-Type");
 	std::string boundary;
 	if (contentType != request->header.end())
@@ -4534,7 +4534,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	
 	if (formPtr->empty())
 	{   
-		sendResponseMsg(9, "Form fixtures is empty", operation, request, response);
+		sendResponseMsg(9, "Form data is empty", operation, request, response);
 		formPtr.release();
 		return;
 	}

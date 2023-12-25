@@ -2046,7 +2046,7 @@ int create_handler(const vector<string> &args)
 		total_num = Util::count_lines(error_log);
 		for (string rdf_file : zip_files)
 		{
-			cout << "begin insert fixtures from " << rdf_file << endl;
+			cout << "begin insert data from " << rdf_file << endl;
 			success_num += _db.batch_insert(rdf_file, false, nullptr);
 		}
 		// exclude Info line

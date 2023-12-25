@@ -67,7 +67,7 @@ function login(){
 			spinner.spin();
 			if(data.StatusCode != 0)
 			{
-				//alert(fixtures);
+				//alert(data);
 				var oCheck = document.getElementById('checkMsg');
 				oCheck.hidden = false;
 			}
@@ -76,7 +76,7 @@ function login(){
 				setCookie('user',oUser.value,7);
 				setCookie('pswd',oPswd.value,7);
 				//$("#main_html").empty();
-				//$("#main_html").append(fixtures);
+				//$("#main_html").append(data);
 				var argu = "?operation=login&username=" + oUser.value + "&password=" + oPswd.value;
 				// alert(argu);
 				var encodeArgu = escape(argu);

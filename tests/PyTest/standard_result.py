@@ -69,7 +69,7 @@ def GenerateBFS():
     os.system('mkdir -p bfs_test')
     for db_name in db_list:
         os.system('mkdir -p bfs_test/%s'%db_name)
-        generateStdAnswer('fixtures/%s/' % db_name, 'bfs_test/%s'% db_name)
+        generateStdAnswer('data/%s/' % db_name, 'bfs_test/%s'% db_name)
 
 def GenerateDFS():
     os.system('rm -r dfs_test')

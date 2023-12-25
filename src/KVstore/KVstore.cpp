@@ -506,7 +506,7 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 		_values[3] = _pre_id;
 		_values[4] = 5;
 		_values[5] = _obj_id;
-		//NOTICE: not use array in stack here, otherwise it will be freed, and fixtures in B+Tree, too
+		//NOTICE: not use array in stack here, otherwise it will be freed, and data in B+Tree, too
 		this->addValueByKey(this->subID2values, _sub_id, (char*)_values, sizeof(int) * 6);
 	}
 
@@ -998,10 +998,10 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 /*
 input:
     _pidoidlist: remove PO pairs
-	_tmp: input fixtures nums(unsigned nums but not bytes num!)
+	_tmp: input data nums(unsigned nums but not bytes num!)
 	_len: bytes nums
-	_values: output fixtures
-	values_len: output fixtures nums(unsigned nums but not bytes num!)
+	_values: output data
+	values_len: output data nums(unsigned nums but not bytes num!)
 */
 unsigned 
 KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  unsigned long _len, unsigned*& values, unsigned long& values_len) const

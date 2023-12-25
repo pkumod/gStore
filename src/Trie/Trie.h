@@ -4,7 +4,7 @@
 * Mail: qinzongyue@pku.edu.cn
 * Last modified	2018-01-15
 * Description:
-* This fixtures structure is used to extract common prefixes from a given dataset,
+* This data structure is used to extract common prefixes from a given dataset,
 * and compress/uncompress the dataset according to those prefixes.
 ==============================================================================*/
 #ifndef TRIE_FORBIDDEN

@@ -4030,7 +4030,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			pfn_lib_path.append("/");
 		}
 		
-		string json_file_path = pfn_file_path + username + "/fixtures.json";
+		string json_file_path = pfn_file_path + username + "/data.json";
 		#if defined(DEBUG)
 		cout << "pfn lib path: " << pfn_lib_path << endl;
 		cout << "open json file: " << json_file_path << endl;

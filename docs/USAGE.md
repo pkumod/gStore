@@ -182,7 +182,7 @@ password: the password of the user that execute the operation
 `ghttp` support concurrent read-only queries, but when queries containing updates come, the whole database will be locked.
 The number of concurrent running queries is suggest to be lower than 300 on a machine with dozens of kernel threads, though we can run 13000 queries concurrently in our experiments.
 To use the concurrency feature, you had better modify the system settings of 'open files' and 'maximum processes' to 65535 or larger.
-Three scripts are placed in [setup](../utils/setup/) to help you modify the settings in different Linux distributions.
+Three scripts are placed in [setup](../scripts/setup/) to help you modify the settings in different Linux distributions.
 
 **If queries containing updates are sent via `ghttp`, you'd better often send a `checkpoint` command to the `ghttp` console. Otherwise, the updates may not be synchronize to disk and will be lost if the `ghttp` server is stopped abnormally.(For example, type "Ctrl+C")**
 

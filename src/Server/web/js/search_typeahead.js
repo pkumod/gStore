@@ -146,7 +146,7 @@ function getPredicateList(subject_entity)
 	$.get(encodeArgu, function(data, status){
 			if(status=="success"){
 				//toTxt();
-				//alert(fixtures);
+				//alert(data);
 				var items = new Array();
 				var parts = data.results.bindings;
 				for(var i = 0; i < parts.length; i++)
@@ -248,8 +248,8 @@ function updatePredColumn(preds) {
 	var innerHTML = "<label class=\"descripiton\" for=\"predicateList\">谓词列表\n" ;
 		/*
     var innerHTML =     "<div class=\"panel panel-default\">\n"+
-        "    <div class=\"panel-heading\" fixtures-toggle=\"collapse\" href=\"#predicateList\" style='cursor:pointer'>\n"+
-        "        <h3 class=\"panel-title\"><a fixtures-toggle=\"collapse\" href=\"#predicateList\">\n"+
+        "    <div class=\"panel-heading\" data-toggle=\"collapse\" href=\"#predicateList\" style='cursor:pointer'>\n"+
+        "        <h3 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#predicateList\">\n"+
         "            谓词列表"+
         "        </a></h3>\n"+
         "    </div>\n"+

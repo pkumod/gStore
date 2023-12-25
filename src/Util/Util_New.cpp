@@ -20,7 +20,7 @@ static string Util_New::getCurrentRootPath()
 
     char pwd[255];
     char* wd;
-    //也可以将buffer作为输出参数
+    //涔熷彲浠ュ皢buffer浣滀负杈撳嚭鍙傛暟
     if ((buffer = getcwd(NULL, 0)) == NULL)
     {
         perror("getcwd error");

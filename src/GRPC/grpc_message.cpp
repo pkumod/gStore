@@ -144,7 +144,7 @@ Json &GRPCReq::json() const
         _req_data->json.Parse(body_content.c_str());
         if (_req_data->json.HasParseError())
         {
-            fprintf(stderr, "[GRPC] %s:%s\n", "Parse json fixtures error: ", body_content.c_str());
+            fprintf(stderr, "[GRPC] %s:%s\n", "Parse json data error: ", body_content.c_str());
             _req_data->json.Clear();
         }
         return _req_data->json;
@@ -442,7 +442,7 @@ int GRPCResp::compress(const std::string * const data, std::string *compress_dat
         if (headers["Content-Encoding"].find("gzip") != std::string::npos)
         {
             // TODO
-            // status = Compressor::gzip(fixtures, compress_data);
+            // status = Compressor::gzip(data, compress_data);
         }
     } else 
     {

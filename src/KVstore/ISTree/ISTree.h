@@ -36,7 +36,7 @@ protected:
 	//so lock is a must. Add lock to transfer is better than to add 
 	//lock to every key/value. However, modify requires a lock for a
 	//key/value, and multiple search for different keys are ok!!!
-	//Bstr transfer[3];	//0:transfer value searched; 1:copy key-fixtures from const char*; 2:copy val-fixtures from const char*
+	//Bstr transfer[3];	//0:transfer value searched; 1:copy key-data from const char*; 2:copy val-data from const char*
 	//unsigned transfer_size[3];
 
 	//tree's operations should be atom(if read nodes)

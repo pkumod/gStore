@@ -3,7 +3,7 @@
  * @Date: 2021-08-22 18:00:17
  * @LastEditTime: 2023-02-14 14:09:19
  * @LastEditors: wangjian 2606583267@qq.com
- * @Description: Batch delete fixtures from database
+ * @Description: Batch delete data from database
  * @FilePath: /gstore/Main/gsub.cpp
  */
 
@@ -45,7 +45,7 @@ main(int argc, char * argv[])
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
 			cout << "\t-db,--database,\t\t the database name. " << endl;
-			cout << "\t-f,--file,\t\tthe file path to delete fixtures." << endl;
+			cout << "\t-f,--file,\t\tthe file path to delete data." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -87,8 +87,8 @@ main(int argc, char * argv[])
 		{
 			//cout << "please input the file path." << endl;
 			//Util::formatPrint("please input the file path.", "Error");
-			//Log.Error("the add fixtures file is empty! Input \"bin/gadd -h\" for help.");
-			cout << "the delete fixtures file is empty! Input \"bin/gsub -h\" for help." << endl;
+			//Log.Error("the add data file is empty! Input \"bin/gadd -h\" for help.");
+			cout << "the delete data file is empty! Input \"bin/gsub -h\" for help." << endl;
 			return 0;
 		}
 		Database system_db("system");

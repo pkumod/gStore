@@ -17,9 +17,9 @@
  * The Controller of read, write, swap operation
  *
  * The SITree File are composed of 3 part:
- * [mete fixtures][free block bit map][block content]
+ * [mete data][free block bit map][block content]
  *
- * [mete fixtures]
+ * [mete data]
  * 0-4 byte:  (unsigned int) tree height
  * 4-7 byte:  (unsigned int) the root SINode's block id
  * 8-11 byte: (unsigned int) cur_block_num

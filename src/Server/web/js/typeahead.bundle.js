@@ -1153,7 +1153,7 @@
             };
             if (_.isMsie()) {
                 _.mixin(css.input, {
-                    backgroundImage: "url(fixtures:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)"
+                    backgroundImage: "url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)"
                 });
             }
             return css;

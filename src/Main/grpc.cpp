@@ -531,7 +531,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 	Form &form = request->form();
 	if (form.empty())
 	{   
-		response->Error(StatusFileReadError, "Form fixtures is empty");
+		response->Error(StatusFileReadError, "Form data is empty");
 		return;
 	}
 	std::string error;
@@ -607,12 +607,12 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	json_data.SetObject();
 	Json::AllocatorType &allocator = json_data.GetAllocator();
 	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
-	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-fixtures
+	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
 	{
 		Form &form = request->form();
 		if (form.empty())
 		{   
-			response->Error(StatusFileReadError, "Form fixtures is empty");
+			response->Error(StatusFileReadError, "Form data is empty");
 			return;
 		}
 		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
@@ -1465,7 +1465,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param request 
  * @param response 
  * @param json_data 
- * {db_name: "the name of database that would build", db_path: "the fixtures file path"}
+ * {db_name: "the name of database that would build", db_path: "the data file path"}
  */
 void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
@@ -1657,7 +1657,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 						unsigned total_num = Util::count_lines(error_log);
 						for (std::string rdf_zip : zip_files)
 						{
-							SLOG_DEBUG("begin insert fixtures from " + rdf_zip);
+							SLOG_DEBUG("begin insert data from " + rdf_zip);
 							success_num += cur_database->batch_insert(rdf_zip, false, nullptr);
 						}
 						parse_insert_error_num = Util::count_lines(error_log)-total_num-zip_files.size();
@@ -2183,7 +2183,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			// end
 			// }
 
-			// to void someone downloading all the fixtures file by sparql query on purpose and to protect the fixtures
+			// to void someone downloading all the data file by sparql query on purpose and to protect the data
 			// if the ansNum too large, for example, larger than 100000, we limit the return ans.
 			if (rs_ansNum > apiUtil->get_max_output_size())
 			{
@@ -2855,12 +2855,12 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 }
 
 /**
- * batch insert fixtures
+ * batch insert data
  * 
  * @param request 
  * @param response 
  * @param json_data 
- * {db_name: "the operation database name", file: "the insert fixtures file"}
+ * {db_name: "the operation database name", file: "the insert data file"}
  */
 void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
@@ -2890,13 +2890,13 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		if (is_file && Util::file_exist(file) == false)
 		{
-			error = "The fixtures file is not exist";
+			error = "The data file is not exist";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
 		if (!is_file && Util::file_exist(dir) == false)
 		{
-			error = "The fixtures directory is not exist";
+			error = "The data directory is not exist";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
@@ -2955,7 +2955,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		else
 		{
-			string success = "Batch insert fixtures successfully.";
+			string success = "Batch insert data successfully.";
 			unsigned success_num = 0;
 			unsigned total_num = 0;
 			unsigned parse_error_num = 0;
@@ -2974,7 +2974,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 					total_num = Util::count_lines(error_log);
 					for (std::string rdf_zip : zip_files)
 					{
-						SLOG_DEBUG("begin insert fixtures from " + rdf_zip);
+						SLOG_DEBUG("begin insert data from " + rdf_zip);
 						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
 					}
 					// exclude Info line
@@ -2989,7 +2989,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 				total_num = Util::count_lines(error_log);
 				for (string rdf_file : files)
 				{
-					SLOG_DEBUG("begin insert fixtures from " + dir + rdf_file);
+					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
 					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
 				}
 				// exclude Info line
@@ -3021,12 +3021,12 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 }
 
 /**
- * batch remove fixtures
+ * batch remove data
  * 
  * @param request 
  * @param response 
  * @param json_data 
- * {db_name: "the operation database name", file: "the insert fixtures file"}
+ * {db_name: "the operation database name", file: "the insert data file"}
  */
 void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
@@ -3048,7 +3048,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		if (Util::file_exist(file) == false)
 		{
-			error = "The fixtures file is not exist";
+			error = "The data file is not exist";
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
@@ -3072,7 +3072,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		else
 		{
-			string success = "Batch remove fixtures successfully.";
+			string success = "Batch remove data successfully.";
 			unsigned success_num = current_database->batch_remove(file, false, nullptr);
 			current_database->save();
 			apiUtil->unlock_database(db_name);

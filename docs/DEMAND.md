@@ -27,7 +27,7 @@ ccache | optional, used to speed up the compilation
 
 NOTICE:
 
-**To help ease the burden of setting environments, several scripts are provided in [setup](../utils/setup/) for different Linux distributions. Please select the setup script corresponding to your system and run it with root(or sudo) priviledge. (As for CentOS system, you need to install boost-devel by yourselves.)**
+**To help ease the burden of setting environments, several scripts are provided in [setup](../scripts/setup/) for different Linux distributions. Please select the setup script corresponding to your system and run it with root(or sudo) priviledge. (As for CentOS system, you need to install boost-devel by yourselves.)**
 
 1. The name of some packages may be different in different platforms, just install the corresponding one in your own operation system.
 

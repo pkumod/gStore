@@ -44,7 +44,7 @@ function query(dp) {
 	if(format != "html")
 	{
 		/*
-		$.get(encodeArgu, function(fixtures, status){
+		$.get(encodeArgu, function(data, status){
 			if(status == "success")
 		{
 			alert("success");
@@ -84,14 +84,14 @@ function query(dp) {
 			if(status=="success"){
 				if(data.StatusCode != 0)
 				{	
-				//	alert(fixtures.StatusMsg);
+				//	alert(data.StatusMsg);
 						spinner.spin();
 						setTimeout(function(){alert(data.StatusMsg);}, 300);
 				}
 				else
 				{
 				//toTxt();
-				//alert(fixtures);
+				//alert(data);
 				var obj = data;
 				var query_time = obj.QueryTime;
 				var fileName = obj.Filename;

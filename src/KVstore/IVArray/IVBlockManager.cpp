@@ -143,7 +143,7 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned long&_len)
 	_str = new char [Len_left];
 	_len = Len_left;
 	//cout << "Read Value: _len = " << _len << endl;
-	//char *pstr = _str; // pointer to where fixtures in next reading is stored
+	//char *pstr = _str; // pointer to where data in next reading is stored
 
 	if (_str == NULL)
 	{

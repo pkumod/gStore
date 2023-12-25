@@ -369,7 +369,7 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
 }
 
 /**
- * encode relative signature fixtures of the query graph
+ * encode relative signature data of the query graph
  * two parts: predicate var id & entity id , both start from 0
  * @param _p_kvstore the KV Store instance to query the node id
  * @param _query_var

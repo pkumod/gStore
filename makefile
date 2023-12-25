@@ -325,7 +325,7 @@ $(objdir)SINode.o: src/KVstore src/KVstore $(filter $(FIRST_BUILD),$(objdir)Util
 	$(CXX) $(CFLAGS) KVstore/SITree/node/SINode.cpp $(inc_log) -o $(objdir)SINode.o $(openmp)
 
 $(objdir)SIIntlNode.o: src/KVstore src/KVstore
-	$(CXX) $(CFLAGS) KVstore/SITree/node/SIIntlNode.cpp $(inc_log) -o $(objdir)SIIntlNode.o $(openmp)
+	$(CXX) $(CFLAGS) KVstore/ $(inc_log) -o $(objdir)SIIntlNode.o $(openmp)
 
 $(objdir)SILeafNode.o: src/KVstore src/KVstore
 	$(CXX) $(CFLAGS) KVstore/SITree/node/SILeafNode.cpp $(inc_log) -o $(objdir)SILeafNode.o $(openmp)
