@@ -6,9 +6,8 @@ gStore, a graph-based RDF triple store, is a joint research project by Peking Un
 
 [TOC]
 
-- - -
 
-<span id="chapter00">
+
 ## Chapter 00: A Quick Tour 
 
 Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
@@ -52,7 +51,7 @@ If you want to understand the details of the gStore system, or you want to try s
 
 We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](#chapter10).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <chenjiaqi93@163.com> to submit your suggestions and report bugs to us by emailing to <zengli-syzz@pku.edu.cn>. A full list of our whole team is in [Mailing List](#chapter11).
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to . A full list of our whole team is in [Mailing List](#chapter11).
 
 There are some restrictions when you use the current gStore project, you can see them on [Limit Description](#chapter12).
 
@@ -70,10 +69,9 @@ Graph database engine is a new area and we are still trying to go further. Thing
 
 People who inspire us or contribute to this project will be listed in the [Thanks List](#chapter15) chapter.
 
-- - -
-</span>
 
-<span id="chapter01">
+
+
 ## Chapter 01: System Requirements
 
 *We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.4.7 or later.*
@@ -110,10 +108,9 @@ NOTICE:
 
 7. Any other questions, please go to [FAQ](#chapter13) page.
 
-- - -
-</span>
 
-<span id="chapter02">
+
+
 ## Chapter 02: Basic Introduction
 
 **The first essay to come up with Gstore System is [gStore_VLDBJ](https://github.com/pkumod/gStore/tree/master/docs/pdf/gStoreVLDBJ.pdf), and You can find related publications in [Publications](#chapter07).**
@@ -138,10 +135,9 @@ What is more, gStore is a high-extensible project. Many new ideas of graph datab
 
 The gStore source code is available as open-source code under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work.
 
-- - -
-</span>
 
-<span id="chapter03">
+
+
 ## Chapter 03: Install Guide 
 
 gStore is a green software, and you just need to compile it with one command. Please run
@@ -158,10 +154,9 @@ You are free to modify the source code of gStore and create your own project whi
 
 Type `make gtest` to compile the gtest program if you want to use this test utility. You can see the [HOW TO USE](#chapter04) for details of gtest program.
 
-- - -
-</span>
 
-<span id="chapter04">
+
+
 ## Chapter 04: How To Use
 
 ### gStore currently includes five executables and others.
@@ -211,23 +206,23 @@ gconsole is the main console of gStore, which integrates with all functions to o
     ...
     final result is : 
     ?x
-    <http://www.Department0.University0.edu/FullProfessor0>
-    <http://www.Department1.University0.edu/FullProfessor0>
-    <http://www.Department2.University0.edu/FullProfessor0>
-    <http://www.Department3.University0.edu/FullProfessor0>
-    <http://www.Department4.University0.edu/FullProfessor0>
-    <http://www.Department5.University0.edu/FullProfessor0>
-    <http://www.Department6.University0.edu/FullProfessor0>
-    <http://www.Department7.University0.edu/FullProfessor0>
-    <http://www.Department8.University0.edu/FullProfessor0>
-    <http://www.Department9.University0.edu/FullProfessor0>
-    <http://www.Department10.University0.edu/FullProfessor0>
-    <http://www.Department11.University0.edu/FullProfessor0>
-    <http://www.Department12.University0.edu/FullProfessor0>
-    <http://www.Department13.University0.edu/FullProfessor0>
-    <http://www.Department14.University0.edu/FullProfessor0>
     
-    gstore>query "select distinct ?x ?y where { ?x <rdf:type> <ub:UndergraduateStudent> . ?x <ub:takesCourse> ?y . ?y <ub:name> <FullProfessor1> . }"
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    gstore>query "select distinct ?x ?y where { ?x  . }"
     final result is : 
     ?x      ?y
     [empty result]
@@ -292,27 +287,27 @@ We also take LUBM_10.n3 as an example.
     ... ...
     Total time used: 4ms.
     final result is : 
-    <http://www.Department0.University0.edu/FullProfessor0>
-    <http://www.Department1.University0.edu/FullProfessor0>
-    <http://www.Department2.University0.edu/FullProfessor0>
-    <http://www.Department3.University0.edu/FullProfessor0>
-    <http://www.Department4.University0.edu/FullProfessor0>
-    <http://www.Department5.University0.edu/FullProfessor0>
-    <http://www.Department6.University0.edu/FullProfessor0>
-    <http://www.Department7.University0.edu/FullProfessor0>
-    <http://www.Department8.University0.edu/FullProfessor0>
-    <http://www.Department9.University0.edu/FullProfessor0>
-    <http://www.Department10.University0.edu/FullProfessor0>
-    <http://www.Department11.University0.edu/FullProfessor0>
-    <http://www.Department12.University0.edu/FullProfessor0>
-    <http://www.Department13.University0.edu/FullProfessor0>
-    <http://www.Department14.University0.edu/FullProfessor0>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 Notice: 
 
 - "[empty result]" will be printed if no answer, and there is an empty line after all results.
 
-- readline lib is used, so you can use <UP> arrow key in your keyboard to see command history, and use <LEFT> and <RIGHT> arrow key to move and modify your entire command.
+- readline lib is used, so you can use  arrow key to move and modify your entire command.
 
 - path completion is supported for utility. (not built-in command completion)
 
@@ -350,7 +345,7 @@ gclient is designed as a client to send commands and receive feedbacks.
     import RDF file to database done.
     gsql>load lubm.db
     load database done.
-    gsql>sparql "select ?s ?o where { ?s <rdf:type> ?o . }"
+    gsql>sparql "select ?s ?o where { ?s  ?o . }"
     [empty result]
     
     gsql>quit
@@ -411,10 +406,9 @@ To use full_test.sh utility, please download the database system which you want 
 
 Only gStore and Jena are tested and compared in this script, but it is easy to add other database systems, if you would like to spend some time on reading this script. You may go to [test report](https://github.com/pkumod/gStore/tree/master/docs/pdf/gstore测试报告.pdf) or [Frequently Asked Questions](#chapter13) for help if you encounter a problem.
 
-- - -
-</span>
 
-<span id="chapter05">
+
+
 ## Chapter 05: API Explanation
 
 **This Chapter guides you to use our API for accessing gStore.**
@@ -496,13 +490,13 @@ gc.build("LUBM10.db", "example/LUBM_10.n3");
 // then you can execute SPARQL query on this database.
 std::string sparql = "select ?x where \
 					 { \
-					  ?x    <rdf:type>    <ub:UndergraduateStudent>. \
-					  ?y    <ub:name> <Course1>. \
-					  ?x    <ub:takesCourse>  ?y. \
-					  ?z    <ub:teacherOf>    ?y. \
-					  ?z    <ub:name> <FullProfessor1>. \
-					  ?z    <ub:worksFor>    ?w. \
-					  ?w    <ub:name>    <Department0>. \
+					  ?x    . \
+					  ?y    . \
+					  ?x      ?y. \
+					  ?z        ?y. \
+					  ?z    . \
+					  ?z        ?w. \
+					  ?w    . \
 					  }";
 std::string answer = gc.query(sparql);
 
@@ -565,13 +559,13 @@ gc.build("LUBM10.db", "example/LUBM_10.n3");
 // then you can execute SPARQL query on this database.
 String sparql = "select ?x where "
 				+ "{"
-				+ "?x    <rdf:type>    <ub:UndergraduateStudent>. "
-				+ "?y    <ub:name> <Course1>. "
-				+ "?x    <ub:takesCourse>  ?y. "
-				+ "?z    <ub:teacherOf>    ?y. "
-				+ "?z    <ub:name> <FullProfessor1>. "
-				+ "?z    <ub:worksFor>    ?w. "
-				+ "?w    <ub:name>    <Department0>. "
+				+ "?x    . "
+				+ "?y    . "
+				+ "?x      ?y. "
+				+ "?z        ?y. "
+				+ "?z    . "
+				+ "?z        ?w. "
+				+ "?w    . "
 				+ "}";
 String answer = gc.query(sparql);
 
@@ -615,10 +609,9 @@ Let us assume that your source code is placed in test.java, whose position is ${
 
 Then you can type `java -cp ${GSTORE}/gStore/api/java/lib/GstoreJavaAPI.jar:. test` to execute your own program(notice that the ":." in command cannot be neglected), which uses our Java API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
 
-- - -
-</span>
 
-<span id="chapter06">
+
+
 ## Chapter 06: Project Structure
 
 **This chapter introduce the whole structure of the gStore system project.**
@@ -871,10 +864,9 @@ We place some datasets and queries in data/ directory as examples, and you can t
 
 You are advised to start from the [README](#chapter00) in the gStore root directory, and visit other chapters only when needed. At last, you will see all documents from link to link if you are really interested in gStore.
 
-- - -
-</span>
 
-<span id="chapter07">
+
+
 ## Chapter 07: Publications
 
 #### Publications related with gStore are listed here:
@@ -893,10 +885,9 @@ You are advised to start from the [README](#chapter00) in the gStore root direct
 
 - Lei Zou, Yueguo Chen, [A Survey of Large-Scale RDF Data Management](http://www.icst.pku.edu.cn/intro/leizou/documentation/pdf/2012CCCF.pdf), Comunications of CCCF Vol.8(11): 32-43, 2012 (Invited Paper, in Chinese).
 
-- - -
-</span>
 
-<span id="chapter08">
+
+
 ## Chapter 08: Updated Logs 
 
 ### Apr 01, 2016
@@ -952,10 +943,9 @@ We add API for C/CPP and JAVA.
 
 We share our gStore2.0 code as an open-source project under BSD license on github.
 
-- - -
-</span>
 
-<span id="chapter09">
+
+
 ## Chapter 09: Test Results 
 
 ### Preparation
@@ -1001,20 +991,18 @@ Generally speaking, the memory cost of gStore when answering queries is higher t
 
 You can find more detailed information in [test report](https://github.com/pkumod/gStore/tree/master/docs/pdf/gstore测试报告.pdf). Notice that some questions in the test report have already be solved now.
 
-- - -
-</span>
 
-<span id="chapter10">
+
+
 ## Chapter 10: Recipe Book 
 
 **This chapter introduces some useful tricks if you are using gStore to implement applications.**
 
 *no tips available now*
 
-- - -
-</span>
 
-<span id="chapter11">
+
+
 ## Chapter 11: Mailing List 
 
 ### People
@@ -1053,10 +1041,9 @@ You can find more detailed information in [test report](https://github.com/pkumo
 
 - Jiaqi Chen (Peking University) (Undergraudate intern) email:chenjiaqi93@pku.edu.cn
 
-- - -
-</span>
 
-<span id="chapter12">
+
+
 ## Chapter 12: Limit Description 
 
 1. Queries related with uncertain predicates are not supported.
@@ -1067,10 +1054,9 @@ You can find more detailed information in [test report](https://github.com/pkumo
 
 4. The cost of disk and memory is still very large.
 
-- - -
-</span>
 
-<span id="chapter13">
+
+
 ## Chapter 13: Frequently Asked Questions 
 
 #### When I use the newer gStore system to query the original database, why error?
@@ -1137,10 +1123,9 @@ Please use `./gserver` command to start up a gStore server first, and notice tha
 
 Please ensure that you include the position of your own program in class path of java. The whole command should be something like `java -cp /home/bookug/project/devGstore/api/java/lib/GstoreJavaAPI.jar:. JavaAPIExample`, and the ":." in this command cannot be neglected.
 
-- - -
-</span>
 
-<span id="chapter14">
+
+
 ## Chapter 14: Future Plan 
 
 ### Improve The Core
@@ -1173,18 +1158,16 @@ Please ensure that you include the position of your own program in class path of
 
 - the strategy for Stream:is 85% valid? consider sampling, analyse the size of result set and decide strategy? how to support order by: sort in memory if not put in file; otherwise, partial sort in memory, then put into file, then proceed external sorting
 
-- - -
-</span>
 
-<span id="chapter15">
+
+
 ## Chapter 15: Thanks List 
 
 **This chapter lists people who inspire us or contribute to this project.**
 
 *nobody now*
 
-- - -
-</span>
+
 
 **Thank you for reading this document. If any question or advice, or you have interests in this project, please don't hesitate to get in touch with us.**
 
