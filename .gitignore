@@ -100,6 +100,7 @@ tags
 # queries
 *.sql
 *.sh
+!docker-entrypoint.sh
 
 # modules
 node_modules
