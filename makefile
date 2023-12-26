@@ -745,10 +745,11 @@ dist: clean
 	rm -rf backups/*.db
 
 tarball:
-	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts docs data logs \
-		Main Database KVstore Util Query Signature VSTree Parser Server README.md init.conf conf.ini StringIndex COVERAGE \
-		Dockerfile LICENSE makefile Trie
-
+	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts data logs \
+		Main Database KVstore Util Query Signature Parser Server StringIndex Trie GRPC COVERAGE \
+		makefile init.conf conf.ini backup.json ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
+		README.md LICENSE
+ 
 APIexample: $(api_cpp) $(api_socket) 
 	$(MAKE) -C api/http/cpp/example
 	$(MAKE) -C api/socket/cpp/example
