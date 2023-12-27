@@ -2236,53 +2236,52 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
-					auto content = request->header.find("Content-Encoding");
-					std::string content_encoding = (content == request->header.end()) ? "gzip" : content->second;
-					if (content_encoding.find("gzip") != std::string::npos)
+					auto content = request->header.find("Accept-Encoding");
+					if (content != request->header.end())
 					{
-						char* compress_ = (char*)malloc(resJson.size());
-						if (compress_ == nullptr)
+						std::string accept_encoding = content->second;
+						SLOG_DEBUG("Accept-Encoding: " + accept_encoding);
+						if (accept_encoding.find("gzip") != std::string::npos)
 						{
-							error = "Cache Not Enough";
-							sendResponseMsg(1005, error, operation, request, response);
-							return;
+							char* compress_ = (char*)malloc(resJson.size());
+							if (compress_ != nullptr)
+							{
+								size_t compress_size = 0;
+								int status = CompressUtil::GzipHelper::compress(&resJson, compress_, compress_size);
+								if (status == 0)
+								{
+									*response << "HTTP/1.1 200 OK"
+										<< "\r\nContent-Type: application/json"
+										<< "\r\nContent-Length: " << compress_size
+										<< "\r\nCache-Control: no-cache"
+										<< "\r\nPragma: no-cache"
+										<< "\r\nExpires: 0"
+										<< "\r\nContent-Encoding: gzip"
+										<< "\r\n\r\n";
+									char buffer;
+									for (size_t i = 0; i < compress_size; ++i)
+									{
+										buffer = compress_[i];
+										*response << buffer;
+									}
+									free(compress_);
+									return;
+								}
+								else
+								{
+									free(compress_);
+								}
+							}
 						}
-						int compress_size = 0;
-						int status = CompressUtil::GzipHelper::compress(&resJson, compress_, compress_size);
-						if (status != 0)
-						{
-							error = "Gzip Compress StatusMsg Error Code:" + std::to_string(status);
-							sendResponseMsg(1005, error, operation, request, response);
-							free(compress_);
-							return;
-						}
-						*response << "HTTP/1.1 200 OK"
-							  << "\r\nContent-Type: application/json"
-							  << "\r\nContent-Length: " << compress_size
-							  << "\r\nCache-Control: no-cache"
-							  << "\r\nPragma: no-cache"
-							  << "\r\nExpires: 0"
-							  << "\r\nContent-Encoding: gzip"
-							  << "\r\n\r\n";
-						char buffer;
-						for (int i = 0; i < compress_size; ++i)
-						{
-							buffer = compress_[i];
-							*response << buffer;
-						}
-						free(compress_);
 					}
-					else
-					{
-						*response << "HTTP/1.1 200 OK"
-							  << "\r\nContent-Type: application/json"
-							  << "\r\nContent-Length: " << resJson.length()
-							  << "\r\nCache-Control: no-cache"
-							  << "\r\nPragma: no-cache"
-							  << "\r\nExpires: 0"
-							  << "\r\n\r\n"
-							  << resJson;
-					}
+					*response << "HTTP/1.1 200 OK"
+							<< "\r\nContent-Type: application/json"
+							<< "\r\nContent-Length: " << resJson.length()
+							<< "\r\nCache-Control: no-cache"
+							<< "\r\nPragma: no-cache"
+							<< "\r\nExpires: 0"
+							<< "\r\n\r\n"
+							<< resJson;
 				}
 			}
 			else if (format == "file")
