@@ -2167,18 +2167,18 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
 					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 
-										response->set_header_pair("Cache-Control", "no-cache");
+					response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
-					std::string content_encoding = (request->header("Content-Encoding").empty()) ? "gzip" : request->header("Content-Encoding");
-					if (content_encoding.find("gzip") != std::string::npos)
-					{
-						response->Gzip(resp_data);
+					SLOG_DEBUG("Accept-Encoding:" + request->header("Accept-Encoding"));
+					if (request->hasHeader("Accept-Encoding")) {
+						std::string accept_encoding = request->header("Accept-Encoding");
+						if (accept_encoding.find("gzip") != std::string::npos)
+						{
+							response->headers["Content-Encoding"] = "gzip";
+						}
 					}
-					else
-					{
-						response->Json(resp_data);
-					}
+					response->Json(resp_data);
 				}
 			}
 			else if (format == "file")

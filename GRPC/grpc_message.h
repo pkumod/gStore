@@ -150,9 +150,6 @@ public:
     // save file
     void Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg);
 
-    // compress with gzip
-    void Gzip(const Json &json);
-
     // send json string
     void Json(const Json &json);
 
@@ -186,7 +183,7 @@ public:
     void add_task(SubTask *task);
 
 private:
-    int compress(const std::string * const data, std::string *compress_data);
+    int compress(const std::string * const data, void *compress_data, size_t &compress_size);
 
 public:
     GRPCResp() = default;
