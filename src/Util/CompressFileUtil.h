@@ -65,8 +65,8 @@ namespace CompressUtil
     class GzipHelper
     {
         public:
-        static int compress(const std::string *data, void *compress_data, int &compress_size);
-        static int unCompress(const char * data, int size, char *uncompress_data, int uncompress_size);
+        static int compress(const std::string *data, void *compress_data, size_t &compress_size);
+        static int unCompress(const char * data, int size, char *uncompress_data, size_t uncompress_size);
     };
 }
 
