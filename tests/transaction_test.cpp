@@ -1,6 +1,7 @@
-﻿#include "../Database/Txn_manager.h"
-#include "../Util/Util.h"
-#include "../Database/Database.h"
+﻿#include "../src/Database/Txn_manager.h"
+#include "../src/Util/Util.h"
+#include "../src/Database/Database.h"
+
 bool do_query(Database* db, string sparql)
 {
 	int ret_val;

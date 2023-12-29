@@ -16,7 +16,8 @@
 #include <string>
 #include <atomic>
 #include <sstream>
-#include "../Database/Txn_manager.h"
+
+#include "../src/Database/Txn_manager.h"
 
 void preload4bug(vector<string>& adds, vector<string>& subs, const int _nums)
 {

@@ -16,8 +16,8 @@
 //#include <stdlib.h>
 //#include <dirent.h>
 //#include <unistd.h>
-#include "../Database/Database.h"
-#include "../Util/Util.h"
+#include "../src/Database/Database.h"
+#include "../src/Util/Util.h"
 
 using namespace std;
 

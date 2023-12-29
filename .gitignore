@@ -5,6 +5,7 @@ lib/
 gstore.tar.gz
 CMakeUserPresets.json
 !CMakeLists.txt
+.cmake/
 
 # Executables
 *.pyc

@@ -9,7 +9,7 @@
 #include <string>
 #include <atomic>
 #include <sstream>
-#include "../Database/Txn_manager.h"
+#include "../src/Database/Txn_manager.h"
 
 using namespace std;
 
@@ -812,7 +812,7 @@ int main(int argc, char* argv[])
     Txn_manager txn_m(&_db, string("lubm_1M"));
     
 
-    TID = txn_m.Begin(2);
+    auto TID = txn_m.Begin(IsolationLevelType::SNAPSHOT);
 
     string res;
     int ret = txn_m.Query(TID, "select ?x where { <m> ?x <t>.}", res);
@@ -829,7 +829,7 @@ int main(int argc, char* argv[])
     insert data { <m> <s> <t>.}
     select ?x where { <m> ?x <t>.} */
 
-    return;
+    return 0;
 
     //threads_num = thread::hardware_concurrency()-1;
     vector<thread> pool(threads_num);
