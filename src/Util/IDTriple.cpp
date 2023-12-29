@@ -16,6 +16,7 @@ bool IDTriple::operator < (const IDTriple& a) const
 		}
 	}
 	assert(false);
+	return false;  // never reach here
 }
 
 

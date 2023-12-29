@@ -6,7 +6,7 @@ set(zlib_FIND_DEPENDENCY_NAMES "")
 
 ########### VARIABLES #######################################################################
 #############################################################################################
-set(zlib_PACKAGE_FOLDER_RELEASE "/home/hrz/.conan2/p/zlib0d40682819e93/p")
+set(zlib_PACKAGE_FOLDER_RELEASE "/home/hrz/.conan2/p/zlib3579ae9197e0e/p")
 set(zlib_BUILD_MODULES_PATHS_RELEASE )
 
 

@@ -344,6 +344,7 @@ unsigned StringIndex::getNum(StringIndexFile::StringIndexFileType _type)
         if (_type == StringIndexFile::Predicate)
                 return this->predicate.getNum();
 		assert(false);
+	return -1;  // never reach here
 }
 
 void StringIndex::save(KVstore &kv_store)
