@@ -407,7 +407,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	if (request->contentType() == APPLICATION_JSON) //for application/json
 	{
 		Json &json = request->json();
-		json_data.CopyFrom(json, allocator, true);
+		json_data.CopyFrom(json, allocator);
 	}
 	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
 	{
@@ -744,7 +744,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	if (request->contentType() == APPLICATION_JSON) //for application/json
 	{
 		Json &json = request->json();
-		json_data.CopyFrom(json, allocator, true);
+		json_data.CopyFrom(json, allocator);
 	}
 	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
 	{

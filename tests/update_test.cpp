@@ -6,8 +6,8 @@
 # Description: used to test the correctness of update triples
 =============================================================================*/
 
-#include "../Util/Util.h"
-#include "../Database/Database.h"
+#include "../src/Util/Util.h"
+#include "../src/Database/Database.h"
 
 using namespace std;
 
