@@ -31,7 +31,10 @@
     "testPresets": [
         {
             "name": "conan-release",
-            "configurePreset": "conan-release"
+            "configurePreset": "conan-release",
+            "environment": {
+                "OPENSSL_MODULES": "/home/hrz/.conan2/p/opensbabb3938048c9/p/lib/ossl-modules"
+            }
         }
     ]
 }

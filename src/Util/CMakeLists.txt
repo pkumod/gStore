@@ -1,0 +1,21 @@
+add_library(gstore_util OBJECT
+        Util.cpp
+        WebUrl.cpp
+        INIParser.cpp
+        Slog.cpp
+        Stream.cpp
+        Bstr.cpp
+        Triple.cpp
+        VList.cpp
+        EvalMultitypeValue.cpp
+        Version.cpp
+        SpinLock.cpp
+        GraphLock.cpp
+        Transaction.cpp
+        IDTriple.cpp
+        Latch.cpp
+        IPWhiteList.cpp
+        IPBlackList.cpp
+        OrderedVector.cpp
+        CompressFileUtil.cpp
+)

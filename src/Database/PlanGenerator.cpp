@@ -1222,6 +1222,7 @@ PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
 		default:
 			cout << "Error in PlanGenerator::get_plan, query strategy error!" << endl;
 			assert(false);
+		return nullptr;  // never reach here
 	}
 }
 

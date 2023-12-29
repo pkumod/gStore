@@ -2,10 +2,10 @@
 build/
 include/
 lib/
+bin/
+.cmake/
 gstore.tar.gz
 CMakeUserPresets.json
-!CMakeLists.txt
-.cmake/
 
 # Executables
 *.pyc
@@ -26,6 +26,7 @@ src/Parser/Sparql*
 *.txt
 *.log
 logs
+!CMakeLists.txt
 
 #backup files
 defaults/backup.json
