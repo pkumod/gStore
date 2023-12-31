@@ -1,4 +1,4 @@
-﻿# Gstore System
+# Gstore System
 
 gStore, a graph-based RDF triple store, is a joint research project by Peking University, University of Waterloo and Hong Kong University of Science and Technology. The system is developed and maintained by the database group in Institute of Computer Science and Technology, Peking University, China. A detailed description of gStore can be found at our papers [Zou et al., VLDB 11] and [Zou et al., VLDB Journal 14]  in the [Publication](#chapter07) section. This HELP document includes system installment, usage, API, use cases and FAQ.  gStore is a open-source project in github under the BSD license. You are welcome to use gStore, report bugs or suggestions, or join us to make gStore better. It is also allowed for you to build all kinds of applications based on gStore, while respecting our work. 
 
