@@ -35,10 +35,10 @@ link_directories(${CMAKE_SOURCE_DIR}/lib)
 include_directories(${CMAKE_INCLUDE_PATH})
 
 # Set output directories (use -DGSTORE_ROOT_DIR=... to override)
-SET(GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR})
+SET(GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR}/dist)
 SET(GSTORE_EXE_DIR ${GSTORE_ROOT_DIR}/bin)
 SET(GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib)
-SET(GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/scripts)
+SET(GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/tests)
 
 # if option USE_DYNAMIC_LIB is set, set env var GSTORE_USE_DYNAMIC_LIB to 1
 SET(USE_DYNAMIC_LIB ON CACHE BOOL "Use dynamic libraries")

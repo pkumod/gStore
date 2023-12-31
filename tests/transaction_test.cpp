@@ -1,4 +1,4 @@
-﻿#include "../src/Database/Txn_manager.h"
+#include "../src/Database/Txn_manager.h"
 #include "../src/Util/Util.h"
 #include "../src/Database/Database.h"
 
