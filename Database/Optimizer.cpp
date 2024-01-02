@@ -103,7 +103,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
   IntermediateResult first_table;
   if(first_operation->op_type_ ==StepOperation::StepOpType::Extend)
   {
-    auto first_result = InitialTable(bgp_query,id_caches,first_operation, gstore::Executor::NO_LIMIT_OUTPUT);
+    auto first_result = InitialTable(bgp_query,id_caches,first_operation, query_plan->join_order_->size()==1 ? query_info.limit_num_ : gstore::Executor::NO_LIMIT_OUTPUT);
     first_table = get<1>(first_result);
     if( query_plan->join_order_->size()==1 || first_table.values_->empty())
       return make_tuple(true, first_table);
