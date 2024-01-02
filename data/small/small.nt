@@ -1,0 +1,25 @@
+<root>	<name>	"Bookug Lobert"	.
+<root>	<contain>	<node0>	.
+<root>	<contain>	<node1>	.
+<root>	<contain>	<node2>	.
+<root>	<contain>	<node3>	.
+<root>	<contain>	<node4>	.
+<node1>	<own>	<point0>	.
+<node1>	<own>	<point1>	.
+<node2>	<own>	<point2>	.
+<node2>	<own>	<point3>	.
+<node2>	<own>	<point4>	.
+<node3>	<own>	<point5>	.
+<node4>	<own>	<point6>	.
+<node4>	<own>	<point7>	.
+<point0>	<from>	<point1>	.
+<point1>	<to>	<point2>	.
+<point1>	<from>	<point3>	.
+<point4>	<similar>	<point5>	.
+<point5>	<inherit>	<point6>	.
+<point3>	<close>	<point7>	.
+<point6>	<close>	<point7>	.
+<point7>	<name>	"sadhjb wdhcbd sdcjhdsjkc1"	.
+<point1>	<name>	"sbsb 12.879"	.
+<point5>	<name>	"tobe NO1."	.
+<point0>	<nick>	"Bookug Lobert"	.

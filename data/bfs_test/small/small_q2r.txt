@@ -1,0 +1,5 @@
+?v0	?v2	?v1
+<point3>	<point3>	<point7>
+<point3>	<point6>	<point7>
+<point6>	<point3>	<point7>
+<point6>	<point6>	<point7>

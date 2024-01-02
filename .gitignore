@@ -120,6 +120,7 @@ tags
 .vs
 *.iml
 .idea
+.vscode
 
 # latex files
 *.aux
