@@ -105,7 +105,7 @@ add_custom_target(
 add_custom_target(
         tarball
         COMMAND cd ../ && ${CMAKE_COMMAND} -E tar "cfzv" "gstore.tar.gz" --
-        "src" "api" "defaults" "tests" "3rdparty" "scripts" "conanfile.py" "CMakeLists.txt" "README.md" "LICENSE"
+        "src" "api" "defaults" "tests" "3rdparty" "data" "scripts" "conanfile.py" "CMakeLists.txt" "README.md" "LICENSE"
         COMMENT "Creating tarball of directory"
         VERBATIM
 )

@@ -15,6 +15,9 @@ CMakeUserPresets.json
 .obj/
 backup/
 logs/
+upload/
+temp/
+fun/
 
 # config files
 # TODO: add a separate config file folder
