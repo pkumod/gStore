@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     uuid-dev \
     libjemalloc-dev \
-    libreadline-dev
+    libreadline-dev \
+    libssl-dev
 
 RUN mkdir -p /src
 
@@ -26,14 +27,20 @@ RUN pip3 install conan && conan profile detect
 
 COPY conanfile.py /usr/src/gstore/
 
-RUN conan install . --output-folder=build --build=missing
+RUN conan install . --output-folder=build --build=missing -s "build_type=Release" -s "compiler.libcxx=libstdc++11" -s "compiler.cppstd=17"
 
 # Copy gStore source code; run `make tarball` to generate this file
 ADD gstore.tar.gz /usr/src/gstore
 
-RUN cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_CXX_FLAGS="-fuse-ld=mold"
+RUN mkdir -p build && cd build && \
+    cmake .. -G Ninja \
+      -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake \
+      -DCMAKE_CXX_FLAGS="-fuse-ld=mold" \
+      -DCMAKE_BUILD_TYPE=Release
 
-RUN ninja -v install
+RUN mkdir -p build && cd build && \
+    ninja -v prepare && \
+    ninja -v install
 
 FROM ubuntu:22.04 AS runtime
 
