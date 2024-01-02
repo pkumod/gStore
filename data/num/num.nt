@@ -1,0 +1,33 @@
+<http://example/alice>	<http://xmlns.com/foaf/0.1/givenName> 	"Alice" .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/familyName> 	"Smith" .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/mbox>       <mailto:alice@example.com> .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/mbox>       <mailto:alice@work.example> .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/salary>		"2500"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/height>		"161.5"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/knows>		<http://example/david> .
+<http://example/alice>	<http://xmlns.com/foaf/0.1/knows>		<http://example/bob> .
+
+<http://example/bob>	<http://xmlns.com/foaf/0.1/givenName> 	"Bob" .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/familyName> 	"Jones" .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/mbox>       <mailto:bob.Jones@example.com> .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/salary>		"5000"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/height>		"171.0"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/knows>		<http://example/alice> .
+<http://example/bob>	<http://xmlns.com/foaf/0.1/knows>		<http://example/carol> .
+
+<http://example/carol>	<http://xmlns.com/foaf/0.1/givenName> "Carol" .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/familyName> "Smith" .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/mbox>       <mailto:carol@gmail.com> .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/salary>		"2000"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/height>		"155.5"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/knows>		<http://example/bob> .
+<http://example/carol>	<http://xmlns.com/foaf/0.1/knows>		<http://example/david> .
+
+<http://example/david>  <http://xmlns.com/foaf/0.1/givenName> "David" .
+<http://example/david>	<http://xmlns.com/foaf/0.1/familyName> "Williams" .
+<http://example/david>	<http://xmlns.com/foaf/0.1/mbox>       <mailto:david_Williams@microsoft.com> .
+<http://example/david>	<http://xmlns.com/foaf/0.1/salary>		"10000"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example/david>	<http://xmlns.com/foaf/0.1/height>		"178.0"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example/david>	<http://xmlns.com/foaf/0.1/knows>		<http://example/carol> .
+<http://example/david>	<http://xmlns.com/foaf/0.1/knows>		<http://example/alice> .
+
