@@ -1,5 +1,4 @@
 from conan import ConanFile
-# from conan.tools.cmake.layout import cmake_layout
 
 class GStore(ConanFile):
     ### Project Attributes ###
@@ -35,7 +34,3 @@ class GStore(ConanFile):
 
     def package_info(self):
         self.output.info("PackageInfo!: Cppstd version: %s!" % self.settings.compiler.cppstd)
-
-    # def layout(self):
-    #     # set the project layout
-    #     cmake_layout(self)

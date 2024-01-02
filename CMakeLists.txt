@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Werror=return-type")
 
 # print build type and flags
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
+message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
 
 # gStore requires gcc 5.4 or higher
 if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.4")
@@ -35,10 +35,10 @@ link_directories(${CMAKE_SOURCE_DIR}/lib)
 include_directories(${CMAKE_INCLUDE_PATH})
 
 # Set output directories (use -DGSTORE_ROOT_DIR=... to override)
-SET(GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR}/dist)
+SET(GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR})
 SET(GSTORE_EXE_DIR ${GSTORE_ROOT_DIR}/bin)
 SET(GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib)
-SET(GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/tests)
+SET(GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/bin_tests)
 
 # if option USE_DYNAMIC_LIB is set, set env var GSTORE_USE_DYNAMIC_LIB to 1
 SET(USE_DYNAMIC_LIB ON CACHE BOOL "Use dynamic libraries")
