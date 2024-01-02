@@ -61,7 +61,7 @@ find_package(indicators REQUIRED CONFIG)
 ## antlr4-runtime: antlr4_shared, antlr4_static
 #find_package(antlr4-runtime REQUIRED CONFIG)
 # rapidjson: rapidjson, rapidjson/document.h
-find_package(rapidjson REQUIRED CONFIG)
+find_package(RapidJSON REQUIRED CONFIG)
 # logcplus: log4cplus::log4cplus, log4cplus/logger.h
 find_package(log4cplus REQUIRED CONFIG)
 # curl: CURL::libcurl, curl/curl.h
