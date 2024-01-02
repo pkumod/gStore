@@ -1,20 +1,64 @@
-FROM lsvih/gcc-cmake-boost:v1
-RUN apt -qqy update \
-	&& apt install -qqy --no-install-recommends \
-	libssl-dev libcurl4-openssl-dev libreadline-dev uuid-dev \
-	&& ldconfig -v \
-	&& echo "*    -    nofile    65535" >> /etc/security/limits.conf \
-	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
+# SPDX-License-Identifier: BSD-3-Clause
 
-COPY . /usr/src/gstore
+FROM ubuntu:22.04 AS builder
+
+LABEL vendor="pkumod"
+LABEL description="gStore RDF Database Engine"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    mold \
+    python3-pip \
+    pkg-config \
+    uuid-dev \
+    libjemalloc-dev \
+    libreadline-dev
+
+RUN mkdir -p /src
+
 WORKDIR /usr/src/gstore
 
-ENV LANG C.UTF-8
+# Install conan dependencies\
+RUN pip3 install conan && conan profile detect
 
-RUN make pre -j && make -j FIRST_BUILD=y \
-	&& apt autoclean && apt clean \
-    && rm -rf /usr/src/gstore/.git \
-    && rm -rf /usr/src/gstore/3rdparty \
-	&& rm -rf /tmp/* /var/tmp/* \
-	&& rm -rf /usr/share/doc/* \
-	&& rm -rf /var/lib/apt/lists/*
+COPY conanfile.py /usr/src/gstore/
+
+RUN conan install . --output-folder=build --build=missing
+
+# Copy gStore source code; run `make tarball` to generate this file
+ADD gstore.tar.gz /usr/src/gstore
+
+RUN cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_CXX_FLAGS="-fuse-ld=mold"
+
+RUN ninja -v install
+
+FROM ubuntu:22.04 AS runtime
+
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    libssl3 \
+    libjemalloc2 \
+    libreadline8 \
+    libuuid1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/src/gstore/bin/ /bin/
+COPY --from=builder /usr/src/gstore/lib/ /lib/
+COPY --from=builder /usr/src/gstore/defaults/ /defaults/
+COPY --from=builder /usr/src/gstore/data/ /data/
+COPY --from=builder /usr/src/gstore/scripts/init.sh /docker-entrypoint.sh
+
+WORKDIR /app/
+VOLUME [ "/app/" ]
+
+RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
+	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
+
+EXPOSE 9000
+
+ENTRYPOINT [ "bash", "/docker-entrypoint.sh" ]
+
+CMD [ "/bin/ghttp" ]

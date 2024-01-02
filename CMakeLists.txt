@@ -81,13 +81,14 @@ find_library(LIB_UUID NAMES uuid REQUIRED)
 
 ### Prepare unmanaged dependencies
 add_custom_target(
-        Aprepare ALL
+        prepare
         COMMAND [ -d ${CMAKE_SOURCE_DIR}/include ] || bash ${CMAKE_SOURCE_DIR}/3rdparty/init.sh
         COMMENT "Prepare unmanaged dependencies"
+        ALWAYS 1
 )
 
 add_custom_target(
-        uninstall_prepare
+        clean_prepare
         COMMAND rm -rvf ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/lib/*.a
         COMMENT "Clean unmanaged dependencies"
 )
@@ -103,7 +104,7 @@ add_custom_target(
 
 add_custom_target(
         tarball
-        COMMAND ${CMAKE_COMMAND} -E tar "cfv" "gstore.tar.gz" --format=zip --
+        COMMAND cd ../ && ${CMAKE_COMMAND} -E tar "cfzv" "gstore.tar.gz" --
         "src" "api" "defaults" "tests" "3rdparty" "scripts" "conanfile.py" "CMakeLists.txt" "README.md" "LICENSE"
         COMMENT "Creating tarball of directory"
         VERBATIM
