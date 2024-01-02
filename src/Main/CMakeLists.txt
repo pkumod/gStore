@@ -115,5 +115,4 @@ SET(gstore_binaries
 
 foreach (gstore_binary ${gstore_binaries})
     install(TARGETS ${gstore_binary} DESTINATION ${GSTORE_EXE_DIR})
-    message(STATUS "installed ${gstore_binary} to ${GSTORE_EXE_DIR}")
 endforeach ()

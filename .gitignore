@@ -3,9 +3,29 @@ build/
 include/
 lib/
 bin/
+bin_tests/
+dist/
 .cmake/
 gstore.tar.gz
 CMakeUserPresets.json
+
+# Runtime directories
+.tmp/
+.debug/
+.obj/
+backup/
+logs/
+
+# config files
+# TODO: add a separate config file folder
+/backup.json
+/conf.ini
+/init.conf
+/ipAllow.config
+/ipDeny.config
+/README.txt
+/slog.properties
+/slog.stdout.properties
 
 # Executables
 *.pyc

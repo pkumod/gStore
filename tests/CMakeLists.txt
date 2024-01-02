@@ -65,5 +65,4 @@ SET(gstore_tests
 
 foreach (test ${gstore_tests})
     install(TARGETS ${test} DESTINATION ${GSTORE_TEST_DIR})
-    message(STATUS "Add test ${test} to ${GSTORE_TEST_DIR}")
 endforeach ()
