@@ -1,5 +1,3 @@
-## SPARQL查询语法
-
 ### 图模式 (Graph Patterns)
 
 
