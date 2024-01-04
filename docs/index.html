@@ -11,7 +11,7 @@
       name="description"
       content="A demonstration of docsify-themable: a delightfully simple theme system for docsify.js"
     />
-    <title>Demo: docsify-themeable</title>
+    <title>Welcome</title>
 
     <!-- 1. Theme -->
     <link
@@ -61,8 +61,21 @@
         themeable: {
           // readyTransition : false,
           // responsiveTables: false
-        }
+        },
+        plugins: [
+          titlePlugin({
+            suffix: ' | gStore Documentation'
+          })
+         ]
       };
+
+      function titlePlugin(config) {
+        return (hook, vm) => {
+          hook.doneEach((content) => {
+            document.title += config.suffix
+          });
+        }
+      }
     </script>
 
     <!-- Required: docsify + docsify-themeable -->
