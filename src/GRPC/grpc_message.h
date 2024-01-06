@@ -183,7 +183,7 @@ public:
     void add_task(SubTask *task);
 
 private:
-    int compress(const std::string * const data, std::string *compress_data);
+    int compress(const std::string * const data, void *compress_data, size_t &compress_size);
 
 public:
     GRPCResp() = default;

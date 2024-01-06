@@ -9,8 +9,8 @@
 // 			   However, we need to re-design the cost function to fit the new added pre_var ?p.
 
 // s ?p ?o
-// ?s ?p o do not need generate ?p candidate, even pre num of one s_o is small
-// however, ?o ?s's candidate should be consider
+// ?s ?p o do not need to generate ?p candidate, even pre num of one s_o is small
+// however, ?o ?s's candidate should be considered
 
 // plan_cache only contains plans about s_o var, because in ?s ?p ?o, after considering ?s and ?o, then ?p has also considered.
 // in binary join, only consider s_o var
@@ -1020,7 +1020,7 @@ double PlanGenerator::NodeScore(unsigned int var_id) {
 		// Skip const linked neighbor (handled before) or satellite node (handle at last),
 		if (!var_descrip->IsIthEdgeLinkedVarSO(nei_index)) continue;
 		unsigned nei_id = var_descrip->so_edge_nei_[nei_index];
-		if (bgpquery->is_var_satellite_by_id(nei_id)) continue;
+        if (find(plan_var_vec.begin(), plan_var_vec.end(), nei_id) == plan_var_vec.end()) continue;
 
 		unsigned pre_size = (var_descrip->IsIthEdgePreVar(nei_index) ? max((unsigned)triples_num/limitID_predicate, (unsigned)2) : pre2num[var_descrip->so_edge_pre_id_[nei_index]]);
 		node_score += PlanGenerator::PARAM_PRE / (double)(pre_size+1);
@@ -1132,6 +1132,30 @@ unsigned PlanGenerator::HeuristicNextNode(unsigned last_node_id) {
 	return best_next_node_id;
 }
 
+unsigned PlanGenerator::HeuristicNextNodeFromVec(const set<unsigned> &neighbor_nodes) {
+    unsigned next_node_id = UINT_MAX;
+    double next_node_score = 0;
+    for (auto node : neighbor_nodes) {
+        double this_node_score = NodeScore(node);
+        if (this_node_score > next_node_score) {
+            next_node_id = node;
+            next_node_score = this_node_score;
+        }
+    }
+    return next_node_id;
+}
+
+void PlanGenerator::RemoveNodeAddNeighbor(unsigned node_id, set<unsigned> &neighbor_nodes) {
+    auto var_descrip = bgpquery->get_vardescrip_by_id(node_id);
+    for (unsigned i = 0; i < var_descrip->degree_; ++i) {
+        if (var_descrip->so_edge_nei_type_[i] == VarDescriptor::EntiType::ConEntiType) continue;
+        if (find(plan_var_vec.begin(), plan_var_vec.end(), var_descrip->so_edge_nei_[i]) == plan_var_vec.end() &&
+            find(join_nodes.begin(), join_nodes.end(), var_descrip->so_edge_nei_[i]) != join_nodes.end())
+            neighbor_nodes.insert(var_descrip->so_edge_nei_[i]);
+    }
+    neighbor_nodes.erase(node_id);
+}
+
 // 1. Scan all vars, count join nodes num.
 // 2. Choose first node.
 // 3. While there are remaining join nodes, add one node.
@@ -1143,22 +1167,23 @@ PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
 	plan_var_vec.emplace_back(first_node_id);
 	plan_var_degree.emplace_back(0);
 
-	stack<unsigned> visited_nodes_stack;
-	visited_nodes_stack.push(first_node_id);
+    set<unsigned> neighbor_nodes{first_node_id};
+    PlanTree *plan = nullptr;
+    PlanTree *temp_plan = nullptr;
 
-	auto* plan = new PlanTree(first_node_id, bgpquery);
-	while (!visited_nodes_stack.empty()) {
-		unsigned last_node_id = visited_nodes_stack.top();
-		unsigned  next_node_id = HeuristicNextNode(last_node_id);
-		if (next_node_id == UINT_MAX) {
-			visited_nodes_stack.pop();
-			continue;
-		}
-		plan = new PlanTree(plan, bgpquery, next_node_id, true);
-		visited_nodes_stack.push(next_node_id);
-		plan_var_vec.emplace_back(next_node_id);
-		plan_var_degree.emplace_back(1);
-	}
+    while (!neighbor_nodes.empty()) {
+        unsigned this_node_id = HeuristicNextNodeFromVec(neighbor_nodes);
+        if (plan == nullptr)
+            plan = new PlanTree(this_node_id, bgpquery);
+        else {
+            temp_plan = new PlanTree(plan, bgpquery, this_node_id, true);
+            swap(temp_plan, plan);
+            plan_var_vec.emplace_back(this_node_id);
+            plan_var_degree.emplace_back(1);
+        }
+        RemoveNodeAddNeighbor(this_node_id, neighbor_nodes);
+    }
+
 	AddSatelliteNode(plan);
 
 	list<PlanTree *> this_query_plan{plan};
@@ -1187,9 +1212,6 @@ PlanTree *PlanGenerator::DPPlan(bool use_binary_join) {
 	return best_plan;
 }
 
-// 我在想这样一个问题：什么时候会有谓词变量？
-// 如果有谓词变量，感觉一定会有s_o_var连接上，不然会被拆分开。
-// 是这样吗？
 PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
 	if (bgpquery->get_triple_num() == 1) return GetSpecialOneTriplePlan();
 	switch (PlanStrategy(use_binary_join)) {

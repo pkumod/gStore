@@ -1160,7 +1160,8 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 	}
 
 	// remove tmpout file //TODO: check this return value
-	system("rm -rf bin/.gconsole_tmp_out");
+	// system("rm -rf bin/.gconsole_tmp_out");
+	Util::remove_path("bin/.gconsole_tmp_out");
 
 	return move(retv);
 }
@@ -1191,7 +1192,8 @@ int silence_sysdb_query(const string &query, ResultSet &_rs)
 	}
 
 	// remove tmpout file //TODO: check this return value
-	system("rm -rf bin/.gconsole_tmp_out");
+	// system("rm -rf bin/.gconsole_tmp_out");
+	Util::remove_path("bin/.gconsole_tmp_out");
 
 	if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
 	{
@@ -1994,8 +1996,7 @@ int create_handler(const vector<string> &args)
 		mkdir(unz_dir_path.c_str(), 0775);
 		if (unzip.unCompress() != CompressUtil::UnZipOK)
 		{
-			std::string cmd = "rm -r " + unz_dir_path;
-			system(cmd.c_str());
+			Util::remove_path(unz_dir_path);
 			cout<<"zip file uncompress faild "<<endl;
 			return -1;
 		}
@@ -2012,13 +2013,15 @@ int create_handler(const vector<string> &args)
 	if (args.size() == 1)
 	{
 		// rm bin/.tmp_nt.nt
-		system("rm -rf bin/.tmp_nt.nt");
+		// system("rm -rf bin/.tmp_nt.nt");
+		Util::remove_path("bin/.tmp_nt.nt");
 	}
 
 	if (flag == 0)
 	{
 		cout << "Database create failed. " << endl;
-		system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
+		// system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
+		Util::remove_path(db_home + "/" + db_name + db_suffix + " " + unz_dir_path);
 		return -1;
 	}
 
@@ -2030,7 +2033,8 @@ int create_handler(const vector<string> &args)
 		if (silence_sysdb_query(record_newdb_sparql, rs))
 		{
 			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
-			system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
+			// system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
+			Util::remove_path(db_home + "/" + db_name + db_suffix + " " + unz_dir_path);
 			return -1;
 		}
 	}
@@ -2057,8 +2061,7 @@ int create_handler(const vector<string> &args)
 			cout<< "See parse error log file for details " << error_log << endl;
 		}
 		_db.save();
-		std::string cmd = "rm -r " + unz_dir_path;
-		system(cmd.c_str());
+		Util::remove_path(unz_dir_path);
 	}
 	cout << "Database " << db_name << "created successfully. " << endl;
 
@@ -2120,8 +2123,8 @@ int drop_handler(const vector<string> &args)
 		cout << "Warn: Drop info about database " << db_name << " failed! Please check system db. \nNote that " << db_name << db_suffix << " and backlog are removed." << endl;
 	}
 
-	string cmd = "rm -r " + db_home + "/" + db_name + db_suffix;
-	system(cmd.c_str());
+	string cmd = db_home + "/" + db_name + db_suffix;
+	Util::remove_path(cmd);
 	Util::delete_backuplog(db_name);
 
 	cout << "Database " << db_name << " dropped successfully." << endl;

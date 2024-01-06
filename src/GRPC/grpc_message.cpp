@@ -16,6 +16,7 @@
 #include "grpc_status_code.h"
 #include "grpc_stringpiece.h"
 #include "grpc_server_task.h"
+#include "../Util/CompressFileUtil.h"
 
 using namespace grpc;
 using namespace protocol;
@@ -289,31 +290,38 @@ GRPCReq &GRPCReq::operator=(GRPCReq&& other)
 // GRPCResp
 void GRPCResp::String(const std::string &str)
 {
-    auto *compress_data = new std::string;
-    int ret = this->compress(&str, compress_data);
+    auto *compress_data = malloc(str.size());
+    size_t compress_size = 0;
+    int ret = this->compress(&str, compress_data, compress_size);
     if(ret != StatusOK)   
     {
         this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
     } 
     else 
     {
-        this->append_output_body_nocopy(compress_data->c_str(), compress_data->size());
+        this->append_output_body_nocopy(compress_data, compress_size);
     }
     this->resp_code = 0;
     this->resp_msg = "Success";
-    task_of(this)->add_callback([compress_data](GRPCTask *) { delete compress_data; });
+    task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
 }
 
 void GRPCResp::String(std::string &&str)
 {
-    auto *data = new std::string;
-    int ret = this->compress(&str, data);
-    if(ret != StatusOK)
+    auto *compress_data = malloc(str.size());
+    size_t compress_size = 0;
+    int ret = this->compress(&str, compress_data, compress_size);
+    if(ret == StatusOK)
     {   
-        *data = std::move(str);
-    } 
-    this->append_output_body_nocopy(data->c_str(), data->size());
-    task_of(this)->add_callback([data](GRPCTask *) { delete data; });
+        this->append_output_body_nocopy(compress_data, compress_size);
+    }
+    else
+    {
+        this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
+    }
+    this->resp_code = 0;
+    this->resp_msg = "Success";
+    task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
 }
 
 void GRPCResp::File(const std::string &path)
@@ -360,6 +368,40 @@ void GRPCResp::Json(const std::string &str)
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
     this->String(str);
 }
+
+// void GRPCResp::Gzip(const ::Json &json)
+// {
+//     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+//     this->headers["Content-Encoding"] = "gzip";
+//     rapidjson::StringBuffer resBuffer;
+//     rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+//     json.Accept(resWriter);
+//     if (json.HasMember("StatusCode") && json["StatusCode"].IsInt())
+//     {
+//         this->resp_code = json["StatusCode"].GetInt();
+//     }
+//     if (json.HasMember("StatusMsg") && json["StatusMsg"].IsString())
+//     {
+//         this->resp_msg = json["StatusMsg"].GetString();
+//     }
+//     std::string data = resBuffer.GetString();
+//     void* compress_ = malloc(data.size());
+//     if (compress_ == nullptr)
+//     {
+//         std::cout<<"malloc failed Cache Not Enough:"<<std::endl;
+//         return;
+//     }
+//     int compress_size = 0;
+//     int status = CompressUtil::GzipHelper::compress(&data, compress_, compress_size);
+//     if (status != 0)
+//     {
+//         std::cout<<"Gzip StatusMsg Error Code:"<<status<<std::endl;
+//         free(compress_);
+//         return;
+//     }
+//     this->append_output_body_nocopy(compress_, compress_size);
+//     task_of(this)->add_callback([compress_](GRPCTask *) { free(compress_); });
+// }
 
 void GRPCResp::set_status(int status_code)
 {
@@ -434,21 +476,35 @@ void GRPCResp::add_task(SubTask *task)
     **server_task << task;
 }
 
-int GRPCResp::compress(const std::string * const data, std::string *compress_data)
+int GRPCResp::compress(const std::string * const data, void *compress_data, size_t &compress_size)
 {
-    int status = StatusOK;
     if (headers.find("Content-Encoding") != headers.end())
     {
         if (headers["Content-Encoding"].find("gzip") != std::string::npos)
         {
-            // TODO
-            // status = Compressor::gzip(data, compress_data);
+            if (compress_data != nullptr)
+            {
+                int rt = CompressUtil::GzipHelper::compress(data, compress_data, compress_size);
+                if (rt == 0)
+                {
+                    return StatusOK;
+                }
+                else
+                {
+                    return StatusCompressError;
+                }
+            }
+            else
+            {
+                return -1;
+            }
         }
-    } else 
-    {
-        status = StatusNoComrpess;
+        else
+        {
+            return StatusCompressNotSupport;
+        }
     }
-    return status;
+    return StatusNoComrpess;
 }
 
 GRPCResp::GRPCResp(GRPCResp&& other)

@@ -71,10 +71,10 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
 
   auto it = dfs_operation.begin();
   it++;
-  while(it!=dfs_operation.end())
+  for (; it!=dfs_operation.end(); ++it)
   {
     tables.emplace_back( IntermediateResult::OnlyPositionCopy(tables.back()));
-    if(dfs_operation[0]->op_type_ != StepOperation::StepOpType::Extend)
+    if((*it)->op_type_ != StepOperation::StepOpType::Extend)
       continue;
     if( (*it)->GetRange() == StepOperation::OpRangeType::OneNode)
       tables.back().AddNewNode( (*it)->GetOneNodePlan()->node_to_join_);
@@ -88,7 +88,6 @@ std::shared_ptr<std::vector<IntermediateResult>> Optimizer::GenerateResultTempla
       tables.back().AddNewNode(the_only_edge.p_);
       tables.back().AddNewNode(the_only_edge.o_);
     }
-    it++;
   }
   return table_template;
 }
@@ -104,7 +103,7 @@ tuple<bool, IntermediateResult> Optimizer:: ExecutionDepthFirst(shared_ptr<BGPQu
   IntermediateResult first_table;
   if(first_operation->op_type_ ==StepOperation::StepOpType::Extend)
   {
-    auto first_result = InitialTable(bgp_query,id_caches,first_operation, gstore::Executor::NO_LIMIT_OUTPUT);
+    auto first_result = InitialTable(bgp_query,id_caches,first_operation, query_plan->join_order_->size()==1 ? query_info.limit_num_ : gstore::Executor::NO_LIMIT_OUTPUT);
     first_table = get<1>(first_result);
     if( query_plan->join_order_->size()==1 || first_table.values_->empty())
       return make_tuple(true, first_table);
@@ -954,6 +953,7 @@ tuple<bool, IntermediateResult> Optimizer::JoinTable(shared_ptr<BGPQuery> &bgp_q
 #ifdef OPTIMIZER_DEBUG_INFO
 void Optimizer::PrintTable(IntermediateResult& result,
                                 shared_ptr<BGPQuery> &bgp_query){
+  cout << "\tresult size = " << result.values_->size() << endl;
   auto &table = *result.values_;
   auto result_size = result.values_->size();
   PrintDebugInfoLine(g_format("Print Table of size %d ",result_size));
@@ -974,7 +974,7 @@ void Optimizer::PrintTable(IntermediateResult& result,
   for(auto it = table.begin();it !=table.end() && c<10 ;c++,it++)
   {
     cout<<"    record["<<c<<"] ";
-    auto& record = **it;
+    auto& record = *it;
     for(size_t j = 0;j < col_size;j++)
     {
       string s;
