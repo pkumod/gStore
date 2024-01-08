@@ -218,6 +218,7 @@ int main(int argc, char * argv[])
 		update_triples.insert(temp);
 		for (int i = 0; i < test_group_num; i++)
 		{
+			std::cerr << "test_group " << i << " of " << test_group_num << std::endl;
 			int a = rand() % test_group_size + 1;
 			int b = rand() % test_group_size + 1;
 			for (int j = 0; j < a; j++)

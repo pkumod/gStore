@@ -1,0 +1,17 @@
+@prefix :       <http://example/> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+
+:alice  foaf:givenName "Alice" ;
+        foaf:familyName "Smith" .
+
+:bob1    foaf:givenName "Bob" ;
+        foaf:familyName "Jones" .
+
+:bob2    foaf:givenName "Bob" ;
+        foaf:familyName "Smith" .
+
+:carol  foaf:givenName "Carol" ;
+        foaf:familyName "Smith" .
+
+:dave   foaf:givenName "Dave" ;
+        foaf:familyName "Jones" .

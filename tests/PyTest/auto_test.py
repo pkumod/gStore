@@ -39,7 +39,7 @@ def TestCase(db_name: str, case_name: str, query_path: str,
 
 def ParseTest():
     query_num = 50
-    data_dir = "tests/parser_test/"
+    data_dir = "data/parser_test/"
     all_passed = True
     db_name = "parser_test"
     os.system("bin/gdrop -db " + db_name + " > /dev/null")
@@ -48,6 +48,11 @@ def ParseTest():
         data_path = data_dir + "parser_d" + str(i) + ".ttl"
         query_path = data_dir + "parser_q" + str(i) + ".sql"
         result_path = data_dir + "parser_r" + str(i) + ".txt"
+
+        for _f in data_path, query_path, result_path:
+            if not os.path.exists(_f):
+                print("File %s not exists" % _f)
+                return False
 
         os.system("bin/gbuild -db " + db_name + " -f " + data_path + " > /dev/null")
         case_passed = TestCase(db_name, cast_name, query_path, result_path)
@@ -61,7 +66,7 @@ def ParseTest():
 
 def BFSTest():
     data_set = ['bbug', 'lubm', 'num']
-    data_dir = "tests/bfs_test/"
+    data_dir = "data/bfs_test/"
     all_passed = True
     db_name_gstore = "bfs_test"
     os.system("bin/gdrop -db " + db_name_gstore + " > /dev/null")
@@ -88,8 +93,8 @@ def BFSTest():
 
 def DFSTest():
     data_set = ['bbug', 'lubm', 'num']
-    data_dir = "tests/dfs_test/"
-    full_data_dir = "tests/bfs_test/"
+    data_dir = "data/dfs_test/"
+    full_data_dir = "data/bfs_test/"
     all_passed = True
     db_name_gstore = "dfs_test"
     os.system("bin/gdrop -db " + db_name_gstore + " > /dev/null")

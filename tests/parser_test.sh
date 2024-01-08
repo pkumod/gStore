@@ -2,7 +2,7 @@
 
 query_num=50
 # query_num=1
-data_dir="scripts/parser_test/"
+data_dir="data/parser_test/"
 gbuild='bin/gbuild '
 gquery='bin/gquery '
 gdrop='bin/gdrop '

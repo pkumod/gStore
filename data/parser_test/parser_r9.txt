@@ -1,7 +1,4 @@
------------------------------------------
-|  ?name  |            ?mbox            |
------------------------------------------
-| "Bob"   |                             |
-| "Alice" | <mailto:alice@work.example> |
-| "Alice" | <mailto:alice@example.com>  |
------------------------------------------
+?name	?mbox
+"Alice"	<mailto:alice@example.com>
+"Alice"	<mailto:alice@work.example>
+"Bob"	-
