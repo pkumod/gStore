@@ -15,7 +15,6 @@ class GStore(ConanFile):
     requires = (
         "log4cplus/2.1.0",
         "zlib/1.3",
-        "boost/1.83.0",
         "indicators/2.3",
         "rapidjson/1.1.0",
         "libcurl/8.5.0",
@@ -31,6 +30,14 @@ class GStore(ConanFile):
         self.settings.compiler.cppstd = "17"
         # set log4cplus to use char instead of wchar_t
         self.options["log4cplus"].unicode = False
+        # remove boost from requirements if on loongarch64
+
+    def requirements(self):
+        if self.settings.get_safe("arch") != "loongarch64":
+            self.requires("boost/1.83.0")
+        else:
+            self.output.warning("The official Boost wheel (1.83.0) is yet to be fixed on loongarch. "
+                             "Please install boost from your system package manager.")
 
     def package_info(self):
         self.output.info("PackageInfo!: Cppstd version: %s!" % self.settings.compiler.cppstd)
