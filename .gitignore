@@ -5,6 +5,7 @@ lib/
 bin/
 bin_tests/
 dist/
+cmake-build-*/
 .cmake/
 gstore.tar.gz
 CMakeUserPresets.json
@@ -29,6 +30,7 @@ fun/
 /README.txt
 /slog.properties
 /slog.stdout.properties
+/*.log
 
 # Executables
 *.pyc

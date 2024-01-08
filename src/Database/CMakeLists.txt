@@ -15,6 +15,5 @@ add_library(gcsr SHARED
 )
 # set fPIC for gscr
 set_property(TARGET gcsr PROPERTY POSITION_INDEPENDENT_CODE ON)
-
+add_dependencies(gcsr prepare)
 install(TARGETS gcsr DESTINATION ${GSTORE_LIB_DIR})
-message(STATUS "installed gcsr to ${GSTORE_LIB_DIR}")

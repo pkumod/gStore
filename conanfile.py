@@ -20,6 +20,7 @@ class GStore(ConanFile):
         "libcurl/8.5.0",
         "openssl/3.2.0",
         "minizip/1.2.13",
+        "backward-cpp/1.6",
     )
     build_policy = "missing"
     settings = "os", "compiler", "build_type", "arch"
@@ -41,3 +42,15 @@ class GStore(ConanFile):
 
     def package_info(self):
         self.output.info("PackageInfo!: Cppstd version: %s!" % self.settings.compiler.cppstd)
+
+    def layout(self):
+        # basically a trimmed down version of the basic_layout function
+        _build_type = self.settings.get_safe("build_type")
+        if _build_type:
+            self.folders.build = "cmake-build-{}".format(str(_build_type).lower())
+        else:
+            self.folders.build = "cmake-build"
+        self.folders.source = "."
+        self.folders.generators = self.folders.build
+        self.cpp.build.bindirs = ["bin", "bin_tests"]
+        self.cpp.build.libdirs = ["lib"]

@@ -18,7 +18,16 @@ set(LIB_EXE
         # Unmanaged Deps
         antlr4-runtime
         workflow
+        Backward::Backward
 )
+
+# set definition if has debug info
+if (CMAKE_BUILD_TYPE MATCHES "Deb")
+    LIST(APPEND LIB_EXE
+        libdwarf::libdwarf
+        libelf::libelf
+    )
+endif ()
 
 set(OBJ_EXE
         $<TARGET_OBJECTS:gstore_stringindex>
@@ -114,5 +123,6 @@ SET(gstore_binaries
 )
 
 foreach (gstore_binary ${gstore_binaries})
+    add_dependencies(${gstore_binary} prepare)
     install(TARGETS ${gstore_binary} DESTINATION ${GSTORE_EXE_DIR})
 endforeach ()
