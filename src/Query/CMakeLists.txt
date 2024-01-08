@@ -29,7 +29,5 @@ add_library(gpathqueryhandler SHARED
 # set fPIC
 set_property(TARGET gpathqueryhandler PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(gpathqueryhandler gcsr)
-add_dependencies(gpathqueryhandler gcsr)
-
+add_dependencies(gpathqueryhandler gcsr prepare)
 install(TARGETS gpathqueryhandler DESTINATION ${GSTORE_LIB_DIR})
-message(STATUS "Installed gpathqueryhandler to ${GSTORE_LIB_DIR}")

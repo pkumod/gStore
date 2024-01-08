@@ -7,22 +7,33 @@ cmake_minimum_required(VERSION 3.16)
 project(gStore LANGUAGES CXX)
 
 ### set compiler flags
-# we default to RelWithDebInfo
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-endif()
 # use -O2 for Release
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 # ignore unused-result, panic on return-type
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Werror=return-type")
+# check CMAKE_BUILD_TYPE, if not set, set to Release
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+    message(WARNING "Build type not set, default to Release")
+endif()
+# Check if mold is available and set it as the linker
+find_program(MOLD_LINKER mold)
+if(MOLD_LINKER)
+    message(STATUS "mold linker found: ${MOLD_LINKER}, adding -fuse-ld=mold to linker flags")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=mold")
+else()
+    message(STATUS "mold linker not found, using default linker")
+endif()
 
 # print build type and flags
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
 
 # gStore requires gcc 5.4 or higher
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.4")
-    message(FATAL_ERROR "gStore requires gcc 5.4 or higher, got ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8")
+    message(FATAL_ERROR "gStore requires gcc 8 or higher, got ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 endif()
 
 # helper for IDEs to find the include path
@@ -45,7 +56,6 @@ SET(USE_DYNAMIC_LIB ON CACHE BOOL "Use dynamic libraries")
 if(USE_DYNAMIC_LIB OR ENV{GSTORE_USE_DYNAMIC_LIB})
     set(ENV{GSTORE_USE_DYNAMIC_LIB} 1)
     # Set rpath so that gStore can find its shared libraries
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 endif()
 
@@ -78,13 +88,18 @@ find_library(LIB_JEMALLOC NAMES jemalloc REQUIRED)
 find_package(OpenMP REQUIRED)
 # uuid: uuid::uuid (required by antlr4-cppruntime)
 find_library(LIB_UUID NAMES uuid REQUIRED)
+# Backward: Backward::Backward
+find_package(Backward REQUIRED)
+# libdwarf: libdwarf::libdwarf
+find_package(libdwarf REQUIRED)
+# libelf libelf::libelf
+find_package(libelf REQUIRED)
 
 ### Prepare unmanaged dependencies
 add_custom_target(
         prepare
-        COMMAND [ -d ${CMAKE_SOURCE_DIR}/include ] || bash ${CMAKE_SOURCE_DIR}/3rdparty/init.sh
+        COMMAND [ -d ${CMAKE_SOURCE_DIR}/include ] && [ -d ${CMAKE_SOURCE_DIR}/lib ] || bash ${CMAKE_SOURCE_DIR}/3rdparty/init.sh
         COMMENT "Prepare unmanaged dependencies"
-        ALWAYS 1
 )
 
 add_custom_target(

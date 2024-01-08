@@ -10,6 +10,9 @@ set(LIB_TESTS
         rapidjson
         log4cplus::log4cplus
         CURL::libcurl
+        Backward::Backward
+        libdwarf::libdwarf
+        libelf::libelf
         # System Deps
         OpenMP::OpenMP_CXX
         ${LIB_JEMALLOC}
@@ -19,6 +22,14 @@ set(LIB_TESTS
         antlr4-runtime
         workflow
 )
+
+# set definition if has debug info
+if (CMAKE_BUILD_TYPE MATCHES "Deb")
+    LIST(APPEND LIB_TESTS
+        libdwarf::libdwarf
+        libelf::libelf
+    )
+endif ()
 
 set(OBJ_TESTS
         $<TARGET_OBJECTS:gstore_stringindex>
@@ -53,16 +64,8 @@ target_link_libraries(debug_test ${LIB_TESTS})
 add_executable(gtest gtest.cpp ${OBJ_TESTS})
 target_link_libraries(gtest ${LIB_TESTS})
 
-SET(gstore_tests
-        update_test
-        dataset_test
-        transaction_test
-        run_transaction
-        workload
-        debug_test
-        gtest
-        )
-
+get_directory_property(gstore_tests DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 foreach (test ${gstore_tests})
+    add_dependencies(${test} prepare)
     install(TARGETS ${test} DESTINATION ${GSTORE_TEST_DIR})
 endforeach ()

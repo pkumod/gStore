@@ -13,7 +13,7 @@ if [ -n "$GSTORE_USE_DYNAMIC_LIB" ]; then
     cp dist/libantlr4-runtime.so* ../../lib/libantlr4-runtime.so
     cd ../../lib/ || echo "./lib not found"
 else
-    make -j2 antlr4_static
+    make -j$(nproc) antlr4_static
     cp dist/libantlr4-runtime.a ../../lib/
 fi
 cp -r runtime/src/* ../../include/
