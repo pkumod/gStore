@@ -1,0 +1,8 @@
+@prefix dt:   <http://example.org/datatype#> .
+@prefix ns:   <http://example.org/ns#> .
+@prefix :     <http://example.org/ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+:x   ns:p     "cat"@en .
+:y   ns:p     "42"^^xsd:integer .
+:z   ns:p     "abc"^^dt:specialDatatype .

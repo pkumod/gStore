@@ -13,6 +13,11 @@ using namespace std;
 
 int main(int argc, char * argv[])
 {
+	if (argc < 5)
+	{
+		cerr << "Usage: " << argv[0] << " <db_name> <db_path> <sql_path> <ans_path>" << endl;
+		return -1;
+	}
 	Util util;
 	Database* db;
 	string db_name = string(argv[1]);

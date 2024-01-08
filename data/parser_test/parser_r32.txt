@@ -1,7 +1,4 @@
------------
-|  ?name  |
------------
-| "Bob"   |
-| "Alice" |
-| "Carol" |
------------
+?name
+"Bob"
+"Alice"
+"Carol"
