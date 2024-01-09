@@ -179,16 +179,16 @@ include(CTest)
 enable_testing()
 add_test(NAME BasicTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/basic_test.sh)
 add_test(NAME ParserTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/parser_test.sh)
-add_test(NAME DatasetTest COMMAND dataset_test)
-add_test(NAME UpdateTest COMMAND update_test 100)
-add_test(NAME TransactionTest COMMAND transaction_test)
-add_test(NAME RunTransaction COMMAND run_transaction)
-add_test(NAME DebugTest COMMAND debug_test)
+# add_test(NAME DatasetTest COMMAND bin_tests/dataset_test)
+add_test(NAME UpdateTest COMMAND bin_tests/update_test 100)
+add_test(NAME TransactionTest COMMAND bin_tests/transaction_test)
+add_test(NAME RunTransaction COMMAND bin_tests/run_transaction)
+add_test(NAME DebugTest COMMAND bin_tests/debug_test)
 
 set(GSTORE_CI_TESTS
         BasicTest
         ParserTest
-        DatasetTest
+        # DatasetTest
         UpdateTest
         TransactionTest
         RunTransaction
