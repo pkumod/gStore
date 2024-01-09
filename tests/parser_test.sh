@@ -27,10 +27,12 @@ do
     # "sed" "-i" "\$d" "tmp.txt"
     "grep" "." "tmp.txt" | "sort" > "result_b.txt"
     
-    "diff" "result_a.txt" "result_b.txt" > "equal.txt"
+    "diff" -w "result_a.txt" "result_b.txt" > "equal.txt"
     if [ -s "equal.txt" ]; then
+        cat "equal.txt"
         echo -e "\033[43;35m parser test #"$i" failed \033[0m"
         all_passed=false
+        exit 1  # exit with error code
     else
         echo "parser test #"$i" passed"
     fi

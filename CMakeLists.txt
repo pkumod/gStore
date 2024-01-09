@@ -134,3 +134,28 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(tests)
+
+# rules for ctest
+include(CTest)
+enable_testing()
+add_test(NAME BasicTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/basic_test.sh)
+add_test(NAME ParserTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/parser_test.sh)
+add_test(NAME DatasetTest COMMAND dataset_test)
+add_test(NAME UpdateTest COMMAND update_test 100)
+add_test(NAME TransactionTest COMMAND transaction_test)
+add_test(NAME RunTransaction COMMAND run_transaction)
+add_test(NAME DebugTest COMMAND debug_test)
+
+set(GSTORE_CI_TESTS
+        BasicTest
+        ParserTest
+        DatasetTest
+        UpdateTest
+        TransactionTest
+        RunTransaction
+        DebugTest
+)
+
+foreach (test ${GSTORE_CI_TESTS})
+    set_tests_properties(${test} PROPERTIES TIMEOUT 300 PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endforeach ()
