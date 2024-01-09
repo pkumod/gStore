@@ -9,6 +9,7 @@ cmake-build-*/
 .cmake/
 gstore-*.tar.gz
 CMakeUserPresets.json
+/Testing/
 
 # Runtime directories
 .tmp/

@@ -57,12 +57,8 @@ jobs:
         working-directory: cmake-build-debug
 
       - name: Generate coverage report
-        run: |
-          lcov --capture --directory . --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*conan*' --output-file coverage.info # filter system and conan dependencies
-          lcov --list coverage.info
-          genhtml coverage.info --output-directory temp --demangle-cpp --frames --legend  --show-details --title "Code Coverage"
-          tar -czf coverage.tar.gz -C temp .
+        run: ninja coverage
+        working-directory: cmake-build-debug
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v2

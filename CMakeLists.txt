@@ -146,6 +146,24 @@ add_custom_target(
         VERBATIM
 )
 
+# ignored files for lcov (*Server* to wildcard all server files)
+SET(GSTORE_COVERAGE_IGNORES "*Server*" "*Main*" "*Parser/SPARQL*" "*include/*" "*tests/*")
+if (COVERAGE)
+    add_custom_target(
+            coverage
+            COMMAND lcov --capture --directory ${CMAKE_SOURCE_DIR} --output-file ${CMAKE_SOURCE_DIR}/coverage.info
+            # remove dependencies
+            COMMAND lcov --remove ${CMAKE_SOURCE_DIR}/coverage.info "/usr/*" "*conan*" --output-file ${CMAKE_SOURCE_DIR}/coverage.info
+            # remove untested
+            COMMAND lcov --remove ${CMAKE_SOURCE_DIR}/coverage.info ${GSTORE_COVERAGE_IGNORES} --output-file ${CMAKE_SOURCE_DIR}/coverage.info
+            COMMAND genhtml ${CMAKE_SOURCE_DIR}/coverage.info --output-directory ${CMAKE_SOURCE_DIR}/temp --demangle-cpp --frames --legend  --show-details --title "Code Coverage"
+            COMMAND lcov --list ${CMAKE_SOURCE_DIR}/coverage.info
+            COMMAND ${CMAKE_COMMAND} -E tar -czf  ${CMAKE_SOURCE_DIR}/coverage.tar.gz -C ${CMAKE_SOURCE_DIR}/temp .
+            COMMENT "Generating code coverage report -> temp/index.html, coverage.tar.gz"
+            VERBATIM
+    )
+endif ()
+
 # Add large file support on 32-bit builds
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     add_definitions(-D_FILE_OFFSET_BITS=64)
