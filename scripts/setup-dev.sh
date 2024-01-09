@@ -8,8 +8,8 @@ fi
 
 # Function to install packages using apt
 install_apt_packages() {
-    apt update
-    apt install -y build-essential cmake ninja-build mold python3-pip \
+    apt-get update
+    apt-get install -y build-essential cmake ninja-build mold python3-pip \
         pkg-config uuid-dev libjemalloc-dev libreadline-dev libssl-dev lcov
 }
 
