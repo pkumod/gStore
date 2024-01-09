@@ -70,5 +70,7 @@ jobs:
           draft: true  # generate a draft release
           generateReleaseNotes: false
           bodyFile: CHANGELOG.md
-          # generate a pre-release if 'pre', 'rc', or 'beta' is in the tag name
+          # generate a pre-release if 'pre', 'rc', or 'beta' is in the tag name, or triggered manually
           prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'beta') || contains(github.ref, 'rc') || contains(github.ref, 'pre') }}
+          # use the tag name if it's a tag, otherwise use the commit hash
+          tag: ${{ startsWith(github.ref, 'refs/tags/') && '' || github.sha }}  
