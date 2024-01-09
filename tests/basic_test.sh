@@ -43,7 +43,7 @@ do
 		continue
 	else
 		echo -e "\033[43;35m build ${db[$i]}.db fails \033[0m"
-		exit
+		exit 1
 	fi
 done
 
@@ -64,7 +64,7 @@ do
 		echo ${ans}
 		echo -e "\033[43;35m update triples in ${db[$i]}.db has errors \033[0m"
 		# "rm" "1.txt"
-		exit
+		exit 2
 	else
 		echo "update triples in ${db[$i]}.db ok"
 	fi
@@ -85,7 +85,7 @@ do
 		then 
 			echo -e "\033[43;35m query ${db[0]}${bbug_sql[$i]}.sql in ${db[0]}.db has errors \033[0m"
 			"rm" "1.txt"
-			exit
+			exit 3
 		else
 			echo "query ${db[0]}${bbug_sql[$i]}.sql in ${db[0]}.db ok"
 		fi
@@ -103,7 +103,7 @@ do
 	then
 		echo -e "\033[43;35m query ${db[1]}${lubm_sql[$i]}.sql in ${db[1]}.db has errors \033[0m"
 		"rm" "1.txt"
-		exit
+		exit 4
 	else
 		echo "query ${db[1]}${lubm_sql[$i]}.sql in ${db[1]}.db ok"
 	fi
@@ -120,7 +120,7 @@ do
 	then
 		echo -e "\033[43;35m query ${db[2]}${num_sql[$i]}.sql in ${db[2]}.db has errors \033[0m"
 		"rm" "1.txt"
-		exit
+		exit 5
 	else
 		echo "query ${db[2]}${num_sql[$i]}.sql in ${db[2]}.db ok"
 	fi
@@ -137,7 +137,7 @@ do
 	then
 		echo -e "\033[43;35m query ${db[3]}${small_sql[$i]}.sql in ${db[3]}.db has errors \033[0m"
 		"rm" "1.txt"
-		exit
+		exit 6
 	else
 		echo "query ${db[3]}${small_sql[$i]}.sql in ${db[3]}.db ok"
 	fi
@@ -156,7 +156,7 @@ if [[ ${ans:18:${#ans}-18} -ne ${triple_num[4]} ]]
 then
 	echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
 	"rm" "1.txt"
-	exit
+	exit 7
 else
 	echo "add triples in ${db[3]}.db ok"
 fi
@@ -171,7 +171,7 @@ if [[ ${ans:18:${#ans}-18} -ne ${triple_num[3]} ]]
 then
 	echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
 	"rm" "1.txt"
-	exit
+	exit 8
 else
 	echo "sub triples in ${db[3]}.db ok"
 fi
