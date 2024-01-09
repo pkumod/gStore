@@ -17,8 +17,8 @@ fi
 
 if [ ! -f ./init.conf ]; then
     echo -e "${BLUE} [INIT] No init.conf file found. Copying default... ${NC}"
-    cp -r "${ROOT_DIR}"/../defaults/* "./"
-    cp -r "${ROOT_DIR}"/../lib/*.so* "./lib/"
+    cp -n -r "${ROOT_DIR}"/../defaults/* "./"
+    cp -n -r "${ROOT_DIR}"/../lib/*.so* "./lib/"
     if [ -d /data ] && [ ! -d ./data/system ]; then
         echo -e "${BLUE} [INIT] Creating symlink... ${NC}"
         ln -s /data ./data

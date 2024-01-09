@@ -158,7 +158,7 @@ if (COVERAGE)
             COMMAND lcov --remove ${CMAKE_SOURCE_DIR}/coverage.info ${GSTORE_COVERAGE_IGNORES} --output-file ${CMAKE_SOURCE_DIR}/coverage.info
             COMMAND genhtml ${CMAKE_SOURCE_DIR}/coverage.info --output-directory ${CMAKE_SOURCE_DIR}/temp --demangle-cpp --frames --legend  --show-details --title "Code Coverage"
             COMMAND lcov --list ${CMAKE_SOURCE_DIR}/coverage.info
-            COMMAND ${CMAKE_COMMAND} -E tar -czf  ${CMAKE_SOURCE_DIR}/coverage.tar.gz -C ${CMAKE_SOURCE_DIR}/temp .
+            COMMAND tar -czf  ${CMAKE_SOURCE_DIR}/coverage.tar.gz -C ${CMAKE_SOURCE_DIR}/temp .
             COMMENT "Generating code coverage report -> temp/index.html, coverage.tar.gz"
             VERBATIM
     )

@@ -27,18 +27,18 @@ RUN pip3 install conan && conan profile detect
 
 COPY conanfile.py /usr/src/gstore/
 
-RUN conan install . --output-folder=build --build=missing -s "build_type=Release" -s "compiler.libcxx=libstdc++11" -s "compiler.cppstd=17"
+RUN conan install . --build=missing -s "build_type=Release" -s "compiler.libcxx=libstdc++11" -s "compiler.cppstd=17"
 
 # Copy gStore source code; run `make tarball` to generate this file
 ADD gstore-src.tar.gz /usr/src/gstore
 
-RUN mkdir -p build && cd build && \
+RUN cd cmake-build-release && \
     cmake .. -G Ninja \
       -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake \
       -DCMAKE_CXX_FLAGS="-fuse-ld=mold" \
       -DCMAKE_BUILD_TYPE=Release
 
-RUN mkdir -p build && cd build && \
+RUN cd cmake-build-release && \
     ninja -v prepare && \
     ninja -v install
 

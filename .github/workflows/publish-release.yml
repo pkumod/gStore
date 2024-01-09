@@ -2,7 +2,7 @@
 # @authors: Runzhi He <rzhe@pku.edu.cn>
 # @date: 2024-01-08
 
-name: Publish Docker
+name: Publish Release
 
 on:
   push:
@@ -45,7 +45,6 @@ jobs:
 
       - name: Create Tarball
         run: |
-          ninja -C cmake-build-release clean_prepare
           ninja -C cmake-build-release tarball
           ninja -C cmake-build-release package
 
@@ -55,6 +54,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: cmake-build-release/gstore-*.tar.gz
-          asset_name: gstore-*.tar.gz
+          asset_path: gstore-*.tar.gz
+          asset_name: Source and Binary
           asset_content_type: application/gzip
