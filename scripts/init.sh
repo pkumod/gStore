@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit on error
+set -e
+
 # Get the directory name of the current script
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
