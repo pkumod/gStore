@@ -24,7 +24,7 @@ jobs:
 
       # Test the setup script
       - name: Install system dependencies
-        run: sudo bash scripts/setup/ubuntu_dev.sh
+        run: sudo bash scripts/setup-dev.sh
   
       - name: Setup Conan
         run: pip install conan && conan profile detect
