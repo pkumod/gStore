@@ -41,30 +41,9 @@ jobs:
           images: |
             ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_REPOSITORY }}
 
-      # Test the setup script
-      - name: Install system dependencies
-        run: sudo bash scripts/setup/ubuntu_dev.sh
-
-      - name: Setup Conan
-        run: pip install conan && conan profile detect
-
-      - name: Cache Conan dependencies
-        uses: actions/cache@v3
-        with:
-            path: |
-              ~/.conan2/p/
-            key: ${{ runner.os }}-conan-${{ hashFiles('**/conanfile.py') }}
-            restore-keys: |
-              ${{ runner.os }}-conan-
-
-      - name: Install conan dependencies
-        run: conan install . -s "build_type=Release" --build=missing
-
-      - name: Build
-        run: |
-          cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-          ninja tarball
-        working-directory: cmake-build-release
+      - name: Creating source tarball
+        run:  |
+          tar -czvf gstore-src.tar.gz "src" "api" "defaults" "tests" "3rdparty" "data" "scripts" "conanfile.py" "CMakeLists.txt" "README.md" "LICENSE"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
