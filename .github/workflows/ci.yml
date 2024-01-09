@@ -1,0 +1,78 @@
+# This workflow runs the test suite, measure coverage, and upload the coverage report to Codecov.
+# @authors: Runzhi He <rzhe@pku.edu.cn>
+# @date: 2024-01-08
+
+name: Tests and Coverage
+
+on:
+    push:
+      branches:
+        - $default-branch
+    pull_request:
+      branches:
+        - $default-branch
+    workflow_dispatch: # Manually run workflow
+
+jobs:
+    build-and-test:
+      # This CI gonna fail if can't build and test on latest Ubuntu LTS
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Test the setup script
+      - name: Install system dependencies
+        run: bash scripts/setup/ubuntu_dev.sh
+  
+      - name: Setup Conan
+        run: pip install conan && conan profile detect
+  
+      - name: Cache Conan dependencies
+        uses: actions/cache@v3
+        with:
+            path: |
+              ~/.conan2/p/
+            key: ${{ runner.os }}-conan-${{ hashFiles('**/conanfile.py') }}
+            restore-keys: |
+              ${{ runner.os }}-conan-
+
+      - name: Install conan dependencies
+        run: conan install . -s "&:build_type=Debug" -s "build_type=Release" --build=missing
+
+      - name: Build
+        run: |
+          cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
+          ninja install
+        working-directory: cmake-build-debug
+
+      - name: Sanity Check
+        run: |
+          bash scripts/init.sh
+          (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
+
+      - name: Test
+        run: ctest -C Debug --output-on-failure
+        working-directory: cmake-build-debug
+
+      - name: Generate coverage report
+        run: |
+          lcov --capture --directory . --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*conan*' --output-file coverage.info # filter system and conan dependencies
+          lcov --list coverage.info
+          genhtml coverage.info --output-directory temp --demangle-cpp --frames --legend  --show-details --title "Code Coverage"
+          tar -czf coverage.tar.gz -C temp .
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage.tar.gz
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        # don't exit with error code if coverage upload fails
+        continue-on-error: true

@@ -1,0 +1,60 @@
+# This workflow builds new releases.
+# @authors: Runzhi He <rzhe@pku.edu.cn>
+# @date: 2024-01-08
+
+name: Publish Docker
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # This line enables manual triggering
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Test the setup script
+      - name: Install system dependencies
+        run: bash scripts/setup/ubuntu_dev.sh
+
+      - name: Setup Conan
+        run: pip install conan && conan profile detect
+
+      - name: Install conan dependencies
+        run: conan install . -s "build_type=Release" --build=missing
+
+      - name: Build
+        run: |
+          cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+          ninja install
+        working-directory: cmake-build-release
+
+      - name: Sanity Check
+        run: |
+          bash scripts/init.sh
+          (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
+
+      - name: Create Tarball
+        run: |
+          ninja -C cmake-build-release clean_prepare
+          ninja -C cmake-build-release tarball
+          ninja -C cmake-build-release package
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: cmake-build-release/gstore-*.tar.gz
+          asset_name: gstore-*.tar.gz
+          asset_content_type: application/gzip
