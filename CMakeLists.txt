@@ -6,6 +6,11 @@ cmake_minimum_required(VERSION 3.16)
 
 project(gStore LANGUAGES CXX)
 
+# gStore requires gcc 8 or higher
+if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8")
+    message(FATAL_ERROR "gStore requires gcc 8 or higher, got ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
 ### set compiler flags
 # use -O2 for Release
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
@@ -26,15 +31,21 @@ if(MOLD_LINKER)
 else()
     message(STATUS "mold linker not found, using default linker")
 endif()
+# coverage settings
+if(COVERAGE)
+    message(STATUS "Enabling coverage reporting")
+    # halt if the build_type is not Debug
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(FATAL_ERROR "Coverage requires Debug build type")
+    endif()
+    # set compiler flags
+    add_link_options(--coverage)
+    add_compile_options(--coverage)
+endif ()
 
 # print build type and flags
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
-
-# gStore requires gcc 5.4 or higher
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8")
-    message(FATAL_ERROR "gStore requires gcc 8 or higher, got ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-endif()
 
 # helper for IDEs to find the include path
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -105,6 +116,7 @@ add_custom_target(
 add_custom_target(
         clean_prepare
         COMMAND rm -rvf ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/lib/*.a
+        COMMAND find ${CMAKE_SOURCE_DIR}/3rdparty -type d -mindepth 1 -maxdepth 1 -exec rm -rvf {} +
         COMMENT "Clean unmanaged dependencies"
 )
 
@@ -119,9 +131,18 @@ add_custom_target(
 
 add_custom_target(
         tarball
-        COMMAND cd ../ && ${CMAKE_COMMAND} -E tar "cfzv" "gstore.tar.gz" --
+        COMMAND cd ../ && ${CMAKE_COMMAND} -E tar "cfzv" "gstore-src.tar.gz" --
         "src" "api" "defaults" "tests" "3rdparty" "data" "scripts" "conanfile.py" "CMakeLists.txt" "README.md" "LICENSE"
-        COMMENT "Creating tarball of directory"
+        COMMENT "Creating source tarball"
+        VERBATIM
+)
+
+string(TOLOWER "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}" GSTORE_PLATFORM_NAME)
+add_custom_target(
+        package
+        COMMAND cd ../ && ${CMAKE_COMMAND} -E tar "cfzv" "gstore-${GSTORE_PLATFORM_NAME}.tar.gz" --
+        "bin" "lib" "defaults" "data/system" "scripts" "README.md" "LICENSE"
+        COMMENT "Creating binary tarball"
         VERBATIM
 )
 
@@ -157,5 +178,5 @@ set(GSTORE_CI_TESTS
 )
 
 foreach (test ${GSTORE_CI_TESTS})
-    set_tests_properties(${test} PROPERTIES TIMEOUT 300 PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    set_tests_properties(${test} PROPERTIES TIMEOUT 300 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endforeach ()

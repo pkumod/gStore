@@ -7,7 +7,7 @@ bin_tests/
 dist/
 cmake-build-*/
 .cmake/
-gstore.tar.gz
+gstore-*.tar.gz
 CMakeUserPresets.json
 
 # Runtime directories

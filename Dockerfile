@@ -30,7 +30,7 @@ COPY conanfile.py /usr/src/gstore/
 RUN conan install . --output-folder=build --build=missing -s "build_type=Release" -s "compiler.libcxx=libstdc++11" -s "compiler.cppstd=17"
 
 # Copy gStore source code; run `make tarball` to generate this file
-ADD gstore.tar.gz /usr/src/gstore
+ADD gstore-src.tar.gz /usr/src/gstore
 
 RUN mkdir -p build && cd build && \
     cmake .. -G Ninja \
