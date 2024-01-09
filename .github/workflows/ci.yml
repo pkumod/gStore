@@ -54,7 +54,7 @@ jobs:
           (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
 
       - name: Test
-        run: ctest -C Debug --output-on-failure
+        run: ctest -C Debug --output-on-failure --rerun-failed
         working-directory: cmake-build-debug
         continue-on-error: ${{ vars.CHEAT_IN_CI == 'true' }}
 

@@ -1,4 +1,4 @@
-# This workflow builds new releases.
+# This workflow will build and draft a new release whenever a new tag is pushed to the repository.
 # @authors: Runzhi He <rzhe@pku.edu.cn>
 # @date: 2024-01-08
 
@@ -12,11 +12,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -24,7 +23,7 @@ jobs:
 
       # Test the setup script
       - name: Install system dependencies
-        run: bash scripts/setup/ubuntu_dev.sh
+        run: sudo bash scripts/setup/ubuntu_dev.sh
 
       - name: Setup Conan
         run: pip install conan && conan profile detect
@@ -35,25 +34,40 @@ jobs:
       - name: Build
         run: |
           cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-          ninja install
+          ninja install -v
         working-directory: cmake-build-release
-
-      - name: Sanity Check
-        run: |
-          bash scripts/init.sh
-          (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
 
       - name: Create Tarball
         run: |
           ninja -C cmake-build-release tarball
           ninja -C cmake-build-release package
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Sanity Check
+        run: |
+          bash scripts/init.sh
+          (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Generate Changelog
+        run: |
+            npm install -g conventional-changelog-cli
+            conventional-changelog -p angular -i CHANGELOG.md -s
+
+      - name: Create a new Release
+        uses: ncipollo/release-action@v1
+        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: gstore-*.tar.gz
-          asset_name: Source and Binary
-          asset_content_type: application/gzip
+          # https://github.com/ncipollo/release-action for the full list of arguments
+          artifacts: gstore-*.tar.gz
+          skipIfReleaseExists: true
+          draft: true  # generate a draft release
+          generateReleaseNotes: false
+          bodyFile: CHANGELOG.md
+          # generate a pre-release if 'pre', 'rc', or 'beta' is in the tag name
+          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'beta') || contains(github.ref, 'rc') || contains(github.ref, 'pre') }}
