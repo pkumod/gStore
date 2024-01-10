@@ -2265,6 +2265,8 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 										*response << buffer;
 									}
 									free(compress_);
+									apiUtil->unlock_database(db_name);
+									SLOG_DEBUG("query complete!");
 									return;
 								}
 								else
