@@ -177,12 +177,12 @@ add_subdirectory(tests)
 # rules for ctest
 include(CTest)
 enable_testing()
-add_test(NAME BasicTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/basic_test.sh)
+add_test(NAME BasicTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/basic_test.sh && rm -r ${CMAKE_SOURCE_DIR}/system.db && bash ${CMAKE_SOURCE_DIR}/scripts/init.sh)
 add_test(NAME ParserTest COMMAND bash ${CMAKE_SOURCE_DIR}/tests/parser_test.sh)
 # add_test(NAME DatasetTest COMMAND bin_tests/dataset_test)
 add_test(NAME UpdateTest COMMAND bin_tests/update_test 100)
 add_test(NAME TransactionTest COMMAND bin_tests/transaction_test)
-add_test(NAME RunTransaction COMMAND bin_tests/run_transaction)
+add_test(NAME RunTransaction COMMAND bash -c "(sleep 1; echo Begin; sleep 1; echo Commit;) | bin_tests/run_transaction small")
 add_test(NAME DebugTest COMMAND bin_tests/debug_test)
 
 set(GSTORE_CI_TESTS
