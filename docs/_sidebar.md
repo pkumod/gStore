@@ -3,7 +3,7 @@
   * [From Source](COMPILE.md)
 
 * :memo: Help
-  * [Manual](gStore_help.md)
+  * [Manual](MANUAL.md)
   * [Usage](USAGE.md)
   * [FAQ](FAQ.md)
   * [Recommendations](TIPS.md)
