@@ -3,6 +3,7 @@
   * [编译](/zh-cn/COMPILE.md)
 
 * :memo: 帮助
+  * [用户手册](/zh-cn/MANUAL.md)
   * [gStore文档](/zh-cn/USAGE.md)
   * [SPARQL指南](/zh-cn/SPARQL.md)
   * [Workbench](/zh-cn/WORKBENCH.md)
