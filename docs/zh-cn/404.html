@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 未找到</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .main-container {
+            text-align: center;
+        }
+
+        .status-code {
+            font-size: 10em;
+            font-weight: bold;
+            color: #c62f46;
+        }
+
+        .message {
+            font-size: 1.5em;
+            margin-top: -20px;
+        }
+
+        .home-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #c62f46;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .home-link:hover {
+            background-color: #a5283d;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="status-code">404</div>
+        <div class="message">哎呀！您要找的页面不存在。</div>
+        <a href="/" class="home-link">返回首页</a>
+    </div>
+</body>
+</html>
