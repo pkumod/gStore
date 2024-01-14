@@ -25,9 +25,9 @@ jobs:
 
       - name: Copy Assets
         run: |
-          mkdir -p temp && cd ./docs
-          cp -rv $(find . -maxdepth 1 -type f) temp  # copy files -> cf
-          cp -rv zh-cn help temp  # copy folders -> cf
+          mkdir -p temp
+          cp -rv $(find ./docs -maxdepth 1 -type f) temp
+          cp -rv ./docs/zh-cn ./docs/help temp
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
