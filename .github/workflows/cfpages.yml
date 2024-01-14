@@ -34,6 +34,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ env.CF_PROJECT_NAME }}
+          projectName: ${{ vars.CF_PROJECT_NAME }}
           directory: temp
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
