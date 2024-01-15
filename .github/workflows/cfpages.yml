@@ -1,0 +1,39 @@
+# This workflow uploads documentation to Cloudflare Pages.
+# @authors: Runzhi He <rzhe@pku.edu.cn>
+# @date: 2024-01-10
+
+name: Publish Cloudflare Pages
+
+on:
+    push:
+      branches: [ online-docs ]
+    workflow_dispatch: # Manually run workflow
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Publish to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: online-docs
+          fetch-depth: 0
+
+      - name: Copy Assets
+        run: |
+          mkdir -p temp
+          cp -rv $(find ./docs -maxdepth 1 -type f) temp
+          cp -rv ./docs/zh-cn ./docs/help temp
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PROJECT_NAME }}
+          directory: temp
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

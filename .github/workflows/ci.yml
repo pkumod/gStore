@@ -1,0 +1,77 @@
+# This workflow runs the test suite, measure coverage, and upload the coverage report to Codecov.
+# @authors: Runzhi He <rzhe@pku.edu.cn>
+# @date: 2024-01-08
+
+name: Build and Test
+
+on:
+    push:
+      # branches: [ master ]  # TODO: have a stable default branch
+    pull_request:
+    workflow_dispatch: # Manually run workflow
+
+jobs:
+    build-and-test:
+      # Only trigger this workflow on the default branch
+      # https://stackoverflow.com/questions/64781462/github-actions-default-branch-variable
+      if: ${{ always() && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref }}
+      # This CI gonna fail if can't build and test on latest Ubuntu LTS
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Test the setup script
+      - name: Install system dependencies
+        run: sudo bash scripts/setup-dev.sh
+  
+      - name: Setup Conan
+        run: pip install conan && conan profile detect
+  
+      - name: Cache Conan dependencies
+        uses: actions/cache@v3
+        with:
+            path: |
+              ~/.conan2/p/
+            key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py') }}
+            restore-keys: |
+              ${{ runner.os }}-conan-
+
+      - name: Install conan dependencies
+        run: conan install . -s "&:build_type=Debug" -s "build_type=Release" --build=missing
+
+      - name: Build
+        run: |
+          cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
+          ninja prepare
+          ninja install -v
+        working-directory: cmake-build-debug
+
+      - name: Sanity Check
+        run: |
+          bash scripts/init.sh
+          (timeout 10s bin/ghttp &) && sleep 3 && bin/gquery -db small -q data/small/small_q0.sql && killall ghttp
+
+      - name: Test
+        run: ctest -C Debug --output-on-failure --rerun-failed
+        working-directory: cmake-build-debug
+        continue-on-error: ${{ vars.CHEAT_IN_CI == 'true' }}
+
+      - name: Generate coverage report
+        run: ninja coverage
+        working-directory: cmake-build-debug
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage.tar.gz
+          path: coverage.tar.gz
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          files: coverage.info
+          verbose: true

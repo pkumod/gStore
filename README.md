@@ -1,3 +1,21 @@
+<!-- insert a mobile friendly image -->
+<div align="center">
+  <img src="docs/logo.png" style="height: 200px;" alt="gStore logo"/>
+</div>
+
+<div align="center">
+  <h4> English | <a href="docs/zh-cn/README.md" target="_blank"> 中文 </a> | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a> |  <a href="https://gstore-docs.pages.dev" target="_blank"> Documentation </a> | <a href="https://gstore-docs.pages.dev/zh-cn/" target="_blank"> 文档 </a> </h4>
+</div>
+
+<div align="center">
+  <a href="https://github.com/hrz6976/gstore/commits"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/y/pkumod/gstore?logo=github"/></a>
+  <a href="https://github.com/hrz6976/gstore/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors-anon/hrz6976/gstore?logo=github&color=%23ffd664"/></a>
+  <a href="https://github.com/hrz6976/gstore/actions" ><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/hrz6976/gStore/ci.yml?logo=github"/></a>
+  <a href="https://codecov.io/github/hrz6976/gStore" ><img src="https://codecov.io/github/hrz6976/gStore/graph/badge.svg?token=0NE3KM5AV8"/></a>
+  <a href="https://hub.docker.com/repository/docker/hrz6976/gstore"><img alt="Docker Image Version (latest semver)" src="https://img.shields.io/docker/v/hrz6976/gstore?logo=docker&label=docker&color=%2328a8ea"/></a>
+  <span><img alt="Static Badge" src="https://img.shields.io/badge/arch-amd64_arm64_loongarch-%23f23f46?logo=amazonec2"></span>
+</div>
+
 # gStore System
 
 gStore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.

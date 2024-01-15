@@ -1,3 +1,38 @@
+# Artifacts and Cache
+build/
+include/
+lib/
+bin/
+bin_tests/
+dist/
+cmake-build-*/
+.cmake/
+gstore-*.tar.gz
+CMakeUserPresets.json
+/Testing/
+
+# Runtime directories
+.tmp/
+.debug/
+.obj/
+backup/
+logs/
+upload/
+temp/
+fun/
+
+# config files
+# TODO: add a separate config file folder
+/backup.json
+/conf.ini
+/init.conf
+/ipAllow.config
+/ipDeny.config
+/README.txt
+/slog.properties
+/slog.stdout.properties
+/*.log
+
 # Executables
 *.pyc
 *.exe
@@ -7,19 +42,20 @@
 *.x86_64
 *.hex
 bin/g*
-scripts/update_test
-scripts/dataset_test
+tests/update_test
+tests/dataset_test
 api/cpp/example/example
 
-Parser/Sparql*
+src/Parser/Sparql*
 
 #result logs
 *.txt
 *.log
 logs
+!CMakeLists.txt
 
 #backup files
-backup.json
+defaults/backup.json
 
 #download files
 *.torrent
@@ -90,6 +126,7 @@ tags
 .vs
 *.iml
 .idea
+.vscode
 
 # latex files
 *.aux
