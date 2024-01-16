@@ -937,6 +937,8 @@ void QueryTree::print()
 						printf("MAX(");
 					if (this->projection[i].aggregate_type == ProjectionVar::Avg_type)
 						printf("AVG(");
+					if (this->projection[i].aggregate_type == ProjectionVar::Sample_type)
+						printf("SAMPLE(");
 					if (this->projection[i].aggregate_type == ProjectionVar::simpleCyclePath_type)
 						printf("simpleCyclePath(");
 					if (this->projection[i].aggregate_type == ProjectionVar::simpleCycleBoolean_type)
@@ -966,7 +968,8 @@ void QueryTree::print()
 						|| this->projection[i].aggregate_type == ProjectionVar::Sum_type
 						|| this->projection[i].aggregate_type == ProjectionVar::Min_type
 						|| this->projection[i].aggregate_type == ProjectionVar::Max_type
-						|| this->projection[i].aggregate_type == ProjectionVar::Avg_type)
+						|| this->projection[i].aggregate_type == ProjectionVar::Avg_type
+						|| this->projection[i].aggregate_type == ProjectionVar::Sample_type)
 						printf("%s", this->projection[i].aggregate_var.c_str());
 					else
 					{

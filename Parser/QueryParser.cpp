@@ -329,7 +329,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			// Make sure only one children along the way
 			if (curr->children.size() > 1)
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
-					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG, SAMPLE; "
 					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}
@@ -338,7 +338,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 		{
 			string tmp = aggCtx->children[0]->getText();
 			transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-			if (tmp != "COUNT" && tmp != "MIN" && tmp != "MAX" && tmp != "AVG" && tmp != "SUM" && tmp != "GROUP_CONCAT")
+			if (tmp != "COUNT" && tmp != "MIN" && tmp != "MAX" && tmp != "AVG" && tmp != "SUM" && tmp != "GROUP_CONCAT" && tmp != "SAMPLE")
 				throw runtime_error("[ERROR] The supported aggregate function now is COUNT, MIN, MAX, AVG, SUM only");
 
 			query_tree_ptr->addProjectionVar();
@@ -353,6 +353,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.aggregate_type = ProjectionVar::Avg_type;
 			else if (tmp == "SUM")
 				proj_var.aggregate_type = ProjectionVar::Sum_type;
+			else if (tmp == "SAMPLE")
+				proj_var.aggregate_type = ProjectionVar::Sample_type;
 			else if (tmp == "GROUP_CONCAT")
 			{
 				proj_var.aggregate_type = ProjectionVar::Groupconcat_type;
@@ -606,7 +608,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			}
 			else
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
-					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG, SAMPLE; "
 					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 				
 			
@@ -621,7 +623,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			// Make sure only one children along the way
 			if (curr->children.size() > 1)
 				throw runtime_error("[ERROR] Currently only support selecting variables; "
-					"the aggregate functions COUNT, MIN, MAX, SUM, AVG; "
+					"the aggregate functions COUNT, MIN, MAX, SUM, AVG, SAMPLE; "
 					"the built-in call CONTAINS; and path-associated built-in or custom calls");
 			curr = curr->children[0];
 		}

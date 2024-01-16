@@ -1478,7 +1478,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj[0].aggregate_type != ProjectionVar::Avg_type && \
 				proj[0].aggregate_type != ProjectionVar::Min_type && \
 				proj[0].aggregate_type != ProjectionVar::Max_type && \
-				proj[0].aggregate_type != ProjectionVar::Contains_type)
+				proj[0].aggregate_type != ProjectionVar::Contains_type && \
+				proj[0].aggregate_type != ProjectionVar::Sample_type )
 			{
 				// Non-aggregate functions, no var (all constant) in arg list
 
@@ -2200,12 +2201,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						|| proj[i].aggregate_type == ProjectionVar::Avg_type
 						|| proj[i].aggregate_type == ProjectionVar::Min_type
 						|| proj[i].aggregate_type == ProjectionVar::Max_type
-						|| proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
+						|| proj[i].aggregate_type == ProjectionVar::Groupconcat_type
+						|| proj[i].aggregate_type == ProjectionVar::Sample_type)
 					{
 						int count = 0;
 						bool numeric = false, datetime = false, succ = true;
 						EvalMultitypeValue numeric_sum, numeric_min, numeric_max, datetime_min, datetime_max, tmp, res;
 						string groupconcat;
+						string sample_result;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_sum.int_value = 0;
 						numeric_min.datatype = EvalMultitypeValue::xsd_long;
@@ -2259,7 +2262,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											datetime = true;
 									}
 									if (!datetime && !numeric && proj[i].aggregate_type != ProjectionVar::Count_type \
-										&& proj[i].aggregate_type != ProjectionVar::Groupconcat_type)
+										&& proj[i].aggregate_type != ProjectionVar::Groupconcat_type \
+										&& proj[i].aggregate_type != ProjectionVar::Sample_type)
 									{
 										succ = false;
 										break;
@@ -2271,6 +2275,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										count_set.insert(tmp.term_value);
 									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 										count_set.insert(tmp.str_value);
+									else if (proj[i].aggregate_type == ProjectionVar::Sample_type)
+										sample_result = tmp.str_value;
 									else if (proj[i].aggregate_type == ProjectionVar::Min_type)
 									{
 										if (numeric)
@@ -2435,6 +2441,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												datetime_max = tmp;
 										}
 									}
+									else if (proj[i].aggregate_type == ProjectionVar::Sample_type)
+									{
+										if (sample_result.empty())
+											sample_result = tmp.str_value;
+									}
 
 									count++;
 								}
@@ -2493,7 +2504,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else if (datetime)
 									ss << datetime_max.term_value;
 							}
-							
+							else if (proj[i].aggregate_type == ProjectionVar::Sample_type)
+							{
+								ss << sample_result;
+							}
 						}
 						else 	// Failed
 							ss << "";
