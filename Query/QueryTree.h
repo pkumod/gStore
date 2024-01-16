@@ -406,9 +406,9 @@ public:
 class ProjectionVar
 {
 public:
-	enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, Groupconcat_type,
-		simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type, 
-		shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type, 
+	enum AggregateType {None_type, Count_type, Sum_type, Min_type, Max_type, Avg_type, Groupconcat_type, Sample_type,
+		simpleCyclePath_type, simpleCycleBoolean_type, cyclePath_type, cycleBoolean_type,
+		shortestPath_type, shortestPathLen_type, kHopReachable_type, kHopEnumerate_type,
 		kHopReachablePath_type, ppr_type, triangleCounting_type, closenessCentrality_type,
 		bfsCount_type, pr_type, sssp_type, sssplen_type, labelProp_type, wcc_type, clusterCoeff_type,
 		maximumKplex_type, coreTruss_type,
