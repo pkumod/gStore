@@ -49,24 +49,14 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	string _subject, _predicate, _object, _objectSubType;
 	string errorMsg;
 	Type::ID _objectType;
-	streambuf *coutbuf = cout.rdbuf();
 	ofstream ofile;
 
-	if (!_error_log.empty())
+	if (!_error_log.empty() && _error_log != "NULL" )
 	{
-		if (_error_log == "NULL")
-			cout.setstate(ios_base::badbit);	// Silent output
-		else
-		{
-			ofile.open(_error_log,ios::app);
-			if (ofile)
-			{
-				// cout << "Error log file: " << _error_log << endl;
-				cout.rdbuf(ofile.rdbuf());
-			}
-			else
-				cout << "Error log file cannot be opened." << endl;
-		}
+		ofile.open(_error_log,ios::app);
+		if (!ofile)
+			cout << "Error log file cannot be opened." << endl;
+
 	}
 
 	int numLines = init_line;
@@ -95,7 +85,10 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			errorMsg = errorMsg.substr(0, num_l - 9) + errorMsg.substr(num_r);
 
 			// TODO: get the actual corresponding line
-			cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg << endl;
+			if (ofile)
+				ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg;
+			else
+				cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg << endl;
 			this->_TurtleParser.discardLine();
 			continue;
 		}
@@ -126,15 +119,23 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				catch (invalid_argument& e)
 				{
 					errorMsg = "Object integer value invalid";
-					cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-						<< "> <" << rawObject << ">): " << errorMsg << endl;
+					if (ofile)
+						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg;
+					else
+						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg << endl;
 					continue;
 				}
 				catch (out_of_range& e)
 				{
 					errorMsg = "Object integer out of range";
-					cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-						<< "> <" << rawObject << ">): " << errorMsg << endl;
+					if (ofile)
+						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg;
+					else
+						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg << endl;
 					continue;
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
@@ -150,16 +151,24 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				catch (invalid_argument& e)
 				{
 					errorMsg = "Object double value invalid";
-					cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-						<< "> <" << rawObject << ">): " << errorMsg << endl;
+					if (ofile)
+						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg;
+					else
+						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg << endl;
 					continue;
 				}
 				if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
 					&& toupper(rawObject[2]) == 'N')
 				{
 					errorMsg = "Object double value is NaN";
-					cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-						<< "> <" << rawObject << ">): " << errorMsg << endl;
+					if (ofile)
+						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg;
+					else
+						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg << endl;
 					continue;
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
@@ -177,15 +186,23 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 					catch (invalid_argument& e)
 					{
 						errorMsg = "Object long value invalid";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
 						errorMsg = "Object long value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -199,22 +216,34 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 					catch (invalid_argument& e)
 					{
 						errorMsg = "Object int value invalid";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 							<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
 						errorMsg = "Object int value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
 					{
 						errorMsg = "Object int value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -228,22 +257,34 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 					catch (invalid_argument& e)
 					{
 						errorMsg = "Object short value invalid";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
 						errorMsg = "Object short value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
 					{
 						errorMsg = "Object short value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -257,22 +298,34 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 					catch (invalid_argument& e)
 					{
 						errorMsg = "Object byte value invalid";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					catch (out_of_range& e)
 					{
 						errorMsg = "Object byte value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
 					{
 						errorMsg = "Object byte value out of range";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -285,16 +338,24 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 					catch (invalid_argument& e)
 					{
 						errorMsg = "Object float value invalid";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 					if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
 						&& toupper(rawObject[2]) == 'N')
 					{
 						errorMsg = "Object float value is NaN";
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						if (ofile)
+							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg;
+						else
+							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg << endl;
 						continue;
 					}
 				}
@@ -306,15 +367,9 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 		_triple_array[_triple_num++] = TripleWithObjType(_subject, _predicate, _object, _object_type);
 
 	}
-	if (!_error_log.empty())
+	if (ofile)
 	{
-		if (_error_log == "NULL")
-			cout.clear();
-		else
-		{
-			ofile.close();
-			cout.rdbuf(coutbuf);
-		}
+		ofile.close();
 	}
 	cout << "RDFParser parseFile done!" << endl;
 

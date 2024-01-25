@@ -3908,6 +3908,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	unsigned update_num_o = 0;
 	unsigned update_num_subject = 0;
 	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
+	set<TYPE_ENTITY_LITERAL_ID> obj_lists;
 
 	if (!_is_restore)
 	{
@@ -3928,7 +3929,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			vertices.push_back(_sub_id);
 			sub_lists.insert(_sub_id);
 		}
-		else if (sub_lists.find(_sub_id) == sub_lists.end())
+		else if (obj_lists.find(_sub_id) != obj_lists.end() && sub_lists.find(_sub_id) == sub_lists.end())
 		{
 			update_num_subject = update_num_subject + 1;
 			sub_lists.insert(_sub_id);
@@ -3954,6 +3955,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 				(this->kvstore)->setIDByEntity(_triple.object, _obj_id);
 				(this->kvstore)->setEntityByID(_obj_id, _triple.object);
 				vertices.push_back(_obj_id);
+				obj_lists.insert(_obj_id);
 			}
 		}
 		else

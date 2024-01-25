@@ -424,7 +424,7 @@ IVArray::remove(unsigned _key)
 		char *str = NULL;
 		unsigned long len = 0;
 		array[_key].getBstr(str, len, false);
-		CurCacheSize += len;
+		CurCacheSize -= len;
 		array[_key].setCacheFlag(false);
 	}
 
