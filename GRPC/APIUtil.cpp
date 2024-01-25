@@ -45,7 +45,16 @@ APIUtil::~APIUtil()
         pthread_rwlock_rdlock(&already_build_map_lock);
         std::map<std::string, struct DatabaseInfo *>::iterator it_already_build = already_build.find(database_name);
         pthread_rwlock_unlock(&already_build_map_lock);
-        if (pthread_rwlock_trywrlock(&(it_already_build->second->db_lock)) != 0)
+        // warning: this is going to be blocked, if the time of the system changes
+        // default timeout 60 seconds, 60000ms
+        unsigned timeout = 60*1000;
+        struct timeval now;
+        struct timespec str_timeout = {0};
+        gettimeofday(&now, NULL);
+        str_timeout.tv_sec = now.tv_sec;
+        str_timeout.tv_nsec = (now.tv_usec + 1000UL*timeout)*1000UL;
+        
+        if (pthread_rwlock_timedwrlock(&(it_already_build->second->db_lock), &str_timeout) != 0)
         {
             SLOG_WARN(database_name + " unable to save due to loss of lock");
             continue;
