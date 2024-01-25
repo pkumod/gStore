@@ -2154,7 +2154,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
-					SLOG_ERROR("result parse error:\n" + localname2);
+					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) 
+							+ ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
 					error = "Query fail: the result parse error.";
 					response->Error(StatusOperationFailed, error);
 				}
