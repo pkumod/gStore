@@ -2215,13 +2215,14 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				resDoc.Parse(success.c_str());
 				if (resDoc.HasParseError())
 				{
-					SLOG_ERROR("result parse error:\n" + success);
 					error = "parse error";
 					string filename2 = "error_" + filename;
 					string localname2 = apiUtil->get_query_result_path() + filename2;
 					outfile.open(localname2);
 					outfile << success;
 					outfile.close();
+					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resDoc.GetParseError()) 
+							+ ", ErrorPosition=" + to_string(resDoc.GetErrorOffset()) + ", ResultFile=" + localname2);
 					sendResponseMsg(1005, error, operation, request, response);
 				}
 				else
