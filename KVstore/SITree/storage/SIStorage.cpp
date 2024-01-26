@@ -360,7 +360,10 @@ bool
 SIStorage::ReadNode(SINode* _np, long long* _request)
 {
   if (_np == NULL || _np->inMem())
-    return false;	//can't read or needn't
+  {
+    std::cout << "error ReadNode: can't read or needn't" << std::endl;
+    return false;
+  }
   fseek(tree_fp_, Address(_np->GetStore()), SEEK_SET);
 
   bool np_is_leaf = _np->isLeaf();
