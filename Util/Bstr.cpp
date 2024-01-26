@@ -188,14 +188,16 @@ void
 Bstr::release()
 {
 	//free(this->str);	//ok to be null, do nothing
-	delete[] this->str;
-	clear();
+	if (this->str)
+	{
+		delete[] this->str;
+		clear();
+	}
 }
 
 Bstr::~Bstr()	
 {	//avoid mutiple delete
-	if (this->str)
-		release();
+	release();
 }
 
 void

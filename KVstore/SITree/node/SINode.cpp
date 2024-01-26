@@ -264,6 +264,11 @@ SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 bool
 SINode::subKey(int _index, bool ifdel)
 {
+	if (keys == nullptr)
+	{
+		std::cout << "error sub keys is null :" << _index << std::endl;
+		return false;
+	}
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{

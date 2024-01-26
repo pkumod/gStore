@@ -174,6 +174,8 @@ SITree::Insert(char* str, unsigned len, unsigned val)
     father->setHeight(this->height_);	//add to heap later
     this->tsm_->updateHeap(ret, ret->getRank(), false);
     this->root_ = father;
+    if (root_->heapId == -1)
+      root_->heapId = 0;
   }
 
   SINode* p = this->root_;
@@ -361,6 +363,11 @@ SITree::Remove(const char* _str, unsigned _len)
         this->Prepare(p->GetChild(i - 1));
       if (i < j)
         this->Prepare(p->GetChild(i + 1));
+      if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
+      {
+        std::cout << "error remove str:" << _str << " key num:" << j << " query node pos:" << i <<std::endl;
+        break;
+      }
       ret = q->Coalesce(p, i);
       if (ret != NULL)
         this->tsm_->updateHeap(ret, 0, true);//non-sense node

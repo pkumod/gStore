@@ -1506,10 +1506,30 @@ Util::getSystemOutput(string cmd)
 string
 Util::getExactPath(const char *str)
 {
-    string cmd = "realpath ";
-    cmd += string(str);
+    // string cmd = "realpath ";
+    // cmd += string(str);
 
-    return getSystemOutput(cmd);
+    // return getSystemOutput(cmd);
+    struct stat st;    
+    if (lstat(str, &st) == -1)
+    {
+        return "";
+    }
+    char real_path[PATH_MAX];
+    if (S_ISLNK(st.st_mode))
+    {
+        ssize_t num_bytes = readlink(str, real_path, PATH_MAX - 1);
+        if (num_bytes == -1)
+        {
+            return "";
+        }
+        real_path[num_bytes] = '\0';
+    }
+    if (realpath(str, real_path) == nullptr)
+    {
+        return "";
+    }
+    return real_path;
 }
 
 void
