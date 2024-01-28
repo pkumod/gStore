@@ -1,15 +1,15 @@
-## gStore currently includes thirteen executables and others.
+gStore currently includes thirteen executables and others. We will introduce them one by one.
 
-**All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.**
+!> All the commands of gStore should be used in the root directory of gStore like bin/gconsole, because executables are placed in bin/, and they may use some files whose paths are indicated in the code, not absolute paths. We will ensure that all paths are absolute later by asking users to give the absolute path in their own systems to really install/configure the gStore. However, you must do as we told now to avoid errors.
 
-#### 0. Format of data
+### 0. Format of data
 The RDF data should be given in N-Triple format(XML is not supported by now) and queries must be given in SPARQL 1.1 syntax.
 Not all syntax in SPARQL 1.1 are parsered and answered in gStore, for example, property path is beyond the ability of gStore system.
 Tabs, '<' and '>' are not allowed to appear in entity, literal or predicates of the data and queries.
 
 - - -
 
-#### 1. gbuild
+### 1. gbuild
 
 As long as you download and compile the code of gStore system, a database named `system` (the real directory name is `system.db`) will be created automatically.
 This is the database that manages the information of system statistics, including all users and all databases.
@@ -32,7 +32,7 @@ Notice:
 
 - - -
 
-#### 2. gquery
+### 2. gquery
 
 gquery is used to query an existing database with files containing SPARQL queries.(each file contains exact one SPARQL query)
 
@@ -97,7 +97,7 @@ Notice:
 
 - - -
 
-#### 3. ghttp
+### 3. ghttp
 
 ghttp runs gStore like HTTP server with port 9000(You need to open this port in your environment, `iptables` tool is suggested). Visit from browser with prescriptive url, then gStore will execute corresponding operation.
 
@@ -192,7 +192,7 @@ Three scripts are placed in [setup](../scripts/setup/) to help you modify the se
 - - -
 
 
-#### 4. gserver
+### 4. gserver
 
 **This is not maintained now.**
 
@@ -215,7 +215,7 @@ Notice: Multiple threads are not supported by gserver. If you start up gclient i
 
 - - -
 
-#### 5. gclient
+### 5. gclient
 
 **This is not maintained now.**
 
@@ -255,7 +255,7 @@ Notice:
 
 - - -
 
-#### 6. gconsole
+### 6. gconsole
 
 **This is not maintained now.**
 
@@ -269,7 +269,7 @@ What we have done is enough to bring you much convenience to use gStore, just en
 
 - - - 
 
-#### 7. gadd
+### 7. gadd
 
 gadd is used to insert triples in a file to an existing database.
 
@@ -285,7 +285,7 @@ Usage: bin/gadd -db db_name -f rdf_triple_file_path
 
 - - -
 
-#### 8. gsub
+### 8. gsub
 
 gsub is used to remove triples in a file from an existing database.
 
@@ -300,7 +300,7 @@ Usage: bin/gsub -db db_name -f rdf_triple_file_path
 
 - - - 
 
-#### 9. gmonitor
+### 9. gmonitor
 
 After starting ghttp, type `bin/gmonitor -db db_name` to check current status of database db_name of gStore.
 
@@ -322,7 +322,7 @@ After starting ghttp, type `bin/gmonitor -db db_name` to check current status of
 
 - - -
 
-#### 10. gshow
+### 10. gshow
 
 After starting ghttp, type `bin/gshow` to check loaded database.
 
@@ -337,25 +337,25 @@ After starting ghttp, type `bin/gshow` to check loaded database.
 
 - - -
 
-#### 11. gdrop
+### 11. gdrop
 
 In order to drop the database, you should not simply type `rm -r db_name.db` because this will not update the built-in database named `system`. Instead, you should type `bin/gdrop -db db_name`.
 
 ---
 
-#### 12. shutdown
+### 12. shutdown
 
 After starting ghttp, type `bin/shutdown` to stop the server instead of simply typing the command "Ctrl+C".
     
 ---
 
-#### 13. ginit
+### 13. ginit
 
 If you want to restore the initial configuration of the ghttp server, type `bin/ginit` to rebuild the system.db.
     
 ---
 
-#### 14. test utilities
+### 14. test utilities
 
 A series of test program are placed in the `scripts/` folder, and we will introduce the several useful ones: `full_test.sh`, `basic_test.sh`, `update_test.cpp`, `parser_test.sh`, `dataset_test.cpp` and `gtest.cpp`.
 

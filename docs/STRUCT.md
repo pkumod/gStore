@@ -1,6 +1,6 @@
 **This chapter introduce the whole structure of the gStore system project.**
 
-#### Figures
+### Figures
 
 The whole architecture of gStore system is presented in [Architecture](png/system_architecture_en.png).
 The thread model of 'ghttp' can be viewed in [EN](png/ghttp_thread_model_en.png) and [ZH](png/ghttp_thread_model_zh.png), which shows the relationship among main process, sever thread, query thread and so on.
@@ -8,7 +8,7 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 ---
 
-#### The core source codes are listed below:
+### The core source codes are listed below:
 
 - Database/ (calling other core parts to deal with requests from interface part)
 	
@@ -232,7 +232,7 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - - -
 
-#### The parser part is listed below:
+### The parser part is listed below:
 
 - Parser/
 	
@@ -264,7 +264,7 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - - -
 
-#### The utilities are listed below:
+### The utilities are listed below:
 
 - Util/
 
@@ -296,7 +296,7 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - - -
 
-#### The interface part is listed below:
+### The interface part is listed below:
 
 - Server/ (client and server mode to use gStore)
 
@@ -326,7 +326,7 @@ The flow of answering a SPARQL query is given in [SPARQL Processing](png/sparql_
 
 - - -
 
-#### More details
+### More details
 
 To acquire a deep understanding of gStore codes, please go to [Code Detail](pdf/code_overview.pdf). See [use case](pdf/Gstore2.0_useCaseDoc.pdf) to understand the design of use cases, and see [OOA](pdf/OOA_class.pdf) and [OOD](pdf/OOD_class.pdf) for OOA design and OOD design, respectively.
 
@@ -372,7 +372,7 @@ It is really not strange to see something different with the original design in 
 
 - - -
 
-#### Others
+### Others
 
 The api/ folder in gStore is used to store API program, libs and examples, please go to [API](API.md) for details. And test/ is used to store a series test programs or utilities, such as gtest, full_test and so on. Chapters related with test/ are [How To Use](USAGE.md) and [Test Result](TEST.md). This project need an ANTLR lib to parse the SPARQL query, whose code is placed in tools/(also archived here) and the compiled libantlr.a is placed in lib/ directory.
 
