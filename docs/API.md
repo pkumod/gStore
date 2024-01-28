@@ -14,7 +14,6 @@ Finally, go to the example directory and run the corresponding executables. All 
 
 You are advised to read the example code carefully, as well as the corresponding Makefile. This will help you to understand the API, specially if you want to write your own programs based on the API interface.
 
-- - -
 
 ## API structure
 
@@ -106,7 +105,6 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
         - src/
             
             - GstoreConnector.php
-- - -
 
 ## C++ API
 
@@ -114,7 +112,7 @@ The HTTP API of gStore is placed in api/http directory in the root directory of 
 
 To use the C++ API, please place the phrase `#include "client.h"` in your cpp code. Functions in client.h should be called like below:
 
-```
+```cpp
 // initialize 
 GstoreConnector gc("127.0.0.1", 9000, "root", "123456");
 
@@ -167,10 +165,9 @@ gc.getCoreVersion();
 gc.getAPIVersion();
 
 ```
-The original declaration of these functions are as below:
+The original declaration of these functions are as below: (If request_type is "GET", the last parameter can be omitted)
 
-```
-If request_type is "GET", the last parameter can be omitted:
+```cpp
 
 GstoreConnector(std::string serverIP, int serverPort, std::string username, std::string password);
 
@@ -202,7 +199,6 @@ void fquery(std::string db_name, std::string format, std::string sparql, std::st
 
 ```
 
-- - -
 
 ## Java API
 
@@ -210,7 +206,7 @@ void fquery(std::string db_name, std::string format, std::string sparql, std::st
 
 To use the Java API, please see gStore/api/http/java/src/jgsc/GstoreConnector.java. Functions should be called like below:
 
-```
+```java
 // initialize
 GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
@@ -265,42 +261,42 @@ gc.getAPIVersion();
 ```
 
 
-The original declaration of these functions are as below:
+The original declaration of these functions are as below (If request_type is "GET", the last parameter can be omitted):
+
+```java
+
+
+public class GstoreConnector(String serverIP, int serverPort, String username, String password) {
+
+	public String build(String db_name, String rdf_file_path, String request_type);
+
+	public String load(String db_name, String request_type);
+
+	public String unload(String db_name, String request_type);
+
+	public String user(String type, String username2, String addition, String request_type);
+
+	public String showUser(String request_type);
+
+	public String query(String db_name, String format, String sparql, String request_type);
+
+	public void fquery(String db_name, String format, String sparql, String filename, String request_type);
+
+	public String drop(String db_name, boolean is_backup, String request_type);
+
+	public String monitor(String db_name, String request_type);
+
+	public String checkpoint(String db_name, String request_type);
+
+	public String show(String request_type);
+
+	public String getCoreVersion(String request_type);
+
+	public String getAPIVersion(String request_type);
+}
 
 ```
-If request_type is "GET", the last parameter can be omitted:
 
-public class GstoreConnector(String serverIP, int serverPort, String username, String password);
-
-public String build(String db_name, String rdf_file_path, String request_type);
-
-public String load(String db_name, String request_type);
-
-public String unload(String db_name, String request_type);
-
-public String user(String type, String username2, String addition, String request_type);
-
-public String showUser(String request_type);
-
-public String query(String db_name, String format, String sparql, String request_type);
-
-public void fquery(String db_name, String format, String sparql, String filename, String request_type);
-
-public String drop(String db_name, boolean is_backup, String request_type);
-
-public String monitor(String db_name, String request_type);
-
-public String checkpoint(String db_name, String request_type);
-
-public String show(String request_type);
-
-public String getCoreVersion(String request_type);
-
-public String getAPIVersion(String request_type);
-
-```
-
-- - -
 
 ## Python API
 
@@ -308,7 +304,7 @@ public String getAPIVersion(String request_type);
 
 To use Python API, please see gStore/api/http/python/src/GstoreConnector.py. Functions should be called like following:
 
-```
+```python
 # start a gc with given IP, Port, username and password
 gc =  GstoreConnector.GstoreConnector("127.0.0.1", 9000, "root", "123456")
 
@@ -354,42 +350,40 @@ res = gc.getCoreVersion();
 res = gc.getAPIVersion();
 
 ```
-The original declaration of these functions are as below:
+The original declaration of these functions are as below (If request_type is "GET", the last parameter can be omitted):
 
-```
-If request_type is "GET", the last parameter can be omitted:
+```python
 
 public class GstoreConnector(self, serverIP, serverPort, username, password):
 
-def build(self, db_name, rdf_file_path, request_type):
+	def build(self, db_name, rdf_file_path, request_type):
 
-def load(self, db_name, request_type):
+	def load(self, db_name, request_type):
 
-def unload(self, db_name, request_type):
+	def unload(self, db_name, request_type):
 
-def user(self, type, username2, addition, request_type):
+	def user(self, type, username2, addition, request_type):
 
-def showUser(self, request_type):
+	def showUser(self, request_type):
 
-def query(self, db_name, format, sparql, request_type):
+	def query(self, db_name, format, sparql, request_type):
 
-def fquery(self, db_name, format, sparql, filename, request_type):
+	def fquery(self, db_name, format, sparql, filename, request_type):
 
-def drop(self, db_name, is_backup, request_type):
+	def drop(self, db_name, is_backup, request_type):
 
-def monitor(self, db_name, request_type):    
+	def monitor(self, db_name, request_type):    
 
-def checkpoint(self, db_name, request_type):
+	def checkpoint(self, db_name, request_type):
 
-def show(self, request_type):
+	def show(self, request_type):
 
-def getCoreVersion(self, request_type):
+	def getCoreVersion(self, request_type):
 
-def getAPIVersion(self, request_type):
+	def getAPIVersion(self, request_type):
 
 ```
 
-- - -
 
 ## Nodejs API
 
@@ -399,7 +393,7 @@ Before using Nodejs API, type `npm install request` and `npm install request-pro
 
 To use Nodejs API, please see gStore/api/http/nodejs/GstoreConnector.js. Functions should be called like following:
 
-```
+```javascript
 // start a gc with given IP, Port, username and password
 gc =  new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
@@ -442,40 +436,40 @@ res = gc.getCoreVersion();
 res = gc.getAPIVersion();
 
 ```
-The original declaration of these functions are as below:
+The original declaration of these functions are as below (If request_type is "GET", the last parameter can be omitted):
+
+```javascript
+
+class GstoreConnector(ip = '', port, username = '', password = '') {
+
+	async build(db_name = '', rdf_file_path = '', request_type);
+
+	async load(db_name = '', request_type);
+
+	async unload(db_name = '', request_type);
+
+	async user(type = '', username2 = '' , addition = '' , request_type);
+
+	async showUser(request_type);
+
+	async query(db_name = '', format = '' , sparql = '' , request_type);
+
+	async drop(db_name = '', is_backup , request_type);
+
+	async monitor(db_name = '', request_type);    
+
+	async checkpoint(db_name = '', request_type);
+
+	async show(request_type);
+
+	async getCoreVersion(request_type);
+
+	async getAPIVersion(request_type);
+
+}
 
 ```
-If request_type is "GET", the last parameter can be omitted:
 
-class GstoreConnector(ip = '', port, username = '', password = '');
-
-async build(db_name = '', rdf_file_path = '', request_type);
-
-async load(db_name = '', request_type);
-
-async unload(db_name = '', request_type);
-
-async user(type = '', username2 = '' , addition = '' , request_type);
-
-async showUser(request_type);
-
-async query(db_name = '', format = '' , sparql = '' , request_type);
-
-async drop(db_name = '', is_backup , request_type);
-
-async monitor(db_name = '', request_type);    
-
-async checkpoint(db_name = '', request_type);
-
-async show(request_type);
-
-async getCoreVersion(request_type);
-
-async getAPIVersion(request_type);
-
-```
-
-- - -
 
 ## Php API
 
@@ -483,7 +477,7 @@ async getAPIVersion(request_type);
 
 To use Php API, please see gStore/api/http/php/src/GstoreConnector.php. Functions should be called like following:
 
-```
+```php
 // start a gc with given IP, Port, username and password
 $gc = new GstoreConnector("127.0.0.1", 9000, "root", "123456");
 
@@ -542,38 +536,38 @@ echo $res. PHP_EOL;
 
 ```
 
-The original declaration of these functions are as below:
+The original declaration of these functions are as below (If request_type is "GET", the last parameter can be omitted):
 
-```
-If request_type is "GET", the last parameter can be omitted:
+```php
 
-class GstoreConnector($ip, $port, $username, $password)
+class GstoreConnector($ip, $port, $username, $password){
 
-function build($db_name, $rdf_file_path, $request_type)
+	function build($db_name, $rdf_file_path, $request_type)
 
-function load($db_name, $request_type)
+	function load($db_name, $request_type)
 
-function unload($db_name, $request_type)
+	function unload($db_name, $request_type)
 
-function user($type, $username2, $addition, $request_type)
+	function user($type, $username2, $addition, $request_type)
 
-function showUser($request_type)
+	function showUser($request_type)
 
-function query($db_name, $format, $sparql, $request_type)
+	function query($db_name, $format, $sparql, $request_type)
 
-function fquery($db_name, $format, $sparql, $filename, $request_type)
+	function fquery($db_name, $format, $sparql, $filename, $request_type)
 
-function drop($db_name, $is_backup, $request_type)
+	function drop($db_name, $is_backup, $request_type)
 
-function monitor($db_name, $request_type)
+	function monitor($db_name, $request_type)
 
-function checkpoint($db_name, $request_type)
+	function checkpoint($db_name, $request_type)
 
-function show($request_type)
+	function show($request_type)
 
-function getCoreVersion($request_type)
+	function getCoreVersion($request_type)
 
-function getAPIVersion($request_type)
+	function getAPIVersion($request_type)
+}
 
 ```
 
@@ -594,7 +588,6 @@ Finally, go to the example directory and run the corresponding executables. For 
 
 You are advised to read the example code carefully, as well as the corresponding Makefile. This will help you to understand the API, specially if you want to write your own programs based on the API interface.
 
-- - -
 
 ## API structure
 
@@ -665,7 +658,6 @@ The socket API of gStore is placed in api/socket directory in the root directory
 			- PythonAPIExample.py
 
 
-- - -
 
 ## C++ API
 
@@ -673,7 +665,7 @@ The socket API of gStore is placed in api/socket directory in the root directory
 
 To use the C++ API, please place the phrase `#include "GstoreConnector.h"` in your cpp code. Functions in GstoreConnector.h should be called like below:
 
-```
+```cpp
 // initialize the Gstore server's IP address and port.
 GstoreConnector gc("127.0.0.1", 3305);
 
@@ -706,7 +698,7 @@ answer = gc.query(sparql);
 
 The original declaration of these functions are as below:
 
-```
+```cpp
 GstoreConnector();
 GstoreConnector(string _ip, unsigned short _port);
 GstoreConnector(unsigned short _port);
@@ -736,7 +728,6 @@ Let us assume that your source code is placed in test.cpp, whose position is ${T
 
 Then you can type `./test` to execute your own program, which uses our C++ API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
 
-- - -
 
 ## Java API
 
@@ -744,7 +735,7 @@ Then you can type `./test` to execute your own program, which uses our C++ API. 
 
 To use the Java API, please place the phrase `import jgsc.GstoreConnector;` in your java code. Functions in GstoreConnector.java should be called like below:
 
-```
+```java
 // initialize IP address and port of the Gstore server.
 GstoreConnector gc = new GstoreConnector("127.0.0.1", 3305);
 
@@ -777,7 +768,7 @@ answer = gc.query(sparql);
 
 The original declaration of these functions are as below:
 
-```
+```java
 GstoreConnector();
 GstoreConnector(string _ip, unsigned short _port);
 GstoreConnector(unsigned short _port);
@@ -806,7 +797,6 @@ Let us assume that your source code is placed in test.java, whose position is ${
 Then you can type `java -cp ${GSTORE}/gStore/api/socket/java/lib/GstoreJavaAPI.jar:. test` to execute your own program(notice that the ":." in command cannot be neglected), which uses our Java API. It is also advised for you to place relative compile commands in a Makefile, as well as other commands if you like.
 
 
-- - -
 
 ## PHP API
 
@@ -815,7 +805,7 @@ Then you can type `java -cp ${GSTORE}/gStore/api/socket/java/lib/GstoreJavaAPI.j
 To use the PHP API, please place the phrase `include('GstoreConnector,php');` in your php code. Functions in
 GstoreConnector.php should be called like below:
 
-```
+```php
 // initialize IP address and port of the Gstore server.
 $gc = new Connector("127.0.0.1", 3305);
 // build a new database by a RDF file.
@@ -841,7 +831,7 @@ $answer = gc->query(sparql);
 
 The original declaration of these functions are as below:
 
-```
+```php
 class Connector {
 	public function __construct($host, $port);
 	public function send($data);
@@ -867,7 +857,6 @@ Notice:
 
 You can see gStore/api/socket/php/PHPAPIExample for instructions on how to use PHP API. PHP script does not need compiling. You can run PHP file directly or use it in your web project.
 
-- - -
 
 ## Python API
 
@@ -875,7 +864,7 @@ You can see gStore/api/socket/php/PHPAPIExample for instructions on how to use P
 
 To use the Python API, please place the phrase `from GstoreConnector import GstoreConnector` in your python code. Functions in GstoreConnector.py should be called like below:
 
-```
+```python
 // initialize IP address and port of the Gstore server.
 gc = GstoreConnector('127.0.0.1', 3305)
 // build a new database by a RDF file.
@@ -902,7 +891,7 @@ answer = gc.query(sparql)
 
 The original declaration of these functions are as below:
 
-```
+```python
 class GstoreConnector {
 	def _connect(self)
 	def _disconnect(self)
