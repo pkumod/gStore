@@ -180,7 +180,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
 
   SINode* p = this->root_;
   SINode* q;
-  int i;
+  int i = 0;
   while (!p->isLeaf())
   {
     i = p->searchKey_less(str, len);
@@ -237,6 +237,10 @@ SITree::Insert(char* str, unsigned len, unsigned val)
     request_ += len;
     p->setDirty();
     this->tsm_->updateHeap(p, p->getRank(), true);
+  }
+  else
+  {
+    std::cout << "error SITree::Insert exist:" << std::endl;
   }
 
   this->tsm_->request(request_);

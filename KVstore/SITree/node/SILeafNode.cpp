@@ -71,7 +71,8 @@ SILeafNode::GetValue(int _index) const
   if (_index < 0 || _index >= num)
   {
     //print(string("error in GetValue: Invalid index ") + Util::int2string(_index));
-    return -1;
+    std::cout << "error GetValue:" << _index << std::endl;
+    return 0;
   }
   else
     return this->values[_index];
@@ -260,6 +261,12 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
       neighbour_key_num = tk;
     }
   }
+
+  if (neighbour == nullptr)
+  {
+    std::cout << "error Coalesce neighbour is null:" << std::endl;
+    return NULL;
+  }
   switch (coalesce_method)
   {
     //union right to this
@@ -348,6 +355,8 @@ SILeafNode::Release()
   delete[] values;
   keys = nullptr;
   values = nullptr;
+  // prev = nullptr;
+  // next = nullptr;
 }
 
 SILeafNode::~SILeafNode()

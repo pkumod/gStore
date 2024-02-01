@@ -4194,6 +4194,8 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		// update string index
 		this->stringindex->disable(vertices, true);
 		this->stringindex->disable(predicates, false);
+
+		cout << "vertices_num:" << vertices.size() << ",predicates:" << predicates.size() << endl;
 	}
 	return update_num_s;
 }
