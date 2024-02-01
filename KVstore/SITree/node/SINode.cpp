@@ -221,6 +221,11 @@ SINode::SetKey(const Bstr* _key, int _index, bool ifcopy)
 bool
 SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 {
+	if (_key == nullptr)
+	{
+		std::cout << "error SINode::addKey" << std::endl;
+		return false;
+	}
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
@@ -277,7 +282,16 @@ SINode::subKey(int _index, bool ifdel)
 	}
 	int i;
 	if (ifdel)
+	{
 		keys[_index].release();
+		if (_index == num-1)
+		{
+			for (i = num; i < MAX_KEY_NUM; ++i)
+			{
+				keys[i].clear();
+			}
+		}
+	}
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
 

@@ -190,6 +190,7 @@ Bstr::release()
 	//free(this->str);	//ok to be null, do nothing
 	if (this->str)
 	{
+		// std::cout << "error Bstr::release:" << this->str << this->length <<std::endl;
 		delete[] this->str;
 		clear();
 	}
