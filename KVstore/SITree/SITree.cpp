@@ -34,19 +34,18 @@ SITree::SITree()
 SITree::SITree(string store_path, string _filename, string _mode, unsigned long long _buffer_size)
 {
   this->root_ = nullptr;
+  this->leaves_head_ = nullptr;
+  this->leaves_tail_ = nullptr;
   store_path_ = store_path;
   filename_ = _filename;
   this->height_ = 0;
   this->mode_ = string(_mode);
   string filepath = this->GetFilePath();
   tsm_ = new SIStorage(filepath, this->mode_, &this->height_, _buffer_size);
-  if (this->mode_ == "open")
-  {
+  if (this->mode_ == "open") {
     // load the entire SITree
     this->tsm_->PreRead(this->root_, this->leaves_head_, this->leaves_tail_);
   }
-  else
-    this->root_ = NULL;
 
   this->request_ = 0;
   this->if_single_thread = false;

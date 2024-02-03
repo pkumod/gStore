@@ -49,21 +49,13 @@ Bstr::Bstr(const Bstr& _bstr)
 	this->str = _bstr.str;
 }
 
-//assign function for class
-//Bstr& Bstr::operate =(const Bstr& _bstr)
-//{
-//	if(*this == _bstr)
-//		return *this;		//a=a
-//	//WARN:not copy memory. if need to copy, delete original first!
-//	this->length = _bstr.length;
-//	this->str = _bstr.str;
-//	return *this;
-//}
+// assign function for class
+// Warning: Please make sure that this->str==nullptr or its memory has been freed.
 Bstr& Bstr::operator=(const Bstr& _bstr) {
-	if(*this == _bstr)
-		return *this;		//a=a
-	this->length = _bstr.length;
-	this->str = _bstr.str;
+	if(this != &_bstr) {
+		this->length = _bstr.length;
+		this->str = _bstr.str;
+	}
 	return *this;
 };
 
@@ -190,7 +182,6 @@ Bstr::release()
 	//free(this->str);	//ok to be null, do nothing
 	if (this->str)
 	{
-		// std::cout << "error Bstr::release:" << this->str << this->length <<std::endl;
 		delete[] this->str;
 		clear();
 	}
