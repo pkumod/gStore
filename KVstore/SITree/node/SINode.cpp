@@ -284,13 +284,13 @@ SINode::subKey(int _index, bool ifdel)
 	if (ifdel)
 	{
 		keys[_index].release();
-		if (_index == num-1)
-		{
-			for (i = num; i < MAX_KEY_NUM; ++i)
-			{
-				keys[i].clear();
-			}
-		}
+//		if (_index == num-1)
+//		{
+//			for (i = num; i < MAX_KEY_NUM; ++i)
+//			{
+//				keys[i].clear();
+//			}
+//		}
 	}
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
