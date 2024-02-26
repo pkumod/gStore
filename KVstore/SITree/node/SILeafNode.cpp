@@ -26,7 +26,7 @@ SILeafNode::SILeafNode()
 SILeafNode::SILeafNode(bool isVirtual)
 {
   node_flag_ |= NF_IL;
-  prev = next = NULL;
+  prev = next = nullptr;
   values = nullptr;
   if (!isVirtual)
     AllocValues();
@@ -281,7 +281,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
       _parent->subChild(_index + 1);
       _parent->SubKeyNum();
       this->next = neighbour->GetNext();
-      if (this->next != NULL)
+      if (this->next != nullptr)
         this->next->setPrev(this);
       neighbour->SetKeyNum(0);
       break;
@@ -312,7 +312,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
       _parent->subChild(_index - 1);
       _parent->SubKeyNum();
       this->prev = neighbour->GetPrev();
-      if (this->prev != NULL)
+      if (this->prev != nullptr)
         this->prev->SetNext(this);
       neighbour->SetKeyNum(0);
       break;
