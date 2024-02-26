@@ -373,7 +373,11 @@ SITree::Remove(const char* _str, unsigned _len)
       }
       ret = q->Coalesce(p, i);
       if (ret != NULL)
+      {
         this->tsm_->updateHeap(ret, 0, true);//non-sense node
+        ret->setPrev(nullptr);
+        ret->SetNext(nullptr);
+      }
       this->tsm_->updateHeap(q, q->getRank(), true);
 
       if (q->isLeaf())
@@ -388,6 +392,8 @@ SITree::Remove(const char* _str, unsigned _len)
       {
         this->root_ = q;
         this->tsm_->updateHeap(p, 0, true);	//instead of delete p
+        p->setPrev(nullptr);
+        p->SetNext(nullptr);
         this->height_--;
       }
     }
@@ -413,10 +419,14 @@ SITree::Remove(const char* _str, unsigned _len)
       this->leaves_tail_ = NULL;
       this->height_ = 0;
       this->tsm_->updateHeap(p, 0, true);	//instead of delete p
+      p->setPrev(nullptr);
+      p->SetNext(nullptr);
     }
     p->setDirty();
     flag = true;
   }
+  if (!flag)
+    std::cout << "error remove data not found key:" << std::endl;
 
   this->tsm_->request(request_);
   this->access_lock_.unlock();
@@ -475,6 +485,40 @@ SITree::~SITree()
   //recursively delete each SINode
   Release(root_);
   //cout << "~SITree done" << endl;
+}
+
+void SITree::PrintTree(SINode* _np)
+{
+  //foreach all keys
+  if (_np == NULL)	return;
+
+  if (_np->isLeaf())
+  {
+    unsigned num = _np->GetKeyNum();
+    for (unsigned i = 0; i < num; ++i)
+    {
+      std::cout << "debug PrintTree leaf:" << "   len:" << _np->getKey(i)->getLen() << std::endl;
+    }
+    return;
+  }
+
+  int cnt = _np->GetKeyNum();
+  for (; cnt >= 0; --cnt)
+    PrintTree(_np->GetChild(cnt));
+  
+  unsigned num = _np->GetKeyNum();
+	for (unsigned i = 0; i < num; ++i)
+		std::cout << "debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen() << std::endl;
+
+  SINode* np = nullptr;
+  for (np = this->leaves_head_; np != NULL; np = np->GetNext())
+  {
+    unsigned num = np->GetKeyNum();
+    for (unsigned i = 0; i < num; ++i)
+    {
+      std::cout << "debug PrintTree leaf:" << "   len:" << np->getKey(i)->getLen() << std::endl;
+    }
+  }
 }
 
 void

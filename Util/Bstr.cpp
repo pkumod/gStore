@@ -51,13 +51,20 @@ Bstr::Bstr(const Bstr& _bstr)
 
 // assign function for class
 // Warning: Please make sure that this->str==nullptr or its memory has been freed.
-Bstr& Bstr::operator=(const Bstr& _bstr) {
+Bstr& Bstr::operator=(const Bstr& _bstr)
+{
 	if(this != &_bstr) {
-		this->length = _bstr.length;
-		this->str = _bstr.str;
-	}
++		this->length = _bstr.length;
++		this->str = _bstr.str;
++	}
 	return *this;
 };
+
+void Bstr::assignCopy(const Bstr& _bstr)
+{
+	this->length = _bstr.length;
+	this->str = _bstr.str;
+}
 
 bool 
 Bstr::operator > (const Bstr& _bstr)

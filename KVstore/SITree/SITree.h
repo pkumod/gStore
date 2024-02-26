@@ -99,6 +99,7 @@ public:
 	~SITree();
 	void Print(std::string s);			//DEBUG(print the tree)
 	void SetSingleThread(bool _single);
+	void PrintTree(SINode* _np);
 };
 
 

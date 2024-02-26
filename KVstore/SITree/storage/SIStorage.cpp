@@ -383,6 +383,7 @@ SIStorage::ReadNode(SINode* _np, long long* _request)
   //to read all keys
   for (i = 0; i < num; ++i)
   {
+    bstr.clear();
     this->ReadBstr(&bstr, &next);
     *_request += bstr.getLen();
     _np->SetKey(&bstr, i);
@@ -737,7 +738,7 @@ SIStorage::request(long long needed_mem)	//aligned to byte
 bool
 SIStorage::handler(unsigned long long needed_mem)	//>0
 {
-  SINode* p;
+  SINode* p = nullptr;
   unsigned long long size;
   while (1)
   {
