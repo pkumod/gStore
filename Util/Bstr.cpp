@@ -54,9 +54,9 @@ Bstr::Bstr(const Bstr& _bstr)
 Bstr& Bstr::operator=(const Bstr& _bstr)
 {
 	if(this != &_bstr) {
-+		this->length = _bstr.length;
-+		this->str = _bstr.str;
-+	}
+		this->length = _bstr.length;
+		this->str = _bstr.str;
+	}
 	return *this;
 };
 
