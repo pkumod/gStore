@@ -382,9 +382,9 @@ SITree::Remove(const char* _str, unsigned _len)
 
       if (q->isLeaf())
       {
-        if (q->GetPrev() == NULL)
+        if (q->GetPrev() == nullptr)
           this->leaves_head_ = q;
-        if (q->GetNext() == NULL)
+        if (q->GetNext() == nullptr)
           this->leaves_tail_ = q;
       }
 
