@@ -214,7 +214,7 @@ SINode::SetKey(const Bstr* _key, int _index, bool ifcopy)
 	if (ifcopy)
 		keys[_index].copy(_key);
 	else
-		keys[_index] = *_key;
+		keys[_index].assignCopy(*_key);
 	return true;
 }
 
@@ -232,6 +232,10 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
+	if (num == MAX_KEY_NUM)
+	{
+		std::cout << "error addKey MAX_KEY_NUM, should split:" << num << std::endl;
+	}
 	int i;
 	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
 	//however. tree operations ensure that: when node is full, not add but split first!
@@ -240,7 +244,7 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 	if (ifcopy)
 		keys[_index].copy(_key);
 	else
-		keys[_index] = *_key;
+		keys[_index].assignCopy(*_key);
 
 	return true;
 }
@@ -254,11 +258,16 @@ SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
 		return false;
 	}
+	if (num == MAX_KEY_NUM)
+	{
+		std::cout << "error addKey MAX_KEY_NUM, should split:" << num << std::endl;
+	}
+
 	int i;
 	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
 	//however. tree operations ensure that: when node is full, not add but split first!
 	for (i = num - 1; i >= _index; --i)
-		keys[i + 1] = keys[i];
+		keys[i + 1].assignCopy(keys[i]);
 
 	keys[_index].setStr(_str);
 	keys[_index].setLen(_len);
@@ -277,20 +286,13 @@ SINode::subKey(int _index, bool ifdel)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in subKey: Invalid index ") + Util::int2string(_index));
+		std::cout << "error sub keys _index >= num :" << _index << "num:" << num << std::endl;
 		return false;
 	}
 	int i;
 	if (ifdel)
 	{
 		keys[_index].release();
-//		if (_index == num-1)
-//		{
-//			for (i = num; i < MAX_KEY_NUM; ++i)
-//			{
-//				keys[i].clear();
-//			}
-//		}
 	}
 	for (i = _index; i < num - 1; ++i)
 		keys[i] = keys[i + 1];
