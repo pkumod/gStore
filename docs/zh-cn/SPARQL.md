@@ -279,19 +279,19 @@ BIND(value, name)
 
 **示例：**
 
-查询Francis或Alice不喜欢的人，并在返回的结果中分类标记：
+查询刘亦菲或胡军的职业，并在返回的结果中分类标记：
 
 ```SPARQL
-SELECT ?a ?x WHERE
+SELECT ?info ?work WHERE
 {
    {
-       BIND("Francis" as ?a).
-       <Francis> <不喜欢> ?x .
+       BIND("刘亦菲" as ?info).
+       <刘亦菲> <职业> ?work .
    }
    UNION
    {
-       BIND("Alice" as ?a).
-       <Alice> <不喜欢> ?x. 
+       BIND("胡军" as ?info).
+       <胡军> <职业> ?work.
    }
 }
 ```
@@ -300,18 +300,26 @@ SELECT ?a ?x WHERE
 
 ```json
 {
-    "bindings": [
+	"bindings": [
         {
-            "a": {"type": "literal", "value": "Francis"},
-            "x": {"type": "uri", "value": "Eve"}
+            "info": {"type": "literal","value": "刘亦菲"},
+            "work": {"type": "literal","value": "演员"}
         },
         {
-            "a": {"type": "literal", "value": "Francis"},
-            "x": {"type": "uri", "value": "Dave"}
+            "info": {"type": "literal","value": "胡军"},
+            "work": {"type": "literal","value": "演员"}
         },
         {
-            "a": {"type": "literal", "value": "Alice"},
-            "x": {"type": "uri", "value": "Eve"}
+            "info": {"type": "literal","value": "胡军"},
+            "work": {"type": "literal","value": "导演"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军"},
+            "work": {"type": "literal","value": "配音"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军"},
+            "work": {"type": "literal","value": "制片"}
         }
     ]
 }
@@ -331,23 +339,48 @@ CONCAT(val_1, val_2,...val_n)
 
 **示例：**
 
-将查询到的学生的姓名、入学年份、学生的国家连接在一起：
+将查询到的人物姓名、性别、工作连接在一起输出：
 
 ```SPARQL
-SELECT CONCAT(?study_name, "-", str(?study_year), "-", ?study_country) WHERE 
+SELECT (CONCAT(?name, ",", ?gender, ",", ?work) as ?info) WHERE
 {
-	?s <university> ?study_name.
-	?s <year> ?study_year.
-	?s <country> ?country.
-	?country <name> ?country_name.
+    ?s <姓名> ?name.
+    ?s <性别> ?gender.
+    ?s <职业> ?work.
 }
-
 ```
 
 最终的结果输出如下（为方便阅读，省略了字符串最外层的双引号和内部双引号转义）：
 
 ```json
-[study_name]-[study_yser]-[study_country]
+{
+    "bindings": [
+        {
+            "info": {"type": "literal","value": "刘亦菲,女,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "Crystal Liu,女,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "林志颖,男,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "林志颖,男,导演"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,导演"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,配音"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,制片"}
+        }
+    ]
+}
 ```
 
 
