@@ -13,12 +13,12 @@ using namespace std;
 
 SIIntlNode::SIIntlNode()
 {
-	memset(childs, 0, sizeof(SINode*) * MAX_CHILD_NUM);
+	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
 }
 
 SIIntlNode::SIIntlNode(bool isVirtual)	//call father-class's constructor automaticlly
 {
-	memset(childs, 0, sizeof(SINode*) * MAX_CHILD_NUM);
+	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
 }
 
 
