@@ -510,15 +510,15 @@ void SITree::PrintTree(SINode* _np)
 	for (unsigned i = 0; i < num; ++i)
 		std::cout << "debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen() << std::endl;
 
-  SINode* np = nullptr;
-  for (np = this->leaves_head_; np != NULL; np = np->GetNext())
-  {
-    unsigned num = np->GetKeyNum();
-    for (unsigned i = 0; i < num; ++i)
-    {
-      std::cout << "debug PrintTree leaf:" << "   len:" << np->getKey(i)->getLen() << std::endl;
-    }
-  }
+  // SINode* np = nullptr;
+  // for (np = this->leaves_head_; np != NULL; np = np->GetNext())
+  // {
+  //   unsigned num = np->GetKeyNum();
+  //   for (unsigned i = 0; i < num; ++i)
+  //   {
+  //     std::cout << "debug PrintTree leaf:" << "   len:" << np->getKey(i)->getLen() << std::endl;
+  //   }
+  // }
 }
 
 void

@@ -19,7 +19,7 @@ SILeafNode::AllocValues()
 SILeafNode::SILeafNode()
 {
   node_flag_ |= NF_IL;		//leaf node_flag_
-  prev = next = NULL;
+  prev = next = nullptr;
   AllocValues();
 }
 
@@ -181,7 +181,11 @@ SILeafNode::Split(SINode* _parent, int _index)
   // NOTICE: assign height for new node
   p->setHeight(this->getHeight());
 
-  p->SetNext(this->next);
+  if (this->next != nullptr)
+  {
+    this->next->setPrev(p);
+    p->SetNext(this->next);
+  }
   this->SetNext(p);
   p->setPrev(this);
 
@@ -355,8 +359,6 @@ SILeafNode::Release()
   delete[] values;
   keys = nullptr;
   values = nullptr;
-  // prev = nullptr;
-  // next = nullptr;
 }
 
 SILeafNode::~SILeafNode()
