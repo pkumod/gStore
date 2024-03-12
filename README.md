@@ -43,7 +43,7 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 * [Lei Zou](zoulei@pku.edu.cn) : The leader of the project.
 * [Haofen Wang](carter.whfcarter@gmail.com) :Building Graph Database and Knowledge Graph Ecological Community.
-* [Wenjie Li](liwenjiehn@pku.edu.cn):The maintainer of the project.
+* [Wenjie Li](https://github.com/WenJieLiHnu):The maintainer of the project.
   
 ## Get gStore
 
