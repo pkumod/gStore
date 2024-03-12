@@ -39,11 +39,6 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 * ACID-compliant transactions. (Added in 1.0)
 
-## Main Contributors
-
-* [Lei Zou](zoulei@pku.edu.cn) : The leader of the project.
-* [Haofen Wang](carter.whfcarter@gmail.com) :Building Graph Database and Knowledge Graph Ecological Community.
-* [Wenjie Li](https://github.com/WenJieLiHnu):The maintainer of the project.
   
 ## Get gStore
 
