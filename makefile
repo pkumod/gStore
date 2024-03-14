@@ -691,6 +691,7 @@ pre:
 	rm -rf tools/zlib-1.3
 	rm -rf lib/libantlr4-runtime.a lib/libworkflow.a lib/liblog4cplus.a
 	rm -rf lib/libminizip.a;
+	mkdir $(objdir);
 	cd tools; tar -xzvf rapidjson.tar.gz;
 	cd tools; tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 	cd tools; tar -xvf indicators.tar;
