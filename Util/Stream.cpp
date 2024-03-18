@@ -33,9 +33,9 @@ bool ResultCmp::operator() (Bstr* const& a, Bstr* const& b)
         if (a[t] == b[t])
             continue;
 
-        a_emv.term_value.assign(a[t].getStr());
+        a_emv.term_value.assign(a[t].getStr(), a[t].getLen());
         a_emv.deduceTypeValue();
-        b_emv.term_value.assign(b[t].getStr());
+        b_emv.term_value.assign(b[t].getStr(), b[t].getLen());
         b_emv.deduceTypeValue();
 
         if(this->desc[i])

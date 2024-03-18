@@ -482,6 +482,14 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
+	if (this->datatype == iri && x.datatype == iri)
+	{
+		ret_femv.bool_value = (this->str_value < x.str_value);
+
+		ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+
 	ret_femv.deduceTermValue();
 	return ret_femv;
 }
@@ -539,6 +547,14 @@ EvalMultitypeValue
 	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
 	{
 		ret_femv.bool_value = (this->dt_value <= x.dt_value);
+
+		ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+
+	if (this->datatype == iri && x.datatype == iri)
+	{
+		ret_femv.bool_value = (this->str_value <= x.str_value);
 
 		ret_femv.deduceTermValue();
 		return ret_femv;
@@ -606,6 +622,14 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
+	if (this->datatype == iri && x.datatype == iri)
+	{
+		ret_femv.bool_value = (this->str_value > x.str_value);
+
+		ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+
 	ret_femv.deduceTermValue();
 	return ret_femv;
 }
@@ -663,6 +687,14 @@ EvalMultitypeValue
 	if (this->datatype == xsd_datetime && x.datatype == xsd_datetime)
 	{
 		ret_femv.bool_value = (this->dt_value >= x.dt_value);
+
+		ret_femv.deduceTermValue();
+		return ret_femv;
+	}
+
+	if (this->datatype == iri && x.datatype == iri)
+	{
+		ret_femv.bool_value = (this->str_value >= x.str_value);
 
 		ret_femv.deduceTermValue();
 		return ret_femv;
