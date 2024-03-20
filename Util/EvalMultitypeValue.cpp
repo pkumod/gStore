@@ -1043,12 +1043,19 @@ void EvalMultitypeValue::deduceTypeValue()
 						p++;
 					nextP = p;
 					decimal = false;
-					while (nextP < contentLen && ('0' <= contentStr[nextP] && contentStr[nextP] <= '9'
-					|| (i == 5 && !decimal && contentStr[nextP] == '.'))) {
+					while (nextP < contentLen 
+						&& (('0' <= contentStr[nextP] && contentStr[nextP] <= '9') 
+						|| (i == 5 && !decimal && contentStr[nextP] == '.'))) {
 						if (contentStr[nextP] == '.')
 							decimal = true;
 						nextP++;
 					}
+					string sub_value =  contentStr.substr(p, nextP - p + 1);
+					std::cout << i << " -> "<< p << "," << nextP << "," << sub_value << endl;
+					// fix bug: if nextP == p substr is empty, stof will throw invalid_argument
+					if (nextP <= p) 
+						break;
+					std::cout << stof(sub_value) << endl;
 					date.emplace_back(stof(contentStr.substr(p, nextP - p + 1)));
 					p = nextP;
 					if (p >= contentLen && i < 5)
