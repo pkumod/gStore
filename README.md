@@ -39,6 +39,7 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 * ACID-compliant transactions. (Added in 1.0)
 
+  
 ## Get gStore
 
 ### From Docker
