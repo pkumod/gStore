@@ -227,6 +227,20 @@ GeneralEvaluation::loadCSR()
 		cout<<csr[1].offset_list[i].size()<<endl;
 		cout<<csr[1].adjacency_list[i].size()<<endl;
 	}
+	// init vertices and edges num
+	set<int> vertices;
+	for (int j = 0; j < 2; j++)
+	{
+		for (unsigned i = 0; i < csr[j].pre_num; i++)
+			vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
+	}
+	csr[1].n = vertices.size();
+
+	unsigned ret = 0;
+	for (auto i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
+		ret += csr[1].adjacency_list[i].size();
+	csr[1].m = ret;
+
 	long end_time = Util::get_cur_time();
 	cout << "Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms" << endl;
 }
