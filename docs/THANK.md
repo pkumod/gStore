@@ -1,12 +1,5 @@
 **This chapter lists people who inspire us or contribute to this project.**
----
-[邹磊 --北京大学]()
-- The project leader.
----
 
----
-[王昊奋 --同济大学](https://github.com/wanghaofen)
-- Building Graph Database and Knowledge Graph Ecological Community.
 ---
 
 [zhangxiaoyang](https://github.com/zhangxiaoyang)

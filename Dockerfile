@@ -9,10 +9,6 @@ LABEL description="gStore RDF Database Engine"
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
-    libboost-regex-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
-    libboost-system-dev \
     curl \
     libcurl4 \
     libcurl4-openssl-dev \
@@ -20,33 +16,45 @@ RUN apt-get update && apt-get install -y \
     libzmq3-dev \
     pkg-config \
     wget \
-    zlib1g-dev \
     uuid-dev \
-    libjemalloc-dev \
-    libreadline-dev
+    ninja-build \
+    mold \
+    python3-pip \
 
 RUN mkdir -p /src
 
 WORKDIR /usr/src/gstore
 
+# Install conan dependencies\
+RUN pip3 install conan && conan profile detect
+
+COPY conanfile.py /usr/src/gstore/
+
+RUN conan install . --build=missing -s "build_type=Release" -s "compiler.libcxx=libstdc++11"
+
 # Compile gStore dependencies
-COPY tools/ /usr/src/gstore/tools
+COPY 3rdparty/ /usr/src/gstore/3rdparty
 
-COPY makefile /usr/src/gstore/
+COPY conanfile.py /usr/src/gstore/
+COPY CMakeLsits.txt /usr/src/gstore/
 
-RUN mkdir -p lib && make pre
+RUN mkdir -p lib
 
 # Copy gStore source code; run `make tarball` to generate this file
 ADD gstore.tar.gz /usr/src/gstore
 
-RUN make
-
 FROM debian:buster-slim AS runtime
 
+RUN cd cmake-build-release && \
+    cmake .. \
+      -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake \
+      -DCMAKE_BUILD_TYPE=Release
+
+RUN cd cmake-build-release && \
+    make pre && \ make
+
 RUN apt-get update && apt-get install -y \
-    libboost-regex1.67.0 \
-    libboost-system1.67.0 \
-    libboost-thread1.67.0 \
+    libssl3 \
     libcurl4 \
     libssl1.1 \
     libzmq5 \
@@ -61,8 +69,7 @@ COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
 
 COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
 
-COPY backup.json init.conf conf.ini ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
-    /docker-init/
+COPY conf/ /docker-init/
 COPY data/ /docker-init/data/
 COPY docker-entrypoint.sh /
 
