@@ -19,7 +19,7 @@ Parser/Sparql*
 logs
 
 #backup files
-backup.json
+./conf/backup.json
 
 #download files
 *.torrent

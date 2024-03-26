@@ -63,7 +63,7 @@ pthread_rwlock_t backuplog_lock;
 //string Util::tmp_path = "../.tmp/";
 //string Util::debug_path = "../.debug/";
 string Util::tmp_path = ".tmp/";
-string Util::debug_path = ".debug/";
+//string Util::debug_path = ".debug/";
 
 //QUERY: assign all in Util()?
 //BETTER:assigned in KVstore, not one tree?
