@@ -1,6 +1,6 @@
 #include "../Database/Database.h"
 #include "../Util/Util.h"
-#include "../Api/GstoreConnector.h"
+#include "../Api/HttpUtil.h"
 #include <regex>
 
 using namespace std;

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 mkdir -p ../include ../lib
 
@@ -17,7 +17,7 @@ rm -rf ../lib/libminizip.a
 # tar
 tar -xzvf rapidjson.tar.gz;
 tar -xzvf antlr4-cpp-runtime-4.tar.gz;
-tar -xvf indicators.tar;
+tar -xzvf indicators.tar.gz;
 tar -xzvf workflow-0.10.3.tar.gz;
 tar -xzvf log4cplus-2.0.8.tar.gz;
 tar -xzvf zlib-1.3.tar.gz;
@@ -31,8 +31,10 @@ mkdir -p rapidjson antlr4 workflow log4cplus indicators minizip
 cd ../3rdparty
 cp -r rapidjson/include/rapidjson/*  ../include/rapidjson/
 cp -r antlr4-cpp-runtime-4/runtime/src/* ../include/antlr4/
-cp -r workflow/_include/* ../include/antlr4/
+cp -r workflow/_include/workflow/* ../include/workflow/
 cp -r log4cplus/include/log4cplus/* ../include/log4cplus/
 cp -r indicators/* ../include/indicators/
 cp -r zlib-1.3/include/* ../include/minizip/
 rm -rf rapidjson antlr4-cpp-runtime-4 workflow log4cplus indicators zlib-1.3
+
+echo "prepare successfully"

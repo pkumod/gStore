@@ -10,12 +10,10 @@ set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 # build generate bin, make pre generate include and lib
 set( GSTORE_BIN_DIR ${GSTORE_ROOT_DIR}/bin )
-set( GSTORE_INCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
-set( GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib )
-#3rdparty include
 set( GSTORE_3RDPARTY_DIR ${GSTORE_ROOT_DIR}/include )
-set( INCLUDE_3RD_PATH 
-        ${GSTORE_ROOT_DIR}/include
+set( GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib )
+
+set( INCLUDE_3RD_PATH
         ${GSTORE_3RDPARTY_DIR}
         ${GSTORE_3RDPARTY_DIR}/rapidjson
         ${GSTORE_3RDPARTY_DIR}/antlr4
@@ -36,7 +34,7 @@ add_custom_target( "init" DEPENDS INIT )
 
 # make pre
 add_custom_target( pre
-    bash init.sh
+    COMMAND [ -d ${GSTORE_INCLUDE_DIR} ] && [ -d ${GSTORE_LIB_DIR} ] || bash init.sh
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/3rdparty/
 )
 
@@ -53,13 +51,10 @@ add_custom_target( "clean_pre" DEPENDS CLEAN )
 
 #make test
 add_custom_command( OUTPUT TEST
-    # COMMAND echo . off
     COMMAND echo "basic build/query/add/sub/drop test......"
-	COMMAND bash scripts/basic_test.sh
-	# COMMAND @echo "repeatedly insertion/deletion test......"
-	# COMMAND @scripts/update_test > /dev/null
+	COMMAND bash scripts/test/basic_test.sh
 	COMMAND echo "parser test......"
-	COMMAND bash scripts/parser_test.sh
+	COMMAND bash scripts/test/parser_test.sh
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
 add_custom_target( "test" DEPENDS TEST )

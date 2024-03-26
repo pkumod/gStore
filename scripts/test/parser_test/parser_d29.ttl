@@ -1,0 +1,6 @@
+@prefix dc:       <http://purl.org/dc/elements/1.1/> .
+
+_:a  dc:title         "That Seventies Show"@en .
+_:a  dc:title         "Cette Série des Années Soixante-dix"@fr .
+_:b  dc:title         "Il Buono, il Bruto, il Cattivo" .
+

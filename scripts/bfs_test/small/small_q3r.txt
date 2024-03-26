@@ -1,2 +1,0 @@
-?v0	?v2	?v1
-<root>	<point0>	"Bookug Lobert"
