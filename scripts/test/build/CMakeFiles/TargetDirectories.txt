@@ -1,4 +1,0 @@
-/mydata/hexuejiangcode/gstore-1.3-cmake/gstore/scripts/test/build/CMakeFiles/update_test.dir
-/mydata/hexuejiangcode/gstore-1.3-cmake/gstore/scripts/test/build/CMakeFiles/gtest.dir
-/mydata/hexuejiangcode/gstore-1.3-cmake/gstore/scripts/test/build/CMakeFiles/edit_cache.dir
-/mydata/hexuejiangcode/gstore-1.3-cmake/gstore/scripts/test/build/CMakeFiles/rebuild_cache.dir
