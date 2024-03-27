@@ -22,7 +22,7 @@ string gc_getUrl(string _type, string _port)
     return _url;
 }
 
-int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
+int gc_check(HttpUtil &gc, string _type, string _port, string &res)
 {
     std::string strUrl = gc_getUrl(_type, _port).append("/api");
 	std::string strPost;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-		GstoreConnector gc;
+		HttpUtil gc;
 		string port;
 		string type;
 		string system_password;

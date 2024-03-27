@@ -69,7 +69,7 @@ string gc_getUrl(string _type, string _port)
     return _url;
 }
 
-int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
+int gc_check(HttpUtil &gc, string _type, string _port, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
     std::string strPost;
@@ -86,7 +86,7 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
     return ret;
 }
 
-int gc_unload(GstoreConnector &gc, string _type, string _port, string _pwd, string _db_name, string &res)
+int gc_unload(HttpUtil &gc, string _type, string _port, string _pwd, string _db_name, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
     std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + _pwd + "\"}";
@@ -218,7 +218,7 @@ main(int argc, char * argv[])
         string port;
         string type;
         string type_port;
-        GstoreConnector gc;
+        HttpUtil gc;
         ofp.open(system_port_path, ios::in);
         ofp >> type_port;
         ofp.close();
