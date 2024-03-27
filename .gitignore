@@ -7,9 +7,7 @@
 *.x86_64
 *.hex
 bin/g*
-scripts/update_test
-scripts/dataset_test
-api/cpp/example/example
+api/http/cpp/example/example
 
 Parser/Sparql*
 
@@ -100,10 +98,17 @@ tags
 # queries
 *.sql
 *.sh
-!docker-entrypoint.sh
+scripts/!docker-entrypoint.sh
 
 # modules
 node_modules
 
 # query results
 *.info
+
+# build
+3rdparty
+build
+include
+lib
+bin
