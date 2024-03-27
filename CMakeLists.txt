@@ -71,9 +71,8 @@ add_custom_target( "dist" DEPENDS CLEAN DIST )
 
 #make tarball
 add_custom_command( OUTPUT TARBALL
-    COMMAND tar -czvf gstore.tar.gz api backups bin lib conf 3rdparty .debug .tmp .objs scripts data logs
-    src/Main src/Database src/KVstore src/Util src/Query src/Signature src/Parser src/Server src/StringIndex src/Trie src/GRPC COVERAGE
-    CMakeLists.txt README.md LICENSE
+    COMMAND tar -czvf gstore.tar.gz backups .tmp api conf 3rdparty scripts data logs
+    src CMakeLists.txt README.md LICENSE
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
 add_custom_target( "tarball" DEPENDS TARBALL )

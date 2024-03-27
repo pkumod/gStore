@@ -4,7 +4,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-if [ ! -f /app/init.conf ]; then
+if [ ! -f /app/conf/conf.ini ]; then
     echo "${BLUE}[INIT] No init.conf file found. Copying default...${NC}"
     cp -r /docker-init/* /app/
 
@@ -24,7 +24,7 @@ if [ ! -d /app/bin ]; then
     mkdir -p bin lib backups data logs .tmp
 fi
 
-if [ ! -d /app/system.db ]; then
+if [ ! -d /app/dbhome/system.db ]; then
     echo "${BLUE}[INIT] Creating system.db...${NC}"
     /usr/local/bin/ginit --make
 
@@ -43,3 +43,5 @@ fi
 echo "${BLUE}[INIT] Command: $@${NC}"
 
 exec "$@"
+
+/usr/local/bin/ghttp
