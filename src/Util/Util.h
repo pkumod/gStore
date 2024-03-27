@@ -526,6 +526,7 @@ public:
 
     //the function of string
     static bool iscontain(const string& _parent,const string& _child);
+	static void string_suffix(string& str, const char suffix);
 
 	//for cpu mem disk
 	static float get_cpu_usage(int pid);

@@ -4,6 +4,7 @@
 #include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
 #include "../Api/APIUtil.h"
+#include "../Api/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 
 #define HTTP_TYPE "grpc"
@@ -14,6 +15,8 @@ using namespace grpc;
 static WFFacilities::WaitGroup wait_group(1);
 
 APIUtil *apiUtil = nullptr;
+
+PFNUtil *pfnUtil = nullptr;
 
 Latch latch;
 
@@ -136,6 +139,11 @@ void sig_handler(int signo)
 		delete apiUtil;
 		apiUtil = NULL;
 	}
+	if (pfnUtil)
+	{
+		delete pfnUtil;
+		pfnUtil = NULL;
+	}
 	SLOG_DEBUG("grpc server stopped.");
 	wait_group.done();
 	std::cout.flush();
@@ -157,6 +165,7 @@ int main(int argc, char *argv[])
 	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
+	pfnUtil = new PFNUtil();
  	_db_home = apiUtil->get_Db_path();
 	_db_suffix = apiUtil->get_Db_suffix();
 	size_t _len_suffix = _db_suffix.length();
@@ -1482,7 +1491,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// }
 		if (!db_path.empty()) 
 		{
-			if (db_path == apiUtil->get_system_path())
+			if (db_path == Util::system_path)
 			{
 				result = "You have no rights to access system files.";
 				response->Error(StatusCheckPrivilegeFailed, result);
@@ -1820,7 +1829,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		// begin backup database
 		string path = backup_path;
-		string default_backup_path = apiUtil->get_backup_path();
+		string default_backup_path = Util::backup_path;
 		if (path.empty())
 		{
 			path = default_backup_path;
@@ -1845,7 +1854,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			string timestamp = Util::get_timestamp();
 			string new_folder =  db_name + _db_suffix + "_" + timestamp;
 			string sys_cmd, _path;
-			apiUtil->string_suffix(path, '/');
+			Util::string_suffix(path, '/');
 			_path = path + new_folder;
 			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
 			system(sys_cmd.c_str());
@@ -1891,8 +1900,7 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			return;
 		}
 		std::vector<std::string> file_list;
-		string backup_path = apiUtil->get_backup_path();
-		apiUtil->string_suffix(backup_path, '/');
+		string backup_path = Util::backup_path;
 		Util::dir_files(backup_path, db_name, file_list);
 		Document resp_data;
 		Document pathsDoc;
@@ -2363,7 +2371,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		apiUtil->string_suffix(db_path, '/');
+		Util::string_suffix(db_path, '/');
 		if (Util::dir_exist(db_path) == false)
 		{
 			Util::create_dirs(db_path);
@@ -2999,7 +3007,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 					{
 						vector<string> files;
 						string dir = _dir;
-						apiUtil->string_suffix(dir, '/');
+						Util::string_suffix(dir, '/');
 						Util::dir_files(dir, "", files);
 						total_num = Util::count_lines(error_log);
 						for (string rdf_file : files)
@@ -3852,39 +3860,6 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 	}
 }
 
-// for personalized function
-void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info)
-{
-	if (fun_info.HasMember("funName") && fun_info["funName"].IsString())
-	{
-		pfn_info.setFunName(fun_info["funName"].GetString());
-	}
-	if (fun_info.HasMember("funDesc") && fun_info["funDesc"].IsString())
-	{
-		pfn_info.setFunDesc(fun_info["funDesc"].GetString());
-	}
-	if (fun_info.HasMember("funArgs") && fun_info["funArgs"].IsString())
-	{
-		pfn_info.setFunArgs(fun_info["funArgs"].GetString());
-	}
-	if (fun_info.HasMember("funBody") && fun_info["funBody"].IsString())
-	{
-		pfn_info.setFunBody(fun_info["funBody"].GetString());
-	}
-	if (fun_info.HasMember("funSubs") && fun_info["funSubs"].IsString())
-	{
-		pfn_info.setFunSubs(fun_info["funSubs"].GetString());
-	}
-	if (fun_info.HasMember("funStatus") && fun_info["funStatus"].IsString())
-	{
-		pfn_info.setFunStatus(fun_info["funStatus"].GetString());
-	}
-	if (fun_info.HasMember("funReturn") && fun_info["funReturn"].IsString())
-	{
-		pfn_info.setFunReturn(fun_info["funReturn"].GetString());
-	}
-}
-
 /**
  * query personalized function
  * 
@@ -3906,11 +3881,11 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		if (hasJsonParam(json_data, "funInfo"))
 		{
 			rapidjson::Value &fun_info = json_data["funInfo"];
-			build_PFNInfo(fun_info, pfn_info);
+			pfnUtil->build_PFNInfo(fun_info, &pfn_info);
 		}
 		std::string username =  jsonParam(json_data, "username");
 		struct PFNInfos *pfn_infos = new PFNInfos();
-		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
+		pfnUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
 		size_t count = list.size();
 		Json resp_data;
@@ -3971,12 +3946,12 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	std::string username = jsonParam(json_data, "username");
 	struct PFNInfo pfn_info;
 	rapidjson::Value &fun_info = json_data["funInfo"];
-	build_PFNInfo(fun_info, pfn_info);
+	pfnUtil->build_PFNInfo(fun_info, &pfn_info);
 	if (type == "1")
 	{
 		try
 		{
-			apiUtil->fun_create(username, &pfn_info);
+			pfnUtil->fun_create(username, &pfn_info);
 			response->Success("Function create success.");
 		}
 		catch(const std::exception& e)
@@ -3989,7 +3964,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		try
 		{
-			apiUtil->fun_update(username, &pfn_info);
+			pfnUtil->fun_update(username, &pfn_info);
 			response->Success("Function update success.");
 		}
 		catch(const std::exception& e)
@@ -4002,7 +3977,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		try
 		{
-			apiUtil->fun_delete(username, &pfn_info);
+			pfnUtil->fun_delete(username, &pfn_info);
 			response->Success("Function delete success.");
 		}
 		catch(const std::exception& e)
@@ -4015,7 +3990,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		try
 		{
-			string result = apiUtil->fun_build(username, pfn_info.getFunName());
+			string result = pfnUtil->fun_build(username, pfn_info.getFunName());
 			if (result == "")
 			{
 				response->Success("Function build success.");
@@ -4069,8 +4044,8 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		std::string username = jsonParam(json_data, "username");
 		struct PFNInfo pfn_info;
 		rapidjson::Value &fun_info = json_data["funInfo"];
-		build_PFNInfo(fun_info, pfn_info);
-		apiUtil->fun_review(username, &pfn_info);
+		pfnUtil->build_PFNInfo(fun_info, &pfn_info);
+		pfnUtil->fun_review(username, &pfn_info);
 		string content = pfn_info.getFunBody();
 		content = Util::urlEncode(content);
 		Json resp_data;

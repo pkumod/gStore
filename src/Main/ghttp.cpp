@@ -25,6 +25,7 @@
 #include <fstream>
 
 #include "../Api/APIUtil.h"
+#include "../Api/PFNUtil.h"
 #include "../Util/INIParser.h"
 #include "../Util/WebUrl.h"
 #include "../Util/CompressFileUtil.h"
@@ -40,6 +41,7 @@ typedef SimpleWeb::Client<SimpleWeb::HTTP> HttpClient;
 #define TEST_IP ""
 #define HTTP_TYPE "ghttp"
 APIUtil *apiUtil = nullptr;
+PFNUtil *pfnUtil = nullptr;
 Latch latch;
 //! init the ghttp server
 int initialize(unsigned short port, std::string db_name, bool load_src);
@@ -153,8 +155,6 @@ void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
 void checkOperationState_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string opt_id);
-
-void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info);
 
 std::map<std::string, std::string> parse_post_body(const std::string &body);
 
@@ -482,6 +482,7 @@ int main(int argc, char *argv[])
 	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
+	pfnUtil = new PFNUtil();
  	_db_home = apiUtil->get_Db_path();
 	_db_suffix = apiUtil->get_Db_suffix();
 	size_t _len_suffix = _db_suffix.length();
@@ -730,6 +731,11 @@ void signalHandler(int signum)
 		delete apiUtil;
 		apiUtil = NULL;
 	}
+	if (pfnUtil)
+	{
+		delete pfnUtil;
+		pfnUtil = NULL;
+	}
 	SLOG_DEBUG("ghttp server stopped.");
 	std::cout.flush();
 	_exit(signum);
@@ -817,7 +823,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		// }
 		if (!db_path.empty()) 
 		{
-			if (db_path == apiUtil->get_system_path())
+			if (db_path == Util::system_path)
 			{
 				string error = "You have no rights to access system files.";
 				sendResponseMsg(1002, error, operation, request, response);
@@ -1878,7 +1884,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		// begin backup database
 		string path = backup_path;
-		string default_backup_path = apiUtil->get_backup_path();
+		string default_backup_path = Util::backup_path;
 		if (path.empty())
 		{
 			path = default_backup_path;
@@ -1904,7 +1910,7 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			string timestamp = Util::get_timestamp();
 			string new_folder =  db_name + _db_suffix + "_" + timestamp;
 			string sys_cmd, _path;
-			apiUtil->string_suffix(path, '/');
+			Util::string_suffix(path, '/');
 			_path = path + new_folder;
 			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
 			system(sys_cmd.c_str());
@@ -1950,8 +1956,7 @@ void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			return;
 		}
 		std::vector<std::string> file_list;
-		string backup_path = apiUtil->get_backup_path();
-		apiUtil->string_suffix(backup_path, '/');
+		string backup_path = Util::backup_path;
 		Util::dir_files(backup_path, db_name, file_list);
 		Document resDoc;
 		Document pathsDoc;
@@ -2495,7 +2500,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		apiUtil->string_suffix(db_path, '/');
+		Util::string_suffix(db_path, '/');
 		if (Util::dir_exist(db_path) == false)
 		{
 			Util::create_dirs(db_path);
@@ -3273,7 +3278,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 					{
 						vector<string> files;
 						string dir = _dir;
-						apiUtil->string_suffix(dir, '/');
+						Util::string_suffix(dir, '/');
 						Util::dir_files(dir, "", files);
 						total_num = Util::count_lines(error_log);
 						for (string rdf_file : files)
@@ -4327,7 +4332,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				if (document.HasMember("funInfo"))
 				{
 					Value &fun_info = document["funInfo"];
-					build_PFNInfo(fun_info, pfn_info);
+					pfnUtil->build_PFNInfo(fun_info, &pfn_info);
 				}
 			}
 			else
@@ -4356,7 +4361,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				if (document.HasMember("funInfo") && document["funInfo"].IsObject())
 				{
 					Value &fun_info = document["funInfo"];
-					build_PFNInfo(fun_info, pfn_info);
+					pfnUtil->build_PFNInfo(fun_info, &pfn_info);
 				}
 				if (document.HasMember("type") && document["type"].IsString())
 				{
@@ -4388,7 +4393,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				if (document.HasMember("funInfo"))
 				{
 					Value &fun_info = document["funInfo"];
-					build_PFNInfo(fun_info, pfn_info);
+					pfnUtil->build_PFNInfo(fun_info, &pfn_info);
 				}
 			}
 			else
@@ -5335,7 +5340,7 @@ void fun_query_thread_new(const shared_ptr<HttpServer::Request> &request, const 
 	try
 	{
 		struct PFNInfos *pfn_infos = new PFNInfos();
-		apiUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
+		pfnUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
 		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
 		size_t count = list.size();
 		rapidjson::Document all;
@@ -5373,7 +5378,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		operation = "funcreate";
 		try
 		{
-			apiUtil->fun_create(username, &pfn_info);
+			pfnUtil->fun_create(username, &pfn_info);
 			sendResponseMsg(0, "success", operation, request, response);
 		}
 		catch (const std::exception &e)
@@ -5387,7 +5392,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		operation = "funupdate";
 		try
 		{
-			apiUtil->fun_update(username, &pfn_info);
+			pfnUtil->fun_update(username, &pfn_info);
 			sendResponseMsg(0, "success", operation, request, response);
 		}
 		catch (const std::exception &e)
@@ -5401,7 +5406,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		operation = "fundelete";
 		try
 		{
-			apiUtil->fun_delete(username, &pfn_info);
+			pfnUtil->fun_delete(username, &pfn_info);
 			sendResponseMsg(0, "success", operation, request, response);
 		}
 		catch (const std::exception &e)
@@ -5415,7 +5420,7 @@ void fun_cudb_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		operation = "funbuild";
 		try
 		{
-			string result = apiUtil->fun_build(username, pfn_info.getFunName());
+			string result = pfnUtil->fun_build(username, pfn_info.getFunName());
 			if (result == "")
 			{
 				sendResponseMsg(0, "success", operation, request, response);
@@ -5442,7 +5447,7 @@ void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const
 	string operation = "funreview";
 	try
 	{
-		apiUtil->fun_review(username, &pfn_info);
+		pfnUtil->fun_review(username, &pfn_info);
 		string content = pfn_info.getFunBody();
 		content = Util::urlEncode(content);
 		Document all;
@@ -5456,38 +5461,6 @@ void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const
 	{
 		string msg = "Function review fail:" + string(e.what());
 		sendResponseMsg(1005, msg, operation, request, response);
-	}
-}
-
-void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info)
-{
-	if (fun_info.HasMember("funName") && fun_info["funName"].IsString())
-	{
-		pfn_info.setFunName(fun_info["funName"].GetString());
-	}
-	if (fun_info.HasMember("funDesc") && fun_info["funDesc"].IsString())
-	{
-		pfn_info.setFunDesc(fun_info["funDesc"].GetString());
-	}
-	if (fun_info.HasMember("funArgs") && fun_info["funArgs"].IsString())
-	{
-		pfn_info.setFunArgs(fun_info["funArgs"].GetString());
-	}
-	if (fun_info.HasMember("funBody") && fun_info["funBody"].IsString())
-	{
-		pfn_info.setFunBody(fun_info["funBody"].GetString());
-	}
-	if (fun_info.HasMember("funSubs") && fun_info["funSubs"].IsString())
-	{
-		pfn_info.setFunSubs(fun_info["funSubs"].GetString());
-	}
-	if (fun_info.HasMember("funStatus") && fun_info["funStatus"].IsString())
-	{
-		pfn_info.setFunStatus(fun_info["funStatus"].GetString());
-	}
-	if (fun_info.HasMember("funReturn") && fun_info["funReturn"].IsString())
-	{
-		pfn_info.setFunReturn(fun_info["funReturn"].GetString());
 	}
 }
 

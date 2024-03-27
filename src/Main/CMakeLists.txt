@@ -26,6 +26,7 @@ set( LIB_GSTROE_DEP
         stringindex
         util
         gcov
+        pfnutil
 )
 set( BIN_LIST
         gadd

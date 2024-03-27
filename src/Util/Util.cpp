@@ -136,6 +136,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
+    Util::system_path = Util::getConfigureValue("system_path");
     // server
     Util::setGlobalConfig(ini_parser, "server", "default_port");
     Util::setGlobalConfig(ini_parser, "server", "thread_num");
@@ -147,10 +148,10 @@ Util::configure()
     // log
     Util::setGlobalConfig(ini_parser, "log", "log_mode");
     Util::setGlobalConfig(ini_parser, "log", "querylog_mode");
-    Util::setGlobalConfig(ini_parser, "log", "querylog_path");
+    Util::setGlobalConfig(ini_parser, "log", "querylog_path", "logs/endpoint/");
     Util::setGlobalConfig(ini_parser, "log", "accesslong_mode");
-    Util::setGlobalConfig(ini_parser, "log", "accesslog_path");
-    Util::setGlobalConfig(ini_parser, "log", "queryresult_path");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_path", "logs/ipaccess/");
+    Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
     // backup
     Util::setGlobalConfig(ini_parser, "backup", "backup_path", "./backups/");
     Util::setGlobalConfig(ini_parser, "backup", "auto_backup");
@@ -162,31 +163,47 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages");
 
-    if (Util::getConfigureValue("backup_path").empty() == false)
-    {
-        Util::backup_path = Util::getConfigureValue("backup_path");
-    }
     // create db_home
-    if (Util::dir_exist(Util::global_config["db_home"]) == false)
-    {
-        Util::create_dirs(Util::global_config["db_home"]);
-    }
+    string temp_str = Util::global_config["db_home"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["db_home"] = temp_str;
+    Util::create_dirs(temp_str);
+    
     // create backup_path
-    if (Util::dir_exist(Util::global_config["backup_path"]) == false)
-    {
-        Util::create_dirs(Util::global_config["backup_path"]);
-    }
+    temp_str = Util::getConfigureValue("backup_path");
+    Util::string_suffix(temp_str, '/');
+    Util::backup_path = temp_str;
+    Util::global_config["backup_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
     // create pfn_base_path
-    if (Util::dir_exist(Util::global_config["pfn_base_path"]) == false)
-    {
-        Util::create_dirs(Util::global_config["pfn_base_path"] + "/gcc");
-        Util::create_dirs(Util::global_config["pfn_base_path"] + "/lib");
-    }
+    temp_str = Util::global_config["pfn_base_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["pfn_base_path"] = temp_str;
+    Util::create_dirs(temp_str + "cpp");
+    Util::create_dirs(temp_str + "lib");
+
     // create upload_path
-    if (Util::dir_exist(Util::global_config["upload_path"]) == false)
-    {
-        Util::create_dirs(Util::global_config["upload_path"]);
-    }
+    temp_str = Util::global_config["upload_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["upload_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    // create logs path
+    temp_str = Util::global_config["querylog_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["querylog_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    temp_str = Util::global_config["accesslog_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["accesslog_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    temp_str = Util::global_config["queryresult_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["queryresult_path"] = temp_str;
+    Util::create_dirs(temp_str);
    // init slog
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
@@ -854,13 +871,13 @@ Util::create_dirs(const string _dirs)
             {
                 if (access(tmpDirPath, 0) != 0)
                 {
-                    mkdir(tmpDirPath, 755);
+                    mkdir(tmpDirPath, 775);
                 }
             }
         }
         if (access(tmpDirPath, 0) != 0)
         {
-            mkdir(tmpDirPath, 755);
+            mkdir(tmpDirPath, 775);
         }
         return true;
     }
@@ -3016,4 +3033,12 @@ float Util::get_memory_usage(int pid)
     #endif
     // return MB
     return available_disk>>20;
+}
+
+void Util::string_suffix(string& str, const char suffix)
+{
+    if (str[str.length()-1] != suffix)
+    {
+        str.push_back(suffix);
+    }
 }
