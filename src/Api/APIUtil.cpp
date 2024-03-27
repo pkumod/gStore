@@ -24,7 +24,7 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&fun_data_lock, NULL);
     ipWhiteList = new IPWhiteList();
     ipBlackList = new IPBlackList();
-    util.configure_new();
+    util.configure();
 }
 
 APIUtil::~APIUtil()

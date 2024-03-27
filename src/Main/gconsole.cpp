@@ -256,7 +256,6 @@ int main(int argc, char **argv)
 {
 	Util util; // This is needed for database loading(Database_instance.load()) and other Util static member fetching situation
 	//  read conf from conf.ini: version, root_name, root_pswd
-	util.configure_new();
 	{
 		ifstream fin(INIT_CONF_FILE);
 		if (fin.is_open() == 0)

@@ -22,7 +22,7 @@ string gc_getUrl(string _type, string _port)
     return _url;
 }
 
-int gc_check(HttpUtil &gc, string _type, string _port, string &res)
+int gc_check(string _type, string _port, string &res)
 {
     std::string strUrl = gc_getUrl(_type, _port).append("/api");
 	std::string strPost;
@@ -36,7 +36,7 @@ int gc_check(HttpUtil &gc, string _type, string _port, string &res)
 		strUrl.append("/");
 		strPost = "{\"operation\": \"check\"}";
 	}
-    int ret = gc.Post(strUrl, strPost, res);
+    int ret = HttpUtil::Post(strUrl, strPost, res);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }
@@ -58,8 +58,6 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			// cout << "\t-p,--port,\t\t the ghttp  server listen port. " << endl;
-			// cout << "\t-t,--type,\t\tthe server type. grpc or ghttp, Default value is grpc." << endl;
 			cout << endl;
 			return 0;
 		}
@@ -79,7 +77,6 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-		HttpUtil gc;
 		string port;
 		string type;
 		string system_password;
@@ -98,7 +95,7 @@ int main(int argc, char *argv[])
 				type = res[0];
 				port = res[1];
 				string res = "";
-				gc_check(gc, type, port, res);
+				gc_check(type, port, res);
 				rapidjson::Document document;
 				document.SetObject();
 				document.Parse(res.c_str());
@@ -120,7 +117,7 @@ int main(int argc, char *argv[])
 		{
 			port = type_port;
 			string res = "";
-			gc_check(gc, "ghttp", port, res);
+			gc_check("ghttp", port, res);
 			rapidjson::Document document;
 			document.SetObject();
 			document.Parse(res.c_str());
@@ -132,7 +129,7 @@ int main(int argc, char *argv[])
 			else
 			{
 				res = "";
-				gc_check(gc, "grpc", port, res);
+				gc_check("grpc", port, res);
 				document.Parse(res.c_str());
 				// grpc server is running
 				if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
@@ -165,8 +162,7 @@ int main(int argc, char *argv[])
 		ofp.open(system_password_path, ios::in);
 		ofp >> system_password;
 		ofp.close();
-
-		util.configure_new();
+		
 		string system_user = util.getConfigureValue("system_username");
 		string res;
 		string postdata;
@@ -180,7 +176,7 @@ int main(int argc, char *argv[])
 		{
 			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
 		}
-		gc.Post(strUrl, postdata, res);
+		HttpUtil::Post(strUrl, postdata, res);
 		rapidjson::Document jsonRes;
 		jsonRes.Parse(res.c_str());
 		if (!jsonRes.HasParseError() && jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)

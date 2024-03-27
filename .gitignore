@@ -106,6 +106,9 @@ node_modules
 # query results
 *.info
 
+# personalized function
+pfn
+
 # build
 3rdparty
 build
