@@ -112,3 +112,8 @@ build
 include
 lib
 bin
+
+# test build
+scripts/test/build
+scripts/test/lib
+scripts/test/bin
