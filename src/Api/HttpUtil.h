@@ -19,20 +19,11 @@
 #include <cstring>
 #include <iostream>
 
-#define defaultServerIP "127.0.0.1"
-#define defaultServerPort 9000
-
 class HttpUtil
 {
 public:
-	std::string serverIP;
-	int serverPort;
-	std::string Url;
-	std::string username;
-	std::string password;
-	HttpUtil(void);
-	HttpUtil(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd);
-	~HttpUtil(void);
+	HttpUtil();
+	~HttpUtil();
 private:
 	static bool m_bDebug;
 

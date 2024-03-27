@@ -2,26 +2,11 @@
 
 bool HttpUtil::m_bDebug = false;
 
-HttpUtil::HttpUtil(void)
+HttpUtil::HttpUtil()
 {
 
 }
-HttpUtil::HttpUtil(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd)
-{
-	if (_ip == "localhost")
-		this->serverIP = defaultServerIP;
-	else
-		this->serverIP = _ip;
-	this->serverPort = _port;
-	this->Url = "http://" + this->serverIP + ":" + std::to_string(this->serverPort) + "/";
-	if (_http_type == "grpc")
-	{
-		this->Url = this->Url + "grpc/api";
-	}
-	this->username = _user;
-	this->password = _passwd;
-}
-HttpUtil::~HttpUtil(void)
+HttpUtil::~HttpUtil()
 {
 
 }
