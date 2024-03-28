@@ -36,7 +36,7 @@ add_custom_target( "init" DEPENDS INIT )
 
 # make pre
 add_custom_target( pre
-    COMMAND [ -d ${GSTORE_INCLUDE_DIR} ] && [ -d ${GSTORE_LIB_DIR} ] || bash init.sh
+    COMMAND [ -d ${GSTORE_3RDINCLUDE_DIR} ] && [ -d ${GSTORE_3RDLIB_DIR} ] || bash init.sh
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/3rdparty/
 )
 
