@@ -334,13 +334,13 @@ $ apt-get install -y libjemalloc-dev    #ubuntu系统
 
 如果遇到权限问题，请在命令前加 `sudo` 。
 
-####.1 方式一：download
+#### 1 方式一：download
 
 gStore目前已经上传到gitee（码云），国内用户推荐使用码云下载，速度更快，网址为 https://gitee.com/PKUMOD/gStore
 
 也可打开 https://github.com/pkumod/gStore ，下载gStore.zip；解压zip包。
 
-####.2 方式二：clone (推荐)
+#### 2 方式二：clone (推荐)
 
 通过如下命令 clone:
 
@@ -374,11 +374,27 @@ $ cd gstore
 
 执行如下指令：
 
+#### 方式1
+
 ```bash
-$ make pre
-# 以下命令可通过 -j4方式加速编译
-$ make            
+$ bash scripts/build.sh
 #若编译顺利完成，最后会出现 Compilation ends successfully! 结果
+```
+
+#### 方式2
+
+```bash
+# 创建build目录
+$ mkdir build
+$ cd build
+# 生成makefile等文件
+$ cmake ..
+# 预编译
+$ make pre
+# 编译
+$ make -j4
+# 初始化system.db数据库
+$ make init
 ```
 
 如果在已安装 5.0 以上版本的 g++ 后 `make pre` 仍报要求 5.0 以上版本 g++ 的错误，请先定位 5.0 以上版本 g++ 的路径，并在 gStore 目录下执行以下命令：
@@ -387,4 +403,21 @@ $ make
 $ export CXX=<5.0 以上版本g++的路径>
 ```
 
-然后重新 `make pre` 。假如在这步操作后仍然报相同的错误，请手动删除 `tools/antlr4-cpp-runtime-4/` 下的 `CMakeCache.txt` 和 `CMakeFiles` 文件夹，再重新 `make pre` 。
+然后进入build目录重新 `make pre` 。假如在这步操作后仍然报相同的错误，请手动删除 `tools/antlr4-cpp-runtime-4/` 下的 `CMakeCache.txt` 和 `CMakeFiles` 文件夹，再重新 `make pre` 。
+
+#### 针对开发人员使用
+
+```bash
+$ cd build
+# 编译
+$ make -j4
+# 测试脚本
+$ make test
+# 清除3rdparty预编译生成的lib,include的文件
+$ make clean_pre
+# 清理编译生成.o等文件
+$ make clean
+# 测试update_test gtest脚本
+$ cd scripts/test
+$ bash test.sh
+```

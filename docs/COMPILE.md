@@ -4,30 +4,30 @@
 
 *We have tested on linux server with CentOS 6.2 x86_64 and CentOS 6.6 x86_64. The version of GCC should be 4.8 or later.*
 
-Item | Requirement
-:-- | :--
-operation system | Linux, such as CentOS, Ubuntu and so on
-architecture | x86_64
-disk size | according to size of dataset 
-memory size | according to size of dataset
-glibc | version >= 2.14
-gcc | version >= 5.0
-g++ | version >= 5.0
-make | need to be installed
-cmake | version >= 3.6
-pkg-config | need to be installed
-uuid-devel | need to be installed
-boost | version >= 1.54
-readline-devel | need to be installed
-curl-devel | need to be installed
-openssl-devel | version >= 1.1
-jemalloc | 1.2 version and above, must be installed
-openjdk-devel | needed if using Java api
-requests | needed if using Python http api
-node | needed if using Nodejs http api and version >= 10.9.0
-pthreads | needed if using php http api
-realpath | needed if using gconsole
-ccache | optional, used to speed up the compilation
+| Item             | Requirement                                           |
+| :--------------- | :---------------------------------------------------- |
+| operation system | Linux, such as CentOS, Ubuntu and so on               |
+| architecture     | x86_64                                                |
+| disk size        | according to size of dataset                          |
+| memory size      | according to size of dataset                          |
+| glibc            | version >= 2.14                                       |
+| gcc              | version >= 5.0                                        |
+| g++              | version >= 5.0                                        |
+| make             | need to be installed                                  |
+| cmake            | version >= 3.6                                        |
+| pkg-config       | need to be installed                                  |
+| uuid-devel       | need to be installed                                  |
+| boost            | version >= 1.54                                       |
+| readline-devel   | need to be installed                                  |
+| curl-devel       | need to be installed                                  |
+| openssl-devel    | version >= 1.1                                        |
+| jemalloc         | 1.2 version and above, must be installed              |
+| openjdk-devel    | needed if using Java api                              |
+| requests         | needed if using Python http api                       |
+| node             | needed if using Nodejs http api and version >= 10.9.0 |
+| pthreads         | needed if using php http api                          |
+| realpath         | needed if using gconsole                              |
+| ccache           | optional, used to speed up the compilation            |
 
 
 >**To help ease the burden of setting environments, several scripts are provided in [setup](https://github.com/pkumod/gStore/tree/master/scripts/setup/) for different Linux distributions. Please select the setup script corresponding to your system and run it with root(or sudo) priviledge. (As for CentOS system, you need to install boost-devel by yourselves.)**
@@ -50,28 +50,33 @@ ccache | optional, used to speed up the compilation
 
 
 1. get curl-devel
+
 ```bash
 yum install curl-devel
 ```
 
 2. get php & pthreads
+
 ```bash
 wget -c http://www.php.net/distributions/php-5.4.36.tar.gz
 wget -c http://pecl.php.net/get/pthreads-1.0.0.tgz
 ```
 
 3. extract both
+
 ```bash
 tar zxvf php-5.4.36.tar.gz
 tar zxvf pthreads-1.0.0.tgz
 ```
 
 4. move pthreads to php/ext folder 
+
 ```bash
 mv pthreads-1.0.0 php-5.4.36/ext/pthreads
 ```
 
 5. reconfigure sources
+
 ```bash
 ./buildconf --force
 ./configure --help | grep pthreads
@@ -92,7 +97,7 @@ rm -rf autom4te.cache/
 ```
 
 7. install php
-We will run make clear just to be sure that no other crashed build will mess our new one.
+   We will run make clear just to be sure that no other crashed build will mess our new one.
 
 ```bash
 make clear
@@ -112,6 +117,7 @@ sudo make install
 ```
 
 9. Copy configuration file of PHP and add local lib to include path
+
 ```bash
 cp php.ini-development /etc/php.ini
 ```
@@ -123,6 +129,7 @@ Include_path = "/usr/local/lib/php"
 ```
 
 10. Check Modules
+
 ```bash
 php -m (check pthread loaded)
 ```
@@ -130,6 +137,7 @@ php -m (check pthread loaded)
 You have to see pthreads listed
 
 11. If pthread is not listed, update php.ini
+
 ```bash
 echo "extension=pthreads.so" >> /etc/php.ini
 ```
@@ -143,12 +151,12 @@ You are advised to read init.conf file, and modify it as you wish. (this file wi
 
 gStore is a green software, and you just need to compile it with three commands. Please run
 
-```
+```bash
 sudo ./scripts/setup/setup_$(ARCH).sh 
-make pre
-make
+sudo bash scripts/build.sh
 
 ```
+
 in the gStore home directory to prepare the dependency, link the ANTLR lib, compile the gStore code, and build executable "gbuild", "gquery", "gadd", "gsub", "gmonitor", "gshow", "ghttp", "ginit", "gdrop", "shutdown", "gserver", "gclient", "gconsole". 
 
 (Please substitute the $(ARCH) with your system version, like setup_archlinux.sh, setup_centos.sh and setup_ubuntu.sh)
@@ -157,17 +165,17 @@ What is more, the api of gStore is also built now.
 
 Setup scripts and dependency preparation only need to be done once, later you can directly use `make` to compile the code.
 
-(For faster compiling speed, use `make -j4` instead, using how many threads is up to your machine)
+(For faster compiling speed,  go to the build directory and use `make -j4` instead, using how many threads is up to your machine)
 
-To check the correctness of the program, please type `make test` command.
+To check the correctness of the program, please type `make test` command in the build directory..
 
-Only if you use the `make dist` command, then you need to run `make pre` command again.
+Only if you use the `make dist` command, then you need to run `make pre` command again in the build directory.
 
 If you want to use API examples of gStore, please run `make APIexample` to compile example codes for both C++ API and Java API. For details of API, please visit [API](API.md) chapter.
 
-Use `make clean` command to clean all objects, executables, and use `make dist` command to clean all objects, executables, libs, datasets, databases, debug logs, temp/text files in the gStore root directory.
+Use `make clean` command to clean all objects, executables, and use `make dist` command to clean all objects, executables, libs, datasets, databases, debug logs, temp/text files in the gStore build directory.
 
-You are free to modify the source code of gStore and create your own project while respecting our work, and type `make tarball` command to compress all useful files into a .tar.gz file, which is easy to carry.
+You are free to modify the source code of gStore and create your own project while respecting our work, and go to the build directory and type `make tarball` command to compress all useful files into a .tar.gz file, which is easy to carry.
 
-Type `make gtest` to compile the gtest program if you want to use this test utility. You can see the [HOW TO USE](USAGE.md) for details of gtest program.
+Type `make gtest` to compile the gtest program if you want to use this test utility in the build directory. You can see the [HOW TO USE](USAGE.md) for details of gtest program.
 

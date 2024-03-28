@@ -8,3 +8,5 @@ make pre
 make -j4
 # init system.db
 make init
+
+echo "Compilation ends successfully!"
