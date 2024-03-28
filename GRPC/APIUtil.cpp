@@ -2628,9 +2628,10 @@ void APIUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
     }
 }
 
-void APIUtil::fun_delete(const std::string &username, struct PFNInfo *pfn_infos)
+void APIUtil::fun_delete(const std::string &username, struct PFNInfo *pfn_info)
 {
-     APIUtil::fun_write_json_file(username, pfn_infos, "3");
+    APIUtil::fun_parse_from_name(username, pfn_info->getFunName(), pfn_info);
+    APIUtil::fun_write_json_file(username, pfn_info, "3");
 }
 
 string APIUtil::fun_build(const std::string &username, const std::string fun_name)
@@ -2666,8 +2667,12 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
         fun_info->setFunStatus("2");
         //delete old so
         string usingPath = APIUtil::pfn_lib_path + username ;
-        string rmOldSo = usingPath +"/lib" + file_name + "*.so";
-        Util::remove_path(targetFile);
+        if (fun_info->getLastTime().empty() == false) 
+        {
+            string oldMd5Str = util.md5(fun_info->getLastTime());
+            string rmOldSo = usingPath +"/lib" + file_name + oldMd5Str + ".so";
+            Util::remove_path(targetFile);
+        }
         //mv the new into using Path
         string mvCmd = "mv " +  targetFile + " " + usingPath +"/";
         system(mvCmd.c_str());
@@ -2830,10 +2835,14 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     string file_name = fun_name;
                     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                     string sourcePath = APIUtil::pfn_file_path + username + "/" + file_name + ".cpp";
-                    // string backPath = sourcePath + "." + util.getTimeString2();
-                    string libPath = APIUtil::pfn_lib_path + username + "/lib" + file_name + "*.so";
                     Util::remove_path(sourcePath);
-                    Util::remove_path(libPath);
+                    if (fun_info->getLastTime().empty() == false) 
+                    {
+                        string md5Str = util.md5(fun_info->getLastTime());
+                        string libPath = APIUtil::pfn_lib_path + username + "/lib" + file_name + md5Str + ".so";
+                        cout << libPath << endl;
+                        Util::remove_path(libPath);
+                    }
                 }
             }
             else
