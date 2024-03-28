@@ -10,17 +10,18 @@ set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 # build generate bin, make pre generate include and lib
 set( GSTORE_BIN_DIR ${GSTORE_ROOT_DIR}/bin )
-set( GSTORE_3RDPARTY_DIR ${GSTORE_ROOT_DIR}/include )
-set( GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib )
+set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
+set( GSTORE_3RDLIB_DIR ${GSTORE_ROOT_DIR}/lib )
+set( GSTORE_PFNLIB_DIR ${GSTORE_ROOT_DIR}/pfn/lib )
 
 set( INCLUDE_3RD_PATH
         ${GSTORE_ROOT_DIR}/src
-        ${GSTORE_3RDPARTY_DIR}
-        ${GSTORE_3RDPARTY_DIR}/rapidjson
-        ${GSTORE_3RDPARTY_DIR}/antlr4
-        ${GSTORE_3RDPARTY_DIR}/workflow
-        ${GSTORE_3RDPARTY_DIR}/log4cplus
-        ${GSTORE_3RDPARTY_DIR}/indicators
+        ${GSTORE_3RDINCLUDE_DIR}
+        ${GSTORE_3RDINCLUDE_DIR}/rapidjson
+        ${GSTORE_3RDINCLUDE_DIR}/antlr4
+        ${GSTORE_3RDINCLUDE_DIR}/workflow
+        ${GSTORE_3RDINCLUDE_DIR}/log4cplus
+        ${GSTORE_3RDINCLUDE_DIR}/indicators
 )
 
 add_subdirectory( src )

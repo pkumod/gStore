@@ -64,11 +64,14 @@ set( MAIN_LIST
         gsub.cpp 
 )
 include_directories( ${INCLUDE_3RD_PATH} )
-link_directories( ${GSTORE_LIB_DIR} )
+link_directories( 
+        ${GSTORE_3RDLIB_DIR}
+        ${GSTORE_PFNLIB_DIR}
+)
 add_library( gcsr SHARED ../Database/CSR.cpp )
 add_library( gpathqueryhandler SHARED ../Query/PathQueryHandler.cpp )
 target_link_libraries( gpathqueryhandler gcsr )
-set_target_properties( gcsr gpathqueryhandler PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_LIB_DIR} )
+set_target_properties( gcsr gpathqueryhandler PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_PFNLIB_DIR} )
 
 add_executable( shutdown shutdown.cpp )
 target_link_libraries( shutdown ${LIB_SYSTEM_DEP} ${LIB_GSTROE_DEP} ${LIB_3RD_DEP} httputil )

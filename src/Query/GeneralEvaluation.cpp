@@ -4039,20 +4039,11 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 	{
 		std::map<std::string, std::string> returnMap;
 		// check funInfo from json file.
-		string pfn_file_path = Util::getConfigureValue("pfn_file_path");
-        pfn_file_path = Util::replace_all(pfn_file_path, "\"", "");
-		if (pfn_file_path[pfn_file_path.length()-1] != '/')
-		{
-			pfn_file_path.append("/");
-		}
-        string pfn_lib_path = Util::getConfigureValue("pfn_lib_path");
-        pfn_lib_path = Util::replace_all(pfn_lib_path, "\"", "");
-		if (pfn_lib_path[pfn_lib_path.length()-1] != '/')
-		{
-			pfn_lib_path.append("/");
-		}
+		string pfn_base_path = Util::getConfigureValue("pfn_base_path");
+		string pfn_cpp_path = pfn_base_path + "cpp/";
+		string pfn_lib_path = pfn_base_path + "lib/";
 		
-		string json_file_path = pfn_file_path + username + "/data.json";
+		string json_file_path = pfn_cpp_path + username + "/data.json";
 		#if defined(DEBUG)
 		cout << "pfn lib path: " << pfn_lib_path << endl;
 		cout << "open json file: " << json_file_path << endl;

@@ -203,7 +203,7 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = targetDir + "/lib" + file_name + md5str + ".out";
     Util::remove_path(targetFile);
-    string libaray = "lib/libgpathqueryhandler.so lib/libgcsr.so";
+    string libaray = pfn_base_path + "lib/libgpathqueryhandler.so " + pfn_base_path + "lib/libgcsr.so";
     string cmd = "g++ -std=c++11 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
     int status;
     status = system(cmd.c_str());
