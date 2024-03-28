@@ -8,7 +8,7 @@ LABEL description="gStore RDF Database Engine"
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
+    wget \
     libboost-regex-dev \
     libboost-system-dev \
     libboost-thread-dev \
@@ -19,11 +19,19 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libzmq3-dev \
     pkg-config \
-    wget \
     zlib1g-dev \
     uuid-dev \
     libjemalloc-dev \
     libreadline-dev
+
+
+RUN wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz \
+    && tar -xvf cmake-3.23.2.tar.gz \
+    && cd cmake-3.23.2 \
+    && ./bootstrap \
+    && make -j$(nproc) \
+    && make install \
+    && cd ..
 
 RUN mkdir -p /src
 
@@ -36,7 +44,7 @@ RUN mkdir -p build
 
 RUN cd build && cmake ..
 
-RUN cd build && make pre && make -j4 && make init
+RUN cd build && make pre && make -j$(nproc)
 
 FROM debian:buster-slim AS runtime
 
@@ -58,9 +66,11 @@ COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
 
 COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
 
-COPY conf /docker-init/
+COPY --from=builder /usr/src/gstore/build/lib/ /docker-init/lib/
+
+COPY conf /docker-init/conf/
 COPY data/ /docker-init/data/
-COPY scripts/docker-entrypoint.sh /scripts/docker-entrypoint.sh 
+COPY scripts/docker-entrypoint.sh /
 
 WORKDIR /app/
 VOLUME [ "/app/" ]
@@ -70,6 +80,6 @@ RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
 
 EXPOSE 9000
 
-ENTRYPOINT [ "sh", "scripts/docker-entrypoint.sh" ]
+ENTRYPOINT [ "sh", "/docker-entrypoint.sh" ]
 
 # CMD [ "/usr/local/bin/ghttp" ]

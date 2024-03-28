@@ -14,7 +14,7 @@ if [ ! -f /app/conf/conf.ini ]; then
     else
         echo "${BLUE}[INIT] Setting root password...${NC}"
         # Replace the line in the file
-        sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${GSTORE_ROOT_PASSWORD}/" init.conf
+        sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${GSTORE_ROOT_PASSWORD}/" conf/conf.ini
     fi
 
 fi
