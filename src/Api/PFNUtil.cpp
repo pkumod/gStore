@@ -213,8 +213,12 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
         // update function status to 2
         fun_info->setFunStatus("2");
         //delete old so
-        string rmOldSo = "rm -f " + pfn_lib_path +"/lib" + file_name + "*.so";
-        system(rmOldSo.c_str());
+        if (fun_info->getLastTime().empty() == false) 
+        {
+            string oldMd5Str = Util::md5(fun_info->getLastTime());
+            string oldLibPath = pfn_lib_path +"/lib" + file_name + oldMd5Str + ".so";
+            Util::remove_path(oldLibPath);
+        }
         //mv the new into using Path
         string mvCmd = "mv " +  targetFile + " " + pfn_lib_path;
         system(mvCmd.c_str());
@@ -375,7 +379,8 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     string file_name = fun_name;
                     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                     string sourcePath = pfn_cpp_path + "/" + file_name + ".cpp";
-                    string libPath = pfn_lib_path + "/lib" + file_name + "*.so";
+                    string md5str = Util::md5(fun_info_tmp->getLastTime());
+                    string libPath = pfn_lib_path + "/lib" + file_name + md5str + ".so";
                     Util::remove_path(sourcePath);
                     Util::remove_path(libPath);
                 }
