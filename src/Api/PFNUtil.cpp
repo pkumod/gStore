@@ -176,7 +176,8 @@ void PFNUtil::fun_update(const std::string &username, struct PFNInfo *pfn_infos)
 
 void PFNUtil::fun_delete(const std::string &username, struct PFNInfo *pfn_infos)
 {
-     PFNUtil::fun_write_json_file(username, pfn_infos, "3");
+    PFNUtil::fun_parse_from_name(username, pfn_infos->getFunName(), pfn_infos);
+    PFNUtil::fun_write_json_file(username, pfn_infos, "3");
 }
 
 string PFNUtil::fun_build(const std::string &username, const std::string fun_name)
@@ -379,10 +380,13 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     string file_name = fun_name;
                     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                     string sourcePath = pfn_cpp_path + "/" + file_name + ".cpp";
-                    string md5str = Util::md5(fun_info_tmp->getLastTime());
-                    string libPath = pfn_lib_path + "/lib" + file_name + md5str + ".so";
                     Util::remove_path(sourcePath);
-                    Util::remove_path(libPath);
+                    if (fun_info->getLastTime().empty() == false) 
+                    {
+                        string md5str = Util::md5(fun_info_tmp->getLastTime());
+                        string libPath = pfn_lib_path + "/lib" + file_name + md5str + ".so";
+                        Util::remove_path(libPath);
+                    }
                 }
             }
             else
