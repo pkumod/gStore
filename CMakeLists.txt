@@ -14,6 +14,7 @@ set( GSTORE_3RDPARTY_DIR ${GSTORE_ROOT_DIR}/include )
 set( GSTORE_LIB_DIR ${GSTORE_ROOT_DIR}/lib )
 
 set( INCLUDE_3RD_PATH
+        ${GSTORE_ROOT_DIR}/src
         ${GSTORE_3RDPARTY_DIR}
         ${GSTORE_3RDPARTY_DIR}/rapidjson
         ${GSTORE_3RDPARTY_DIR}/antlr4
