@@ -1,15 +1,20 @@
 #!/bin/bash
 
+# go to gstore dir
 # basic test
+
+cd ../../
 echo "basic build/query/add/sub/drop test start......"
-bash basic_test.sh
+bash scripts/test/basic_test.sh
 echo "basic build/query/add/sub/drop test end"
 
 # parser test
 echo "parser test start......"
-bash parser_test.sh
+bash scripts/test/parser_test.sh
 echo "parser test end"
 
+
+cd scripts/test/
 # update test gtest
 # build cmake
 mkdir -p ./bin ./lib
