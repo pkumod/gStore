@@ -45,10 +45,7 @@ add_custom_target( pre
 #make clean_pre
 add_custom_command( OUTPUT CLEAN
     COMMAND bash clean.sh
-    COMMAND rm -rf ../bin/*.class
     COMMAND rm -rf ../logs/*.log
-    COMMAND rm -rf ../*.out   # gmon.out for gprof with -pg
-    COMMAND rm -rf ../lib/libgcsr.so ../lib/libgpathqueryhandler.so
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/3rdparty/
 )
 add_custom_target( "clean_pre" DEPENDS CLEAN )

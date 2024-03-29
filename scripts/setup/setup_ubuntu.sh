@@ -20,7 +20,10 @@ echo -e "make installed \n"
 apt install -y libreadline-dev
 echo -e "readline-devel installed \n"
 
-apt install -y libboost-all-dev
+# install all pacakage, but slowly
+#apt install -y libboost-all-dev
+# only install need package 
+apt install -y libboost-system-dev libboost-regex-dev libboost-thread-dev
 echo -e "libboost-all-dev installed \n"
 
 apt install -y curl libcurl4 libcurl4-openssl-dev libssl-dev
@@ -34,6 +37,9 @@ echo -e "pkg-config installed \n"
 
 apt install -y uuid-dev
 echo -e "uuid installed \n"
+
+apt install -y libjemalloc-dev
+echo -e "jemalloc installed \n"
 
 echo -e "Optional: requests for python api, pthreads and curl-devel for php api, realpath for gconsole, ccache for faster compilation\n"
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"

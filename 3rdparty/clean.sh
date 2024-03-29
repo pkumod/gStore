@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-
-make clean
-rm -rf ./*
 # rm include
 rm -rf ../include
 # rm static lib
