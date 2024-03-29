@@ -112,7 +112,7 @@ int main(int argc, char * argv[])
 	int test_group_size = 5;
 	int test_value_region = 10;
 	string db_name = "update_test";
-	string db_path = "../../data/update_test.nt";
+	string db_path = "data/update_test.nt";
 	string _db_home = util.getConfigureValue("db_home");
 	std::cout << "db_home:" << _db_home << std::endl;
 	string _db_suffix = util.getConfigureValue("db_suffix");

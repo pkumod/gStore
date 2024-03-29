@@ -9,10 +9,11 @@ set( EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/../bin" )
 set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 # build generate bin, make pre generate include and lib
-set( GSTORE_BIN_DIR ${GSTORE_ROOT_DIR}/bin )
 set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
 set( GSTORE_3RDLIB_DIR ${GSTORE_ROOT_DIR}/lib )
 set( GSTORE_PFNLIB_DIR ${GSTORE_ROOT_DIR}/pfn/lib )
+# scripts test
+set( GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/scripts/test )
 
 set( INCLUDE_3RD_PATH
         ${GSTORE_ROOT_DIR}/src
@@ -25,6 +26,7 @@ set( INCLUDE_3RD_PATH
 )
 
 add_subdirectory( src )
+add_subdirectory( ${GSTORE_TEST_DIR} )
 
 # init system.db
 add_custom_command( OUTPUT INIT
@@ -57,6 +59,9 @@ add_custom_command( OUTPUT TEST
 	COMMAND bash scripts/test/basic_test.sh
 	COMMAND echo "parser test......"
 	COMMAND bash scripts/test/parser_test.sh
+    COMMAND echo "repeatedly insertion/deletion test num:20......"
+    COMMAND scripts/test/update_test 20
+    COMMAND echo "repeatedly insertion/deletion test end"
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
 add_custom_target( "test" DEPENDS TEST )
@@ -73,7 +78,7 @@ add_custom_target( "dist" DEPENDS CLEAN DIST )
 
 #make tarball
 add_custom_command( OUTPUT TARBALL
-    COMMAND tar -czvf gstore.tar.gz backups .tmp api conf 3rdparty scripts data logs
+    COMMAND tar -czvf gstore.tar.gz backups .tmp api conf 3rdparty scripts data logs pfn
     src CMakeLists.txt README.md LICENSE
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )

@@ -60,6 +60,8 @@ RUN apt-get update && apt-get install -y \
     libreadline7 \
     libopenmpi3 \
     coreutils \
+    g++ \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
