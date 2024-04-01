@@ -35,7 +35,7 @@ RUN wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz \
 
 RUN mkdir -p /src
 
-WORKDIR /usr/src/gstore 
+WORKDIR /usr/src/gstore
 
 # Copy gStore source code; run `make tarball` to generate this file
 ADD gstore.tar.gz /usr/src/gstore
@@ -66,19 +66,24 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
 
+COPY --from=builder /usr/src/gstore/pfn/lib/ /lib/
+
 COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
 
-COPY --from=builder /usr/src/gstore/build/lib/ /docker-init/lib/
+COPY --from=builder /usr/src/gstore/build/lib/ /docker-init/build/lib/
+
+COPY --from=builder /usr/src/gstore/pfn/lib/ /docker-init/pfn/lib/
 
 COPY conf /docker-init/conf/
-COPY data/ /docker-init/data/
+COPY data /docker-init/data/
+COPY src /docker-init/src/
 COPY scripts/docker-entrypoint.sh /
 
 WORKDIR /app/
 VOLUME [ "/app/" ]
 
 RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
-	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
+        && echo "*    -    noproc    65535" >> /etc/security/limits.conf
 
 EXPOSE 9000
 
