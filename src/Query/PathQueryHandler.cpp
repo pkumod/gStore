@@ -5545,10 +5545,15 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 	partial_sort_copy(v2ppr.begin(), v2ppr.end(), topkV2ppr.begin(), topkV2ppr.end(),
 					  [](pair<int, double> const &l, pair<int, double> const &r)
 					  { return l.second > r.second; });
-	size_t i = topkV2ppr.size() - 1;
-	while (topkV2ppr[i].second == 0)
-		i--;
-	topkV2ppr.erase(topkV2ppr.begin() + i + 1, topkV2ppr.end()); // Get rid of ppr = 0 entries
+	if (topkV2ppr.size() > 0)
+	{
+		size_t i = topkV2ppr.size() - 1;
+		while (topkV2ppr[i].second == 0 && i != 0)
+		{
+			i--;
+		}
+		topkV2ppr.erase(topkV2ppr.begin() + i + 1, topkV2ppr.end()); // Get rid of ppr = 0 entries
+	}
 }
 
 void PathQueryHandler::compute_ppr_with_reserve(pair<iMap<double>, iMap<double>> &fwd_idx, unordered_map<int, double> &v2ppr)
