@@ -1,4 +1,4 @@
-project( gstore2.0 )
+project( gstore1.3 )
 
 cmake_minimum_required( VERSION 3.17 )
 message( STATUS "this is source dir " ${CMAKE_SOURCE_DIR} )
@@ -15,7 +15,7 @@ set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type -ggdb")
 SET(CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb")
 
-
+# build generate bin, make pre generate include and lib
 set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
 set( GSTORE_3RDLIB_DIR ${GSTORE_ROOT_DIR}/lib )
 set( GSTORE_PFNLIB_DIR ${GSTORE_ROOT_DIR}/pfn/lib )

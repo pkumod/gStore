@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM debian:buster-slim AS builder
+FROM ubuntu:22.04 AS builder
 
 LABEL vendor="pkumod"
 LABEL description="gStore RDF Database Engine"
@@ -46,18 +46,18 @@ RUN cd build && cmake ..
 
 RUN cd build && make pre && make -j$(nproc)
 
-FROM debian:buster-slim AS runtime
+FROM ubuntu:22.04 AS runtime
 
 RUN apt-get update && apt-get install -y \
-    libboost-regex1.67.0 \
-    libboost-system1.67.0 \
-    libboost-thread1.67.0 \
+    libboost-regex1.74.0 \
+    libboost-system1.74.0 \
+    libboost-thread1.74.0 \
     libcurl4 \
-    libssl1.1 \
+    libssl3 \
     libzmq5 \
     uuid-runtime \
     libjemalloc2 \
-    libreadline7 \
+    libreadline8 \
     libopenmpi3 \
     coreutils \
     g++ \
@@ -66,7 +66,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
 
-COPY --from=builder /usr/src/gstore/pfn/lib/ /lib/
+COPY --from=builder /usr/src/gstore/pfn/lib/ /lib/pfn
 
 COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
 
