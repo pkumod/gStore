@@ -8,7 +8,14 @@ message( STATUS "this is current binary dir " ${CMAKE_BINARY_DIR} )
 set( EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/../bin" )
 set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
-# build generate bin, make pre generate include and lib
+
+# gdb debug or release
+# SET(CMAKE_BUILD_TYPE "Debug")  # 定义编译类型
+# SET(CMAKE_BUILD_TYPE "Release")  # 定义编译类型
+SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb")
+
+
 set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
 set( GSTORE_3RDLIB_DIR ${GSTORE_ROOT_DIR}/lib )
 set( GSTORE_PFNLIB_DIR ${GSTORE_ROOT_DIR}/pfn/lib )
