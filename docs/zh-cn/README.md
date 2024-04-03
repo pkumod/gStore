@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="/docs/logo.png" style="height: 200px;" alt="gStore logo"/>
+  <img src="../logo.png" style="height: 200px;" alt="gStore logo"/>
 </div>
 
 <div align="center">
-  <h4> <a href="docs/zh-cn/README.md" target="_blank"> English </a> | 中文 | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a> |  <a href="https://gstore-docs.pages.dev" target="_blank"> Documentation </a> | <a href="https://gstore-docs.pages.dev/zh-cn/" target="_blank"> 文档 </a> </h4>
+  <h4> <a href="../../README.md" target="_blank"> English </a> | 中文 | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a> |  <a href="https://gstore-docs.pages.dev" target="_blank"> Documentation </a> | <a href="https://gstore-docs.pages.dev/zh-cn/" target="_blank"> 文档 </a> </h4>
 </div>
 
 <div align="center">
