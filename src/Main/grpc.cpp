@@ -1604,6 +1604,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
 								if (async != "true")
 									response->Error(StatusOperationFailed, result);
+								delete current_database;
+								current_database = NULL;
 								return;
 							}
 							for (std::string rdf_zip : zip_files)
@@ -1612,7 +1614,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 							}
 							current_database->save();
 							success_num = current_database->getTripleNum();
-							current_database->unload();
 							delete current_database;
 							current_database = NULL;
 						}
@@ -2376,7 +2377,15 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			Util::create_dirs(db_path);
 		}
-		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+		std::string compress = jsonParam(json_data, "compress");
+		std::string zip_path;
+		if (compress=="0")
+			db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+		else
+		{
+			zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
+			db_path = db_name + "_" + Util::get_timestamp() + ".nt";
+		}
 		apiUtil->rdlock_database(db_name); // lock database
 		SLOG_DEBUG("export_path: " + db_path);
 		FILE *ofp = fopen(db_path.c_str(), "w");
@@ -2394,7 +2403,6 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
 
-		std::string compress = jsonParam(json_data, "compress");
 		if (compress=="0")
 		{
 			resp_data.AddMember("filepath", StringRef(db_path.c_str()), allocator);
@@ -2402,14 +2410,11 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		else
 		{
-			std::string file_suffix = GRPCUtil::fileSuffix(db_path);
-			size_t pos = db_path.size() - file_suffix.size() - 1;
-			std::string zip_path = db_path.substr(0, pos) + ".zip";
 			if (!CompressUtil::FileHelper::compressExportZip(db_path, zip_path))
 			{
 				error = "export compress fail.";
 				response->Error(StatusCompressError, error);
-				Util::remove_path(db_path + " " + zip_path);
+				Util::remove_path(zip_path);
 				return;
 			}
 			resp_data.AddMember("filepath", StringRef(zip_path.c_str()), allocator);

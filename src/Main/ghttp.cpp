@@ -931,6 +931,8 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
 								if (async != "true")
 									sendResponseMsg(1005, result, operation, request, response);
+								delete current_database;
+								current_database = NULL;
 								return;
 							}
 							for (std::string rdf_zip : zip_files)
@@ -939,7 +941,6 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							}
 							current_database->save();
 							success_num = current_database->getTripleNum();
-							current_database->unload();
 
 							delete current_database;
 							current_database = NULL;
@@ -2505,7 +2506,14 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		{
 			Util::create_dirs(db_path);
 		}
-		db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+		std::string zip_path;
+		if (compress=="0")
+			db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+		else
+		{
+			zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
+			db_path = db_name + "_" + Util::get_timestamp() + ".nt";
+		}
 		apiUtil->rdlock_database(db_name); // lock database
 		SLOG_DEBUG("export_path: " + db_path);
 		FILE *ofp = fopen(db_path.c_str(), "w");
@@ -2529,14 +2537,11 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		else
 		{
-			std::string file_suffix = fileSuffix(db_path);
-			size_t pos = db_path.size() - file_suffix.size() - 1;
-			std::string zip_path = db_path.substr(0, pos) + ".zip";
 			if (!CompressUtil::FileHelper::compressExportZip(db_path, zip_path))
 			{
 				error = "export compress fail.";
 				sendResponseMsg(1005, error, operation, request, response);
-				Util::remove_path(db_path + " " + zip_path);
+				Util::remove_path(zip_path);
 				return;
 			}
 			resDoc.AddMember("filepath", StringRef(zip_path.c_str()), allocator);

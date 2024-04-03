@@ -7,6 +7,9 @@ set( LIB_SYSTEM_DEP
         ssl
         crypto
         pthread
+        jemalloc
+        dl
+        gcov
 )
 set( LIB_3RD_DEP
         workflow

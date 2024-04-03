@@ -69,6 +69,7 @@ main(int argc, char * argv[])
 		}
 		filepath= Util::getArgValue(argc, argv, "f", "file");
 		std::string zip_path;
+		std:string zip = Util::getArgValue(argc, argv, "z", "zip");
 		if (filepath.empty())
 		{
 			filepath = db_name + "_" + Util::get_timestamp() + ".nt";
@@ -81,7 +82,10 @@ main(int argc, char * argv[])
 			if (!Util::dir_exist(filepath))
 				Util::create_dirs(filepath);
 			zip_path = filepath + db_name  + "_" + Util::get_timestamp() +  ".zip";
-			filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
+			if (zip == "0")
+				filepath = filepath + db_name  + "_" + Util::get_timestamp() +  ".nt";
+			else
+				filepath = db_name  + "_" + Util::get_timestamp() +  ".nt";
 		}
 		cout << "gexport..." << endl;
 
@@ -124,7 +128,6 @@ main(int argc, char * argv[])
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;
-		std:string zip = Util::getArgValue(argc, argv, "z", "zip");
 		if (zip == "0")
 		{
 			long tv_end = Util::get_cur_time();
@@ -136,8 +139,7 @@ main(int argc, char * argv[])
 			if (!CompressUtil::FileHelper::compressExportZip(filepath, zip_path))
 			{
 				cout << db_name << _db_suffix + " export compress fail"<<endl;
-				std::string cmd = filepath + " " + zip_path;
-				Util::remove_path(cmd);
+				Util::remove_path(zip_path);
 				return -1;
 			}
 			long tv_end = Util::get_cur_time();
