@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM debian:buster-slim AS builder
+FROM ubuntu:22.04 AS builder
 
 LABEL vendor="pkumod"
 LABEL description="gStore RDF Database Engine"
@@ -41,25 +41,31 @@ ADD gstore.tar.gz /usr/src/gstore
 
 RUN make
 
-FROM debian:buster-slim AS runtime
+FROM ubuntu:22.04 AS runtime
 
 RUN apt-get update && apt-get install -y \
-    libboost-regex1.67.0 \
-    libboost-system1.67.0 \
-    libboost-thread1.67.0 \
+    libboost-regex1.74.0 \
+    libboost-system1.74.0 \
+    libboost-thread1.74.0 \
     libcurl4 \
-    libssl1.1 \
+    libssl3 \
     libzmq5 \
     uuid-runtime \
     libjemalloc2 \
-    libreadline7 \
+    libreadline8 \
     libopenmpi3 \
     coreutils \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
 
 COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
+
+COPY --from=builder /usr/src/gstore/Query/ /docker-init/Query/
+
+COPY --from=builder /usr/src/gstore/Database/ /docker-init/Database/
 
 COPY backup.json init.conf conf.ini ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
     /docker-init/
@@ -76,4 +82,4 @@ EXPOSE 9000
 
 ENTRYPOINT [ "sh", "/docker-entrypoint.sh" ]
 
-CMD [ "/usr/local/bin/ghttp" ]
+#CMD [ "/usr/local/bin/ghttp" ]

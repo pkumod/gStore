@@ -42,4 +42,6 @@ fi
 
 echo "${BLUE}[INIT] Command: $@${NC}"
 
+/usr/local/bin/ghttp
+
 exec "$@"
