@@ -1,16 +1,35 @@
-set( LIB_SYSTEM_DEP
-        boost_thread
-        boost_system
-        boost_regex
-        readline
-        curl
-        ssl
-        crypto
-        pthread
-        jemalloc
-        dl
-        gcov
-)
+if ( CMAKE_BUILD_TYPE STREQUAL Static )
+        set( LIB_SYSTEM_DEP
+                boost_thread
+                boost_system
+                boost_regex
+                readline
+                ncurses
+                tinfo
+                curl
+                ssl
+                crypto
+                pthread
+                jemalloc
+                dl
+                gcov
+        )
+else ()
+        set( LIB_SYSTEM_DEP
+                boost_thread
+                boost_system
+                boost_regex
+                readline
+                curl
+                ssl
+                crypto
+                pthread
+                jemalloc
+                dl
+                gcov
+        )
+endif()
+
 set( LIB_3RD_DEP
         workflow
         antlr4-runtime

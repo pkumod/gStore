@@ -9,11 +9,19 @@ set( EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/../bin" )
 set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 
-# gdb debug or release
-# SET(CMAKE_BUILD_TYPE "Debug")  # 定义编译类型
-# SET(CMAKE_BUILD_TYPE "Release")  # 定义编译类型
-SET(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb")
+# gdb debug or release, build type
+if ( CMAKE_BUILD_TYPE STREQUAL Debug )
+    message( STATUS "start build ------------, build type is debug!" )
+    SET( CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type -ggdb" )
+elseif ( CMAKE_BUILD_TYPE STREQUAL Static )
+    message( STATUS "start build ------------, build type is static!" )
+    set( CMAKE_EXE_LINKER_FLAGS "-O2 -pthread -std=c++11 -Werror=return-type -static" )
+elseif ( CMAKE_BUILD_TYPE STREQUAL Release )
+    message( STATUS "start build ------------, build type is release!" )
+    SET( CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb" )
+else ()
+    message( STATUS "start build ------------, default!!!" ${CMAKE_BUILD_TYPE} )
+endif()
 
 # build generate bin, make pre generate include and lib
 set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
@@ -155,3 +163,9 @@ add_custom_command( OUTPUT CONTRIBUTION
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
 add_custom_target( "contribution" DEPENDS CONTRIBUTION )
+
+# make static
+add_custom_target( static
+    COMMAND bash scripts/static.sh
+    WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
+)
