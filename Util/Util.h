@@ -668,5 +668,73 @@ public:
 		delete[] buffer;
 	}
 };
+
+//The snowflake algorithm generates a unique id with a timestamp
+class GenerateUidManager
+{
+	static const uint64_t kEpoch = 1710172800000; // 2024-03-12 00:00:00.000
+	static const uint64_t kSequenceBits = 12;
+	static const uint64_t kWorkerIdBits = 10;
+	static const uint64_t kMaxWorkerId = (1 << kWorkerIdBits) - 1;
+	static const uint64_t kSequenceMask = (1 << kSequenceBits) - 1;
+	static const uint64_t kTimestampShift = kSequenceBits + kWorkerIdBits;
+	static const uint64_t kWorkerIdShift = kSequenceBits;
+	uint16_t worker_id_;
+	uint64_t last_timestamp_ = 0;
+	uint64_t sequence_ = 0;
+	public:
+	GenerateUidManager()
+	{
+		worker_id_ = 1;
+	}
+	std::string NextID()
+	{
+		std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+		uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+		uint64_t sequence = 0;
+		if (timestamp == last_timestamp_)
+		{
+			sequence = (sequence_ + 1) & kSequenceMask;
+			if (sequence == 0)
+			{
+				// If the ID generated in the current millisecond exceeds the maximum value, wait for the next millisecond
+				timestamp = NextTimestamp(last_timestamp_);
+			}
+		}
+		else
+		{
+			sequence = 0;
+		}
+		last_timestamp_ = timestamp;
+		sequence_ = sequence;
+		uint64_t id = ((timestamp - kEpoch) << kTimestampShift) | (worker_id_ << kWorkerIdShift) | sequence;
+		return std::to_string(id);
+	}
+
+	static std::string getConvertTimeById(const std::string& id)
+	{
+		time_t time = std::stoll(id);
+		time = ((time >> kTimestampShift) + kEpoch)/1000;
+		struct tm *timeinfo = nullptr;
+		char buffer[64];
+		timeinfo = localtime(&time);
+		strftime(buffer,sizeof(buffer),"%Y%m%d",timeinfo);
+		return std::string(buffer);
+	}
+
+	private:
+	uint64_t NextTimestamp(uint64_t last_timestamp)
+	{
+		std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+		uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+		while (timestamp <= last_timestamp)
+		{
+			now = std::chrono::system_clock::now();
+			timestamp =	std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+		}
+		return timestamp;
+	}
+};
+
 #endif //_UTIL_UTIL_H
 
