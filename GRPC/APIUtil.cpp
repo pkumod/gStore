@@ -2104,7 +2104,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     dbAccessLogs->setTotalPage(totalPage);
 }
 
-void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg)
+void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string opt_id)
 {
     string iplog_name = util.get_date_day();
     string iplogfile = access_log_path + iplog_name + ".log";
@@ -2129,9 +2129,13 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
 	status_msg = util.string_replace(status_msg, "\n", "");
     status_msg = util.string_replace(status_msg, "    ", "");
     struct DBAccessLogInfo dbAccessLogInfo(remoteIP, operation, statusCode, status_msg, createTime);
+    if (!opt_id.empty())
+    {
+        dbAccessLogInfo.setOptId(opt_id);
+    }
     
     string _info = dbAccessLogInfo.toJSON();
-    _info.push_back(',');
+    // _info.push_back(',');
     _info.push_back('\n');
     fprintf(ip_logfp, "%s", _info.c_str());
 
@@ -2140,6 +2144,93 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     fclose(ip_logfp);
     // SLOG_DEBUG("logSize:" + to_string(logSize);
     pthread_rwlock_unlock(&access_log_lock);
+}
+
+void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum)
+{
+    if (opt_id.empty())
+        return;
+    pthread_rwlock_wrlock(&access_log_lock);
+    string iplog_name = getConvertTimeById(opt_id);
+    string filename = access_log_path + iplog_name + ".log";
+    string file_temp_name = access_log_path + iplog_name + "temp.log";
+    if (util.file_exist(filename) == false)
+    {
+        SLOG_DEBUG("error ip access log file is not exist");
+        return;
+    }
+    FILE* file = fopen(filename.c_str(), "r");
+    FILE* temp_file = fopen(file_temp_name.c_str(), "w");
+    char readBuffer[0xffff];
+    struct DBAccessLogInfo *logInfo = nullptr;
+    while (fgets(readBuffer, 1024, file))
+    {
+        string rec = readBuffer;
+        logInfo = new DBAccessLogInfo(rec);
+        if (logInfo->getOptId() != opt_id)
+        {
+            fputs(readBuffer, temp_file);
+            delete logInfo;
+            logInfo = NULL;
+            continue;
+        }
+        if (logInfo->checkOperation())
+        {
+            logInfo->setCode(statusCode);
+            logInfo->setMsg(statusMsg);
+            string endtime = util.get_date_time();
+            logInfo->setEndTime(endtime);
+            logInfo->setState(state);
+            logInfo->setNum(num);
+            logInfo->setFailNum(failnum);
+            string line = logInfo->toJSON();
+            line.push_back('\n');
+            fputs(line.c_str(), temp_file);
+        }
+        else
+        {
+            fputs(readBuffer, temp_file);
+            SLOG_ERROR("access log corrupted, this operation not it!");
+        }
+        delete logInfo;
+        logInfo = NULL;
+    }
+    fclose(file);
+    fclose(temp_file);
+    Util::remove_path(filename);
+    string cmd = "mv " + file_temp_name + ' ' + filename;
+    system(cmd.c_str());
+    pthread_rwlock_unlock(&access_log_lock);
+}
+
+bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
+{
+    pthread_rwlock_wrlock(&access_log_lock);
+    string iplog_name = getConvertTimeById(opt_id);
+    string filename = access_log_path + iplog_name + ".log";
+    if (util.file_exist(filename) == false)
+    {
+        SLOG_DEBUG("error ip access log file is not exist");
+        return false;
+    }
+    FILE* file = fopen(filename.c_str(), "r");
+    char readBuffer[0xffff];
+    struct DBAccessLogInfo logInfo;
+    bool find = false;
+    while (fgets(readBuffer, 1024, file))
+    {
+        string rec = readBuffer;
+        logInfo = DBAccessLogInfo(rec);
+        if (logInfo.checkOperation() && logInfo.getOptId() == opt_id)
+        {
+            log = logInfo;
+            find = true;
+            break;
+        }
+    }
+    fclose(file);
+    pthread_rwlock_unlock(&access_log_lock);
+    return find;
 }
 
 void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
@@ -2671,7 +2762,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
         {
             string oldMd5Str = util.md5(fun_info->getLastTime());
             string rmOldSo = usingPath +"/lib" + file_name + oldMd5Str + ".so";
-            Util::remove_path(targetFile);
+        Util::remove_path(targetFile);
         }
         //mv the new into using Path
         string mvCmd = "mv " +  targetFile + " " + usingPath +"/";
@@ -2841,7 +2932,7 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                         string md5Str = util.md5(fun_info->getLastTime());
                         string libPath = APIUtil::pfn_lib_path + username + "/lib" + file_name + md5Str + ".so";
                         cout << libPath << endl;
-                        Util::remove_path(libPath);
+                    Util::remove_path(libPath);
                     }
                 }
             }

@@ -76,7 +76,7 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 
 void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
-void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password);
+void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async);
 
 void load_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string remote_ip, string port, bool load_csr);
 
@@ -128,9 +128,9 @@ void test_connect_thread_new(const shared_ptr<HttpServer::Request> &request, con
 
 void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir);
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async);
 
-void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file);
+void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async);
 
 void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string date, int page_no, int page_size);
 
@@ -151,6 +151,8 @@ void fun_review_thread_new(const shared_ptr<HttpServer::Request> &request, const
 void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string new_name);
 
 void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
+
+void checkOperationState_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string opt_id);
 
 void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo &pfn_info);
 
@@ -798,7 +800,7 @@ void thread_sigterm_handler(int _signal_num)
  * @param {string} password: password
  * @return {*}
  */
-void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password)
+void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async)
 {
 	string operation = "build";
 	try
@@ -879,98 +881,136 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			db_path = upfile.getMaxFilePath();
 			upfile.getFileList(zip_files, db_path);
 		}
-		string _db_path = _db_home + "/" + db_name + _db_suffix;
-		string dataset = db_path;
-		string database = db_name;
-		SLOG_DEBUG("Import dataset to build database...");
-		SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
-		Database *current_database = new Database(database);
-		bool flag = false;
-		if (!dataset.empty())
-			flag = current_database->build(dataset);
-		else
-			flag = current_database->BuildEmptyDB();
-		delete current_database;
-		current_database = NULL;
-		if (flag) 
-		{
-			// if zip file then excuse batchInsert
-			if (is_zip && zip_files.size() > 0)
-			{
-				current_database = new Database(db_name);
-				bool rt  = current_database->load(false);
-				if (!rt)
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = getRemoteIp(request);
+		string msg = "Operation Success.";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async]
+				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
-					result = "Import RDF file to database failed: load error.";
-					Util::remove_path(_db_path);
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					sendResponseMsg(1005, result, operation, request, response);
+					string _db_path = _db_home + "/" + db_name + _db_suffix;
+					string dataset = db_path;
+					string database = db_name;
+					SLOG_DEBUG("Import dataset to build database...");
+					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
+					string result;
+					Database *current_database = new Database(database);
+					bool flag = false;
+					if (!dataset.empty())
+						flag = current_database->build(dataset);
+					else
+						flag = current_database->BuildEmptyDB();
+					int success_num = current_database->getTripleNum();
 					delete current_database;
 					current_database = NULL;
-					return;
-				}
-				for (std::string rdf_zip : zip_files)
-				{
-					current_database->batch_insert(rdf_zip, false, nullptr);
-				}
-				current_database->save();
-				delete current_database;
-				current_database = NULL;
-			}
-			// init database info and privilege
-			if (apiUtil->build_db_user_privilege(db_name, username) 
-				&& apiUtil->init_privilege(username, db_name))
-			{
-				// add success.txt
-				ofstream f;
-				f.open(_db_path + "/success.txt");
-				f.close();
-				// add backup.log
-				Util::add_backuplog(db_name);
-				// build response result
-				result = "Import RDF file to database done.";
-				string error_log = _db_path + "/parse_error.log";
-				size_t parse_error_num = Util::count_lines(error_log);
-				// exclude Info line
-				if (parse_error_num > 0)
-					parse_error_num = parse_error_num - 1;
-				if (zip_files.size() > 0)
-					parse_error_num = parse_error_num - zip_files.size();
-				rapidjson::Document resp_data;
-				resp_data.SetObject();
-				rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
-				resp_data.AddMember("failed_num", parse_error_num, allocator);
-				if (parse_error_num > 0)
-				{
-					SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
-					SLOG_ERROR("See log file for details " + error_log);
-				}
-				// remove unzip dir
-				if (!unz_dir_path.empty())
-				{
-					Util::remove_path(unz_dir_path);
-				}
-				Util::add_backuplog(db_name);
-				sendResponseMsg(resp_data, operation, request, response);
-				return;
-			}
+					if (flag) 
+					{
+						// if zip file then excuse batchInsert
+						if (is_zip && zip_files.size() > 0)
+						{
+							current_database = new Database(db_name);
+							bool rt  = current_database->load(false);
+							if (!rt)
+							{
+								result = "Import RDF file to database failed: load error.";
+								Util::remove_path(_db_path);
+								if (!unz_dir_path.empty())
+								{
+									Util::remove_path(unz_dir_path);
+								}
+								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
+								if (async != "true")
+									sendResponseMsg(1005, result, operation, request, response);
+								delete current_database;
+								current_database = NULL;
+								return;
+							}
+							for (std::string rdf_zip : zip_files)
+							{
+								current_database->batch_insert(rdf_zip, false, nullptr);
+							}
+							current_database->save();
+							success_num = current_database->getTripleNum();
+
+							delete current_database;
+							current_database = NULL;
+						}
+						// init database info and privilege
+						if (apiUtil->build_db_user_privilege(db_name, username) 
+							&& apiUtil->init_privilege(username, db_name))
+						{
+							// add success.txt
+							ofstream f;
+							f.open(_db_path + "/success.txt");
+							f.close();
+							// add backup.log
+							Util::add_backuplog(db_name);
+							// build response result
+							result = "Import RDF file to database done.";
+							string error_log = _db_path + "/parse_error.log";
+							size_t parse_error_num = Util::count_lines(error_log);
+							// exclude Info line
+							if (parse_error_num > 0)
+								parse_error_num = parse_error_num - 1;
+							if (zip_files.size() > 0)
+								parse_error_num = parse_error_num - zip_files.size();
+							if (parse_error_num > 0)
+							{
+								SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
+								SLOG_ERROR("See log file for details " + error_log);
+							}
+							// remove unzip dir
+							if (!unz_dir_path.empty())
+							{
+								Util::remove_path(unz_dir_path);
+							}
+							Util::add_backuplog(db_name);
+							apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
+							if (async != "true")
+							{
+								rapidjson::Document resp_data;
+								resp_data.SetObject();
+								rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+								resp_data.AddMember("StatusCode", 0, allocator);
+								resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
+								resp_data.AddMember("failed_num", parse_error_num, allocator);
+								resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+								sendResponseMsg(resp_data, operation, request, response);
+							}
+							return;
+						}
+					}
+					else
+					{
+						result = "Import RDF file to database failed.";
+						rmdir(_db_path.c_str());
+						Util::remove_path(_db_path);
+						if (!unz_dir_path.empty())
+						{
+							Util::remove_path(unz_dir_path);
+						}
+						apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
+						if (async != "true")
+							sendResponseMsg(1005, result, operation, request, response);
+					}
+				};
+		if (async == "true")
+		{
+			Document resDoc;
+			resDoc.SetObject();
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			sendResponseMsg(resDoc, operation, request, response);
+			thread t(build_helper, nullptr, nullptr);
+			t.detach();
 		}
 		else
 		{
-			result = "Import RDF file to database failed.";
-			rmdir(_db_path.c_str());
-			Util::remove_path(_db_path);
-			if (!unz_dir_path.empty())
-			{
-				Util::remove_path(unz_dir_path);
-			}
-			sendResponseMsg(1005, result, operation, request, response);
+			build_helper(request, response);
 		}
+		
 	}
 	catch (const std::exception &e)
 	{
@@ -1024,7 +1064,8 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 		msg = "";
 	}
 	string remote_ip = getRemoteIp(request);
-	apiUtil->write_access_log(operation, remote_ip, code, msg);
+	if (operation != "build" && operation != "batchInsert" && operation != "batchRemove")
+		apiUtil->write_access_log(operation, remote_ip, code, msg);
 	StringBuffer resBuffer;
 	rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 	doc.Accept(resWriter);
@@ -3101,7 +3142,7 @@ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, c
  * @param {string} file: the insert data file
  * @return {*}
  */
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir)
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async)
 {
 	string error;
 	string operation = "batchInsert";
@@ -3189,63 +3230,98 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		{
 			error = "The operation can not been excuted due to loss of lock.";
 			sendResponseMsg(1004, error, operation, request, response);
+			if (!unz_dir_path.empty())
+			{
+				Util::remove_path(unz_dir_path);
+			}
 		}
 		else
 		{
-			string success = "Batch insert data successfully.";
-			unsigned success_num = 0;
-			unsigned total_num = 0;
-			unsigned parse_error_num = 0;
-			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
-			if (is_file)
-			{
-				if (!is_zip)
+			std::string opt_id = apiUtil->generateUid();
+			string remote_ip = getRemoteIp(request);
+			string msg = "Operation Success.";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+			string _dir = dir;
+			auto insert_helper = [operation,opt_id,db_name,file,_dir,is_file,is_zip,zip_files,unz_dir_path,async](const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
-					total_num = Util::count_lines(error_log);
-					success_num = current_database->batch_insert(file, false, nullptr);
-					// exclude Info line
-					parse_error_num = Util::count_lines(error_log) - total_num - 1;
-				}
-				else
-				{
-					total_num = Util::count_lines(error_log);
-					for (std::string rdf_zip : zip_files)
+					Database *current_database;
+					apiUtil->get_database(db_name, current_database);
+					unsigned success_num = 0;
+					unsigned total_num = 0;
+					unsigned parse_error_num = 0;
+					string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+					if (is_file)
 					{
-						SLOG_DEBUG("begin insert data from " + rdf_zip);
-						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+						if (!is_zip)
+						{
+							total_num = Util::count_lines(error_log);
+							success_num = current_database->batch_insert(file, false, nullptr);
+							// exclude Info line
+							parse_error_num = Util::count_lines(error_log) - total_num - 1;
+						}
+						else
+						{
+							total_num = Util::count_lines(error_log);
+							for (std::string rdf_zip : zip_files)
+							{
+								SLOG_DEBUG("begin insert data from " + rdf_zip);
+								success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+							}
+							parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+						}
 					}
-					parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
-				}
+					else
+					{
+						vector<string> files;
+						string dir = _dir;
+						apiUtil->string_suffix(dir, '/');
+						Util::dir_files(dir, "", files);
+						total_num = Util::count_lines(error_log);
+						for (string rdf_file : files)
+						{
+							SLOG_DEBUG("begin insert data from " + dir + rdf_file);
+							success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
+						}
+						// exclude Info line
+						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
+					}
+					current_database->save();
+					string success = "Batch insert data successfully.";
+					apiUtil->unlock_database(db_name);
+					if (!unz_dir_path.empty())
+					{
+						Util::remove_path(unz_dir_path);
+					}
+					apiUtil->update_access_log(0, success, opt_id, 1, success_num, parse_error_num);
+					if (async != "true")
+					{
+						Document resDoc;
+						resDoc.SetObject();
+						Document::AllocatorType &allocator = resDoc.GetAllocator();
+						resDoc.AddMember("StatusCode", 0, allocator);
+						resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resDoc.AddMember("success_num", success_num, allocator);
+						resDoc.AddMember("failed_num", parse_error_num, allocator);
+						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						sendResponseMsg(resDoc, operation, request, response);
+					}
+				};
+			if (async == "true")
+			{
+				Document resDoc;
+				resDoc.SetObject();
+				Document::AllocatorType &allocator = resDoc.GetAllocator();
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+				sendResponseMsg(resDoc, operation, request, response);
+				thread t(insert_helper, nullptr, nullptr);
+				t.detach();
 			}
 			else
 			{
-				vector<string> files;
-				apiUtil->string_suffix(dir, '/');
-				Util::dir_files(dir, "", files);
-				total_num = Util::count_lines(error_log);
-				for (string rdf_file : files)
-				{
-					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
-				}
-				// exclude Info line
-				parse_error_num = Util::count_lines(error_log) - total_num - files.size();
+				insert_helper(request, response);
 			}
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-			Document resDoc;
-			resDoc.SetObject();
-			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			resDoc.AddMember("StatusCode", 0, allocator);
-			resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resDoc.AddMember("success_num", success_num, allocator);
-			resDoc.AddMember("failed_num", parse_error_num, allocator);
-			
-			sendResponseMsg(resDoc, operation, request, response);
-		}
-		if (!unz_dir_path.empty())
-		{
-			Util::remove_path(unz_dir_path);
 		}
 	}
 	catch (const std::exception &e)
@@ -3264,10 +3340,10 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
  * @param {string} file: the remove data file
  * @return {*}
  */
-void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file)
+void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async)
 {
 	string error;
-	string operation = "batchremove";
+	string operation = "batchRemove";
 	try
 	{
 		error = apiUtil->check_param_value("db_name", db_name);
@@ -3309,18 +3385,48 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 		}
 		else
 		{
-			string success = "Batch remove data successfully.";
-			string success_num = std::to_string(current_database->batch_remove(file, false, nullptr));
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-
-			Document resDoc;
-			resDoc.SetObject();
-			Document::AllocatorType &allocator = resDoc.GetAllocator();
-			resDoc.AddMember("StatusCode", 0, allocator);
-			resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resDoc.AddMember("success_num", StringRef(success_num.c_str()), allocator);
-			sendResponseMsg(resDoc, operation, request, response);
+			std::string opt_id = apiUtil->generateUid();
+			string remote_ip = getRemoteIp(request);
+			string msg = "Operation Success.";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+			auto remove_helper = [db_name,operation,file,opt_id,async]
+				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+				{
+					Database *current_database;
+					apiUtil->get_database(db_name, current_database);
+					string success = "Batch remove data successfully.";
+					int success_num = current_database->batch_remove(file, false, nullptr);
+					current_database->save();
+					apiUtil->unlock_database(db_name);
+					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
+					if (async != "true")
+					{
+						Document resDoc;
+						resDoc.SetObject();
+						Document::AllocatorType &allocator = resDoc.GetAllocator();
+						resDoc.AddMember("StatusCode", 0, allocator);
+						resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resDoc.AddMember("success_num", success_num, allocator);
+						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						sendResponseMsg(resDoc, operation, request, response);
+					}
+				};
+			if (async == "true")
+			{
+				Document resDoc;
+				resDoc.SetObject();
+				Document::AllocatorType &allocator = resDoc.GetAllocator();
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+				sendResponseMsg(resDoc, operation, request, response);
+				thread t(remove_helper, nullptr, nullptr);
+				t.detach();
+			}
+			else
+			{
+				remove_helper(request, response);
+			}
 		}
 	}
 	catch (const std::exception &e)
@@ -3461,6 +3567,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	{
 		string db_path = "";
 		string port;
+		string async = "";
 		try
 		{
 			if (request_type == "GET")
@@ -3469,6 +3576,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				port = WebUrl::CutParam(url, "port");
 				db_path = UrlDecode(db_path);
 				port = UrlDecode(port);
+				async = WebUrl::CutParam(url, "async");
+				async = UrlDecode(async);
 			}
 			else if (request_type == "POST")
 			{
@@ -3480,6 +3589,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				{
 					port = document["port"].GetString();
 				}
+				if (document.HasMember("async") && document["async"].IsString())
+				{
+					async = document["async"].GetString();
+				}
 			}
 		}
 		catch (...)
@@ -3488,7 +3601,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		build_thread_new(request, response, db_name, db_path, remote_ip, port, username, password);
+		build_thread_new(request, response, db_name, db_path, remote_ip, port, username, password, async);
 	}
 	// load dababase
 	else if (operation == "load")
@@ -4009,6 +4122,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	{
 		string file = "";
 		string dir = "";
+		string async = "";
 		try
 		{
 			if (request_type == "GET")
@@ -4017,6 +4131,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				file = UrlDecode(file);
 				dir = WebUrl::CutParam(url, "dir");
 				dir = UrlDecode(dir);
+				async = WebUrl::CutParam(url, "async");
+				async = UrlDecode(async);
 			}
 			else if (request_type == "POST")
 			{
@@ -4028,31 +4144,9 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				{
 					dir = document["dir"].GetString();
 				}
-			}
-		}
-		catch (...)
-		{
-			string error = "the parameter has some error,please look up the api document.";
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
-		}
-		batchInsert_thread_new(request, response, db_name, file, dir);
-	}
-	else if (operation == "batchRemove")
-	{
-		string file = "";
-		try
-		{
-			if (request_type == "GET")
-			{
-				file = WebUrl::CutParam(url, "file");
-				file = UrlDecode(file);
-			}
-			else if (request_type == "POST")
-			{
-				if (document.HasMember("file") && document["file"].IsString())
+				if (document.HasMember("async") && document["async"].IsString())
 				{
-					file = document["file"].GetString();
+					async = document["async"].GetString();
 				}
 			}
 		}
@@ -4062,7 +4156,40 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		batchRemove_thread_new(request, response, db_name, file);
+		batchInsert_thread_new(request, response, db_name, file, dir, async);
+	}
+	else if (operation == "batchRemove")
+	{
+		string file = "";
+		string async = "";
+		try
+		{
+			if (request_type == "GET")
+			{
+				file = WebUrl::CutParam(url, "file");
+				file = UrlDecode(file);
+				async = WebUrl::CutParam(url, "async");
+				async = UrlDecode(async);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("file") && document["file"].IsString())
+				{
+					file = document["file"].GetString();
+				}
+				if (document.HasMember("async") && document["async"].IsString())
+				{
+					async = document["async"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		batchRemove_thread_new(request, response, db_name, file, async);
 	}
 	else if (operation == "querylog")
 	{
@@ -4313,6 +4440,32 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (operation == "stat")
 	{
 		stat_thread_new(request, response);
+	}
+	else if (operation == "checkOperationState")
+	{
+		string opt_id = "";
+		try
+		{
+			if (request_type == "GET")
+			{
+				opt_id = WebUrl::CutParam(url, "opt_id");
+				opt_id = UrlDecode(opt_id);
+			}
+			else if (request_type == "POST")
+			{
+				if (document.HasMember("opt_id") && document["opt_id"].IsString())
+				{
+					opt_id = document["opt_id"].GetString();
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please look up the api document.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		checkOperationState_thread_new(request, response, opt_id);
 	}
 	else
 	{
@@ -5454,5 +5607,42 @@ void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 	{
 		string msg = "stat fail:" + string(e.what());
 		sendResponseMsg(1005, msg, operation, request, response);
+	}
+}
+
+void checkOperationState_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string opt_id)
+{
+	string error;
+	string operation = "checkOperationState";
+	try
+	{
+		if (opt_id.empty())
+		{
+			error = "opt_id is empty.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		struct DBAccessLogInfo log;
+		if (!apiUtil->getAccessLogByOptId(opt_id, log))
+		{
+			error = "opt_id not found.";
+			sendResponseMsg(1004, error, operation, request, response);
+			return;
+		}
+		Document resp_data;
+		Document::AllocatorType &allocator = resp_data.GetAllocator();
+		string msg = log.getMsg();
+		resp_data.SetObject();
+		resp_data.AddMember("StatusCode", log.getCode(), allocator);
+		resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+		resp_data.AddMember("state", log.getState(), allocator);
+		resp_data.AddMember("success_num", log.getNum(), allocator);
+		resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		sendResponseMsg(resp_data, operation, request, response);
+	}
+	catch (const std::exception &e)
+	{
+		string error = "checkbatchInsertUid fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
 	}
 }

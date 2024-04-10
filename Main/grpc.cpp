@@ -66,6 +66,7 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 void query_log_date_task(const GRPCReq *request, GRPCResp *response);
 void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void access_log_date_task(const GRPCReq *request, GRPCResp *response);
+void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for personalized function
 void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -810,7 +811,10 @@ void api(const GRPCReq *request, GRPCResp *response)
 	auto *ip_ptr = new std::string(ip_addr);
 	rpc_task->add_callback([operation_ptr,ip_ptr](GRPCTask *task) {
 		GRPCResp *resp = task->get_resp();
-		apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
+		if (*operation_ptr != "build" && *operation_ptr != "batchInsert" && *operation_ptr != "batchRemove")
+			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
+		else if (resp->resp_code != 0)
+			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
 		delete operation_ptr;
 		delete ip_ptr;
 	});
@@ -961,6 +965,9 @@ void api(const GRPCReq *request, GRPCResp *response)
 		break;
 	case OP_STAT:
 		stat_task(request, response, json_data);
+		break;
+	case OP_CHECKOPERATIONSTATE:
+		checkOperationState_task(request, response, json_data);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
@@ -1541,97 +1548,135 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			db_path = upfile.getMaxFilePath();
 			upfile.getFileList(zip_files, db_path);
 		}
-		string _db_path = _db_home + "/" + db_name + _db_suffix;
-		string dataset = db_path;
-		string database = db_name;
-		SLOG_DEBUG("Import dataset to build database...");
-		SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
-		Database *current_database = new Database(database);
-		// TODO progress notification
-		bool flag = true;
-		if (!dataset.empty())
-			flag = current_database->build(dataset);
-		else
-			flag = current_database->BuildEmptyDB();
-		delete current_database;
-		current_database = NULL;
-		if (flag)
-		{
-			// if zip file then excuse batchInsert
-			if (is_zip && zip_files.size() > 0)
-			{
-				current_database = new Database(db_name);
-				bool rt  = current_database->load(false);
-				if (!rt)
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = task_of(response)->peer_addr();
+		string msg = "Operation Success.";
+		string operation = "build";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		string username = jsonParam(json_data, "username");
+		string async = jsonParam(json_data, "async");
+		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async]
+				(GRPCResp *response)
 				{
-					result = "Import RDF file to database failed: load error.";
-					Util::remove_path(_db_path);
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					response->Error(StatusOperationFailed, result);
+					string _db_path = _db_home + "/" + db_name + _db_suffix;
+					string dataset = db_path;
+					string database = db_name;
+					SLOG_DEBUG("Import dataset to build database...");
+					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
+					string result;
+					Database *current_database = new Database(database);
+					// TODO progress notification
+					bool flag = true;
+					if (!dataset.empty())
+						flag = current_database->build(dataset);
+					else
+						flag = current_database->BuildEmptyDB();
+					int success_num = current_database->getTripleNum();
 					delete current_database;
 					current_database = NULL;
-					return;
-				}
-				for (std::string rdf_zip : zip_files)
-				{
-					current_database->batch_insert(rdf_zip, false, nullptr);
-				}
-				current_database->save();
-				delete current_database;
-				current_database = NULL;
-			}
-		}
-		// init database info and privilege
-		std::string username = jsonParam(json_data, "username");
-		if (apiUtil->build_db_user_privilege(db_name, username) 
-			&& apiUtil->init_privilege(username, db_name))
+					if (flag)
+					{
+						// if zip file then excuse batchInsert
+						if (is_zip && zip_files.size() > 0)
+						{
+							current_database = new Database(db_name);
+							bool rt  = current_database->load(false);
+							if (!rt)
+							{
+								result = "Import RDF file to database failed: load error.";
+								Util::remove_path(_db_path);
+								if (!unz_dir_path.empty())
+								{
+									Util::remove_path(unz_dir_path);
+								}
+								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
+								if (async != "true")
+									response->Error(StatusOperationFailed, result);
+								delete current_database;
+								current_database = NULL;
+								return;
+							}
+							for (std::string rdf_zip : zip_files)
+							{
+								current_database->batch_insert(rdf_zip, false, nullptr);
+							}
+							current_database->save();
+							success_num = current_database->getTripleNum();
+							delete current_database;
+							current_database = NULL;
+						}
+					}
+					// init database info and privilege
+					if (apiUtil->build_db_user_privilege(db_name, username) 
+						&& apiUtil->init_privilege(username, db_name))
+					{
+						ofstream f;
+						f.open(_db_path + "/success.txt");
+						f.close();
+						// add backup.log
+						Util::add_backuplog(db_name);
+						// build response result
+						result = "Import RDF file to database done.";
+						string error_log = _db_path + "/parse_error.log";
+						size_t parse_error_num = Util::count_lines(error_log);
+						// exclude Info line
+						if (parse_error_num > 0)
+							parse_error_num = parse_error_num - 1;
+						if (zip_files.size() > 0)
+							parse_error_num = parse_error_num - zip_files.size();
+						if (parse_error_num > 0)
+						{
+							SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
+							SLOG_ERROR("See log file for details " + error_log);
+						}
+						// remove unzip dir
+						if (!unz_dir_path.empty())
+						{
+							Util::remove_path(unz_dir_path);
+						}
+						Util::add_backuplog(db_name);
+						apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
+						if (async != "true")
+						{
+							rapidjson::Document resp_data;
+							resp_data.SetObject();
+							rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+							resp_data.AddMember("StatusCode", 0, allocator);
+							resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
+							resp_data.AddMember("failed_num", parse_error_num, allocator);
+							resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+							response->Json(resp_data);
+						}
+					}
+					else
+					{
+						result = "Import RDF file to database failed.";
+						rmdir(_db_path.c_str());
+						Util::remove_path(_db_path);
+						if (!unz_dir_path.empty())
+						{
+							Util::remove_path(unz_dir_path);
+						}
+						apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
+						if (async != "true")
+							response->Json(result);
+					}
+				};
+		if (async == "true")
 		{
-			ofstream f;
-			f.open(_db_path + "/success.txt");
-			f.close();
-			// add backup.log
-			Util::add_backuplog(db_name);
-			// build response result
-			result = "Import RDF file to database done.";
-			string error_log = _db_path + "/parse_error.log";
-			size_t parse_error_num = Util::count_lines(error_log);
-			// exclude Info line
-			if (parse_error_num > 0)
-				parse_error_num = parse_error_num - 1;
-			if (zip_files.size() > 0)
-				parse_error_num = parse_error_num - zip_files.size();
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
-			resp_data.AddMember("failed_num", parse_error_num, allocator);
-			if (parse_error_num > 0)
-			{
-				SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
-				SLOG_ERROR("See log file for details " + error_log);
-			}
-			// remove unzip dir
-			if (!unz_dir_path.empty())
-			{
-				Util::remove_path(unz_dir_path);
-			}
-			Util::add_backuplog(db_name);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			response->Json(resp_data);
+			thread t(build_helper, nullptr);
+			t.detach();
 		}
 		else
 		{
-			result = "Import RDF file to database failed.";
-			rmdir(_db_path.c_str());
-			Util::remove_path(_db_path);
-			if (!unz_dir_path.empty())
-			{
-				Util::remove_path(unz_dir_path);
-			}
-			response->Json(result);
+			build_helper(response);
 		}
 	}
 	catch (const std::exception &e)
@@ -2907,65 +2952,106 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		{
 			error = "The operation can not been excuted due to loss of lock.";
 			response->Error(StatusLossOfLock, error);
+			if (!unz_dir_path.empty())
+			{
+				Util::remove_path(unz_dir_path);
+			}
 		}
 		else
 		{
-			string success = "Batch insert data successfully.";
-			unsigned success_num = 0;
-			unsigned total_num = 0;
-			unsigned parse_error_num = 0;
-			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
-			if (is_file)
-			{
-				if (!is_zip)
+			std::string opt_id = apiUtil->generateUid();
+			string remote_ip = task_of(response)->peer_addr();
+			string msg = "Operation Success.";
+			string operation = "batchInsert";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+			string _dir = dir;
+			std::string async = jsonParam(json_data, "async");
+			auto insert_helper = [db_name,is_file,is_zip,file,zip_files,_dir,unz_dir_path,opt_id,async]
+				(GRPCResp *response)
 				{
-					total_num = Util::count_lines(error_log);
-					success_num = current_database->batch_insert(file, false, nullptr);
-					// exclude Info line
-					parse_error_num = Util::count_lines(error_log) - total_num - 1;
-				}
-				else
-				{
-					total_num = Util::count_lines(error_log);
-					for (std::string rdf_zip : zip_files)
+					string success = "Batch insert data successfully.";
+					Database *current_database;
+					apiUtil->get_database(db_name, current_database);
+					unsigned success_num = 0;
+					unsigned total_num = 0;
+					unsigned parse_error_num = 0;
+					string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+					if (is_file)
 					{
-						SLOG_DEBUG("begin insert data from " + rdf_zip);
-						success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+						if (!is_zip)
+						{
+							total_num = Util::count_lines(error_log);
+							success_num = current_database->batch_insert(file, false, nullptr);
+							// exclude Info line
+							parse_error_num = Util::count_lines(error_log) - total_num - 1;
+						}
+						else
+						{
+							total_num = Util::count_lines(error_log);
+							for (std::string rdf_zip : zip_files)
+							{
+								SLOG_DEBUG("begin insert data from " + rdf_zip);
+								success_num += current_database->batch_insert(rdf_zip, false, nullptr);
+							}
+							// exclude Info line
+							parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+						}
 					}
-					// exclude Info line
-					parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
-				}
+					else
+					{
+						vector<string> files;
+						string dir = _dir;
+						apiUtil->string_suffix(dir, '/');
+						Util::dir_files(dir, "", files);
+						total_num = Util::count_lines(error_log);
+						for (string rdf_file : files)
+						{
+							SLOG_DEBUG("begin insert data from " + dir + rdf_file);
+							success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
+						}
+						// exclude Info line
+						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
+					}
+					current_database->save();
+					apiUtil->unlock_database(db_name);
+					if (!unz_dir_path.empty())
+					{
+						Util::remove_path(unz_dir_path);
+					}
+					apiUtil->update_access_log(0, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
+					if (async != "true")
+					{
+						Json resp_data;
+						resp_data.SetObject();
+						Json::AllocatorType &allocator = resp_data.GetAllocator();
+						resp_data.AddMember("StatusCode", 0, allocator);
+						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resp_data.AddMember("success_num", success_num, allocator);
+						resp_data.AddMember("failed_num", parse_error_num, allocator);
+						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						response->Json(resp_data);
+					}
+				};
+			if (async == "true")
+			{
+				Json resp_data;
+				resp_data.SetObject();
+				Json::AllocatorType &allocator = resp_data.GetAllocator();
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+				response->Json(resp_data);
+				thread t(insert_helper, nullptr);
+				t.detach();
 			}
 			else
 			{
-				vector<string> files;
-				apiUtil->string_suffix(dir, '/');
-				Util::dir_files(dir, "", files);
-				total_num = Util::count_lines(error_log);
-				for (string rdf_file : files)
-				{
-					SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-					success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
-				}
-				// exclude Info line
-				parse_error_num = Util::count_lines(error_log) - total_num - files.size();
+				insert_helper(response);
 			}
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resp_data.AddMember("success_num", success_num, allocator);
-			resp_data.AddMember("failed_num", parse_error_num, allocator);
 			
-			response->Json(resp_data);
 		}
-		if (!unz_dir_path.empty())
-		{
-			Util::remove_path(unz_dir_path);
-		}
+			
+			
 	}
 	catch (const std::exception &e)
 	{
@@ -3027,18 +3113,50 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		else
 		{
-			string success = "Batch remove data successfully.";
-			unsigned success_num = current_database->batch_remove(file, false, nullptr);
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
-			response->Json(resp_data);
+			std::string opt_id = apiUtil->generateUid();
+			string remote_ip = task_of(response)->peer_addr();
+			string msg = "Operation Success.";
+			string operation = "batchRemove";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+			std::string async = jsonParam(json_data, "async");
+			auto remove_helper = [db_name,operation,file,opt_id,async]
+				(GRPCResp *response)
+				{
+					Database *current_database;
+					apiUtil->get_database(db_name, current_database);
+					string success = "Batch remove data successfully.";
+					unsigned success_num = current_database->batch_remove(file, false, nullptr);
+					current_database->save();
+					apiUtil->unlock_database(db_name);
+					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
+					if (async != "true")
+					{
+						Json resp_data;
+						resp_data.SetObject();
+						Json::AllocatorType &allocator = resp_data.GetAllocator();
+						resp_data.AddMember("StatusCode", 0, allocator);
+						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
+						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						response->Json(resp_data);
+					}
+				};
+			if (async == "true")
+			{
+				Json resp_data;
+				resp_data.SetObject();
+				Json::AllocatorType &allocator = resp_data.GetAllocator();
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+				response->Json(resp_data);
+				thread t(remove_helper, nullptr);
+				t.detach();
+			}
+			else
+			{
+				remove_helper(response);
+			}
 		}
 	}
 	catch (const std::exception &e)
@@ -3999,6 +4117,44 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	catch (const std::exception &e)
 	{
 		std::string error = "stat fail: " + string(e.what());
+		response->Error(StatusOperationFailed, error);
+	}
+}
+
+void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	string error;
+	string operation = "checkOperationState";
+	try
+	{
+		std::string opt_id = jsonParam(json_data, "opt_id");
+		if (opt_id.empty())
+		{
+			error = "opt_id is empty.";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
+		struct DBAccessLogInfo log;
+		if (!apiUtil->getAccessLogByOptId(opt_id, log))
+		{
+			error = "opt_id not found.";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		string msg = log.getMsg();
+		resp_data.SetObject();
+		resp_data.AddMember("StatusCode", log.getCode(), allocator);
+		resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+		resp_data.AddMember("state", log.getState(), allocator);
+		resp_data.AddMember("success_num", log.getNum(), allocator);
+		resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		response->Json(resp_data);
+	}
+	catch (const std::exception &e)
+	{
+		error = "checkbatchInsertUid fail:" + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }

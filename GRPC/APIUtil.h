@@ -510,6 +510,11 @@ private:
     int code;
     std::string msg;
     std::string createtime;
+    std::string opt_id;
+    std::string endtime;
+    int state;
+    int num;
+    int fail_num;
 public:
     DBAccessLogInfo() {}
     DBAccessLogInfo(string _ip, string _operation, int _code, string _msg, string _createtime) 
@@ -519,6 +524,11 @@ public:
         code = _code;
         msg = _msg;
         createtime = _createtime;
+        opt_id = "";
+        endtime = "";
+        state = 0;
+        num = 0;
+        fail_num = 0;
     }
     DBAccessLogInfo(string json_str)
     {
@@ -536,6 +546,19 @@ public:
                 msg = doc["msg"].GetString();
             if (doc.HasMember("createtime") && doc["createtime"].IsString())
                 createtime = doc["createtime"].GetString();
+            if (checkOperation())
+            {
+                if (doc.HasMember("opt_id") && doc["opt_id"].IsString())
+                    opt_id = doc["opt_id"].GetString();
+                if (doc.HasMember("endtime") && doc["endtime"].IsString())
+                    endtime = doc["endtime"].GetString();
+                if (doc.HasMember("state") && doc["state"].IsInt())
+                    state = doc["state"].GetInt();
+                if (doc.HasMember("num") && doc["num"].IsInt())
+                    num = doc["num"].GetInt();
+                if (doc.HasMember("fail_num") && doc["fail_num"].IsInt())
+                    fail_num = doc["fail_num"].GetInt();
+            }
         }
     }
     std::string getIP() {return ip;}
@@ -543,6 +566,23 @@ public:
     int getCode() {return code;}
     std::string getMsg() {return msg;}
     std::string getCreateTime() {return createtime;}
+    std::string getOptId() {return opt_id;}
+    int getState() {return state;}
+    int getNum() {return num;}
+    int getFailNum() {return fail_num;}
+    void setOptId(const std::string& value) {opt_id = value;}
+    void setCode(int value) {code = value;}
+    void setMsg(const std::string& value) {msg = value;}
+    void setEndTime(const std::string& value) {endtime = value;}
+    void setState(int value) {state = value;}
+    void setNum(int value) {num = value;}
+    void setFailNum(int value) {fail_num = value;}
+    bool checkOperation()
+    {
+        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
+            return true;
+        return false;
+    }
     rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
         rapidjson::Value doc(kObjectType);
@@ -551,6 +591,14 @@ public:
         doc.AddMember("code", code, allocator);
         doc.AddMember("msg", rapidjson::Value().SetString(msg.c_str(), allocator).Move(), allocator);
         doc.AddMember("createtime", rapidjson::Value().SetString(createtime.c_str(), allocator).Move(), allocator);
+        if (checkOperation() && !opt_id.empty())
+        {
+            doc.AddMember("opt_id", rapidjson::Value().SetString(opt_id.c_str(), allocator).Move(), allocator);
+            doc.AddMember("endtime", rapidjson::Value().SetString(endtime.c_str(), allocator).Move(), allocator);
+            doc.AddMember("state", state, allocator);
+            doc.AddMember("num", num, allocator);
+            doc.AddMember("fail_num", fail_num, allocator);
+        }
         return doc;
     }
     std::string toJSON()
@@ -890,6 +938,7 @@ class APIUtil
 {
 private:
     Util util;
+    GenerateUidManager uid_mgr_;
     string default_port = "9000";
     int thread_pool_num = 30;
     
@@ -1010,7 +1059,9 @@ public:
     // for access log
     void get_access_log_files(std::vector<std::string> &file_list);
     void get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs);
-    void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg);
+    void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string optId = "");
+    void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum);
+    bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
     // for query log
     void get_query_log_files(std::vector<std::string> &file_list);
     void get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs);
@@ -1050,4 +1101,6 @@ public:
     size_t get_upload_max_body_size();
     bool check_upload_allow_extensions(const string& suffix);
     bool check_upload_allow_compress_packages(const string& suffix);
+    std::string generateUid(){ return uid_mgr_.NextID(); }
+    std::string getConvertTimeById(const std::string& uid)const{ return uid_mgr_.getConvertTimeById(uid); }
 };
