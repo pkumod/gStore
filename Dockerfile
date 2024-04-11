@@ -72,8 +72,8 @@ COPY backup.json init.conf conf.ini ipAllow.config ipDeny.config slog.properties
 COPY data/ /docker-init/data/
 COPY docker-entrypoint.sh /
 
-WORKDIR /app/
-VOLUME [ "/app/" ]
+WORKDIR /gstore/
+VOLUME [ "/gstore/" ]
 
 RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
 	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
