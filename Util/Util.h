@@ -430,6 +430,7 @@ public:
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
 	static std::string getExactPath(const char* path);
+	static bool checkProcessExist(const std::string& processPath, const std::string& currPid);
 	static std::string getItemsFromDir(std::string path);
 	static void logging(std::string _str);
 	static void empty_file(const char* _fname);
