@@ -1487,7 +1487,47 @@ Util::getExactPath(const char *str)
     }
     return real_path;
 }
-
+// chek process exist by proc file
+bool
+Util::checkProcessExist(const std::string& processPath, const std::string& currPid)
+{
+    std::string procPath = "/proc";
+    DIR *dirp = opendir(procPath.c_str());
+    if (dirp == NULL) {
+        #ifdef DEBUG
+        std::cerr << "Error opening /proc directory." << std::endl;
+        #endif
+        return false;
+    }
+     // read all files of /proc 
+    struct dirent *dir_entry = NULL;
+    string line;
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        if (dir_entry->d_type == DT_DIR)
+        {
+            line = dir_entry->d_name;
+            if (Util::is_number(line) && line != currPid) 
+            {
+                // concat full pid file path
+                std::string pidFilePath = procPath + "/" + line + "/exe";
+                std::ifstream pidFile(pidFilePath);
+                // check pid exe file
+                if (pidFile.is_open()) {
+                    // get pid exe linked file
+                    std::string pidExeLinkPath = Util::getExactPath(pidFilePath.c_str());
+                    if (pidExeLinkPath == processPath) {
+                        pidFile.close();
+                        return true;
+                    }
+                    pidFile.close();
+                }
+            }
+        }
+    }
+    closedir(dirp);
+    return false;
+}
 void
 Util::logging(string _str)
 {
