@@ -469,17 +469,6 @@ ThreadPool pool;
 
 int main(int argc, char *argv[])
 {
-	// check ghttp thread
-	string running_pid = Util::getSystemOutput("pidof " + Util::getExactPath(argv[0]));
-	string current_pid = to_string(getpid());
-	std::cout << "running_pid: " << running_pid << endl;
-	std::cout << "current_pid: " << current_pid << endl;
-	
-	if (running_pid != current_pid)
-	{
-		cout << "ghttp server already running." << endl;
-		return 0;
-	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
 	pfnUtil = new PFNUtil();
@@ -505,7 +494,7 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "gStore HTTP Server(ghttp)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/ghttp -db [dbname] -p [port] -c [enable]" << endl;
+			cout << "Usage:\tbin/ghttp -p [port] -db [dbname] -c [enable]" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
@@ -539,7 +528,14 @@ int main(int argc, char *argv[])
 		port = Util::string2int(port_str);
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
 	}
-
+	// check ghttp thread
+	std::string processPath = Util::getExactPath(argv[0]);
+	std::string currPid = to_string(getpid());
+	if (Util::checkProcessExist(processPath, currPid))
+	{
+		cout << "ghttp server already running." << endl;
+		return 0;
+	}
 	// check port
 	int max_try = 20;
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);

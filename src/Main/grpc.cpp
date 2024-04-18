@@ -152,17 +152,6 @@ void sig_handler(int signo)
 
 int main(int argc, char *argv[])
 {
-	// check grpc thread
-	string running_pid = Util::getSystemOutput("pidof " + Util::getExactPath(argv[0]));
-	string current_pid = to_string(getpid());
-	std::cout << "running_pid: " << running_pid << endl;
-	std::cout << "current_pid: " << current_pid << endl;
-	
-	if (running_pid != current_pid)
-	{
-		cout << "grpc server already running." << endl;
-		return 0;
-	}
 	srand(time(NULL));
 	apiUtil = new APIUtil();
 	pfnUtil = new PFNUtil();
@@ -187,7 +176,7 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "gStore RPC Server(grpc)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/grpc -p [port]" << endl;
+			cout << "Usage:\tbin/grpc -p [port] -db [dbname] -c [enable]" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
@@ -219,6 +208,14 @@ int main(int argc, char *argv[])
 		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
 		port = atoi(port_str.c_str());
 		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
+	}
+	// check grpc thread
+	std::string processPath = Util::getExactPath(argv[0]);
+	std::string currPid = to_string(getpid());
+	if (Util::checkProcessExist(processPath, currPid))
+	{
+		cout << "grpc server already running." << endl;
+		return 0;
 	}
 	// check port
 	int max_try = 20;
