@@ -3466,7 +3466,11 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		url = request->path;
 		url = UrlDecode(url);
 		SLOG_DEBUG("get url: \n" + url);
-
+		if (url.find("operation") == string::npos)
+		{
+			sendResponseMsg(14, "GET " + url, "unknown", request, response);
+			return;
+		}
 		operation = WebUrl::CutParam(url, "operation");
 		username = WebUrl::CutParam(url, "username");
 		password = WebUrl::CutParam(url, "password");
