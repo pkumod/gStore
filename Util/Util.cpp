@@ -296,6 +296,7 @@ bool Util::configure_new()
     Util::setGlobalConfig(ini_parser, "upload", "upload_path");
     Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
+    Util::setGlobalConfig(ini_parser, "backup", "max_backups");
     if (Util::getConfigureValue("backup_path").empty() == false)
     {
         Util::backup_path = Util::getConfigureValue("backup_path");
