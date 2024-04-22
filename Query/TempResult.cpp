@@ -940,6 +940,18 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		ret_femv.datatype = EvalMultitypeValue::literal;
 		ret_femv.deduceTermValue();
 		return ret_femv;
+	} else if (root.oprt == "STRLEN") {
+		// xsd:integer  STRLEN(string literal str)
+		// TODO: 对中文的支持
+		EvalMultitypeValue x;
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		if (x.datatype != EvalMultitypeValue::literal && x.datatype != EvalMultitypeValue::xsd_string) {
+			ret_femv.int_value = -1;
+			return ret_femv;
+		}
+		ret_femv.int_value = x.getStrContent().length();
+		ret_femv.datatype = EvalMultitypeValue::xsd_integer;
+		return ret_femv;
 	}
 	else if (root.oprt == "STR")
 	{
