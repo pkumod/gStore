@@ -904,6 +904,42 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		ret_femv.datatype = EvalMultitypeValue::literal;
 		ret_femv.deduceTermValue();
 		return ret_femv;
+	} else if (root.oprt == "SUBSTR") {
+		// string literal  SUBSTR(string literal source, xsd:integer startingLoc)
+		// string literal  SUBSTR(string literal source, xsd:integer startingLoc, xsd:integer length)
+		// TODO: 对中文的支持
+		size_t numChild = root.children.size();
+		if (numChild < 2 || numChild > 3) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		EvalMultitypeValue x, y, z;
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		if (x.datatype != EvalMultitypeValue::literal && x.datatype != EvalMultitypeValue::xsd_string) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset);
+		if (y.datatype != EvalMultitypeValue::xsd_integer) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		string source = x.getStrContent();
+		int startingLoc = y.int_value;
+		if (numChild == 2) {
+			ret_femv.str_value = '\"' + source.substr(startingLoc - 1) + '\"';
+		} else {
+			z = doComp(root.children[2], row, id_cols, kvstore, this_varset);
+			if (z.datatype != EvalMultitypeValue::xsd_integer) {
+				ret_femv.str_value.clear();
+				return ret_femv;
+			}
+			int length = z.int_value;
+			ret_femv.str_value = '\"' + source.substr(startingLoc - 1, length) + '\"';
+		}
+		ret_femv.datatype = EvalMultitypeValue::literal;
+		ret_femv.deduceTermValue();
+		return ret_femv;
 	}
 	else if (root.oprt == "STR")
 	{
