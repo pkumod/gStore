@@ -804,7 +804,8 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				&& funcName != "UCASE" && funcName != "LCASE" && funcName != "STRSTARTS" \
 				&& funcName != "NOW" && funcName != "YEAR" && funcName != "MONTH" \
 				&& funcName != "DAY" && funcName != "HOURS" && funcName != "MINUTES" \
-				&& funcName != "ABS" && funcName != "REGEX" && funcName != "IF")
+				&& funcName != "ABS" && funcName != "REGEX" && funcName != "IF" \
+				&& funcName != "REPLACE")
 				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
 			curr_node.oprt = funcName;
 			if (funcName == "BOUND")

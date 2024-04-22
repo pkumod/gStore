@@ -41,6 +41,16 @@ class RegexExpression
 				return false;
 			}
 		}
+
+		std::string replace(std::string &pText, std::string &pReplaceStr)
+		{
+			try {
+				std::string ret = regex_replace(pText, pattern, pReplaceStr);
+				return ret;
+			} catch (regex_error& e) {
+				return "";
+			}
+		}
 };
 
 #endif // _QUERY_REGEXEXPRESSION_H

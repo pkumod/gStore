@@ -858,6 +858,52 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		ret_femv.datatype = EvalMultitypeValue::literal;
 		ret_femv.deduceTermValue();
 		return ret_femv;
+	} else if (root.oprt == "REPLACE") {
+		//  string literal  REPLACE (string literal arg, simple literal pattern, simple literal replacement )
+		//  string literal  REPLACE (string literal arg, simple literal pattern, simple literal replacement,  simple literal flags)
+		size_t numChild = root.children.size();
+		if (numChild < 3 || numChild > 4) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		EvalMultitypeValue x, y, z;
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		if (x.datatype != EvalMultitypeValue::literal && x.datatype != EvalMultitypeValue::xsd_string) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset);
+		if (!y.isSimpleLiteral()) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		z = doComp(root.children[2], row, id_cols, kvstore, this_varset);
+		if (!z.isSimpleLiteral()) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		string arg = x.str_value.substr(1, x.str_value.rfind('\"') - 1);
+		string pattern = y.str_value.substr(1, y.str_value.rfind('\"') - 1);
+		string replacement = z.str_value.substr(1, z.str_value.rfind('\"') - 1);
+		string flags = "";
+		if (numChild == 4) {
+			EvalMultitypeValue f;
+			f = doComp(root.children[3], row, id_cols, kvstore, this_varset);
+			if (!f.isSimpleLiteral()) {
+				ret_femv.str_value.clear();
+				return ret_femv;
+			}
+			flags = f.str_value.substr(1, f.str_value.rfind('\"') - 1);
+		}
+		RegexExpression re;
+		if (!re.compile(pattern, flags)) {
+			ret_femv.str_value.clear();
+			return ret_femv;
+		}
+		ret_femv.str_value = '\"' + re.replace(arg, replacement) + '\"';
+		ret_femv.datatype = EvalMultitypeValue::literal;
+		ret_femv.deduceTermValue();
+		return ret_femv;
 	}
 	else if (root.oprt == "STR")
 	{
