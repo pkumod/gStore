@@ -907,7 +907,6 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 	} else if (root.oprt == "SUBSTR") {
 		// string literal  SUBSTR(string literal source, xsd:integer startingLoc)
 		// string literal  SUBSTR(string literal source, xsd:integer startingLoc, xsd:integer length)
-		// TODO: 对中文的支持
 		size_t numChild = root.children.size();
 		if (numChild < 2 || numChild > 3) {
 			ret_femv.str_value.clear();
@@ -926,8 +925,11 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		}
 		string source = x.getStrContent();
 		int startingLoc = y.int_value;
+		// using wstring to support multi-byte characters
+		wstring_convert<codecvt_utf8<wchar_t>> conv;
+		wstring wstr = conv.from_bytes(source);
 		if (numChild == 2) {
-			ret_femv.str_value = '\"' + source.substr(startingLoc - 1) + '\"';
+			ret_femv.str_value = '\"' + conv.to_bytes(wstr.substr(startingLoc)) + '\"';
 		} else {
 			z = doComp(root.children[2], row, id_cols, kvstore, this_varset);
 			if (z.datatype != EvalMultitypeValue::xsd_integer) {
@@ -935,21 +937,23 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 				return ret_femv;
 			}
 			int length = z.int_value;
-			ret_femv.str_value = '\"' + source.substr(startingLoc - 1, length) + '\"';
+			ret_femv.str_value = '\"' + conv.to_bytes(wstr.substr(startingLoc, length)) + '\"';
 		}
 		ret_femv.datatype = EvalMultitypeValue::literal;
 		ret_femv.deduceTermValue();
 		return ret_femv;
 	} else if (root.oprt == "STRLEN") {
 		// xsd:integer  STRLEN(string literal str)
-		// TODO: 对中文的支持
 		EvalMultitypeValue x;
 		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
 		if (x.datatype != EvalMultitypeValue::literal && x.datatype != EvalMultitypeValue::xsd_string) {
 			ret_femv.int_value = -1;
 			return ret_femv;
 		}
-		ret_femv.int_value = x.getStrContent().length();
+		// using wstring to support multi-byte characters
+		wstring_convert<codecvt_utf8<wchar_t>> conv;
+		wstring wstr = conv.from_bytes(x.getStrContent());
+		ret_femv.int_value = wstr.length();
 		ret_femv.datatype = EvalMultitypeValue::xsd_integer;
 		return ret_femv;
 	}
