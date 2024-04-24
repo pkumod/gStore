@@ -1214,6 +1214,47 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 
 		return ret_femv;
 	}
+	else if (root.oprt == "STRENDS")
+	{
+		EvalMultitypeValue x, y;
+
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset);
+		if(x.argCompatible(y))
+		{
+			string x_content = x.getStrContent(), y_content = y.getStrContent();
+			size_t p = x_content.rfind(y_content);
+			if (p != string::npos && p == x_content.length() - y_content.length())
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+			else
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "STRBEFORE" || root.oprt == "STRAFTER")
+	{
+		EvalMultitypeValue x, y;
+
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset);
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset);
+		if(x.argCompatible(y))
+		{
+			string x_content = x.getStrContent(), y_content = y.getStrContent();
+			size_t p = x_content.find(y_content);
+			if (p != string::npos)
+			{
+				if (root.oprt == "STRBEFORE")
+					ret_femv.str_value = '\"' + x_content.substr(0, p) + '\"';
+				else
+					ret_femv.str_value = '\"' + x_content.substr(p + y_content.length()) + '\"';
+			}
+		}
+
+		ret_femv.datatype = EvalMultitypeValue::literal;
+		ret_femv.deduceTermValue();
+		return ret_femv;
+	}
 	else if (root.oprt == "ABS")
 	{
 		EvalMultitypeValue x;
