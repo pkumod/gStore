@@ -483,7 +483,7 @@ $(objdir)DPBTopKUtil.o: Query/topk/DPBTopKUtil.cpp Query/topk/DPBTopKUtil.h $(fi
 
 
 #no more using $(objdir)Database.o
-$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h \
+$(objdir)GeneralEvaluation.o: Query/GeneralEvaluation.cpp Query/GeneralEvaluation.h Query/RegexExpression.h Query/AndOrDag.h \
 	$(filter $(FIRST_BUILD),$(objdir)StringIndex.o) $(filter $(FIRST_BUILD),$(objdir)QueryParser.o) \
 	$(filter $(FIRST_BUILD),$(objdir)EvalMultitypeValue.o) $(filter $(FIRST_BUILD),$(objdir)SPARQLquery.o) \
 	$(filter $(FIRST_BUILD),$(objdir)QueryCache.o) $(filter $(FIRST_BUILD),$(objdir)ResultSet.o) \
