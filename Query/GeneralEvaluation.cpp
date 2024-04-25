@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "GeneralEvaluation.h"
+#include "AndOrDag.h"
 
 using namespace std;
 
@@ -4218,6 +4219,16 @@ void GeneralEvaluation::addAllTriples(const GroupPattern &group_pattern)
 					group_pattern.sub_group_pattern[i].pattern.object.value));
 		}
 	}
+}
+
+void GeneralEvaluation::execPropPath(TempResultSet *temp, TempResult * const tr,
+const string &subject, const string &predicate, const string &object, int dep) {
+	AndOrDag aod(csr);
+	// Yue TODO: addWorkloadQuery. After this, we can assume the AODC has been fully built
+	aod.initAuxiliary();
+	aod.annotateLeafCostCard();
+	aod.plan();
+	aod.execute();
 }
 
 // Input: tr; Output: temp
