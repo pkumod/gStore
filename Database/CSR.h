@@ -22,10 +22,11 @@ public:
 	unsigned w;
 	unsigned n,m;
 
-	// One for each predicate
-	std::vector<unsigned> *id2vid;	// Index to subject/object ID
-    std::map<unsigned, unsigned> *vid2id;	// Subject/object ID to index
-	std::vector<unsigned> *offset_list;	// Offset in adjacency list
+	// A CSR for each predicate. For example, for the predicate p, use id2vid[p], vid2id[p], etc.
+	std::vector<unsigned> *id2vid;	// Index (subscript) in offset_list to subject/object external ID
+    std::map<unsigned, unsigned> *vid2id;	// Subject/object external ID to index (subscript) in offset_list
+	std::vector<unsigned> *offset_list;	// Offsets in adjacency list
+	// adjacency_list[p][offset_list[i]...offset_list[i+1]-1] are the external IDs of the neighbors of i
 	std::vector<unsigned> *adjacency_list;
 	// bool *valid;
 	CSR();
