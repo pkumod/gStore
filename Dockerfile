@@ -59,17 +59,22 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/src/gstore/bin/ /usr/local/bin/
-
-COPY --from=builder /usr/src/gstore/lib/ /docker-init/lib/
-
-COPY --from=builder /usr/src/gstore/Query/ /docker-init/Query/
-
-COPY --from=builder /usr/src/gstore/Database/ /docker-init/Database/
-
-COPY backup.json init.conf conf.ini ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
-    /docker-init/
-COPY data/ /docker-init/data/
+COPY --from=builder /usr/src/gstore/bin/ /gstore/bin/
+COPY --from=builder /usr/src/gstore/lib/ /gstore/lib/
+COPY --from=builder /usr/src/gstore/data/ /gstore/data/
+COPY --from=builder /usr/src/gstore/backups/ /gstore/backups/
+COPY --from=builder /usr/src/gstore/logs/ /gstore/logs/
+COPY --from=builder /usr/src/gstore/.tmp/ /gstore/.tmp/
+# configure file
+COPY --from=builder /usr/src/gstore/Query/ /gstore/Query/
+COPY --from=builder /usr/src/gstore/Database/ /gstore/Database/
+COPY --from=builder /usr/src/gstore/backup.json /gstore/
+COPY --from=builder /usr/src/gstore/init.conf /gstore/
+COPY --from=builder /usr/src/gstore/conf.ini /gstore/
+COPY --from=builder /usr/src/gstore/ipAllow.config /gstore/
+COPY --from=builder /usr/src/gstore/ipDeny.config /gstore/
+COPY --from=builder /usr/src/gstore/slog.properties /gstore/
+COPY --from=builder /usr/src/gstore/slog.stdout.properties /gstore/
 COPY docker-entrypoint.sh /
 
 WORKDIR /gstore/
