@@ -1911,6 +1911,26 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			_path = path + new_folder;
 			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
 			system(sys_cmd.c_str());
+			vector<string> files;
+			Util::dir_files(path, "", files);
+			int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
+			std::string db_file_suffix = db_name + _db_suffix;
+			int db_file_suffix_size = db_file_suffix.size();
+			std::string db_file_min;
+			unsigned int backup_num = 0;
+			for (auto& file_name : files)
+			{
+				if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
+				{
+					if (db_file_min.empty() || file_name < db_file_min)
+						db_file_min = file_name;
+					backup_num++;
+				}
+			}
+			if (backup_num > max_backups)
+			{
+				Util::remove_path(path + db_file_min);
+			}
 
 			SLOG_DEBUG("database backup done: " + db_name);
 			string success = "Database backup successfully.";
