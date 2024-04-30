@@ -1865,8 +1865,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			if (backup_num > max_backups)
 			{
-				sys_cmd = "rm -rf " + path + db_file_min;
-				system(sys_cmd.c_str());
+				Util::remove_path(path + db_file_min);
 			}
 
 			SLOG_DEBUG("database backup done: " + db_name);

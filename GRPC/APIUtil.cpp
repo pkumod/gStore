@@ -2762,7 +2762,7 @@ string APIUtil::fun_build(const std::string &username, const std::string fun_nam
         {
             string oldMd5Str = util.md5(fun_info->getLastTime());
             string rmOldSo = usingPath +"/lib" + file_name + oldMd5Str + ".so";
-        Util::remove_path(targetFile);
+            Util::remove_path(targetFile);
         }
         //mv the new into using Path
         string mvCmd = "mv " +  targetFile + " " + usingPath +"/";
