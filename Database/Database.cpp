@@ -4218,15 +4218,9 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 				if (txn == nullptr)
 				{
 					if (type == UPDATE_TYPE::SUBJECT_INSERT)
-					{
 						update_num += this->kvstore->updateInsert_s2values(sub_id, data);
-						updateUmap(type, data);
-					}
 					else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
-					{
 						update_num += this->kvstore->updateRemove_s2values(sub_id, data);
-						updateUmap(type, data);
-					}
 				}
 				else
 				{
@@ -4240,15 +4234,9 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 		if (txn == nullptr)
 		{
 			if (type == UPDATE_TYPE::SUBJECT_INSERT)
-			{
 				update_num += this->kvstore->updateInsert_s2values(sub_id, data);
-				updateUmap(type, data);
-			}
 			else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
-			{
 				update_num += this->kvstore->updateRemove_s2values(sub_id, data);
-				updateUmap(type, data);
-			}
 		}
 		else
 		{
@@ -4269,6 +4257,7 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 			{
 				if (txn == nullptr)
 				{
+					updateUmap(type, data, pre_id);
 					if (type == UPDATE_TYPE::PREDICATE_INSERT)
 						update_num += this->kvstore->updateInsert_p2values(pre_id, data);
 					else if (type == UPDATE_TYPE::PREDICATE_REMOVE)
@@ -4285,6 +4274,7 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 		}
 		if (txn == nullptr)
 		{
+			updateUmap(type, data, pre_id);
 			if (type == UPDATE_TYPE::PREDICATE_INSERT)
 				update_num += this->kvstore->updateInsert_p2values(pre_id, data);
 			else if (type == UPDATE_TYPE::PREDICATE_REMOVE)
@@ -4310,15 +4300,9 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 				if (txn == nullptr)
 				{
 					if (type == UPDATE_TYPE::OBJECT_INSERT)
-					{
 						update_num += this->kvstore->updateInsert_o2values(obj_id, data);
-						updateUmap(type, data);
-					}
 					else if (type == UPDATE_TYPE::OBJECT_REMOVE)
-					{
 						update_num += this->kvstore->updateRemove_o2values(obj_id, data);
-						updateUmap(type, data);
-					}
 				}
 				else
 				{
@@ -4335,15 +4319,9 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 		if (txn == nullptr)
 		{
 			if (type == UPDATE_TYPE::OBJECT_INSERT)
-			{
 				update_num += this->kvstore->updateInsert_o2values(obj_id, data);
-				updateUmap(type, data);
-			}
 			else if (type == UPDATE_TYPE::OBJECT_REMOVE)
-			{
 				update_num += this->kvstore->updateRemove_o2values(obj_id, data);
-				updateUmap(type, data);
-			}
 		}
 		else
 		{
@@ -4919,46 +4897,74 @@ unordered_map<string, unsigned long long> Database::getStatisticsInfo()
 	return this->umap;
 }
 
-void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoidlist)
+void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id)
 {
+	if (_sidoidlist.size() == 0)
+		return;
+	string _pre = this->kvstore->getPredicateByID(pred_id);
+	if (!this->checkIsTypePredicate(_pre))
+		return;
 	umap_lock.lock();
-	for(unsigned i = 0; i < _pidoidlist.size(); i += 2)
-    {
-		TYPE_ENTITY_LITERAL_ID preid = _pidoidlist[i];
-		TYPE_ENTITY_LITERAL_ID objid = _pidoidlist[i+1];
-		if (type == UPDATE_TYPE::SUBJECT_INSERT)
+	std::map<unsigned, set<unsigned>> sub_obj_list;
+	if (type == UPDATE_TYPE::PREDICATE_INSERT)
+	{
+		TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
+		TYPE_ENTITY_LITERAL_ID edge_list_len;
+		this->kvstore->getsubIDobjIDlistBypreID(pred_id, edge_candidate_list, edge_list_len);
+		edge_list_len = edge_list_len/2;
+		for (size_t i =0; i < edge_list_len; i++)
 		{
+			auto subid = edge_candidate_list[2*i];
+			auto objid = edge_candidate_list[2*i+1];
+			if (!Util::is_entity_ele(objid))
+				continue;
+			sub_obj_list[subid].insert(objid);
+		}
+		delete [] edge_candidate_list;
+		edge_candidate_list = nullptr;
+
+		for(unsigned i = 0; i < _sidoidlist.size(); i += 2)
+    	{
+			auto subid = _sidoidlist[i];
+			auto objid = _sidoidlist[i+1];
+			if (!Util::is_entity_ele(objid))
+				continue;
 			string _obj = this->kvstore->getEntityByID(objid);
-			string _pre = this->kvstore->getPredicateByID(preid);
-			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
+			if (_obj.empty())
+				continue;
+			auto it = sub_obj_list.find(subid);
+			if (it != sub_obj_list.end() && it->second.find(objid) != it->second.end())
+				continue;
+			auto obj_it = this->umap.find(_obj);
+			if (obj_it != this->umap.end())
 			{
-				auto it = this->umap.find(_obj);
-				if (it != this->umap.end())
-				{
-					it->second = it->second + 1;
-				}
+				obj_it->second = obj_it->second + 1;
+			}
+			else
+			{
+				this->umap.insert(pair<string, unsigned long long>(_obj, 1));
+			}
+		}
+	}
+	else if (type == UPDATE_TYPE::PREDICATE_REMOVE)
+	{
+		for (unsigned i = 0; i < _sidoidlist.size(); i += 2)
+		{
+			auto objid = _sidoidlist[i+1];
+			if (!Util::is_entity_ele(objid))
+				continue;
+			string _obj = this->kvstore->getEntityByID(objid);
+			if (_obj.empty())
+				continue;
+			auto it = this->umap.find(_obj);
+			if (it != this->umap.end())
+			{
+				if (it->second <= 1)
+					umap.erase(it);
 				else
-				{
-					this->umap.insert(pair<string, unsigned long long>(_obj, 1));
-				}
+					it->second = it->second - 1;
 			}
 		}
-		else if (type == UPDATE_TYPE::SUBJECT_REMOVE)
-		{
-			string _obj = this->kvstore->getEntityByID(objid);
-			string _pre = this->kvstore->getPredicateByID(preid);
-			if (!_obj.empty() && this->checkIsTypePredicate(_pre))
-			{
-				auto it = this->umap.find(_obj);
-				if (it != this->umap.end())
-				{
-					if (it->second <= 1)
-						umap.erase(it);
-					else
-						it->second = it->second - 1;
-				}
-			}
-		}
-    }
+	}
 	umap_lock.unlock();
 }
