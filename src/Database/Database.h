@@ -357,7 +357,7 @@ private:
 	bool restore_update(multiset<string> &_i, multiset<string> &_r);
 	void clear_update_log();
 	bool write_update_log(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
-	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _pidoidlist);
+	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id);
 };
 
 #endif //_DATABASE_DATABASE_H
