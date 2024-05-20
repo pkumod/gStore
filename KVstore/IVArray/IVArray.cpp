@@ -380,9 +380,12 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 	// TODO maybe sometimes not to write in disk, but stored in main memory
 	if (VList::isLongList(_len))
 	{
+		array[_key].release();
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
+			std::cout << "error: IVArray insert write value failed" << std::endl;
+			this->CacheLock.unlock();
 			return false;
 		}
 		array[_key].setStore(store);
@@ -422,8 +425,7 @@ IVArray::remove(unsigned _key)
 			array[_key].setCachePinFlag(false);
 
 		char *str = NULL;
-		unsigned long len = 0;
-		array[_key].getBstr(str, len, false);
+		unsigned long len = array[_key].getBstrLen();
 		CurCacheSize -= len;
 		array[_key].setCacheFlag(false);
 	}
@@ -456,21 +458,57 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 			array[_key].setCachePinFlag(false);
 
 		char* str = NULL;
-		unsigned long len = 0;
-		array[_key].getBstr(str, len, false);
-
+		unsigned long len = array[_key].getBstrLen();
+		unsigned store = array[_key].getStore();
+		BM->FreeBlocks(store);
 		array[_key].release();
 		CurCacheSize -= len;
-		AddInCache(_key, _str, _len);
+
+		if (VList::isLongList(_len))
+		{
+			unsigned store = BM->WriteValue(_str, _len);
+			if (store == 0)
+			{
+				std::cout << "error: IVArray modify in cache write value failed" << std::endl;
+				this->CacheLock.unlock();
+				return false;
+			}
+			array[_key].setStore(store);
+			array[_key].setCacheFlag(false);
+		}
+		else
+		{
+			array[_key].setStore(0);
+			AddInCache(_key, _str, _len);
+		}
 	}
 	else
 	{
 		//cout << "free disk and set" << endl;
 		unsigned store = array[_key].getStore();
 		BM->FreeBlocks(store);
-		AddInCache(_key, _str, _len);
-		
+		array[_key].release();
+		if (VList::isLongList(_len))
+		{
+			unsigned store = BM->WriteValue(_str, _len);
+			if (store == 0)
+			{
+				std::cout << "error: IVArray modify no cache write value failed" << std::endl;
+				this->CacheLock.unlock();
+				return false;
+			}
+			array[_key].setStore(store);
+			array[_key].setCacheFlag(false);
+		}
+		else
+		{
+			array[_key].setStore(0);
+			AddInCache(_key, _str, _len);
+		}
 	}
+	
+	array[_key].setUsedFlag(true);
+	array[_key].setDirtyFlag(true);
 	this->CacheLock.unlock();
 	return true;
 	

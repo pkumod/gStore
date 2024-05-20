@@ -88,7 +88,7 @@ IVBlockManager::IVBlockManager(string& _filename, string& _mode, unsigned _keynu
 
 			pread(fd, &tmp_index, 1 * sizeof(unsigned), offset * sizeof(unsigned));
 			offset++;
-		}
+		}	
 	}
 }
 
@@ -324,7 +324,7 @@ IVBlockManager::FreeBlocks(const unsigned index)
 
 		pread(fd, &next_index, 1 * sizeof(unsigned), offset);
 
-		if (next_index - index == 1) // continuous
+		if (next_index - _index == 1) // continuous
 		{
 			curlen++;
 		}
