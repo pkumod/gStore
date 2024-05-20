@@ -69,6 +69,13 @@ IVEntry::getBstr(char *& _str, unsigned long &_len, bool if_copy) const
 	return true;
 }
 
+unsigned long IVEntry::getBstrLen()const
+{
+	if (value == NULL)
+		return 0;
+	return value->getLen();
+}
+
 void
 IVEntry::setStore(unsigned _store)
 {

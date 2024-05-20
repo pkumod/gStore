@@ -41,6 +41,7 @@ public:
 	enum class LatchType { SHARED, EXCLUSIVE};
 	void setBstr(const Bstr* _value);
 	bool getBstr(char *& _str, unsigned long& _len, bool if_copy = true) const;
+	unsigned long getBstrLen()const;
 	void setBstr(char *_str, unsigned long _len);
 	
 	void setStore(unsigned _store);

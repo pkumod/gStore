@@ -318,7 +318,7 @@ ISBlockManager::FreeBlocks(const unsigned index)
 
 		pread(fd, &next_index, 1 * sizeof(unsigned), offset);
 
-		if (next_index - index == 1) // continuous
+		if (next_index - _index == 1) // continuous
 		{
 			curlen++;
 		}
@@ -367,11 +367,14 @@ ISBlockManager::FreeBlocks(const unsigned index)
 
 ISBlockManager::~ISBlockManager()
 {
-	if (BlockToWrite != NULL)
+	BlockInfo* p = BlockToWrite;
+	while (p != NULL)
 	{
-		delete BlockToWrite;
-		BlockToWrite = NULL;
+		BlockInfo *np = p->next;
+		delete p;
+		p = np;
 	}
+	BlockToWrite = NULL;
 	fclose(FreeBlockList);
 	fclose(ValueFile);
 }
