@@ -3059,6 +3059,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	int batch_count = 0;
 	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
+	std::map<int, vector<ID_TUPLE>> id_tuples;
 	while (true)
 	{
 		++batch_count;
@@ -3164,21 +3165,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 					(this->kvstore)->setIDByEntity(_obj, _obj_id);
 					(this->kvstore)->setEntityByID(_obj_id, _obj);
 				}
-
-				// when the predicat is type
-				if (this->checkIsTypePredicate(_pre))
-				{
-					auto it = this->umap.find(_obj);
-					if (it != this->umap.end())
-					{
-						it->second = it->second + 1;
-					}
-					else
-					{
-						this->umap.insert(pair<string, unsigned long long>(_obj, 1));
-					}
-					// cout<<"the umap size is "<<umap.size()<<endl;
-				}
 			}
 			// obj is literal
 			if (triple_array[i].isObjLiteral())
@@ -3205,6 +3191,9 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			tmp_id_tuple.subid = _sub_id;
 			tmp_id_tuple.preid = _pre_id;
 			tmp_id_tuple.objid = _obj_id;
+			// when the predicat is type
+			if (triple_array[i].isObjEntity() && this->checkIsTypePredicate(_pre))
+				id_tuples[_obj_id].push_back(tmp_id_tuple);
 			fwrite(&tmp_id_tuple, sizeof(ID_TUPLE), 1, fp);
 
 #ifdef DEBUG_PRECISE
@@ -3220,6 +3209,20 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 		if (!bar.is_completed())
 			bar.set_progress(100);
 	}
+	for (const auto& m: id_tuples)
+	{
+		std::string obj_v = (this->kvstore)->getEntityByID(m.first);
+		if (obj_v.empty())
+			continue;
+		auto obj_array = m.second;
+		sort(obj_array.begin(), obj_array.end(), Util::spo_cmp_idtuple);
+		auto new_end = unique(obj_array.begin(), obj_array.end(), Util::equal);
+		obj_array.erase(new_end, obj_array.end());
+		if (obj_array.size() == 0)
+			continue;
+		this->umap.insert(pair<string, unsigned long long>(obj_v, obj_array.size()));
+	}
+
 	this->kvstore->set_if_single_thread(false);
 
 	delete[] triple_array;
