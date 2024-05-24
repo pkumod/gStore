@@ -9,6 +9,7 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../Util/CompressFileUtil.h"
 //#include "../Util/Slog.h"
 
 using namespace std;
@@ -111,15 +112,29 @@ main(int argc, char * argv[])
 			return 0;
 		}
 
+		bool is_zip = false;
 		if (backup_path[0] == '/')
 			backup_path = '.' + backup_path;
 		if (backup_path[backup_path.length() - 1] == '/')
 			backup_path = backup_path.substr(0, backup_path.length() - 1);
-
-		if (!Util::dir_exist(backup_path))
+		string base_path = backup_path;
+		if (Util::fileSuffix(backup_path) == "zip")
 		{
-			cout << "the backup path error, restore failed." << endl;
-			return 0;
+			is_zip = true;
+			if (Util::file_exist(backup_path) == false)
+			{
+				cout << "the backup path error, restore failed." << endl;
+				return 0;
+			}
+			backup_path = backup_path.substr(0, backup_path.length() - 4);
+		}
+		else
+		{
+			if (Util::dir_exist(backup_path) == false)
+			{
+				cout << "the backup path error, restore failed." << endl;
+				return 0;
+			}
 		}
 		//system.db
 		Database system_db("system");
@@ -156,7 +171,26 @@ main(int argc, char * argv[])
 			Util::add_backuplog(db_name);
 		}
 
-		int ret = copy(backup_path, _db_home);
+		int ret = 0;
+		if (is_zip)
+		{
+			if (Util::dir_exist(backup_path))
+				Util::remove_path(backup_path);
+			mkdir(backup_path.c_str(), 0775);
+			CompressUtil::UnCompressZip unzip(base_path, backup_path);
+			if (unzip.unCompress() != CompressUtil::UnZipOK)
+			{
+				Util::remove_path(backup_path);
+				std::cout << "backup compress fail" << std::endl;;
+				return 0;
+			}
+			ret = copy(backup_path, _db_home);
+			Util::remove_path(backup_path);
+		}
+		else
+		{
+			ret = copy(backup_path, _db_home);
+		}
 
 
 		if (ret == 1)

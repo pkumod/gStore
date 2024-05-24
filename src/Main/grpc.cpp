@@ -1798,6 +1798,10 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string backup_path = jsonParam(json_data, "backup_path");
 		std::string error = apiUtil->check_param_value("db_name", db_name);
+		std::string compress_zip = jsonParam(json_data, "backup_zip");
+		bool backup_zip = false;
+		if (compress_zip == "true")
+			backup_zip = true;
 
 		if (error.empty() == false)
 		{
@@ -1812,12 +1816,6 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		Database* current_db;
 		apiUtil->get_database(db_name, current_db);
-		if (current_db == NULL)
-		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
 		struct DatabaseInfo *db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
@@ -1841,7 +1839,16 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
-		bool flag = current_db->backup();
+		bool flag = false;
+		if (current_db)
+		{
+			flag = current_db->backup();
+		}
+		else
+		{
+			Database _db(db_name);
+			flag = _db.backup();
+		}
 		if(flag == false)
 		{
 			error = "Failed to backup the database.";
@@ -1852,11 +1859,28 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			string timestamp = Util::get_timestamp();
 			string new_folder =  db_name + _db_suffix + "_" + timestamp;
-			string sys_cmd, _path;
+			string sys_cmd, _path, backup_store_path;
 			Util::string_suffix(path, '/');
 			_path = path + new_folder;
-			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
-			system(sys_cmd.c_str());
+			backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+			if (backup_zip)
+			{
+				_path = _path + ".zip";
+				CompressUtil::CompressZip compress_dir;
+				if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+				{
+					error = "Failed to backup compress the database.";
+					apiUtil->unlock_databaseinfo(db_info);
+					response->Error(StatusOperationFailed, error);
+					return;
+				}
+				Util::remove_path(backup_store_path);
+			}
+			else
+			{
+				sys_cmd = "mv " + backup_store_path + " " + _path;
+				system(sys_cmd.c_str());
+			}
 			vector<string> files;
 			Util::dir_files(path, "", files);
 			int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
@@ -1964,17 +1988,32 @@ try
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
+		bool is_zip = false;
 		std::string path = backup_path;
-		if (path[path.length() - 1] == '/')
+		if (GRPCUtil::fileSuffix(backup_path) == "zip")
 		{
-			path = path.substr(0, path.length() - 1);
+			is_zip = true;
+			if (Util::file_exist(path) == false)
+			{
+				error = "Backup path not exist, restore failed.";
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
+			path = path.substr(0, path.length() - 4);
 		}
-		SLOG_DEBUG("backup path:" + path);
-		if (Util::dir_exist(path) == false)
+		else
 		{
-			error = "Backup path not exist, restore failed.";
-			response->Error(StatusParamIsIllegal, error);
-			return;
+			if (path[path.length() - 1] == '/')
+			{
+				path = path.substr(0, path.length() - 1);
+			}
+			SLOG_DEBUG("backup path:" + path);
+			if (Util::dir_exist(path) == false)
+			{
+				error = "Backup path not exist, restore failed.";
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
 		}
 		// check load status: need unload if already load
 		if (apiUtil->check_already_load(db_name))
@@ -2023,7 +2062,27 @@ try
 
 		// TODO why need lock the database_map?
 		// apiUtil->trywrlock_database_map();
-		int ret = apiUtil->db_copy(path, _db_home);
+		int ret = 0;
+		if (is_zip)
+		{
+			if (Util::dir_exist(path))
+				Util::remove_path(path);
+			mkdir(path.c_str(), 0775);
+			CompressUtil::UnCompressZip unzip(backup_path, path);
+			if (unzip.unCompress() != CompressUtil::UnZipOK)
+			{
+				Util::remove_path(path);
+				string error = "backup compress fail";
+				response->Error(StatusParamIsIllegal, error);
+				return;
+			}
+			ret = apiUtil->db_copy(path, _db_home);
+			Util::remove_path(path);
+		}
+		else
+		{
+			apiUtil->db_copy(path, _db_home);
+		}
 		// apiUtil->unlock_database_map();
 		// copy failed
 		if (ret == 1)

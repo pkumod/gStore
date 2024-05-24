@@ -99,7 +99,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 
 void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, string password);
 
-void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path);
+void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip);
 
 void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name);
 
@@ -1844,7 +1844,7 @@ void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, con
  * @param {string} backup_path: the backup path
  * @return {*}
  */
-void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path)
+void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip)
 {
 	string operation = "backup";
 	try
@@ -1865,12 +1865,6 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		Database* current_db;
 		apiUtil->get_database(db_name, current_db);
-		if (current_db == NULL)
-		{
-			error = "Database not load yet.";
-			sendResponseMsg(1004, error, operation, request, response);
-			return;
-		}
 		struct DatabaseInfo *db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
@@ -1895,7 +1889,16 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			return;
 		}
 
-		bool flag = current_db->backup();
+		bool flag = false;
+		if (current_db)
+		{
+			flag = current_db->backup();
+		}
+		else
+		{
+			Database _db(db_name);
+			flag = _db.backup();
+		}
 		if(flag == false)
 		{
 			error = "Failed to backup the database.";
@@ -1906,11 +1909,28 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		{
 			string timestamp = Util::get_timestamp();
 			string new_folder =  db_name + _db_suffix + "_" + timestamp;
-			string sys_cmd, _path;
+			string sys_cmd, _path, backup_store_path;
 			Util::string_suffix(path, '/');
 			_path = path + new_folder;
-			sys_cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + _path;
-			system(sys_cmd.c_str());
+			backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+			if (backup_zip)
+			{
+				_path = _path + ".zip";
+				CompressUtil::CompressZip compress_dir;
+				if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+				{
+					error = "Failed to backup compress the database.";
+					apiUtil->unlock_databaseinfo(db_info);
+					sendResponseMsg(1005, error, operation, request, response);
+					return;
+				}
+				Util::remove_path(backup_store_path);
+			}
+			else
+			{
+				sys_cmd = "mv " + backup_store_path + " " + _path;
+				system(sys_cmd.c_str());
+			}
 			vector<string> files;
 			Util::dir_files(path, "", files);
 			int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
@@ -2017,17 +2037,32 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
+		bool is_zip = false;
 		string path = backup_path;
-		if (path[path.length() - 1] == '/')
+		if (fileSuffix(backup_path) == "zip")
 		{
-			path = path.substr(0, path.length() - 1);
+			is_zip = true;
+			if (Util::file_exist(path) == false)
+			{
+				string error = "Backup path not exist, restore failed.";
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
+			path = path.substr(0, path.length() - 4);
 		}
-		SLOG_DEBUG("backup path:" + path);
-		if (Util::dir_exist(path) == false)
+		else
 		{
-			string error = "Backup path not exist, restore failed.";
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
+			if (path[path.length() - 1] == '/')
+			{
+				path = path.substr(0, path.length() - 1);
+			}
+			SLOG_DEBUG("backup path:" + path);
+			if (Util::dir_exist(path) == false)
+			{
+				string error = "Backup path not exist, restore failed.";
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
 		}
 		// check load status: need unload if already load
 		if (apiUtil->check_already_load(db_name))
@@ -2076,9 +2111,28 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 
 		// TODO why need lock the database_map?
 		// apiUtil->trywrlock_database_map();
-		int ret = apiUtil->db_copy(path, _db_home);
+		int ret = 0;
+		if (is_zip)
+		{
+			if (Util::dir_exist(path))
+				Util::remove_path(path);
+			mkdir(path.c_str(), 0775);
+			CompressUtil::UnCompressZip unzip(backup_path, path);
+			if (unzip.unCompress() != CompressUtil::UnZipOK)
+			{
+				Util::remove_path(path);
+				string error = "backup compress fail";
+				sendResponseMsg(1003, error, operation, request, response);
+				return;
+			}
+			ret = apiUtil->db_copy(path, _db_home);
+			Util::remove_path(path);
+		}
+		else
+		{
+			ret = apiUtil->db_copy(path, _db_home);
+		}
 		// apiUtil->unlock_database_map();
-
 		// copy failed
 		if (ret == 1)
 		{
@@ -3856,18 +3910,25 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (operation == "backup")
 	{
 		string backup_path = "";
+		string compress_zip = "";
 		try
 		{
 			if (request_type == "GET")
 			{
 				backup_path = WebUrl::CutParam(url, "backup_path");
 				backup_path = UrlDecode(backup_path);
+				compress_zip = WebUrl::CutParam(url, "backup_zip");
+				compress_zip = UrlDecode(compress_zip);
 			}
 			else if (request_type == "POST")
 			{
 				if (document.HasMember("backup_path") && document["backup_path"].IsString())
 				{
 					backup_path = document["backup_path"].GetString();
+				}
+				if (document.HasMember("backup_zip") && document["backup_zip"].IsString())
+				{
+					compress_zip = document["backup_zip"].GetString();
 				}
 			}
 		}
@@ -3877,7 +3938,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		backup_thread_new(request, response, db_name, backup_path);
+		bool backup_zip = false;
+		if (compress_zip == "true")
+			backup_zip = true;
+		backup_thread_new(request, response, db_name, backup_path, backup_zip);
 	}
 	// query backup path
 	else if (operation == "backuppath")

@@ -385,6 +385,7 @@ public:
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
     static void dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list);
+	static void dir_filepaths(const string _dir, std::vector<std::string> &file_list);
 	static bool dir_exist(const std::string _dir);
     static bool is_file(const string _file);
     static bool file_exist(const std::string _file);
@@ -396,6 +397,7 @@ public:
 	static bool remove_dir(const std::string dir_path);
 	static bool remove_file(const std::string file_path);
 	static bool remove_path(const std::string path);
+	static std::string fileSuffix(const std::string &filepath);
 
 	static std::string getTimeName();
 	static std::string getTimeString();

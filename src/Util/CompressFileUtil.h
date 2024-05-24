@@ -9,6 +9,7 @@
 #include <vector>
 #include "minizip/unzip.h"
 #include "minizip/zip.h"
+#include "Util.h"
 
 #define WRITEBUFFERSIZE (8192)
 #define MAXFILENAME (512)
@@ -65,6 +66,17 @@ namespace CompressUtil
         public:
         static int compress(const std::string *data, void *compress_data, size_t &compress_size);
         static int unCompress(const char * data, int size, char *uncompress_data, size_t uncompress_size);
+    };
+
+    class CompressZip
+    {
+        public:
+        CompressZip(){}
+        ~CompressZip(){}
+        bool compressDirExportZip(const std::string& sourcePath, const std::string& zipPath, bool contain_base = false);
+        bool AddFileToZip(zipFile zf, const std::string& relative, const std::string& sourcePath);
+        bool AddDirToZip(zipFile zf, const std::string& relative);
+        bool InnerWriteFileToZip(zipFile zf, const std::string& path);
     };
 }
 

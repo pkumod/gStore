@@ -820,6 +820,44 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
     closedir(dirp);
 }
 
+void Util::dir_filepaths(const string _dir, std::vector<std::string> &file_list)
+{
+    DIR *dirp = opendir(_dir.c_str());
+    if (dirp == NULL)
+    {
+        if(Slog::_logger.getAllAppenders().size() > 0)
+        {
+            SLOG_WARN("dir is not exist.");
+        }
+        else
+        {
+            cout << "dir is not exist." << endl;
+        }
+        return;
+    }
+    struct dirent *dir_entry = NULL;
+    string file_name;
+    struct stat st; 
+    while ((dir_entry = readdir(dirp)) != NULL)
+    {
+        file_name = dir_entry->d_name;
+        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+        std::string path;
+        if (_dir.back() != '/')
+            path = _dir + '/' + file_name;
+        else
+            path = _dir + file_name;
+        stat(path.c_str(), &st);
+        file_list.push_back(path);
+        if (S_ISDIR(st.st_mode))
+            dir_filepaths(path, file_list);
+    }
+    closedir(dirp);
+}
+
 bool
 Util::dir_exist(const string _dir)
 {
@@ -1079,6 +1117,27 @@ bool Util::remove_path(const std::string path)
         SLOG_ERROR("rm_path st_mode error:"+path);
     }
     return true;
+}
+
+std::string Util::fileSuffix(const std::string &filepath)
+{
+    std::string::size_type pos1 = filepath.find_last_of("/");
+    if (pos1 == std::string::npos)
+    {
+        pos1 = 0;
+    }
+    else
+    {
+        pos1++;
+    }
+    std::string file = filepath.substr(pos1, -1);
+
+    std::string::size_type pos2 = file.find_last_of(".");
+    if (pos2 == std::string::npos)
+    {
+        return "";
+    }
+    return file.substr(pos2 + 1, -1);
 }
 
 long

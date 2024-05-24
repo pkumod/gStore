@@ -13,6 +13,7 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "../Util/CompressFileUtil.h"
 #include <sstream>
 
 using namespace std;
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
 			cout << "\t-db,--database,\t\t the database name. " << endl;
 			cout << "\t-p,--path [optional],\t\tthe backup path,defalut backup_path is \""
 			     << default_backup_path +"\",the path should not include your database's name!" << endl;
+			cout << "\t-z,--zip,\t\t 1:backup zip format, default backup dir format" << endl;
 			cout << endl;
 			return 0;
 		}
@@ -58,6 +60,7 @@ int main(int argc, char *argv[])
 	{
 		db_name = Util::getArgValue(argc, argv, "db", "database");
 		backup_path = Util::getArgValue(argc, argv, "p", "path");
+		std::string backup_zip = Util::getArgValue(argc, argv, "z", "zip"); 
 		if (backup_path.empty())
 		{
 			backup_path = default_backup_path;
@@ -111,8 +114,24 @@ int main(int argc, char *argv[])
 		}
 		string timestamp = Util::get_timestamp();
 		string new_folder =  db_name + _db_suffix + "_" + timestamp;
-		cmd = "mv " + default_backup_path + "/" + db_name + _db_suffix + " " + backup_path + "/" + new_folder;
-		system(cmd.c_str());
+		string _path = backup_path + "/" + new_folder;
+		string backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+		if (backup_zip == "1")
+		{
+			_path = _path + ".zip";
+			CompressUtil::CompressZip compress_dir;
+			if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+			{
+				std::cout << "Failed to backup compress the database." << std::endl;
+				return 0;
+			}
+			Util::remove_path(backup_store_path);
+		}
+		else
+		{
+			cmd = "mv " + backup_store_path + " " + _path;
+			system(cmd.c_str());
+		}
 		long tv_end = Util::get_cur_time();
 		cout << "Used " << (tv_end - tv_begin) << " ms" << endl;
 		return 0;
