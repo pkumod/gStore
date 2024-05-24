@@ -2329,8 +2329,15 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		else if (update)
 		{
-			SLOG_DEBUG("update query returns true.");
-			response->Success("update query returns true.");	
+			SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
+			resp_data.AddMember("AnsNum", ret_val, allocator);
+			resp_data.AddMember("QueryTime", query_time, allocator);
+			response->Json(resp_data);
 		}
 		else
 		{

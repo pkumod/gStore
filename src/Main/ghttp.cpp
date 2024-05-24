@@ -2450,21 +2450,35 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		}
 		else
 		{
-			string error = "";
-			int error_code;
 			if (update)
 			{
-				SLOG_DEBUG(log_prefix + "update query returned correctly.");
-				error = "update query returns true.";
-				error_code = 0;
+				SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
+				Document resDoc;
+				resDoc.SetObject();
+				Document::AllocatorType &allocator = resDoc.GetAllocator();
+				resDoc.AddMember("StatusCode", 0, allocator);
+				resDoc.AddMember("StatusMsg", "update query returns true.", allocator);
+				resDoc.AddMember("AnsNum", ret_val, allocator);
+				resDoc.AddMember("QueryTime", query_time, allocator);
+				rapidjson::StringBuffer resBuffer;
+				rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+				resDoc.Accept(resWriter);
+				string resJson = resBuffer.GetString();
+				*response << "HTTP/1.1 200 OK"
+							<< "\r\nContent-Type: application/json"
+							<< "\r\nContent-Length: " << resJson.length()
+							<< "\r\nCache-Control: no-cache"
+							<< "\r\nPragma: no-cache"
+							<< "\r\nExpires: 0"
+							<< "\r\n\r\n"
+							<< resJson;
 			}
 			else
 			{
 				SLOG_DEBUG(log_prefix + "search query returned error.");
-				error = "search query returns false.";
-				error_code = 1005;
+				std::string error = "search query returns false.";
+				sendResponseMsg(1005, error, operation, request, response);
 			}
-			sendResponseMsg(error_code, error, operation, request, response);
 		}
 		apiUtil->unlock_database(db_name);
 		SLOG_DEBUG("query complete!");
