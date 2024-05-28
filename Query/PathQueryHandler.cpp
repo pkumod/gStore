@@ -2528,7 +2528,7 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 	}
 
 	// will call move constructor when construction return val
-	return move(result);
+	return std::move(result);
 }
 
 /**
@@ -5102,7 +5102,7 @@ namespace MaxKPX
             long long sum = 0;
             for (int i = 0; i < n; i++)
                 sum += pend[i] - pstart[i];
-            printf("%lld %lld\n", sum, m);
+            printf("%lld %d\n", sum, m);
             assert(sum * 2 == m);
 #endif
 

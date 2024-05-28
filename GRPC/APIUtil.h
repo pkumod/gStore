@@ -412,7 +412,7 @@ public:
         }
     }
     void setQueryDateTime(string _queryDateTime){queryDateTime = _queryDateTime;}
-    void setRemoteIP(string _remoteIP) {remoteIP = remoteIP;}
+    void setRemoteIP(string _remoteIP) {remoteIP = _remoteIP;}
     void setSparql(string _sparql) {sparql = _sparql;}
     void setAnsNum(long _ansNum) {ansNum = _ansNum;}
     void setFormat(string _format) {format = _format;}

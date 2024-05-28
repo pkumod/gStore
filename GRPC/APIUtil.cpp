@@ -2981,13 +2981,13 @@ void APIUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                 cmd = "mv -f " + back_path + " " + json_file_path;
                 system(cmd.c_str());
                 pthread_rwlock_unlock(&fun_data_lock);
-                throw std::runtime_error("save function info to json file error, status code:" + status);
+                throw std::runtime_error("save function info to json file error, status code:" + std::to_string(status));
             }
         }
         else
         {
             pthread_rwlock_unlock(&fun_data_lock);
-            throw std::runtime_error("save function info to json file error, status code:" + status);
+            throw std::runtime_error("save function info to json file error, status code:" + std::to_string(status));
         }
     }
     else
