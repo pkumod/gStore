@@ -518,10 +518,12 @@ void APIUtil::reset_access_ip_error_num(const string& ip)
     pthread_rwlock_unlock(&ips_map_lock);
 }
 
-/// 
-/// @param ip 
-/// @param check_level =1 表示锁定IP  =2 表示判断IP地址错误 =3 不作判定
-/// @return 
+/**
+ * check ip 
+ * @param ip  
+ * @param check_level =1 表示锁定IP  =2 表示判断IP地址错误 =3 不作判定
+ * @return
+*/ 
 string APIUtil::check_access_ip(const string& ip, int check_level)
 {
     
@@ -2002,71 +2004,14 @@ void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs)
 {
-    int totalSize = 0;
-    int totalPage = 0;
     string accessLog = APIUtil::access_log_path + date + ".log";
-    if(util.file_exist(accessLog))
-    {
-        pthread_rwlock_rdlock(&access_log_lock);
-        ifstream in;
+    vector<std::string> lines;
+    int total_size = 0;
+    int total_page = 0;
+    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock)) 
+    {   
+        size_t count = lines.size();			
         string line;
-        in.open(accessLog.c_str(), ios::in);
-        int startLine;
-        int endLine;
-        if(page_no < 1)
-        {
-            page_no = 1;
-        }
-        if(page_size < 1)
-        {
-            page_size = 10;
-        }
-        startLine = (page_no - 1)*page_size + 1;
-        endLine = page_no*page_size + 1;
-        //count total
-        while (getline(in, line, '\n'))
-        {
-            totalSize++;
-        }
-        in.close();
-        if (totalSize == 0)
-        {
-            dbAccessLogs->setTotalSize(totalSize);
-            dbAccessLogs->setTotalPage(totalPage);
-            return;
-        }
-        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
-        if (page_no > totalPage)
-        {
-            pthread_rwlock_unlock(&access_log_lock);
-            throw std::invalid_argument("more then max page number " + to_string(totalPage));
-        }
-        startLine = totalSize - page_size*page_no + 1;
-        endLine = totalSize - page_size*(page_no - 1) + 1;
-        if (startLine < 1)
-        {
-            startLine = 1;
-        }
-        // seek to start line;
-        in.open(accessLog.c_str(), ios::in);
-        int i_temp;
-        char buf_temp[1024];
-        in.seekg(0,ios::beg);
-        for (i_temp = 1;i_temp<startLine;i_temp++)
-        {
-            in.getline(buf_temp, sizeof(buf_temp));
-        }
-        //APIUtil::Seek_to_line(in, startLine);
-        vector<std::string> lines;
-        while (startLine < endLine && getline(in, line, '\n')) {
-            lines.push_back(line);
-            startLine++;
-        }
-        in.close();
-        pthread_rwlock_unlock(&access_log_lock);
-        size_t count;
-        count =  lines.size();			
-        // SLOG_DEBUG("access log count : " + to_string(count));
         for (size_t i = 0; i < count; i++)
         {
             line = lines[count - i - 1];
@@ -2077,8 +2022,8 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
             dbAccessLogs->addAccessLogInfo(line);
         }
     }
-    dbAccessLogs->setTotalSize(totalSize);
-    dbAccessLogs->setTotalPage(totalPage);
+    dbAccessLogs->setTotalSize(total_size);
+    dbAccessLogs->setTotalPage(total_page);
 }
 
 void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string opt_id)
@@ -2234,70 +2179,14 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs)
 {
-    int totalSize = 0;
-    int totalPage = 0;
     string queryLog = APIUtil::query_log_path + date + ".log";
-    if(util.file_exist(queryLog))
+    vector<std::string> lines;
+    int total_size = 0;
+    int total_page = 0;
+    if (get_file_lines(lines, queryLog, page_no, page_size, total_size, total_page, &query_log_lock)) 
     {
-        pthread_rwlock_rdlock(&query_log_lock);
-        ifstream in;
+        size_t count = lines.size();
         string line;
-        in.open(queryLog.c_str(), ios::in);
-        int startLine;
-        int endLine;
-        if(page_no < 1)
-        {
-            page_no = 1;
-        }
-        if(page_size < 1)
-        {
-            page_size = 10;
-        }
-        startLine = (page_no - 1)*page_size + 1;
-        endLine = page_no*page_size + 1;
-        //count total
-        while (getline(in, line, '\n'))
-        {
-            totalSize++;
-        }
-        in.close();
-        if (totalSize == 0)
-        {
-            dbQueryLogs->setTotalSize(totalSize);
-            dbQueryLogs->setTotalPage(totalPage);
-            return;
-        }
-        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
-        if (page_no > totalPage)
-        {
-            pthread_rwlock_unlock(&query_log_lock);
-            throw std::invalid_argument("more then max page number " + to_string(totalPage));
-        }
-        startLine = totalSize - page_size*page_no + 1;
-        endLine = totalSize - page_size*(page_no - 1) + 1;
-        if (startLine < 1)
-        {
-            startLine = 1;
-        }
-        // seek to start line;
-        in.open(queryLog.c_str(), ios::in);
-        int i_temp;
-        char buf_temp[1024];
-        in.seekg(0, ios::beg);
-        for (i_temp = 1; i_temp < startLine; i_temp++)
-        {
-            in.getline(buf_temp, sizeof(buf_temp));
-        }
-        //APIUtil::Seek_to_line(in, startLine);
-        vector<std::string> lines;
-        while (startLine < endLine && getline(in, line, '\n')) {
-            lines.push_back(line);
-            startLine++;
-        }
-        in.close();
-        pthread_rwlock_unlock(&query_log_lock);
-        size_t count;
-        count =  lines.size();
         for (size_t i = 0; i < count; i++)
         {
             line = lines[count - i - 1];
@@ -2308,8 +2197,8 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, st
             dbQueryLogs->addQueryLogInfo(line);
         }
     }
-    dbQueryLogs->setTotalSize(totalSize);
-    dbQueryLogs->setTotalPage(totalPage);
+    dbQueryLogs->setTotalSize(total_size);
+    dbQueryLogs->setTotalPage(total_page);
 }
 
 void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
@@ -2428,76 +2317,22 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
 
 void APIUtil::get_transactionlog(int &page_no, int &page_size, struct TransactionLogs *dbQueryLogs)
 {
-    int totalSize = 0;
-    int totalPage = 0;
-    if (util.file_exist(TRANSACTION_LOG_PATH))
+    string transactionLog = TRANSACTION_LOG_PATH;
+    vector<std::string> lines;
+    int total_size = 0;
+    int total_page = 0;
+    if (get_file_lines(lines, transactionLog, page_no, page_size, total_size, total_page, &transactionlog_lock)) 
     {
-        pthread_rwlock_rdlock(&transactionlog_lock);
-        ifstream in;
-        in.open(TRANSACTION_LOG_PATH, ios::in);
+        size_t count = lines.size();
         string line;
-        int startLine;
-        int endLine;
-        if(page_no < 1)
-        {
-            page_no = 1;
-        }
-        if(page_size < 1)
-        {
-            page_size = 10;
-        }
-        startLine = (page_no - 1)*page_size + 1;
-        endLine = page_no*page_size + 1;
-        //count total
-        while (getline(in, line, '\n'))
-        {
-            totalSize++;
-        }
-        in.close();
-        if (totalSize == 0)
-        {
-            dbQueryLogs->setTotalSize(totalSize);
-            dbQueryLogs->setTotalPage(totalPage);
-            return;
-        }
-        totalPage = (totalSize/page_size) + (totalSize%page_size == 0 ? 0 : 1);
-        if (page_no > totalPage)
-        {
-            pthread_rwlock_unlock(&transactionlog_lock);
-            throw std::invalid_argument("more then max page number " + to_string(totalPage));
-        }
-        startLine = totalSize - page_size*page_no + 1;
-        endLine = totalSize - page_size*(page_no - 1) + 1;
-        if (startLine < 1)
-        {
-            startLine = 1;
-        }
-        // seek to start line;
-        in.open(TRANSACTION_LOG_PATH, ios::in);
-        int i_temp;
-        char buf_temp[1024];
-        in.seekg(0, ios::beg);
-        for (i_temp = 1; i_temp < startLine; i_temp++)
-        {
-            in.getline(buf_temp, sizeof(buf_temp));
-        }
-        vector<std::string> lines;
-        while (startLine < endLine && getline(in, line, '\n')) {
-            lines.push_back(line);
-            startLine++;
-        }
-        in.close();
-        pthread_rwlock_unlock(&transactionlog_lock);
-        size_t count;
-        count =  lines.size();
         for (size_t i = 0; i < count; i++)
         {
             line = lines[count - i - 1];
             dbQueryLogs->addTransactionLogInfo(line);
         }
     }
-    dbQueryLogs->setTotalPage(totalPage);
-    dbQueryLogs->setTotalSize(totalSize);
+    dbQueryLogs->setTotalSize(total_size);
+    dbQueryLogs->setTotalPage(total_page);
 }
 
 void APIUtil::abort_transactionlog(long end_time)
@@ -2659,7 +2494,6 @@ APIUtil::check_upload_allow_extensions(const string& suffix)
     return false;
 }
 
-
 bool
 APIUtil::check_upload_allow_compress_packages(const string& suffix)
 {
@@ -2671,4 +2505,72 @@ APIUtil::check_upload_allow_compress_packages(const string& suffix)
         }
     }
     return false;
+}
+
+bool 
+APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock) {
+    total_size = 0;
+    total_page = 0;
+    if(util.file_exist(log_file))
+    {
+        pthread_rwlock_rdlock(rw_lock);
+        ifstream in;
+        string line;
+        in.open(log_file.c_str(), ios::in);
+        int startLine;
+        int endLine;
+        if(page_no < 1)
+        {
+            page_no = 1;
+        }
+        if(page_size < 1)
+        {
+            page_size = 10;
+        }
+        startLine = (page_no - 1)*page_size + 1;
+        endLine = page_no*page_size + 1;
+        //count total
+        while (getline(in, line, '\n'))
+        {
+            total_size++;
+        }
+        in.close();
+        if (total_size == 0)
+        {
+            pthread_rwlock_unlock(rw_lock);
+            return false;
+        }
+        total_page = (total_size/page_size) + (total_size%page_size == 0 ? 0 : 1);
+        if (page_no > total_page)
+        {
+            pthread_rwlock_unlock(rw_lock);
+            throw std::invalid_argument("more then max page number " + to_string(total_page));
+        }
+        startLine = total_size - page_size*page_no + 1;
+        endLine = total_size - page_size*(page_no - 1) + 1;
+        if (startLine < 1)
+        {
+            startLine = 1;
+        }
+        // seek to start line;
+        in.open(log_file.c_str(), ios::in);
+        int i_temp;
+        char buf_temp[1024];
+        in.seekg(0, ios::beg);
+        for (i_temp = 1; i_temp < startLine; i_temp++)
+        {
+            in.getline(buf_temp, sizeof(buf_temp));
+        }
+        while (startLine < endLine && getline(in, line, '\n')) {
+            lines.push_back(line);
+            startLine++;
+        }
+        in.close();
+        pthread_rwlock_unlock(rw_lock);
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
 }

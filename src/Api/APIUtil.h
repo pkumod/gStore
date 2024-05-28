@@ -411,7 +411,7 @@ public:
         }
     }
     void setQueryDateTime(string _queryDateTime){queryDateTime = _queryDateTime;}
-    void setRemoteIP(string _remoteIP) {remoteIP = remoteIP;}
+    void setRemoteIP(string _remoteIP) {remoteIP = _remoteIP;}
     void setSparql(string _sparql) {sparql = _sparql;}
     void setAnsNum(long _ansNum) {ansNum = _ansNum;}
     void setFormat(string _format) {format = _format;}
@@ -889,6 +889,7 @@ public:
     bool ip_save(string ip_type, vector<string> ipVector);
     vector<string> ip_list(string type);
     string ip_enabled_type();
+    bool get_file_lines(vector<string> &lines, string &logFile, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock);
     // for access log
     void get_access_log_files(std::vector<std::string> &file_list);
     void get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs);
