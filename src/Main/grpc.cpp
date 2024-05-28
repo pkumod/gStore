@@ -1286,14 +1286,15 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				resp_data.AddMember("StatusCode", 0, allocator);
 				resp_data.AddMember("StatusMsg", "Database loaded successfully.", allocator);
 				resp_data.AddMember("csr", StringRef(csr_str.c_str()), allocator);
+				apiUtil->unlock_database(db_name);
 				response->Json(resp_data);
 			}
 			else
 			{
 				error = "load failed: unknow error.";
+				apiUtil->unlock_database(db_name);
 				response->Error(StatusOperationFailed, error);
 			}
-			rt = apiUtil->unlock_database(db_name);
 		}
 		else
 		{
