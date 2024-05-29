@@ -1184,7 +1184,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string username = json_data["username"].GetString();
 
-		vector<struct DatabaseInfo *> array;
+		vector<shared_ptr<DatabaseInfo>> array;
 		apiUtil->get_already_builds(username, array);
 
 		Json resp_data;
@@ -1195,7 +1195,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			DatabaseInfo *dbInfo = array[i];
+			shared_ptr<DatabaseInfo> dbInfo = array[i];
 			array_data.PushBack(dbInfo->toJSON(allocator).Move(), allocator);
 		}
 		resp_data.AddMember("StatusCode", 0, allocator);
@@ -1238,7 +1238,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -1248,7 +1248,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
-			Database *current_database = new Database(db_name);
+			shared_ptr<Database> current_database = make_shared<Database>(db_name);
 			SLOG_DEBUG("begin loading...");
 			bool load_csr = false;
 			if (jsonParam(json_data, "csr", "0") == "1")
@@ -1339,7 +1339,7 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -1391,7 +1391,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		DatabaseInfo *database_info;
+		shared_ptr<DatabaseInfo> database_info;
 		apiUtil->get_databaseinfo(db_name, database_info);
 		if (apiUtil->rdlock_databaseinfo(database_info) == false)
 		{
@@ -1402,10 +1402,10 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string creator = database_info->getCreator();
 		std::string time = database_info->getTime();
 		apiUtil->unlock_databaseinfo(database_info);
-		Database* current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL) {
-			current_database = new Database(db_name);
+			current_database = make_shared<Database>(db_name);
 			current_database->loadDBInfoFile();
 			current_database->loadStatisticsInfoFile();
 		}
@@ -1564,7 +1564,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					SLOG_DEBUG("Import dataset to build database...");
 					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
 					string result;
-					Database *current_database = new Database(database);
+					shared_ptr<Database> current_database = make_shared<Database>(database);
 					// TODO progress notification
 					bool flag = true;
 					if (!dataset.empty())
@@ -1572,14 +1572,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					else
 						flag = current_database->BuildEmptyDB();
 					int success_num = current_database->getTripleNum();
-					delete current_database;
-					current_database = NULL;
+					current_database.reset();
 					if (flag)
 					{
 						// if zip file then excuse batchInsert
 						if (is_zip && zip_files.size() > 0)
 						{
-							current_database = new Database(db_name);
+							current_database = make_shared<Database>(db_name);
 							bool rt  = current_database->load(false);
 							if (!rt)
 							{
@@ -1592,8 +1591,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
 								if (async != "true")
 									response->Error(StatusOperationFailed, result);
-								delete current_database;
-								current_database = NULL;
+								current_database.reset();
 								return;
 							}
 							for (std::string rdf_zip : zip_files)
@@ -1602,8 +1600,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 							}
 							current_database->save();
 							success_num = current_database->getTripleNum();
-							delete current_database;
-							current_database = NULL;
+							current_database.reset();
 						}
 					}
 					// init database info and privilege
@@ -1713,7 +1710,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -1800,7 +1797,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database* current_db;
+		shared_ptr<Database> current_db;
 		apiUtil->get_database(db_name, current_db);
 		if (current_db == NULL)
 		{
@@ -1808,7 +1805,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -2003,7 +2000,7 @@ try
 				return;
 			}
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -2076,7 +2073,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		string thread_id = Util::getThreadID();
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		bool update_flag_bool = true;
 		if (apiUtil->check_privilege(username, "update", db_name) == 0)
 		{
@@ -2202,6 +2199,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			ofstream outfile;
 			string ans = "";
 			string success = rs.to_JSON();
+			rs.release();
 			// TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
 			// BETTER: divide and transfer, in multiple times, getNext()
 			if (format == "json")
@@ -2373,7 +2371,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		// check if database named [db_name] is already load
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2483,12 +2481,6 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		if (apiUtil->get_Txn_ptr(db_name) == NULL)
-		{
-			error = "Database transaction manager error.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
 		std::string username = jsonParam(json_data, "username");
 		string TID_s = apiUtil->begin_process(db_name, level, username);
 		if (TID_s.empty())
@@ -2567,7 +2559,8 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			error = "Get database transaction manager error.";
@@ -2672,7 +2665,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2680,7 +2673,8 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			error = "Get database transaction manager error.";
@@ -2770,7 +2764,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2778,7 +2772,8 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			error = "Get database transaction manager error.";
@@ -2834,7 +2829,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2849,7 +2844,8 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		}
 		else
 		{
-			auto txn_m = apiUtil->get_Txn_ptr(db_name);
+			shared_ptr<Txn_manager> txn_m;
+			apiUtil->get_Txn_ptr(db_name, txn_m);
 			if (txn_m == NULL)
 			{
 				error = "Get database transaction manager error.";
@@ -2966,7 +2962,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			upfile.getFileList(zip_files, "");
 		}
 
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -2990,7 +2986,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 				(GRPCResp *response)
 				{
 					string success = "Batch insert data successfully.";
-					Database *current_database;
+					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
 					unsigned success_num = 0;
 					unsigned total_num = 0;
@@ -3124,7 +3120,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -3142,7 +3138,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			auto remove_helper = [db_name,operation,file,opt_id,async]
 				(GRPCResp *response)
 				{
-					Database *current_database;
+					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
 					string success = "Batch remove data successfully.";
 					unsigned success_num = current_database->batch_remove(file, false, nullptr);
@@ -3224,7 +3220,7 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -3373,8 +3369,8 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 {
 	try
 	{
-		vector<struct DBUserInfo *> userList;
-		apiUtil->get_user_info(&userList);
+		vector<shared_ptr<struct DBUserInfo>> userList;
+		apiUtil->get_user_info(userList);
 		if (userList.empty())
 		{
 			response->Success("No Users");
@@ -3387,7 +3383,7 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			struct DBUserInfo *useInfo = userList[i];
+			shared_ptr<struct DBUserInfo> useInfo = userList[i];
 			array_data.PushBack(useInfo->toJSON(allocator).Move(), allocator);
 		}
 
