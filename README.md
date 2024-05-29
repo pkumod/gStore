@@ -29,6 +29,127 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 **We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](https://www.gstore.cn).**
 
+
+## Highlights
+
+
+* First-tire performance in the [WatDiv](http://dsg.uwaterloo.ca/watdiv/), [LUBM](http://swat.cse.lehigh.edu/projects/lubm/) and [DBPedia](https://wiki.dbpedia.org/) benchmarks. ([Benchmark Results](docs/test/formal_experiment.pdf))
+
+
+* Supports multiple RDF formats, including Turtle, TriG, RDF/XML, RDFa, and JSON-LD.
+
+
+* Supports user-defined graph analysis functions. (Added in 1.0)
+
+
+* ACID-compliant transactions. (Added in 1.0)
+
+
+
+## Get gStore
+
+gStore has been uploaded to gitee (code cloud), which is recommended for faster download for users in mainland China. The website is https://gitee.com/PKUMOD/gStore.
+
+You can also open https://github.com/pkumod/gStore, download gStore.zip, then decompress the zip package.
+
+### From Docker
+
+
+```bash
+$ docker pull pkumodlab/gstore-docker:latest
+```
+
+
+### From Source
+
+
+To compile gStore, first clone the repository:
+
+
+```bash
+git clone https://github.com/pkumod/gStore.git --depth=1
+```
+
+Complete instruction documentation is on the [Installation Instructions](docs/en-us/INSTALL_INSTRUCT.md).
+
+## Quick Start
+
+
+**gconsole command**
+
+
+Login gconsole
+
+
+```shell
+$ bin/gconsole -u root
+```
+
+
+Create database
+
+
+```shell
+$ create lubm data/lubm/lubm.nt;
+```
+
+
+**Api server**
+
+
+Start the server
+
+
+```shell
+$ bin/ghttp &
+```
+
+
+Then, you can access the server via HTTP protocol:
+
+
+```http
+curl http://127.0.0.1:9000 -X POST -H 'Content-Type: application/json' -d '{"operation":"check"}'
+```
+
+
+Full list of commands introduce is on the [API Usage](docs/en-us/API_USAGE.md).
+
+
+## Cite gStore
+
+
+If you use gStore in your research, please cite the following paper:
+
+
+```bibtex
+@article{zou2014gstore,
+  title={gStore: a graph-based SPARQL query engine},
+  author={Zou, Lei and {\"O}zsu, M Tamer and Chen, Lei and Shen, Xuchuan and Huang, Ruizhe and Zhao, Dongyan},
+  journal={The VLDB journal},
+  volume={23},
+  pages={565--590},
+  year={2014},
+  publisher={Springer}
+}
+```
+
+
+Or cite this repository:
+
+
+```bibtex
+@misc{gStore,
+  author = {gStore Authors},
+  title = {gStore},
+  year = {2021},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/pkumod/gStore}},
+}
+```
+
+
 ## Change log
 **1.2(stable):2023-11-11**
 
@@ -44,7 +165,6 @@ New features in gStore 1.2 are listed as follows:
   - **Support for Multiple Data Formats**: Added support for multiple formats such as **Turtle**, **TriG**, **RDF/XML**, **RDFa**, and **JSON-LD**.
   - **Optimization of custom graph analysis algorithm editing function**: Redesign the interface of the custom graph analysis algorithm editing function, optimize the dynamic compilation algorithm, and improve compilation efficiency.
   - **Bug fixes**: Fixed a series of bugs.
-
 
 
 **1.0：2022-10-01**
@@ -113,6 +233,7 @@ This system is really user-friendly and you can pick it up in several minutes. R
 
 - (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
 
+
 - download the zip from this repository and extract it
 
 - fork this repository in your github account
@@ -145,23 +266,47 @@ To run gStore, please type `bin/gbuild database_name dataset_path` to build a da
 
 If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
 
-- [Basic Introduction](docs/INTRO.md): introduce the theory and features of gStore
 
-- [Install Guide](docs/INSTALL.md): instructions on how to install this system
+- [Document Download](docs/en-us/DOCUMENT_DOWNLOAD.md)
 
-- [How To Use](docs/USAGE.md): detailed information about using the gStore system
 
-- [API Explanation](docs/API.md): guide you to develop applications based on our API
+- [Update Log](docs/en-us/UPDATE_LOG.md)
 
-- [Project Structure](docs/STRUCT.md): show the whole structure and process of this project
 
-- [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
+- [Introduction of Knowledge Graph and gStore](docs/en-us/GRAPH_INTRODUCE.md)
 
-- [Update Logs](docs/CHANGELOG.md): keep the logs of the system updates
 
-- [Test Results](docs/TEST.md): present the test results of a series of experiments
+- [Installation Instructions](docs/en-us/INSTALL_INSTRUCT.md)
+
+
+- [Quick Start](docs/en-us/QUICK_START.md)
+
+
+- [API Usage](docs/en-us/API_USAGE.md)
+
+
+- [SPARQL query syntax](docs/en-us/SPARQL_QUERY.md)
+
+
+- [gStore Visual Tool Workbench](docs/en-us/WORKBENCH_USAGE.md)
+
+
+- [gStore Cloud platform user manual ](docs/en-us/CLOUD_INTRODUCE.md)
+
+
+- [gStore Chronology](docs/en-us/CHRONOLOGY.md)
+
+
+- [Open source and legal provision](docs/en-us/LEGAL_PROVISION.md)
+
+
+- [gStore Logo](docs/en-us/GSTORE_LOGO.md)
+
+
+- [FAQ](docs/en-us/FAQ.md)
 
 - - -
+
 
 ## Other Business
 
