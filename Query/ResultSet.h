@@ -30,6 +30,7 @@ public:
 	ResultSet();
 	~ResultSet();
 	ResultSet(int _v_num, const std::string* _v_names);
+	void release();
 
 	void setUseStream();
 	bool checkUseStream();

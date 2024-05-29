@@ -25,19 +25,7 @@ ResultSet::ResultSet()
 
 ResultSet::~ResultSet()
 {
-  delete[] this->var_name;
-  if (!this->useStream)
-  {
-    for(unsigned i = 0; i < this->ansNum; i++)
-    {
-      delete[] this->answer[i];
-    }
-    delete[] this->answer;
-  }
-  else if(!this->stream)
-  {
-    delete this->stream;    //maybe NULL
-  }
+	release();
 }
 
 ResultSet::ResultSet(int _v_num, const string* _v_names)
@@ -54,6 +42,36 @@ ResultSet::ResultSet(int _v_num, const string* _v_names)
 	this->useStream = false;
 	this->output_offset = 0;
 	this->output_limit = -1;
+}
+
+void
+ResultSet::release()
+{
+	if (this->var_name != nullptr)
+	{
+  		delete[] this->var_name;
+		this->var_name = nullptr;
+	}
+	if (!this->useStream)
+	{
+		if (this->answer != nullptr)
+		{
+			for(unsigned i = 0; i < this->ansNum; i++)
+			{
+				if (this->answer[i] != nullptr)
+				{
+					delete[] this->answer[i];
+					this->answer[i] = nullptr;
+				}	
+			}
+			delete[] this->answer;
+			this->answer = nullptr;
+		}
+	}
+	else if(!this->stream)
+	{
+		delete this->stream;    //maybe NULL
+	}
 }
 
 void
@@ -78,6 +96,9 @@ ResultSet::setOutputOffsetLimit(int _output_offset, int _output_limit)
 void
 ResultSet::setVar(const vector<string> & _var_names)
 {
+	if (this->var_name != nullptr) {
+		delete[] this->var_name;
+	}
 	this->select_var_num = _var_names.size();
 	this->var_name = new string[this->select_var_num];
 	for(int i = 0; i < this->select_var_num; i++)
