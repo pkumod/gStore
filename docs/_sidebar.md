@@ -1,24 +1,12 @@
-* :computer: Get gStore
-  * [From Docker](DOCKER_DEPLOY.md)
-  * [From Source](COMPILE.md)
-
-* :memo: Help
-  * [Manual](MANUAL.md)
-  * [Usage](USAGE.md)
-  * [FAQ](FAQ.md)
-  * [Recommendations](TIPS.md)
-
-* :rocket: Development
-  * [Structure](STRUCT.md)
-  * [API](API.md)
-  * [Roadmap](PLAN.md)
-  * [Benchmark](TEST.md)
-
-* :bug: Known Issues
-  * [Bugs](BUGS.md)
-  * [Limitations](LIMIT.md)
-
-* :rose: Acknowledgements
-  * [Contact](MAIL.md)
-  * [Publications](ESSAY.md)
-  * [Contributors](THANK.md)
+* [文档下载](DOCUMENT_DOWNLOAD.md)
+* [更新日志](UPDATE_LOG.md)
+* [知识图谱与gstore介绍](GRAPH_INTRODUCE.md)
+* [安装指南](INSTALL_INSTRUCT.md)
+* [快速入门](QUICK_START.md)
+* [常用API](API_USAGE.md)
+* [SPARQL查询语言](SPARQL_QUERY.md)
+* [可视化工具Workbench](WORKBENCH_USAGE.md)
+* [gStore云平台介绍](CLOUD_INTRODUCE.md)
+* [项目大事记](CHRONOLOGY.md)
+* [开源与法律条款](LEGAL_PROVISION.md)
+* [gstore标识](GSTORE_LOGO.md)

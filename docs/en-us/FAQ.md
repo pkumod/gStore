@@ -1,3 +1,5 @@
+## Frequently Asked Questions
+
 1. What is the data model of gStore?
    <br>Answer: The data model of gStore is a native graph model that maintains the graph structure of the original RDF knowledge graph.</br>
    
