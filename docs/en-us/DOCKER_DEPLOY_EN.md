@@ -1,65 +1,108 @@
-# Deploy gStore by Docker
+## Deploy gStore using Docker 
 
-[点击查看中文文档](/en-us/DOCKER_DEPLOY_CN.md)
-
->Roughly speaking, there are two ways to deploy gStore via Docker.
+> We provide two ways to deploy gStore from containers:  
 >
->The first one is using Dockerfile file in the root directory of project to automatically build it. And then run the container.
+> One is to build it yourself from the Dockerfile file in the project root and then run the container.  
 >
->Another one is downloading the mirror which has been automatically built directly, then just run it.
+> Another option is to download the image that has been automatically built and run it directly.  
 
-## 0x00. prepare the environment (recommendation)
+### environment preparation
 
-Official doc of Docker has explained how to download and use it on common Liunx release version in details. And here is the link: [English doc](https://docs.docker.com/install/linux/docker-ce/ubuntu/), [中文文档](https://docs.docker-cn.com/engine/installation/linux/docker-ce/centos/#%E5%85%88%E5%86%B3%E6%9D%A1%E4%BB%B6)
+Docker, refer to the address [docker](https://blog.csdn.net/A632189007/article/details/78662741)
 
-## 0x01. Build the mirror via Dockerfile
+### Run by pulling the image directly(recommend)
 
-After having the correct Docker environment and network, use `git clone` to download the project firstly. Then enter the root directory and input command `docker build -t gstore .` to start building. More specific explanation has been written in the Dockerfile.
+Currently, the gstore image has been built and published on Docker Hub. The image is based on Ubuntu 16.04 and can be installed and deployed using the following methods.
 
-After the building, using `docker run -p 9000:80 -it gstore` directly to start and enter the container and execute other operations.
-
-### Playground Mode
-
-The docker image has been built with some sample data. You can run the following command to start the container in playground mode:
+**(1) Pull the docker image**
 
 ```bash
-docker run --rm -it gstore sh -c "(/usr/local/bin/ghttp &); bash"
+docker pull pkumodlab/gstore-docker:latest #Pull up the latest docker image
 ```
 
-Press Enter to start the bash shell. Then you can play with the sample data in the container.
+**(2) Run the image** 
+
+View the list of Docker images with the following command
+
+```
+docker image list
+```
+
+As shown in the following figure：
+
+![image-20221018223737566](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20221018223737566.png)
+
+Start the image using the following command
+
+```shell
+docker run -itd -p 9999:9000 9ca4388fc81e /bin/bash 
+# Map container 9000 port to host 9999 port
+# 9ca4388fc81e is image id
+```
+
+After the startup is complete, enter the following command to view container information
+
+```shell
+docker ps
+```
+
+![image-20221018224207124](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20221018224207124.png)
+
+Use the following command to enter the container
+
+```shell
+docker exec -it a5016bd46094 /bin/bash 
+#It is recommended to use exec to enter the container, and the container will not stop after exiting
+```
+
+After entering the container, you can see the gstore directory in the root directory, which has already been compiled and installed.
+
+ You can operate it like using local gstore. To exit the docker container, you can use the following command:
+
+```shell
+exit
+```
+
+
+
+## Build the image from Dockerfile 
+
+### Build an image named gstore
 
 ```bash
-gquery -db small -q data/small/small_q0.sql
+# build docker image
+build -t gstore 
+
+# show docker image
+docker image list
 ```
 
-### Server Mode
+ As shown below
 
-Expose the port 9000, persist the data and run the container in background:
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-docker.jpg)
+
+### Start the locally built image
+
+```shell
+# Map host 9999 port to container 9000 port(Default port for the gstore API service) 
+# a5d51ff4f121 is image id
+docker run -itd -p 9999:9000 a5d51ff4f121 /bin/bash
+
+# Show container status
+docker ps -a
+#CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+#317e4ce0a667   a5d51ff4f121   "bash /docker-entryp…"   6 minutes ago   Up 6 minutes   0.0.0.0:9999->9000/tcp, :::9999->9000/tcp   awesome_greider
+```
+
+### Check API Service
 
 ```bash
-docker run -d -p 9000:9000 -v /path/to/data:/app gstore
+curl http://127.0.0.1:9999 -X POST -H 'Content-Type: application/json' -d '{"operation":"check"}'
+
+# If the following information is displayed on the console, the gstore http api service starts normally
+# {"StatusCode":0,"StatusMsg":"the ghttp server is running..."}
 ```
 
-## 0x02. pulling the mirror directly to run
+------
 
-Instead of downloading project or building on your own, input `docker pull pkumodlab/gstore:latest` to pull the mirror which has been automatically built well on the docker hub.  Then input `docker run -p 9000:80 -it pkumodlab/gstore:latest` to start and enter the container and execute other operations.
-
-## 0x03. Follow-up
-
-### A. Performance testing
-
-The proportion of the loss of the performance of the container under the conditions of different file numbers/networks. The performance of running gStore in the native environment and in the container.
-
-It's waiting for supplement.
-
-### B. Test of connecting other containers
-
-Waiting for supplement.
-
----
-
-There are still a large number of content waiting for supplement.
-
-Up to now we have just given a basic version. It's only the first step of containerization.
-
-It's the document ver1.0
+There are probably a lot of other things that need to be added, so for now I've just added a basic version. The basic environment build is just the first step in containerization.	

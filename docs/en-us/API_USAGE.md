@@ -30,7 +30,7 @@ We now provide C++ (Java, Python, PHP, and Node.js will be supported in future v
 
 **After the Socket API is started, you can connect through the Socket. The default port of gServer is 9000.**
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## HTTP API framework
 
 The gStore HTTP API is placed in the API/HTTP directory of the gStore root directory and contains the following: 
@@ -82,7 +82,7 @@ The gStore HTTP API is placed in the API/HTTP directory of the gStore root direc
 
 - - -
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## ghttp API instruction
 
 ### API Interconnection Mode
@@ -149,7 +149,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 | rename               | rename graph database                     | modify graph database name.                                  |
 | stat                 | query system resources                    | statistics CPU, memory, disk available space information.    |
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ### API specific intruction
 
 > The input and output parameters of each interface are specified in this section. Assume that the IP address of the GHTTP server is 127.0.0.1 and the port is 9000
@@ -202,7 +202,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(2) check**
 
 **Brief description**
@@ -244,7 +244,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(3) load (Updated in this version)**
 
 **Brief description**  
@@ -375,7 +375,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(5) unload**
 
 **Brief description**
@@ -420,7 +420,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(6) drop**
 
 **Brief description**
@@ -466,7 +466,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(7) show**
 
 **Brief description**
@@ -530,7 +530,7 @@ The interface supports both `GET` and `POST` requests, where `GET` requests plac
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(8) usermanage**
 
 **Brief description**
@@ -584,7 +584,7 @@ Users with the `update` permission also have the following interface permissions
 
 Only the root user can invoke the interface rights that are not within the scope of authorization management, for example: `build`, `drop`, `usermanage`, `showuser`, `userprivilege`, `manage`, `txnlog`, `checkpoint`, `shutdown`, `querylog`, `accesslog`, `ipmanage`.
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(9) showuser**
 
 **Brief description**
@@ -663,7 +663,7 @@ Only the root user can invoke the interface rights that are not within the scope
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(10) userprivilegemanage**
 
 **Brief description**
@@ -708,7 +708,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "add privilege query successfully. \r\nadd privilege load successfully. \r\nadd privilege unload successfully. \r\nadd privilege update successfully. \r\nadd privilege backup successfully. \r\n"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(11) userpassword (New in this version)**
 
 **Brief description**
@@ -803,7 +803,7 @@ Only the root user can invoke the interface rights that are not within the scope
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(13) backuppath**
 
 **Summary Description**
@@ -894,7 +894,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "Database restore successfully."}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(15) query**
 
 **Brief description**
@@ -979,7 +979,7 @@ Only the root user can invoke the interface rights that are not within the scope
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(16) export**
 
 **Brief description**
@@ -1025,7 +1025,7 @@ Only the root user can invoke the interface rights that are not within the scope
 
 
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(17) login (Updated in this version)**
 
 **Brief description**
@@ -1126,7 +1126,7 @@ Only the root user can invoke the interface rights that are not within the scope
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(19) tquery**
 
 **Brief description**
@@ -1172,7 +1172,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "result": "",    "StatusCode": 0,    "StatusMsg": "success"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(20) commit** 
 
 **Brief description**
@@ -1215,7 +1215,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "transaction commit success. TID: 1"}
 ```
 
- <div STYLE="page-break-after: always;"></div>
+ <!-- <div STYLE="page-break-after: always;"></div> -->
 **(21) rollback** 
 
 **Brief description**
@@ -1258,7 +1258,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "transaction rollback success. TID: 2"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(22) txnlog (Updated in this version)**
 
 **Brief description**
@@ -1339,7 +1339,7 @@ Only the root user can invoke the interface rights that are not within the scope
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(23) checkpoint**
 
 **Brief description**
@@ -1381,7 +1381,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "Database saved successfully."}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(24) testConnect (Updated in this version)**
 
 **Brief description**
@@ -1525,7 +1525,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "Batch Insert Data  Successfully.",    "success_num": "25"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(27) batchRemove**
 
 **Brief description**
@@ -1569,7 +1569,7 @@ Only the root user can invoke the interface rights that are not within the scope
 {    "StatusCode": 0,    "StatusMsg": "Batch Remove Data  Successfully.",    "success_num": "25"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(28) shutdown**
 
 **Brief description**
@@ -1609,7 +1609,7 @@ Only the root user can invoke the interface rights that are not within the scope
 If no value is returned, no information is received by default on success, and an error JSON message is returned on failure
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(29) querylog**
 
 **Brief description**
@@ -1665,7 +1665,7 @@ If no value is returned, no information is received by default on success, and a
 {	"StatusCode":0,    "StatusMsg":"Get query log success",	"totalSize":64,	"totalPage":13,	"pageNo":2,	"pageSize":5,	"list":[		{			"QueryDateTime":"2021-11-16 14:55:52:90ms:467microseconds",			"Sparql":"select ?name where { ?name <dislike> <Eve>. }",			"Format":"json",			"RemoteIP":"183.67.4.126",			"FileName":"140163774674688_20211116145552_847890509.txt",			"QueryTime":0,			"AnsNum":2		}        ......    ]}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(30) querylogdate**
 
 **Brief description**
@@ -1902,7 +1902,7 @@ Saving the blacklist and whitelist:
 // 查询黑白名单返回{    "StatusCode": 0,    "StatusMsg": "success",    "ResponseBody": {        "whiteIPs": [            "127.0.0.1",            "183.67.4.126-183.67.4.128"        ],        "blackIPs": [            "192.168.1.141"        ]    }}// 保存黑白名单返回{    "StatusCode": 0,    "StatusMsg": "success"}
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(34) funquery (New in this version)**
 
 **Brief description**
@@ -2270,7 +2270,7 @@ Connection: Keep-Alive
 | 1100       | The operation is  not defined               |
 | 1101       | IP Blocked                                  |
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## grpc API instruction
 
 ### API Connection Mode
@@ -4827,7 +4827,7 @@ To use the C++ API, put the phrase '#include "client.h" in your CPP code, as sho
 
 
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## Java  HTTP API
 
 To use the Java API, please refer to the gStore/API/HTTP/Java/SRC/JGSC/GstoreConnector. Java. Specific use is as follows:
@@ -4930,7 +4930,7 @@ Example：GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000, "ghttp",
 
 	public String exportDB(String db_name, String dir_path, String request_type);Function：Export database to parameter definition under file folder：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"】Example：gc.exportDB("lubm", "/root/gStore/");
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## Python HTTP API
 
 To use the Python API, please refer to the gStore/API/HTTP/Python/SRC/GstoreConnector. Py. Specific use is as follows:
@@ -5035,7 +5035,7 @@ Example：gc = GstoreConnector.GstoreConnector("127.0.0.1", 9000, "ghttp", "root
 	def exportDB(self, db_name, dir_path, request_type): Function：parameter definition of exprotin database to folders：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：res = gc.exportDB("lubm", "/root/gStore/")
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## Node.js HTTP API
 
 Before using the Nodejs API, type `NPM install Request` and `NPM Install request-promise` to add the required modules under the Nodejs folder.
@@ -5143,7 +5143,7 @@ To use Nodejs API, please refer to the `gStore/API/http/Nodejs/GstoreConnector.j
 	parameter definition：[database name], [directory where the database is exported], [Request types "GET" and "POST" can be omitted if the Request type is "GET"]
 	Example：res = gc.exportDB("lubm", "/root/gStore/");
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## PHP HTTP API
 
 To use the Php API, please refer to the gStore/API/HTTP/Php/SRC/GstoreConnector. Php. Specific use is as follows:
@@ -5270,7 +5270,7 @@ Example：$gc = new GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456"
 	Parameter definition：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：$res = $gc->exportDB("lubm", "/root/gStore/");
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ## gServer API instruction
 
 ### API Interconnection Mode
@@ -5308,7 +5308,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 | login    | login to database              | authenticate user names and password                    |
 |          |                                |                                                         |
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 ### API specific instruction
 
 > This section describes the input and output parameters of each interface. Assume that the IP address of the gserver is 127.0.0.1 and the port is 9000
@@ -5356,7 +5356,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(2) load**
 
 **Brief description**
@@ -5398,7 +5398,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(3) unload**
 
 **Brief description**
@@ -5440,7 +5440,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(4) drop**
 
 **Brief description**
@@ -5482,7 +5482,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(5) show**
 
 **Brief description**
@@ -5530,7 +5530,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(6) query**
 
 **Brief description**
@@ -5604,7 +5604,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(7) login**
 
 **Brief description**
@@ -5647,7 +5647,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
 **(8) stop**
 
 **Brief description**
@@ -5688,7 +5688,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(9) close**
 
 **Brief description**
@@ -5729,7 +5729,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **Appendix 1 return value code table**
 
 | Code value | Definition                                  |
@@ -5750,5 +5750,5 @@ The API supports the input of a parameter list in JSON format, as shown below：
 
 
 
-<div STYLE="page-break-after: always;"></div>
-<div STYLE="page-break-after: always;"></div>
+<!-- <div STYLE="page-break-after: always;"></div> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->

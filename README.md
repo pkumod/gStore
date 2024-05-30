@@ -2,9 +2,7 @@
   <img src="https://www.gstore.cn/pcsite/docs/logo.png" style="height: 200px;" alt="gStore logo"/>
 </div>
 
-<div align="center">
-  <h4> English | <a href="#/zh-cn/"> 中文 </a> | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a>  </h4>
-</div>
+**English** | [中文](README_ZH.md) | [Website](https://en.gstore.cn) | [网站](https://www.gstore.cn)
 
 <div align="center">
   <a href="https://github.com/pkumod/gStore/commits/1.2/"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/pkumod/gstore?logo=github"/></a>
@@ -17,7 +15,7 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 :key: gStore is released under the [BSD 3-Caluse](https://opensource.org/license/bsd-3-clause/) License, with several third-party libraries under their own licenses. Check [LICENSE](LICENSE) for details.
 
-:bug: Check out [FAQ](docs/en-us/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](/zh-cn/docs/BUGS.md) and [LIMIT](/zh-cn/docs/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
+:bug: Check out [FAQ](docs/en-us/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](docs/en-us/BUGS.md) and [LIMIT](docs/en-us/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
 
 :microphone: If you have any questions or suggestions, please open a thread in [GitHub Discussions](https://github.com/pkumod/gStore/discussions).
 
@@ -27,7 +25,7 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
-**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](https://www.gstore.cn).**
+**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](https://en.gstore.cn/#/enHome).**
 
 ## Get gStore
 
@@ -42,6 +40,7 @@ You can also open https://github.com/pkumod/gStore, download gStore.zip, then de
 $ docker pull pkumodlab/gstore-docker:latest
 ```
 
+Complete instruction documentation is on the [Docker Deployment Instructions](docs/en-us/DOCKER_DEPLOY_EN.md).
 
 ### From Source
 
@@ -57,47 +56,54 @@ Complete instruction documentation is on the [Installation Instructions](docs/en
 
 ## Quick Start
 
+**N-Triple Data format introduction**
 
-**gconsole command**
+​      RDF data should be provided in n-triple format (XML is not currently supported), and queries must be provided in [SPARQL1.1](https://www.w3.org/TR/sparql11-query/) syntax. The following is an example of the n-triple format file:        
 
-
-Login gconsole
-
-
-```shell
-$ bin/gconsole -u root
+```
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .	
+_:a  foaf:name   "Johnny Lee Outlaw" .
+_:a  foaf:mbox   <mailto:jlow@example.com> .
+_:b  foaf:name   "Peter Goodguy" .
+_:b  foaf:mbox   <mailto:peter@example.org> .
+_:c  foaf:mbox   <mailto:carol@example.org> .
 ```
 
+Triples are typically stored in the W3C-defined NT file format and represent three RDF data, where the values wrapped in `<` and `>`are urIs of an entity, and the values wrapped in '"" are literals representing the value of an attribute of the entity, followed by'`^^ `to indicate the type of the value. The following three RDF data points represent two attributes of `John`, `gender` and `age`, with values of `male` and `28` respectively. The last one indicates that `John` and `Li` have a `friend` relationship.
 
-Create database
-
-
-```shell
-$ create lubm data/lubm/lubm.nt;
+```NT
+<John> <gender> "male"^^<http://www.w3.org/2001/XMLSchema#String>.
+<John> <age> "28"^^<http://www.w3.org/2001/XMLSchema#Int>.
+<John> <friend> <Li>.
 ```
 
+​    More specific information about N-Triple please check [N-Triple](https://www.w3.org/TR/n-triples/). Not all syntax in [SPARQL1.1](https://www.w3.org/TR/sparql11-query/) is parsed and answered in gStore; for example, property paths are beyond the capabilities of the gStore system.
 
-**Api server**
-
-
-Start the server
-
+**Initialize the system database**
 
 ```shell
-# Default port 9000, you can change it with -p [port]
-$ nohup bin/ghttp &
+bin/ginit
 ```
 
-
-Then, you can access the server via HTTP protocol:
-
+**Create database**
 
 ```shell
-curl http://127.0.0.1:9000/?operation=check
+bin/gbuild -db lubm -f data/lubm/lubm.nt 
 ```
 
+**Database list**
 
-Full list of commands introduce is on the [API Usage](docs/en-us/API_USAGE.md).
+```shell
+bin/gshow
+```
+
+**Database query**
+
+```shell
+bin/gquery -db lubm -q data/lubm/lubm_q0.sql 
+```
+
+Complete instruction documentation is on the [Quick Start](docs/en-us/QUICK_START.md).
 
 
 ## Cite gStore
@@ -197,52 +203,7 @@ New features in version 0.9 include:
 - Support for transactions with three levels of isolation: *read committed*, *snapshot isolation* and *serializable*;
 - Expanding data structures to hold large-scale graphs of up to five billion triples.
 
-The version is a beta version, you can get it by :
-```
-git clone https://github.com/pkumod/gStore.git
-```
-
-**0.8**
-
-The version is a stable version ,you can get it by 
-```
- git clone -b 0.8 https://github.com/pkumod/gStore.git
-```
-
 <!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
-
-## Getting Started
-### Compile from Source
-This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
-
-- (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
-
-
-- download the zip from this repository and extract it
-
-- fork this repository in your github account
-
-Then you need to compile the project, for the first time you need to type `make pre` to prepare the `ANTLR` library and some Lexer/Parser programs.
-Later you do not need to type this command again, just use the `make` command in the home directory of gStore, then all executables will be generated.
-(For faster compiling speed, use `make -j4` instead, using how many threads is up to your machine)
-To check the correctness of the program, please type `make test` command.
-
-The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
-In addition, you can directly check the version of the code by typing `git log` to see the commit logs.
-If you want to use code from other branches instead of master branch, like 'dev' branch, then:
-
-- clone the master branch and type `git checkout dev` in your terminal
-
-- clone the dev branch directly by typing `git clone -b dev`
-
-### Deploy via Docker
-You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
-
-### Deploy  via the Static compilation package
-You can obtain the static compilation package from developers by sending an email to <gstore@pku.edu.cn>, and directly decompress the static compilation package to use it.
-
-### Run
-To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
 
 - - -
 
@@ -294,18 +255,18 @@ If you want to understand the details of the gStore system, or you want to try s
 
 ## Other Business
 
-Bugs are recorded in [BUG REPORT](docs/BUGS.md).
+Bugs are recorded in [BUG REPORT](docs/en-us/BUGS.md).
 You are welcomed to submit the bugs  through [Community Web](https://www.gstore.cn/pcsite/index.html#/forum) questioning when you discover if they do not exist in this file.
 
-We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
+We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/en-us/TIPS.md).
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gstore@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gstore@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/en-us/MAIL.md).
 
-There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
+There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/en-us/LIMIT.md).
 
-Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/FAQ.md) page.
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/en-us/FAQ.md) page.
 
-Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/en-us/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
 
 - watch/star our project
 
@@ -315,7 +276,7 @@ Graph database engine is a new area and we are still trying to go further. Thing
 
 - ...
 
-People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
+People who inspire us or contribute to this project will be listed in the [Thanks List](docs/en-us/THANK.md) chapter.
 
 
 

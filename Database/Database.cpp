@@ -583,8 +583,8 @@ void Database::setPreMap()
 		}
 	}
 
-	//if (!bar.is_completed())
-		//bar.set_progress(100);
+	if (!bar.is_completed())
+		bar.set_progress(100);
 	/*
 	for(int i = 0;i < this->pre_num;i++)
 	{
@@ -1179,16 +1179,16 @@ void Database::load_cache()
 	// cout << "Begin to add cache of s2v, p2v and o2v ......" << endl;
 	this->load_candidate_pre2values();
 
-	//bar.set_option(indicators::option::PostfixText{"Load s2v cache 1/3"});
-	//bar.set_progress(33);
+	bar.set_option(indicators::option::PostfixText{"Load s2v cache 1/3"});
+	bar.set_progress(33);
 	this->load_important_sub2values();
 
-	//bar.set_option(indicators::option::PostfixText{"Load o2v cache 2/3"});
-	//bar.set_progress(66);
+	bar.set_option(indicators::option::PostfixText{"Load o2v cache 2/3"});
+	bar.set_progress(66);
 	this->load_important_obj2values();
 
-	//bar.set_option(indicators::option::PostfixText{"Load cache done!"});
-	//bar.set_progress(100); // all done
+	bar.set_option(indicators::option::PostfixText{"Load cache done!"});
+	bar.set_progress(100); // all done
 }
 
 void Database::get_important_preID()
@@ -3042,8 +3042,8 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 				t = triple_array[i].getObject();
 				trie->Addstring(t);
 			}
-			//if (!bar.is_completed())
-				//bar.set_progress(100);
+			if (!bar.is_completed())
+				bar.set_progress(100);
 		}
 		cout << "Add triples to Trie, begin to build Prefix ......" << endl;
 		trie->BuildPrefix();
@@ -3208,8 +3208,8 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			//<< _obj << endl;
 #endif
 		}
-		//if (!bar.is_completed())
-			//bar.set_progress(100);
+		if (!bar.is_completed())
+			bar.set_progress(100);
 	}
 	for (const auto& m: id_tuples)
 	{
