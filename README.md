@@ -3,7 +3,7 @@
 </div>
 
 <div align="center">
-  <h4> <a href="#/en-us/"> English </a> | 中文 | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a>  </h4>
+  <h4> English | <a href="#/zh-cn/"> 中文 </a> | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a>  </h4>
 </div>
 
 <div align="center">
@@ -15,9 +15,9 @@
 
 gStore is an open-source graph database engine (or "triple store") born for managing large [RDF](http://www.w3.org/TR/rdf11-concepts/) datasets with the [SPARQL](https://www.w3.org/TR/sparql11-query/) query language. It works with Linux systems and amd64, arm64, and loongarch processors. gStore is a collaborative effort between the [Data Management Lab of Peking University](https://mod.icst.pku.edu.cn/english/index.htm), [University of Waterloo](https://uwaterloo.ca/), and awesome [contributors](https://github.com/pkumod/gStore/contributors) from the open-source community.
 
-:key: gStore is released under the [BSD 3-Caluse](https://opensource.org/license/bsd-3-clause/) License, with several third-party libraries under their own licenses. Check [LICENSE](/zh-cn/LICENSE.md) for details.
+:key: gStore is released under the [BSD 3-Caluse](https://opensource.org/license/bsd-3-clause/) License, with several third-party libraries under their own licenses. Check [LICENSE](LICENSE) for details.
 
-:bug: Check out [FAQ](/docs/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](/zh-cn/docs/BUGS.md) and [LIMIT](/zh-cn/docs/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
+:bug: Check out [FAQ](docs/en-us/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](/zh-cn/docs/BUGS.md) and [LIMIT](/zh-cn/docs/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
 
 :microphone: If you have any questions or suggestions, please open a thread in [GitHub Discussions](https://github.com/pkumod/gStore/discussions).
 
@@ -28,23 +28,6 @@ gStore is an open-source graph database engine (or "triple store") born for mana
 **The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
 **We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](https://www.gstore.cn).**
-
-
-## Highlights
-
-
-* First-tire performance in the [WatDiv](http://dsg.uwaterloo.ca/watdiv/), [LUBM](http://swat.cse.lehigh.edu/projects/lubm/) and [DBPedia](https://wiki.dbpedia.org/) benchmarks. ([Benchmark Results](docs/test/formal_experiment.pdf))
-
-
-* Supports multiple RDF formats, including Turtle, TriG, RDF/XML, RDFa, and JSON-LD.
-
-
-* Supports user-defined graph analysis functions. (Added in 1.0)
-
-
-* ACID-compliant transactions. (Added in 1.0)
-
-
 
 ## Get gStore
 
@@ -67,7 +50,7 @@ To compile gStore, first clone the repository:
 
 
 ```bash
-git clone https://github.com/pkumod/gStore.git --depth=1
+git clone https://github.com/pkumod/gStore.git
 ```
 
 Complete instruction documentation is on the [Installation Instructions](docs/en-us/INSTALL_INSTRUCT.md).
@@ -101,15 +84,16 @@ Start the server
 
 
 ```shell
-$ bin/ghttp &
+# Default port 9000, you can change it with -p [port]
+$ nohup bin/ghttp &
 ```
 
 
 Then, you can access the server via HTTP protocol:
 
 
-```http
-curl http://127.0.0.1:9000 -X POST -H 'Content-Type: application/json' -d '{"operation":"check"}'
+```shell
+curl http://127.0.0.1:9000/?operation=check
 ```
 
 
