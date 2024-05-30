@@ -467,12 +467,14 @@ SITree::Release(SINode* _np) const
   if (_np->isLeaf())
   {
     delete _np;
+    _np = nullptr;
     return;
   }
   int cnt = _np->GetKeyNum();
   for (; cnt >= 0; --cnt)
     Release(_np->GetChild(cnt));
   delete _np;
+  _np = nullptr;
 }
 
 SITree::~SITree()
@@ -484,6 +486,7 @@ SITree::~SITree()
 #endif
   //recursively delete each SINode
   Release(root_);
+  root_ = nullptr;
   //cout << "~SITree done" << endl;
 }
 

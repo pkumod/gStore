@@ -125,7 +125,7 @@ namespace CompressUtil
         int err = ZIP_OK;
         do
         {
-            err == ZIP_OK;
+            err = ZIP_OK;
             size_read = fread(read_buf, 1, WRITEBUFFERSIZE, fin);
             if (size_read < WRITEBUFFERSIZE)
             {

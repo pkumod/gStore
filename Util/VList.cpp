@@ -69,11 +69,10 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 	//limitID freelist
 	//QUETY: can free id list consume very large memory??
 
-	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
+	unsigned i = 0, j = 0, k = 0;	//j = (SuperNum-1)*BLOCK_SIZE
 	BlockInfo* bp;
 	if (_mode == "build")
 	{	//write basic information
-		i = 0;
 		fwrite(&cur_block_num, sizeof(unsigned), 1, this->valfp);	//current block num
 		//NOTICE: use a 1M block for a unsigned?? not ok!
 		fseek(this->valfp, BLOCK_SIZE, SEEK_SET);
