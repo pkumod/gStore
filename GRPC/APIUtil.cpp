@@ -22,8 +22,8 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&access_log_lock, NULL);
     pthread_rwlock_init(&transactionlog_lock, NULL);
     pthread_rwlock_init(&fun_data_lock, NULL);
-    ipWhiteList = new IPWhiteList();
-    ipBlackList = new IPBlackList();
+    ipWhiteList = std::unique_ptr<IPWhiteList>(new IPWhiteList());
+    ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
     util.configure_new();
 }
 
@@ -101,11 +101,10 @@ APIUtil::~APIUtil()
     pthread_rwlock_destroy(&access_log_lock);
     pthread_rwlock_destroy(&transactionlog_lock);
     pthread_rwlock_destroy(&fun_data_lock);
-    delete ipWhiteList;
-    ipWhiteList = NULL;
 
-    delete ipBlackList;
-    ipBlackList = NULL;
+    ipWhiteList = nullptr;
+
+    ipBlackList = nullptr;
 
     if (Util::file_exist(system_password_path))
     {
@@ -177,14 +176,12 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             #if defined(DEBUG)
             SLOG_DEBUG("IP white List enabled.");
             #endif
-            ipWhiteList = new IPWhiteList();
             ipWhiteList->Load(ipWhiteFile);
         }
         else if (blackList) {
             #if defined(DEBUG)
             SLOG_DEBUG("IP black list enabled.");
             #endif
-            ipBlackList = new IPBlackList();
             ipBlackList->Load(ipBlackFile);
         }
 
