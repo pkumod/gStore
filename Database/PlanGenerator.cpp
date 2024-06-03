@@ -1176,10 +1176,15 @@ PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
         if (plan == nullptr)
             plan = new PlanTree(this_node_id, bgpquery);
         else {
-            temp_plan = new PlanTree(plan, bgpquery, this_node_id, true);
+            temp_plan = new PlanTree(plan, bgpquery, this_node_id, false);
             swap(temp_plan, plan);
             plan_var_vec.emplace_back(this_node_id);
             plan_var_degree.emplace_back(1);
+			if (temp_plan != nullptr)
+			{
+				delete temp_plan;
+				temp_plan = nullptr;
+			}
         }
         RemoveNodeAddNeighbor(this_node_id, neighbor_nodes);
     }
