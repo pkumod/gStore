@@ -916,13 +916,13 @@ Util::create_dirs(const string _dirs)
             {
                 if (access(tmpDirPath, 0) != 0)
                 {
-                    mkdir(tmpDirPath, 755);
+                    mkdir(tmpDirPath, 0755);
                 }
             }
         }
         if (access(tmpDirPath, 0) != 0)
         {
-            mkdir(tmpDirPath, 755);
+            mkdir(tmpDirPath, 0755);
         }
         return true;
     }
