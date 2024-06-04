@@ -82,7 +82,7 @@ The gStore HTTP API is placed in the API/HTTP directory of the gStore root direc
 
 - - -
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## ghttp API instruction
 
 ### API Interconnection Mode
@@ -2270,7 +2270,7 @@ Connection: Keep-Alive
 | 1100       | The operation is  not defined               |
 | 1101       | IP Blocked                                  |
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## grpc API instruction
 
 ### API Connection Mode
@@ -4788,20 +4788,30 @@ To use the C++ API, put the phrase '#include "client.h" in your CPP code, as sho
 
 **Monitoring database: monitor**
 
-	std::string monitor(std::string db_name, std::string request_type);Function：Displays information for a specific database.
-	Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：gc.monitor("lubm");
+	std::string monitor(std::string db_name, std::string request_type);
+	Function：Displays information for a specific database.
+	Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：gc.monitor("lubm");
 
 **Save the database: checkpoint**
 
-	std::string checkpoint(std::string db_name, std::string request_type);Function：If you change the database, save the databas Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：gc.checkpoint("lubm");
+	std::string checkpoint(std::string db_name, std::string request_type);
+	Function：If you change the database, save the database 
+	Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：gc.checkpoint("lubm");
 
 **Show the database: show**
 
-	std::string show(std::string request_type);Function：Displays all created databases Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"] Example：gc.show();
+	std::string show(std::string request_type);
+	Function：Displays all created databases 
+	Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.show();
 
 **The kernel version information is displayed: getCoreVersion**
 
-	std::string getCoreVersion(std::string request_type);Function：Get kernel version information Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	std::string getCoreVersion(std::string request_type);
+	Function：Get kernel version information 
+	Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：gc.getCoreVersion();
 
 **The API version information is displaye: getAPIVersion**
@@ -4825,9 +4835,7 @@ To use the C++ API, put the phrase '#include "client.h" in your CPP code, as sho
 	Parameter Definition：[database name], [path to database export folder], [request type "GET" and "POST ", if the request type is "GET", can be omitted]
 	Example：gc.exportDB("lubm", "/root/gStore/");
 
-
-
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> --> 
 ## Java  HTTP API
 
 To use the Java API, please refer to the gStore/API/HTTP/Java/SRC/JGSC/GstoreConnector. Java. Specific use is as follows:
@@ -4908,134 +4916,199 @@ Example：GstoreConnector gc = new GstoreConnector("127.0.0.1", 9000, "ghttp",
 
 	public String checkpoint(String db_name, String request_type);
 	Function：If you change the database, save the database 
-	Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：gc.checkpoint("lubm");
+	Parameter Definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：gc.checkpoint("lubm");
 
 **Show database：show**
 
-	public String show(String request_type);Function：Displays all created databasesParameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：gc.show();
+	public String show(String request_type);
+	Function：Displays all created databases
+	Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.show();
 
 **The kernel version information is displayed：getCoreVersion**
 
-	public String getCoreVersion(String request_type);Function：Get kernel version information Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：gc.getCoreVersion();
+	public String getCoreVersion(String request_type);
+	Function：Get kernel version information 
+	Parameter Definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.getCoreVersion();
 
 **Display API version：getAPIVersion**
 
-	public String getAPIVersion(String request_type);Function：Get API version Parameter：[Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：gc.getAPIVersion();
+	public String getAPIVersion(String request_type);
+	Function：Get API version 
+	Parameter Parameter：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.getAPIVersion();
 
 **Query the database and save the file: fquery**
 
-	public void fquery(String db_name, String format, String sparql, String filename, String request_type);Function：Query the database and save the result to a file Parameter definition：[database name], [query result type JSON, HTML or text], [SPARQL statement], [file name]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：gc.fquery("lubm", "json", sparql, "ans.txt");
+	public void fquery(String db_name, String format, String sparql, String filename, String request_type);
+	Function：Query the database and save the result to a file 
+	Parameter definition：[database name], [query result type JSON, HTML or text], [SPARQL statement], [file name]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.fquery("lubm", "json", sparql, "ans.txt");
 
 **Export database**
 
-	public String exportDB(String db_name, String dir_path, String request_type);Function：Export database to parameter definition under file folder：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"】Example：gc.exportDB("lubm", "/root/gStore/");
+	public String exportDB(String db_name, String dir_path, String request_type);
+	Function：Export database to a folder
+	Parameter definition：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.exportDB("lubm", "/root/gStore/");
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## Python HTTP API
 
 To use the Python API, please refer to the gStore/API/HTTP/Python/SRC/GstoreConnector. Py. Specific use is as follows:
 
 **Construct the initialization function**
 
-```python
-public class GstoreConnector(self, serverIP, serverPort, httpType, username,
-password):
-Function: Initialize
-Parameter Definition：[Server IP], [HTTP port on the server], [HTTP service type], [Username], [password]
-Example：gc = GstoreConnector.GstoreConnector("127.0.0.1", 9000, "ghttp", "root",
-"123456")
-```
+	def __init__(self, ip, port, username, password, http_type='ghttp'):
+	Function: Initialize
+	Parameter definition：[Server IP], [HTTP port on the server], [Username], [password], [HTTP service types "ghttp" and "grpc" can be omitted if the http type is "ghttp"]
+	Example：gc = GstoreConnector.GstoreConnector("127.0.0.1", 9000, "root","123456")
+
+**Check service: check**
+
+	def check(self, request_type='GET'):
+	Function: check the HTTP service status
+	Parameter definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example: res = gc.check()
 
 **Build database: build**
 
-	def build(self, db_name, rdf_file_path, request_type):
+	def build(self, db_name, db_path, request_type='GET'):
 	Function：Create a new database from an RDF file
-	Parameter definition：[Database name]，[.nt文件路径]，[Request types "GET" and "POST" can be omitted if the request type is "GET"】
+	Parameter definition：[Database name], [REF file path], [Request types "GET" and "POST" can be omitted if the request type is "GET"】
 	Example：res = gc.build("lubm", "data/lubm/lubm.nt")
+
+**Database deletion: drop**
+
+	def drop(self, db_name, is_backup, request_type='GET'):
+	Function：Delete the database directly or delete the database while leaving a backup
+	Parameter definition：[database name], [false not backup, true backup], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：res = gc.drop("lubm", false)
 
 **Load database: load**
 
-	def load(self, db_name, request_type):
+	def load(self, db_name, csr='0', request_type='GET'):
 	Function：load the database you have created
-	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Parameter definition：[database name], ["0" not loading csr resource "1" loading csr resource default "0"] [Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：res = gc.load("lubm")
 
 **Unload database: unload**
 
-	def unload(self, db_name, request_type):
+	def unload(self, db_name, request_type='GET'):
 	Function：Unload database
-	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Parameter definition：[database name], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：res = gc.unload("lubm")
 
-**User management: user**
+**Display database：show**
 
-	def user(self, type, username2, addition, request_type):
-	Function：The root user can add, delete, or modify the user's permission only.
-	1.Add or delete users：
-	Parameter definition：["add_user" adds a user, "delete_user" deletes a user],  [username],[password],[Request types "GET" and "POST" can be omitted if the Request type is "GET"]
-	Example：res = gc.user("add_user", "user1", "111111")
-	2.Modify user's privilege：
-	Parameter definition：["Add_query" adds query permission, "delete_query" deletes query permission, "add_load" adds load permission, "delete_load" deletes load permission, "add_unload" adds no load permission, "delete_unload" deletes no load permission,  "Add_update" adds update permission, "delete_update" deletes update permission, "add_backup" adds backup permission, "delete_bakup" deletes backup permission, "add_restore" adds restore permission,  "Delete_restore" deletes restore permission,"add_export" adds export permission," delete_export" deletes export permission],  [user name],[database name],[Request types "GET" and "POST" can be omitted if the Request type is "GET"]
-	Example：res = gc.user("add_query", "user1", "lubm")
+	def show(self, request_type='GET'):
+	Function: Display the meanings of all created databases
+	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"] 
+	Example：res = gc.show()
+	
+**Database Monitor ：monitor**   	
+
+	def monitor(self, db_name, request_type='GET'):
+	Function：Displays information for a specific database 
+	Parameter definition：[Database name], [Request types "GET" and "POST" can be omitted if the request type is "GET"] 
+	Example：res = gc.monitor("lubm")
+	
+**Query Database: query**
+
+	def query(self, db_name, format, sparql, request_type='GET'):
+	Function：Query the database
+	Parameter definition：[Database name], [Query result type JSON, HTML or text], [SPARQL statement], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：
+	sparql = "select ?x ?p where { ?x ?p <FullProfessor0>. }"
+	res = gc.query("lubm", "json", sparql)
+	print(res)
 
 **Display users: showUser**
 
-	def showUser(self, request_type):
+	def showuser(self, request_type='GET'):
 	Function：Display all users
 	Parameter definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：res = gc.showUser()
 
-**Query Database: query**
+**User management: usermanage**
 
-	def query(self, db_name, format, sparql, request_type):
-	Function：Query the database
-	Parameter definition：[Database name]，[Query result type JSON, HTML or text], [SPARQL statement], [Request types "GET" and "POST" can be omitted if the Request type is "GET"]
+	def usermanage(self, type, op_username, op_password, equest_type='GET'):
+	Function：The root user can add, delete user, or modify the user's password only.
+	Parameter definition：["1" adds a user, "2" deletes a user, "3" modify user's password], [username], [password], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：res = gc.usermanage("1", "test", "123456")
+	
+**Modify user's privileges: userprivilegemanage**
+
+	def userprivilegemanage(self, type, op_username, privileges, db_name, request_type='GET'):
+	unction：modify user's privileges
+	Parameter definition：["1" add privilege, "2" delete privilege, "3" clear privilege], [user name], ["1" query permission, "2" load permission, "3" unload permission, "4" update permission, "5" backup permission, "6" restore permission,  "7" export permission], [database name],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：
-	res = gc.query("lubm", "json", sparql)
-	print(res) //output result
-
-**Database deletion: drop**
-
-	def drop(self, db_name, is_backup, request_type):
-	Function：Delete the database directly or delete the database while leaving a backup
-	Parameter definition：[database name], [false not backup, true backup],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
-	Example：res = gc.drop("lubm", false)  //Delete the database without leaving a backup
-
-**Database Monitor ：monitor**   	
-
-	def monitor(self, db_name, request_type):    Function：Displays information for a specific database Parameter definition：[Database name]，[Request types "GET" and "POST" can be omitted if the request type is "GET"] 
-	Example：res = gc.monitor("lubm")
-
-**Save database: checkpoint**
-
-	def checkpoint(self, db_name, request_type):Function：If the database is changed, save the meaning of the database parameters：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted] Example：res = gc.checkpoint("lubm")
-
-**Display database：show**
-
-	def show(self, request_type):Function：Display the meanings of all created databases：[Request types "GET" and "POST" can be omitted if the request type is "GET"] 
-	Example：res = gc.show()
+	Add all privileges of "lubm" to user "test"
+	res = gc.userprivilegemanage("1", "test", "1,2,3,4,5,6,7", "lubm")
+	Remove "backup" "restore" privileges of "lubm" from user "test"
+	res = gc.userprivilegemanage("2", "test", "5,7", "lubm")
+	Clear all privileges 
+	res = gc.userprivilegemanage("3", "test", "", "")
 
 **The kernel version information is displayed: getCoreVersion**
 
-	def getCoreVersion(self, request_type):Function：Get the definition of kernel version parameter ：[Request types "GET" and "POST" can be omitted if the request type is "GET"] 
+	def getCoreVersion(self, request_type='GET'):
+	Function: Get the definition of kernel version
+	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"] 
 	Example：res = gc.getCoreVersion()
 
-**Display API version: getAPIVersion**	
+**Open transaction operation: begin**
 
-	def getAPIVersion(self, request_type):Function：Get the API version information parameter definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
-	Example：res = gc.getAPIVersion()
+	def begin(self, db_name, isolevel, request_type='GET'):
+	Function：open transaction operation 
+	Parameter definition：[database name], ["1" seriablizable "2" snapshot isolation "3" read committed], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.begin("lubm", "1")
 
-**Query the database and save the file: fquery**
+**Execute transaction query: fquery**
 
-	def fquery(self, db_name, format, sparql, filename, request_type):Function：Query the database and save the result to a file Parameter definition：[database name], [query result type JSON, HTML or text], [SPARQL statement], [file name]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
-	Example：gc.fquery("lubm", "json", sparql, "ans.txt")
+	def tquery(self, db_name, tid, sparql, request_type='GET'):
+	Function：execute transaction query 
+	Parameter definition：[database name], [transaction ID], [SPARQL statement], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.fquery("lubm", "1", sparql)
 
-**Export databse**
+**commit transaction: commit**
 
-	def exportDB(self, db_name, dir_path, request_type): Function：parameter definition of exprotin database to folders：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
-	Example：res = gc.exportDB("lubm", "/root/gStore/")
+	def commit(self, db_name, tid, request_type='GET'):
+	Function: commit transaction 
+	Parameter definition：[database name], [transaction ID], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.commit("lubm", "1")
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+**rollback transaction: rollback**
+
+	def rollback(self, db_name, tid, request_type='GET'):
+	Function: rollback transaction 
+	Parameter definition：[database name], [transaction ID], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.rollback("lubm", "1")
+
+**get transaction log: getTransLog**
+
+	def getTransLog(self, page_no=1, page_size=10, request_type='GET'):
+	Function: get transaction log information
+	Parameter definition：[database name], [page number], [size per page], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：gc.getTransLog(1, 10)
+
+**Save database: checkpoint**
+
+	def checkpoint(self, db_name, request_type='GET'):
+	Function：If you change the database, save the database 
+	Parameter definition: [database name], [request type "GET" and "POST ", if request type "GET" can be omitted] 
+	Example：res = gc.checkpoint("lubm")
+
+**Export databse: exportDB**
+
+	def exportDB(self, db_name, db_path, request_type='GET'):
+	Function：exprot database to folders
+	Parameter definition：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：res = gc.exportDB("lubm", "./export")
+
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## Node.js HTTP API
 
 Before using the Nodejs API, type `NPM install Request` and `NPM Install request-promise` to add the required modules under the Nodejs folder.
@@ -5054,7 +5127,7 @@ To use Nodejs API, please refer to the `gStore/API/http/Nodejs/GstoreConnector.j
 
 	async build(db_name = '', rdf_file_path = '', request_type);
 	Function：Create a new database from an RDF file
-	The defintion of parameters are as follows: [database name], [.nt file path],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	The defintion of parameters are as follows: [database name], [.nt file path], [Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：res = gc.build("lubm", "data/lubm/lubm.nt");
 
 **Load database：load**
@@ -5107,20 +5180,31 @@ To use Nodejs API, please refer to the `gStore/API/http/Nodejs/GstoreConnector.j
 
 **Database monitor: monitor**   	
 
-	async monitor(db_name = '', request_type);     Function：Parameter definition for displaying information about a specific database：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：res = gc.monitor("lubm");
+	async monitor(db_name = '', request_type);
+	Function：Displays information for a specific database 
+	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：res = gc.monitor("lubm");
 
 **Save database: checkpoint**
 
-	async checkpoint(db_name = '', request_type);Function：If the database is changed, the parameter definition of saving database：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：res = gc.checkpoint("lubm");
+	async checkpoint(db_name = '', request_type);
+	Function：If you change the database, save the database 
+	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：res = gc.checkpoint("lubm");
 
 **Display database: show**
 
-	async show(request_type);Function：Displays all created databases Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：res = gc.show();
+	async show(request_type);
+	Function：Displays all created databases
+	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：res = gc.show();
 
 **Display kernel version information: getCoreVersion**	
 
-	async getCoreVersion(request_type);Function：Get kernel version information 
-	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"]Example：res = gc.getCoreVersion();
+	async getCoreVersion(request_type);
+	Function：Get kernel version information 
+	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example：res = gc.getCoreVersion();
 
 **Display API version: getAPIVersion**			
 
@@ -5143,7 +5227,7 @@ To use Nodejs API, please refer to the `gStore/API/http/Nodejs/GstoreConnector.j
 	parameter definition：[database name], [directory where the database is exported], [Request types "GET" and "POST" can be omitted if the Request type is "GET"]
 	Example：res = gc.exportDB("lubm", "/root/gStore/");
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## PHP HTTP API
 
 To use the Php API, please refer to the gStore/API/HTTP/Php/SRC/GstoreConnector. Php. Specific use is as follows:
@@ -5194,7 +5278,7 @@ Example：$gc = new GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456"
 	$res = $gc->user("add_user", "user1", "111111");
 	echo $res . PHP_EOL;
 	2.Privilege to modify user：
-	参数含义：["Add_query" adds query permission, "delete_query" deletes query permission, "add_load" adds load permission, "delete_load" deletes load permission, "add_unload" adds no load permission, "delete_unload" deletes no load permission,  "Add_update" adds update permission, "delete_update" deletes update permission, "add_backup" adds backup permission, "delete_bakup" deletes backup permission, "add_restore" adds restore permission,  "Delete_restore" deletes restore permission,"add_export" adds export permission," delete_export" deletes export permission],  [user name],[database name],[Request types "GET" and "POST" can be omitted if the Request type is "GET"]]
+	参数含义：["Add_query" adds query permission, "delete_query" deletes query permission, "add_load" adds load permission, "delete_load" deletes load permission, "add_unload" adds no load permission, "delete_unload" deletes no load permission,  "Add_update" adds update permission, "delete_update" deletes update permission, "add_backup" adds backup permission, "delete_bakup" deletes backup permission, "add_restore" adds restore permission,  "Delete_restore" deletes restore permission,"add_export" adds export permission," delete_export" deletes export permission], [user name], [database name], [Request types "GET" and "POST" can be omitted if the Request type is "GET"]
 	Example：
 	$res = $gc->user("add_user", "user1", "lubm");
 	echo $res . PHP_EOL;
@@ -5227,23 +5311,29 @@ Example：$gc = new GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456"
 
 **Database monitor: monitor**  	
 
-	function monitor($db_name, $request_type)Function：Displays information for a specific database 
+	function monitor($db_name, $request_type)
+	Function：Displays information for a specific database 
 	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
 	Example：$res = $gc->monitor("lubm");echo $res. PHP_EOL;
 
 **Save database: checkpoint**
 
-	function checkpoint($db_name, $request_type)Function：the Parameter definition of save database if it has been changed：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]Example：$res = $gc->checkpoint("lubm");echo $res. PHP_EOL;
+	function checkpoint($db_name, $request_type)
+	Function：If you change the database, save the database 
+	Parameter definition：[database name], [request type "GET" and "POST ", if request type "GET" can be omitted]
+	Example：$res = $gc->checkpoint("lubm");echo $res. PHP_EOL;
 
 **Display database: show**
 
-	function show($request_type)Function：Displays all created databases
+	function show($request_type)
+	Function：Displays all created databases
 	Parameter definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：$res = $gc->show();echo $res. PHP_EOL;
 
 **Display kernel version information: getCoreVersion**
 
-	function getCoreVersion($request_type)Function：get kernel version information
+	function getCoreVersion($request_type)
+	Function：get kernel version information
 	Parameter definition: [Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：$res = $gc->getCoreVersion();echo $res. PHP_EOL;
 
@@ -5270,7 +5360,7 @@ Example：$gc = new GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456"
 	Parameter definition：[database name], [database export folder path]，[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：$res = $gc->exportDB("lubm", "/root/gStore/");
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ## gServer API instruction
 
 ### API Interconnection Mode
@@ -5286,7 +5376,7 @@ http://ip:9000/
 The API supports the input of a parameter list in JSON format, as shown below：
 
 ```json
-{"op": "[op_type]", "[paramname1]": "[paramvalue1]", "[paramname2]": "[paramvalue2]"……}
+{"op": "[op_type]", "[paramname1]": "[paramvalue1]", "[paramname2]": "[paramvalue2]"}
 ```
 
  
@@ -5308,7 +5398,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 | login    | login to database              | authenticate user names and password                    |
 |          |                                |                                                         |
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 ### API specific instruction
 
 > This section describes the input and output parameters of each interface. Assume that the IP address of the gserver is 127.0.0.1 and the port is 9000
@@ -5356,7 +5446,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(2) load**
 
 **Brief description**
@@ -5398,7 +5488,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(3) unload**
 
 **Brief description**
@@ -5440,7 +5530,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(4) drop**
 
 **Brief description**
@@ -5482,7 +5572,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(5) show**
 
 **Brief description**
@@ -5530,7 +5620,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(6) query**
 
 **Brief description**
@@ -5604,7 +5694,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(7) login**
 
 **Brief description**
@@ -5647,7 +5737,7 @@ The API supports the input of a parameter list in JSON format, as shown below：
 }
 ```
 
-<!-- <!-- <div STYLE="page-break-after: always;"></div> --> -->
+<!-- <div STYLE="page-break-after: always;"></div> -->
 **(8) stop**
 
 **Brief description**

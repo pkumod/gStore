@@ -201,7 +201,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`build`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称（不需要.db）                                      |
 | db_path    | 是   | string | 数据库文件路径（可以是绝对路径，也可以是相对路径，相对路径以gStore安装根目录为参照目录） |
@@ -296,7 +296,7 @@ http://ip:9000/
 | operation                  | 是   | string | 操作名称，固定值为**`load`**                               |
 | username                   | 是   | string | 用户名                                                     |
 | encryption                 | 否   | string | 为空，则密码为明文，为1表示用md5加密                       |
-| password                   | 是   | string | 密码（明文)                                                |
+| password                   | 是   | string | 密码（明文）                                                |
 | db_name                    | 是   | string | 数据库名称（不需要.db）                                    |
 | <font color=red>csr</font> | 否   | string | 是否加载CSR资源，默认为0（使用高级查询函数时，需要设置为1) |
 
@@ -344,7 +344,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`monitor`**     |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称（不需要.db）             |
 
@@ -427,7 +427,7 @@ http://ip:9000/
 | operation  | 是   | string | 操作名称，固定值为**`unload`**      |
 | db_name    | 是   | string | 数据库名称（不需要.db）             |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 
 **返回值**
@@ -471,7 +471,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`drop`**                                 |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称（不需要.db）                                      |
 | is_backup  | 否   | string | true:代表逻辑删除，false:代表物理删除（默认为true），如果是逻辑删除，将文件夹变成.bak文件夹，用户可以通过修改文件夹名为.db，然后调用 `bin/ginit -db 数据库名` 的方式将其加入system数据库中，从而实现恢复 |
@@ -517,7 +517,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`show`**         |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -580,7 +580,7 @@ http://ip:9000/
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`usermanage`**                           |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type        | 是   | string | 操作类型（1：adduser，2：deleteUser，3：alterUserPassword）  |
 | op_username | 是   | string | 操作的用户名                                                 |
@@ -634,7 +634,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`showuser`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -646,13 +646,13 @@ http://ip:9000/
 | ResponseBody           | JsonArray | JSON对象数组                                 |
 | ---- username          | string    | 用户名                                       |
 | ---- password          | string    | 密码                                         |
-| ---- query_privilege   | string    | 查询权限（数据库名以逗号分隔)                |
-| ---- update_privilege  | string    | 更新权限（数据库名以逗号分隔)                |
-| ---- load_privilege    | string    | 加载权限（数据库名以逗号分隔)                |
-| ---- unload_privilege  | string    | 卸载权限（数据库名以逗号分隔)                |
-| ---- backup_privilege  | string    | 备份权限（数据库名以逗号分隔)                |
-| ---- restore_privilege | string    | 还原权限（数据库名以逗号分隔)                |
-| ---- export_privilege  | string    | 导出权限（数据库名以逗号分隔)                |
+| ---- query_privilege   | string    | 查询权限（数据库名以逗号分隔）                |
+| ---- update_privilege  | string    | 更新权限（数据库名以逗号分隔）                |
+| ---- load_privilege    | string    | 加载权限（数据库名以逗号分隔）                |
+| ---- unload_privilege  | string    | 卸载权限（数据库名以逗号分隔）                |
+| ---- backup_privilege  | string    | 备份权限（数据库名以逗号分隔）                |
+| ---- restore_privilege | string    | 还原权限（数据库名以逗号分隔）                |
+| ---- export_privilege  | string    | 导出权限（数据库名以逗号分隔）                |
 
 **返回示例**
 
@@ -714,7 +714,7 @@ http://ip:9000/
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`userprivilegemanage`**                  |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type        | 是   | string | 操作类型（1：add privilege，2：delete privilege， 3：clear privilege ） |
 | op_username | 是   | string | 操作的用户名                                                 |
@@ -809,7 +809,7 @@ http://ip:9000/
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**backup**                                 |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name     | 是   | string | 需要操作的数据库                                             |
 | backup_path | 否   | string | 备份文件路径（可以是相对路径，也可以是绝对路径,相对路径以gStore根目录为参考），默认为gStore根目录下的backups目录 |
@@ -853,7 +853,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**backuppath**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 需要查询的数据库名称                 |
 
@@ -903,7 +903,7 @@ http://ip:9000/
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`restore`**                              |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name     | 是   | string | 需要操作的数据库                                             |
 | backup_path | 是   | string | 备份文件完整路径【带时间戳的】（可以是相对路径，也可以是绝对路径，相对路径以gStore根目录为参考） |
@@ -949,7 +949,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`query`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 需要操作的数据库                                             |
 | format     | 否   | string | 结果集返回格式（可选值有：json，html和file），默认是json     |
@@ -1034,7 +1034,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`restore`**                              |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 需要操作的数据库                                             |
 | db_path    | 是   | string | 导出路径（可以是相对路径，也可以是绝对路径，相对路径以gStore根目录为参考） |
@@ -1083,7 +1083,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`login`**        |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -1135,7 +1135,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`begin`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称                                                   |
 | isolevel   | 是   | string | 事务隔离等级 1:RC(read committed)  2:SI(snapshot isolation) 3:SR(seriablizable） |
@@ -1183,7 +1183,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`tquery`**       |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 | tid        | 是   | string | 事务ID                               |
@@ -1232,7 +1232,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`commit`**      |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                          |
 | tid        | 是   | string | 事务ID                              |
@@ -1278,7 +1278,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`rollback`**    |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                          |
 | tid        | 是   | string | 事务ID                              |
@@ -1325,7 +1325,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`txnlog`**       |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
 | pageSize   | 是   | int    | 每页条数，取值范围1-N，默认10        |
@@ -1404,7 +1404,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`checkpoint`**   |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 
@@ -1452,7 +1452,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`testConnect`**  |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -1505,7 +1505,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | -------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`getCoreVersion`** |
 | username   | 是   | string | 用户名                                 |
-| password   | 是   | string | 密码（明文)                            |
+| password   | 是   | string | 密码（明文）                            |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密   |
 
 **返回值**
@@ -1555,7 +1555,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ---------------------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**batchInsert**                    |
 | username   | 是   | string | 用户名                                               |
-| password   | 是   | string | 密码（明文)                                          |
+| password   | 是   | string | 密码（明文）                                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                 |
 | db_name    | 是   | string | 数据库名                                             |
 | file       | 是   | string | 要插入的数据nt文件（可以是相对路径也可以是绝对路径） |
@@ -1605,7 +1605,7 @@ http://ip:9000/
 | :--------- | :--- | :----- | ---------------------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`batchRemove`**                  |
 | username   | 是   | string | 用户名                                               |
-| password   | 是   | string | 密码（明文)                                          |
+| password   | 是   | string | 密码（明文）                                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                 |
 | db_name    | 是   | string | 数据库名                                             |
 | file       | 是   | string | 要删除的数据nt文件（可以是相对路径也可以是绝对路径） |
@@ -1696,7 +1696,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`querylog`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | date       | 是   | string | 日期，格式为yyyyMMdd                 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
@@ -1773,7 +1773,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`querylogdate`** |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -1826,7 +1826,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`accesslog`**    |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | date       | 是   | string | 日期，格式为yyyyMMdd                 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
@@ -1899,7 +1899,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`accesslogdate`** |
 | username   | 是   | string | 用户名                                |
-| password   | 是   | string | 密码（明文)                           |
+| password   | 是   | string | 密码（明文）                           |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密  |
 
 **返回值**
@@ -1955,7 +1955,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`ipmanage`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | type       | 是   | string | 操作类型，固定值为**1**              |
 
@@ -1965,7 +1965,7 @@ http://ip:9000/
 | ---------- | ---- | ------ | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`ipmanage`**                             |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type       | 是   | string | 操作类型，固定值为**2**                                      |
 | ip_type    | 是   | string | 名单类型，1-黑名单 2-白名单                                  |
@@ -2039,7 +2039,7 @@ http://ip:9000/
 | -------------- | ---- | ---------- | ------------------------------------ |
 | operation      | 是   | string     | 操作名称，固定值为**`funquery`**     |
 | username       | 是   | string     | 用户名                               |
-| password       | 是   | string     | 密码（明文)                          |
+| password       | 是   | string     | 密码（明文）                          |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密 |
 | funInfo        | 否   | JSONObject | 查询参数                             |
 | ---- funName   | 否   | string     | 函数名称                             |
@@ -2104,7 +2104,7 @@ http://ip:9000/
 | -------------- | ---- | ---------- | ------------------------------------------------------------ |
 | operation      | 是   | string     | 操作名称，固定值为**`funcudb`**                              |
 | username       | 是   | string     | 用户名                                                       |
-| password       | 是   | string     | 密码（明文)                                                  |
+| password       | 是   | string     | 密码（明文）                                                  |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密                         |
 | type           | 是   | string     | 1:新增，2:修改，3:删除，4:编译                               |
 | funInfo        | 是   | JSONObject | 算子函数                                                     |
@@ -2155,7 +2155,7 @@ http://ip:9000/
 | -------------- | ---- | ---------- | ------------------------------------------------------- |
 | operation      | 是   | string     | 操作名称，固定值为**`funreview`**                       |
 | username       | 是   | string     | 用户名                                                  |
-| password       | 是   | string     | 密码（明文)                                             |
+| password       | 是   | string     | 密码（明文）                                             |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密                    |
 | funInfo        | 是   | JSONObject | 算子函数                                                |
 | ---- funName   | 是   | string     | 函数名称                                                |
@@ -2206,7 +2206,7 @@ http://ip:9000/
 | 参数名     | 必选 | 类型    | 说明                                 |
 | :--------- | :--- | :------ | ------------------------------------ |
 | username   | 是   | string  | 用户名                               |
-| password   | 是   | string  | 密码（明文)                          |
+| password   | 是   | string  | 密码（明文）                          |
 | encryption | 否   | string  | 为空，则密码为明文，为1表示用md5加密 |
 | file       | 是   | boudary | 待上传的文件的二进制文件流           |
 
@@ -2251,7 +2251,7 @@ http://ip:9000/
 | 参数名     | 必选 | 类型   | 说明                                                       |
 | :--------- | :--- | :----- | ---------------------------------------------------------- |
 | username   | 是   | string | 用户名（该用户名默认是system）                             |
-| password   | 是   | string | 密码（明文)                                                |
+| password   | 是   | string | 密码（明文）                                                |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                       |
 | filepath   | 是   | string | 待下载的文件路径（只支持下载gstore主目录及子目录下的文件） |
 
@@ -2294,7 +2294,7 @@ Connection: Keep-Alive
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**rename**         |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 | new_name   | 是   | string | 数据库新名称                         |
@@ -2346,7 +2346,7 @@ Connection: Keep-Alive
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**stat**           |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -2544,7 +2544,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`login`**        |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -2601,7 +2601,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`testConnect`**  |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -2656,7 +2656,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | -------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`getCoreVersion`** |
 | username   | 是   | string | 用户名                                 |
-| password   | 是   | string | 密码（明文)                            |
+| password   | 是   | string | 密码（明文）                            |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密   |
 
 **返回值**
@@ -2711,7 +2711,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`ipmanage`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | type       | 是   | string | 操作类型，固定值为**1**              |
 
@@ -2721,7 +2721,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`ipmanage`**                             |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type       | 是   | string | 操作类型，固定值为**2**                                      |
 | ip_type    | 是   | string | 名单类型，1-黑名单 2-白名单                                  |
@@ -2801,7 +2801,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`show`**         |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -2870,7 +2870,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | operation  | 是   | string | 操作名称，固定值为**`load`**                               |
 | username   | 是   | string | 用户名                                                     |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                       |
-| password   | 是   | string | 密码（明文)                                                |
+| password   | 是   | string | 密码（明文）                                                |
 | db_name    | 是   | string | 数据库名称（不需要.db）                                    |
 | csr        | 否   | string | 是否加载CSR资源，默认为0（使用高级查询函数时，需要设置为1) |
 
@@ -2923,7 +2923,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | operation  | 是   | string | 操作名称，固定值为**`unload`**      |
 | db_name    | 是   | string | 数据库名称（不需要.db）             |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 
 **返回值**
@@ -2972,7 +2972,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`monitor`**     |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称（不需要.db）             |
 
@@ -3058,7 +3058,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`build`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称（不需要.db）                                      |
 | db_path    | 是   | string | 数据库文件路径（可以是绝对路径，也可以是相对路径，相对路径以gStore安装根目录为参照目录） |
@@ -3111,7 +3111,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`drop`**                                 |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称（不需要.db）                                      |
 | is_backup  | 否   | string | true:代表逻辑删除，false:代表物理删除（默认为true），如果是逻辑删除，将文件夹变成.bak文件夹，用户可以通过修改文件夹名为.db，然后调用 `bin/ginit -db 数据库名` 的方式将其加入system数据库中，从而实现恢复 |
@@ -3162,7 +3162,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**backup**                                 |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name     | 是   | string | 需要操作的数据库                                             |
 | backup_path | 否   | string | 备份文件路径（可以是相对路径，也可以是绝对路径,相对路径以gStore根目录为参考），默认为gStore根目录下的backups目录 |
@@ -3215,7 +3215,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**backuppath**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 需要查询的数据库名称                 |
 
@@ -3270,7 +3270,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`restore`**                              |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name     | 是   | string | 需要操作的数据库                                             |
 | backup_path | 是   | string | 备份文件完整路径【带时间戳的】（可以是相对路径，也可以是绝对路径，相对路径以gStore根目录为参考） |
@@ -3321,7 +3321,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`query`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 需要操作的数据库                                             |
 | format     | 否   | string | 结果集返回格式（可选值有：json, file, json+file），默认是json |
@@ -3427,7 +3427,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`restore`**                              |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 需要操作的数据库                                             |
 | db_path    | 是   | string | 导出路径（可以是相对路径，也可以是绝对路径，相对路径以gStore根目录为参考） |
@@ -3480,7 +3480,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`begin`**                                |
 | username   | 是   | string | 用户名                                                       |
-| password   | 是   | string | 密码（明文)                                                  |
+| password   | 是   | string | 密码（明文）                                                  |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | db_name    | 是   | string | 数据库名称                                                   |
 | isolevel   | 是   | string | 事务隔离等级 1:RC(read committed)  2:SI(snapshot isolation) 3:SR(seriablizable） |
@@ -3533,7 +3533,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`tquery`**       |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 | tid        | 是   | string | 事务ID                               |
@@ -3587,7 +3587,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`commit`**      |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                          |
 | tid        | 是   | string | 事务ID                              |
@@ -3638,7 +3638,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ----------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`rollback`**    |
 | username   | 是   | string | 用户名                              |
-| password   | 是   | string | 密码（明文)                         |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，=1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                          |
 | tid        | 是   | string | 事务ID                              |
@@ -3684,7 +3684,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`checkpoint`**   |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 
@@ -3734,7 +3734,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ---------------------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**batchInsert**                    |
 | username   | 是   | string | 用户名                                               |
-| password   | 是   | string | 密码（明文)                                          |
+| password   | 是   | string | 密码（明文）                                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                 |
 | db_name    | 是   | string | 数据库名                                             |
 | file       | 是   | string | 要插入的数据nt文件（可以是相对路径也可以是绝对路径） |
@@ -3787,7 +3787,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ---------------------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`batchRemove`**                  |
 | username   | 是   | string | 用户名                                               |
-| password   | 是   | string | 密码（明文)                                          |
+| password   | 是   | string | 密码（明文）                                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                 |
 | db_name    | 是   | string | 数据库名                                             |
 | file       | 是   | string | 要删除的数据nt文件（可以是相对路径也可以是绝对路径） |
@@ -3840,7 +3840,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`usermanage`**                           |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type        | 是   | string | 操作类型（1：adduser，2：deleteUser，3：alterUserPassword）  |
 | op_username | 是   | string | 被操作的用户名                                               |
@@ -3899,7 +3899,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`showuser`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -3911,13 +3911,13 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ResponseBody           | JsonArray | JSON对象数组                                 |
 | ---- username          | string    | 用户名                                       |
 | ---- password          | string    | 密码                                         |
-| ---- query_privilege   | string    | 查询权限（数据库名以逗号分隔)                |
-| ---- update_privilege  | string    | 更新权限（数据库名以逗号分隔)                |
-| ---- load_privilege    | string    | 加载权限（数据库名以逗号分隔)                |
-| ---- unload_privilege  | string    | 卸载权限（数据库名以逗号分隔)                |
-| ---- backup_privilege  | string    | 备份权限（数据库名以逗号分隔)                |
-| ---- restore_privilege | string    | 还原权限（数据库名以逗号分隔)                |
-| ---- export_privilege  | string    | 导出权限（数据库名以逗号分隔)                |
+| ---- query_privilege   | string    | 查询权限（数据库名以逗号分隔）                |
+| ---- update_privilege  | string    | 更新权限（数据库名以逗号分隔）                |
+| ---- load_privilege    | string    | 加载权限（数据库名以逗号分隔）                |
+| ---- unload_privilege  | string    | 卸载权限（数据库名以逗号分隔）                |
+| ---- backup_privilege  | string    | 备份权限（数据库名以逗号分隔）                |
+| ---- restore_privilege | string    | 还原权限（数据库名以逗号分隔）                |
+| ---- export_privilege  | string    | 导出权限（数据库名以逗号分隔）                |
 
 **返回示例**
 
@@ -3982,7 +3982,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :---------- | :--- | :----- | ------------------------------------------------------------ |
 | operation   | 是   | string | 操作名称，固定值为**`userprivilegemanage`**                  |
 | username    | 是   | string | 用户名                                                       |
-| password    | 是   | string | 密码（明文)                                                  |
+| password    | 是   | string | 密码（明文）                                                  |
 | encryption  | 否   | string | 为空，则密码为明文，为1表示用md5加密                         |
 | type        | 是   | string | 操作类型（1：add privilege，2：delete privilege， 3：clear privilege ） |
 | op_username | 是   | string | 操作的用户名                                                 |
@@ -4083,7 +4083,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`txnlog`**       |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
 | pageSize   | 是   | int    | 每页数，取值范围1-N，默认10          |
@@ -4167,7 +4167,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`querylog`**     |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | date       | 是   | string | 日期，格式为yyyyMMdd                 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
@@ -4216,7 +4216,6 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
             "StatusCode": 0,
             "DbName": "demo"
 		}
-        ......
     ]
 }
 ```
@@ -4251,7 +4250,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`querylogdate`** |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -4307,7 +4306,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**`accesslog`**    |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | date       | 是   | string | 日期，格式为yyyyMMdd                 |
 | pageNo     | 是   | int    | 页号，取值范围1-N，默认1             |
@@ -4348,7 +4347,6 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
             "code":0,
             "msg":"Server stopped successfully."
         }
-        ......
     ]
 }
 ```
@@ -4383,7 +4381,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | ---------- | ---- | ------ | ------------------------------------- |
 | operation  | 是   | string | 操作名称，固定值为**`accesslogdate`** |
 | username   | 是   | string | 用户名                                |
-| password   | 是   | string | 密码（明文)                           |
+| password   | 是   | string | 密码（明文）                           |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密  |
 
 **返回值**
@@ -4436,7 +4434,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | -------------- | ---- | ---------- | ------------------------------------ |
 | operation      | 是   | string     | 操作名称，固定值为**`funquery`**     |
 | username       | 是   | string     | 用户名                               |
-| password       | 是   | string     | 密码（明文)                          |
+| password       | 是   | string     | 密码（明文）                         |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密 |
 | funInfo        | 否   | JSONObject | 查询参数                             |
 | ---- funName   | 否   | string     | 函数名称                             |
@@ -4501,7 +4499,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | -------------- | ---- | ---------- | ------------------------------------------------------------ |
 | operation      | 是   | string     | 操作名称，固定值为**`funcudb`**                              |
 | username       | 是   | string     | 用户名                                                       |
-| password       | 是   | string     | 密码（明文)                                                  |
+| password       | 是   | string     | 密码（明文）                                                 |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密                         |
 | type           | 是   | string     | 1:新增，2:修改，3:删除，4:编译                               |
 | funInfo        | 是   | JSONObject | 算子函数                                                     |
@@ -4552,7 +4550,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | -------------- | ---- | ---------- | ------------------------------------------------------------ |
 | operation      | 是   | string     | 操作名称，固定值为**`funreview`**                            |
 | username       | 是   | string     | 用户名                                                       |
-| password       | 是   | string     | 密码（明文)                                                  |
+| password       | 是   | string     | 密码（明文）                                                  |
 | encryption     | 否   | string     | 为空，则密码为明文，为1表示用md5加密                         |
 | funInfo        | 是   | JSONObject | 算子函数                                                     |
 | ---- funName   | 是   | string     | 函数名称                                                     |
@@ -4645,7 +4643,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | 参数名     | 必选 | 类型    | 说明                                 |
 | :--------- | :--- | :------ | ------------------------------------ |
 | username   | 是   | string  | 用户名                               |
-| password   | 是   | string  | 密码（明文)                          |
+| password   | 是   | string  | 密码（明文）                       |
 | encryption | 否   | string  | 为空，则密码为明文，为1表示用md5加密 |
 | file       | 是   | boudary | 待上传的文件的二进制文件流           |
 
@@ -4690,7 +4688,7 @@ post请求方式二：参数以Form表单方式传递（要求RequestHeader参�
 | 参数名     | 必选 | 类型   | 说明                                                       |
 | :--------- | :--- | :----- | ---------------------------------------------------------- |
 | username   | 是   | string | 用户名（该用户名默认是system）                             |
-| password   | 是   | string | 密码（明文)                                                |
+| password   | 是   | string | 密码（明文）                                                |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密                       |
 | filepath   | 是   | string | 待下载的文件路径（只支持下载gstore主目录及子目录下的文件） |
 
@@ -4740,7 +4738,7 @@ Connection: Keep-Alive
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**rename**         |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                         |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 | db_name    | 是   | string | 数据库名称                           |
 | new_name   | 是   | string | 数据库新名称                         |
@@ -4791,7 +4789,7 @@ Connection: Keep-Alive
 | :--------- | :--- | :----- | ------------------------------------ |
 | operation  | 是   | string | 操作名称，固定值为**stat**           |
 | username   | 是   | string | 用户名                               |
-| password   | 是   | string | 密码（明文)                          |
+| password   | 是   | string | 密码（明文）                          |
 | encryption | 否   | string | 为空，则密码为明文，为1表示用md5加密 |
 
 **返回值**
@@ -4912,19 +4910,31 @@ Connection: Keep-Alive
 
 **监控数据库：monitor**
 
-	std::string monitor(std::string db_name, std::string request_type);功能：显示特定数据库的信息参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.monitor("lubm");
+	std::string monitor(std::string db_name, std::string request_type);
+    功能：显示特定数据库的信息
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.monitor("lubm");
 
 **保存数据库：checkpoint**
 
-	std::string checkpoint(std::string db_name, std::string request_type);功能：如果更改了数据库，保存数据库参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.checkpoint("lubm");
+	std::string checkpoint(std::string db_name, std::string request_type);
+    功能：如果更改了数据库，保存数据库
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.checkpoint("lubm");
 
 **展示数据库：show**
 
-	std::string show(std::string request_type);功能：显示所有已创建的数据库参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.show();
+	std::string show(std::string request_type);
+    功能：显示所有已创建的数据库
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.show();
 
 **显示内核版本信息：getCoreVersion**
 
-	std::string getCoreVersion(std::string request_type);功能：得到内核版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.getCoreVersion();
+	std::string getCoreVersion(std::string request_type);
+    功能：得到内核版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.getCoreVersion();
 
 **显示API版本信息：getAPIVersion**
 
@@ -5018,31 +5028,52 @@ Connection: Keep-Alive
 
 **监控数据库：monitor**
 
-	public String monitor(String db_name, String request_type);功能：显示特定数据库的信息参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.monitor("lubm");
+	public String monitor(String db_name, String request_type);
+    功能：显示特定数据库的信息
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.monitor("lubm");
 
 **保存数据库：checkpoint**
 
-	public String checkpoint(String db_name, String request_type);功能：如果更改了数据库，保存数据库参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.checkpoint("lubm");
+	public String checkpoint(String db_name, String request_type);
+    功能：如果更改了数据库，保存数据库
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.checkpoint("lubm");
 
 **展示数据库：show**
 
-	public String show(String request_type);功能：显示所有已创建的数据库参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.show();
+	public String show(String request_type);
+    功能：显示所有已创建的数据库
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.show();
 
 **显示内核版本信息：getCoreVersion**
 
-	public String getCoreVersion(String request_type);功能：得到内核版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.getCoreVersion();
+	public String getCoreVersion(String request_type);
+    功能：得到内核版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.getCoreVersion();
 
 **显示API版本信息：getAPIVersion**
 
-	public String getAPIVersion(String request_type);功能：得到API版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.getAPIVersion();
+	public String getAPIVersion(String request_type);
+    功能：得到API版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.getAPIVersion();
 
 **查询数据库并保存文件：fquery**
 
-	public void fquery(String db_name, String format, String sparql, String filename, String request_type);功能：查询数据库并保留结果到文件参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[文件名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.fquery("lubm", "json", sparql, "ans.txt");
+	public void fquery(String db_name, String format, String sparql, String filename, String request_type);
+    功能：查询数据库并保留结果到文件
+    参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[文件名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.fquery("lubm", "json", sparql, "ans.txt");
 
 **导出数据库**
 
-	public String exportDB(String db_name, String dir_path, String request_type);功能：导出数据库到文件夹下参数含义：[数据库名称]，[数据库导出的文件夹路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.exportDB("lubm", "/root/gStore/");
+	public String exportDB(String db_name, String dir_path, String request_type);
+    功能：导出数据库到文件夹下
+    参数含义：[数据库名称]，[数据库导出的文件夹路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.exportDB("lubm", "/root/gStore/");
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
 ## Python HTTP API
@@ -5051,93 +5082,153 @@ Connection: Keep-Alive
 
 **构造初始化函数**
 
-	public class GstoreConnector(self, serverIP, serverPort, httpType, username, password):
+	def __init__(self, ip, port, username, password, http_type='ghttp'):
 	功能：初始化   
-	参数含义：[服务器IP]，[服务器上http端口]，[http服务类型]，[用户名]，[密码]
-	使用示例：gc = GstoreConnector.GstoreConnector("127.0.0.1", 9000, "ghttp", "root", "123456")
+	参数含义：[服务器IP]，[服务器上http端口]，[用户名]，[密码]，[http服务类型，默认为ghttp]
+	使用示例：gc = GstoreConnector.GstoreConnector("127.0.0.1", 9000, "root", "123456")
+
+**心跳检测: check**
+
+	 def check(self, request_type='GET'):
+	 功能：检测http服务是否在线
+	 参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	 使用示例：res = gc.check()
 
 **构建数据库：build**
 
-	def build(self, db_name, rdf_file_path, request_type):
+	def build(self, db_name, db_path, request_type='GET'):
 	功能：通过RDF文件新建一个数据库
-	参数含义：[数据库名称]，[.nt文件路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	参数含义：[数据库名称]，[RDF文件路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：res = gc.build("lubm", "data/lubm/lubm.nt")
+
+**删除数据库：drop**
+
+	def drop(self, db_name, is_backup, request_type='GET'):
+	功能：直接删除数据库或删除数据库同时留下备份
+	参数含义：[数据库名称]，[false不备份，true备份]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：res = gc.drop("lubm", false)
 
 **加载数据库：load**
 
-	def load(self, db_name, request_type):
-	功能：加载你建立的数据库
-	参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	def load(self, db_name, csr='0', request_type='GET'):
+	功能：加载已构建的数据库
+	参数含义：[数据库名称]，[是否记载CSR资源，默认不加载]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：res = gc.load("lubm")
 
-**停止加载数据库：unload**
+**卸载数据库：unload**
 
-	def unload(self, db_name, request_type):
-	功能：停止加载数据库
+	def unload(self, db_name, request_type='GET'):
+	功能：将数据库从内存中卸载（所有的更改都会刷回硬盘）
 	参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：res = gc.unload("lubm")
 
-**用户管理：user**
+**展示数据库：show**
 
-	def user(self, type, username2, addition, request_type):
-	功能：添加、删除用户或修改用户的权限，必须由根用户执行操作
-	1.添加、删除用户：
-	参数含义：["add_user"添加用户，"delete_user"删除用户]，[用户名],[密码],[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
-	使用示例：res = gc.user("add_user", "user1", "111111")
-	2.修改用户的权限：
-	参数含义：["add_query"添加查询权限，"delete_query"删除查询权限，"add_load"添加加载权限，"delete_load"删除加载权限，"add_unload"添加不加载权限，"delete_unload"删除不加载权限，"add_update"添加更新权限，"delete_update"删除更新权限，"add_backup"添加备份权限，"delete_bakup"删除备份权限，"add_restore"添加还原权限，"delete_restore"删除还原权限,"add_export"添加导出权限，"delete_export"删除导出权限]，[用户名],[数据库名],[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
-	使用示例：res = gc.user("add_query", "user1", "lubm")
+	def show(self, request_type='GET'):
+    功能：显示所有已创建的数据库
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.show()
+
+**监控数据库：monitor**   	
+
+	def monitor(self, db_name, request_type='GET'):
+    功能：显示特定数据库的信息
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.monitor("lubm")
+
+**数据库查询：query**
+
+	def query(self, db_name, format, sparql, request_type='GET'):
+	功能：查询数据库
+	参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：
+    sparql = "select ?x ?p where { ?x ?p <FullProfessor0>. }"
+	res = gc.query("lubm", "json", sparql)
+	print(res)
 
 **显示用户：showUser**
 
-	def showUser(self, request_type):
+	def showuser(self, request_type='GET'):
 	功能：显示所有用户
 	参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：res = gc.showUser()
 
-**数据库查询：query**
+**用户管理：usermanage**
 
-	def query(self, db_name, format, sparql, request_type):
-	功能：查询数据库
-	参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	def usermanage(self, type, op_username, op_password, equest_type='GET'):
+	功能：添加、删除用户或修改用户的密码，必须由根用户执行操作
+	1.添加、删除用户：
+	参数含义：["1"添加用户, "2"删除用户, "3"修改密码]，[用户名], [密码], [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：res = gc.user("1", "test", "123456")
+
+**修改用户权限：userprivilegemanage**
+
+	def userprivilegemanage(self, type, op_username, privileges, db_name, request_type='GET'):
+    功能：修改用户的权限
+	参数含义：["1" 新增权限, "2" 删除权限, "3" 清空权限], [用户名], ["1" 查询, "2" 加载, "3" 卸载, "4" 更新, "5" 备份, "6" 还原,  "7" 导出],  [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：
-	res = gc.query("lubm", "json", sparql)
-	print(res) //输出结果
+	给用户test添加lubm库的所有权限
+	res = gc.userprivilegemanage("1", "test", "1,2,3,4,5,6,7", "lubm")
+	删除用户test对lubm库的"备份"和"还原"权限
+	res = gc.userprivilegemanage("2", "test", "5,7", "lubm")
+	清空用户test的所有权限 
+	res = gc.userprivilegemanage("3", "test", "", "")
 
-**删除数据库：drop**
+**获取内核版本信息：getCoreVersion**
 
-	def drop(self, db_name, is_backup, request_type):
-	功能：直接删除数据库或删除数据库同时留下备份
-	参数含义：[数据库名称]，[false不备份，true备份]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
-	使用示例：res = gc.drop("lubm", false)  //直接删除数据库不留下备份
+	def getCoreVersion(self, request_type='GET'):
+    功能：得到内核版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.getCoreVersion()
 
-**监控数据库：monitor**   	
+**开启事务: begin**
 
-	def monitor(self, db_name, request_type):    功能：显示特定数据库的信息参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.monitor("lubm")
+	def begin(self, db_name, isolevel, request_type='GET'):
+	功能：开启事务，将返回事务id用于后续的事务操作
+	参数含义：[数据库名称], ["1" seriablizable "2" snapshot isolation "3" read committed], [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：gc.begin("lubm", "1")
+
+**执行事务查询：fquery**
+
+	def tquery(self, db_name, tid, sparql, request_type='GET'):
+    功能：执行事务类型的查询
+    参数含义：[数据库名称]，[事务id]，[sparql语句]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：gc.fquery("lubm", "1", sparql)
+
+**提交事务: commit**
+
+	def commit(self, db_name, tid, request_type='GET'):
+	功能：提交事务 
+	参数含义：[数据库名称]，[事务id], [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：gc.commit("lubm", "1")
+
+**回滚事务: rollback**
+
+	def rollback(self, db_name, tid, request_type='GET'):
+	功能：回滚事务
+	参数含义：[数据库名称]，[事务id], [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：gc.rollback("lubm", "1")
+
+**获取事务日志: getTransLog**
+
+	def getTransLog(self, page_no=1, page_size=10, request_type='GET'):
+	功能：获取事务日志信息
+	参数含义：[数据库名称], [页数], [每页条数], [请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+	使用示例：gc.getTransLog(1, 10)
 
 **保存数据库：checkpoint**
 
-	def checkpoint(self, db_name, request_type):功能：如果更改了数据库，保存数据库参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.checkpoint("lubm")
+	def checkpoint(self, db_name, request_type='GET'):
+    功能：将数据刷回到硬盘，一般在执行事务相关操作后调用
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.checkpoint("lubm")
 
-**展示数据库：show**
+**导出数据库：exportDB**
 
-	def show(self, request_type):功能：显示所有已创建的数据库参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.show()
-
-**显示内核版本信息：getCoreVersion**
-
-	def getCoreVersion(self, request_type):功能：得到内核版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.getCoreVersion()
-
-**显示API版本信息：getAPIVersion**	
-
-	def getAPIVersion(self, request_type):功能：得到API版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.getAPIVersion()
-
-**查询数据库并保存文件：fquery**
-
-	def fquery(self, db_name, format, sparql, filename, request_type):功能：查询数据库并保留结果到文件参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[文件名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：gc.fquery("lubm", "json", sparql, "ans.txt")
-
-**导出数据库**
-
-	def exportDB(self, db_name, dir_path, request_type): 功能：导出数据库到文件夹下参数含义：[数据库名称]，[数据库导出的文件夹路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.exportDB("lubm", "/root/gStore/")
+	def exportDB(self, db_name, db_path, request_type='GET'):
+    功能：导出数据库到文件夹下
+    参数含义：[数据库名称]，[数据库导出的文件夹路径]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.exportDB("lubm", "/root/gStore/")
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
 ## Nodejs  HTTP API
@@ -5210,19 +5301,31 @@ Connection: Keep-Alive
 
 **监控数据库：monitor**   	
 
-	async monitor(db_name = '', request_type);     功能：显示特定数据库的信息参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.monitor("lubm");
+	async monitor(db_name = '', request_type);
+    功能：显示特定数据库的信息
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.monitor("lubm");
 
 **保存数据库：checkpoint**
 
-	async checkpoint(db_name = '', request_type);功能：如果更改了数据库，保存数据库参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.checkpoint("lubm");
+	async checkpoint(db_name = '', request_type);
+    功能：如果更改了数据库，保存数据库
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.checkpoint("lubm");
 
 **展示数据库：show**
 
-	async show(request_type);功能：显示所有已创建的数据库参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.show();
+	async show(request_type);
+    功能：显示所有已创建的数据库
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.show();
 
 **显示内核版本信息：getCoreVersion**	
 
-	async getCoreVersion(request_type);功能：得到内核版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：res = gc.getCoreVersion();
+	async getCoreVersion(request_type);
+    功能：得到内核版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：res = gc.getCoreVersion();
 
 **显示API版本信息：getAPIVersion**			
 
@@ -5311,6 +5414,7 @@ Connection: Keep-Alive
 **数据库查询：query**
 
 	function query($db_name, $format, $sparql, $request_type)
+    功能：查询数据
 	参数含义：[数据库名称]，[查询结果类型json,html或text]，[sparql语句]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	使用示例：
 	$res = $gc->query("lubm", "json", $sparql);
@@ -5327,19 +5431,31 @@ Connection: Keep-Alive
 
 **监控数据库：monitor**  	
 
-	function monitor($db_name, $request_type)功能：显示特定数据库的信息参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：$res = $gc->monitor("lubm");echo $res. PHP_EOL;
+	function monitor($db_name, $request_type)
+    功能：显示特定数据库的信息
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：$res = $gc->monitor("lubm");echo $res. PHP_EOL;
 
 **保存数据库：checkpoint**
 
-	function checkpoint($db_name, $request_type)功能：如果更改了数据库，保存数据库参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：$res = $gc->checkpoint("lubm");echo $res. PHP_EOL;
+	function checkpoint($db_name, $request_type)
+    功能：如果更改了数据库，保存数据库
+    参数含义：[数据库名称]，[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：$res = $gc->checkpoint("lubm");echo $res. PHP_EOL;
 
 **展示数据库：show**
 
-	function show($request_type)功能：显示所有已创建的数据库参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：$res = $gc->show();echo $res. PHP_EOL;
+	function show($request_type)
+    功能：显示所有已创建的数据库
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：$res = $gc->show();echo $res. PHP_EOL;
 
 **显示内核版本信息：getCoreVersion**
 
-	function getCoreVersion($request_type)功能：得到内核版本信息参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]使用示例：$res = $gc->getCoreVersion();echo $res. PHP_EOL;
+	function getCoreVersion($request_type)
+    功能：得到内核版本信息
+    参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
+    使用示例：$res = $gc->getCoreVersion();echo $res. PHP_EOL;
 
 **显示API版本信息：getAPIVersion**	
 
@@ -5380,7 +5496,7 @@ http://ip:9000/
 接口支持输入一个json格式的参数列表，如下所示：
 
 ```json
-{"op": "[op_type]", "[paramname1]": "[paramvalue1]", "[paramname2]": "[paramvalue2]"……}
+{"op": "[op_type]", "[paramname1]": "[paramvalue1]", "[paramname2]": "[paramvalue2]"}
 ```
 
  
@@ -5723,7 +5839,7 @@ http://ip:9000/
 | :------- | :--- | :----- | --------------------------- |
 | op       | 是   | string | 操作名称，固定值为**login** |
 | username | 是   | string | 用户名                      |
-| password | 是   | string | 密码（明文)                 |
+| password | 是   | string | 密码（明文）                 |
 
 **返回值**
 
