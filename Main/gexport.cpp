@@ -69,7 +69,7 @@ main(int argc, char * argv[])
 		}
 		filepath= Util::getArgValue(argc, argv, "f", "file");
 		std::string zip_path;
-		std:string zip = Util::getArgValue(argc, argv, "z", "zip");
+		std:string zip = Util::getArgValue(argc, argv, "z", "zip", "0");
 		if (filepath.empty())
 		{
 			filepath = db_name + "_" + Util::get_timestamp() + ".nt";
