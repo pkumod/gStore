@@ -28,6 +28,7 @@ class TempResult
 				ResultPair(const ResultPair& that);
 				ResultPair& operator=(const ResultPair& that);
 				~ResultPair() { }	// Delete pointer already handled in release
+				void swap(ResultPair& that);
 		};
 
 		Varset id_varset, str_varset;
