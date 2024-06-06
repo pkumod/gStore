@@ -20,7 +20,10 @@ CSR::CSR(unsigned pnum)
 
 CSR::~CSR()
 {
-	
+	delete [] this->id2vid;
+	delete [] this->vid2id;
+	delete [] this->offset_list;
+	delete [] this->adjacency_list;
 }
 
 void CSR::init(unsigned pnum)

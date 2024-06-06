@@ -36,7 +36,7 @@ print(res)
 
 # load the database 
 res = gc.load("lubm", "0", "POST")
-print(res);
+print(res)
 
 # show all users
 res = gc.showuser("POST")
@@ -67,12 +67,12 @@ print(res)
 
 # unload the database
 res = gc.unload("lubm", "POST")
-print(res);
+print(res)
 
 # drop the database
 res = gc.drop("lubm", False, "POST") #delete the database directly
 #res = gc.drop("lubm", True, "POST") #leave a backup
-print(res);
+print(res)
 
 
 

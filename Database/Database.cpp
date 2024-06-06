@@ -147,6 +147,8 @@ void Database::initIDinfo()
 
 void Database::resetIDinfo()
 {
+	if (this->if_loaded)
+		this->releaseIDBlock();
 	this->initIDinfo();
 }
 
@@ -1069,6 +1071,8 @@ bool Database::load(bool loadCSR)
 					index++;
 					offset += len;
 				}
+				delete [] objlist;
+				objlist = nullptr;
 			}
 			// if(this->csr[0].offset_list[i].size() == 0)
 			// 	this->csr[0].valid[i] = false;
@@ -1081,6 +1085,8 @@ bool Database::load(bool loadCSR)
 			// }
 			cout << this->csr[0].offset_list[i].size() << endl;	   // # of this predicate's subjects
 			cout << this->csr[0].adjacency_list[i].size() << endl; // # of this predicate's objects
+			delete [] sublist;
+			sublist = nullptr;
 		}
 
 		// Process out-edges (csr[1])
@@ -1124,6 +1130,8 @@ bool Database::load(bool loadCSR)
 					index++;
 					offset += len;
 				}
+				delete [] sublist;
+				sublist = nullptr;
 			}
 			// if(this->csr[1].offset_list[i].size() == 0)
 			// 	this->csr[1].valid[i] = false;
@@ -1136,6 +1144,8 @@ bool Database::load(bool loadCSR)
 			// }
 			cout << this->csr[1].offset_list[i].size() << endl;
 			cout << this->csr[1].adjacency_list[i].size() << endl;
+			delete [] objlist;
+			objlist = nullptr;
 		}
 		csr[1].n = this->entity_num;
 
@@ -1574,10 +1584,47 @@ bool Database::unload()
 
 	delete this->query_cache;
 
+	delete [] this->csr;
+	this->csr = NULL;
+
 	this->if_loaded = false;
 	this->clear_update_log();
 
 	return true;
+}
+
+void Database::releaseIDBlock()
+{
+	if (this->freelist_entity != nullptr)
+	{
+		BlockInfo* p = this->freelist_entity;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_literal != nullptr)
+	{
+		BlockInfo* p = this->freelist_literal;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_predicate != nullptr)
+	{
+		BlockInfo* p = this->freelist_predicate;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
 }
 
 // this is used for checkpoint, we must ensure that modification is written to disk,
@@ -3297,6 +3344,20 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
+		}
+		string _pre = _triple.getPredicate();
+		string _obj = _triple.getObject();
+		if (this->checkIsTypePredicate(_pre))
+		{
+			auto obj_it = this->umap.find(_obj);
+			if (obj_it != this->umap.end())
+			{
+				obj_it->second = obj_it->second + 1;
+			}
+			else
+			{
+				this->umap.insert(pair<string, unsigned long long>(_obj, 1));
+			}
 		}
 	}
 	else

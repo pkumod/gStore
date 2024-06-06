@@ -20,9 +20,11 @@ TempResult::ResultPair::ResultPair(const ResultPair& that)
 {
 	if (that.id)
 	{
-		id = new unsigned[that.sz];
+		// id = new unsigned[that.sz];
 		// TODO: ResultPair cannot access id_varset of its parent TempResult
-		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+		// memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+		// notice: std::vector push will memory leak, so use assign copy
+		id = that.id;
 	}else{
 		id = nullptr;
 	}	sz = that.sz;
@@ -50,6 +52,21 @@ TempResult::ResultPair& TempResult::ResultPair::operator=(const ResultPair& that
 	str = that.str;
 
 	return *this;
+}
+
+void TempResult::ResultPair::swap(ResultPair& that)
+{
+	unsigned* temp_id = id;
+	int temp_sz = sz;
+	std::vector<std::string> temp_str = str;
+
+	id = that.id;
+	sz = that.sz;
+	str = that.str;
+
+	that.id = temp_id;
+	that.sz = temp_sz;
+	that.str = temp_str;
 }
 
 TempResult::TempResult()
@@ -1386,10 +1403,20 @@ void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &
             ++i;
             ++save_num;
         } else {
-            swap(this->result[i], this->result[original_size - 1 - delete_num]);
+			this->result[i].swap(this->result[original_size - 1 - delete_num]);
             ++delete_num;
         }
     }
+
+	unsigned size = this->result.size();
+	for (unsigned i = save_num; i < size; i++)
+	{
+		if (result[i].id)
+		{
+			delete[] result[i].id;
+			result[i].id = nullptr;
+		}
+	}
 
     this->result.erase(this->result.begin()+(save_num), this->result.end());
     this->result.shrink_to_fit();
