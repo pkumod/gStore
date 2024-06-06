@@ -147,6 +147,8 @@ void Database::initIDinfo()
 
 void Database::resetIDinfo()
 {
+	if (this->if_loaded)
+		this->releaseIDBlock();
 	this->initIDinfo();
 }
 
@@ -1589,6 +1591,40 @@ bool Database::unload()
 	this->clear_update_log();
 
 	return true;
+}
+
+void Database::releaseIDBlock()
+{
+	if (this->freelist_entity != nullptr)
+	{
+		BlockInfo* p = this->freelist_entity;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_literal != nullptr)
+	{
+		BlockInfo* p = this->freelist_literal;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_predicate != nullptr)
+	{
+		BlockInfo* p = this->freelist_predicate;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
 }
 
 // this is used for checkpoint, we must ensure that modification is written to disk,
