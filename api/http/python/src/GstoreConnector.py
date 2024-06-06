@@ -240,3 +240,11 @@ class GstoreConnector:
             'operation': 'getCoreVersion'
         }
         return self.request[request_type](query_params)
+    
+    def login(self, username, password, request_type='GET'):
+        query_params = {
+            'username': username,
+            'password': password,
+            'operation': 'login'
+        }
+        return self.request[request_type](query_params)
