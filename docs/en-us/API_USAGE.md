@@ -4973,6 +4973,13 @@ To use the Python API, please refer to the gStore/API/HTTP/Python/SRC/GstoreConn
 	Parameter definition：[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example: res = gc.check()
 
+**login authorization: login**
+
+	def login(self, username, password, request_type='GET'):
+	Function: login HTTP API Server. If a message is displayed indicating that "the ip address has been locked" when you access another API, you can unlock the IP address through this interface
+	Parameter definition：[username],[password],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example: res = gc.login("root","123456")
+
 **Build database: build**
 
 	def build(self, db_name, db_path, request_type='GET'):
@@ -5042,7 +5049,7 @@ To use the Python API, please refer to the gStore/API/HTTP/Python/SRC/GstoreConn
 **Modify user's privileges: userprivilegemanage**
 
 	def userprivilegemanage(self, type, op_username, privileges, db_name, request_type='GET'):
-	unction：modify user's privileges
+	Function：modify user's privileges
 	Parameter definition：["1" add privilege, "2" delete privilege, "3" clear privilege], [user name], ["1" query permission, "2" load permission, "3" unload permission, "4" update permission, "5" backup permission, "6" restore permission,  "7" export permission], [database name],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
 	Example：
 	Add all privileges of "lubm" to user "test"

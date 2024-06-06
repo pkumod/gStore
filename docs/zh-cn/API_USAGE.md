@@ -5094,6 +5094,13 @@ Connection: Keep-Alive
 	 参数含义：[请求类型"GET"和"post",如果请求类型为“GET”，则可以省略]
 	 使用示例：res = gc.check()
 
+**登录授权: login**
+
+	def login(self, username, password, request_type='GET'):
+	功能: 登录HTTP API服务。如果在调用其他API接口时提示"the ip has been locked"，可通过login接口登录成功后解除IP锁定
+	Parameter definition：[username],[password],[Request types "GET" and "POST" can be omitted if the request type is "GET"]
+	Example: res = gc.login("root","123456")
+
 **构建数据库：build**
 
 	def build(self, db_name, db_path, request_type='GET'):
