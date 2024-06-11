@@ -703,7 +703,11 @@ KVstore::updateInsert_s2values(TYPE_ENTITY_LITERAL_ID _subid, const std::vector<
 	unsigned* values = NULL;
 	unsigned long values_len = 0;
 	unsigned update_num = this->Insert_s2values(_pidoidlist, _tmp, _len, values, values_len);
-	if(update_num == 0) return 0;
+	if(update_num == 0)
+	{
+		delete [] values;
+		return 0;
+	}
 	if(_len == 0){
 		this->addValueByKey(this->subID2values, _subid, (char*)values, sizeof(unsigned) * values_len);
 		return update_num;
@@ -1377,7 +1381,11 @@ KVstore::updateInsert_o2values(TYPE_ENTITY_LITERAL_ID _objid, const std::vector<
 	unsigned* values = NULL;
 	unsigned long values_len = 0;
 	unsigned update_num = this->Insert_o2values(_pidsidlist, _tmp, _len, values, values_len);
-	if(update_num == 0) return 0;
+	if(update_num == 0)
+	{
+		delete [] values;
+		return 0;
+	}
 	if(_len == 0){
 		this->addValueByKey(this->objID2values, _objid, (char*)values, sizeof(unsigned) * values_len);
 		return update_num;
@@ -1922,7 +1930,11 @@ KVstore::updateInsert_p2values(TYPE_PREDICATE_ID _preid, const std::vector<unsig
 	unsigned* values = NULL;
 	unsigned long values_len = 0;
 	unsigned update_num = this->Insert_p2values(_sidoidlist, _tmp, _len, values, values_len);
-	if(update_num == 0) return 0;
+	if(update_num == 0)
+	{
+		delete [] values;
+		return 0;
+	}
 	if(_len == 0){
 		//cout << "...............preID2values addValueByKey" << endl;
 		this->addValueByKey(this->preID2values, _preid, (char*)values, sizeof(unsigned)*values_len);
