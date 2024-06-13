@@ -2461,7 +2461,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			Util::create_dirs(db_path);
 		}
-		std::string compress = jsonParam(json_data, "compress");
+		std::string compress = jsonParam(json_data, "compress", "0");
 		std::string zip_path;
 		if (compress=="0")
 			db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
