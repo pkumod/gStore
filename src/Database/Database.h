@@ -44,6 +44,7 @@ public:
 	bool load(bool loadCSR = false);
 	bool unload();
 	void clear();
+	void releaseIDBlock();
 	void export_db(FILE *fp);
 	int query(const string _query, ResultSet &_result_set, FILE *_fp = stdout, bool update_flag = true, bool export_flag = false, shared_ptr<Transaction> txn = nullptr);
 	// 1. if subject of _triple doesn't exist,

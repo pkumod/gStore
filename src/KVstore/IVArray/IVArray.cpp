@@ -389,6 +389,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 			return false;
 		}
 		array[_key].setStore(store);
+		delete[] _str;
 	}
 	else
 	{
@@ -475,6 +476,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 			}
 			array[_key].setStore(store);
 			array[_key].setCacheFlag(false);
+			delete[] _str;
 		}
 		else
 		{
@@ -499,6 +501,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 			}
 			array[_key].setStore(store);
 			array[_key].setCacheFlag(false);
+			delete[] _str;
 		}
 		else
 		{

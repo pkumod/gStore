@@ -147,6 +147,8 @@ void Database::initIDinfo()
 
 void Database::resetIDinfo()
 {
+	if (this->if_loaded)
+		this->releaseIDBlock();
 	this->initIDinfo();
 }
 
@@ -1591,6 +1593,40 @@ bool Database::unload()
 	return true;
 }
 
+void Database::releaseIDBlock()
+{
+	if (this->freelist_entity != nullptr)
+	{
+		BlockInfo* p = this->freelist_entity;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_literal != nullptr)
+	{
+		BlockInfo* p = this->freelist_literal;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+	if (this->freelist_predicate != nullptr)
+	{
+		BlockInfo* p = this->freelist_predicate;
+		while (p != nullptr)
+		{
+			BlockInfo *np = p->next;
+			delete p;
+			p = np;
+		}
+	}
+}
+
 // this is used for checkpoint, we must ensure that modification is written to disk,
 // so flush() is a must
 bool Database::save()
@@ -1732,6 +1768,8 @@ void Database::export_db(FILE *fp)
 
 int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
 {
+	if (_result_set.ansNum > 0) 
+		_result_set.release();
 	string dictionary_store_path = this->store_path + "/dictionary.dc";
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
