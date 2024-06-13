@@ -11,12 +11,12 @@
 using namespace std;
 
 
-SIIntlNode::SIIntlNode()
+SIIntlNode::SIIntlNode():SINode()
 {
 	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
 }
 
-SIIntlNode::SIIntlNode(bool isVirtual)	//call father-class's constructor automaticlly
+SIIntlNode::SIIntlNode(bool isVirtual):SINode(isVirtual)	//The constructor of father's class must be called explicitly
 {
 	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
 }

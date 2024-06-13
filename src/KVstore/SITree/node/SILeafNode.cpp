@@ -16,14 +16,14 @@ SILeafNode::AllocValues()
   values = new unsigned[MAX_KEY_NUM];
 }
 
-SILeafNode::SILeafNode()
+SILeafNode::SILeafNode():SINode()
 {
   node_flag_ |= NF_IL;		//leaf node_flag_
   prev = next = nullptr;
   AllocValues();
 }
 
-SILeafNode::SILeafNode(bool isVirtual)
+SILeafNode::SILeafNode(bool isVirtual):SINode(isVirtual) //The constructor of father's class must be called explicitly
 {
   node_flag_ |= NF_IL;
   prev = next = nullptr;
