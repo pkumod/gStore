@@ -1248,6 +1248,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
                 cout<<"<NONSIMP> number of results: "<<temp_rs->ansNum<<endl;
                 TempResultSet *temp_trs = new TempResultSet();
                 temp_trs->results.push_back(temp_rs->to_tempresult());
+				// release
+				delete temp_rs;
 				if (result->results.empty())
 		    	{
 		    		delete result;
