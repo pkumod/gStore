@@ -20,9 +20,11 @@ TempResult::ResultPair::ResultPair(const ResultPair& that)
 {
 	if (that.id)
 	{
-		id = new unsigned[that.sz];
+		// id = new unsigned[that.sz];
 		// TODO: ResultPair cannot access id_varset of its parent TempResult
-		memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+		// memcpy(id, that.id, (that.sz) * sizeof(unsigned));
+		// notice: std::vector push will memory leak, so use assign copy
+		id = that.id;
 	}else{
 		id = nullptr;
 	}	sz = that.sz;
