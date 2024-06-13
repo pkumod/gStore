@@ -22,6 +22,7 @@ IVEntry::IVEntry()
 	prevID = nextID = -1;
 	shared_ptr<Version> p = make_shared<Version>(0, INVALID_ID);
 	vList.push_back(p); //dummy version [0, INF)
+	is_versioned.store(false);
 	clearVersionFlag();
 }
 
