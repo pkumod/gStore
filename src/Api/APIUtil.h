@@ -819,8 +819,8 @@ private:
     int whiteList = 0;
     string ipBlackFile = "ipDeny.config";
     string ipWhiteFile = "";
-    IPWhiteList* ipWhiteList;
-    IPBlackList* ipBlackList;
+    std::unique_ptr<IPWhiteList> ipWhiteList;
+    std::unique_ptr<IPBlackList> ipBlackList;
 
     pthread_rwlock_t query_log_lock;
     pthread_rwlock_t access_log_lock;
