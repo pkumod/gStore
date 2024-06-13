@@ -68,9 +68,10 @@ ResultSet::release()
 			this->answer = nullptr;
 		}
 	}
-	else if(!this->stream)
+	else if(this->stream)
 	{
 		delete this->stream;    //maybe NULL
+		this->stream = nullptr;
 	}
 }
 

@@ -20,10 +20,12 @@ GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct()
 
 GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct(const EvaluationStackStruct& that)
 {
-	result = new TempResultSet();
+	// result = new TempResultSet();
+	// if (that.result)
+	// 	*result = *(that.result);
+	
+	result = that.result;
 	group_pattern = that.group_pattern;
-	if (that.result)
-		*result = *(that.result);
 }
 
 GeneralEvaluation::EvaluationStackStruct& GeneralEvaluation::EvaluationStackStruct::operator=(const EvaluationStackStruct& that)
@@ -138,7 +140,7 @@ GeneralEvaluation::loadCSR()
 	cout << "GeneralEvaluation::loadCSR" << endl;
 
 	if (csr)
-		delete csr;
+		delete [] csr;
 	csr = new CSR[2];
 
 	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
@@ -184,9 +186,13 @@ GeneralEvaluation::loadCSR()
 				index++;
 				offset += len;
 			}
+			delete [] objlist;
+			objlist = nullptr;
 		}
 		cout<<csr[0].offset_list[i].size()<<endl;	// # of this predicate's subjects
 		cout<<csr[0].adjacency_list[i].size()<<endl;	// # of this predicate's objects
+		delete [] sublist;
+		sublist = nullptr;
 	}
 
 	// Process out-edges (csr[1])
@@ -223,9 +229,13 @@ GeneralEvaluation::loadCSR()
 				index++;
 				offset += len;
 			}
+			delete [] sublist;
+			sublist = nullptr;
 		}
 		cout<<csr[1].offset_list[i].size()<<endl;
 		cout<<csr[1].adjacency_list[i].size()<<endl;
+		delete [] objlist;
+		objlist = nullptr;
 	}
 	// init vertices and edges num
 	set<int> vertices;
@@ -701,6 +711,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 						result = new_result;
 					}
+				}
+				else
+				{
+					delete sub_result;
 				}
 			}
 			else
@@ -4463,6 +4477,8 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 					}
 				}
 			}
+			delete [] outList;
+			outList = nullptr;
 		}
 		else
 		{
@@ -4495,6 +4511,8 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 					}
 				}
 			}
+			delete [] inList;
+			inList = nullptr;
 		}
 	}
 }
