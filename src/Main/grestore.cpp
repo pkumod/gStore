@@ -70,7 +70,7 @@ main(int argc, char * argv[])
 		{
 			//cout << "the command is not complete." << endl;
 			//Log.Error("Invalid arguments! Input \"bin/gadd -h\" for help.");
-			cout << "Invalid arguments! Input \"bin/gadd -h\" for help." << endl;
+			cout << "Invalid arguments! Input \"bin/grestore -h\" for help." << endl;
 			return 0;
 		}
 	}
