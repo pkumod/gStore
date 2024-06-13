@@ -412,6 +412,7 @@ SITree::Remove(const char* _str, unsigned _len)
     p->subKey(i, true);		//to release
     p->SubValue(i);	//to release
     p->SubKeyNum();
+    p->setDirty();
     if (p->GetKeyNum() == 0)	//root leaf 0 key
     {
       this->root_ = NULL;
@@ -422,7 +423,6 @@ SITree::Remove(const char* _str, unsigned _len)
       p->setPrev(nullptr);
       p->SetNext(nullptr);
     }
-    p->setDirty();
     flag = true;
   }
   if (!flag)
