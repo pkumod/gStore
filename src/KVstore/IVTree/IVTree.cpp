@@ -130,7 +130,7 @@ IVTree::search(unsigned _key, char*& _str, unsigned& _len)
 	//}
 
 	this->request = 0;
-	int store;
+	int store = -1;
 	IVNode* ret = this->find(_key, &store, false);
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
@@ -644,7 +644,7 @@ void
 IVTree::AddIntoCache(TYPE_ENTITY_LITERAL_ID _id)
 {
 	char* _tmp = NULL;
-	unsigned _len;
+	unsigned _len = 0;
 	this->search(_id, _tmp, _len);
 //	cout << "len is " << len << endl;
 	this->value_list->AddIntoCache(_id, _tmp, _len);

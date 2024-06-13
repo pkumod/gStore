@@ -466,7 +466,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 
 		if (VList::isLongList(_len))
 		{
-			unsigned store = BM->WriteValue(_str, _len);
+			store = BM->WriteValue(_str, _len);
 			if (store == 0)
 			{
 				std::cout << "error: IVArray modify in cache write value failed" << std::endl;
@@ -490,7 +490,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 		array[_key].release();
 		if (VList::isLongList(_len))
 		{
-			unsigned store = BM->WriteValue(_str, _len);
+			store = BM->WriteValue(_str, _len);
 			if (store == 0)
 			{
 				std::cout << "error: IVArray modify no cache write value failed" << std::endl;
