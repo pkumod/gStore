@@ -956,7 +956,7 @@ Util::count_lines(const std::string _file, unsigned int _mode)
             pclose(ptr);
             ptr = NULL;
             count = atol(rt);
-            delete rt;
+            delete [] rt;
         }
     }
     else
@@ -1186,8 +1186,13 @@ Util::get_timestamp()
 time_t 
 Util::time_to_stamp(string time){
     struct tm* tm = (struct tm*)malloc(sizeof(struct tm));
+    if (!tm) {
+        // Handle allocation failures
+        return 0;
+    }
     strptime(time.c_str() , "%Y-%m-%d %H:%M:%S", tm);
     time_t stamp = mktime(tm);
+    free(tm); // release memory
     return stamp;
 }
 
@@ -1813,8 +1818,8 @@ Util::HFHash(const char* _str)
 unsigned
 Util::StrHash(const char* _str)
 {
-    register unsigned int   h;
-    register unsigned char *p;
+    unsigned int h;
+    unsigned char *p;
     for(h = 0, p = (unsigned char *)_str; *p; p++) 
 	{
         h = 31 * h + *p;

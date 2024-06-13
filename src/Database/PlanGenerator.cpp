@@ -242,7 +242,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 							this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
 							this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-							this_sample.push_back(move(this_pass_sample));
+							this_sample.push_back(std::move(this_pass_sample));
 						} else {
 							// if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
 							if (dis(eng) < SAMPLE_PRO) {
@@ -250,7 +250,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 								this_pass_sample[new_id_pos_map[last_node]] = var_to_sample_cache[last_node][i];
 								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-								this_sample.push_back(move(this_pass_sample));
+								this_sample.push_back(std::move(this_pass_sample));
 							}
 						}
 					}
@@ -320,7 +320,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 							this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
 							this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
 
-							this_sample.push_back(move(this_pass_sample));
+							this_sample.push_back(std::move(this_pass_sample));
 						} else {
 							// if (rand() / double(RAND_MAX) < SAMPLE_PRO) {
 							if (dis(eng) < SAMPLE_PRO) {
@@ -329,7 +329,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 								this_pass_sample[new_id_pos_map[last_node]] = s_o_list[j];
 								this_pass_sample[new_id_pos_map[next_join_node]] = var_to_sample_cache[next_join_node][i];
 
-								this_sample.push_back(move(this_pass_sample));
+								this_sample.push_back(std::move(this_pass_sample));
 
 							}
 						}
@@ -469,7 +469,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 								}
 								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-								this_sample.push_back(move(this_pass_sample));
+								this_sample.push_back(std::move(this_pass_sample));
 							} else {
 
 								// if (rand() % 1000 < SAMPLE_CACHE_MAX) {
@@ -481,7 +481,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 									}
 									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-									this_sample.push_back(move(this_pass_sample));
+									this_sample.push_back(std::move(this_pass_sample));
 								}
 							}
 						}
@@ -535,7 +535,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 								}
 								this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-								this_sample.push_back(move(this_pass_sample));
+								this_sample.push_back(std::move(this_pass_sample));
 							} else {
 
 								// if (rand() % 1000 < SAMPLE_CACHE_MAX) {
@@ -547,7 +547,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 									}
 									this_pass_sample[new_id_pos_map[next_join_node]] = s_o_list[j];
 
-									this_sample.push_back(move(this_pass_sample));
+									this_sample.push_back(std::move(this_pass_sample));
 								}
 							}
 						}

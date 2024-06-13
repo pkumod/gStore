@@ -1162,7 +1162,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 	// system("rm -rf bin/.gconsole_tmp_out");
 	Util::remove_path("bin/.gconsole_tmp_out");
 
-	return move(retv);
+	return std::move(retv);
 }
 // single query
 // return -1: failed, error report is done inside. return 0: succeed.

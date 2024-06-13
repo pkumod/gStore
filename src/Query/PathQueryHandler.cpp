@@ -2458,7 +2458,7 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 	{
 		if (vid2wccid.count(vertexid) == 0)
 		{
-			cout << "start vertexid: " << vertexid << endl;
+			// cout << "start vertexid: " << vertexid << endl;
 
 			unordered_set<int> visited; // visited in current wcc
 			// mark when pushing into queue: to avoid one same vertex being added twice in the same level
@@ -2500,14 +2500,14 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 				}
 			}
 			++wccid;
-			cout << "current found WCC count: " << wccid << endl;
+			// cout << "current found WCC count: " << wccid << endl;
 
-			cout << "new wcc (sz:" << visited.size() << "): ";
-			for (auto v : visited)
-			{
-				cout << v << " ";
-			}
-			cout << endl;
+			// cout << "new wcc (sz:" << visited.size() << "): ";
+			// for (auto v : visited)
+			// {
+			// 	cout << v << " ";
+			// }
+			// cout << endl;
 
 			wccsz.push_back(visited.size());
 		}
@@ -2528,7 +2528,7 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 	}
 
 	// will call move constructor when construction return val
-	return move(result);
+	return std::move(result);
 }
 
 /**
@@ -5102,7 +5102,7 @@ namespace MaxKPX
             long long sum = 0;
             for (int i = 0; i < n; i++)
                 sum += pend[i] - pstart[i];
-            printf("%lld %lld\n", sum, m);
+            printf("%lld %d\n", sum, m);
             assert(sum * 2 == m);
 #endif
 
