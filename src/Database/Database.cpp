@@ -1069,6 +1069,8 @@ bool Database::load(bool loadCSR)
 					index++;
 					offset += len;
 				}
+				delete [] objlist;
+				objlist = nullptr;
 			}
 			// if(this->csr[0].offset_list[i].size() == 0)
 			// 	this->csr[0].valid[i] = false;
@@ -1081,6 +1083,8 @@ bool Database::load(bool loadCSR)
 			// }
 			cout << this->csr[0].offset_list[i].size() << endl;	   // # of this predicate's subjects
 			cout << this->csr[0].adjacency_list[i].size() << endl; // # of this predicate's objects
+			delete [] sublist;
+			sublist = nullptr;
 		}
 
 		// Process out-edges (csr[1])
@@ -1124,6 +1128,8 @@ bool Database::load(bool loadCSR)
 					index++;
 					offset += len;
 				}
+				delete [] sublist;
+				sublist = nullptr;
 			}
 			// if(this->csr[1].offset_list[i].size() == 0)
 			// 	this->csr[1].valid[i] = false;
@@ -1136,6 +1142,8 @@ bool Database::load(bool loadCSR)
 			// }
 			cout << this->csr[1].offset_list[i].size() << endl;
 			cout << this->csr[1].adjacency_list[i].size() << endl;
+			delete [] objlist;
+			objlist = nullptr;
 		}
 		csr[1].n = this->entity_num;
 
@@ -1573,6 +1581,9 @@ bool Database::unload()
 	}
 
 	delete this->query_cache;
+
+	delete [] this->csr;
+	this->csr = NULL;
 
 	this->if_loaded = false;
 	this->clear_update_log();
