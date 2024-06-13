@@ -3307,6 +3307,20 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
 		}
+		string _pre = _triple.getPredicate();
+		string _obj = _triple.getObject();
+		if (this->checkIsTypePredicate(_pre))
+		{
+			auto obj_it = this->umap.find(_obj);
+			if (obj_it != this->umap.end())
+			{
+				obj_it->second = obj_it->second + 1;
+			}
+			else
+			{
+				this->umap.insert(pair<string, unsigned long long>(_obj, 1));
+			}
+		}
 	}
 	else
 	{
