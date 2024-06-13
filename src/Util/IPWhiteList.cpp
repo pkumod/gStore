@@ -20,7 +20,8 @@ IPWhiteList::~IPWhiteList(){
 }
 
 void IPWhiteList::Init(){
-    ipList.erase(ipList.begin(), ipList.end());
+    // ipList.erase(ipList.begin(), ipList.end());
+     ipList.clear();
 }
 
 void IPWhiteList::Load(std::string file){

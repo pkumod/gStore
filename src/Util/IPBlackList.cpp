@@ -20,7 +20,8 @@ IPBlackList::~IPBlackList(){
 }
 
 void IPBlackList::Init(){
-    ipList.erase(ipList.begin(), ipList.end());
+    // ipList.erase(ipList.begin(), ipList.end());
+    ipList.clear();
 }
 
 void IPBlackList::Load(std::string file){
