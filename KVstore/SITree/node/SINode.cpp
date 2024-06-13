@@ -212,7 +212,7 @@ SINode::SetKey(const Bstr* _key, int _index, bool ifcopy)
 		return false;
 	}
 	if (ifcopy)
-		keys[_index].copy(_key);
+		keys[_index].copy(_key, true);
 	else
 		keys[_index].assignCopy(*_key);
 	return true;

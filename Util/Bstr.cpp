@@ -167,6 +167,15 @@ Bstr::copy(const Bstr* _bp)
 	memcpy(this->str, _bp->getStr(), sizeof(char) * this->length);
 }
 
+void Bstr::copy(const Bstr* _bp, bool del)
+{
+	if (del && this->str != nullptr)
+		delete [] this->str;
+	this->length = _bp->getLen();
+	this->str = new char[this->length];
+	memcpy(this->str, _bp->getStr(), sizeof(char) * this->length);
+}
+
 void
 Bstr::copy(const char* _str, unsigned long _len)
 {

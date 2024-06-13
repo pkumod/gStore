@@ -45,6 +45,7 @@ public:
 	void clear();					//set str/length to 0
 	void copy(const Bstr* _bp);
 	void copy(const char* _str, unsigned long _len);
+	void copy(const Bstr* _bp, bool del);
 	void assignCopy(const Bstr& _bstr);
 	//bool read(FILE* _fp);
 	//int write(FILE* _fp);
