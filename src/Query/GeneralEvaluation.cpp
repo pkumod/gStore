@@ -2241,10 +2241,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						string sample_result;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_sum.int_value = 0;
-						numeric_min.datatype = EvalMultitypeValue::xsd_long;
-						numeric_min.long_value = LONG_LONG_MAX;
-						numeric_max.datatype = EvalMultitypeValue::xsd_long;
-						numeric_max.long_value = LONG_LONG_MIN;
+						numeric_min.datatype = EvalMultitypeValue::xsd_integer;
+						numeric_min.int_value = INT_MAX;
+						numeric_max.datatype = EvalMultitypeValue::xsd_integer;
+						numeric_max.int_value = INT_MIN;
 						datetime_min.datatype = EvalMultitypeValue::xsd_datetime;
 						datetime_max.datatype = EvalMultitypeValue::xsd_datetime;
 
