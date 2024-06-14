@@ -796,14 +796,14 @@ private:
     std::vector<std::string> upload_allow_extensions;
     std::vector<std::string> upload_allow_compress_packages;
 
-    std::map<std::string, Database *> databases;
-    std::map<std::string, struct DBUserInfo *> users;
-    std::map<std::string, struct DatabaseInfo *> already_build;
-    std::map<std::string, struct IpInfo *> ips;
+    std::map<std::string, shared_ptr<Database>> databases;
+    std::map<std::string, shared_ptr<DBUserInfo>> users;
+    std::map<std::string, shared_ptr<DatabaseInfo>> already_build;
+    std::map<std::string, shared_ptr<IpInfo>> ips;
     std::map<std::string, shared_ptr<Txn_manager>> txn_managers;
     std::map<std::string, txn_id_t> running_txn;
 
-    Database *system_database;
+    shared_ptr<Database> system_database;
     pthread_rwlock_t users_map_lock;
     pthread_rwlock_t databases_map_lock;
     pthread_rwlock_t already_build_map_lock;
@@ -833,17 +833,17 @@ public:
     ~APIUtil();
     int initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr);
     bool unlock_already_build_map();
-    bool add_database(const std::string& db_name, Database *& db);
-    bool get_database(const std::string& db_name, Database *& db);
-    bool get_databaseinfo(const std::string& db_name, DatabaseInfo *& dbInfo);
-    bool trywrlock_databaseinfo(DatabaseInfo* dbinfo);
-    bool rdlock_databaseinfo(DatabaseInfo* dbinfo);
-    bool unlock_databaseinfo(DatabaseInfo* dbinfo);
+    bool add_database(const std::string& db_name, shared_ptr<Database> &db);
+    bool get_database(const std::string& db_name, shared_ptr<Database> &db);
+    bool get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbInfo);
+    bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
+    bool rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
+    bool unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool check_already_load(const std::string& db_name);
-    shared_ptr<Txn_manager> get_Txn_ptr(string db_name);
+    bool get_Txn_ptr(const std::string& db_name, shared_ptr<Txn_manager> &txn_manager);
     bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time);
     // std::string get_already_build(const std::string& db_name);
-    void get_already_builds(const std::string& username, vector<struct DatabaseInfo *> &array);
+    void get_already_builds(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
     bool check_already_build(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name);
     bool rdlock_database(const std::string& db_name);
@@ -864,7 +864,7 @@ public:
     bool refresh_sys_db();
     std::string query_sys_db(const std::string& sparql);
     bool build_db_user_privilege(std::string db_name, std::string username);
-    bool insert_txn_managers(Database* current_database, std::string database);
+    bool insert_txn_managers(shared_ptr<Database> &current_database, std::string database);
     bool remove_txn_managers(std::string db_name);
     bool db_checkpoint(string db_name);
     // bool db_checkpoint_all();
@@ -881,7 +881,7 @@ public:
     bool user_add(const string& username, const string& password);
     bool user_delete(const string& username);
     bool user_pwd_alert(const string& username, const string& password);
-    void get_user_info(vector<struct DBUserInfo *> *_users);
+    void get_user_info(vector<shared_ptr<struct DBUserInfo>> &_users);
     int clear_user_privilege(string username);
     string check_access_ip(const string& ip, int check_level);
     void update_access_ip_error_num(const string& ip);

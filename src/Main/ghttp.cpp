@@ -900,21 +900,20 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					SLOG_DEBUG("Import dataset to build database...");
 					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
 					string result;
-					Database *current_database = new Database(database);
+					shared_ptr<Database> current_database = make_shared<Database>(database);
 					bool flag = false;
 					if (!dataset.empty())
 						flag = current_database->build(dataset);
 					else
 						flag = current_database->BuildEmptyDB();
 					int success_num = current_database->getTripleNum();
-					delete current_database;
-					current_database = NULL;
+					current_database.reset();
 					if (flag) 
 					{
 						// if zip file then excuse batchInsert
 						if (is_zip && zip_files.size() > 0)
 						{
-							current_database = new Database(db_name);
+							current_database = make_shared<Database>(db_name);
 							bool rt  = current_database->load(false);
 							if (!rt)
 							{
@@ -927,8 +926,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
 								if (async != "true")
 									sendResponseMsg(1005, result, operation, request, response);
-								delete current_database;
-								current_database = NULL;
+								current_database.reset();
 								return;
 							}
 							for (std::string rdf_zip : zip_files)
@@ -938,8 +936,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							current_database->save();
 							success_num = current_database->getTripleNum();
 
-							delete current_database;
-							current_database = NULL;
+							current_database.reset();
 						}
 						// init database info and privilege
 						if (apiUtil->build_db_user_privilege(db_name, username) 
@@ -1122,7 +1119,7 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 			return;
 		}
 
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -1134,7 +1131,7 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 			}
 
 			Socket socket;
-			Database *current_database = new Database(db_name);
+			shared_ptr<Database> current_database = make_shared<Database>(db_name);
 			SLOG_DEBUG("begin loading...");
 			bool rt;
 			if (!port.empty())
@@ -1229,7 +1226,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		struct DatabaseInfo *database_info;
+		shared_ptr<DatabaseInfo> database_info;
 		apiUtil->get_databaseinfo(db_name, database_info);
 		if (apiUtil->rdlock_databaseinfo(database_info) == false)
 		{
@@ -1240,10 +1237,10 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		string creator = database_info->getCreator();
 		string time = database_info->getTime();
 		apiUtil->unlock_databaseinfo(database_info);
-		Database* current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL) {
-			current_database = new Database(db_name);
+			current_database = make_shared<Database>(db_name);
 			current_database->loadDBInfoFile();
 			current_database->loadStatisticsInfoFile();
 		}
@@ -1325,7 +1322,7 @@ void unload_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -1376,7 +1373,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -1448,7 +1445,7 @@ void show_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 	string operation = "show";
 	try
 	{
-		vector<struct DatabaseInfo *> array;
+		vector<shared_ptr<DatabaseInfo>> array;
 		apiUtil->get_already_builds(username, array);
 		rapidjson::Document resDoc;
 		resDoc.SetObject();
@@ -1458,7 +1455,7 @@ void show_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			DatabaseInfo *dbInfo = array[i];
+			shared_ptr<DatabaseInfo> dbInfo = array[i];
 			jsonArray.PushBack(dbInfo->toJSON(allocator).Move(), allocator);
 		}
 
@@ -1577,8 +1574,8 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 	string operation = "showuser";
 	try
 	{
-		vector<struct DBUserInfo *> userList;
-		apiUtil->get_user_info(&userList);
+		vector<shared_ptr<struct DBUserInfo>> userList;
+		apiUtil->get_user_info(userList);
 		if (userList.empty())
 		{
 			sendResponseMsg(0, "No Users", operation, request, response);
@@ -1591,7 +1588,7 @@ void showuser_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		rapidjson::Value jsonArray(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
-			struct DBUserInfo *useInfo = userList[i];
+			shared_ptr<struct DBUserInfo> useInfo = userList[i];
 			jsonArray.PushBack(useInfo->toJSON(allocator).Move(), allocator);
 		}	
 		resDoc.AddMember("StatusCode", 0, allocator);
@@ -1863,9 +1860,9 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database* current_db;
+		shared_ptr<Database> current_db;
 		apiUtil->get_database(db_name, current_db);
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -2100,7 +2097,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			}
 		}
 
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
@@ -2195,7 +2192,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			return;
 		}
 		string thread_id = Util::getThreadID();
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		bool update_flag_bool = true;
 		if (update_flag == "0")
 		{
@@ -2577,7 +2574,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			return;
 		}
 		// check if database named [db_name] is already load
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2735,12 +2732,6 @@ void begin_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		if (apiUtil->get_Txn_ptr(db_name) == NULL)
-		{
-			error = "Database transaction manager error.";
-			sendResponseMsg(1004, error, operation, request, response);
-			return;
-		}
 		string TID_s = apiUtil->begin_process(db_name, level, username);
 		if (TID_s.empty())
 		{
@@ -2819,7 +2810,8 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			error = "Get database transaction manager error.";
@@ -2925,7 +2917,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -2933,7 +2925,8 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			error = "Get database transaction manager error.";
@@ -3030,7 +3023,8 @@ void rollback_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		auto txn_m = apiUtil->get_Txn_ptr(db_name);
+		shared_ptr<Txn_manager> txn_m;
+		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == NULL)
 		{
 			string error = "Get database transaction manager error.";
@@ -3141,7 +3135,7 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (current_database == NULL)
 		{
@@ -3156,7 +3150,8 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 		}
 		else
 		{
-			auto txn_m = apiUtil->get_Txn_ptr(db_name);
+			shared_ptr<Txn_manager> txn_m;
+			apiUtil->get_Txn_ptr(db_name, txn_m);
 			if (txn_m == NULL)
 			{
 				error = "Get database transaction manager error.";
@@ -3317,7 +3312,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			}
 			upfile.getFileList(zip_files, "");
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -3337,7 +3332,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			string _dir = dir;
 			auto insert_helper = [operation,opt_id,db_name,file,_dir,is_file,is_zip,zip_files,unz_dir_path,async](const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
-					Database *current_database;
+					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
 					unsigned success_num = 0;
 					unsigned total_num = 0;
@@ -3469,7 +3464,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		Database *current_database;
+		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
@@ -3485,7 +3480,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			auto remove_helper = [db_name,operation,file,opt_id,async]
 				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
-					Database *current_database;
+					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
 					string success = "Batch remove data successfully.";
 					int success_num = current_database->batch_remove(file, false, nullptr);
@@ -5604,7 +5599,7 @@ void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			return;
 		}
 
-		struct DatabaseInfo *db_info;
+		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
