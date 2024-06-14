@@ -5,7 +5,7 @@
 using namespace std;
 using namespace rapidjson;
 
-#define PFN_HEADER "#include \"../../../src/Query/PathQueryHandler.h\"\n\nusing namespace std;\n\n"
+#define PFN_HEADER "#include \"../../../src/Query/Algorithm/PathQueryHandler.h\"\n\nusing namespace std;\n\n"
 
 struct PFNInfo
 {

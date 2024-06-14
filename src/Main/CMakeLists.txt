@@ -91,7 +91,8 @@ link_directories(
         ${GSTORE_PFNLIB_DIR}
 )
 add_library( gcsr SHARED ../Database/CSR.cpp )
-add_library( gpathqueryhandler SHARED ../Query/PathQueryHandler.cpp )
+aux_source_directory( ../Query/Algorithm ALGORITHM_LIST )
+add_library( gpathqueryhandler SHARED ${ALGORITHM_LIST} )
 target_link_libraries( gpathqueryhandler gcsr )
 set_target_properties( gcsr gpathqueryhandler PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_PFNLIB_DIR} )
 

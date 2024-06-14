@@ -20,7 +20,7 @@
 #include "QueryCache.h"
 #include "ResultSet.h"
 #include <dlfcn.h>
-#include "PathQueryHandler.h"
+#include "Algorithm/PathQueryHandler.h"
 
 struct hashFunction
 {
