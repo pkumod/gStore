@@ -1,18 +1,12 @@
-* :computer: 安装gStore
-  * [Docker](/zh-cn/DOCKER_DEPLOY_CN.md)
-  * [编译](/zh-cn/COMPILE.md)
-
-* :memo: 帮助
-  * [用户手册](/zh-cn/MANUAL.md)
-  * [gStore文档](/zh-cn/USAGE.md)
-  * [SPARQL指南](/zh-cn/SPARQL.md)
-  * [Workbench](/zh-cn/WORKBENCH.md)
-  * [Cloud](/zh-cn/CLOUD.md)
-
-* :rocket: 开发
-  * [API](/zh-cn/API.md)
-  * [变更日志](/zh-cn/CHANGELOG.md)
-
-* :page_facing_up: 其他
-  * [开源，许可与版权](/zh-cn/LICENSE.md)
-  * [gStore大事记](/zh-cn/CHRONICLE.md)
+* [文档下载](DOCUMENT_DOWNLOAD.md)
+* [更新日志](UPDATE_LOG.md)
+* [知识图谱与gstore介绍](GRAPH_INTRODUCE.md)
+* [安装指南](INSTALL_INSTRUCT.md)
+* [快速入门](QUICK_START.md)
+* [常用API](API_USAGE.md)
+* [SPARQL查询语言](SPARQL_QUERY.md)
+* [可视化工具Workbench](WORKBENCH_USAGE.md)
+* [gStore云平台介绍](CLOUD_INTRODUCE.md)
+* [项目大事记](CHRONOLOGY.md)
+* [开源与法律条款](LEGAL_PROVISION.md)
+* [gstore标识](GSTORE_LOGO.md)

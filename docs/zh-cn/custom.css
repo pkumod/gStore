@@ -1,0 +1,115 @@
+.sidebar-nav li {
+    padding: 12px 0;
+    font-size: 14px !important;
+}
+
+.sidebar-nav li .active {
+    background: #fff !important;
+}
+
+.sidebar-nav ul ul, .sidebar nav ul ul{
+    margin-left: 0 !important;
+    padding-left:var(--sidebar-nav-indent)
+}
+
+.sidebar-nav li.active>a {
+    color: rgb(148, 7, 10) !important;
+}
+
+
+
+.sidebar-nav li.active>a,
+.sidebar-nav li.collapse>a {
+    color: rgb(148, 7, 10) !important;
+    /* border-color: #fff; */
+    border-right: none;
+}
+
+body .sidebar {
+    /* var(--sidebar-padding); */
+    padding: 0 !important;
+}
+
+
+.sidebar-nav li>a[href^="/"]:not([href*="?id="]):only-child, .sidebar-nav li>a[href^="#/"]:not([href*="?id="]):only-child{
+    background: none;
+    padding-left: 26px;
+    position: relative;
+    width: 220px;
+    overflow:hidden;
+}
+
+.sidebar-nav li>a[href^="#/"]:not([href*="?id="]):only-child:after{
+    
+}
+
+.sidebar-nav ul>li{
+    position: relative;
+}
+
+.sidebar-nav>ul>li.active:after{
+    /* content: "";
+    position: absolute;
+    overflow:visible;
+    right: 30px;
+    top: 20px;
+    width: 20px; 
+    height: 20px; 
+    background: var(--sidebar-nav-pagelink-background); 
+    transform: rotate(90deg); */
+}
+
+.sidebar-nav>ul>li:after{
+    content: "";
+    position: absolute;
+    overflow:visible;
+    right: 20px;
+    top: 20px;
+    width: 20px; 
+    height: 20px; 
+    background: var(--sidebar-nav-pagelink-background); 
+    transform: rotate(90deg);
+} 
+
+.sidebar-nav li:root:after{
+    content: "";
+    position: absolute;
+    overflow:visible;
+    right: 50px;
+    bottom: 0;
+    width: 20px; 
+    height: 20px; 
+    background: var(--sidebar-nav-pagelink-background); 
+    background: gold;
+    transform: rotate(90deg);
+}
+
+
+.sidebar-nav li.active>a[href^="/"]:not([href*="?id="]):not(:only-child), .sidebar-nav li.active>a[href^="#/"]:not([href*="?id="]):not(:only-child){
+    background: none;
+    padding-left: 26px;
+    width: 220px;
+    overflow:hidden;
+}
+
+.sidebar-nav li>a[href^="/"]:not([href*="?id="]):not(:only-child), .sidebar-nav li>a[href^="#/"]:not([href*="?id="]):not(:only-child){
+    background: none;
+    padding-left: 26px;
+    width: 220px;
+    overflow:hidden;
+}
+
+.sidebar-nav li.collapse>a[href^="/"]:not([href*="?id="]):not(:only-child), .sidebar-nav li.collapse>a[href^="#/"]:not([href*="?id="]):not(:only-child){
+    background: none;
+    padding-left: 26px;
+    width: 220px;
+    overflow:hidden;
+    
+}
+
+
+.sidebar-nav li>a[href^="/"]:not([href*="?id="]), .sidebar-nav li>a[href^="/"]:not([href*="?id="])~ul a, .sidebar-nav li>a[href^="#/"]:not([href*="?id="]), .sidebar-nav li>a[href^="#/"]:not([href*="?id="])~ul a{
+    /* padding-left: 51px; */
+    width: 220px;
+    overflow:hidden;
+}

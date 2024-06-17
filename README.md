@@ -1,164 +1,146 @@
-<!-- insert a mobile friendly image -->
 <div align="center">
-  <img src="docs/logo.png" style="height: 200px;" alt="gStore logo"/>
+  <img src="https://www.gstore.cn/pcsite/docs/logo.png" style="height: 200px;" alt="gStore logo"/>
 </div>
 
-<div align="center">
-  <h4> English | <a href="docs/zh-cn/README.md" target="_blank"> 中文 </a> | <a href="https://en.gstore.cn" target="_blank"> Website </a> | <a href="https://www.gstore.cn" target="_blank"> 网站 </a> |  <a href="https://gstore-docs.pages.dev" target="_blank"> Documentation </a> | <a href="https://gstore-docs.pages.dev/zh-cn/" target="_blank"> 文档 </a> </h4>
-</div>
+**English** | [中文](README_ZH.md) | [Website](https://en.gstore.cn) | [网站](https://www.gstore.cn)
 
 <div align="center">
-  <a href="https://github.com/hrz6976/gstore/commits"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/y/pkumod/gstore?logo=github"/></a>
-  <a href="https://github.com/hrz6976/gstore/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors-anon/hrz6976/gstore?logo=github&color=%23ffd664"/></a>
-  <a href="https://github.com/hrz6976/gstore/actions" ><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/hrz6976/gStore/ci.yml?logo=github"/></a>
-  <a href="https://codecov.io/github/hrz6976/gStore" ><img src="https://codecov.io/github/hrz6976/gStore/graph/badge.svg?token=0NE3KM5AV8"/></a>
-  <a href="https://hub.docker.com/repository/docker/hrz6976/gstore"><img alt="Docker Image Version (latest semver)" src="https://img.shields.io/docker/v/hrz6976/gstore?logo=docker&label=docker&color=%2328a8ea"/></a>
-  <span><img alt="Static Badge" src="https://img.shields.io/badge/arch-amd64_arm64_loongarch-%23f23f46?logo=amazonec2"></span>
+  <a href="https://github.com/pkumod/gStore/commits/1.2/"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/pkumod/gstore?logo=github"/></a>
+  <a href="https://github.com/pkumod/gStore/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors-anon/pkumod/gstore?logo=github&color=%23ffd664"/></a>
+  <a href="https://hub.docker.com/repository/docker/pkumodlab/gstore-docker/general"><img alt="Docker Image Version (V1.2)" src="https://img.shields.io/docker/v/pkumod/gstore?logo=docker&label=docker&color=%2328a8ea"/></a>
+  <span><img alt="Static Badge" src="https://img.shields.io/badge/arch-x86_amd64_arm64_loongarch-%23f23f46?logo=amazonec2"></span>
 </div>
-
-<p></p>
 
 gStore is an open-source graph database engine (or "triple store") born for managing large [RDF](http://www.w3.org/TR/rdf11-concepts/) datasets with the [SPARQL](https://www.w3.org/TR/sparql11-query/) query language. It works with Linux systems and amd64, arm64, and loongarch processors. gStore is a collaborative effort between the [Data Management Lab of Peking University](https://mod.icst.pku.edu.cn/english/index.htm), [University of Waterloo](https://uwaterloo.ca/), and awesome [contributors](https://github.com/pkumod/gStore/contributors) from the open-source community.
 
-:key: gStore is released under the [BSD 3-Caluse](https://opensource.org/license/bsd-3-clause/) License, with several third-party libraries under their own licenses. Check [LICENSE](/zh-cn/LICENSE.md) for details.
+:key: gStore is released under the [BSD 3-Caluse](https://opensource.org/license/bsd-3-clause/) License, with several third-party libraries under their own licenses. Check [LICENSE](LICENSE) for details.
 
-:bug: Check out [FAQ](/docs/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](/zh-cn/docs/BUGS.md) and [LIMIT](/zh-cn/docs/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
+:bug: Check out [FAQ](docs/en-us/FAQ.md) for frequently asked questions. Known bugs and limitations are listed in [BUGS](docs/en-us/BUGS.md) and [LIMIT](docs/en-us/LIMIT.md). If you find any bugs, please feel free to [open an issue](https://github.com/pkumod/gStore/issues/new/choose).
 
 :microphone: If you have any questions or suggestions, please open a thread in [GitHub Discussions](https://github.com/pkumod/gStore/discussions).
 
-:book: For recommendations, project roadmap, and more, check [online documentation](https://gstore-docs.pages.dev/zh-cn/).
+:book: For recommendations, project roadmap, and more, check [online documentation](https://www.gstore.cn/pcsite/index.html#/documentation).
 
+**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_ZH.pdf).**
 
-## Highlights
+**The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
 
-* First-tire performance in the [WatDiv](http://dsg.uwaterloo.ca/watdiv/), [LUBM](http://swat.cse.lehigh.edu/projects/lubm/) and [DBPedia](https://wiki.dbpedia.org/) benchmarks. ([Benchmark Results](docs/test/formal_experiment.pdf))
+**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](https://en.gstore.cn/#/enHome).**
 
-* Supports multiple RDF formats, including Turtle, TriG, RDF/XML, RDFa, and JSON-LD.
-  
-* Supports user-defined graph analysis functions. (Added in 1.0)
-
-* ACID-compliant transactions. (Added in 1.0)
-
-  
 ## Get gStore
+
+gStore has been uploaded to gitee (code cloud), which is recommended for faster download for users in mainland China. The website is https://gitee.com/PKUMOD/gStore.
+
+You can also open https://github.com/pkumod/gStore, download gStore.zip, then decompress the zip package.
 
 ### From Docker
 
-We host cross-platform Docker images on [Docker Hub](https://hub.docker.com/repository/docker/hrz6976/gstore). You can pull and run the latest image with:
 
 ```bash
-docker run -it --rm hrz6976/gstore sh -c "(/usr/local/bin/ghttp &); bash"
+$ docker pull pkumodlab/gstore-docker:latest
 ```
 
-To serve `ghttp` and persist the data:
-```bash
-export GSTORE_PORT=9000 # or any port you want
-export GSTORE_PATH=$(realpath ./gstore) # or any local directory with write permission
-docker run -d -p ${GSTORE_PORT}:9000 -v ${GSTORE_PATH}:/app gstore
-```
-
-Check [documentation](https://gstore-docs.pages.dev/#/DOCKER_DEPLOY) for more detailed instructions.
+Complete instruction documentation is on the [Docker Deployment Instructions](docs/en-us/DOCKER_DEPLOY_EN.md).
 
 ### From Source
 
+
 To compile gStore, first clone the repository:
 
-```bash
-git clone https://github.com/pkumod/gStore.git --depth=1
-```
-
-Then, install the system packages required to compile gStore:
 
 ```bash
-cd gStore
-bash scripts/setup-dev.sh
+git clone https://github.com/pkumod/gStore.git
 ```
 
-Install conan and 3rd-party libraries:
-
-```bash
-pip3 install conan --user
-conan detect
-conan install . --build=missing -s build_type=Release
-```
-
-Finally, compile gStore:
-
-```bash
-cd cmake-build-release
-cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-ninja prepare
-ninja install
-```
-
-Check [documentation](https://gstore-docs.pages.dev/#/COMPILE) for more details.
+Complete instruction documentation is on the [Installation Instructions](docs/en-us/INSTALL_INSTRUCT.md).
 
 ## Quick Start
 
-Create the databases (docker containers automatically do this on startup):
+**N-Triple Data format introduction**
 
-```bash
-export GSTORE_ROOT_PASSWORD=a_strong_password # or any password you want
-bash script/init.sh
+​      RDF data should be provided in n-triple format (XML is not currently supported), and queries must be provided in [SPARQL1.1](https://www.w3.org/TR/sparql11-query/) syntax. The following is an example of the n-triple format file:        
+
+```
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .	
+_:a  foaf:name   "Johnny Lee Outlaw" .
+_:a  foaf:mbox   <mailto:jlow@example.com> .
+_:b  foaf:name   "Peter Goodguy" .
+_:b  foaf:mbox   <mailto:peter@example.org> .
+_:c  foaf:mbox   <mailto:carol@example.org> .
 ```
 
-Run a query:
-  
-```bash
-bin/gquery -db small -q data/small/small_q0.sql
+Triples are typically stored in the W3C-defined NT file format and represent three RDF data, where the values wrapped in `<` and `>`are urIs of an entity, and the values wrapped in '"" are literals representing the value of an attribute of the entity, followed by'`^^ `to indicate the type of the value. The following three RDF data points represent two attributes of `John`, `gender` and `age`, with values of `male` and `28` respectively. The last one indicates that `John` and `Li` have a `friend` relationship.
+
+```NT
+<John> <gender> "male"^^<http://www.w3.org/2001/XMLSchema#String>.
+<John> <age> "28"^^<http://www.w3.org/2001/XMLSchema#Int>.
+<John> <friend> <Li>.
 ```
 
-Start the server:
+​    More specific information about N-Triple please check [N-Triple](https://www.w3.org/TR/n-triples/). Not all syntax in [SPARQL1.1](https://www.w3.org/TR/sparql11-query/) is parsed and answered in gStore; for example, property paths are beyond the capabilities of the gStore system.
 
-```bash
-bin/ghttp &
+**Initialize the system database**
+
+```shell
+bin/ginit
 ```
 
-Then, you can access the server via HTTP protocol:
+**Create database**
 
-```bash
-curl http://127.0.0.1:9000/grpc/api
+```shell
+bin/gbuild -db lubm -f data/lubm/lubm.nt 
 ```
 
-To shutdown the server:
+**Database list**
 
-```bash
-bin/shutdown
+```shell
+bin/gshow
 ```
 
-Full list of commands is on the [documentation website](https://gstore-docs.pages.dev/#/USAGE).
+**Database query**
+
+```shell
+bin/gquery -db lubm -q data/lubm/lubm_q0.sql 
+```
+
+Complete instruction documentation is on the [Quick Start](docs/en-us/QUICK_START.md).
+
 
 ## Cite gStore
 
+
 If you use gStore in your research, please cite the following paper:
+
 
 ```bibtex
 @article{zou2014gstore,
-  title={gStore: a graph-based SPARQL query engine},
-  author={Zou, Lei and {\"O}zsu, M Tamer and Chen, Lei and Shen, Xuchuan and Huang, Ruizhe and Zhao, Dongyan},
-  journal={The VLDB journal},
-  volume={23},
-  pages={565--590},
-  year={2014},
-  publisher={Springer}
+  title={gStore: a graph-based SPARQL query engine},
+  author={Zou, Lei and {\"O}zsu, M Tamer and Chen, Lei and Shen, Xuchuan and Huang, Ruizhe and Zhao, Dongyan},
+  journal={The VLDB journal},
+  volume={23},
+  pages={565--590},
+  year={2014},
+  publisher={Springer}
 }
 ```
+
 
 Or cite this repository:
 
+
 ```bibtex
 @misc{gStore,
-  author = {gStore Authors},
-  title = {gStore},
-  year = {2021},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/pkumod/gStore}},
+  author = {gStore Authors},
+  title = {gStore},
+  year = {2021},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/pkumod/gStore}},
 }
 ```
 
-## Changelog
 
+## Change log
 **1.2(stable):2023-11-11**
 
 New features in gStore 1.2 are listed as follows:
@@ -173,7 +155,6 @@ New features in gStore 1.2 are listed as follows:
   - **Support for Multiple Data Formats**: Added support for multiple formats such as **Turtle**, **TriG**, **RDF/XML**, **RDFa**, and **JSON-LD**.
   - **Optimization of custom graph analysis algorithm editing function**: Redesign the interface of the custom graph analysis algorithm editing function, optimize the dynamic compilation algorithm, and improve compilation efficiency.
   - **Bug fixes**: Fixed a series of bugs.
-
 
 
 **1.0：2022-10-01**
@@ -222,18 +203,81 @@ New features in version 0.9 include:
 - Support for transactions with three levels of isolation: *read committed*, *snapshot isolation* and *serializable*;
 - Expanding data structures to hold large-scale graphs of up to five billion triples.
 
-The version is a beta version, you can get it by :
-```
-git clone https://github.com/pkumod/gStore.git
-```
+<!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
 
-**0.8**
+- - -
 
-The version is a stable version ,you can get it by 
-```
- git clone -b 0.8 https://github.com/pkumod/gStore.git
-```
+## Advanced Help
+
+If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
+
+
+- [Document Download](docs/en-us/DOCUMENT_DOWNLOAD.md)
+
+
+- [Update Log](docs/en-us/UPDATE_LOG.md)
+
+
+- [Introduction of Knowledge Graph and gStore](docs/en-us/GRAPH_INTRODUCE.md)
+
+
+- [Installation Instructions](docs/en-us/INSTALL_INSTRUCT.md)
+
+
+- [Quick Start](docs/en-us/QUICK_START.md)
+
+
+- [API Usage](docs/en-us/API_USAGE.md)
+
+
+- [SPARQL query syntax](docs/en-us/SPARQL_QUERY.md)
+
+
+- [gStore Visual Tool Workbench](docs/en-us/WORKBENCH_USAGE.md)
+
+
+- [gStore Cloud platform user manual ](docs/en-us/CLOUD_INTRODUCE.md)
+
+
+- [gStore Chronology](docs/en-us/CHRONOLOGY.md)
+
+
+- [Open source and legal provision](docs/en-us/LEGAL_PROVISION.md)
+
+
+- [gStore Logo](docs/en-us/GSTORE_LOGO.md)
+
+
+- [FAQ](docs/en-us/FAQ.md)
+
+- - -
+
+
+## Other Business
+
+Bugs are recorded in [BUG REPORT](docs/en-us/BUGS.md).
+You are welcomed to submit the bugs  through [Community Web](https://www.gstore.cn/pcsite/index.html#/forum) questioning when you discover if they do not exist in this file.
+
+We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/en-us/TIPS.md).
+
+You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gstore@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/en-us/MAIL.md).
+
+There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/en-us/LIMIT.md).
+
+Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/en-us/FAQ.md) page.
+
+Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/en-us/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
+
+- watch/star our project
+
+- fork this repository and submit pull requests to us
+
+- download and use this system, report bugs or suggestions
+
+- ...
+
+People who inspire us or contribute to this project will be listed in the [Thanks List](docs/en-us/THANK.md) chapter.
+
 
 
 <!--This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).-->
-
