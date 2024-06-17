@@ -48,6 +48,7 @@ set( LIB_GSTROE_DEP
         stringindex
         util
         gcov
+        reason
 )
 set( BIN_LIST
         gadd
@@ -65,7 +66,8 @@ set( BIN_LIST
         gserver     
         gserver_backup_scheduler     
         gshow     
-        gsub      
+        gsub
+        greason     
 )
 set( MAIN_LIST 
         gadd.cpp  
@@ -83,7 +85,8 @@ set( MAIN_LIST
         gserver.cpp 
         gserver_backup_scheduler.cpp 
         gshow.cpp
-        gsub.cpp 
+        gsub.cpp
+        greason.cpp
 )
 include_directories( ${INCLUDE_3RD_PATH} )
 link_directories( 

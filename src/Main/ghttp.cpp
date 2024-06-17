@@ -29,6 +29,7 @@
 #include "../Util/INIParser.h"
 #include "../Util/WebUrl.h"
 #include "../Util/CompressFileUtil.h"
+#include "../Reason/Reason.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -155,6 +156,10 @@ void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 void stat_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
 void checkOperationState_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string opt_id);
+
+
+void reasonManage_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string type,
+string db_name,Document &document);
 
 std::map<std::string, std::string> parse_post_body(const std::string &body);
 
@@ -1792,6 +1797,274 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 	catch (const std::exception &e)
 	{
 		string error = "User privilege manage fail:" + string(e.what());
+		sendResponseMsg(1005, error, operation, request, response);
+	}
+}
+
+/**
+ * 1:addReason 2:listReason 3:compileReason 4:executeReason 5:disableReason 6.showReason
+*/
+void reasonManage_thread_new(const shared_ptr<HttpServer::Request> &request, 
+const shared_ptr<HttpServer::Response> &response, int type, string db_name,Document &document)
+{
+	string error = "";
+	string operation = "reasonManage";
+	try
+	{
+		bool checkresult=apiUtil->check_db_exist(db_name);
+		if(checkresult==false)
+		{
+			error="the database is not exist!";
+			SLOG_DEBUG("dbname:"+db_name+",error:"+error);
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		int typeint=type;
+		try
+		{
+       
+		  if(typeint<1||typeint>6)
+		  {
+			error = "The type " + std::to_string(type) + " is not support.";
+			SLOG_DEBUG(error);
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		  }
+		}catch(...)
+		{
+            error = "The type " +std::to_string(type) + " is not support.";
+			SLOG_DEBUG(error);
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+	
+		if(typeint==1)
+		{
+			//add reason
+		   operation = "AddReason";
+		   if(document.HasMember("ruleinfo")==false)
+		   {
+			 string error2="the data has not the rule information";
+			 cout<<"error2:"<<error2<<endl;
+			 sendResponseMsg(1005, error2, operation, request, response);
+			return;
+		   }
+           Value reasonInfo=document["ruleinfo"].GetObject();
+		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
+		   if(resultInfo.issuccess==1)
+		   {
+		   sendResponseMsg(0, resultInfo.error_message, operation, request, response);
+		   return;
+		   }
+		   else
+		   {
+			sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			return;
+		   }
+
+		}
+		else if(typeint==2)
+		{
+			//listReason
+			operation = "listReason";
+            string db_path=_db_home+db_name+_db_suffix;
+			vector<string> liststr = ReasonHelper::getReasonRuleList(db_path);
+			stringstream str_stream;
+			str_stream << "[";
+            for(int i=0;i<liststr.size();i++)
+			{
+				if (i > 0) 
+					str_stream << ",";
+				str_stream << liststr[i];
+			}
+			str_stream << "]";
+			string arrayStr = str_stream.str();
+			Document list;
+			list.SetArray();
+			list.Parse(arrayStr.c_str());
+			if (list.HasParseError()) 
+			{
+				SLOG_ERROR("pasrse rulefiles error:" + arrayStr);
+				sendResponseMsg(1005, "pasrse rulefiles error", operation, request, response);
+			} 
+			else 
+			{
+				Document doc;
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				unsigned num = list.Size();
+				doc.SetObject();
+				doc.AddMember("StatusCode", 0, allocator);
+				doc.AddMember("StatusMsg", "ok", allocator);
+				doc.AddMember("list", list.Move(), allocator);
+				doc.AddMember("num",  num, allocator);
+           		sendResponseMsg(doc, operation, request, response);
+			}
+		}
+		else if(typeint==3)
+		{
+			//compileReason
+			operation = "compileReason";
+			string rulename=document["rulename"].GetString();
+            ReasonSparql resultInfo=ReasonHelper::compileReasonRule(rulename,db_name,_db_home,_db_suffix);
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			if(resultInfo.issuccess==0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			    return;
+			}
+			
+			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
+			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
+		
+			rapidjson::StringBuffer buffer;
+			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
+			if (doc.Accept(writer))
+			{
+				// 输出格式化的JSON
+				sendResponseMsg(0, buffer.GetString(), operation, request, response);
+				return;
+			}
+			else
+			{
+				error="the result is not json format!";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+		}
+		else if(typeint==4)
+		{
+			//executeReason
+			operation = "executeReason";
+			string rulename=document["rulename"].GetString();
+			ReasonSparql resultInfo= ReasonHelper::executeReasonRule(rulename,db_name,_db_home,_db_suffix);
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			if(resultInfo.issuccess==0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			    return;
+			}
+			
+			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
+			Database _db(db_name);
+            _db.load();
+            ResultSet ask_rs;
+            FILE *ask_ofp = NULL;
+            string sparql = resultInfo.insert_sparql;
+            _db.query(sparql, ask_rs, ask_ofp);
+            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
+            cout << "ans:" << rs_ansNum << endl;
+			doc.AddMember("AnsNum",rs_ansNum,allocator);
+			_db.unload();
+            _db.save();
+            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
+		
+			rapidjson::StringBuffer buffer;
+			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
+			if (doc.Accept(writer))
+			{
+				// 输出格式化的JSON
+				sendResponseMsg(0, buffer.GetString(), operation, request, response);
+				return;
+			}
+			else
+			{
+				error="the result is not json format!";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+
+		}
+		else if(typeint==5)
+		{
+			operation = "disableReason";
+			string rulename=document["rulename"].GetString();
+			ReasonSparql resultInfo= ReasonHelper::disableReasonRule(rulename,db_name,_db_home,_db_suffix);
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			if(resultInfo.issuccess==0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			    return;
+			}
+			
+			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
+			Database _db(db_name);
+            _db.load();
+            ResultSet ask_rs;
+            FILE *ask_ofp = NULL;
+            string sparql = resultInfo.insert_sparql;
+            _db.query(sparql, ask_rs, ask_ofp);
+            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
+            cout << "ans:" << rs_ansNum << endl;
+			doc.AddMember("AnsNum",rs_ansNum,allocator);
+			_db.unload();
+            _db.save();
+            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
+		
+			rapidjson::StringBuffer buffer;
+			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
+			if (doc.Accept(writer))
+			{
+				// 输出格式化的JSON
+				sendResponseMsg(0, buffer.GetString(), operation, request, response);
+				return;
+			}
+			else
+			{
+				error="the result is not json format!";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+
+		}
+		else if(typeint==6)
+		{
+		     operation = "showReason";
+			string rulename=document["rulename"].GetString();
+			ReasonOperationResult resultInfo= ReasonHelper::getReasonInfo(rulename,db_name,_db_home,_db_suffix);
+		
+			
+			if(resultInfo.issuccess==0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			    return;
+			}
+			
+			
+			else
+			{
+				// 输出格式化的JSON
+				Document doc;
+				doc.SetObject();
+				doc.Parse(resultInfo.error_message.c_str());
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				doc.AddMember("StatusCode",0,allocator);
+				doc.AddMember("StatusMsg","ok",allocator);
+				sendResponseMsg(doc, operation, request, response);
+				return;
+			}
+			
+		}
+		else
+		{
+           error = "the operation type is not support!";
+		  sendResponseMsg(1005, error, operation, request, response);
+		}
+	}
+	catch (const std::exception &e)
+	{
+		string error = "Reason manage fail:" + string(e.what());
 		sendResponseMsg(1005, error, operation, request, response);
 	}
 }
@@ -4564,6 +4837,44 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			return;
 		}
 		checkOperationState_thread_new(request, response, opt_id);
+	}
+	else if(operation=="reasonManage")
+	{
+		int type =0;
+		SLOG_DEBUG("begin reasonManage,");
+		// cout<<"begin reasonManage...."<<endl;
+		try
+		{
+			if (request_type == "GET")
+			{
+				
+			string error = "the parameter has some error,please consult the api document.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+			}
+			else if (request_type == "POST")
+			{
+				if(document.HasMember("type")&&document["type"].IsInt())
+			    {
+				type = document["type"].GetInt();
+				SLOG_DEBUG("begin reasonManage,type:"+std::to_string(type));
+				reasonManage_thread_new(request, response, type, db_name,document);
+				}
+				else{
+						string error = "the type parameter not exist or has some error,please consult the api document.";
+			           sendResponseMsg(1003, error, operation, request, response);
+			          return;
+				}
+			}
+		}
+		catch (...)
+		{
+			string error = "the parameter has some error,please consult the api document.";
+			cout<<"error:"<<error<<endl;
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
+		
 	}
 	else
 	{

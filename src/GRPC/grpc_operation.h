@@ -59,7 +59,8 @@ namespace grpc
     OP(OP_UPLOADFILE,                     uploadfile) \
     OP(OP_DOWNLOADFILE,                 downloadfile) \
     OP(OP_STAT,                                 stat) \
-    OP(OP_CHECKOPERATIONSTATE,   checkOperationState)
+    OP(OP_CHECKOPERATIONSTATE,   checkOperationState) \
+    OP(OP_REASON_MANAGE,                reasonManage)
 }
 
 enum operation_type
