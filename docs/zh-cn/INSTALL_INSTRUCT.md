@@ -10,7 +10,7 @@
 | gcc            | 必须安装 version >= 5.0                        |
 | g++            | 必须安装 version >= 5.0                        |
 | make           | 必须安装                                       |
-| cmake          | 必须安装 version >=3.6                         |
+| cmake          | 必须安装 version >=3.17                         |
 | pkg-config     | 必须安装                                       |
 | uuid-devel     | 必须安装                                       |
 | boost          | 必须安装 version >= 1.56 && <= 1.59            |
@@ -222,15 +222,15 @@ $ cmake --version				#ubuntu系统
 
 如果没有安装，则安装：
 
-版本：3.6.2
+版本：3.23.2
 
-地址：https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz
+地址：https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz
 
 安装脚本 （适用于 CentOS 和 Ubuntu）
 
 ```bash
-$ wget https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz
-$ tar -xvf cmake-3.6.2.tar.gz && cd cmake-3.6.2/
+$ wget https://cmake.org/files/v3.6/cmake-3.23.2.tar.gz
+$ tar -xvf cmake-3.23.2.tar.gz && cd cmake-3.23.2/
 $ ./bootstrap
 $ make
 $ make install
@@ -370,11 +370,26 @@ $ cd gstore
 
 执行如下指令：
 
+#### 方式1
+
 ```bash
-$ make pre
-# 以下命令可通过 -j4方式加速编译
-$ make            
+$ sudo bash scripts/build.sh
 #若编译顺利完成，最后会出现 Compilation ends successfully! 结果
+```
+
+#### 方式2
+```bash
+# 创建build目录
+$ mkdir build
+$ cd build
+# 生成makefile等文件
+$ cmake ..
+# 预编译
+$ make pre
+# 编译
+$ make -j4
+# 初始化system.db数据库
+$ make init
 ```
 
 如果在已安装 5.0 以上版本的 g++ 后 `make pre` 仍报要求 5.0 以上版本 g++ 的错误，请先定位 5.0 以上版本 g++ 的路径，并在 gStore 目录下执行以下命令：
@@ -384,6 +399,23 @@ $ export CXX=<5.0 以上版本g++的路径>
 ```
 
 然后重新 `make pre` 。假如在这步操作后仍然报相同的错误，请手动删除 `tools/antlr4-cpp-runtime-4/` 下的 `CMakeCache.txt` 和 `CMakeFiles` 文件夹，再重新 `make pre` 。
+
+#### 针对开发人员使用
+
+```bash
+$ cd build
+# 编译
+$ make -j4
+# 测试脚本
+$ make test
+# 清除3rdparty预编译生成的lib,include的文件(3rdparty有改动时才执行此命令)
+$ make clean_pre
+# 清理编译生成.o等文件
+$ make clean
+# 测试update_test gtest脚本(等同于make test)
+$ cd scripts/test
+$ bash test.sh
+```
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
 ## Docker方式部署gStore
