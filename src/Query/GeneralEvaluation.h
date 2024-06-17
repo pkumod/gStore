@@ -104,7 +104,7 @@ class GeneralEvaluation
 			all_entity_id(_ge.all_entity_id), \
 			fp(_ge.fp), export_flag(_ge.export_flag){}
 
-		~GeneralEvaluation() {delete [] csr;}
+		~GeneralEvaluation() {}
 
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
