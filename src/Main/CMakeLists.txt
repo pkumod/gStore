@@ -1,3 +1,4 @@
+# alter the cmakelist
 if ( CMAKE_BUILD_TYPE STREQUAL Static )
         set( LIB_SYSTEM_DEP
                 boost_thread
