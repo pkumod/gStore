@@ -30,7 +30,7 @@ public:
     static void alterReasonRule(Document rule);
     static Document getReasonRuleById(string id);
     static ReasonOperationResult getReasonInfo(string name,string db_name,string db_home,string db_suffix);
-    static void removeReasonRule(string id);
+    static ReasonOperationResult removeReasonRule(string rulename,string db_name,string db_home,string db_suffix);
     static string getSparqlForReasonRule(Document rule);
     static Document stringToRuleInfo(Value doc);
     static string RuleInfoToString(Document ruleinfo);
@@ -40,8 +40,6 @@ public:
     static string updateReasonRuleInfo(string rulename,string db_name,Document ruleinfo,string db_home,string db_suffix);
     static string updateReasonRuleStatus(string rulename,string db_name,string status,string db_home,string db_suffix);
     static ReasonSparql disableReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    
-    
 };
 
 

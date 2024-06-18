@@ -3445,8 +3445,21 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 {
 	try
 	{
+		string type="";
+		if(json_data.HasMember("type"))
+		{
+          if(json_data["type"].IsInt())
+		  {
+			type=json_data["type"].GetInt()+"";
+		  }
+		  else if(json_data["type"].IsString())
+		  {
+			type=json_data["type"].GetString();
+		  }
+		  
+
+		}
 		
-		std::string type = jsonParam(json_data, "type");
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string operation="AddReason";
 		std::string error = apiUtil->check_param_value("db_name", db_name);
@@ -3455,16 +3468,14 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
-	    int typeint=stoi(type);
-		if(typeint<1||typeint>6)
+		if(type.empty())
 		{
-			error = "The type " + type + " is not support.";
-            response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, "The type parameter is illegal");
 			return;
 		}
 		if (type == "1") // add Reason Rule
 		{
-			operation="AddReason";
+			operation="AddReasonRule";
 			// check user number
 			if(json_data.HasMember("ruleinfo")==false)
 			{
@@ -3474,6 +3485,8 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				return;
 			}
 			Value reasonInfo=json_data["ruleinfo"].GetObject();
+			   Document::AllocatorType &allocator = json_data.GetAllocator();
+			 reasonInfo.AddMember("status","新建",allocator);
 		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
 		   if(resultInfo.issuccess==1)
 		   {
@@ -3488,7 +3501,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 		}
 		else if (type == "2") // listReason
 		{
-			operation = "listReason";
+			operation = "listReasonRules";
             string db_path=_db_home+db_name+_db_suffix;
 			vector<string> liststr = ReasonHelper::getReasonRuleList(db_path);
 			stringstream str_stream;
@@ -3525,7 +3538,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 		}
 		else if (type == "3") // Compile Reason Rule
 		{
-			operation = "compileReason";
+			operation = "compileReasonRule";
 			string rulename=json_data["rulename"].GetString();
             ReasonSparql resultInfo=ReasonHelper::compileReasonRule(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
@@ -3537,6 +3550,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				
 			}
 			else{
+			doc.AddMember("StatusCode",0,allocator);
 			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
 			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
 		
@@ -3545,8 +3559,9 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 		}
 		else if(type=="4") //execute Reason
 		{
-			operation = "executeReason";
+			operation = "executeReasonRule";
 			string rulename=json_data["rulename"].GetString();
+			string username=json_data["username"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::executeReasonRule(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
 			doc.SetObject();
@@ -3558,27 +3573,80 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			}
 			else{
 			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
-			Database _db(db_name);
-            _db.load();
-            ResultSet ask_rs;
-            FILE *ask_ofp = NULL;
-            string sparql = resultInfo.insert_sparql;
-            _db.query(sparql, ask_rs, ask_ofp);
-            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
-            cout << "ans:" << rs_ansNum << endl;
-			doc.AddMember("AnsNum",rs_ansNum,allocator);
-			_db.unload();
-            _db.save();
+	        if(apiUtil->check_db_exist(db_name)==false)
+			{
+				error="the database is not exist!";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+            shared_ptr<Database> current_database;
+			
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.insert_sparql;
+			bool update_flag_bool = true;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+            // cout<<"rs.number:"<<rs.ansNum<<",rs.answer:"<<rs.answer<<endl;
+			
+			// cout << "ans:" << rs_ansNum << endl;
+			doc.AddMember("AnsNum", ret_val, allocator);
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
-		
-
 		    response->Json(doc);
 			}
 			
 		}
-		else if(typeint==5)
+		else if(type=="5")
 		{
-			operation = "disableReason";
+			operation = "disableReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::disableReasonRule(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
@@ -3592,25 +3660,83 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			else
 			{
 			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
-			Database _db(db_name);
-            _db.load();
-            ResultSet ask_rs;
-            FILE *ask_ofp = NULL;
-            string sparql = resultInfo.insert_sparql;
-            _db.query(sparql, ask_rs, ask_ofp);
-            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
-            cout << "ans:" << rs_ansNum << endl;
-			doc.AddMember("AnsNum",rs_ansNum,allocator);
-			_db.unload();
-            _db.save();
-            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
+			string username=json_data["username"].GetString();
+			if(apiUtil->check_db_exist(db_name)==false)
+			{
+				error="the database is not exist!";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+            shared_ptr<Database> current_database;
+			bool update_flag_bool=true;
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.delete_sparql;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			
+            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+            cout << "ans:" << ret_val << endl;
+			doc.AddMember("AnsNum",ret_val,allocator);
+			
+          
+		
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
 		      response->Json(doc);
 			}
 
 		}
-		else if(typeint==6)
+		else if(type=="6")
 		{
-		     operation = "showReason";
+		     operation = "showReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonOperationResult resultInfo= ReasonHelper::getReasonInfo(rulename,db_name,_db_home,_db_suffix);
 		
@@ -3634,6 +3760,49 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				response->Json(doc);
 			}
 			
+		}
+		else if (type == "7")
+		{
+			operation = "deleteReasonRule";
+			string rulename = json_data["rulename"].GetString();
+			ReasonOperationResult resultInfo = ReasonHelper::getReasonInfo(rulename, db_name, _db_home, _db_suffix);
+			if (resultInfo.issuccess == 0)
+			{
+				response->Error(StatusOperationFailed,resultInfo.error_message);
+				return;
+			}
+
+			else
+			{
+				// 输出格式化的JSON
+				Document doc;
+				doc.SetObject();
+				doc.Parse(resultInfo.error_message.c_str());
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				if (doc.HasMember("status")&&doc["status"].GetString() == "已执行")
+				{
+					string error_msg = "该规则已经执行，请先让该规则失效后再执行";
+					response->Error(StatusOperationFailed,error_msg);
+					return;
+				}
+				
+				ReasonOperationResult resultInfo2 = ReasonHelper::removeReasonRule(rulename, db_name, _db_home, _db_suffix);
+				if (resultInfo2.issuccess == 1)
+				{
+					Document doc2;
+				    doc2.SetObject();
+					doc2.AddMember("StatusCode", 0, allocator);
+					doc2.AddMember("StatusMsg", StringRef(resultInfo2.error_message.c_str()), allocator);
+					response->Json(doc2);
+					return;
+				}
+				else
+				{
+
+					response->Error(StatusOperationFailed,resultInfo2.error_message);
+					return;
+				}
+			}
 		}
 		else
 		{

@@ -18,38 +18,40 @@ ReasonHelper::~ReasonHelper()
 
 ReasonOperationResult ReasonHelper::saveReasonRuleInfo(Value& ruleInfo,string db_name,string db_home,string db_suffix)
 {
-
+    // 将字符串写入文件中
+    ReasonOperationResult result;
     string rulename = ruleInfo["rulename"].GetString();
-    cout<<"rulename:"<<rulename<<endl;
+    string filepath = db_home + db_name + db_suffix + "/reason_rule_files/";
+    string rulefilepath = filepath + rulename + ".json";
+    // cout<<"rulefilepath:"<<rulefilepath<<endl;
+    if (Util::file_exist(rulefilepath))
+    {
+      // cout<< "the rule name is duplicated"<<endl;
+      // Util::remove_file(rulefilepath);
+      result.issuccess = 0;
+      result.error_message = "The rule file has been exist, please remove it before!";
+      return result;
+    }
+
+    // cout<<"rulename:"<<rulename<<endl;
 
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
     ruleInfo.Accept(writer);
 
-    // 将字符串写入文件中
-    ReasonOperationResult result;
-    string filepath = db_home+ db_name +db_suffix+"/rulefiles/";
-    cout<<"filepath:"<<filepath<<endl;
+    // cout<<"filepath:"<<filepath<<endl;
     if (Util::dir_exist(filepath) == false)
     {
-        Util::create_dir(filepath);
+      Util::create_dir(filepath);
     }
-    string rulefilepath = filepath + rulename + ".json";
-     cout<<"rulefilepath:"<<rulefilepath<<endl;
-    if (Util::file_exist(rulefilepath))
-    {
-        cout<< "the rule name is duplicated"<<endl;
-        Util::remove_file(rulefilepath);
-    }
-    
+
     std::ofstream file(rulefilepath);
     file << buffer.GetString();
     file.close();
-    result.issuccess=1;
-    result.error_message="Save Successfully! the file path is "+rulefilepath;
-    cout<<"success:"<<result.error_message<<endl;
+    result.issuccess = 1;
+    result.error_message = "Save Successfully! the file path is " + rulefilepath;
+    // cout<<"success:"<<result.error_message<<endl;
     return result;
-    
 }
 
 
@@ -63,12 +65,12 @@ vector<string> ReasonHelper::getReasonRuleList(string db_path)
     vector<string> resultlist;
     
    
-    string filepath =db_path+"/rulefiles/";
+    string filepath =db_path+"/reason_rule_files/";
     if (Util::dir_exist(filepath) == false)
     {
         Util::create_dir(filepath);
     }
-    cout<<"filepath:"<<filepath<<endl;
+    // cout<<"filepath:"<<filepath<<endl;
     vector<string> files=Util::GetFiles(filepath.c_str(),"json");
   
     int size=files.size();
@@ -77,12 +79,12 @@ vector<string> ReasonHelper::getReasonRuleList(string db_path)
     for(int i=0;i<files.size();i++)
     {
         string rulename=files[i];
-        cout<<"file:"<<rulename<<endl;
+        // cout<<"file:"<<rulename<<endl;
         string rulefilepath = filepath + rulename;
 
         if(Util::file_exist(rulefilepath))
         {
-            cout<<"file:"<<rulefilepath<<endl;
+            // cout<<"file:"<<rulefilepath<<endl;
             std::ifstream ifs(rulefilepath);
              if(ifs.is_open()==false)
              {
@@ -111,7 +113,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
 {
   ReasonSparql results;
   string _db_path = db_home + db_name + db_suffix;
-  string rulefilepath = _db_path + "/rulefiles/" + rulename + ".json";
+  string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
   // string searchsparql = "";
   // string updatesparql = "";
   string insert_sparql="";
@@ -239,9 +241,23 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
     doc.Parse(jsonStr.c_str());
     // doc.AddMember("conditions",conditions,allocator);
     // doc.AddMember("return",returnInfo,allocator);
-    doc.AddMember("status", "编译", allocator);
-    doc.AddMember("insert_sparql", StringRef(insert_sparql.c_str()), allocator);
-    doc.AddMember("delete_sparql",StringRef(delete_sparql.c_str()),allocator);
+    doc["status"].SetString("已编译",allocator);
+    if(doc.HasMember("insert_sparql"))
+    {
+       doc["insert_sparql"].SetString(StringRef(insert_sparql.c_str()),allocator);
+    }
+    else
+    {
+         doc.AddMember("insert_sparql", StringRef(insert_sparql.c_str()), allocator);
+    }
+    if(doc.HasMember("delete_sparql"))
+    {
+      doc["delete_sparql"].SetString(StringRef(delete_sparql.c_str()),allocator);
+    }
+    else{
+      doc.AddMember("delete_sparql",StringRef(delete_sparql.c_str()),allocator);
+    }
+   
     //doc.AddMember("updatesparql", StringRef(updatesparql.c_str()), allocator);
     results.insert_sparql = insert_sparql;
     results.delete_sparql=delete_sparql;
@@ -264,7 +280,7 @@ ReasonSparql ReasonHelper::executeReasonRule(string rulename, string db_name,str
 {
   ReasonSparql results;
   string _db_path = db_home + db_name + db_suffix;
-  string rulefilepath = _db_path + "/rulefiles/" + rulename + ".json";
+  string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
   cout<<"rulefilepath:"<<rulefilepath<<endl;
   string searchsparql = "";
   string updatesparql = "";
@@ -295,7 +311,7 @@ ReasonSparql ReasonHelper::executeReasonRule(string rulename, string db_name,str
     if (doc.HasMember("insert_sparql"))
     {
       sparql = doc["insert_sparql"].GetString();
-      // cout << "start loading the database......" << endl;
+      cout << "start loading the database......" << endl;
       results.insert_sparql=sparql;
       results.issuccess=1;
       return results;
@@ -316,7 +332,7 @@ ReasonSparql ReasonHelper::executeReasonRule(string rulename, string db_name,str
 string ReasonHelper::updateReasonRuleInfo(string rulename,string db_name,Document ruleinfo,string db_home,string db_suffix)
 {
    string result="";
-  string filepath="./" + db_name + ".db/rulefiles/";
+  string filepath="./" + db_name + ".db/reason_rule_files/";
    string rulefilepath=filepath+rulename+".json";
    
     StringBuffer buffer;
@@ -336,7 +352,7 @@ string ReasonHelper::updateReasonRuleStatus(string rulename,string db_name,strin
 {
    string result="";
   string _db_path = db_home + db_name + db_suffix;
-  string rulefilepath2 = _db_path + "/rulefiles/" + rulename + ".json";
+  string rulefilepath2 = _db_path + "/reason_rule_files/" + rulename + ".json";
    
     StringBuffer buffer;
     if(Util::dir_exist(_db_path)==false)
@@ -376,7 +392,7 @@ ReasonSparql ReasonHelper::disableReasonRule(string rulename,string db_name,stri
 {
   ReasonSparql results;
   string _db_path = db_home + db_name + db_suffix;
-  string rulefilepath = _db_path + "/rulefiles/" + rulename + ".json";
+  string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
   cout<<"rulefilepath:"<<rulefilepath<<endl;
   string searchsparql = "";
   string updatesparql = "";
@@ -430,7 +446,7 @@ ReasonOperationResult ReasonHelper::getReasonInfo(string rulename,string db_name
   ReasonOperationResult result;
   
   string _db_path = db_home + db_name + db_suffix;
-  string rulefilepath2 = _db_path + "/rulefiles/" + rulename + ".json";
+  string rulefilepath2 = _db_path + "/reason_rule_files/" + rulename + ".json";
    
     StringBuffer buffer;
     if(Util::dir_exist(_db_path)==false)
@@ -449,6 +465,32 @@ ReasonOperationResult ReasonHelper::getReasonInfo(string rulename,string db_name
     std::string jsonStr((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
     result.issuccess=1;
     result.error_message=jsonStr;
+    return result;
+}
+
+ReasonOperationResult ReasonHelper::removeReasonRule(string rulename,string db_name,string db_home,string db_suffix)
+{
+  ReasonOperationResult result;
+  
+  string _db_path = db_home + db_name + db_suffix;
+  string rulefilepath2 = _db_path + "/reason_rule_files/" + rulename + ".json";
+   
+    StringBuffer buffer;
+    if(Util::dir_exist(_db_path)==false)
+    {
+      result.error_message="the database directory is not exists";
+      result.issuccess=0;
+      return result;
+    }
+    if (Util::file_exist(rulefilepath2) == false)
+    {
+       result.error_message="the reason file is not exists";
+       result.issuccess=0;
+      return result;
+    }
+    Util::remove_file(rulefilepath2);
+    result.issuccess=1;
+    result.error_message="the reason file has been remove successfully! file path:"+rulefilepath2;
     return result;
 }
 

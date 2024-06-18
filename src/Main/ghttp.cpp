@@ -1039,7 +1039,7 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 	string resJson = CreateJson(code, msg, 0);
 	if (code == 0)
 	{
-		SLOG_DEBUG("response result:" + resJson);
+		// SLOG_DEBUG("response result:" + resJson);
 	}
 	else
 	{
@@ -1820,28 +1820,11 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			return;
 		}
 		int typeint=type;
-		try
-		{
-       
-		  if(typeint<1||typeint>6)
-		  {
-			error = "The type " + std::to_string(type) + " is not support.";
-			SLOG_DEBUG(error);
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
-		  }
-		}catch(...)
-		{
-            error = "The type " +std::to_string(type) + " is not support.";
-			SLOG_DEBUG(error);
-			sendResponseMsg(1003, error, operation, request, response);
-			return;
-		}
 	
 		if(typeint==1)
 		{
 			//add reason
-		   operation = "AddReason";
+		   operation = "AddReasonRule";
 		   if(document.HasMember("ruleinfo")==false)
 		   {
 			 string error2="the data has not the rule information";
@@ -1850,6 +1833,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			return;
 		   }
            Value reasonInfo=document["ruleinfo"].GetObject();
+		   Document::AllocatorType &allocator = document.GetAllocator();
+		   reasonInfo.AddMember("status","新建",allocator);
 		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
 		   if(resultInfo.issuccess==1)
 		   {
@@ -1866,7 +1851,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 		else if(typeint==2)
 		{
 			//listReason
-			operation = "listReason";
+			operation = "listReasonRules";
             string db_path=_db_home+db_name+_db_suffix;
 			vector<string> liststr = ReasonHelper::getReasonRuleList(db_path);
 			stringstream str_stream;
@@ -1903,91 +1888,155 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 		else if(typeint==3)
 		{
 			//compileReason
-			operation = "compileReason";
-			string rulename=document["rulename"].GetString();
-            ReasonSparql resultInfo=ReasonHelper::compileReasonRule(rulename,db_name,_db_home,_db_suffix);
+			operation = "compileReasonRule";
+			string rulename = document["rulename"].GetString();
+			ReasonSparql resultInfo = ReasonHelper::compileReasonRule(rulename, db_name, _db_home, _db_suffix);
 			Document doc;
 			doc.SetObject();
 			Document::AllocatorType &allocator = doc.GetAllocator();
-			if(resultInfo.issuccess==0)
+			if (resultInfo.issuccess == 0)
 			{
 				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
-			    return;
-			}
-			
-			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
-			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
-		
-			rapidjson::StringBuffer buffer;
-			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
-			if (doc.Accept(writer))
-			{
-				// 输出格式化的JSON
-				sendResponseMsg(0, buffer.GetString(), operation, request, response);
 				return;
 			}
-			else
-			{
-				error="the result is not json format!";
-				sendResponseMsg(1005, error, operation, request, response);
-			    return;
-			}
+
+			doc.AddMember("insert_sparql", StringRef(resultInfo.insert_sparql.c_str()), allocator);
+			doc.AddMember("delete_sparql", StringRef(resultInfo.delete_sparql.c_str()), allocator);
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			sendResponseMsg(doc, operation, request, response);
+			return;
+			// // rapidjson::StringBuffer buffer;
+			// // rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+			// // 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
+			// if (doc.Accept(writer))
+			// {
+			// 	// 输出格式化的JSON
+				
+			// }
+			// else
+			// {
+			// 	error="the result is not json format!";
+			// 	sendResponseMsg(1005, error, operation, request, response);
+			//     return;
+			// }
 		}
 		else if(typeint==4)
 		{
 			//executeReason
 			operation = "executeReason";
 			string rulename=document["rulename"].GetString();
+			string username=document["username"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::executeReasonRule(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
 			doc.SetObject();
+			bool update_flag_bool = true;
 			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
 				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
 			    return;
 			}
-			
+			SLOG_DEBUG("insert_sparql:"+resultInfo.insert_sparql);
 			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
-			Database _db(db_name);
-            _db.load();
-            ResultSet ask_rs;
-            FILE *ask_ofp = NULL;
-            string sparql = resultInfo.insert_sparql;
-            _db.query(sparql, ask_rs, ask_ofp);
-            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
-            cout << "ans:" << rs_ansNum << endl;
-			doc.AddMember("AnsNum",rs_ansNum,allocator);
-			_db.unload();
-            _db.save();
-            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
-		
-			rapidjson::StringBuffer buffer;
-			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
-			if (doc.Accept(writer))
+			if(apiUtil->check_db_exist(db_name)==false)
 			{
-				// 输出格式化的JSON
-				sendResponseMsg(0, buffer.GetString(), operation, request, response);
-				return;
-			}
-			else
-			{
-				error="the result is not json format!";
+				error="the database is not exist!";
 				sendResponseMsg(1005, error, operation, request, response);
 			    return;
 			}
+            shared_ptr<Database> current_database;
+			
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.insert_sparql;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+            // cout<<"rs.number:"<<rs.ansNum<<",rs.answer:"<<rs.answer<<endl;
+			
+			// cout << "ans:" << rs_ansNum << endl;
+			doc.AddMember("AnsNum", ret_val, allocator);
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+			
+			//_db.unload();
+			//_db.save();
+			ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行", _db_home, _db_suffix);
+			sendResponseMsg(doc, operation, request, response);
+			return;
+			// rapidjson::StringBuffer buffer;
+			// rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+			// // 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
+			// if (doc.Accept(writer))
+			// {
+			// 	// 输出格式化的JSON
+			// 	sendResponseMsg(0, buffer.GetString(), operation, request, response);
+			// 	return;
+			// }
+			// else
+			// {
+			// 	error="the result is not json format!";
+			// 	sendResponseMsg(1005, error, operation, request, response);
+			//     return;
+			// }
 
 		}
 		else if(typeint==5)
 		{
 			operation = "disableReason";
 			string rulename=document["rulename"].GetString();
+			string username=document["username"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::disableReasonRule(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
+			bool update_flag_bool=true;
 			doc.SetObject();
 			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
@@ -1997,35 +2046,76 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			}
 			
 			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
-			Database _db(db_name);
-            _db.load();
-            ResultSet ask_rs;
-            FILE *ask_ofp = NULL;
-            string sparql = resultInfo.insert_sparql;
-            _db.query(sparql, ask_rs, ask_ofp);
-            long rs_ansNum = max((long)ask_rs.ansNum - ask_rs.output_offset, 0L);
-            cout << "ans:" << rs_ansNum << endl;
-			doc.AddMember("AnsNum",rs_ansNum,allocator);
-			_db.unload();
-            _db.save();
-            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
-		
-			rapidjson::StringBuffer buffer;
-			rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-			// 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
-			if (doc.Accept(writer))
+			if(apiUtil->check_db_exist(db_name)==false)
 			{
-				// 输出格式化的JSON
-				sendResponseMsg(0, buffer.GetString(), operation, request, response);
-				return;
-			}
-			else
-			{
-				error="the result is not json format!";
+				error="the database is not exist!";
 				sendResponseMsg(1005, error, operation, request, response);
 			    return;
 			}
+            shared_ptr<Database> current_database;
+			
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.delete_sparql;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			
+            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+            cout << "ans:" << ret_val << endl;
+			doc.AddMember("AnsNum",ret_val,allocator);
+			
+            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+		
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+			sendResponseMsg(doc, operation, request, response);
+			return;
 
 		}
 		else if(typeint==6)
@@ -2055,6 +2145,49 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 				return;
 			}
 			
+		}
+		else if (typeint == 7)
+		{
+			operation = "deleteReasonRule";
+			string rulename = document["rulename"].GetString();
+			ReasonOperationResult resultInfo = ReasonHelper::getReasonInfo(rulename, db_name, _db_home, _db_suffix);
+			if (resultInfo.issuccess == 0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+				return;
+			}
+
+			else
+			{
+				// 输出格式化的JSON
+				Document doc;
+				doc.SetObject();
+				doc.Parse(resultInfo.error_message.c_str());
+				Document::AllocatorType &allocator = doc.GetAllocator();
+				if (doc.HasMember("status")&&doc["status"].GetString() == "已执行")
+				{
+					string error_msg = "该规则已经执行，请先让该规则失效后再执行";
+					sendResponseMsg(1005, error_msg, operation, request, response);
+					return;
+				}
+				
+				ReasonOperationResult resultInfo2 = ReasonHelper::removeReasonRule(rulename, db_name, _db_home, _db_suffix);
+				if (resultInfo2.issuccess == 1)
+				{
+					Document doc2;
+				    doc2.SetObject();
+					doc2.AddMember("StatusCode", 0, allocator);
+					doc2.AddMember("StatusMsg", StringRef(resultInfo2.error_message.c_str()), allocator);
+					sendResponseMsg(doc2, operation, request, response);
+					return;
+				}
+				else
+				{
+
+					sendResponseMsg(1005, resultInfo2.error_message, operation, request, response);
+					return;
+				}
+			}
 		}
 		else
 		{
@@ -4854,16 +4987,30 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			}
 			else if (request_type == "POST")
 			{
-				if(document.HasMember("type")&&document["type"].IsInt())
-			    {
-				type = document["type"].GetInt();
-				SLOG_DEBUG("begin reasonManage,type:"+std::to_string(type));
-				reasonManage_thread_new(request, response, type, db_name,document);
-				}
-				else{
+				if (document.HasMember("type")==true)
+				{
+					if (document["type"].IsInt())
+					{
+						type = document["type"].GetInt();
+					}
+					else if (document["type"].IsString())
+					{
+						type = stoi(document["type"].GetString());
+					}
+					else
+					{
 						string error = "the type parameter not exist or has some error,please consult the api document.";
-			           sendResponseMsg(1003, error, operation, request, response);
-			          return;
+						sendResponseMsg(1003, error, operation, request, response);
+						return;
+					}
+					SLOG_DEBUG("begin reasonManage,type:" + std::to_string(type));
+					reasonManage_thread_new(request, response, type, db_name, document);
+				}
+				else
+				{
+					string error = "the type parameter not exist or has some error,please consult the api document.";
+					sendResponseMsg(1003, error, operation, request, response);
+					return;
 				}
 			}
 		}
@@ -5021,7 +5168,7 @@ void shutdown_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 	}
 	string msg = "Server stopped successfully.";
 	string resJson = CreateJson(0, msg, 0);
-	SLOG_DEBUG("response result:" + resJson);
+	// SLOG_DEBUG("response result:" + resJson);
 	// register callback for exit
 	response->register_callback([](std::ios_base::event __e, ios_base& __b, int __i){
 		SLOG_DEBUG("Server stopped successfully.");
