@@ -535,6 +535,8 @@ public:
 	static float get_cpu_usage(int pid);
 	static float get_memory_usage(int pid);
 	static unsigned long long get_disk_free();
+	static int getIntFromJSON(rapidjson::Document &doc,string keyname);
+	static string getStringFromJSON(rapidjson::Document &doc,string keyname);
  private:
 	
 private:

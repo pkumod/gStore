@@ -207,7 +207,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
     }
     Value returnInfo = doc["return"].GetObject();
     string source = returnInfo["source"].GetString();
-    string target = returnInfo["target"].GetString();
+ 
     string label = "";
     string value = "";
     if (returnInfo.HasMember("label"))
@@ -219,6 +219,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       value = returnInfo["value"].GetString();
     }
     int type = doc["type"].GetInt();
+  
     if (type == 0)
     {
       // property
@@ -232,6 +233,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // relationship
       // searchsparql = "select " + source + " " + target + " where " + wheresparql;
       // updatesparql = " <?1> <Rule:" + label + "> <?2>.";
+      string target = Util::getStringFromJSON(doc,"target");
       insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where "+wheresparql;
       delete_sparql="delete where {?x <Rule:" + label + "> ?y.}";
     }

@@ -275,6 +275,46 @@ string Util::getConfigureValue(string keyname)
 	return "";
 }
 
+int Util::getIntFromJSON(rapidjson::Document &doc,string keyname)
+{
+    int result=0;
+    if(doc.HasMember(keyname.c_str())==false)
+    {
+        throw runtime_error("the "+keyname+" has not exists!");
+
+    }
+    else if(doc[keyname.c_str()].IsInt())
+    {
+        result=doc[keyname.c_str()].GetInt();
+    }
+    else {
+        throw runtime_error("the  "+keyname+" is not a Integer ");
+    }
+    return result;
+}
+
+string Util::getStringFromJSON(rapidjson::Document &doc,string keyname)
+{
+    string result="";
+    if(doc.HasMember(keyname.c_str())==false)
+    {
+
+       
+        throw runtime_error("the "+keyname+" has not exists!");
+        
+
+    }
+    else if(doc[keyname.c_str()].IsString())
+    {
+        result=doc[keyname.c_str()].GetString();
+    }
+    else {
+        throw runtime_error("the  "+keyname+" is not a String ");
+      
+    }
+    return result;
+}
+
 bool
 Util::config_setting()
 {

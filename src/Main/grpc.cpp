@@ -3812,7 +3812,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 	}
 	catch (const std::exception &e)
 	{
-		string error = "User manage fail: " + string(e.what());
+		string error = "Reason Manage fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
