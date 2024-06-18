@@ -7,6 +7,7 @@
 #include "../Api/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
+#include "../Api/HttpUtil.h"
 
 #define HTTP_TYPE "grpc"
 
@@ -1572,7 +1573,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 		string username = jsonParam(json_data, "username");
 		string async = jsonParam(json_data, "async");
-		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async]
+		string callback = jsonParam(json_data, "callback");
+		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback]
 				(GRPCResp *response)
 				{
 					string _db_path = _db_home + "/" + db_name + _db_suffix;
@@ -1660,6 +1662,16 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 							resp_data.AddMember("failed_num", parse_error_num, allocator);
 							resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 							response->Json(resp_data);
+						}
+						if (!callback.empty())
+						{
+							string postdata;
+							string res;
+							postdata += "{\"StatusCode\":\"0\",";
+							postdata += "\"StatusMsg\":\"" + result + "\",";
+							postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+							postdata += "\"opt_id\":\"" + opt_id + "\"}";
+							HttpUtil::Post(callback, postdata, res);
 						}
 					}
 					else
@@ -3064,7 +3076,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			string _dir = dir;
 			std::string async = jsonParam(json_data, "async");
-			auto insert_helper = [db_name,is_file,is_zip,file,zip_files,_dir,unz_dir_path,opt_id,async]
+			std::string callback = jsonParam(json_data, "callback");
+			auto insert_helper = [db_name,is_file,is_zip,file,zip_files,_dir,unz_dir_path,opt_id,async,callback]
 				(GRPCResp *response)
 				{
 					string success = "Batch insert data successfully.";
@@ -3128,6 +3141,17 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 						resp_data.AddMember("failed_num", parse_error_num, allocator);
 						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 						response->Json(resp_data);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+						postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
 					}
 				};
 			if (async == "true")
@@ -3217,7 +3241,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			string operation = "batchRemove";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			std::string async = jsonParam(json_data, "async");
-			auto remove_helper = [db_name,operation,file,opt_id,async]
+			std::string callback = jsonParam(json_data, "callback");
+			auto remove_helper = [db_name,operation,file,opt_id,async,callback]
 				(GRPCResp *response)
 				{
 					shared_ptr<Database> current_database;
@@ -3237,6 +3262,16 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 						resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
 						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 						response->Json(resp_data);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
 					}
 				};
 			if (async == "true")

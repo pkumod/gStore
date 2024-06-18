@@ -110,5 +110,5 @@ target_link_libraries( gpara ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYS
 foreach( bin_name main_name IN ZIP_LISTS BIN_LIST MAIN_LIST )
    message( STATUS "bin_name = ${bin_name} main_name = ${main_name}" )
    add_executable( ${bin_name} ${main_name} )
-   target_link_libraries( ${bin_name} ${LIB_GSTROE_DEP} ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+   target_link_libraries( ${bin_name} ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
 endforeach()

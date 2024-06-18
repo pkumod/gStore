@@ -30,6 +30,7 @@
 #include "../Util/WebUrl.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
+#include "../Api/HttpUtil.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -79,7 +80,7 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 
 void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
-void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async);
+void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async, string callback);
 
 void load_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string remote_ip, string port, bool load_csr);
 
@@ -131,9 +132,9 @@ void test_connect_thread_new(const shared_ptr<HttpServer::Request> &request, con
 
 void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response);
 
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async);
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async, string callback);
 
-void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async);
+void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async, string callback);
 
 void querylog_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string date, int page_no, int page_size);
 
@@ -811,7 +812,7 @@ void thread_sigterm_handler(int _signal_num)
  * @param {string} password: password
  * @return {*}
  */
-void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async)
+void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string db_path, string remote_ip, string port, string username, string password, string async, string callback)
 {
 	string operation = "build";
 	try
@@ -896,7 +897,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		string remote_ip = getRemoteIp(request);
 		string msg = "Operation Success.";
 		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async]
+		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback]
 				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
 					string _db_path = _db_home + "/" + db_name + _db_suffix;
@@ -984,6 +985,16 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 								resp_data.AddMember("failed_num", parse_error_num, allocator);
 								resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 								sendResponseMsg(resp_data, operation, request, response);
+							}
+							if (!callback.empty())
+							{
+								string postdata;
+								string res;
+								postdata += "{\"StatusCode\":\"0\",";
+								postdata += "\"StatusMsg\":\"" + result + "\",";
+								postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+								postdata += "\"opt_id\":\"" + opt_id + "\"}";
+								HttpUtil::Post(callback, postdata, res);
 							}
 							return;
 						}
@@ -3636,7 +3647,7 @@ void getCoreVersion_thread_new(const shared_ptr<HttpServer::Request> &request, c
  * @param {string} file: the insert data file
  * @return {*}
  */
-void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async)
+void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string dir, string async, string callback)
 {
 	string error;
 	string operation = "batchInsert";
@@ -3736,7 +3747,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			string msg = "Operation Success.";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			string _dir = dir;
-			auto insert_helper = [operation,opt_id,db_name,file,_dir,is_file,is_zip,zip_files,unz_dir_path,async](const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
+			auto insert_helper = [operation,opt_id,db_name,file,_dir,is_file,is_zip,zip_files,unz_dir_path,async,callback](const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
 					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
@@ -3799,6 +3810,17 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 						sendResponseMsg(resDoc, operation, request, response);
 					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+						postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
 				};
 			if (async == "true")
 			{
@@ -3834,7 +3856,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
  * @param {string} file: the remove data file
  * @return {*}
  */
-void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async)
+void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string file, string async, string callback)
 {
 	string error;
 	string operation = "batchRemove";
@@ -3883,7 +3905,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			string remote_ip = getRemoteIp(request);
 			string msg = "Operation Success.";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-			auto remove_helper = [db_name,operation,file,opt_id,async]
+			auto remove_helper = [db_name,operation,file,opt_id,async,callback]
 				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
 					shared_ptr<Database> current_database;
@@ -3903,6 +3925,16 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 						resDoc.AddMember("success_num", success_num, allocator);
 						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 						sendResponseMsg(resDoc, operation, request, response);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
 					}
 				};
 			if (async == "true")
@@ -4062,6 +4094,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		string db_path = "";
 		string port;
 		string async = "";
+		string callback = "";
 		try
 		{
 			if (request_type == "GET")
@@ -4072,6 +4105,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				port = UrlDecode(port);
 				async = WebUrl::CutParam(url, "async");
 				async = UrlDecode(async);
+				callback = WebUrl::CutParam(url, "callback");
+				callback = UrlDecode(callback);
 			}
 			else if (request_type == "POST")
 			{
@@ -4087,6 +4122,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				{
 					async = document["async"].GetString();
 				}
+				if (document.HasMember("callback") && document["callback"].IsString())
+				{
+					callback = document["callback"].GetString();
+				}
 			}
 		}
 		catch (...)
@@ -4095,7 +4134,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		build_thread_new(request, response, db_name, db_path, remote_ip, port, username, password, async);
+		build_thread_new(request, response, db_name, db_path, remote_ip, port, username, password, async, callback);
 	}
 	// load dababase
 	else if (operation == "load")
@@ -4627,6 +4666,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		string file = "";
 		string dir = "";
 		string async = "";
+		string callback = "";
 		try
 		{
 			if (request_type == "GET")
@@ -4637,6 +4677,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				dir = UrlDecode(dir);
 				async = WebUrl::CutParam(url, "async");
 				async = UrlDecode(async);
+				callback = WebUrl::CutParam(url, "callback");
+				callback = UrlDecode(callback);
 			}
 			else if (request_type == "POST")
 			{
@@ -4652,6 +4694,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				{
 					async = document["async"].GetString();
 				}
+				if (document.HasMember("callback") && document["callback"].IsString())
+				{
+					callback = document["callback"].GetString();
+				}
 			}
 		}
 		catch (...)
@@ -4660,12 +4706,13 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		batchInsert_thread_new(request, response, db_name, file, dir, async);
+		batchInsert_thread_new(request, response, db_name, file, dir, async, callback);
 	}
 	else if (operation == "batchRemove")
 	{
 		string file = "";
 		string async = "";
+		string callback = "";
 		try
 		{
 			if (request_type == "GET")
@@ -4674,6 +4721,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				file = UrlDecode(file);
 				async = WebUrl::CutParam(url, "async");
 				async = UrlDecode(async);
+				callback = WebUrl::CutParam(url, "callback");
+				callback = UrlDecode(callback);
 			}
 			else if (request_type == "POST")
 			{
@@ -4685,6 +4734,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				{
 					async = document["async"].GetString();
 				}
+				if (document.HasMember("callback") && document["callback"].IsString())
+				{
+					callback = document["callback"].GetString();
+				}
 			}
 		}
 		catch (...)
@@ -4693,7 +4746,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		batchRemove_thread_new(request, response, db_name, file, async);
+		batchRemove_thread_new(request, response, db_name, file, async, callback);
 	}
 	else if (operation == "querylog")
 	{
