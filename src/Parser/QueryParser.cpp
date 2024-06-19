@@ -399,7 +399,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
 				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \ 
-				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14")	// Path calls
+				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14" \
+				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" || tmp == "DEGREECORRELATION")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -456,6 +457,14 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::louvain_type;
 				else if (tmp == "IC14")
 					proj_var.aggregate_type = ProjectionVar::IC14_type;
+				else if (tmp == "DIAMETERESTIMATION")
+					proj_var.aggregate_type = ProjectionVar::diameterEstimation_type;
+				else if (tmp == "BETWEENNESSCENTRALITY")
+					proj_var.aggregate_type = ProjectionVar::betweennessCentrality_type;
+				else if (tmp == "JACCARDSIMILARITY")
+					proj_var.aggregate_type = ProjectionVar::JaccardSimilarity_type;
+				else if (tmp == "DEGREECORRELATION")
+					proj_var.aggregate_type = ProjectionVar::degreeCorrelation_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -531,6 +540,18 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				else if (tmp == "LABELPROP")
 				{
 					proj_var.path_args.misc.push_back(stof(bicCtx->num_integer(0)->getText()));	// maxiter
+				}
+				else if (tmp == "JACCARDSIMILARITY")
+				{
+					if (bicCtx->integerLiteral(0))
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
+					if (bicCtx->integerLiteral(1))
+						proj_var.path_args.retNum = stoi(getTextWithRange(bicCtx->integerLiteral(1)));
+				}
+				else if (tmp == "DEGREECORRELATION")
+				{
+					if (bicCtx->integerLiteral(0))
+						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
 				}
 
 				if (bicCtx->booleanLiteral())

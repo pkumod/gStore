@@ -217,6 +217,10 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_SHORTESTPATHCOUNT '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_LOUVAIN '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ',' K_INCREASE '=' numericLiteral ')'
 |   K_IC14 '(' varOrIri ',' varOrIri ')'
+|   K_DIAMETERESTIMATION '(' predSet ')'
+|   K_BETWEENNESSCENTRALITY '(' varOrIri ',' predSet ')'
+|   K_JACCARDSIMILARITY '(' varOrIri ',' predSet ',' integerLiteral ',' integerLiteral ')'
+|   K_DEGREECORRELATION '(' varOrIri ',' integerLiteral ',' predSet ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
 substringexpression : K_SUBSTR '(' expression ',' expression ( ',' expression )? ')' ;
@@ -389,6 +393,10 @@ K_KHOPNEIGHBOR : K H O P N E I G H B O R ;
 K_SHORTESTPATHCOUNT : S H O R T E S T P A T H C O U N T ;
 K_LOUVAIN : L O U V A I N ;
 K_IC14 : I C '1' '4' ;
+K_DIAMETERESTIMATION : D I A M E T E R E S T I M A T I O N ;
+K_BETWEENNESSCENTRALITY : B E T W E E N N E S S C E N T R A L I T Y ;
+K_JACCARDSIMILARITY : J A C C A R D S I M I L A R I T Y ;
+K_DEGREECORRELATION : D E G R E E C O R R E L A T I O N;
 K_INCREASE : I N C R E A S E ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
 KK_DELETEDATA : D E L E T E ' ' D A T A ;

@@ -2036,6 +2036,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									doneOnceOp = true;
 								}
 							}
+							else if (proj[0].aggregate_type == ProjectionVar::diameterEstimation_type)
+							{
+								diameterEstimation(ss, pred_id_set);
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::betweennessCentrality_type)
+							{
+								betweennessCentrality(ss, uid, pred_id_set);
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::JaccardSimilarity_type)
+							{
+								JaccardSimilarity(ss, uid, pred_id_set, proj[0].path_args.k, proj[0].path_args.retNum);
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::degreeCorrelation_type)
+							{
+								degreeCorrelation(ss, uid, proj[0].path_args.k, pred_id_set);
+							}
 						}
 						if (earlyBreak)
 							break;
@@ -3424,6 +3440,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										doneOnceOp = true;
 									}
 								}
+								else if (proj[i].aggregate_type == ProjectionVar::diameterEstimation_type)
+								{
+									diameterEstimation(ss, pred_id_set);
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::betweennessCentrality_type)
+								{
+									betweennessCentrality(ss, uid, pred_id_set);
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::JaccardSimilarity_type)
+								{
+									JaccardSimilarity(ss, uid, pred_id_set, proj[i].path_args.k, proj[i].path_args.retNum);
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::degreeCorrelation_type)
+								{
+									degreeCorrelation(ss, uid, proj[i].path_args.k, pred_id_set);
+								}
 							}
 							if (earlyBreak)
 								break;
@@ -4576,4 +4608,42 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
         this->stringindex->trySequenceAccess(string_index_request, string_index_buffer, string_index_buffer_size);
 		if (string_index_buffer != NULL) delete[] string_index_buffer;
     }
+}
+
+void GeneralEvaluation::diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set)
+{
+	unsigned int ret = pqHandler->diameterEstimation(pred_id_set);
+	ss << "{\"Maximum steps\":" << ret << "}";
+}
+
+void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, const std::vector<int> &pred_id_set)
+{
+	double ret = pqHandler->betweennessCentrality(id, pred_id_set);
+	ss << "{\"src\":\"" << kvstore->getStringByID(id) << "\", \"centrality\":" << ret << "}";
+}
+
+void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum)
+{
+	int max_depth = k < 0 ? 999 : k;
+	int max_retNum = retNum < 0 ? 10 : retNum;
+	std::vector<int> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
+	ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
+		<< "\", \"result\":["; 
+	bool hasMore = false;
+	for (int nid : ret)
+	{
+		if (hasMore)
+			ss << ","; 
+		else 
+			hasMore = true;
+		ss << "\"" + kvstore->getStringByID(nid) + "\"";
+	}
+	ss << "]}";
+}
+
+void GeneralEvaluation::degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set)
+{
+	int max_depth = k < 0 ? 999 : k;
+	double ret = pqHandler->degreeCorrelation(uid, max_depth, pred_id_set);
+	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"degree correlation\":" << ret << "}";
 }

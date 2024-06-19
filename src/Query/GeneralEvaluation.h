@@ -156,6 +156,12 @@ class GeneralEvaluation
 
 		void kleeneClosure(TempResultSet *temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
 		void BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol=2);
+
+		//Algorithm evaluation high level function
+		void diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set);
+		void betweennessCentrality(std::stringstream &ss, int id, const std::vector<int> &pred_id_set);
+		void JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum);
+		void degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
