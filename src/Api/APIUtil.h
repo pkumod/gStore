@@ -514,6 +514,7 @@ private:
     int state;
     int num;
     int fail_num;
+    std::string backupfilepath;
 public:
     DBAccessLogInfo() {}
     DBAccessLogInfo(string _ip, string _operation, int _code, string _msg, string _createtime) 
@@ -528,6 +529,7 @@ public:
         state = 0;
         num = 0;
         fail_num = 0;
+        backupfilepath = "";
     }
     DBAccessLogInfo(string json_str)
     {
@@ -557,6 +559,8 @@ public:
                     num = doc["num"].GetInt();
                 if (doc.HasMember("fail_num") && doc["fail_num"].IsInt())
                     fail_num = doc["fail_num"].GetInt();
+                if (doc.HasMember("backupfilepath") && doc["backupfilepath"].IsString())
+                    backupfilepath = doc["backupfilepath"].GetString();
             }
         }
     }
@@ -569,6 +573,7 @@ public:
     int getState() {return state;}
     int getNum() {return num;}
     int getFailNum() {return fail_num;}
+    std::string getBackupfilepath() {return backupfilepath;}
     void setOptId(const std::string& value) {opt_id = value;}
     void setCode(int value) {code = value;}
     void setMsg(const std::string& value) {msg = value;}
@@ -576,9 +581,10 @@ public:
     void setState(int value) {state = value;}
     void setNum(int value) {num = value;}
     void setFailNum(int value) {fail_num = value;}
+    void setBackupfilepath(const std::string& value) {backupfilepath = value;}
     bool checkOperation()
     {
-        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
+        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove" || operation == "backup" || operation == "restore")
             return true;
         return false;
     }
@@ -595,8 +601,13 @@ public:
             doc.AddMember("opt_id", rapidjson::Value().SetString(opt_id.c_str(), allocator).Move(), allocator);
             doc.AddMember("endtime", rapidjson::Value().SetString(endtime.c_str(), allocator).Move(), allocator);
             doc.AddMember("state", state, allocator);
-            doc.AddMember("num", num, allocator);
-            doc.AddMember("fail_num", fail_num, allocator);
+            if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
+            {
+                doc.AddMember("num", num, allocator);
+                doc.AddMember("fail_num", fail_num, allocator);
+            }
+            else if (operation == "backup")
+                doc.AddMember("backupfilepath", rapidjson::Value().SetString(backupfilepath.c_str(), allocator).Move(), allocator);
         }
         return doc;
     }
@@ -894,7 +905,7 @@ public:
     void get_access_log_files(std::vector<std::string> &file_list);
     void get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs);
     void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string optId = "");
-    void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum);
+    void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath = "");
     bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
     // for query log
     void get_query_log_files(std::vector<std::string> &file_list);

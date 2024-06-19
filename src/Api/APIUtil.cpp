@@ -2069,7 +2069,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     pthread_rwlock_unlock(&access_log_lock);
 }
 
-void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum)
+void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath)
 {
     if (opt_id.empty())
         return;
@@ -2106,6 +2106,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
             logInfo->setState(state);
             logInfo->setNum(num);
             logInfo->setFailNum(failnum);
+            logInfo->setBackupfilepath(backupfilepath);
             string line = logInfo->toJSON();
             line.push_back('\n');
             fputs(line.c_str(), temp_file);

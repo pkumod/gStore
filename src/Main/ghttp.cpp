@@ -101,11 +101,11 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 
 void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string username, string password);
 
-void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip);
+void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip, string async, string callback);
 
 void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name);
 
-void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username);
+void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username, string async, string callback);
 
 void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string sparql, string format,
 					  string update_flag, string log_prefix, string username, string remote_ip);
@@ -1083,7 +1083,7 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 		msg = "";
 	}
 	string remote_ip = getRemoteIp(request);
-	if (operation != "build" && operation != "batchInsert" && operation != "batchRemove")
+	if (operation != "build" && operation != "batchInsert" && operation != "batchRemove" && operation != "backup" && operation != "restore")
 		apiUtil->write_access_log(operation, remote_ip, code, msg);
 	StringBuffer resBuffer;
 	rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
@@ -2258,7 +2258,7 @@ void userPassword_thread_new(const shared_ptr<HttpServer::Request> &request, con
  * @param {string} backup_path: the backup path
  * @return {*}
  */
-void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip)
+void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, bool backup_zip, string async, string callback)
 {
 	string operation = "backup";
 	try
@@ -2303,81 +2303,129 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			return;
 		}
 
-		bool flag = false;
-		if (current_db)
-		{
-			flag = current_db->backup();
-		}
-		else
-		{
-			Database _db(db_name);
-			flag = _db.backup();
-		}
-		if(flag == false)
-		{
-			error = "Failed to backup the database.";
-			apiUtil->unlock_databaseinfo(db_info);
-			sendResponseMsg(1005, error, operation, request, response);
-		}
-		else
-		{
-			string timestamp = Util::get_timestamp();
-			string new_folder =  db_name + _db_suffix + "_" + timestamp;
-			string sys_cmd, _path, backup_store_path;
-			Util::string_suffix(path, '/');
-			_path = path + new_folder;
-			backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
-			if (backup_zip)
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = getRemoteIp(request);
+		string msg = "Operation Success.";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		string temp_path = path;
+		auto backup_helper = [db_name,operation,opt_id,&current_db,&db_info,temp_path,default_backup_path,backup_zip,async,callback]
+			(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 			{
-				_path = _path + ".zip";
-				CompressUtil::CompressZip compress_dir;
-				if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+				string path = temp_path;
+				std::string error = "";
+				bool flag = false;
+				if (current_db)
 				{
-					error = "Failed to backup compress the database.";
+					flag = current_db->backup();
+				}
+				else
+				{
+					Database _db(db_name);
+					flag = _db.backup();
+				}
+				if(flag == false)
+				{
+					error = "Failed to backup the database.";
 					apiUtil->unlock_databaseinfo(db_info);
-					sendResponseMsg(1005, error, operation, request, response);
+					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+					if (async != "true")
+						sendResponseMsg(1005, error, operation, request, response);
 					return;
 				}
-				Util::remove_path(backup_store_path);
-			}
-			else
-			{
-				sys_cmd = "mv " + backup_store_path + " " + _path;
-				system(sys_cmd.c_str());
-			}
-			vector<string> files;
-			Util::dir_files(path, "", files);
-			int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
-			std::string db_file_suffix = db_name + _db_suffix;
-			int db_file_suffix_size = db_file_suffix.size();
-			std::string db_file_min;
-			unsigned int backup_num = 0;
-			for (auto& file_name : files)
-			{
-				if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
+				else
 				{
-					if (db_file_min.empty() || file_name < db_file_min)
-						db_file_min = file_name;
-					backup_num++;
+					string timestamp = Util::get_timestamp();
+					string new_folder =  db_name + _db_suffix + "_" + timestamp;
+					string sys_cmd, _path, backup_store_path;
+					Util::string_suffix(path, '/');
+					_path = path + new_folder;
+					backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+					if (backup_zip)
+					{
+						_path = _path + ".zip";
+						CompressUtil::CompressZip compress_dir;
+						if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+						{
+							error = "Failed to backup compress the database.";
+							apiUtil->unlock_databaseinfo(db_info);
+							apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+							if (async != "true")
+								sendResponseMsg(1005, error, operation, request, response);
+							return;
+						}
+						Util::remove_path(backup_store_path);
+					}
+					else
+					{
+						sys_cmd = "mv " + backup_store_path + " " + _path;
+						system(sys_cmd.c_str());
+					}
+					vector<string> files;
+					Util::dir_files(path, "", files);
+					int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
+					std::string db_file_suffix = db_name + _db_suffix;
+					int db_file_suffix_size = db_file_suffix.size();
+					std::string db_file_min;
+					unsigned int backup_num = 0;
+					for (auto& file_name : files)
+					{
+						if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
+						{
+							if (db_file_min.empty() || file_name < db_file_min)
+								db_file_min = file_name;
+							backup_num++;
+						}
+					}
+					if (backup_num > max_backups)
+					{
+						Util::remove_path(path + db_file_min);
+					}
+
+					SLOG_DEBUG("database backup done: " + db_name);
+					string success = "Database backup successfully.";
+					// current_db = NULL;
+					apiUtil->unlock_databaseinfo(db_info);
+					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0, _path);
+
+					if (async != "true")
+					{
+						Document resDoc;
+						resDoc.SetObject();
+						Document::AllocatorType &allocator = resDoc.GetAllocator();
+						resDoc.AddMember("StatusCode", 0, allocator);
+						resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resDoc.AddMember("backupfilepath", StringRef(_path.c_str()), allocator);
+						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						sendResponseMsg(resDoc, operation, request, response);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"backupfilepath\":\"" + _path + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
 				}
-			}
-			if (backup_num > max_backups)
-			{
-				Util::remove_path(path + db_file_min);
-			}
-
-			SLOG_DEBUG("database backup done: " + db_name);
-			string success = "Database backup successfully.";
-			current_db = NULL;
-			apiUtil->unlock_databaseinfo(db_info);
-
+			};
+		if (async == "true")
+		{
 			Document resDoc;
 			resDoc.SetObject();
 			Document::AllocatorType &allocator = resDoc.GetAllocator();
 			resDoc.AddMember("StatusCode", 0, allocator);
-			resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resDoc.AddMember("backupfilepath", StringRef(_path.c_str()), allocator);
+			resDoc.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			sendResponseMsg(resDoc, operation, request, response);
+
+			thread t(backup_helper, nullptr, nullptr);
+			t.detach();
+		}
+		else
+		{
+			backup_helper(request, response);
 		}
 	}
 	catch (const std::exception &e)
@@ -2439,7 +2487,7 @@ void backup_path_thread_new(const shared_ptr<HttpServer::Request> &request, cons
  * @param {string} username the operation username
  * @return {*}
  */
-void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username)
+void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response, string db_name, string backup_path, string username, string async, string callback)
 {
 	string error = "";
 	string operation = "restore";
@@ -2523,50 +2571,98 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			return;
 		}
 
-		// TODO why need lock the database_map?
-		// apiUtil->trywrlock_database_map();
-		int ret = 0;
-		if (is_zip)
-		{
-			if (Util::dir_exist(path))
-				Util::remove_path(path);
-			mkdir(path.c_str(), 0775);
-			CompressUtil::UnCompressZip unzip(backup_path, path);
-			if (unzip.unCompress() != CompressUtil::UnZipOK)
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = getRemoteIp(request);
+		string msg = "Operation Success.";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		auto restore_helper = [db_name,operation,opt_id,is_zip,backup_path,&db_info,path,async,callback]
+			(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 			{
-				Util::remove_path(path);
-				string error = "backup compress fail";
-				sendResponseMsg(1003, error, operation, request, response);
-				return;
-			}
-			ret = apiUtil->db_copy(path, _db_home);
-			Util::remove_path(path);
+				// TODO why need lock the database_map?
+				// apiUtil->trywrlock_database_map();
+				int ret = 0;
+				if (is_zip)
+				{
+					if (Util::dir_exist(path))
+						Util::remove_path(path);
+					mkdir(path.c_str(), 0775);
+					CompressUtil::UnCompressZip unzip(backup_path, path);
+					if (unzip.unCompress() != CompressUtil::UnZipOK)
+					{
+						Util::remove_path(path);
+						string error = "backup compress fail";
+						apiUtil->update_access_log(1003, error, opt_id, -1, 0, 0);
+						if (async != "true")
+							sendResponseMsg(1003, error, operation, request, response);
+						return;
+					}
+					ret = apiUtil->db_copy(path, _db_home);
+					Util::remove_path(path);
+				}
+				else
+				{
+					ret = apiUtil->db_copy(path, _db_home);
+				}
+				// apiUtil->unlock_database_map();
+				// copy failed
+				if (ret == 1)
+				{
+					string error = "Failed to restore the database. Backup path error";
+					apiUtil->unlock_databaseinfo(db_info);
+					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+					if (async != "true")
+						sendResponseMsg(1005, error, operation, request, response);
+				}
+				else
+				{
+					// remove old folder
+					string db_path = _db_home + "/" + db_name + _db_suffix;
+					Util::remove_path(db_path);
+					// mv backup folder to database folder
+					string folder_name = Util::get_folder_name(path, db_name);
+					string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
+					std::system(sys_cmd.c_str());
+					apiUtil->unlock_databaseinfo(db_info);
+
+					string success = "Database " + db_name + " restore successfully.";
+					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0);
+					if (async != "true")
+					{
+						Document resDoc;
+						resDoc.SetObject();
+						Document::AllocatorType &allocator = resDoc.GetAllocator();
+						resDoc.AddMember("StatusCode", 0, allocator);
+						resDoc.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						sendResponseMsg(resDoc, operation, request, response);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
+				}
+			};
+		if (async == "true")
+		{
+			Document resDoc;
+			resDoc.SetObject();
+			Document::AllocatorType &allocator = resDoc.GetAllocator();
+			resDoc.AddMember("StatusCode", 0, allocator);
+			resDoc.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resDoc.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			sendResponseMsg(resDoc, operation, request, response);
+
+			thread t(restore_helper, nullptr, nullptr);
+			t.detach();
 		}
 		else
 		{
-			ret = apiUtil->db_copy(path, _db_home);
-		}
-		// apiUtil->unlock_database_map();
-		// copy failed
-		if (ret == 1)
-		{
-			string error = "Failed to restore the database. Backup path error";
-			apiUtil->unlock_databaseinfo(db_info);
-			sendResponseMsg(1005, error, operation, request, response);
-		}
-		else
-		{
-			// remove old folder
-			string db_path = _db_home + "/" + db_name + _db_suffix;
-			Util::remove_path(db_path);
-			// mv backup folder to database folder
-			string folder_name = Util::get_folder_name(path, db_name);
-			string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
-			std::system(sys_cmd.c_str());
-			apiUtil->unlock_databaseinfo(db_info);
-			
-			string success = "Database " + db_name + " restore successfully.";
-			sendResponseMsg(0, success, operation, request, response);
+			restore_helper(request, response);
 		}
 	}
 	catch (const std::exception &e)
@@ -4351,6 +4447,8 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	{
 		string backup_path = "";
 		string compress_zip = "";
+		string async = "";
+		string callback = "";
 		try
 		{
 			if (request_type == "GET")
@@ -4359,6 +4457,10 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				backup_path = UrlDecode(backup_path);
 				compress_zip = WebUrl::CutParam(url, "backup_zip");
 				compress_zip = UrlDecode(compress_zip);
+				async = WebUrl::CutParam(url, "async");
+				async = UrlDecode(async);
+				callback = WebUrl::CutParam(url, "callback");
+				callback = UrlDecode(callback);
 			}
 			else if (request_type == "POST")
 			{
@@ -4369,6 +4471,14 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 				if (document.HasMember("backup_zip") && document["backup_zip"].IsString())
 				{
 					compress_zip = document["backup_zip"].GetString();
+				}
+				if (document.HasMember("async") && document["async"].IsString())
+				{
+					async = document["async"].GetString();
+				}
+				if (document.HasMember("callback") && document["callback"].IsString())
+				{
+					callback = document["callback"].GetString();
 				}
 			}
 		}
@@ -4381,7 +4491,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 		bool backup_zip = false;
 		if (compress_zip == "true")
 			backup_zip = true;
-		backup_thread_new(request, response, db_name, backup_path, backup_zip);
+		backup_thread_new(request, response, db_name, backup_path, backup_zip, async, callback);
 	}
 	// query backup path
 	else if (operation == "backuppath")
@@ -4392,18 +4502,32 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	else if (operation == "restore")
 	{
 		string backup_path = "";
+		string async = "";
+		string callback = "";
 		try
 		{
 			if (request_type == "GET")
 			{
 				backup_path = WebUrl::CutParam(url, "backup_path");
 				backup_path = UrlDecode(backup_path);
+				async = WebUrl::CutParam(url, "async");
+				async = UrlDecode(async);
+				callback = WebUrl::CutParam(url, "callback");
+				callback = UrlDecode(callback);
 			}
 			else if (request_type == "POST")
 			{
 				if (document.HasMember("backup_path") && document["backup_path"].IsString())
 				{
 					backup_path = document["backup_path"].GetString();
+				}
+				if (document.HasMember("async") && document["async"].IsString())
+				{
+					async = document["async"].GetString();
+				}
+				if (document.HasMember("callback") && document["callback"].IsString())
+				{
+					callback = document["callback"].GetString();
 				}
 			}
 		}
@@ -4413,7 +4537,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
-		restore_thread_new(request, response, db_name, backup_path, username);
+		restore_thread_new(request, response, db_name, backup_path, username, async, callback);
 	}
 	// query database
 	else if (operation == "query")
@@ -6209,12 +6333,21 @@ void checkOperationState_thread_new(const shared_ptr<HttpServer::Request> &reque
 		Document resp_data;
 		Document::AllocatorType &allocator = resp_data.GetAllocator();
 		string msg = log.getMsg();
+		std::string backupfilepath = log.getBackupfilepath();
 		resp_data.SetObject();
 		resp_data.AddMember("StatusCode", log.getCode(), allocator);
 		resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 		resp_data.AddMember("state", log.getState(), allocator);
-		resp_data.AddMember("success_num", log.getNum(), allocator);
-		resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		std::string log_operation = log.getOperation();
+		if (log_operation == "backup")
+		{
+			resp_data.AddMember("backupfilepath", StringRef(backupfilepath.c_str()), allocator);
+		}
+		else if(log_operation != "restore")
+		{
+			resp_data.AddMember("success_num", log.getNum(), allocator);
+			resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		}
 		sendResponseMsg(resp_data, operation, request, response);
 	}
 	catch (const std::exception &e)

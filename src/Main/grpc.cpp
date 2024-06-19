@@ -825,7 +825,8 @@ void api(const GRPCReq *request, GRPCResp *response)
 	auto *ip_ptr = new std::string(ip_addr);
 	rpc_task->add_callback([operation_ptr,ip_ptr](GRPCTask *task) {
 		GRPCResp *resp = task->get_resp();
-		if (*operation_ptr != "build" && *operation_ptr != "batchInsert" && *operation_ptr != "batchRemove")
+		if (*operation_ptr != "build" && *operation_ptr != "batchInsert" && *operation_ptr != "batchRemove" 
+			&& *operation_ptr != "backup" && *operation_ptr != "restore")
 			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
 		else if (resp->resp_code != 0)
 			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
@@ -1855,81 +1856,132 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusParamIsIllegal, error);
 			return;
 		}
-		bool flag = false;
-		if (current_db)
-		{
-			flag = current_db->backup();
-		}
-		else
-		{
-			Database _db(db_name);
-			flag = _db.backup();
-		}
-		if(flag == false)
-		{
-			error = "Failed to backup the database.";
-			apiUtil->unlock_databaseinfo(db_info);
-			response->Error(StatusOperationFailed, error);
-		}
-		else
-		{
-			string timestamp = Util::get_timestamp();
-			string new_folder =  db_name + _db_suffix + "_" + timestamp;
-			string sys_cmd, _path, backup_store_path;
-			Util::string_suffix(path, '/');
-			_path = path + new_folder;
-			backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
-			if (backup_zip)
+
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = task_of(response)->peer_addr();
+		string msg = "Operation Success.";
+		string operation = "backup";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		std::string async = jsonParam(json_data, "async");
+		std::string callback = jsonParam(json_data, "callback");
+		string temp_path = path;
+		auto backup_helper = [db_name,operation,opt_id,&current_db,&db_info,temp_path,default_backup_path,backup_zip,async,callback]
+			(GRPCResp *response)
 			{
-				_path = _path + ".zip";
-				CompressUtil::CompressZip compress_dir;
-				if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+				string path = temp_path;
+				std::string error = "";
+				bool flag = false;
+				if (current_db)
 				{
-					error = "Failed to backup compress the database.";
+					flag = current_db->backup();
+				}
+				else
+				{
+					Database _db(db_name);
+					flag = _db.backup();
+				}
+				if(flag == false)
+				{
+					error = "Failed to backup the database.";
 					apiUtil->unlock_databaseinfo(db_info);
-					response->Error(StatusOperationFailed, error);
+					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+					if (async != "true")
+						response->Error(StatusOperationFailed, error);
 					return;
 				}
-				Util::remove_path(backup_store_path);
-			}
-			else
-			{
-				sys_cmd = "mv " + backup_store_path + " " + _path;
-				system(sys_cmd.c_str());
-			}
-			vector<string> files;
-			Util::dir_files(path, "", files);
-			int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
-			std::string db_file_suffix = db_name + _db_suffix;
-			int db_file_suffix_size = db_file_suffix.size();
-			std::string db_file_min;
-			unsigned int backup_num = 0;
-			for (auto& file_name : files)
-			{
-				if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
+				else
 				{
-					if (db_file_min.empty() || file_name < db_file_min)
-						db_file_min = file_name;
-					backup_num++;
+					string timestamp = Util::get_timestamp();
+					string new_folder =  db_name + _db_suffix + "_" + timestamp;
+					string sys_cmd, _path, backup_store_path;
+					Util::string_suffix(path, '/');
+					_path = path + new_folder;
+					backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+					if (backup_zip)
+					{
+						_path = _path + ".zip";
+						CompressUtil::CompressZip compress_dir;
+						if (!compress_dir.compressDirExportZip(backup_store_path, _path))
+						{
+							error = "Failed to backup compress the database.";
+							apiUtil->unlock_databaseinfo(db_info);
+							apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+							if (async != "true")
+								response->Error(StatusOperationFailed, error);
+							return;
+						}
+						Util::remove_path(backup_store_path);
+					}
+					else
+					{
+						sys_cmd = "mv " + backup_store_path + " " + _path;
+						system(sys_cmd.c_str());
+					}
+					vector<string> files;
+					Util::dir_files(path, "", files);
+					int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
+					std::string db_file_suffix = db_name + _db_suffix;
+					int db_file_suffix_size = db_file_suffix.size();
+					std::string db_file_min;
+					unsigned int backup_num = 0;
+					for (auto& file_name : files)
+					{
+						if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
+						{
+							if (db_file_min.empty() || file_name < db_file_min)
+								db_file_min = file_name;
+							backup_num++;
+						}
+					}
+					if (backup_num > max_backups)
+					{
+						Util::remove_path(path + db_file_min);
+					}
+
+					SLOG_DEBUG("database backup done: " + db_name);
+					string success = "Database backup successfully.";
+					// current_db = NULL;
+					apiUtil->unlock_databaseinfo(db_info);
+					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0, _path);
+
+					if (async != "true")
+					{
+						Document resp_data;
+						resp_data.SetObject();
+						Document::AllocatorType &allocator = resp_data.GetAllocator();
+						resp_data.AddMember("StatusCode", 0, allocator);
+						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
+						resp_data.AddMember("backupfilepath", StringRef(_path.c_str()), allocator);
+						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						response->Json(resp_data);
+					}
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"backupfilepath\":\"" + _path + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
 				}
-			}
-			if (backup_num > max_backups)
-			{
-				Util::remove_path(path + db_file_min);
-			}
-
-			SLOG_DEBUG("database backup done: " + db_name);
-			string success = "Database backup successfully.";
-			current_db = NULL;
-			apiUtil->unlock_databaseinfo(db_info);
-
-			Document resp_data;
+			};
+		if (async == "true")
+		{
+			Json resp_data;
 			resp_data.SetObject();
-			Document::AllocatorType &allocator = resp_data.GetAllocator();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-			resp_data.AddMember("backupfilepath", StringRef(_path.c_str()), allocator);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			response->Json(resp_data);
+			thread t(backup_helper, nullptr);
+			t.detach();
+		}
+		else
+		{
+			backup_helper(response);
 		}
 	}
 	catch (const std::exception &e)
@@ -2076,50 +2128,92 @@ try
 			return;
 		}
 
-		// TODO why need lock the database_map?
-		// apiUtil->trywrlock_database_map();
-		int ret = 0;
-		if (is_zip)
-		{
-			if (Util::dir_exist(path))
-				Util::remove_path(path);
-			mkdir(path.c_str(), 0775);
-			CompressUtil::UnCompressZip unzip(backup_path, path);
-			if (unzip.unCompress() != CompressUtil::UnZipOK)
+		std::string opt_id = apiUtil->generateUid();
+		string remote_ip = task_of(response)->peer_addr();
+		string msg = "Operation Success.";
+		string operation = "restore";
+		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+		std::string async = jsonParam(json_data, "async");
+		std::string callback = jsonParam(json_data, "callback");
+		auto remove_helper = [db_name,operation,opt_id,is_zip,backup_path,&db_info,path,async,callback]
+			(GRPCResp *response)
 			{
-				Util::remove_path(path);
-				string error = "backup compress fail";
-				response->Error(StatusParamIsIllegal, error);
-				return;
-			}
-			ret = apiUtil->db_copy(path, _db_home);
-			Util::remove_path(path);
+				// TODO why need lock the database_map?
+				// apiUtil->trywrlock_database_map();
+				int ret = 0;
+				if (is_zip)
+				{
+					if (Util::dir_exist(path))
+						Util::remove_path(path);
+					mkdir(path.c_str(), 0775);
+					CompressUtil::UnCompressZip unzip(backup_path, path);
+					if (unzip.unCompress() != CompressUtil::UnZipOK)
+					{
+						Util::remove_path(path);
+						string error = "backup compress fail";
+						apiUtil->update_access_log(1003, error, opt_id, -1, 0, 0);
+						if (async != "true")
+							response->Error(StatusParamIsIllegal, error);
+						return;
+					}
+					ret = apiUtil->db_copy(path, _db_home);
+					Util::remove_path(path);
+				}
+				else
+				{
+					apiUtil->db_copy(path, _db_home);
+				}
+				// apiUtil->unlock_database_map();
+				// copy failed
+				if (ret == 1)
+				{
+					string error = "Failed to restore the database. Backup path error";
+					apiUtil->unlock_databaseinfo(db_info);
+					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
+					if (async != "true")
+						response->Error(StatusOperationFailed, error);
+				}
+				else
+				{
+					// remove old folder
+					string db_path = _db_home + "/" + db_name + _db_suffix;
+					Util::remove_path(db_path);
+					// mv backup folder to database folder
+					string folder_name = Util::get_folder_name(path, db_name);
+					string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
+					std::system(sys_cmd.c_str());
+					apiUtil->unlock_databaseinfo(db_info);
+					
+					std::string success = "Database " + db_name + " restore successfully.";
+					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0);
+					if (async != "true")
+						response->Success(success);
+					if (!callback.empty())
+					{
+						string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"0\",";
+						postdata += "\"StatusMsg\":\"" + success + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
+				}
+			};
+		if (async == "true")
+		{
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			response->Json(resp_data);
+			thread t(remove_helper, nullptr);
+			t.detach();
 		}
 		else
 		{
-			apiUtil->db_copy(path, _db_home);
-		}
-		// apiUtil->unlock_database_map();
-		// copy failed
-		if (ret == 1)
-		{
-			error = "Failed to restore the database. Backup path error";
-			apiUtil->unlock_databaseinfo(db_info);
-			response->Error(StatusOperationFailed, error);
-		}
-		else
-		{
-			// remove old folder
-			string db_path = _db_home + "/" + db_name + _db_suffix;
-			Util::remove_path(db_path);
-			// mv backup folder to database folder
-			string folder_name = Util::get_folder_name(path, db_name);
-			string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
-			std::system(sys_cmd.c_str());
-			apiUtil->unlock_databaseinfo(db_info);
-
-			std::string success = "Database " + db_name + " restore successfully.";
-			response->Success(success);
+			remove_helper(response);
 		}
 	}
 	catch (const std::exception &e)
@@ -4619,12 +4713,21 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &
 		Json resp_data;
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		string msg = log.getMsg();
+		std::string backupfilepath = log.getBackupfilepath();
 		resp_data.SetObject();
 		resp_data.AddMember("StatusCode", log.getCode(), allocator);
 		resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 		resp_data.AddMember("state", log.getState(), allocator);
-		resp_data.AddMember("success_num", log.getNum(), allocator);
-		resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		std::string log_operation = log.getOperation();
+		if (log_operation == "backup")
+		{
+			resp_data.AddMember("backupfilepath", StringRef(backupfilepath.c_str()), allocator);
+		}
+		else if(log_operation != "restore")
+		{
+			resp_data.AddMember("success_num", log.getNum(), allocator);
+			resp_data.AddMember("failed_num", log.getFailNum(), allocator);
+		}
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
