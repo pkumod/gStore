@@ -28,7 +28,7 @@ if [ $? -eq 0 ]; then
         mkdir -p gstore-1.3-static/dbhome
         cp -r conf backups bin docs data LICENSE README.md gstore-1.3-static/
         cp -r dbhome/system.db gstore-1.3-static/dbhome/
-        cp -rf conf/* gstore-1.3-static/conf/*
+        cp -f conf/* gstore-1.3-static/conf/
         cp -rf scripts/test gstore-1.3-static/scripts/
         rm -f gstore-1.3-static/bin/.gitignore
         rm -f gstore-1.3-static/backups/.gitkeep
