@@ -34,24 +34,21 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
     };
     auto binaryInsert = [&](vector<pair<int,float>>& a,pair<int,float> insertPair)
     {
-        int loc = a.size()/2,l=0,r=a.size();
-        vector<pair<int,float>>::iterator it = a.begin()+loc;
+        int l=0,r=a.size();
         if(a.size()>0)
-        while((*it).second>insertPair.second||(it!=a.begin()&&(*(it-1)).second<insertPair.second))
+        while(l<r)
         {
-            if((*it).second>insertPair.second)
-            {
-                l = loc+1;
-                loc = (l+r)/2;
-            }
+            int loc = l+(r-l)/2;
+            if(a[loc].second>insertPair.second)
+                {
+                     l = loc+1;
+                }
             else
             {
-                r = loc-1;
-                loc = (l+r)/2;
+                r = loc;
             }
-            it = a.begin()+loc;
-        }        
-        a.insert(it,insertPair);
+        }          
+        a.insert(a.begin()+l,insertPair);
     };
     if(k>0||k<0)
     {   
