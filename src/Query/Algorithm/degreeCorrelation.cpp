@@ -4,7 +4,63 @@ using namespace std;
 
 double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets)
 {
-    double ret = 0;
-    std::cout << "degreeCorrelation 允许出现的谓词:" << pred_sets.size() << std::endl;
+    double ret = 0,d1,d2,d3,e=getSetEdgeNum(pred_sets);
+    queue<int> q;
+    q.push(uid);
+    map<int,bool> vi;
+    auto oneHopDe = [&](int id)
+    {
+        unordered_set<int> oneHop_ret = unordered_set<int>();
+        for(auto pred:pred_sets)
+        {
+            int inSz = getInSize(id,pred),inNei;
+            int outSz = getOutSize(id,pred),outNei;
+
+            for(int i=0;i<inSz;i++)
+            {
+                inNei = getInVertID(id,pred,i);
+                oneHop_ret.insert(inNei);
+                if(vi[inNei]==false)
+                {
+                    int tmpD1 = getTotalInSize(id,false)+getTotalOutSize(id,false);
+                    int tmpD2 = getTotalInSize(inNei,false)+getTotalOutSize(inNei,false);
+
+                    d1+=tmpD1*tmpD2;
+                    d2+=0.5*(tmpD1+tmpD2);
+                    d3+=0.5*(tmpD1*tmpD1+tmpD2*tmpD2);
+                }
+            }
+            for(int i=0;i<outSz;i++)
+            {
+                outNei = getOutVertID(id,pred,i);
+                oneHop_ret.insert(outNei);
+                if(vi[outNei]==false)
+                {
+                    int tmpD1 = getTotalInSize(id,false)+getTotalOutSize(id,false);
+                    int tmpD2 = getTotalInSize(outNei,false)+getTotalOutSize(outNei,false);
+
+                    d1+=tmpD1*tmpD2;
+                    d2+=0.5*(tmpD1+tmpD2);
+                    d3+=0.5*(tmpD1*tmpD1+tmpD2*tmpD2);
+                }
+            }
+
+        }
+        return oneHop_ret;
+    };
+    while(k!=0&&q.size())
+    {
+        unordered_set<int> oneHopAdj=oneHopDe(q.front());
+        vi[q.front()]=true;
+        q.pop();
+        
+        for(auto v:oneHopAdj)
+        {
+            q.push(v);
+        }
+
+        if(k>0) k--;
+    }
+    ret = (pow(e,-1)*d1-pow(pow(e,-1)*d2,2))/(pow(e,-1)*d3-pow(pow(e,-1)*d2,2));
     return ret;
 }
