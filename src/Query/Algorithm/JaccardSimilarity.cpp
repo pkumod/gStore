@@ -59,7 +59,7 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
         }        
         a.insert(it,insertPair);
     };
-    if(k>0)
+    if(k>0||k<0)
     {   
         //获取uid的一阶邻居，包括入边邻居和出边邻居 
         adj_oneHop = getNeighbourWithPredSet(uid,pred_sets);
@@ -80,7 +80,7 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
             binaryInsert(JS,pair<int,float>(neighbour,js));
         }
     }
-    if(k>1)
+    if(k>1||k<0)
     {
         //对于二阶邻居计算交集和相似度
         for(auto neighbour:adj_twoHop)
@@ -122,15 +122,42 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
     //如果顶点在uid两跳范围外，则它们的相似度一定为0
     if(retNum>JS.size())
     {
-        vector<int> kHop = kHopNeighbor(uid,false,k,pred_sets,retNum);
-        for(auto vid:kHop)
+        if(k<0)
         {
-            if(adj_oneHop.find(vid)==adj_oneHop.end()&&adj_twoHop.find(vid)==adj_twoHop.end()&&others.find(vid)==others.end())
+            int j=0;
+            while (retNum>JS.size()&&j<2)
             {
-                JS.emplace_back(pair<int,float>(vid,0));
-                others.insert(vid);
+                for(auto pred=0;csr[j].pre_num;pred++)
+                {
+                    for(int i=0;i<csr[j].id2vid[pred].size();i++)
+                    {
+                        auto vid = csr[j].id2vid[pred][i];
+                        if(adj_oneHop.find(vid)==adj_oneHop.end()&&adj_twoHop.find(vid)==adj_twoHop.end()&&others.find(vid)==others.end())
+                        {
+                            JS.emplace_back(pair<int,float>(vid,0));
+                            others.insert(vid);
+                            if(retNum<=JS.size())
+                                break;
+                        }
+                    }
+                    if(retNum<=JS.size())
+                        break;
+                }
+                j++;
             }
         }
+        else
+       {
+            vector<int> kHop = kHopNeighbor(uid,false,k,pred_sets,retNum);
+            for(auto vid:kHop)
+            {
+                if(adj_oneHop.find(vid)==adj_oneHop.end()&&adj_twoHop.find(vid)==adj_twoHop.end()&&others.find(vid)==others.end())
+                {
+                    JS.emplace_back(pair<int,float>(vid,0));
+                    others.insert(vid);
+                }
+            }
+       }
     }
     //返回相似度最大的retNum个顶点
     for(int i=0;i<retNum&&i<JS.size();i++)
