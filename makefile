@@ -735,19 +735,19 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
-	rm -rf lib/libgcsr.so lib/libgpathqueryhandler.so
+	rm -rf lib/*.a
+	rm -rf lib/*.so
 
 
 dist: clean
 	rm -rf *.nt *.n3 .debug/*.log .tmp/*.dat *.txt *.db
-	rm -rf lib/libantlr4-runtime.a
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
-	rm -rf backups/*.db
+	rm -rf backups/*.db_*
 
 tarball:
-	tar -czvf gstore.tar.gz api backups bin lib tools .debug .tmp .objs scripts data logs \
-		Main Database KVstore Util Query Signature Parser Server StringIndex Trie GRPC COVERAGE \
+	tar -czvf gstore.tar.gz api tools/*.gz tools/*.tar scripts data \
+		Main Database KVstore Util Query Signature Parser Server StringIndex Trie GRPC \
 		makefile init.conf conf.ini backup.json ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
 		README.md LICENSE
  
