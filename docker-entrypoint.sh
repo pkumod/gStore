@@ -3,25 +3,26 @@
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
-SERVER="$API_SERVER"
+SERVER="$API_SERVICE"
+PASSWD="$ROOT_PASSWD"
 
-# Check if GSTORE_ROOT_PASSWORD is set
-if [ -z "$GSTORE_ROOT_PASSWORD" ]; then
-    echo "${RED}[INIT] GSTORE_ROOT_PASSWORD is not set. We strongly recommend setting a strong password.${NC}"
-else
-    echo "${BLUE}[INIT] Setting root password...${NC}"
-    # Replace the line in the file
-    sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${GSTORE_ROOT_PASSWORD}/" init.conf
+# Check init
+if [ ! -e /gstore/init.lock ]; then
+    if [ -n $PASSWD ] && [ $PASSWD != "123456" ]; then
+         # Replace the line in the file
+        sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${PASSWD}/" conf.ini
+    else
+        PASSWD="123456"
+    fi
+    /gstore/bin/ginit
+    touch /gstore/init.lock
+    echo "${BLUE}[INIT] Initialization complete${NC}"
+    echo "${BLUE}[INIT] Root password ${PASSWD}${NC}"
 fi
 
-if [ ! -d /gstore/system.db ]; then
-    echo "${BLUE}[INIT] Creating system.db...${NC}"
-    /gstore/bin/ginit --make
-fi
+echo "${BLUE}[INFO] API SERVER ${SERVER}${NC}"
 
-echo "${BLUE}[INIT] Command: $@${NC}"
-
-if [ -n $SERVER ] && [ $SERVER = "grpc" ]; then
+if [ -n $SERVER ] && [ $SERVER = grpc ]; then
     /gstore/bin/grpc
 else
     /gstore/bin/ghttp

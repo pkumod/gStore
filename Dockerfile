@@ -29,17 +29,19 @@ RUN mkdir -p /src
 
 WORKDIR /usr/src/gstore
 
-# Compile gStore dependencies
-COPY tools/ /usr/src/gstore/tools
-
-COPY makefile /usr/src/gstore/
-
-RUN mkdir -p lib && make pre
+RUN mkdir .debug \
+    && mkdir .tmp \
+    && mkdir .objs \
+    && mkdir logs \
+    && mkdir -p backups/logs \
+    && mkdir bin \
+    && mkdir lib
 
 # Copy gStore source code; run `make tarball` to generate this file
 ADD gstore.tar.gz /usr/src/gstore
 
-RUN make
+# Compile gStore
+RUN make pre && make
 
 FROM ubuntu:22.04 AS runtime
 
@@ -75,16 +77,19 @@ COPY --from=builder /usr/src/gstore/ipAllow.config /gstore/
 COPY --from=builder /usr/src/gstore/ipDeny.config /gstore/
 COPY --from=builder /usr/src/gstore/slog.properties /gstore/
 COPY --from=builder /usr/src/gstore/slog.stdout.properties /gstore/
+
+# Entry Point Script
 COPY docker-entrypoint.sh /
 
 WORKDIR /gstore/
 VOLUME [ "/gstore/" ]
 
 RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
-	&& echo "*    -    noproc    65535" >> /etc/security/limits.conf
+ && echo "*    -    noproc    65535" >> /etc/security/limits.conf
 
 EXPOSE 9000
 
+# Default API service is ghttp, which can be configured with -e API_SERVICE=grpc
+# Default root password is 123456, witch can be configured with -e ROOT_PASSWD=your password
+# For example: docker run -itd -p 9999:9000 -e API_SERVICE=grpc -e ROOT_PASSWD=123@abc gstore:latest
 ENTRYPOINT [ "sh", "/docker-entrypoint.sh" ]
-
-#CMD [ "/usr/local/bin/ghttp" ]
