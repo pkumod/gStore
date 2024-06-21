@@ -21,19 +21,13 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
             int outSz = getOutSize(id,pred),outNei;
             for(int i = 0;i<inSz;i++)
             {
-                inNei = getInVertID(id,i);
-                if(adj_ret.find(inNei)==adj_ret.end())
-                {
-                    adj_ret.insert(inNei);
-                }
+                inNei = getInVertID(id,pred,i);
+                adj_ret.insert(inNei);
             }
             for(int i=0;i<outSz;i++)
             {
-                outNei = getOutVertID(id,i);
-                if(adj_ret.find(outNei)==adj_ret.end())
-                {
-                    adj_ret.insert(outNei);
-                }
+                outNei = getOutVertID(id,pred,i);
+                adj_ret.insert(outNei);
             }
         }
         return adj_ret;
@@ -47,12 +41,12 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
         {
             if((*it).second>insertPair.second)
             {
-                l = loc;
+                l = loc+1;
                 loc = (l+r)/2;
             }
             else
             {
-                r = loc;
+                r = loc-1;
                 loc = (l+r)/2;
             }
             it = a.begin()+loc;
@@ -86,27 +80,7 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
         for(auto neighbour:adj_twoHop)
         {
             std::set<int> _adj_oneHop = set<int>();
-            for(auto pred:pred_sets)
-            {
-                int inSz = getInSize(neighbour,pred),inNei;
-                int outSz = getOutSize(neighbour,pred),outNei;
-                for(int i = 0;i<inSz;i++)
-                {
-                    inNei = getInVertID(neighbour,i);
-                    if(_adj_oneHop.find(inNei)==_adj_oneHop.end())
-                    {
-                        _adj_oneHop.insert(inNei);
-                    }
-                }
-                for(int i=0;i<outSz;i++)
-                {
-                    outNei = getOutVertID(neighbour,i);
-                    if(_adj_oneHop.find(outNei)==_adj_oneHop.end())
-                    {
-                        _adj_oneHop.insert(outNei);
-                    }
-                }
-            }
+            _adj_oneHop = getNeighbourWithPredSet(neighbour,pred_sets);
             int isa = 0;
             for(auto v:_adj_oneHop)
             {
