@@ -12,6 +12,8 @@ using namespace std;
 	@return the number of vertices reachable from u with k steps.
 **/
  std::vector<int> PathQueryHandler::kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set, int retNum) {
+	if (uid < 0)
+		return std::vector<int>();
 	int s = uid;
 	std::vector<int> cnt;
 	std::vector<int> q[2];

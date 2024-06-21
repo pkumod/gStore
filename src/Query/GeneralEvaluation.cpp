@@ -4624,6 +4624,8 @@ void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, con
 
 void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum)
 {
+	if (uid < 0)
+		return;
 	int max_depth = k < 0 ? 999 : k;
 	int max_retNum = retNum < 0 ? 10 : retNum;
 	std::vector<int> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
@@ -4643,6 +4645,8 @@ void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const 
 
 void GeneralEvaluation::degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set)
 {
+	if (uid < 0)
+		return;
 	int max_depth = k < 0 ? 999 : k;
 	double ret = pqHandler->degreeCorrelation(uid, max_depth, pred_id_set);
 	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"degree correlation\":" << ret << "}";
