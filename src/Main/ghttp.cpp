@@ -1813,7 +1813,7 @@ void userPrivilegeManage_thread_new(const shared_ptr<HttpServer::Request> &reque
 }
 
 /**
- * 1:addReason 2:listReason 3:compileReason 4:executeReason 5:disableReason 6.showReason
+ * 1:addReason 2:listReason 3:compileReason 4:executeReason 5:disableReason 6.showReason 7.deleteReason
 */
 void reasonManage_thread_new(const shared_ptr<HttpServer::Request> &request, 
 const shared_ptr<HttpServer::Response> &response, int type, string db_name,Document &document)
@@ -1845,7 +1845,9 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 		   }
            Value reasonInfo=document["ruleinfo"].GetObject();
 		   Document::AllocatorType &allocator = document.GetAllocator();
+		   std::string createtime = Util::get_date_time();
 		   reasonInfo.AddMember("status","新建",allocator);
+		   reasonInfo.AddMember("createtime",StringRef(createtime.c_str()),allocator);
 		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
 		   if(resultInfo.issuccess==1)
 		   {
@@ -2146,9 +2148,10 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			else
 			{
 				// 输出格式化的JSON
+				std::string ruleinfo = "{\"ruleinfo\":" + resultInfo.error_message + "}";
 				Document doc;
 				doc.SetObject();
-				doc.Parse(resultInfo.error_message.c_str());
+				doc.Parse(ruleinfo.c_str());
 				Document::AllocatorType &allocator = doc.GetAllocator();
 				doc.AddMember("StatusCode",0,allocator);
 				doc.AddMember("StatusMsg","ok",allocator);

@@ -3614,18 +3614,20 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				return;
 			}
 			Value reasonInfo=json_data["ruleinfo"].GetObject();
-			   Document::AllocatorType &allocator = json_data.GetAllocator();
-			 reasonInfo.AddMember("status","新建",allocator);
-		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
-		   if(resultInfo.issuccess==1)
-		   {
-		       response->Success("Add Reason Rule done."+resultInfo.error_message);
-		   }
-		   else
-		   {
-			 error="Add Reason Rule Fail. "+resultInfo.error_message;
-			 response->Error(StatusOperationFailed,error);
-		   }
+			Document::AllocatorType &allocator = json_data.GetAllocator();
+			std::string createtime = Util::get_date_time();
+			reasonInfo.AddMember("status","新建",allocator);
+			reasonInfo.AddMember("createtime",StringRef(createtime.c_str()),allocator);
+			ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
+			if(resultInfo.issuccess==1)
+			{
+				response->Success("Add Reason Rule done."+resultInfo.error_message);
+			}
+			else
+			{
+				error="Add Reason Rule Fail. "+resultInfo.error_message;
+				response->Error(StatusOperationFailed,error);
+			}
 			
 		}
 		else if (type == "2") // listReason
@@ -3880,9 +3882,10 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			else
 			{
 				// 输出格式化的JSON
+				std::string ruleinfo = "{\"ruleinfo\":" + resultInfo.error_message + "}";
 				Document doc;
 				doc.SetObject();
-				doc.Parse(resultInfo.error_message.c_str());
+				doc.Parse(ruleinfo.c_str());
 				Document::AllocatorType &allocator = doc.GetAllocator();
 				doc.AddMember("StatusCode",0,allocator);
 				doc.AddMember("StatusMsg","ok",allocator);
