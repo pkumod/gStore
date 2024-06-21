@@ -148,19 +148,14 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
     Value conditions = doc["conditions"].GetArray();
     string wheresparql = "";
     int conditions_length = conditions.Size();
+    int logic = doc["logic"].GetInt();
     for (int i = 0; i < conditions.Size(); i++)
     {
       string subwhere = "";
       Value condition = conditions[i].GetObject();
-      if (condition.HasMember("condition") == false)
+      if (condition.HasMember("patterns"))
       {
-        continue;
-      }
-      Value conditioninfos = condition["condition"].GetObject();
-      int logic = condition["logic"].GetInt();
-      if (conditioninfos.HasMember("patterns"))
-      {
-        Value patterns = conditioninfos["patterns"].GetArray();
+        Value patterns = condition["patterns"].GetArray();
         for (int j = 0; j < patterns.Size(); j++)
         {
           Value pattern = patterns[j].GetObject();
@@ -173,9 +168,9 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       }
 
       string subfilter = "";
-      if (conditioninfos.HasMember("filters"))
+      if (condition.HasMember("filters"))
       {
-        Value filters = conditioninfos["filters"].GetArray();
+        Value filters = condition["filters"].GetArray();
         for (int j = 0; j < filters.Size(); j++)
         {
           string filter = filters[j].GetString();
@@ -233,7 +228,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // relationship
       // searchsparql = "select " + source + " " + target + " where " + wheresparql;
       // updatesparql = " <?1> <Rule:" + label + "> <?2>.";
-      string target = Util::getStringFromJSON(doc,"target");
+      string target = returnInfo["target"].GetString();
       insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where "+wheresparql;
       delete_sparql="delete where {?x <Rule:" + label + "> ?y.}";
     }
