@@ -10,6 +10,9 @@ unsigned int PathQueryHandler::diameterEstimation(const std::vector<int> &pred_s
      */
     int vertNum = getVertNum();
     int predNum = pred_sets.size();
+    if (predNum == 0) {
+        predNum = getEdgeNum();
+    }
     // 获得0~predNum之间的一个随机数，左闭右开
     int beginPred = rand()%predNum;
     int endPred = rand()%predNum;
