@@ -24,7 +24,7 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
             vertSets.insert(csr->id2vid[i][j]);
         }
     }
-    for (int i : vertSets) {
+    for (int i; i < vertSets.size(); i++) {
         int j = 0;
         if (!directed) {
             j = i + 1;
@@ -44,9 +44,9 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
             if (minPathPred == (firstPathPred + secondPathPred)) {
                 crossID = firstPathNum * secondPathNum;
             }
-            cout << "起点：" << i << " 终点:" << j << endl;
-            cout << totalPathNum << " " << firstPathNum << " " << secondPathNum << endl;
-            cout << minPathPred << " " << firstPathPred << " " << secondPathPred << endl;
+            // cout << "起点：" << i << " 终点:" << j << endl;
+            // cout << totalPathNum << " " << firstPathNum << " " << secondPathNum << endl;
+            // cout << minPathPred << " " << firstPathPred << " " << secondPathPred << endl;
             ret += (crossID * 1.0) / (totalPathNum * 1.0);
         }
     }
