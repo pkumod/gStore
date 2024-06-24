@@ -24,6 +24,12 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
             vertSets.insert(csr->id2vid[i][j]);
         }
     }
+    int vertArray[vertSets.size()]; 
+    int k = 0;
+    for (auto i : vertSets) {
+        vertArray[k] = i;
+        k++;
+    }
     for (int i; i < vertSets.size(); i++) {
         int j = 0;
         if (!directed) {
@@ -32,15 +38,15 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
         for (; j < vertSets.size(); j++) {
             if (i == j) continue;
             int crossID = 0;
-            int totalPathNum = shortestPathCount(i, j, true, pred_sets);
+            int totalPathNum = shortestPathCount(vertArray[i], vertArray[j], true, pred_sets);
             if (totalPathNum == 0) continue;;
-            int firstPathNum = shortestPathCount(i, id, true, pred_sets);
-            int secondPathNum = shortestPathCount(id, j, true, pred_sets);
+            int firstPathNum = shortestPathCount(vertArray[i], id, true, pred_sets);
+            int secondPathNum = shortestPathCount(id, vertArray[j], true, pred_sets);
             // ret += (firstPathNum * secondPathNum) / totalPathNum;
-            vector<int> minPath =  shortestPath(i, j, true, pred_sets);
+            vector<int> minPath =  shortestPath(vertArray[i], vertArray[j], true, pred_sets);
             int minPathPred = (minPath.size() - 1) / 2;
-            int firstPathPred = (shortestPath(i, id, true, pred_sets).size() - 1) / 2;
-            int secondPathPred = (shortestPath(id, j, true, pred_sets).size() - 1) / 2;
+            int firstPathPred = (shortestPath(vertArray[i], id, true, pred_sets).size() - 1) / 2;
+            int secondPathPred = (shortestPath(id, vertArray[j], true, pred_sets).size() - 1) / 2;
             if (minPathPred == (firstPathPred + secondPathPred)) {
                 crossID = firstPathNum * secondPathNum;
             }
