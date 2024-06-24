@@ -390,7 +390,7 @@ public:
     std::vector<int> coreTruss(const std::vector<int> &pred_set, int alpha, int beta);
     std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
     unsigned int diameterEstimation(const std::vector<int> &pred_sets);
-    double betweennessCentrality(int id, const std::vector<int> &pred_sets);
+    double betweennessCentrality(int id, bool directed, const std::vector<int> &pred_sets);
     std::vector<int> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
     double degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets);
 	

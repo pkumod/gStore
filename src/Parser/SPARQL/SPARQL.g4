@@ -218,7 +218,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_LOUVAIN '(' booleanLiteral ',' predSet ',' K_MAXITER '=' num_integer ',' K_INCREASE '=' numericLiteral ')'
 |   K_IC14 '(' varOrIri ',' varOrIri ')'
 |   K_DIAMETERESTIMATION '(' predSet ')'
-|   K_BETWEENNESSCENTRALITY '(' varOrIri ',' predSet ')'
+|   K_BETWEENNESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_JACCARDSIMILARITY '(' varOrIri ',' predSet ',' integerLiteral ',' integerLiteral ')'
 |   K_DEGREECORRELATION '(' varOrIri ',' integerLiteral ',' predSet ')'
  ;
