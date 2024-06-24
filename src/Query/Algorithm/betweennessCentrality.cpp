@@ -25,7 +25,11 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
         }
     }
     for (int i : vertSets) {
-        for (int j = 0; j < vertSets.size(); j++) {
+        int j = 0;
+        if (!directed) {
+            j = i + 1;
+        }
+        for (; j < vertSets.size(); j++) {
             if (i == j) continue;
             int crossID = 0;
             int totalPathNum = shortestPathCount(i, j, true, pred_sets);
