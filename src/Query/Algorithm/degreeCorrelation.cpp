@@ -4,7 +4,7 @@ using namespace std;
 
 double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets)
 {
-    double ret = 0,d1,d2,d3,e=getSetEdgeNum(pred_sets);
+    double ret = 0,d1=0,d2=0,d3=0,e=getSetEdgeNum(pred_sets);
     queue<int> q;
     q.push(uid);
     map<int,bool> vi;
@@ -54,12 +54,13 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
         vi[q.front()]=true;
         q.pop();
         
-        for(auto v:oneHopAdj)
-        {
-            q.push(v);
-        }
-
         if(k>0) k--;
+        if(!k) break;
+        else for(auto v:oneHopAdj)
+        {
+            if(vi[v]==false)
+            q.push(v);
+        }     
     }
     ret = (pow(e,-1)*d1-pow(pow(e,-1)*d2,2))/(pow(e,-1)*d3-pow(pow(e,-1)*d2,2));
     return ret;
