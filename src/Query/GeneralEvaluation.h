@@ -159,7 +159,7 @@ class GeneralEvaluation
 
 		//Algorithm evaluation high level function
 		void diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set);
-		void betweennessCentrality(std::stringstream &ss, int id, const std::vector<int> &pred_id_set);
+		void betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set);
 		void JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum);
 		void degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set);
 };

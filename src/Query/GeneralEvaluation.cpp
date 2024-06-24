@@ -2042,7 +2042,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							}
 							else if (proj[0].aggregate_type == ProjectionVar::betweennessCentrality_type)
 							{
-								betweennessCentrality(ss, uid, pred_id_set);
+								betweennessCentrality(ss, uid, proj[0].path_args.directed, pred_id_set);
 							}
 							else if (proj[0].aggregate_type == ProjectionVar::JaccardSimilarity_type)
 							{
@@ -3446,7 +3446,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								}
 								else if (proj[i].aggregate_type == ProjectionVar::betweennessCentrality_type)
 								{
-									betweennessCentrality(ss, uid, pred_id_set);
+									betweennessCentrality(ss, uid, proj[i].path_args.directed, pred_id_set);
 								}
 								else if (proj[i].aggregate_type == ProjectionVar::JaccardSimilarity_type)
 								{
@@ -4616,9 +4616,9 @@ void GeneralEvaluation::diameterEstimation(std::stringstream &ss, const std::vec
 	ss << "{\"Maximum steps\":" << ret << "}";
 }
 
-void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, const std::vector<int> &pred_id_set)
+void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set)
 {
-	double ret = pqHandler->betweennessCentrality(id, pred_id_set);
+	double ret = pqHandler->betweennessCentrality(id, directed, pred_id_set);
 	ss << "{\"src\":\"" << kvstore->getStringByID(id) << "\", \"centrality\":" << ret << "}";
 }
 
