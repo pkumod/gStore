@@ -41,10 +41,13 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
             int minPathPred = (minPath.size() - 1) / 2;
             int firstPathPred = (shortestPath(i, id, true, pred_sets).size() - 1) / 2;
             int secondPathPred = (shortestPath(id, j, true, pred_sets).size() - 1) / 2;
-            if (minPathPred == firstPathPred + secondPathPred) {
-                crossID += firstPathNum * secondPathNum;
+            if (minPathPred == (firstPathPred + secondPathPred)) {
+                crossID = firstPathNum * secondPathNum;
             }
-            ret += crossID/totalPathNum;
+            cout << "起点：" << i << " 终点:" << j << endl;
+            cout << totalPathNum << " " << firstPathNum << " " << secondPathNum << endl;
+            cout << minPathPred << " " << firstPathPred << " " << secondPathPred << endl;
+            ret += (crossID * 1.0) / (totalPathNum * 1.0);
         }
     }
     return ret;
