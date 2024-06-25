@@ -55,7 +55,7 @@ class GstoreConnector:
         }
         return self.request[request_type](query_params)
 
-    def load(self, db_name, csr, request_type='GET'):
+    def load(self, db_name, csr='0', request_type='GET'):
         query_params = {
             **self.auth_params,
             'operation': 'load',
@@ -217,10 +217,12 @@ class GstoreConnector:
         }
         return self.request[request_type](query_params)
 
-    def getTransLog(self, request_type='GET'):
+    def getTransLog(self, page_no=1, page_size=10, request_type='GET'):
         query_params = {
             **self.auth_params,
-            'operation': 'txnlog'
+            'operation': 'txnlog',
+            'pageNo': page_no,
+            'pageSize': page_size
         }
         return self.request[request_type](query_params)
 
@@ -229,5 +231,20 @@ class GstoreConnector:
             **self.auth_params,
             'operation': 'checkpoint',
             'db_name': db_name
+        }
+        return self.request[request_type](query_params)
+
+    def getCoreVersion(self, request_type='GET'):
+        query_params = {
+            **self.auth_params,
+            'operation': 'getCoreVersion'
+        }
+        return self.request[request_type](query_params)
+    
+    def login(self, username, password, request_type='GET'):
+        query_params = {
+            'username': username,
+            'password': password,
+            'operation': 'login'
         }
         return self.request[request_type](query_params)

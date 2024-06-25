@@ -4,11 +4,27 @@ using namespace std;
 
 double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets)
 {
-    double ret = 0,d1,d2,d3,e=getSetEdgeNum(pred_sets);
-    queue<int> q;
+    double ret = 0,e=getSetEdgeNum(pred_sets);
+    double averageD = 0,s=0;
+    queue<int> q,de;
     q.push(uid);
-    map<int,bool> vi;
-    auto oneHopDe = [&](int id)
+    unordered_map<int,bool> vi;
+    unordered_map<int,int> degree;
+    vector<pair<float,float>> dpair;
+
+    auto getVDegree = [&](int id)
+    {
+        int sum = 0;
+        for(auto pred:pred_sets)
+        {
+            int inSz = getInSize(id,pred);
+            int outSz = getOutSize(id,pred);
+            sum+=inSz+outSz;
+        }
+        degree[id] = sum;
+        return sum;
+    };
+    auto oneHop = [&](int id)
     {
         unordered_set<int> oneHop_ret = unordered_set<int>();
         for(auto pred:pred_sets)
@@ -20,47 +36,54 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
             {
                 inNei = getInVertID(id,pred,i);
                 oneHop_ret.insert(inNei);
+                if(degree.find(inNei)==degree.end())
+                getVDegree(inNei);
                 if(vi[inNei]==false)
                 {
-                    int tmpD1 = getTotalInSize(id,false)+getTotalOutSize(id,false);
-                    int tmpD2 = getTotalInSize(inNei,false)+getTotalOutSize(inNei,false);
-
-                    d1+=tmpD1*tmpD2;
-                    d2+=0.5*(tmpD1+tmpD2);
-                    d3+=0.5*(tmpD1*tmpD1+tmpD2*tmpD2);
+                    dpair.emplace_back(pair<double,double>(degree[id],degree[inNei]));
+                    averageD+=0.5*(degree[id]+degree[inNei]);
                 }
+
             }
             for(int i=0;i<outSz;i++)
             {
                 outNei = getOutVertID(id,pred,i);
                 oneHop_ret.insert(outNei);
+                if(degree.find(outNei)==degree.end())
+                getVDegree(outNei);
                 if(vi[outNei]==false)
                 {
-                    int tmpD1 = getTotalInSize(id,false)+getTotalOutSize(id,false);
-                    int tmpD2 = getTotalInSize(outNei,false)+getTotalOutSize(outNei,false);
-
-                    d1+=tmpD1*tmpD2;
-                    d2+=0.5*(tmpD1+tmpD2);
-                    d3+=0.5*(tmpD1*tmpD1+tmpD2*tmpD2);
+                    dpair.emplace_back(pair<double,double>(degree[id],degree[outNei]));
+                    averageD+=0.5*(degree[id]+degree[outNei]);
                 }
             }
-
         }
         return oneHop_ret;
     };
+       
+    getVDegree(uid);
     while(k!=0&&q.size())
     {
-        unordered_set<int> oneHopAdj=oneHopDe(q.front());
-        vi[q.front()]=true;
+        int vid = q.front();
+        unordered_set<int> oneHopAdj=oneHop(vid);
+        vi[vid]=true;
         q.pop();
-        
         for(auto v:oneHopAdj)
         {
-            q.push(v);
+            if(vi[v]==false)
+            {              
+                q.push(v);
+            }
         }
 
         if(k>0) k--;
     }
-    ret = (pow(e,-1)*d1-pow(pow(e,-1)*d2,2))/(pow(e,-1)*d3-pow(pow(e,-1)*d2,2));
+    averageD/=dpair.size();
+    for(auto v:dpair)
+    {
+        s+=pow((v.first+v.second)/2-averageD,2);
+        ret+=(v.first-averageD)*(v.second-averageD);
+    }
+    ret /= s;
     return ret;
 }
