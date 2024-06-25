@@ -26,11 +26,15 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
     }
     int vertArray[vertSets.size()]; 
     int k = 0;
-    for (auto i : vertSets) {
-        vertArray[k] = i;
+    for (auto ii : vertSets) {
+        vertArray[k] = ii;
         k++;
     }
-    for (int i; i < vertSets.size(); i++) {
+    // cout << "测试"<<endl;
+    // for (k = 0; k < vertSets.size(); k++) {
+    //     cout << vertArray[k] << " "; 
+    // }
+    for (int i = 0; i < vertSets.size(); i++) {
         int j = 0;
         if (!directed) {
             j = i + 1;
