@@ -265,7 +265,7 @@ bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname, s
     return true;
 }
 
-string Util::getConfigureValue(string keyname)
+string Util::getConfigureValue(const std::string& keyname)
 {
     map<string, string>::iterator iter = Util::global_config.find(keyname);
 	if (iter != Util::global_config.end())
@@ -2553,16 +2553,28 @@ Util::clear_angle_brackets(std::string _str)
 }
 
 void
-Util::split(string str, string pattern, vector<string> &res){
-    string::size_type pos = 0;
-    str += pattern;
-    for(int i = 0; i < static_cast<int>(str.size()); i++)
+Util::split(const std::string& str, const std::string& pat, std::vector<std::string>& res){
+    std::string token;
+    size_t start = 0;
+    size_t end;
+    while ((end = str.find(pat, start)) != std::string::npos)
     {
-        pos = str.find(pattern, i);
-        if(pos < str.size()){
-            res.push_back(str.substr(i, pos-i));
-            i = pos + pattern.size() - 1;
-        }
+        token = str.substr(start, end-start);
+        // remove lr blank chars
+        token.erase(0, token.find_first_not_of(' '));
+        token.erase(token.find_last_not_of(' ') + 1);
+        std::cout << "token=\""<<token<<"\""<<endl;
+        res.push_back(token);
+        start = end + 1;
+    }
+    // push last token
+    token = str.substr(start);
+    token.erase(0, token.find_first_not_of(' '));
+    token.erase(token.find_last_not_of(' ') + 1);
+    std::cout << "lastToken=\""<<token<<"\""<<endl;
+    if(!token.empty()) 
+    {
+        res.push_back(token);
     }
 }
 

@@ -466,7 +466,7 @@ public:
 	static char* r_trim(char *szOutput, const char *szInput);
 	static char* a_trim(char *szOutput, const char * szInput);
 
-	static void split(const std::string str, const std::string pat, std::vector<std::string>& res);
+	static void split(const std::string& str, const std::string& pat, std::vector<std::string>& res);
 	//NOTICE: this function must be called at the beginning of executing!
 	Util();
 	~Util();
@@ -476,7 +476,7 @@ public:
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
 	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname, string default_value="");
-	static string getConfigureValue(string keyname);
+	static string getConfigureValue(const std::string& keyname);
 	static bool config_setting();
 	// static bool config_advanced();
 	// static bool config_debug();
