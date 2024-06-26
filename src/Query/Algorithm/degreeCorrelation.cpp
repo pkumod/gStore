@@ -11,7 +11,7 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
     unordered_map<int,bool> vi;
     unordered_map<int,int> degree;
     vector<pair<float,float>> dpair;
-
+    unordered_set<int> Set;
     auto getVDegree = [&](int id)
     {
         int sum = 0;
@@ -24,7 +24,7 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
         degree[id] = sum;
         return sum;
     };
-    auto oneHop = [&](int id)
+    auto oneHop = [&](int id,int K)
     {
         unordered_set<int> oneHop_ret = unordered_set<int>();
         for(auto pred:pred_sets)
@@ -38,7 +38,7 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
                 oneHop_ret.insert(inNei);
                 if(degree.find(inNei)==degree.end())
                 getVDegree(inNei);
-                if(vi[inNei]==false)
+                if(vi[inNei]==false&&(K!=0||(Set.find(inNei)!=Set.end())))
                 {
                     dpair.emplace_back(pair<double,double>(degree[id],degree[inNei]));
                     averageD+=0.5*(degree[id]+degree[inNei]);
@@ -51,7 +51,7 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
                 oneHop_ret.insert(outNei);
                 if(degree.find(outNei)==degree.end())
                 getVDegree(outNei);
-                if(vi[outNei]==false)
+                if(vi[outNei]==false&&(K!=0||(Set.find(outNei)!=Set.end())))
                 {
                     dpair.emplace_back(pair<double,double>(degree[id],degree[outNei]));
                     averageD+=0.5*(degree[id]+degree[outNei]);
@@ -60,22 +60,23 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
         }
         return oneHop_ret;
     };
-       
+    Set.insert(uid);  
     getVDegree(uid);
-    while(k!=0&&q.size())
+    while(q.size())
     {
         int vid = q.front();
-        unordered_set<int> oneHopAdj=oneHop(vid);
+        unordered_set<int> oneHopAdj=oneHop(vid,k);
         vi[vid]=true;
         q.pop();
+        if(k!=0)
         for(auto v:oneHopAdj)
         {
             if(vi[v]==false)
             {              
                 q.push(v);
+                Set.insert(v);
             }
         }
-
         if(k>0) k--;
     }
     averageD/=dpair.size();
