@@ -5,7 +5,7 @@ using namespace std;
 double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets)
 {
     double ret = 0,e=getSetEdgeNum(pred_sets);
-    double averageD = 0,s1=0,s2=0;
+    double averageD1 = 0,averageD2=0,s1=0,s2=0;
     queue<int> q,de;
     q.push(uid);
     unordered_map<int,bool> vi;
@@ -78,7 +78,6 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
         unordered_set<int> oneHopAdj=oneHop(vid,k);
         vi[vid]=true;
         q.pop();
-        averageD+=degree[vid];
         if(k!=0)
         for(auto v:oneHopAdj)
         {
@@ -90,11 +89,16 @@ double PathQueryHandler::degreeCorrelation(int uid, int k, const std::vector<int
         }
         if(k>0) k--;
     }
-    averageD/=Set.size();
+    for(auto v:dpair)
+    {
+        averageD1 += degree[v.first];
+        averageD2 += degree[v.second];
+    }
+    averageD1/=dpair.size();averageD2/=dpair.size();
     for(auto v:dpair)
     {        
-        s1+=pow(degree[v.first]-averageD,2);s2+=pow(degree[v.second]-averageD,2);
-        ret+=(degree[v.first]-averageD)*(degree[v.second]-averageD);
+        s1+=pow(degree[v.first]-averageD1,2);s2+=pow(degree[v.second]-averageD2,2);
+        ret+=(degree[v.first]-averageD1)*(degree[v.second]-averageD2);
     }
     s1 = pow(s1,0.5);s2=pow(s2,0.5);
     if(s1*s2==0)
