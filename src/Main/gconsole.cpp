@@ -142,7 +142,7 @@ COMMAND commands[] =
 		{"help", help_handler, "Display help msg. Enter 'help/?' see more about usage.", "help/? [edit/usage/<command>];", 0},
 		{"?", help_handler, "Synonym for \"help\".", "help/? [edit/usage/<command>];", 0},
 		{"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
-		{"version", version_handler, "Display gstore core version.", "version;", 0},
+		{"version", version_handler, "Display  core version.", "version;", 0},
 
 		// linux shell cmd
 		{"pwd", pwd_handler, "Print name of current/working directory.", "pwd;", 0},
@@ -150,7 +150,7 @@ COMMAND commands[] =
 
 		// raw_sparql
 		{"raw_sparql", 0, "Support enter sparql query directedly in gconsole.",
-		 "Begin with SELECT, INSERT, DELETE, PREFIX or BASE. For more about SPARQL, see https://www.w3.org/TR/sparql11-query/ and http://www.gstore.cn/pcsite/index.html#/documentation", QUERY_PRIVILEGE_BIT},
+		 "Begin with SELECT, INSERT, DELETE, PREFIX or BASE. For more about SPARQL, see https://www.w3.org/TR/sparql11-query/ ", QUERY_PRIVILEGE_BIT},
 		// handler: int raw_sparql_handler(string query);
 
 		//*/
@@ -180,9 +180,9 @@ COMMAND commands[] =
 #define CROSS_LINE_PROMPT "     -> "
 #define PROMPT_LEN 8
 #define PRINT_ENTER_HELP_MSG                                                                                                 \
-	cout << "Gstore Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
-	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl; \
-	cout << "Copyright (c) 2016, 2022, pkumod and/or its affiliates." << endl;                                               \
+	cout << product_name<<" Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
+	cout << product_name<<" Console(gconsole), an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl; \
+	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;                                               \
 	cout << "" << endl;                                                                                                      \
 	cout << "Usage: bin/gconsole [OPTIONS]" << endl;                                                                         \
 	cout << "  -?, --help          Display this help and exit." << endl;                                                     \
@@ -190,8 +190,8 @@ COMMAND commands[] =
 	cout << "  " << endl;                                                                                                    \
 	cout << "Supported command in gconsole: Type \"?\" or \"help\" in the console to see info of all commands." << endl;     \
 	cout << "  " << endl;                                                                                                    \
-	cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl                                  \
-		 << endl;
+	// cout << "For bug reports and suggestions, see https://github.com/pkumod/gStore" << endl                                  \
+		//  << endl;
 
 #define PRINT_WRONG_USG    \
 	cout << "Wrong usage." \
@@ -200,8 +200,8 @@ COMMAND commands[] =
 	cout << "System db query failed. The query is: " << sparql << endl; \
 	return -1;
 #define PRINT_VERSION                                                               \
-	cout << "Gstore version: " << gstore_version << " Source distribution" << endl; \
-	cout << "Copyright (c) 2016, 2022, pkumod and/or its affiliates." << endl;
+	cout << product_name<<" version: " << gstore_version << " Source distribution" << endl; \
+	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;
 #define CHECK_CURRENT_DB_LOADED                                                                                    \
 	if (current_database == 0)                                                                                     \
 	{                                                                                                              \
@@ -251,6 +251,7 @@ unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, av
 
 string db_home, db_suffix, default_backup_path;
 string gstore_version, root_username, root_password;
+string product_name;
 
 int main(int argc, char **argv)
 {
@@ -270,17 +271,25 @@ int main(int argc, char **argv)
 				root_username = line.substr(15, line.size() - 16);
 			else if (line.find("root_password") != string::npos)
 			{
-				read_pswd(root_username, root_password);
+				// read_pswd(root_username, root_password);
+				root_password=line.substr(15,line.size()-16);
+				// cout<<"root_password:"<<root_password<<endl;
 			}
 			else if (line.find("version") != string::npos) // len(version):7
 				gstore_version = line.substr(8, line.size() - 8);
+			else if(line.find("product_name")!=string::npos)
+			{
+				product_name=line.substr(13,line.size()-13); //len(product_name):12
+				cout<<"product_name:"<<product_name<<endl;
+			}
 		}
 		fin.close();
 
 #ifdef _GCONSOLE_TRACE
 		cout << "[root_username:]" << root_username << endl;
 		cout << "[root_password:]" << root_password << endl;
-		cout << "[gstore_version:]" << gstore_version << endl;
+		cout << "[version:]" << gstore_version << endl;
+		cout <<" [product_name:]"<<product_name<<endl;
 #endif //_GCONSOLE_TRACE
 	}
 
@@ -316,14 +325,17 @@ int main(int argc, char **argv)
 	{
 		cout << "Enter user name: ";
 		cin >> usrname;
+	
 		getchar(); // absorb the '\n'
 	}
-
+    // cout << "Enter password2:";
+	// getchar();
 	/* check usrname and pswd */
-	{
+	
 		// get stdpswd according to usrname
 		if (usrname == root_username)
 			stdpswd = root_password;
+	
 		else
 		{
 			int wrong_usr_cnt = 0;
@@ -354,18 +366,19 @@ int main(int argc, char **argv)
 			cout << "Warn: pswd for you(" << usrname << ") is empty!" << endl;
 		}
 
+       
 		if (enter_pswd("Enter password: "))
 		{
 			return 0;
 		}
-	}
+	
 
 	/* welcome and work */
 	cout << endl;
-	cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl;
+	cout << product_name<<" Console , an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl;
 	PRINT_VERSION
 	cout << "" << endl;
-	cout << "Welcome to the gStore Console." << endl;
+	cout << "Welcome to the "<<product_name<<" Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
 	cout << "Comment start with #. Redirect (> and >>) is supported." << endl;
 	cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
@@ -503,8 +516,8 @@ public:
 // usrname and stdpswd must have been filled
 int enter_pswd(string prompt)
 {
-	HideStdinDisplay hide_ins;
 
+	HideStdinDisplay hide_ins;
 	int wrong_pswd_cnt = 0;
 	string pswd;
 	while (wrong_pswd_cnt < MAX_WRONG_PSWD_TIMES)
@@ -587,11 +600,11 @@ void single_cmd()
 		string msg = "";
 		if (current_database == NULL)
 		{
-			msg = "gstore[no database]> ";
+			msg = product_name+"[no database]> ";
 		}
 		else
 		{
-			msg = "gstore[" + current_database->getName() + "]> ";
+			msg = product_name+"[" + current_database->getName() + "]> ";
 		}
 		// cout << "msg:" << msg << endl;
 		volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
@@ -1000,6 +1013,7 @@ int read_pswd(string usr_name, string &pswd)
 		if (rs.ansNum)
 		{
 			pswd = rs.answer[0][0];
+			cout<<"get system password:"<<pswd<<endl;
 			// strip ""
 			pswd = pswd.substr(1, pswd.size() - 2);
 			return 0;
@@ -1128,7 +1142,9 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 			would first copy elements to new mem then call DESTRUCTOR on previous elements,
 			which would release all pointers of destructing objects;
 			and copy assignment operator only carry out LOW copy */
-			int ret = system_db.query(sparql, _rs[sz]);
+			ResultSet rs_tmp;
+			int ret = system_db.query(sparql, rs_tmp);
+			cout << "System db query executed. The query is: " << query <<",the result is " <<ret<< endl;
 			if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
 			{
 				cout << "System db query failed. The query is: " << query << endl;
@@ -1143,7 +1159,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 				retv.push_back(0);
 			}
 			++sz;
-
+            rs_tmp.~ResultSet();
 			/*NOTE: this would fail:
 			ResultSet rs; //would call destructor after this turn while scope
 			_rs.push_back(rs); //call copy assignment operator: LOW copy
@@ -1649,17 +1665,17 @@ int help_handler(const vector<string> &args)
 	// all info
 	if (args.size() == 0)
 	{
-		cout << "Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories." << endl;
+		cout << product_name<<" Console , an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl;
 		cout << "" << endl;
-		cout << "For information about gStore products and services, visit:" << endl;
-		cout << "   http://www.gstore.cn/" << endl;
-		cout << "For developer information, including the gStore Reference Manual, visit:" << endl;
-		cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
-		cout << "" << endl;
+		// cout << "For information about "<<product_name<<" products and services, visit:" << endl;
+		// cout << "   http://www.gstore.cn/" << endl;
+		// cout << "For developer information, including the gStore Reference Manual, visit:" << endl;
+		// cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
+		// cout << "" << endl;
 		cout << "Commands end with ;. Cross line input is allowed." << endl;
 		cout << "Comment start with #." << endl;
 		cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
-		cout << "List of all gconsole commands:" << endl;
+		cout << "List of all console commands:" << endl;
 
 		for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
 		{
@@ -1667,7 +1683,7 @@ int help_handler(const vector<string> &args)
 		}
 		cout << endl;
 		cout << "Other help arg:" << endl;
-		cout << "edit\tDisplay line editing shortcut keys supported by gconsole." << endl;
+		cout << "edit\tDisplay line editing shortcut keys supported by console." << endl;
 		cout << "usage\tDisplay all commands as well as their usage." << endl
 			 << endl;
 		return 0;
@@ -1737,7 +1753,7 @@ int help_handler(const vector<string> &args)
 		return 0;
 	}
 	// not a cmd
-	cout << name << ": Not a supported gconsole command. \nList of gconsole command:" << endl;
+	cout << name << ": Not a supported console command. \nList of gconsole command:" << endl;
 	for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
 	{
 		cout << commands[i].name << " ";
@@ -2510,8 +2526,10 @@ int setpswd_handler(const vector<string> &args)
 
 	// write new_pswd(for tar_usr) to sysdb: delete then insert
 	string query = "DELETE WHERE { <" + tar_usr + "> <has_password> ?pswd. }; INSERT DATA { <" + tar_usr + "> <has_password> \"" + new_pswd + "\". }";
+	cout<<"sparql:"<<query<<endl;
 	vector<ResultSet> rs;
 	vector<int> re = silence_sysdb_query(query, rs);
+	
 	if (re.size() != 2 || re[0] || re[1])
 	{
 		cout << "System db update failed. Password set failed." << endl;
@@ -2527,32 +2545,32 @@ int setpswd_handler(const vector<string> &args)
 		root_password = new_pswd;
 
 		// write to config file
-		// string res;
-		// {
-		// 	ifstream fin(INIT_CONF_FILE);
-		// 	if (fin.is_open() == 0)
-		// 	{
-		// 		cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
-		// 		return 0;
-		// 	}
-		// 	string line;
-		// 	while (getline(fin, line))
-		// 	{
-		// 		if (line.find("root_password") != string::npos)
-		// 			res += "root_password=\"" + new_pswd + "\"\n";
-		// 		else
-		// 			res += line + "\n";
-		// 	}
-		// }
-		// {
-		// 	ofstream fout(INIT_CONF_FILE);
-		// 	if (fout.is_open() == 0)
-		// 	{
-		// 		cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
-		// 		return 0;
-		// 	}
-		// 	fout << res;
-		// }
+		string res;
+		{
+			ifstream fin(INIT_CONF_FILE);
+			if (fin.is_open() == 0)
+			{
+				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+				return 0;
+			}
+			string line;
+			while (getline(fin, line))
+			{
+				if (line.find("root_password") != string::npos)
+					res += "root_password=\"" + new_pswd + "\"\n";
+				else
+					res += line + "\n";
+			}
+		}
+		{
+			ofstream fout(INIT_CONF_FILE);
+			if (fout.is_open() == 0)
+			{
+				cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
+				return 0;
+			}
+			fout << res;
+		}
 	}
 	cout << "Password set successfully." << endl;
 	return 0;
