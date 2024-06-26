@@ -402,7 +402,7 @@ public:
     void getPostComments(int vid, int hasCreatorPred, int typePred, int postId, int commentId,
     std::vector<int> &postVec, std::vector<int> &commentVec);
     void getCommReplyOf(int replyPred, const std::vector<int> &commentVec, std::unordered_set<int> &commReplyOf);
-
+    int shortPathCountForBetweennessCentrality(int uid, int vid, bool directed, const std::vector<int> &pred_set);
 	std::string getPathString(std::vector<int> &path_set);
 private:
     // Helper functions for SSPPR
