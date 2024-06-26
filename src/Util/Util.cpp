@@ -2557,21 +2557,20 @@ Util::split(const std::string& str, const std::string& pat, std::vector<std::str
     std::string token;
     size_t start = 0;
     size_t end;
+    size_t pat_length = pat.length();
     while ((end = str.find(pat, start)) != std::string::npos)
     {
         token = str.substr(start, end-start);
         // remove lr blank chars
         token.erase(0, token.find_first_not_of(' '));
         token.erase(token.find_last_not_of(' ') + 1);
-        std::cout << "token=\""<<token<<"\""<<endl;
         res.push_back(token);
-        start = end + 1;
+        start = end + pat_length;
     }
     // push last token
     token = str.substr(start);
     token.erase(0, token.find_first_not_of(' '));
     token.erase(token.find_last_not_of(' ') + 1);
-    std::cout << "lastToken=\""<<token<<"\""<<endl;
     if(!token.empty()) 
     {
         res.push_back(token);

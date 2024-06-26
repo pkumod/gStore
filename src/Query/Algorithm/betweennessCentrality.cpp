@@ -26,27 +26,32 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
     }
     int vertArray[vertSets.size()]; 
     int k = 0;
-    for (auto i : vertSets) {
-        vertArray[k] = i;
+    for (auto ii : vertSets) {
+        vertArray[k] = ii;
         k++;
     }
-    for (int i; i < vertSets.size(); i++) {
+    // cout << "测试"<<endl;
+    // for (k = 0; k < vertSets.size(); k++) {
+    //     cout << vertArray[k] << " "; 
+    // }
+    for (int i = 0; i < vertSets.size(); i++) {
         int j = 0;
         if (!directed) {
+            // 无向
             j = i + 1;
         }
         for (; j < vertSets.size(); j++) {
             if (i == j) continue;
             int crossID = 0;
-            int totalPathNum = shortestPathCount(vertArray[i], vertArray[j], true, pred_sets);
+            int totalPathNum = shortestPathCount(vertArray[i], vertArray[j], directed, pred_sets);
             if (totalPathNum == 0) continue;;
-            int firstPathNum = shortestPathCount(vertArray[i], id, true, pred_sets);
-            int secondPathNum = shortestPathCount(id, vertArray[j], true, pred_sets);
+            int firstPathNum = shortestPathCount(vertArray[i], id, directed, pred_sets);
+            int secondPathNum = shortestPathCount(id, vertArray[j], directed, pred_sets);
             // ret += (firstPathNum * secondPathNum) / totalPathNum;
-            vector<int> minPath =  shortestPath(vertArray[i], vertArray[j], true, pred_sets);
+            vector<int> minPath =  shortestPath(vertArray[i], vertArray[j], directed, pred_sets);
             int minPathPred = (minPath.size() - 1) / 2;
-            int firstPathPred = (shortestPath(vertArray[i], id, true, pred_sets).size() - 1) / 2;
-            int secondPathPred = (shortestPath(id, vertArray[j], true, pred_sets).size() - 1) / 2;
+            int firstPathPred = (shortestPath(vertArray[i], id, directed, pred_sets).size() - 1) / 2;
+            int secondPathPred = (shortestPath(id, vertArray[j], directed, pred_sets).size() - 1) / 2;
             if (minPathPred == (firstPathPred + secondPathPred)) {
                 crossID = firstPathNum * secondPathNum;
             }
