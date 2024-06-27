@@ -37,28 +37,196 @@ double PathQueryHandler::betweennessCentrality(int id, bool directed, const std:
     for (int i = 0; i < vertSets.size(); i++) {
         int j = 0;
         if (!directed) {
+            // 无向
             j = i + 1;
         }
         for (; j < vertSets.size(); j++) {
             if (i == j) continue;
             int crossID = 0;
-            int totalPathNum = shortestPathCount(vertArray[i], vertArray[j], true, pred_sets);
+            int totalPathNum = shortPathCountForBetweennessCentrality(vertArray[i], vertArray[j], directed, pred_sets);
             if (totalPathNum == 0) continue;;
-            int firstPathNum = shortestPathCount(vertArray[i], id, true, pred_sets);
-            int secondPathNum = shortestPathCount(id, vertArray[j], true, pred_sets);
+            int firstPathNum = shortPathCountForBetweennessCentrality(vertArray[i], id, directed, pred_sets);
+            int secondPathNum = shortPathCountForBetweennessCentrality(id, vertArray[j], directed, pred_sets);
             // ret += (firstPathNum * secondPathNum) / totalPathNum;
-            vector<int> minPath =  shortestPath(vertArray[i], vertArray[j], true, pred_sets);
+            vector<int> minPath =  shortestPath(vertArray[i], vertArray[j], directed, pred_sets);
             int minPathPred = (minPath.size() - 1) / 2;
-            int firstPathPred = (shortestPath(vertArray[i], id, true, pred_sets).size() - 1) / 2;
-            int secondPathPred = (shortestPath(id, vertArray[j], true, pred_sets).size() - 1) / 2;
+            int firstPathPred = (shortestPath(vertArray[i], id, directed, pred_sets).size() - 1) / 2;
+            int secondPathPred = (shortestPath(id, vertArray[j], directed, pred_sets).size() - 1) / 2;
             if (minPathPred == (firstPathPred + secondPathPred)) {
                 crossID = firstPathNum * secondPathNum;
             }
             // cout << "起点：" << i << " 终点:" << j << endl;
             // cout << totalPathNum << " " << firstPathNum << " " << secondPathNum << endl;
             // cout << minPathPred << " " << firstPathPred << " " << secondPathPred << endl;
+            // cout << "总路径：" << totalPathNum << "有效路径：" << crossID << endl; 
             ret += (crossID * 1.0) / (totalPathNum * 1.0);
         }
     }
     return ret;
+}
+
+int PathQueryHandler::shortPathCountForBetweennessCentrality(int uid, int vid, bool directed, const std::vector<int> &pred_set) {
+    int N = getVertNum();
+	std::vector<int> q[2], tq[2];
+	std::vector<int> scnt(N, 0), tcnt(N, 0); // scnt[v]: s--v, number of all shortest paths
+	std::vector<int> sd(N, 0), td(N, 0);	 // sd[v]: s--v, shortest path len
+	std::vector<int> joint;
+	// std::vector<int> nbr_dedup(N, -1); // used for nbr dedup // no need: multi-edge contribute to different path
+	int s = uid, t = vid;
+
+	size_t qsz = 1, next_qsz = 0;
+	int idx = 0, next_idx = 1;
+	if (q[0].empty())
+		q[0].push_back(s);
+	else
+		q[0][0] = s;
+	scnt[s] = 1;
+	size_t tqsz = 1, tnext_qsz = 0;
+	int tidx = 0, tnext_idx = 1;
+	if (tq[0].empty())
+		tq[0].push_back(t);
+	else
+		tq[0][0] = t;
+	tcnt[t] = 1;
+	int v, n, vcnt, vd, sz;
+	bool meet = 0;
+	while (meet == 0 && qsz && tqsz)
+	{
+		if (qsz < tqsz)
+		{
+			for (size_t i = 0; i < qsz; ++i)
+			{
+				v = q[idx][i];
+				vcnt = scnt[v];
+				vd = sd[v];
+				for (int pred : pred_set)
+				{
+                    set<int> attendVertSet;
+                    for (int d = directed; d <= 1; ++d)
+                    {
+                        if (d)
+						    sz = getOutSize(v, pred);
+						else
+						    sz = getInSize(v, pred);
+                        
+						for (int j = 0; j < sz; j++)
+						{
+							if (d) {
+                                n = getOutVertID(v, pred, j);
+                                // 如果该结点已经出现过，则直接跳过当前结点
+                                if (attendVertSet.find(n) != attendVertSet.end()) {
+                                    continue;
+                                }
+                            }
+							else {
+                                n = getInVertID(v, pred, j);
+                                // v-pred->到的所有结点记录下来
+                                attendVertSet.insert(n);
+                            }
+							// if (nbr_dedup[n] != v)
+							// {
+							// 	nbr_dedup[n] = v;
+							if (scnt[n] == 0)
+							{
+								if (tcnt[n])
+								{
+									meet = 1;
+									joint.push_back(n);
+								}
+								if (meet == 0)
+								{
+									if (q[next_idx].size() <= next_qsz)
+										q[next_idx].push_back(n);
+									else
+										q[next_idx][next_qsz] = n;
+									++next_qsz;
+								}
+								scnt[n] = vcnt;
+								sd[n] = vd + 1;
+							}
+							// n has been visited by some other vertices in the same level as v
+							else if (sd[n] == vd + 1)
+							{
+								scnt[n] += vcnt;
+							}
+							// }
+						}
+                    }
+				}
+			}
+			idx = next_idx;
+			next_idx = 1 - next_idx;
+			qsz = next_qsz;
+			next_qsz = 0;
+		}
+		else
+		{
+			for (size_t i = 0; i < tqsz; ++i)
+			{
+				v = tq[tidx][i];
+				vcnt = tcnt[v];
+				vd = td[v];
+				for (int pred : pred_set)
+				{
+                    set<int> attendVertSet;
+                    for (int d = directed; d <= 1; ++d) 
+                    {
+                        if (d)
+							sz = getInSize(v, pred);
+						else
+							sz = getOutSize(v, pred);
+						for (int j = 0; j < sz; j++)
+						{
+							if (d) {
+                                n = getInVertID(v, pred, j);
+                                if (attendVertSet.find(n) != attendVertSet.end()) continue;
+                            }
+							else {
+                                n = getOutVertID(v, pred, j);
+                                attendVertSet.insert(n);
+                            }
+							// if (nbr_dedup[n] != v)
+							// {
+							// 	nbr_dedup[n] = v;
+							if (tcnt[n] == 0)
+							{
+								if (scnt[n])
+								{
+									meet = 1;
+									joint.push_back(n);
+								}
+								if (meet == 0)
+								{
+									if (tq[tnext_idx].size() <= tnext_qsz)
+										tq[tnext_idx].push_back(n);
+									else
+										tq[tnext_idx][tnext_qsz] = n;
+									++tnext_qsz;
+								}
+								tcnt[n] = vcnt;
+								td[n] = vd + 1;
+							}
+							// n has been visited by some other vertices in the same level as v
+							else if (td[n] == vd + 1)
+							{
+								tcnt[n] += vcnt;
+							}
+							// }
+						}
+                    }
+						
+				}
+			}
+			tidx = tnext_idx;
+			tnext_idx = 1 - tnext_idx;
+			tqsz = tnext_qsz;
+			tnext_qsz = 0;
+		}
+	}
+	if (meet == 0) // no path between s and t
+		return 0;
+	int path_num = 0;
+	for (auto jt : joint)
+		path_num += scnt[jt] * tcnt[jt];
+	return path_num;
 }
