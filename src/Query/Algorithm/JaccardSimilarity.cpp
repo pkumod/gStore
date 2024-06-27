@@ -62,6 +62,7 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
             int isa = 0;
             for(auto v:_adj_oneHop)
             {
+                if(v==uid) continue;
                 if(adj_oneHop.find(v)!=adj_oneHop.end())
                     isa++;
                 else if(adj_twoHop.find(v)==adj_twoHop.end())
