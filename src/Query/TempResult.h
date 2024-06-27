@@ -58,7 +58,7 @@ class TempResult
         void doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max());
 		void doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset);
 
-		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVstore *kvstore, Varset &this_varset);
+		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVstore *kvstore, Varset &this_varset, bool isel = true);
 
 		void print(int no=-1);
 	private:
