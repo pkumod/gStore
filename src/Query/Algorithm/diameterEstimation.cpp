@@ -29,14 +29,15 @@ unsigned int PathQueryHandler::diameterEstimation(const std::vector<int> &pred_s
         //     endPred = rand()%predNum;
         // }
         for (int endVertID = beginVertID + 1; endVertID < vertSets.size(); endVertID++){
-            int q1[vertNum + 1], q2[vertNum + 1];
+            // int q1[vertNum + 1], q2[vertNum + 1];
+            std::vector<int> q1(vertNum + 1), q2(vertNum + 1);
             int front1,rear1,front2,rear2,i,flag;
             front1=rear1=0;
             front2=rear2=0;
             int cur, next;
             cur = beginVertID;
             next = endVertID;
-            int vis[vertNum + 1] = {0};
+            std::vector<int> vis(vertNum + 1, 0);
             vis[cur] = 1;
             vis[next] = 2;
             q1[rear1] = cur;
@@ -44,7 +45,7 @@ unsigned int PathQueryHandler::diameterEstimation(const std::vector<int> &pred_s
             q2[rear2] = next;
             rear2 += 1;
             // 记录路径
-            int step[vertNum + 1] = {0};
+            std::vector<int> step(vertNum + 1, 0);
             while (front1 < rear1 && front2<rear2) {
                 // 出列
                 if (rear1-front1 < rear2-front2) {
