@@ -1520,7 +1520,10 @@ int raw_sparql_handler(string query)
 	{
 		return -1;
 	}
-
+	if (ret >= 0)
+	{
+		cout << "update query returns true. update num " << ret << endl;
+	}
 	long tv_end = Util::get_cur_time();
 	cout << "query database successfully, Used " << (tv_end - tv_begin) << " ms" << endl;
 	// TODO: pretty print final result
