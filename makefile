@@ -735,8 +735,6 @@ clean:
 	#rm -rf .project .cproject .settings   just for eclipse
 	rm -rf logs/*.log
 	rm -rf *.out   # gmon.out for gprof with -pg
-	rm -rf lib/*.a
-	rm -rf lib/*.so
 
 
 dist: clean
@@ -744,6 +742,8 @@ dist: clean
 	rm -rf cscope* .cproject .settings tags
 	rm -rf *.info
 	rm -rf backups/*.db_*
+	rm -rf lib/*.a
+	rm -rf lib/*.so
 
 tarball:
 	tar -czvf gstore.tar.gz api tools/*.gz tools/*.tar scripts data \
