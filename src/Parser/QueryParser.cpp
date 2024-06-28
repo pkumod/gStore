@@ -1552,6 +1552,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 		predicate = propertyListNotEmpty->verb(i)->getText();
 		if (predicate == "a")
 			predicate = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
+		replacePrefix(predicate);
 		auto objectList = propertyListNotEmpty->objectList(i);
 		for (auto object_ptr : objectList->object())
 		{
