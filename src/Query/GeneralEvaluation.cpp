@@ -2005,32 +2005,28 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									pair<size_t, map<int,set<int> > > result;
+									pair<size_t, std::set<std::set<int>>> result;
 									float min_modularity_increase = proj[0].path_args.misc[0];
 									int phase1_loop_num = proj[0].path_args.misc[1];
 									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[0].path_args.directed, result);
-									ss << "{\"count\":" << result.first << ", \"details\":[";
-									for (auto it=result.second.begin(); it != result.second.end(); it++ )
+									ss << "{\"count\":" << result.first << ", \"community\":[";
+									for (std::set<int> it: result.second)
 									{
 										if (notFirstOutput)
 											ss << ",";
 										else
 											notFirstOutput = 1;
-										ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
-										// ss << "{\"communityId\":\""<<it->first <<"\", \"menbers\": [";
-										// bool hasMore = false;
-										// for (int mid : it->second)
-										// {
-										// 	if (hasMore) {
-										// 		ss << ",";
-										// 	} 
-										// 	else 
-										// 	{
-										// 		hasMore = true;
-										// 	}
-										// 	ss << "\"" + kvstore->getStringByID(mid) + "\"";
-										// }
-										// ss << "]";
+										ss << "[";
+										bool hasMore = false;
+										for (int mid : it)
+										{
+											if (hasMore)
+												ss << ",";
+											else 
+												hasMore = true;
+											ss << "\"" + to_string(mid) + "\"";
+										}
+										ss << "]";
 									}
 									ss << "]}";
 									doneOnceOp = true;
@@ -3423,18 +3419,28 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										pair<size_t, map<int,set<int> > > result;
+										pair<size_t, std::set<std::set<int> > > result;
 										float min_modularity_increase = proj[i].path_args.misc[0];
 										int phase1_loop_num = proj[i].path_args.misc[1];
 										pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
-										ss << "{\"count\":" << result.first << ", \"details\":[";
-										for (auto it=result.second.begin(); it != result.second.end(); it++ )
+										ss << "{\"count\":" << result.first << ", \"community\":[";
+										for (set<int> it : result.second)
 										{
 											if (notFirstOutput)
 												ss << ",";
 											else
 												notFirstOutput = 1;
-											ss << "{\"communityId\":\""<<it->first <<"\", \"menberNum\":" << it->second.size() << "}";
+											ss << "[";
+											bool hasMore = false;
+											for (int mid : it)
+											{
+												if (hasMore)
+													ss << ",";
+												else 
+													hasMore = true;
+												ss << "\"" + to_string(mid) + "\"";
+											}
+											ss << "]";
 										}
 										ss << "]}";
 										doneOnceOp = true;
@@ -4638,7 +4644,7 @@ void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const 
 			ss << ","; 
 		else 
 			hasMore = true;
-		ss << "\"" + kvstore->getStringByID(nid) + "\"";
+		ss << "\"" + to_string(nid) + "\"";
 	}
 	ss << "]}";
 }
