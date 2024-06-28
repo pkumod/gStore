@@ -1401,7 +1401,9 @@ void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &
     int this_id_cols = this->id_varset.getVarsetSize();
 
     for (unsigned i = 0; save_num < limit_number && i < original_size-delete_num;) {
-		bool isel = entity_literal_varset.findVar(filter.val);
+		bool isel = true;
+		if (filter.varset.vars.size() > i)
+			isel = entity_literal_varset.findVar(filter.varset.vars[i]);
         EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, kvstore, this_varset, isel);
         if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
             ++i;
