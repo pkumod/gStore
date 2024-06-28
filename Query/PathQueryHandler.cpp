@@ -784,6 +784,8 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, con
 */
 vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, const vector<int> &pred_set) // cost less space and less time.
 {
+	if (uid < 0 || vid < 0)
+		return vector<int>();
 	// cout << "BFS2" << endl;
 	map<int, int> dis_u, dis_v; // store the distance to u and v
 	queue<int> q_u, q_v;
