@@ -83,3 +83,95 @@ unsigned int PathQueryHandler::diameterEstimation(const std::vector<int> &pred_s
     }  
     return ret;
 }
+
+unsigned int PathQueryHandler::diameterEstimation2(const std::vector<int> &pred_sets)
+{
+    std::cout << "diameterEstimation 允许出现的谓词数量:" << pred_sets.size() << std::endl;
+    unsigned int ret = 0;
+    int vertex_num = getVertNum();
+    int num_of_pred = pred_sets.size();
+    std::set<int> vertex;
+    for (int temp_u = 0; temp_u < vertex_num; temp_u++)
+    {
+        for (int i = 0; i < num_of_pred; ++i)
+        {
+            int x = pred_sets[i];
+            int num = getOutSize(temp_u, x);
+            if (num > 0)
+            {
+                vertex.insert(temp_u);
+                break;
+            }
+        }
+    }
+    std::cout << "diameterEstimation vertex size:" << vertex.size()<< std::endl;
+    for (auto temp_u : vertex)
+    {
+        std::pair<int, int> diameter = diameterEstimationByuid(temp_u, pred_sets);
+        std::cout << "diameterEstimation2 diameterEstimation2 diameterEstimation2:" << diameter.first << std::endl;
+        if (diameter.first > ret)
+            ret = diameter.first;
+    }
+    return ret;
+}
+
+std::pair<int, int> PathQueryHandler::diameterEstimationByuid(int uid, const std::vector<int> &pred_set)
+{
+    std::pair<int, int> ret(0, -1);
+    if (uid < 0)
+		return ret;
+
+    std::set<int> visited;
+	std::queue<int> q_l;
+	int num_of_pred = pred_set.size();
+	std::map<int, int> dis_u;
+	std::map<int, std::vector<int>> dis_pre;
+	q_l.push(uid);
+	dis_u[uid] = 0;
+	visited.insert(uid);
+    std::set<int> visited_s;
+
+	while (!q_l.empty())
+	{
+		int temp_u = q_l.front();
+		q_l.pop();
+		int distance = dis_u[temp_u] + 1;
+		std::set<int> nl;
+		for (int i = 0; i < num_of_pred; ++i)
+		{
+			int x = pred_set[i];
+			int num = getOutSize(temp_u, x);
+			for (int j = 0; j < num; ++j)
+			{
+				int t = getOutVertID(temp_u, x, j);
+				nl.insert(t);
+				auto vit = dis_u.find(t);
+				if (vit == dis_u.end())
+				{
+					dis_u[t] = distance;
+				}
+				else if (dis_u[t] < distance && t != uid)
+				{
+					dis_u[t] = distance;
+				}
+                //不重复记录已访问的点，避免环路
+                if (dis_u[t] > ret.first && visited_s.find(t) == visited_s.end())
+                {
+                    ret.first = dis_u[t];
+                    ret.second= t;
+                }
+			}
+		}
+		for (auto m : nl)
+		{
+			if (visited.find(m) == visited.end())
+			{
+				visited.insert(m);
+				q_l.push(m);
+			}
+		}
+        visited_s.insert(temp_u);
+	}
+
+    return ret;
+}

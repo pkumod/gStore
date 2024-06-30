@@ -4618,13 +4618,13 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
 
 void GeneralEvaluation::diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set)
 {
-	unsigned int ret = pqHandler->diameterEstimation(pred_id_set);
+	unsigned int ret = pqHandler->diameterEstimation2(pred_id_set);
 	ss << "{\"Maximum steps\":" << ret << "}";
 }
 
 void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set)
 {
-	double ret = pqHandler->betweennessCentrality(id, directed, pred_id_set);
+	double ret = pqHandler->betweennessCentrality2(id, directed, pred_id_set);
 	ss << "{\"src\":\"" << kvstore->getStringByID(id) << "\", \"centrality\":" << ret << "}";
 }
 
