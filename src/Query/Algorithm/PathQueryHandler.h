@@ -389,8 +389,6 @@ public:
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
     std::vector<int> coreTruss(const std::vector<int> &pred_set, int alpha, int beta);
     std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
-    unsigned int diameterEstimation(const std::vector<int> &pred_sets); //废弃
-    double betweennessCentrality(int id, bool directed, const std::vector<int> &pred_sets); //废弃
     std::vector<int> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
     double degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets);
 	
@@ -402,7 +400,6 @@ public:
     void getPostComments(int vid, int hasCreatorPred, int typePred, int postId, int commentId,
     std::vector<int> &postVec, std::vector<int> &commentVec);
     void getCommReplyOf(int replyPred, const std::vector<int> &commentVec, std::unordered_set<int> &commReplyOf);
-    int shortPathCountForBetweennessCentrality(int uid, int vid, bool directed, const std::vector<int> &pred_set);
     // betweennessCentrality
     double betweennessCentrality2(int id, bool directed, const std::vector<int> &pred_sets);
     std::set<int> getAllNeighborsById(int uid, bool directed, const std::vector<int> &pred_sets);
