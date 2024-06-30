@@ -108,7 +108,6 @@ unsigned int PathQueryHandler::diameterEstimation2(const std::vector<int> &pred_
     for (auto temp_u : vertex)
     {
         std::pair<int, int> diameter = diameterEstimationByuid(temp_u, pred_sets);
-        std::cout << "diameterEstimation2 diameterEstimation2 diameterEstimation2:" << diameter.first << std::endl;
         if (diameter.first > ret)
             ret = diameter.first;
     }
