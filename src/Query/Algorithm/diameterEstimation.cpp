@@ -84,7 +84,7 @@ using namespace std;
 //     return ret;
 // }
 
-unsigned int PathQueryHandler::diameterEstimation2(const std::vector<int> &pred_sets)
+unsigned int PathQueryHandler::diameterEstimation(const std::vector<int> &pred_sets)
 {
     std::cout << "diameterEstimation 允许出现的谓词数量:" << pred_sets.size() << std::endl;
     unsigned int ret = 0;

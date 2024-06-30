@@ -459,7 +459,7 @@ double PathQueryHandler::shortestPathScalePassId(int uid, int passid, bool direc
     return ret;
 }
 
-double PathQueryHandler::betweennessCentrality2(int id, bool directed, const std::vector<int> &pred_sets)
+double PathQueryHandler::betweennessCentrality(int id, bool directed, const std::vector<int> &pred_sets)
 {
 	std::cout << "betweennessCentrality 允许出现的谓词数量:" << pred_sets.size() << std::endl;
 	if (id < 0 || pred_sets.empty())
