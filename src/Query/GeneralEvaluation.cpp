@@ -2005,12 +2005,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									pair<size_t, std::set<std::set<int>>> result;
+									std::set<std::set<int> > result;
 									float min_modularity_increase = proj[0].path_args.misc[0];
 									int phase1_loop_num = proj[0].path_args.misc[1];
 									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[0].path_args.directed, result);
-									ss << "{\"count\":" << result.first << ", \"community\":[";
-									for (std::set<int> it: result.second)
+									ss << "{\"count\":" << result.size() << ", \"community\":[";
+									for (std::set<int> it: result)
 									{
 										if (notFirstOutput)
 											ss << ",";
@@ -2024,7 +2024,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												ss << ",";
 											else 
 												hasMore = true;
-											ss << "\"" + to_string(mid) + "\"";
+											ss << mid;
 										}
 										ss << "]";
 									}
@@ -3419,12 +3419,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										pair<size_t, std::set<std::set<int> > > result;
+										std::set<std::set<int> > result;
 										float min_modularity_increase = proj[i].path_args.misc[0];
 										int phase1_loop_num = proj[i].path_args.misc[1];
 										pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
-										ss << "{\"count\":" << result.first << ", \"community\":[";
-										for (set<int> it : result.second)
+										ss << "{\"count\":" << result.size() << ", \"community\":[";
+										for (set<int> it : result)
 										{
 											if (notFirstOutput)
 												ss << ",";
@@ -3438,7 +3438,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 													ss << ",";
 												else 
 													hasMore = true;
-												ss << "\"" + to_string(mid) + "\"";
+												ss << mid;
 											}
 											ss << "]";
 										}
