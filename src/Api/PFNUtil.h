@@ -173,6 +173,7 @@ private:
     std::string fun_build_source_data(struct PFNInfo * fun_info, bool has_header);
     void fun_write_json_file(const std::string& username, struct PFNInfo *fun_info, std::string operation);
     void fun_parse_from_name(const std::string& username, const std::string& fun_name, struct PFNInfo *fun_info);
+    vector<string> get_files(const char *src_dir, const std::string& prefix);
 public:
     PFNUtil();
     ~PFNUtil();
