@@ -4,9 +4,6 @@ using namespace std;
 
 
 
- Util util;
-
-
 ReasonHelper::ReasonHelper(/* args */)
 {
    
