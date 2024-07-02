@@ -124,7 +124,6 @@ using namespace std;
 	std::map<int, int> dis_u;
 	q_l.push(uid);
 	dis_u[uid] = 0;
-	std::set<int> nei_node;
 	visited.insert(uid);
 	while (!q_l.empty())
 	{
@@ -173,7 +172,6 @@ using namespace std;
         degree[temp_u] += degree_num;
 		if (dis_u[temp_u] <= k)
 		{
-			nei_node.insert(temp_u);
 			for (auto m : nl)
 			{
 				if (visited.find(m) == visited.end() && dis_u[m] <= k)
@@ -186,7 +184,8 @@ using namespace std;
 	}
 
     std::cout << "degreeCorrelation id:" <<  uid << "  vertex size:" << visited.size() << std::endl;
-
+    if (visited.size() <= 1)
+        return 0;
     double averageD1 = 0;
     double averageD2 = 0;
     vector<pair<double,double>> dpair;
