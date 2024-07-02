@@ -3,10 +3,9 @@
 #include <iterator>
 using namespace std;
 
-std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum)
+std::vector<std::pair<int, float>> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum)
 {
     //参数uid是待计算Jaccard相似度顶点id,pred_sets是边过滤的谓词集合，k是计算uid k跳内邻居的相似度,retNum是返回相似度最高的retNum个顶点id
-    std::vector<int> ret;
     std::vector<pair<int,float>> JS;
     
     std::set<int> adj_oneHop = set<int>();
@@ -131,10 +130,11 @@ std::vector<int> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<
             }
        }
     }
+    std::vector<std::pair<int, float>> ret;
     //返回相似度最大的retNum个顶点
     for(int i=0;i<retNum&&i<JS.size();i++)
     {
-        ret.emplace_back(JS[i].first);
+        ret.emplace_back(JS[i]);
     }
     std::cout << "Jaccard 节点uid:" << uid << std::endl;
     std::cout << "Jaccard 允许出现的谓词:" << pred_sets.size() << std::endl;

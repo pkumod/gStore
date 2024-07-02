@@ -389,7 +389,7 @@ public:
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
     std::vector<int> coreTruss(const std::vector<int> &pred_set, int alpha, int beta);
     std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
-    std::vector<int> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
+    std::vector<std::pair<int, float>> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
     double degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets);
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);

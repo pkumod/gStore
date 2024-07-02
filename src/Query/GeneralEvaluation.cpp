@@ -4636,15 +4636,15 @@ void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const 
 		return;
 	int max_depth = k < 0 ? 999 : k;
 	int max_retNum = retNum < 0 ? 10 : retNum;
-	std::vector<int> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
+	std::vector<std::pair<int, float>> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
 	bool hasMore = false;
-	for (int nid : ret)
+	for (auto m : ret)
 	{
 		if (hasMore)
 			ss << ","; 
 		else 
 			hasMore = true;
-		ss << "{\"dst\":"<< nid << ", \"value\":0.0}";
+		ss << "{\"dst\":"<< m.first << ", \"value\":" << m.second << "}";
 	}
 }
 
