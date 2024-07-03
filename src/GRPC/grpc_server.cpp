@@ -157,7 +157,10 @@ void GRPCServer::process(GRPCTask *task)
         return;
     }
 
-    std::string request_uri = "http://" + host + req->get_request_uri();
+    std::string request_uri = req->get_request_uri();
+    if (UrlEncode::is_url_encode(request_uri))
+        StringUtil::url_decode(request_uri);
+    request_uri = "http://" + host + request_uri;
     ParsedURI uri;
     if (URIParser::parse(request_uri, uri) < 0)
     {
