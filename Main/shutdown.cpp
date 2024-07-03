@@ -26,17 +26,14 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 {
     std::string strUrl = gc_getUrl(_type, _port).append("/api");
 	std::string strPost;
+	strUrl.append("/");
 	if (_type == "grpc")
     {
-        strUrl.append("/grpc");
-		strPost = "operation=check";
+        strUrl.append("grpc");
+		gc.InitContentType();
     }
-	else
-	{
-		strUrl.append("/");
-		strPost = "{\"operation\": \"check\"}";
-	}
-    int ret = gc.Post(strUrl, strPost, res, false);
+	strPost = "{\"operation\": \"check\"}";
+    int ret = gc.Post(strUrl, strPost, res);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }
@@ -172,15 +169,8 @@ int main(int argc, char *argv[])
 		string postdata;
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
-		if (type == "grpc")
-		{
-			postdata = "username=" + system_user + "&password=" + system_password;
-		} 
-		else
-		{
-			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
-		}
-		gc.Post(strUrl, postdata, res, false);
+		postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
+		gc.Post(strUrl, postdata, res);
 		rapidjson::Document jsonRes;
 		jsonRes.Parse(res.c_str());
 		if (!jsonRes.HasParseError() && jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)
