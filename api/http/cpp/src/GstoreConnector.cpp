@@ -27,6 +27,11 @@ GstoreConnector::~GstoreConnector(void)
 
 }
 
+void GstoreConnector::InitContentType()
+{
+	this->content_type = "Content-Type:application/json";
+}
+
 static const std::string UrlEncode(const std::string& s)
 {
 	std::string ret;
@@ -154,7 +159,7 @@ int GstoreConnector::Get(const std::string& strUrl, const std::string& filename)
 	return res;
 }
 
-int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse, bool grpcjson)
+int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
@@ -169,7 +174,7 @@ int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost,
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
 
-	if (grpcjson && !this->content_type.empty())
+	if (!this->content_type.empty())
 	{
 		struct curl_slist* headerlist = NULL;
 		headerlist = curl_slist_append(headerlist, this->content_type.c_str());

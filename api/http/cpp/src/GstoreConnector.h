@@ -46,7 +46,9 @@ public:
 
 	int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
 
-	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse, bool grpcjson = true);
+	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
+
+	void InitContentType();
 
 	/**
 	* @brief: HTTP GET request
