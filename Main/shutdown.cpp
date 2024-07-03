@@ -36,7 +36,7 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 		strUrl.append("/");
 		strPost = "{\"operation\": \"check\"}";
 	}
-    int ret = gc.Post(strUrl, strPost, res);
+    int ret = gc.Post(strUrl, strPost, res, false);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		{
 			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
 		}
-		gc.Post(strUrl, postdata, res);
+		gc.Post(strUrl, postdata, res, false);
 		rapidjson::Document jsonRes;
 		jsonRes.Parse(res.c_str());
 		if (!jsonRes.HasParseError() && jsonRes.HasMember("StatusCode") && jsonRes["StatusCode"].GetInt() == 0)

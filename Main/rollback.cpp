@@ -81,7 +81,7 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
 	{
 		strPost = "{\"operation\": \"check\"}";
 	}
-    int ret = gc.Post(strUrl, strPost, res);
+    int ret = gc.Post(strUrl, strPost, res, false);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }
@@ -90,7 +90,7 @@ int gc_unload(GstoreConnector &gc, string _type, string _port, string _pwd, stri
 {
     string strUrl = gc_getUrl(_type, _port);
     std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + _pwd + "\"}";
-    int ret = gc.Post(strUrl, strPost, res);
+    int ret = gc.Post(strUrl, strPost, res, false);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
 }

@@ -30,6 +30,7 @@ public:
 	std::string Url;
 	std::string username;
 	std::string password;
+	std::string content_type;
 	GstoreConnector(void);
 	GstoreConnector(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd);
 	~GstoreConnector(void);
@@ -45,7 +46,7 @@ public:
 
 	int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
 
-	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
+	int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse, bool grpcjson = true);
 
 	/**
 	* @brief: HTTP GET request
