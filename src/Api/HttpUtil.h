@@ -36,9 +36,9 @@ public:
 	* @return: returned value
 	*/
 
-	static int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
+	static int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename, bool json = false);
 
-	static int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
+	static int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse, bool json = false);
 
 	/**
 	* @brief: HTTP GET request
