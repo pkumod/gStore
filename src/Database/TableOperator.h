@@ -92,7 +92,7 @@ class EdgeInfo{
   		p_ = var_descrip->id_;
   		if(var_descrip->s_type_[index] == VarDescriptor::EntiType::VarEntiType){
   			if(var_descrip->o_type_[index] == VarDescriptor::EntiType::VarEntiType){
-  				cout << "error: sub, pre, obj in this triple are all var" << endl;
+          SLOG_ERROR("error: sub, pre, obj in this triple are all var");
   				exit(-1);
   			}
 			else
@@ -119,7 +119,7 @@ class EdgeInfo{
 
   		if(var_descrip->so_edge_nei_type_[index] == VarDescriptor::EntiType::VarEntiType){
   			if(var_descrip->so_edge_pre_type_[index] == VarDescriptor::PreType::VarPreType){
-  				cout << "error: sub, pre, obj in this triple are all var" << endl;
+          SLOG_ERROR("error: sub, pre, obj in this triple are all var");
   				exit(-1);
   			} else{
   				// nei is var, pre is const

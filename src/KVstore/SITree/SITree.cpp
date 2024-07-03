@@ -239,7 +239,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   }
   else
   {
-    std::cout << "error SITree::Insert exist:" << std::endl;
+    SLOG_ERROR("error SITree::Insert exist:");
   }
 
   this->tsm_->request(request_);
@@ -368,7 +368,7 @@ SITree::Remove(const char* _str, unsigned _len)
         this->Prepare(p->GetChild(i + 1));
       if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
       {
-        std::cout << "error remove str:" << _str << " key num:" << j << " query node pos:" << i <<std::endl;
+        SLOG_ERROR("error remove str:" << _str << " key num:" << j << " query node pos:" << i);
         break;
       }
       ret = q->Coalesce(p, i);
@@ -426,7 +426,7 @@ SITree::Remove(const char* _str, unsigned _len)
     flag = true;
   }
   if (!flag)
-    std::cout << "error remove data not found key:" << std::endl;
+    SLOG_ERROR("error remove data not found key:");
 
   this->tsm_->request(request_);
   this->access_lock_.unlock();
@@ -500,7 +500,7 @@ void SITree::PrintTree(SINode* _np)
     unsigned num = _np->GetKeyNum();
     for (unsigned i = 0; i < num; ++i)
     {
-      std::cout << "debug PrintTree leaf:" << "   len:" << _np->getKey(i)->getLen() << std::endl;
+      SLOG_CODE("debug PrintTree leaf:" << "   len:" << _np->getKey(i)->getLen());
     }
     return;
   }
@@ -511,7 +511,7 @@ void SITree::PrintTree(SINode* _np)
   
   unsigned num = _np->GetKeyNum();
 	for (unsigned i = 0; i < num; ++i)
-		std::cout << "debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen() << std::endl;
+    SLOG_CODE("debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen());
 
   // SINode* np = nullptr;
   // for (np = this->leaves_head_; np != NULL; np = np->GetNext())

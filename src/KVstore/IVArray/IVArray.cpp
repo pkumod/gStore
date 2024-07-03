@@ -72,7 +72,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	
 		if (BM == NULL || array == NULL || IVfile == NULL)
 		{
-			cout << "Initialize IVArray ERROR" << endl;
+			SLOG_ERROR("Initialize IVArray ERROR");
 		}
 	}
 	else // open mode
@@ -82,7 +82,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		IVfile = fopen(IVfile_name.c_str(), "r+b");
 		if (IVfile == NULL)
 		{
-			cout << "Error in open " << IVfile_name << endl;
+			SLOG_ERROR("Error in open ");
 			perror("fopen");
 			exit(0);
 		}
@@ -94,14 +94,14 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		BM = new IVBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
-			cout << _filename << ": Fail to initialize IVBlockManager" << endl;
+			SLOG_ERROR(_filename << ": Fail to initialize IVBlockManager");
 			exit(0);
 		}
 
 		array = new IVEntry [CurEntryNum];
 		if (array == NULL)
 		{
-			cout << _filename << ": Fail to malloc enough space in main memory for array." << endl;
+			SLOG_ERROR(_filename << ": Fail to malloc enough space in main memory for array.");
 			exit(0);
 		}
 //		cout << _filename << " CurEntryNum = " << CurEntryNum << endl;
@@ -227,7 +227,7 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned long _len)
 	{
 		if (!SwapOut())
 		{
-			cout << filename << ": swapout error" << endl;
+			SLOG_ERROR(filename << ": swapout error");
 			exit(0);
 		}
 	}
@@ -339,8 +339,8 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 	
 	if (_key >= IVArray::MAX_KEY_NUM)
 	{
-		cout << _key << ' ' << MAX_KEY_NUM << endl;
-		cout << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+		SLOG_ERROR(_key << ' ' << MAX_KEY_NUM);
+		SLOG_ERROR("IVArray insert error: Key is bigger than MAX_KEY_NUM");
 		this->CacheLock.unlock();
 		return false;
 	}
@@ -362,7 +362,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
 		{
-			cout << "IVArray insert error: main memory full" << endl;
+			SLOG_ERROR("IVArray insert error: main memory full");
 			CurEntryNum = OldEntryNum;
 			delete[] newp;
 			this->CacheLock.unlock();
@@ -384,7 +384,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
-			std::cout << "error: IVArray insert write value failed" << std::endl;
+			SLOG_ERROR("error: IVArray insert write value failed");
 			this->CacheLock.unlock();
 			return false;
 		}
@@ -470,7 +470,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 			store = BM->WriteValue(_str, _len);
 			if (store == 0)
 			{
-				std::cout << "error: IVArray modify in cache write value failed" << std::endl;
+				SLOG_ERROR("error: IVArray modify in cache write value failed");
 				this->CacheLock.unlock();
 				return false;
 			}
@@ -495,7 +495,7 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 			store = BM->WriteValue(_str, _len);
 			if (store == 0)
 			{
-				std::cout << "error: IVArray modify no cache write value failed" << std::endl;
+				SLOG_ERROR("error: IVArray modify no cache write value failed");
 				this->CacheLock.unlock();
 				return false;
 			}
@@ -705,7 +705,7 @@ IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 	//array[_key].setDirtyFlag(true);
 	int ret = array[_key].WriteVersion(delta, delset, txn);
 	if(ret != 1) {
-		cerr << "write version failed!" << endl;
+		SLOG_ERROR("write version failed!");
 		txn->SetState(TransactionState::ABORTED);
 		ArrayUnlock();
 		return false;
@@ -725,8 +725,8 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 		//cerr << "expanding..............." << endl;
 		if (_key >= IVArray::MAX_KEY_NUM)
 		{
-			cerr << _key << ' ' << MAX_KEY_NUM << endl;
-			cerr << "IVArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+			SLOG_ERROR(_key << ' ' << MAX_KEY_NUM);
+			SLOG_ERROR("IVArray insert error: Key is bigger than MAX_KEY_NUM");
 			ArrayUnlock();
 			return 0;
 		}
@@ -746,7 +746,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)
 			{
-				cerr << "IVArray insert error: main memory full" << endl;
+				SLOG_ERROR("IVArray insert error: main memory full");
 				CurEntryNum = OldEntryNum;
 				delete[] newp;
 				ArrayUnlock();

@@ -22,7 +22,7 @@ Txn_manager::~Txn_manager()
 {
 	abort_all_running();
 	Checkpoint();
-	cout << "Checkpoint done" << endl;
+	SLOG_CODE("Checkpoint done");
 	txn_table.clear();
 	out.close();
 	out_all.close();
@@ -50,7 +50,7 @@ shared_ptr<Transaction> Txn_manager::get_transaction(txn_id_t TID)
 	table_lock.lockShared();
 	if(txn_table.find(TID) == txn_table.end()) {
 		table_lock.unlock();
-		cerr << "wrong TID" << endl;
+		SLOG_ERROR("wrong TID");
 		return nullptr;
 	}
 	auto p =  txn_table[TID];
@@ -70,7 +70,7 @@ bool Txn_manager::undo(string str, txn_id_t TID)
 		undo_sparql = "INSERT DATA{";
 	}
 	else {
-		cerr << "wrong undo sparql: " << str << endl;
+		SLOG_ERROR("wrong undo sparql: " << str);
 		return false;
 	}
 	undo_sparql += str.substr(2, str.length());
@@ -82,7 +82,7 @@ bool Txn_manager::undo(string str, txn_id_t TID)
 		this->db->query(undo_sparql, rs, output);
 	else
 	{
-		cout << "error! database has been flushed or removed!" << endl;
+		SLOG_ERROR("error! database has been flushed or removed!");
 		return false;
 	}
 	return true;
@@ -99,7 +99,7 @@ bool Txn_manager::redo(string str, txn_id_t TID)
 		redo_sparql = "DELETE DATA{";
 	}
 	else {
-		cerr << "wrong redo sparql: " << str << endl;
+		SLOG_ERROR("wrong redo sparql: " << str);
 		return false;
 	}
 	redo_sparql += str.substr(2, str.length());
@@ -111,7 +111,7 @@ bool Txn_manager::redo(string str, txn_id_t TID)
 		this->db->query(redo_sparql, rs, output);
 	else
 	{
-		cout << "error! database has been flushed or removed" << endl;
+		SLOG_CODE("error! database has been flushed or removed");
 		return false;
 	}
 	return true;
@@ -132,7 +132,7 @@ inline txn_id_t Txn_manager::ArrangeTID()
 	txn_id_t TID = cnt.fetch_add(1);
 	if(TID == INVALID_ID)
 	{
-		cerr << "TID wrapped! " << endl;
+		SLOG_ERROR("TID wrapped! ");
 	}
 	return TID;
 }
@@ -148,7 +148,7 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 	txn_id_t TID = this->ArrangeTID();
 	if(TID == INVALID_ID)
 	{
-		cout << "TID wrapped, please run garbage clean!" << endl;
+		SLOG_CODE("TID wrapped, please run garbage clean!");
 		checkpoint_lock.unlock();
 		return TID;
 	}
@@ -166,12 +166,12 @@ int Txn_manager::Commit(txn_id_t TID)
 	string log_str = "Commit " + Util::int2string(TID);
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
-		cerr << "wrong transaction id!" << endl;
+		SLOG_ERROR("wrong transaction id!");
 		// checkpoint_lock.unlock();
 		return -1;
 	}
 	else if (txn->GetState() != TransactionState::RUNNING) {
-		cerr << "transaction not in running state! commit failed" << " " << (int)txn->GetState() << endl;	
+		SLOG_ERROR("transaction not in running state! commit failed" << " " << (int)txn->GetState());	
 		// checkpoint_lock.unlock();
 		return 1;
 	}
@@ -181,7 +181,7 @@ int Txn_manager::Commit(txn_id_t TID)
 		db->TransactionCommit(txn);
 	else
 	{
-		cout << "error! database has been flushed or removed" << endl;
+		SLOG_CODE("error! database has been flushed or removed");
 		// checkpoint_lock.unlock();
 		return -1;
 	}
@@ -194,7 +194,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	int cycle = 50000;
 	if(committed_num.compare_exchange_strong(cycle, 0)){
 		Checkpoint();
-		cerr << "checkpoint done!" << endl;
+		SLOG_ERROR("checkpoint done!");
 	}
 	return 0;
 }
@@ -204,14 +204,14 @@ int Txn_manager::Abort(txn_id_t TID)
 	string log_str = "Abort " + Util::int2string(TID);
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
-		cerr << "wrong transaction id!" << endl;
+		SLOG_ERROR("wrong transaction id!");
 		return -1;
 	}
 	if(db != nullptr)
 		db->TransactionRollback(txn);
 	else
 	{
-		cout << "error! database has been flushed or removed" << endl;
+		SLOG_CODE("error! database has been flushed or removed");
 		return -1;
 	}
 	//writelog(log_str);
@@ -226,11 +226,11 @@ int Txn_manager::Rollback(txn_id_t TID)
 {
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
-		cerr << "wrong transaction id!" << endl;
+		SLOG_ERROR("wrong transaction id!");
 		return -1;
 	}
 	else if (txn->GetState() != TransactionState::RUNNING) {
-		cerr << "transaction not in running state! rollback failed" << endl;
+		SLOG_ERROR("transaction not in running state! rollback failed");
 		return 1;
 	}
 	return Abort(TID);
@@ -241,11 +241,11 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if(txn == nullptr)
 	{
-		cerr << "wrong transaction ID!" << endl;
+		SLOG_ERROR("wrong transaction ID!");
 		return -1;
 	}
 	if (txn->GetState() != TransactionState::RUNNING) {
-		cerr << "transaction not in running state! Query failed" <<  " " << (int)txn->GetState() <<  endl;;
+		SLOG_ERROR("transaction not in running state! Query failed" <<  " " << (int)txn->GetState() );
 		return -99;
 	}
 	int ret_val;
@@ -254,12 +254,12 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	if(db != nullptr)
 		ret_val = this->db->query(sparql, rs, output , true, false, txn);
 	else{
-		cout << "error! database has been flushed or removed" << endl;
+		SLOG_CODE("error! database has been flushed or removed");
 		return -10;
 	}
 	if(txn->GetState() == TransactionState::ABORTED)
 	{
-		cout << "Transaction Abort due to Query failed. TID:" << TID << endl;
+		SLOG_CODE("Transaction Abort due to Query failed. TID:" << TID);
 		Abort(TID);
 		return -20;
 	}
@@ -277,9 +277,9 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 
 void Txn_manager::Checkpoint()
 {
-	cerr << "set checkpoint_lock lockExclusive begin..." << endl;
+	SLOG_CODE("set checkpoint_lock lockExclusive begin...");
 	checkpoint_lock.lockExclusive();
-	cerr << "set checkpoint_lock lockExclusive ok." << endl;
+	SLOG_CODE("set checkpoint_lock lockExclusive ok.");
 	vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
 	sub_ids.insert(sub_ids.begin(), DirtyKeys[0].begin(), DirtyKeys[0].end());
 	pre_ids.insert(pre_ids.begin(), DirtyKeys[1].begin(), DirtyKeys[1].end());
@@ -292,10 +292,6 @@ void Txn_manager::Checkpoint()
 			obj_literal_ids.push_back(key);
 		}
 	}
-	//cout << "sub_ids.size(): " << sub_ids.size() << endl;
-	//cout << "pre_ids.size(): " << pre_ids.size() << endl;
-	//cout << "obj_ids.size(): " << obj_ids.size() << endl;
-	//cout << "obj_literal_ids.size(): " << obj_literal_ids.size() << endl;
  	if(db != nullptr)
 		db->VersionClean(sub_ids, obj_ids, obj_literal_ids, pre_ids);
 	checkpoint_lock.unlock();

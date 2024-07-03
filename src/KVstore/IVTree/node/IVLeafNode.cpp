@@ -127,7 +127,7 @@ IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) con
 	if(this->values[_index].isBstrLongList())
 	{
 #ifdef DEBUG_VLIST
-		cout<<"this is a vlist in get()"<<endl;
+		SLOG_CODE("this is a vlist in get()");
 #endif
 		unsigned block_num = this->values[_index].getLen();
 		_vlist->readValue(block_num, _str, _len, this->keys[_index]);
@@ -154,7 +154,7 @@ IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 	if(this->values[_index].isBstrLongList())
 	{
 #ifdef DEBUG_VLIST
-		cout<<"this is a vlist in set()"<<endl;
+		SLOG_ERROR("this is a vlist in set()");
 #endif
 		unsigned block_num = this->values[_index].getLen();
 		_vlist->removeValue(block_num, this->keys[_index]);
@@ -212,7 +212,7 @@ IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 	if(VList::isLongList(_len))
 	{
 #ifdef DEBUG_VLIST
-		cout<<"this is a vlist in add()"<<endl;
+		SLOG_ERROR("this is a vlist in add()");
 #endif
 		unsigned block_num = _vlist->writeValue(_str, _len);
 		this->values[_index].setStr(NULL);

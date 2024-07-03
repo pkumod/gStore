@@ -69,7 +69,7 @@ ISHeap::insert(ISNode* _np)
 {
 	if (this->length == this->size)	//when full, reallocate
 	{
-		cout<<"check: double the heap"<<endl;
+		SLOG_CODE("check: double the heap");
 		//WARN: realloc should be combined with malloc instead of new
 		//http://bbs.csdn.net/topics/320148799
 		//For new, use placement new to enlarge space: http://blog.csdn.net/vangoals/article/details/4252833

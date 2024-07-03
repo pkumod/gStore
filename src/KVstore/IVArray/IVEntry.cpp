@@ -211,12 +211,12 @@ IVEntry::getLatestVersion(TYPE_TXN_ID TID, VDataSet &addset, VDataSet &delset)
 	for(unsigned i = 0; i < n - 1; i++)
 	{
 		vList[i]->get_version(addset, delset);
-		cout << "begin_ts" << vList[i]->get_begin_ts() << "  end_ts" << vList[i]->get_end_ts() << endl;
+		SLOG_CODE("begin_ts" << vList[i]->get_begin_ts() << "  end_ts" << vList[i]->get_end_ts());
 	}
 	if((vList[n-1]->get_begin_ts() == INVALID_TS && vList[n-1]->get_end_ts() == TID) || (vList[n-1]->get_end_ts() == INVALID_TS)) //private version or committed version
 	{
 		vList[n-1]->get_version(addset, delset);
-		cout << "begin_ts" << vList[n-1]->get_begin_ts() << "  end_ts" << vList[n-1]->get_end_ts() << endl;
+		SLOG_CODE("begin_ts" << vList[n-1]->get_begin_ts() << "  end_ts" << vList[n-1]->get_end_ts());
 	}
 	rwLatch.unlock();
 }
@@ -340,7 +340,7 @@ IVEntry::InvalidExlusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 		else
 		{
 			if(glatch.unlatch(TID, true, IS_SR) == false) {
-				cerr << "exclusive unlatch failed!" << endl;
+				SLOG_ERROR("exclusive unlatch failed!");
 				rwLatch.unlock();
 				return false;
 			}
@@ -377,7 +377,7 @@ IVEntry::UnLatch(shared_ptr<Transaction> txn, LatchType latch_type)
 		}
 		//update the version info(unlock)
 		//assert(vList[k-1]->get_end_ts() == TID);
-		cout << "cid..................." << cid << endl;
+		SLOG_CODE("cid..................." << cid);
 		vList[k-1]->set_begin_ts(cid);
 		vList[k-1]->set_end_ts(INVALID_TS);
 		vList[k-2]->set_end_ts(cid);
@@ -386,7 +386,7 @@ IVEntry::UnLatch(shared_ptr<Transaction> txn, LatchType latch_type)
 	}
 	else
 	{
-		cerr << "error latch type !" << endl;
+		SLOG_ERROR("error latch type !");
 		return false;
 	}
 }
@@ -466,7 +466,7 @@ IVEntry::GetExclusiveLatch(shared_ptr<Transaction> txn, bool has_read)
 	}
 	else
 	{
-		cerr << "undefined IsolationLevelType!" << endl;
+		SLOG_ERROR("undefined IsolationLevelType!");
 		rwLatch.unlock();
 		return 0;
 	}

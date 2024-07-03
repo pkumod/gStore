@@ -361,7 +361,7 @@ SIStorage::ReadNode(SINode* _np, long long* _request)
 {
   if (_np == NULL || _np->inMem())
   {
-    std::cout << "error ReadNode: can't read or needn't" << std::endl;
+    SLOG_ERROR("error ReadNode: can't read or needn't");
     return false;
   }
   fseek(tree_fp_, Address(_np->GetStore()), SEEK_SET);

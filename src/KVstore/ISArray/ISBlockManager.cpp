@@ -42,13 +42,13 @@ ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynu
 	}
 	else
 	{
-		cout << "Error in BLockManager: Invalid Mode" << endl;
+		SLOG_ERROR("Error in BLockManager: Invalid Mode");
 		return;
 	}
 
 	if (FreeBlockList == NULL || ValueFile == NULL)
 	{
-		cout << "Error in ISBlockManager: Open error" << endl;
+		SLOG_ERROR("Error in ISBlockManager: Open error");
 		return;
 	}
 
@@ -79,7 +79,6 @@ ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynu
 
 		while (tmp_index > 0)
 		{
-			//cout << _filename << ": free block " << tmp_index << " offset " << offset << endl;
 			pread(fd, &tmp_len, 1 * sizeof(unsigned), offset * sizeof(unsigned));
 			offset++;
 
@@ -95,7 +94,6 @@ ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynu
 void
 ISBlockManager::SaveFreeBlockList()
 {
-//	cout << "Save Free blocks " << FreeBlockList_path << endl;
 	map <unsigned, unsigned>::iterator it;
 	off_t offset = 0;
 	int fd = fileno(FreeBlockList);
@@ -147,7 +145,7 @@ ISBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned &_len)
 
 	if (_str == NULL)
 	{
-		cout << "ISBlockManager Error: fail when new" << endl;
+		SLOG_ERROR("ISBlockManager Error: fail when new");
 		return false;
 	}
 
@@ -292,7 +290,7 @@ ISBlockManager::WriteValue(const char *_str, const unsigned _len)
 
 	if (len_left > 0)
 	{
-		cout << "Get Where To Write error: space is not enough" << endl;
+		SLOG_ERROR("Get Where To Write error: space is not enough");
 		return 0;
 	}
 

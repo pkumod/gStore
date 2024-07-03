@@ -152,21 +152,21 @@ Strategy::handle(SPARQLquery& _query)
 			this->handler6(*iter, result_list);
 			break;			
 		default:
-			cout << "not support this method" << endl;
+			SLOG_CODE("not support this method");
 
 		}
 		if(this->method == 6)
 		{
-			cout << "BasicQuery -- Final result size: " << (*iter)->getResultList()[0][0] << endl;
+			SLOG_CODE("BasicQuery -- Final result size: " << (*iter)->getResultList()[0][0]);
 			(*iter)->getResultList().clear();
 		}
 		else
 		{
-			cout << "BasicQuery -- Final result size: " << (*iter)->getResultList().size() << endl;
+			SLOG_CODE("BasicQuery -- Final result size: " << (*iter)->getResultList().size());
 		}
 	}
 #else
-	cout << "this BasicQuery use original query strategy" << endl;
+	SLOG_CODE("this BasicQuery use original query strategy");
 	//VSTREE:
 	//long tv_handle = Util::get_cur_time();
 	//(this->vstree)->retrieve(_query);
@@ -178,7 +178,7 @@ Strategy::handle(SPARQLquery& _query)
 	delete this->join;
 
 	long tv_join = Util::get_cur_time();
-	cout << "after Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+	SLOG_CODE("after Join, used " << (tv_join - tv_retrieve) << "ms.");
 #endif
 	Util::logging("OUT Strategy::handle");
 	return true;
@@ -195,7 +195,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	// use constant filter to estimate now many ffits exist
         vector<int> estimate_num(var_num,10000000);
 
-	cout << "start constant filter here " << endl << endl;
+	SLOG_CODE("start constant filter here \n");
 	for (int _var_i = 0; _var_i < var_num; _var_i++)
 	{
 	    
@@ -203,7 +203,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    
 	    int var_degree = basic_query->getVarDegree(_var_i);
 	    IDList &_list = basic_query->getCandidateList(_var_i);
-	    cout << "\tVar" << _var_i << " " << basic_query->getVarName(_var_i) << endl;
+		SLOG_CODE("\tVar" << _var_i << " " << basic_query->getVarName(_var_i));
 	   // this->basic_query->setReady(_var_i);
 	    for (int j = 0; j < var_degree; j++)
 	    {
@@ -324,10 +324,10 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
     
 	    }
 	
-            cout << "\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << endl << endl << endl;
+			SLOG_CODE("\t\t[" << _var_i << "] after constant filter, candidate size = " << _list.size() << "\n\n");
 	}
 
-	cout << "pre filter start here" << endl;
+	SLOG_CODE("pre filter start here");
 
 	//TODO:use vector instead of set
 	for(int _var = 0; _var < var_num; _var++)
@@ -335,7 +335,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    if(basic_query->isSatelliteInJoin(_var))
 	        continue;
             
-	    cout << "\tVar" << _var << " " << basic_query->getVarName(_var) << endl;
+		SLOG_CODE("\tVar" << _var << " " << basic_query->getVarName(_var));
 	    IDList& cans = basic_query->getCandidateList(_var);
 	    unsigned size = basic_query->getCandidateSize(_var);
 	    
@@ -398,7 +398,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        double border = size / (Util::logarithm(2, size) + 1);
 	        if(pre2num[pre_id] > border)
 	        {
-	        	cout << "skip the prefilter because the pre var is not efficent enough" << endl;
+				SLOG_CODE("skip the prefilter because the pre var is not efficent enough");
 	        	continue;
 	        }
 
@@ -406,7 +406,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 		if((edge_type == Util::EDGE_OUT && (prefilter_num = pre2obj[pre_id]) > estimate_num[_var]) ||
 			(edge_type == Util::EDGE_IN && (prefilter_num = pre2sub[pre_id]) > estimate_num[_var]))
 		{
-			cout << "skip the prefilter because the constant filter is strong enough" << endl;
+			SLOG_CODE("skip the prefilter because the constant filter is strong enough");
 			// cout << "estimate_num:" << estimate_num[_var] << endl;
 			// cout << "prefilter_num:" << prefilter_num << endl;
 			continue;
@@ -551,7 +551,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	    {
 	        return false;
 	    }
-	    cout << "\t\t[" << _var << "] after pre var filter, candidate size = " << cans.size() << endl << endl << endl;
+		SLOG_CODE("\t\t[" << _var << "] after pre var filter, candidate size = " << cans.size() << "\n\n");
 	}
 
 	return true;
@@ -563,7 +563,7 @@ void
 Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	//long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 0 database" << endl;
+	SLOG_CODE("this BasicQuery use query strategy 0 database");
 
 	//BETTER:not all vars in join filtered by vstree
 	//(A)-B-c: B should by vstree, then by c, but A should be generated in join(first set A as not)
@@ -603,7 +603,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	//BETTER:end directly if one is empty!
 
 	long tv_retrieve = Util::get_cur_time();
-	cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
+	SLOG_CODE("after Retrieve, used " << (tv_retrieve - tv_handle) << "ms.");
 
 	/*
 		pre_handler()主要是对谓词过滤做一些预处理，对量级有一定要求，要求使用二分搜索；
@@ -616,9 +616,9 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
 	bool ret2 = pre_handler(_bq, kvstore, pre2num,pre2sub,pre2obj, d_triple);
 	long after_prehandler = Util::get_cur_time();
-	cout << "after prehandler: used " << (after_prehandler - tv_retrieve) << " ms" << endl;
+	SLOG_CODE("after prehandler: used " << (after_prehandler - tv_retrieve) << " ms");
 	if(!ret2){
-		cout << "after the prehandler, the canlist size is 0." << endl;
+		SLOG_CODE("after the prehandler, the canlist size is 0.");
 	}
 
 	Join *join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal,this->limitID_entity, txn);
@@ -626,14 +626,14 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	delete join;
 
 	long tv_join = Util::get_cur_time();
-	cout << "during Join, used " << (tv_join - tv_retrieve) << "ms." << endl;
+	SLOG_CODE("during Join, used " << (tv_join - tv_retrieve) << "ms.");
 }
 
 void
 Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 1" << endl;
+	SLOG_CODE("this BasicQuery use query strategy 1");
 	//int neighbor_id = (*_bq->getEdgeNeighborID(0, 0);  //constant, -1
 	char edge_type = _bq->getEdgeType(0, 0);
 	int triple_id = _bq->getEdgeID(0, 0);
@@ -659,7 +659,7 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 
 	long after_filter = Util::get_cur_time();
-	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
+	SLOG_CODE("after filter, used " << (after_filter - before_filter) << "ms");
 	_result_list.clear();
 	//cout<<"now to copy result to list"<<endl;
 	for (unsigned i = 0; i < id_list_len; ++i)
@@ -670,16 +670,16 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		_result_list.push_back(record);
 	}
 	long after_copy = Util::get_cur_time();
-	cout << "after copy to result list: used " << (after_copy - after_filter) << " ms" << endl;
+	SLOG_CODE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
-	cout << "Final result size: " << _result_list.size() << endl;
+	SLOG_CODE("Final result size: " << _result_list.size());
 }
 
 void
 Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 2" << endl;
+	SLOG_CODE("this BasicQuery use query strategy 2");
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
 	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
@@ -702,10 +702,10 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 	else
 	{
-		cout << "ERROR in Database::handle(): no selected var!" << endl;
+		SLOG_CODE("ERROR in Database::handle(): no selected var!");
 	}
 	long after_filter = Util::get_cur_time();
-	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
+	SLOG_CODE("after filter, used " << (after_filter - before_filter) << "ms");
 	_result_list.clear();
 	for (unsigned i = 0; i < id_list_len; ++i)
 	{
@@ -714,16 +714,16 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		_result_list.push_back(record);
 	}
 	long after_copy = Util::get_cur_time();
-	cout << "after copy to result list: used " << (after_copy - after_filter) << " ms" << endl;
+	SLOG_CODE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
-	cout << "Final result size: " << _result_list.size() << endl;
+	SLOG_CODE("Final result size: " << _result_list.size());
 }
 
 void
 Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
 	long before_filter = Util::get_cur_time();
-	cout << "this BasicQuery use query strategy 3" << endl;
+	SLOG_CODE("this BasicQuery use query strategy 3");
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
 	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
@@ -742,7 +742,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 
 	long after_filter = Util::get_cur_time();
-	cout << "after filter, used " << (after_filter - before_filter) << "ms" << endl;
+	SLOG_CODE("after filter, used " << (after_filter - before_filter) << "ms");
 
 	for (unsigned i = 0; i < id_list_len; i += 2)
 	{
@@ -753,15 +753,15 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 
 	long after_copy = Util::get_cur_time();
-	cout << "after copy to result list: used " << (after_copy - after_filter) << " ms" << endl;
+	SLOG_CODE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
-	cout << "Final result size: " << _result_list.size() << endl;
+	SLOG_CODE("Final result size: " << _result_list.size());
 }
 
 void
 Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	cout<<"Special Case: consider pre var in this triple"<<endl;
+	SLOG_CODE("Special Case: consider pre var in this triple");
 	int varNum = _bq->getVarNum();  
 	//all variables(not including pre vars)
 	int total_num = _bq->getTotalVarNum();
@@ -778,12 +778,12 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	//cout<<"total num: "<<total_num <<endl;
 	if (total_num == 2)
 	{
-		cout<<"Special Case 1"<<endl;
+		SLOG_CODE("Special Case 1");
 		int svpos = _bq->getSelectedVarPosition(triple.subject);
 		int ovpos = _bq->getSelectedVarPosition(triple.object);
-		cout<<"subject: "<<triple.subject<<" "<<svpos<<endl;
-		cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
-		cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
+		SLOG_CODE("subject: "<<triple.subject<<" "<<svpos);
+		SLOG_CODE("object: "<<triple.object<<" "<<ovpos);
+		SLOG_CODE("predicate: "<<triple.predicate<<" "<<pvpos);
 		
 		bool only_get_distinct_pre = (ovpos < 0 && svpos < 0 && pvpos >= 0 && this->isDistinct);
 		if(only_get_distinct_pre)
@@ -835,7 +835,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 	else if (total_num == 1)
 	{
-		cout<<"Special Case 2"<<endl;
+		SLOG_CODE("Special Case 2");
 		int vpos = -1;
 		if(triple.subject[0] != '?')  //constant
 		{
@@ -877,7 +877,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	}
 	else if (total_num == 0)  //only ?p and it must be selected
 	{
-		cout<<"Special Case 3"<<endl;
+		SLOG_CODE("Special Case 3");
 		//just use so2p
 		unsigned sid = (this->kvstore)->getIDByEntity(triple.subject);
 		unsigned oid = (this->kvstore)->getIDByEntity(triple.object);
@@ -904,7 +904,7 @@ Strategy::handler4(BasicQuery* _bq, vector<unsigned*>& _result_list)
 void
 Strategy::handler5(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	cout<<"Special Case: consider constant triple"<<endl;
+	SLOG_CODE("Special Case: consider constant triple");
 	Triple triple = _bq->getTriple(0);
 	_result_list.clear();
 
@@ -949,7 +949,7 @@ Strategy::handler5(BasicQuery* _bq, vector<unsigned*>& _result_list)
 void
 Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-  cout << "Special Case:select * and write to stream" << endl;
+  SLOG_CODE("Special Case:select * and write to stream");
   // int varNum = _bq->getVarNum();
   //all variables(not including pre vars)
   // int total_num = _bq->getTotalVarNum();
@@ -965,9 +965,9 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
   int svpos = _bq->getSelectedVarPosition(triple.subject);
   int ovpos = _bq->getSelectedVarPosition(triple.object);
-  cout<<"subject: "<<triple.subject<<" "<<svpos<<endl;
-  cout<<"object: "<<triple.object<<" "<<ovpos<<endl;
-  cout<<"predicate: "<<triple.predicate<<" "<<pvpos<<endl;
+  SLOG_CODE("subject: "<<triple.subject<<" "<<svpos);
+  SLOG_CODE("object: "<<triple.object<<" "<<ovpos);
+  SLOG_CODE("predicate: "<<triple.predicate<<" "<<pvpos);
   //very special case, to find all triples, select ?s (?p) ?o where { ?s ?p ?o . }
   //filter and join is too costly, should enum all predicates and use p2so
   unsigned* rsize = new unsigned[1];

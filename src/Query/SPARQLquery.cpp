@@ -113,14 +113,14 @@ SPARQLquery::getBasicQueryVec()
 void 
 SPARQLquery::print(ostream& _out_stream){
 	int k=getQueryVarNum();
-	cout<<"QueryVar "<<k<<":"<<endl;
+	SLOG_CODE("QueryVar "<<k<<":");
 	for (int i=0;i<k;i++){
-		cout<<getQueryVar(i)<<endl;
+		SLOG_CODE(getQueryVar(i));
 	}
 	k=getBasicQueryNum();
-	cout<<"Block "<<k<<" in total."<<endl;
+	SLOG_CODE("Block "<<k<<" in total.");
 	for (int i=0;i<k;i++){
-		cout<<"Block "<<i<<endl;
+		SLOG_CODE("Block ");
 		getBasicQuery(i).print(_out_stream);
 	}
 }

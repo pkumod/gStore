@@ -223,18 +223,18 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 {
 	if (_key == nullptr)
 	{
-		std::cout << "error SINode::addKey" << std::endl;
+		SLOG_ERROR("error SINode::addKey");
 		return false;
 	}
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR(string("error in addKey: Invalid index ") << Util::int2string(_index));
 		return false;
 	}
 	if (num == MAX_KEY_NUM)
 	{
-		std::cout << "error addKey MAX_KEY_NUM, should split:" << num << std::endl;
+		SLOG_ERROR("error addKey MAX_KEY_NUM, should split:" << num);
 	}
 	int i;
 	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
@@ -260,7 +260,7 @@ SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 	}
 	if (num == MAX_KEY_NUM)
 	{
-		std::cout << "error addKey MAX_KEY_NUM, should split:" << num << std::endl;
+		SLOG_ERROR("error addKey MAX_KEY_NUM, should split:" << num);
 	}
 
 	int i;
@@ -280,13 +280,13 @@ SINode::subKey(int _index, bool ifdel)
 {
 	if (keys == nullptr)
 	{
-		std::cout << "error sub keys is null :" << _index << std::endl;
+		SLOG_ERROR("error sub keys is null :" << _index);
 		return false;
 	}
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		std::cout << "error sub keys _index >= num :" << _index << "num:" << num << std::endl;
+		SLOG_ERROR("error sub keys _index >= num :" << _index << "num:" << num);
 		return false;
 	}
 	int i;

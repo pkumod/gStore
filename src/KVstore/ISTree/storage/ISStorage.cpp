@@ -650,7 +650,7 @@ ISStorage::handler(unsigned long long _needmem)	//>0
 		//cout<<"get heap top"<<endl;
 		if (p == NULL)
 		{
-			cout << "the heap top is null" << endl;
+			SLOG_ERROR("the heap top is null");
 			return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
 		}
 

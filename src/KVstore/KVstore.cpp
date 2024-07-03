@@ -64,33 +64,24 @@ KVstore::flush()
 void 
 KVstore::release() 
 {
-	//cout << "delete entity2id" << endl;
 	delete this->entity2id;
 	this->entity2id = NULL;
-	//cout << "delete id2eneity" << endl;
 	delete this->id2entity;
 	this->id2entity = NULL;
-	//cout << "delete literal2id" << endl;
 	delete this->literal2id;
 	this->literal2id = NULL;
-	//cout << "delete id2leteral" << endl;
 	delete this->id2literal;
 	this->id2literal = NULL;
 
-	//cout << "delete p2id" << endl;
 	delete this->predicate2id;
 	this->predicate2id = NULL;
-	//cout << "delte id2p" << endl;
 	delete this->id2predicate;
 	this->id2predicate = NULL;
 
-	//cout << "delete s2v" << endl;
 	delete this->subID2values;
 	this->subID2values = NULL;
-	//cout << "delete p2v" << endl;
 	delete this->preID2values;
 	this->preID2values = NULL;
-	//cout << "delete o2v" << endl;
 	delete this->objID2values;
 	this->objID2values = NULL;
 
@@ -108,7 +99,7 @@ KVstore::release()
 void 
 KVstore::open() 
 {
-	cout << "open KVstore" << endl;
+	SLOG_CODE("open KVstore");
 
 	this->open_entity2id(KVstore::READ_WRITE_MODE);
 	this->open_id2entity(KVstore::READ_WRITE_MODE);
@@ -180,7 +171,6 @@ KVstore::getStringByID(TYPE_ENTITY_LITERAL_ID _id)
 TYPE_ENTITY_LITERAL_ID
 KVstore::getIDByString(string _str)
 {
-	// cout << "KVSTORE::GETIDBYSTRING" << endl;
 	//load kv_trie
 /*	if (kv_trie == NULL)
 	{
@@ -197,7 +187,6 @@ KVstore::getIDByString(string _str)
 	if(Util::isEntity(_str))
 	{
 	//	string tmp_str = kv_trie->Compress(_str);
-	//	cout << "GetIDBYString: " << tmp_str << endl;
 		return this->getIDByEntity(_str);
 	}
 	else
@@ -215,7 +204,6 @@ KVstore::getEntityDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 unsigned
 KVstore::getEntityInDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const 
 {
-	//cout << "In getEntityInDegree " << _entity_id << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _entity_id, char_tmp, _len);
@@ -238,7 +226,6 @@ KVstore::getEntityInDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 unsigned
 KVstore::getEntityOutDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const 
 {
-	//cout << "In getEntityOutDegree " << _entity_id << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _entity_id, char_tmp, _len);
@@ -261,7 +248,6 @@ KVstore::getEntityOutDegree(TYPE_ENTITY_LITERAL_ID _entity_id) const
 unsigned
 KVstore::getLiteralDegree(TYPE_ENTITY_LITERAL_ID _literal_id) const 
 {
-	//cout << "In getLiteralDegree " << _literal_id << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _literal_id, char_tmp, _len);
@@ -282,7 +268,6 @@ KVstore::getLiteralDegree(TYPE_ENTITY_LITERAL_ID _literal_id) const
 unsigned
 KVstore::getPredicateDegree(TYPE_PREDICATE_ID _predicate_id) const 
 {
-	//cout << "In getPredicate Degree " << _predicate_id << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->preID2values, _predicate_id, char_tmp, _len);
@@ -305,7 +290,6 @@ KVstore::getPredicateDegree(TYPE_PREDICATE_ID _predicate_id) const
 unsigned 
 KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid) const 
 {
-	//cout << "In getSubjectPredicateDegree " << _subid << ' ' << _preid << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->subID2values, _subid, char_tmp, _len);
@@ -342,7 +326,6 @@ KVstore::getSubjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE
 unsigned 
 KVstore::getObjectPredicateDegree(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid) const 
 {
-	//cout << "In getObjectPredicateDegree " << _objid << _preid << endl;
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
 	bool _get = this->getValueByKey(this->objID2values, _objid, char_tmp, _len);
@@ -387,7 +370,6 @@ KVstore::updateTupleslist_insert(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_
 	}
 	else
 	{
-		// cout << "transaction update" << endl;
 		return this->updateInsert_s2values(_sub_id, _pre_id, _obj_id, txn)
 		&& this->updateInsert_o2values(_sub_id, _pre_id, _obj_id, txn)
 		&& this->updateInsert_p2values(_sub_id, _pre_id, _obj_id, txn);
@@ -936,7 +918,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 			}
 			else
 			{
-				cerr << "error!" << endl;
+				SLOG_ERROR("error!");
 			}
 			if(p_offset + 3 < p_len)
 				_values[p_offset + 3] = o_offset;
@@ -1135,7 +1117,7 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 
     while(old_p_offset < old_p_len)
     {
-		cout << " old_p_offset < old_p_len " << endl;
+		SLOG_CODE(" old_p_offset < old_p_len ");
         int next_o_offset;
         if(old_p_offset + 3 > old_p_len){
             next_o_offset = _len; //to the last pid
@@ -1606,7 +1588,7 @@ KVstore::Insert_o2values(const std::vector<unsigned>& _pidsidlist, unsigned* _tm
 			}
 			else
 			{
-				cerr << "error!" << endl;
+				SLOG_ERROR("error!");
 			}
 			if(p_offset + 3 < p_len)
 				_values[p_offset + 3] = s_offset;
@@ -2277,7 +2259,7 @@ KVstore::open_entity2id(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_entity2id, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_entity2id, mode = " << _mode);
 		return false;
 	}
 
@@ -2358,7 +2340,7 @@ KVstore::open_id2entity(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_id2entity, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_id2entity, mode = " << _mode);
 		return false;
 	}
 
@@ -2457,7 +2439,7 @@ KVstore::open_predicate2id(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_predicate2id, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_predicate2id, mode = " << _mode);
 		return false;
 	}
 
@@ -2532,7 +2514,7 @@ KVstore::open_id2predicate(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_id2predicate, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_id2predicate, mode = " << _mode);
 		return false;
 	}
 
@@ -2613,7 +2595,7 @@ KVstore::open_literal2id(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_literal2id, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_literal2id, mode = " << _mode);
 		return false;
 	}
 
@@ -2696,7 +2678,7 @@ KVstore::open_id2literal(int _mode)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_id2literal, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_id2literal, mode = " << _mode);
 		return false;
 	}
 
@@ -2775,7 +2757,7 @@ KVstore::open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num)
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_subID2values, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_subID2values, mode = " << _mode);
 		return false;
 	}
 
@@ -3445,7 +3427,7 @@ KVstore::open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num, TYPE_E
 	}
 	else 
 	{
-		cerr << "Invalid open mode in open_objID2values, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_objID2values, mode = " << _mode);
 		return false;
 	}
 
@@ -3915,12 +3897,12 @@ KVstore::getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_
 			return false;
 		}
 		if(_tmp[1] == 0 || _tmp[1] == 32767){
-			cerr << "InIn getsubIDlistByobjIDpreID " << _objid << ' ' << _preid << endl;
-			cerr << " _tmp[0] :" << _tmp[0] << endl;
-			cerr << " _tmp[1] :" << _tmp[1] << endl;
-			cerr << "_len:" << _len << endl;
-			cerr << "old_len:  " << tmp_len << endl;
-			cerr << "add_pidsidlist.size():  " << add_pidsidlist.size() << " " << "del_pidsidlist.size(): " << del_pidsidlist.size() << endl;
+			SLOG_ERROR("InIn getsubIDlistByobjIDpreID " << _objid << ' ' << _preid);
+			SLOG_ERROR(" _tmp[0] :" << _tmp[0]);
+			SLOG_ERROR(" _tmp[1] :" << _tmp[1]);
+			SLOG_ERROR("_len:" << _len);
+			SLOG_ERROR("old_len:  " << tmp_len);
+			SLOG_ERROR("add_pidsidlist.size():  " << add_pidsidlist.size() << " " << "del_pidsidlist.size(): " << del_pidsidlist.size());
 
 			// for(int i = 0; i < _len / sizeof(unsigned); i++){
 			// 	cerr << _tmp[i] << " ";
@@ -4092,7 +4074,7 @@ KVstore::open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num)
 		buffer_size = Util::MAX_BUFFER_SIZE * buffer_pID2values_query;
 	}
 	else {
-		cerr << "Invalid open mode in open_preID2values, mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode in open_preID2values, mode = " << _mode);
 		return false;
 	}
 	return this->open(this->preID2values, KVstore::s_pID2values, _mode, buffer_size, _pre_num);
@@ -4421,7 +4403,7 @@ bool
 KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
 #ifdef DEBUG_KVSTORE
-	cout << "In getsubIDobjIDlistBypreID " << _preid << endl;
+	SLOG_CODE("In getsubIDobjIDlistBypreID " << _preid);
 #endif
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
@@ -4430,7 +4412,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 #ifdef DEBUG_KVSTORE
-	cout<<"the length of list: "<<_len<<endl;
+	SLOG_CODE("the length of list: "<<_len);
 #endif
 		if (!_get) 
 		{
@@ -4446,7 +4428,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 			_subid_objidlist[2 * i] = _tmp[1 + i];
 			_subid_objidlist[2 * i + 1] = _tmp[1 + _tmp[0] + i];
 #ifdef DEBUG_KVSTORE
-		cout<<_subid_objidlist[2*i]<<" "<<_subid_objidlist[2*i+1]<<endl;
+		SLOG_CODE(_subid_objidlist[2*i]<<" "<<_subid_objidlist[2*i+1]);
 #endif
 		}
 
@@ -4455,7 +4437,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 	//	if(VList::listNeedDelete(_len))
 	//	{
 #ifdef DEBUG_KVSTORE
-		cout<<"this is a vlist"<<endl;
+		SLOG_CODE("this is a vlist");
 #endif
 			delete[] _tmp;
 			//_tmp = NULL;
@@ -4781,7 +4763,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		smode = "open";
 	}
 	else {
-		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode of: " << _tree_name << " mode = " << _mode);
 		return false;
 	}
 	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
@@ -4823,7 +4805,7 @@ KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buf
 		smode = "open";
 	}
 	else {
-		cerr << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode of: " << _name << " mode = " << _mode);
 		return false;
 	}
 	_array = new ISArray(this->store_path, _name, smode, _buffer_size, _key_num);
@@ -4870,7 +4852,7 @@ KVstore::open(IVArray*& _array, string _name, int _mode, unsigned long long _buf
 	}
 	else
 	{
-		cerr << "Invalid open mode of: " << _name << " mode = " << _mode << endl;
+		SLOG_ERROR("Invalid open mode of: " << _name << " mode = " << _mode);
 		return false;
 	}
 	_array = new IVArray(this->store_path, _name, smode, _buffer_size, _key_num);
@@ -5771,11 +5753,11 @@ KVstore::TransactionInvalid(shared_ptr<Transaction> txn)
 	
 	if(ret1 == false)
 	{
-		cerr << "shared unlock failed !" << endl;
+		SLOG_ERROR("shared unlock failed !");
 	}
 	if(ret2 == false)
 	{
-		cerr << "exclusive unlock failed !" << endl;
+		SLOG_ERROR("exclusive unlock failed !");
 	}
 	assert(ret1 && ret2);
 	return ret1 && ret2;
@@ -5865,7 +5847,7 @@ KVstore::s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0 ) {
 			if(base_empty == false){
-				cerr << "delete keys" << endl;
+				SLOG_ERROR("delete keys");
 				this->removeKey(this->subID2values, _subid);
 			}
 			continue;
@@ -5934,14 +5916,14 @@ KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0) {
 			if(base_empty == false){
-				cerr << "delete keys" << endl;
+				SLOG_ERROR("delete keys");
 				this->removeKey(this->objID2values, _obj_id);
 			}
 			continue;
 		}
 		
 		if(base_empty == true){
-			cout << "addValueByKey in objID2values" << endl;
+			SLOG_CODE("addValueByKey in objID2values");
 			this->addValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
 		} 
 		else this->setValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
@@ -6006,7 +5988,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		if(_len == 0) {
 			if(base_empty == false)
 			{
-				cerr << "delete keys" << endl;
+				SLOG_ERROR("delete keys");
 				// assert(false);
 				this->removeKey(this->objID2values, _obj_id);
 			}
@@ -6079,7 +6061,7 @@ KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0) {
 			if(base_empty == false){
-				cerr << "delete keys" << endl;
+				SLOG_ERROR("delete keys");
 				this->removeKey(this->preID2values, _pre_id);
 			}
 			continue;

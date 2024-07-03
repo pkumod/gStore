@@ -40,7 +40,7 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
     root_candidate.insert(root_id);
   }
 #ifdef TOPK_DEBUG_INFO
-  cout<<"ROOT has"<< root_candidate.size()<<" ids"<<endl;
+  SLOG_CODE("ROOT has"<< root_candidate.size()<<" ids");
 #endif
   if(has_coefficient)
     node_score = GetChildNodeScores(coefficient,root_candidate, false, nullptr, nullptr,
@@ -93,7 +93,7 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
   }
 
 #ifdef TOPK_DEBUG_INFO
-  cout<<"ROOT has"<< root_candidate.size()<<"ids "<<", FR has "<<child_fqs.size()<<" FQs"<<endl;
+  SLOG_CODE("ROOT has"<< root_candidate.size()<<"ids "<<", FR has "<<child_fqs.size()<<" FQs");
 #endif
   return fr;
 }
@@ -133,7 +133,7 @@ DPBUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
     id_fqs[fq_id] = fq;
     fq->TryGetNext(k);
 #ifdef SHOW_SCORE
-  cout<<"FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost<<endl;
+  SLOG_CODE("FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost);
 #endif
   }
   return id_fqs;
@@ -183,7 +183,7 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
 
   // Return OW iterators
 #ifdef SHOW_SCORE
-  cout<<"var["<<child_var<<"] has no child, constructing OW iterators"<<endl;
+  SLOG_CODE("var["<<child_var<<"] has no child, constructing OW iterators");
 #endif
   std::vector<TYPE_ENTITY_LITERAL_ID> children_ids;
   std::vector<double> children_scores;
@@ -195,18 +195,19 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
   for(auto parent_id:parent_var_candidates)
   {
 #ifdef SHOW_SCORE
-    cout<<"parent var["<<parent_id<<"] has "<<parent_child[parent_id].size()<<" child, its OW "<<endl;
+    SLOG_CODE("parent var["<<parent_id<<"] has "<<parent_child[parent_id].size()<<" child, its OW ");
 #endif
     auto ow = make_shared<OWIterator>();
     auto child_it = parent_child[parent_id]->contents_->cbegin();
     auto child_end =  parent_child[parent_id]->contents_->cend();
     auto ow_predicates = make_shared<NodeOneChildVarPredicates>();
+    std::string code_print;
     while(child_it != child_end)
     {
       const auto child_id = child_it->first;
       auto predicate_vec = child_it->second;
 #ifdef SHOW_SCORE
-      cout<<"["<<child_id<<"]"<<" "<<(*node_score)[child_id];
+      code_print += "["<<child_id<<"]" + " " + (*node_score)[child_id];
 #endif
       children_ids.push_back(child_id);
       (*ow_predicates)[child_id] = predicate_vec;
@@ -215,7 +216,7 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
       child_it++;
     }
 #ifdef SHOW_SCORE
-    cout<<endl;
+    SLOG_CODE(code_print);
       //cout<<parent_id<<"'s OW ["<<child_var<<"]";
 #endif
     if(has_coefficient)

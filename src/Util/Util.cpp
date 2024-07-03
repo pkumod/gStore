@@ -832,7 +832,7 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CODE("dir is not exist.");
         }
         return;
     }
@@ -871,7 +871,7 @@ void Util::dir_filepaths(const string _dir, std::vector<std::string> &file_list)
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CODE("dir is not exist.");
         }
         return;
     }
@@ -1030,7 +1030,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CODE("dir is not exist.");
         }
         return total_size;
     }

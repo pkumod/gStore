@@ -88,11 +88,11 @@ JoinMethod PlanGenerator::GetJoinStrategy(bool s_is_var, bool p_is_var, bool o_i
 			if (o_is_var) return JoinMethod::sp2o;
 			if (p_is_var) return JoinMethod::so2p;
 		} else {
-			cout << "error: var_num not equal to 1 or 2" << endl;
+			SLOG_ERROR("error: var_num not equal to 1 or 2");
 			exit(-1);
 		}
 	}
-	cout << "error: var_num not equal to 1 or 2" << endl;
+	SLOG_ERROR("error: var_num not equal to 1 or 2");
 	exit(-1);
 }
 
@@ -665,7 +665,7 @@ PlanTree* PlanGenerator::GetBestPlanByNum(int total_var_num) {
 			}
 		}
 	}
-	cout << "during enumerate plans, get " << count << " possible best plans." << endl;
+	SLOG_CODE("during enumerate plans, get " << count << " possible best plans.");
 	return best_plan;
 }
 
@@ -988,7 +988,7 @@ void PlanGenerator::AddSatelliteNode(PlanTree* best_plan) {
 // 	  we use heuristic optimization strategy.
 // 4. Else, we use complex DP optimization strategy.
 BGPQueryStrategy PlanGenerator::PlanStrategy(bool use_binary_join) {
-	cout << "small query var num = " << SMALL_QUERY_VAR_NUM << ", total var num = " << bgpquery->get_total_var_num() << endl;
+	SLOG_CODE("small query var num = " << SMALL_QUERY_VAR_NUM << ", total var num = " << bgpquery->get_total_var_num());
 	if(bgpquery->get_total_var_num() <= SMALL_QUERY_VAR_NUM) return BGPQueryStrategy::Heuristic;
 
 	unsigned candidate_max = 1 << 5;
@@ -1090,7 +1090,7 @@ void PlanGenerator::ConsiderVarScan(BGPQueryStrategy strategy) {
 				break;
 			}
 			default:{
-				cout << "Error in PlanGenerator::ConsiderVarScan, unknown BGPQueryStrategy!" << endl;
+				SLOG_ERROR("Error in PlanGenerator::ConsiderVarScan, unknown BGPQueryStrategy!");
 				assert(false);
 			}
 		}
@@ -1225,7 +1225,7 @@ PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
 		case BGPQueryStrategy::DP:
 			return DPPlan(use_binary_join);
 		default:
-			cout << "Error in PlanGenerator::get_plan, query strategy error!" << endl;
+			SLOG_ERROR("Error in PlanGenerator::get_plan, query strategy error!");
 			assert(false);
 	}
 }
@@ -1361,7 +1361,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				break;
 			}
 			default: {
-				cout << "error: joinmethod error" << endl;
+				SLOG_ERROR("error: joinmethod error");
 				exit(-1);
 			}
 		}
@@ -1483,37 +1483,37 @@ double PlanGenerator::EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID pre_id, bool 
 // Codes belows for print debug_info
 
 void PlanGenerator::print_plan_generator_info() const {
-	cout << "----print plan_generator_info----" << endl;
-	cout << "triple_num = " << triples_num << endl;
-	cout << "limit_literal = " << limitID_literal << endl;
-	cout << "limit_entity = " << limitID_entity << endl;
-	cout << "limit_predicate = " << limitID_predicate << endl;
-	cout << "-------print var and id--------" << endl;
+	SLOG_CODE("----print plan_generator_info----");
+	SLOG_CODE("triple_num = " << triples_num);
+	SLOG_CODE("limit_literal = " << limitID_literal);
+	SLOG_CODE("limit_entity = " << limitID_entity);
+	SLOG_CODE("limit_predicate = " << limitID_predicate);
+	SLOG_CODE("-------print var and id--------");
 	for(unsigned i = 0; i < bgpquery->var_vector.size(); ++i){
-		cout << "\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "\t\t" << bgpquery->get_vardescrip_by_index(i)->id_ << endl;
+		SLOG_CODE("\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "\t\t" << bgpquery->get_vardescrip_by_index(i)->id_);
 	}
 }
 
 void PlanGenerator::print_sample_info() {
-	cout << "----print var_to_num_map----" << endl;
+	SLOG_CODE("----print var_to_num_map----");
 	for(auto var_num_pair : var_to_num_map){
-		cout << "var: " << var_num_pair.first << ", num: " << var_num_pair.second << endl;
+		SLOG_CODE("var: " << var_num_pair.first << ", num: " << var_num_pair.second);
 	}
 
-	cout << "----print var_sampled_from_candidate----" << endl;
+	SLOG_CODE("----print var_sampled_from_candidate----");
 	for(auto var_sampled_pair : var_sampled_from_candidate){
-		cout << "var: " << var_sampled_pair.first << ", sampled: " << (var_sampled_pair.second ? "true" : "false") << endl;
+		SLOG_CODE("var: " << var_sampled_pair.first << ", sampled: " << (var_sampled_pair.second ? "true" : "false"));
 	}
 
-	cout << "----print var_to_sample_cache----" << endl;
+	SLOG_CODE("----print var_to_sample_cache----");
 	for(const auto &var_sample_pair : var_to_sample_cache){
-		cout << "var: " << var_sample_pair.first << ", sample_num: " << var_sample_pair.second.size() << endl;
+		SLOG_CODE("var: " << var_sample_pair.first << ", sample_num: " << var_sample_pair.second.size());
 	}
 
-	cout << "----print s_o_list_average_size----" << endl;
+	SLOG_CODE("----print s_o_list_average_size----");
 	for(const auto &s_pair : s_o_list_average_size){
 		for(auto o_pair : s_pair.second){
-			cout << s_pair.first << " to " << o_pair.first << " average size: " << o_pair.second << endl;
+			SLOG_CODE(s_pair.first << " to " << o_pair.first << " average size: " << o_pair.second);
 		}
 	}
 }
