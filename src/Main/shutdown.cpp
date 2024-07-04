@@ -26,16 +26,10 @@ int gc_check(string _type, string _port, string &res)
 {
     std::string strUrl = gc_getUrl(_type, _port).append("/api");
 	std::string strPost;
+	strUrl.append("/");
 	if (_type == "grpc")
-    {
-        strUrl.append("/grpc");
-		strPost = "operation=check";
-    }
-	else
-	{
-		strUrl.append("/");
-		strPost = "{\"operation\": \"check\"}";
-	}
+        strUrl.append("grpc");
+	strPost = "{\"operation\": \"check\"}";
     int ret = HttpUtil::Post(strUrl, strPost, res);
 	// cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
@@ -168,14 +162,7 @@ int main(int argc, char *argv[])
 		string postdata;
 		string strUrl = gc_getUrl(type, port);
 		strUrl.append("/shutdown");
-		if (type == "grpc")
-		{
-			postdata = "username=" + system_user + "&password=" + system_password;
-		} 
-		else
-		{
-			postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
-		}
+		postdata = "{\"username\":\"" + system_user + "\",\"password\":\"" + system_password + "\"}";
 		HttpUtil::Post(strUrl, postdata, res);
 		rapidjson::Document jsonRes;
 		jsonRes.Parse(res.c_str());

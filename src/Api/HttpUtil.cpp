@@ -138,7 +138,7 @@ int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 	return res;
 }
 
-int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse, bool json)
+int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 	strResponse.clear();
 	CURLcode res;
@@ -152,13 +152,10 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::s
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	if (json)
-	{
-		struct curl_slist* headerlist = NULL;
-		std::string content_type = "Content-Type:application/json";
-		headerlist = curl_slist_append(headerlist, content_type.c_str());
-    	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
-	}
+	struct curl_slist* headerlist = NULL;
+	std::string content_type = "Content-Type:application/json";
+	headerlist = curl_slist_append(headerlist, content_type.c_str());
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
@@ -173,7 +170,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::s
 	return res;
 }
 
-int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename, bool json)
+int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -186,13 +183,10 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const 
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	if (json)
-	{
-		struct curl_slist* headerlist = NULL;
-		std::string content_type = "Content-Type:application/json";
-		headerlist = curl_slist_append(headerlist, content_type.c_str());
-    	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
-	}
+	struct curl_slist* headerlist = NULL;
+	std::string content_type = "Content-Type:application/json";
+	headerlist = curl_slist_append(headerlist, content_type.c_str());
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
 	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
