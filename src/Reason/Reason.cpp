@@ -217,7 +217,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // property
       // searchsparql = "select " + source + " where " + wheresparql;
       // updatesparql = " <?> <Rule:" + target + "> " + value + ". ";
-      if (logic == 1)
+      if (conditions_length > 1)
       {
         insert_sparql="insert {"+source+" <Rule:" + label + "> " + value + ". } where { " + wheresparql + " }";
       }
@@ -233,7 +233,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // searchsparql = "select " + source + " " + target + " where " + wheresparql;
       // updatesparql = " <?1> <Rule:" + label + "> <?2>.";
       string target = returnInfo["target"].GetString();
-      if (logic == 1)
+      if (conditions_length > 1)
       {
         insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where { " + wheresparql + " }";
       }
