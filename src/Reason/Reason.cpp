@@ -182,7 +182,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
         }
       }
 
-      if (conditions_length > 1)
+      if (conditions_length > 1 && i < conditions_length-1)
       {
         if (logic == 1)
         {
@@ -217,7 +217,14 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // property
       // searchsparql = "select " + source + " where " + wheresparql;
       // updatesparql = " <?> <Rule:" + target + "> " + value + ". ";
-      insert_sparql="insert {"+source+" <Rule:" + label + "> " + value + ". } where "+wheresparql;
+      if (logic == 1)
+      {
+        insert_sparql="insert {"+source+" <Rule:" + label + "> " + value + ". } where { " + wheresparql + " }";
+      }
+      else
+      {
+        insert_sparql="insert {"+source+" <Rule:" + label + "> " + value + ". } where "+wheresparql;
+      }
       delete_sparql="delete where {?x <Rule:" + label + "> " + value +".}";
     }
     else
@@ -226,7 +233,14 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       // searchsparql = "select " + source + " " + target + " where " + wheresparql;
       // updatesparql = " <?1> <Rule:" + label + "> <?2>.";
       string target = returnInfo["target"].GetString();
-      insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where "+wheresparql;
+      if (logic == 1)
+      {
+        insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where { " + wheresparql + " }";
+      }
+      else
+      {
+        insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where "+wheresparql;
+      }
       delete_sparql="delete where {?x <Rule:" + label + "> ?y.}";
     }
     Document::AllocatorType &allocator = doc.GetAllocator();
