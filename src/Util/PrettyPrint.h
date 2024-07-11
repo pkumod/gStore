@@ -138,9 +138,35 @@ protected:
     for (size_t i = 0; i < t.size(); i++)
     {
       auto & val = t[i];
-      stream << std::string(_cell_padding, ' ') << std::setw(_column_sizes[i])
+      unsigned int num = getUtf8CHNum(val);
+      if (num != 0)
+      {
+        stream << std::string(_cell_padding, ' ') << val;
+        num = _column_sizes[i] - val.size() + num;
+        stream << std::string(_cell_padding + num, ' ') << "|";
+      }
+      else
+      {
+        stream << std::string(_cell_padding, ' ') << std::setw(_column_sizes[i])
             << std::left << val << std::string(_cell_padding, ' ') << "|";
+      }
     }
+  }
+
+  unsigned int getUtf8CHNum(const std::string& str)
+  {
+      unsigned int num = 0;
+      int i = 0;
+      for (int i = 0; i < str.size(); i++)
+      {
+        if ((unsigned char)str[i] > 0x80)  
+        {
+            i += 2;
+            num++;
+        }  
+      }
+
+      return num;
   }
 
 
