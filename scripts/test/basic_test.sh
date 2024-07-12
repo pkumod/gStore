@@ -59,7 +59,7 @@ do
 	done
 	${op[1]} -db ${db[$i]} -q ${path}"all.sql" | grep -A 10000 "Finish Database \`${db[$i]}\` Load" > "1.txt"
 	ans=$(grep "There has answer" 1.txt)
-	if [[ ${ans:18:${#ans}-18} -ne ${triple_num[$i]} ]]
+	if [[ ${ans:73:${#ans}-73} -ne ${triple_num[$i]} ]]
 	then
 		echo ${ans}
 		echo -e "\033[43;35m update triples in ${db[$i]}.db has errors \033[0m"
@@ -81,7 +81,7 @@ do
 	if [ ${bbug_ans[$i]} -ne -1 ]
 	then
 		ans=$(grep "There has answer" 1.txt)
-		if [[ ${ans:18:${#ans}-18} -ne ${bbug_ans[$i]} ]]
+		if [[ ${ans:73:${#ans}-73} -ne ${bbug_ans[$i]} ]]
 		then 
 			echo -e "\033[43;35m query ${db[0]}${bbug_sql[$i]}.sql in ${db[0]}.db has errors \033[0m"
 			"rm" "1.txt"
@@ -99,7 +99,7 @@ do
     # echo "${op[1]} -db ${db[1]} -q ${path}${db[1]}/${db[1]}${lubm_sql[$i]}.sql"
     ${op[1]} -db ${db[1]} -q ${path}${db[1]}"/"${db[1]}${lubm_sql[$i]}".sql" | grep -A 10000 "Finish Database \`${db[1]}\` Load" > "1.txt"
 	ans=$(grep "There has answer" 1.txt)
-	if [[ ${ans:18:${#ans}-18} -ne ${lubm_ans[$i]} ]]
+	if [[ ${ans:73:${#ans}-73} -ne ${lubm_ans[$i]} ]]
 	then
 		echo -e "\033[43;35m query ${db[1]}${lubm_sql[$i]}.sql in ${db[1]}.db has errors \033[0m"
 		"rm" "1.txt"
@@ -116,7 +116,7 @@ do
 	# echo "${op[1]} -db ${db[2]} -q ${path}${db[2]}/${db[2]}${num_sql[$i]}"
 	${op[1]} -db ${db[2]} -q ${path}${db[2]}"/"${db[2]}${num_sql[$i]}".sql" | grep -A 10000 "Finish Database \`${db[2]}\` Load" > "1.txt"
 	ans=$(grep "There has answer" 1.txt)
-	if [[ ${ans:18:${#ans}-18} -ne ${num_ans[$i]} ]]
+	if [[ ${ans:73:${#ans}-73} -ne ${num_ans[$i]} ]]
 	then
 		echo -e "\033[43;35m query ${db[2]}${num_sql[$i]}.sql in ${db[2]}.db has errors \033[0m"
 		"rm" "1.txt"
@@ -133,7 +133,7 @@ do
 	# echo "${op[1]} -db ${db[3]} -q ${path}${db[3]}/${db[3]}${small_sql[$i]}"
 	${op[1]} -db ${db[3]} -q ${path}${db[3]}"/"${db[3]}${small_sql[$i]}".sql" | grep -A 10000 "Finish Database \`${db[3]}\` Load" > "1.txt"
 	ans=$(grep "There has answer" 1.txt)
-	if [[ ${ans:18:${#ans}-18} -ne ${small_ans[$i]} ]]
+	if [[ ${ans:73:${#ans}-73} -ne ${small_ans[$i]} ]]
 	then
 		echo -e "\033[43;35m query ${db[3]}${small_sql[$i]}.sql in ${db[3]}.db has errors \033[0m"
 		"rm" "1.txt"
@@ -152,7 +152,7 @@ ${op[2]} -db ${db[3]} -f ${path}${db[3]}"/small_add.nt" > "1.txt"
 "rm" "1.txt"
 ${op[1]} -db ${db[3]} -q ${path}"all.sql" | grep -A 10000 "Finish Database \`${db[3]}\` Load" > "1.txt"
 ans=$(grep "There has answer" 1.txt)
-if [[ ${ans:18:${#ans}-18} -ne ${triple_num[4]} ]]
+if [[ ${ans:73:${#ans}-73} -ne ${triple_num[4]} ]]
 then
 	echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
 	"rm" "1.txt"
@@ -167,7 +167,7 @@ ${op[3]} -db ${db[3]} -f ${path}${db[3]}"/small_add.nt" > "1.txt"
 "rm" "1.txt"
 ${op[1]} -db ${db[3]} -q ${path}"all.sql" | grep -A 10000 "Finish Database \`${db[3]}\` Load" > "1.txt"
 ans=$(grep "There has answer" 1.txt)
-if [[ ${ans:18:${#ans}-18} -ne ${triple_num[3]} ]]
+if [[ ${ans:73:${#ans}-73} -ne ${triple_num[3]} ]]
 then
 	echo -e "\033[43;35m update triples in ${db[3]}.db has errors \033[0m"
 	"rm" "1.txt"

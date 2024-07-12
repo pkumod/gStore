@@ -72,7 +72,7 @@ add_custom_command( OUTPUT TEST
 	COMMAND echo "parser test......"
 	COMMAND bash scripts/test/parser_test.sh
     COMMAND echo "repeatedly insertion/deletion test num:20......"
-    COMMAND scripts/test/update_test 20
+    COMMAND scripts/test/update_test 20 > /dev/null
     COMMAND echo "repeatedly insertion/deletion test end"
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
