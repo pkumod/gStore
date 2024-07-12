@@ -63,15 +63,17 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 	int dep = ctx->depth();
 
 	// Print tabs according to node's depth in tree
+	stringstream ss;
 	for (int i = 0; i < dep; i++)
-		cout << '\t';
+		ss << '\t';
 
 	// Print node type
-	cout << "Type: " << nodeTypeName << ' ';
+	ss << "Type: " << nodeTypeName << ' ';
 
 	// Print what text a node has matched
-	cout << "Text: " << ctx->getText() << endl;
+	ss << "Text: " << ctx->getText();
 
+	SLOG_CORE(ss.str());
 }
 
 /**
@@ -83,15 +85,16 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
 {
 	// Print tabs according to node's depth in tree
+	stringstream ss;
 	for (int i = 0; i < dep; i++)
-		cout << '-';
+		ss << '-';
 
 	string nodeTypeName = typeid(*root).name();
 	size_t n = root->children.size();
-	cout << "Type: " << nodeTypeName << ' ';
-	cout << "Text: " << root->getText() << ' ';
-	cout << "#Children: " << n << endl;
-
+	ss << "Type: " << nodeTypeName << ' ';
+	ss << "Text: " << root->getText() << ' ';
+	ss << "#Children: " << n;
+	SLOG_CORE(ss.str());
 	for (size_t i = 0; i < n; i++)
 	{
 		antlr4::tree::ParseTree *childNode = root->children[i];
@@ -403,7 +406,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
-				// cout<<"tmp:"<<tmp<<endl;
+				// SLOG_CORE("tmp:"<<tmp);
 				if (tmp == "SIMPLECYCLEPATH")
 					proj_var.aggregate_type = ProjectionVar::simpleCyclePath_type;
 				else if (tmp == "SIMPLECYCLEBOOLEAN")
@@ -589,7 +592,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				// set fun_name
 				proj_var.path_args.fun_name = bicCtx->string()->getText();
 				proj_var.var = varCtx->getText();
-				cout<< "call personalized function:" << proj_var.path_args.fun_name << endl;
+				SLOG_CORE("call personalized function:" << proj_var.path_args.fun_name);
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{
@@ -791,7 +794,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 	}
 	else 	// >= 3, even #children, must be NOT IN or function call
 	{
-		cout << "root->getText() " << root->getText() << endl;
+		SLOG_CORE("root->getText() " << root->getText());
 		string left = root->children[1]->getText();
 		transform(left.begin(), left.end(), left.begin(), ::toupper);
 		if (left == "NOT")
@@ -914,7 +917,7 @@ antlrcpp::Any QueryParser::visitGroupGraphPattern(SPARQLParser::GroupGraphPatter
 antlrcpp::Any QueryParser::visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
 	GroupPattern &group_pattern)
 {
-    // cout<<"##Enter visitSubSelect##"<<ctx->getText()<<endl;
+    SLOG_CORE("Enter visitSubSelect\n" << ctx->getText());
 	group_pattern.addOneSubquery();
     QueryParser new_parser(&group_pattern.getLastSubquery());
     new_parser.prefix_map=prefix_map;
@@ -929,9 +932,11 @@ antlrcpp::Any QueryParser::visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
 	const auto &inner_v2t = new_parser.query_tree_ptr->getVar2Type();
 	for (const auto &p : inner_v2t)
 		v2t[p.first] = p.second;
-    // cout<<"##Result visitSubSelect##"<<endl;
-    // group_pattern.print(0);
-    // cout<<"##Exit visitSubSelect##"<<endl;
+	stringstream _ss;
+    _ss << "Result visitSubSelect" << endl;
+    group_pattern.print(0, _ss);
+	SLOG_CORE(_ss.str());
+    SLOG_CORE("Exit visitSubSelect");
 	return antlrcpp::Any();
 }
 
@@ -1206,7 +1211,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 			{
 				kleene = true;
 				predicate = pathPrimary->getText();
-				// cout << "kleene true, predicate = " << predicate << endl;
+				// SLOG_CORE("kleene true, predicate = " << predicate);
 			}
 			else if ((pathMod && pathMod->getText() != "*") || pathPrimary->pathNegatedPropertySet() || pathPrimary->path())
 				throw runtime_error("[ERROR]	Only support iri* as property path.");

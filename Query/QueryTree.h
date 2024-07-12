@@ -82,7 +82,7 @@ class GroupPattern
 		int getRootPatternBlockID(int x);
 		void mergePatternBlockID(int x, int y);
 
-		void print(int dep);
+		void print(int dep, stringstream& ss);
 		void relabel(QueryTreeRelabeler& qtr);
 };
 
@@ -317,7 +317,7 @@ public:
 	// CompTreeNode(const CompTreeNode& that);
 	// CompTreeNode& operator=(const CompTreeNode& that);
 	// ~CompTreeNode();
-	void print(int dep);	// Print subtree rooted at this node
+	void print(int dep, stringstream& _ss);	// Print subtree rooted at this node
 	Varset getVarset();
 	CompTreeNode(const CompTreeNode& that)
 	{

@@ -14,6 +14,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	Util util;
+	util.configure_new();
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	size_t _len_suffix = _db_suffix.length();
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
 		ResultSet ask_rs;
-		FILE *ask_ofp = stdout;
+		FILE *ask_ofp = nullptr;
 		system_db.query(sparql, ask_rs, ask_ofp);
 		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
@@ -76,11 +77,11 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-		cout << "start loading the database......" << endl;
+		SLOG_CORE("start loading the database......");
 		Database _db(db_name);
 		// _db.load();
 		_db.loadDBInfoFile();
-		cout << "finish load database info...."<< endl;
+		SLOG_CORE("finish load database info");
 
 		sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
 		ResultSet _rs;

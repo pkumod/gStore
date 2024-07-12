@@ -30,13 +30,13 @@ void StringIndexFile::save(KVstore &kv_store)
 	this->index_file = fopen((this->loc + "index").c_str(), "wb");
 	if (this->index_file == NULL)
 	{
-		cerr << "save " << this->loc + "index" << " for wb error." << endl;
+		SLOG_ERROR("save " << this->loc + "index" << " for wb error.");
 		return;
 	}
 	this->value_file = fopen((this->loc + "value").c_str(), "wb");
 	if (this->value_file == NULL)
 	{
-		cerr << "save " << this->loc + "value" << " for wb error." << endl;
+		SLOG_ERROR("save " << this->loc + "value" << " for wb error.");
 		return;
 	}
 
@@ -70,13 +70,13 @@ void StringIndexFile::load()
 	this->index_file = fopen((this->loc + "index").c_str(), "rb+");
 	if (this->index_file == NULL)
 	{
-		cerr << "load " << this->loc + "index" << " for rb+ error." << endl;
+		SLOG_ERROR("load " << this->loc + "index" << " for rb+ error.");
 		return;
 	}
 	this->value_file = fopen((this->loc + "value").c_str(), "rb+");
 	if (this->value_file == NULL)
 	{
-		cerr << "load " << this->loc + "value" << " for rb+ error." << endl;
+		SLOG_ERROR("load " << this->loc + "value" << " for rb+ error.");
 		return;
 	}
 
@@ -101,7 +101,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, char* &buffer, unsi
 	unsigned length = (*this->index_table)[id].length;
 	//if(id == 9)
 	//{
-	//cout<<"check: "<<offset<<" "<<length<<endl;
+	//SLOG_CORE("check: "<<offset<<" "<<length);
 	//}
 
 	allocBuffer(buffer, buffer_size, length);
@@ -121,7 +121,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, char* &buffer, unsi
 
 	//if(id == 9)
 	//{
-	//cout<<"check: "<<*str<<endl;
+	//SLOG_CORE("check: "<<*str);
 	//}
 
 	//	if (real)
@@ -130,7 +130,7 @@ bool StringIndexFile::randomAccess(unsigned id, string *str, char* &buffer, unsi
 	//	}
 	//if(id == 9)
 	//{
-	//cout<<"check: "<<*str<<endl;
+	//SLOG_CORE("check: "<<*str);
 	//}
 
 	return true;
@@ -151,19 +151,19 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 
 		max_end = max(max_end, request[i].offset + long(request[i].length));
 	}
-
+	stringstream _ss;
 	if (this->type == Entity)
-		cout << "Entity StringIndex ";
-	if (this->type == Literal)
-		cout << "Literal StringIndex ";
-	if (this->type == Predicate)
-		cout << "Predicate StringIndex ";
+		_ss << "Entity StringIndex ";
+	else if (this->type == Literal)
+		_ss << "Literal StringIndex ";
+	else if (this->type == Predicate)
+		_ss <<"Predicate StringIndex ";
 
 	long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)request.size())
 	{
-		cout << "sequence access." << endl;
-
+		_ss << "sequence access.";
+		SLOG_CORE(_ss.str());
 #ifndef PARALLEL_SORT
 		sort(request.begin(), request.end());
 #else
@@ -252,8 +252,8 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	}
 	else
 	{
-		cout << "random access." << endl;
-
+		_ss << "random access.";
+		SLOG_CORE(_ss.str());
 		for (int i = 0; i < (int)request.size(); i++)
 			this->randomAccess(request[i].id, request[i].str, buffer, buffer_size, real);
 	}
@@ -305,10 +305,10 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	fflush(this->value_file);
 	//if(id == 9)
 	//{
-		//cout<<"check in change():9 "<<str<<endl;
+		//SLOG_CORE("check in change():9 "<<str<<endl;
 		//string str2;
 		//randomAccess(id, &str2);
-		//cout<<str2<<endl;
+		//SLOG_CORE(str2<<endl;
 	//}
 }
 
@@ -411,12 +411,12 @@ void StringIndex::addRequest(std::vector<StringIndexFile::AccessRequest> *reques
 	{
 		//if(id == 9)
 		//{
-		//cout<<"to search 9 in string buffer"<<endl;
+		//SLOG_CORE("to search 9 in string buffer"<<endl;
 		//}
 		//if(searchBuffer(id, str))
 		//{
 		////			*str = trie->Uncompress(*str)
-		//cout<<"found in string buffer"<<endl;
+		//SLOG_CORE("found in string buffer");
 		//return;
 		//}
 		if (id < Util::LITERAL_FIRST_ID) // entity

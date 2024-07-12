@@ -145,12 +145,12 @@ Util::configure()
 	Util::global_config["operation_logs"] = "true";
 
 #ifdef DEBUG
-	fprintf(stderr, "profile: %s\n", profile.c_str());
+	SLOG_CORE("profile: " << profile);
 #endif
     if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
     {
 #ifdef DEBUG
-        fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
+        SLOG_CORE("openfile " + profile + " error " + strerror(errno));
 #endif
         return false;
     }
@@ -177,7 +177,7 @@ Util::configure()
 		memset(keyname, 0, sizeof(keyname));
 		sscanf(buf, "%[^=|^ |^\t]", keyname);
 #ifdef DEBUG
-				//fprintf(stderr, "keyname: %s\n", keyname);
+		SLOG_CORE("keyname: " + keyname);
 #endif
 		sscanf(++c, "%[^\n]", keyval);
 		char *keyval_o = (char *)calloc(strlen(keyval) + 1, sizeof(char));
@@ -185,12 +185,27 @@ Util::configure()
 		{
 			Util::a_trim(keyval_o, keyval);
 #ifdef DEBUG
-			//fprintf(stderr, "keyval: %s\n", keyval_o);
+            SLOG_CORE("keyval: " + keyval_o);
 #endif
 			if(keyval_o && strlen(keyval_o) > 0)
 			{
 				//strcpy(keyval, keyval_o);
-				global_config[string(keyname)] = string(keyval_o);
+                const char* hashPos = strchr(keyval_o, '#');
+                if (hashPos != NULL)
+                {   
+                    size_t len = hashPos - keyval_o;
+                    char *p0 = new char[len + 1];
+                    char *p1 = new char[len + 1];
+                    strncpy(p0, keyval_o, len);
+                    Util::a_trim(p1, p0);
+				    global_config[string(keyname)] = string(p1);
+                    delete p0;
+                    delete p1;
+                }
+                else
+                {
+                    global_config[string(keyname)] = string(keyval_o);
+                }
 			}
 			xfree(keyval_o);
 		}
@@ -305,18 +320,20 @@ bool Util::configure_new()
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
     slog.init(log_mode.c_str());
-    #ifdef DEBUG
-    if (slog._logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
+    if (Slog::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
     {
-        SLOG_DEBUG("the current settings are as below (key:value): ");
-        SLOG_DEBUG("----------------------------------");
+        vector<std::string> headers = {"name", "value"};
+        PrettyPrint pp(headers);
+        std::vector<std::vector<std::string>> rows;
         for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
         {
-            SLOG_DEBUG(it->first + " : " + it->second);
+            pp.addRow({it->first, it->second});
         }
-        SLOG_DEBUG("----------------------------------");
+        stringstream _ss;
+        _ss << "configuration params: " << endl;
+        pp.print(_ss);
+        SLOG_CORE(_ss.str());
     }
-    #endif
     return true;
 }
 
@@ -334,22 +351,22 @@ Util::config_setting()
     FILE *fp = NULL;
     int status = 0; // 1 AppName 2 KeyName
 
-#ifdef DEBUG
-	fprintf(stderr, "profile: %s\n", profile.c_str());
-#endif
+    #ifdef DEBUG
+	SLOG_CORE("profile: " + profile);
+    #endif
     if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
     {
-#ifdef DEBUG
-        fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
-#endif
+        #ifdef DEBUG
+        SLOG_CORE("openfile [" + profile + "] error [" + strerror(errno) + "]");
+        #endif
         return false;
     }
     fseek(fp, 0, SEEK_SET);
 	memset(appname, 0, sizeof(appname));
 	sprintf(appname,"[%s]", AppName);
-#ifdef DEBUG
-	fprintf(stderr, "appname: %s\n", appname);
-#endif
+    #ifdef DEBUG
+	SLOG_CORE("appname: " + appname);
+    #endif
 
     while(!feof(fp) && fgets(buf_i, len2, fp) != NULL)
     {
@@ -367,9 +384,9 @@ Util::config_setting()
         {
             if(strncmp(buf, appname, strlen(appname)) == 0)
             {
-#ifdef DEBUG
-				fprintf(stderr, "app found!\n");
-#endif
+                #ifdef DEBUG
+				SLOG_CORE("app found!");
+                #endif
                 status = 1;
                 continue;
             }
@@ -387,22 +404,22 @@ Util::config_setting()
                     continue;
                 memset(keyname, 0, sizeof(keyname));
                 sscanf(buf, "%[^=|^ |^\t]", keyname);
-#ifdef DEBUG
-				fprintf(stderr, "keyname: %s\n", keyname);
-#endif
+                #ifdef DEBUG
+				SLOG_CORE("keyname: " + keyname);
+                #endif
                 if(strcmp(keyname, KeyName) == 0) 
 				{
-#ifdef DEBUG
-					fprintf(stderr, "key found!\n");
-#endif
+                    #ifdef DEBUG
+					SLOG_CORE("key [" + keyname + "] found!");
+                    #endif
                     sscanf(++c, "%[^\n]", KeyVal);
                     char *KeyVal_o = (char *)calloc(strlen(KeyVal) + 1, sizeof(char));
                     if(KeyVal_o != NULL) 
 					{
                         Util::a_trim(KeyVal_o, KeyVal);
-#ifdef DEBUG
-						fprintf(stderr, "KeyVal: %s\n", KeyVal_o);
-#endif
+                        #ifdef DEBUG
+						SLOG_CORE("KeyVal: " + KeyVal_o);
+                        #endif
                         if(KeyVal_o && strlen(KeyVal_o) > 0)
                             strcpy(KeyVal, KeyVal_o);
                         xfree(KeyVal_o);
@@ -421,9 +438,9 @@ Util::config_setting()
     //fprintf(stderr, "%s\n", KeyVal);
 	if(strcmp(KeyVal, "distribute") == 0)
 	{
-#ifdef DEBUG
-		fprintf(stderr, "the gStore will run in distributed mode!\n");
-#endif
+        #ifdef DEBUG
+		SLOG_CORE("the gStore will run in distributed mode!");
+        #endif
 		//Util::gStore_mode = true;
 	}
 
@@ -440,7 +457,7 @@ Util::Util()
         this->debug_kvstore = fopen(s.c_str(), "w+");
         if(this->debug_kvstore == NULL)
         {
-            cerr << "open error: kv.log\n";
+            SLOG_ERROR("open error: kv.log");
             this->debug_kvstore = stderr;
         }
     }
@@ -452,7 +469,7 @@ Util::Util()
         this->debug_database = fopen(s.c_str(), "w+");
         if(this->debug_database == NULL)
         {
-            cerr << "open error: db.log\n";
+            SLOG_ERROR("open error: db.log");
             this->debug_database = stderr;
         }
     }
@@ -464,7 +481,7 @@ Util::Util()
         this->debug_vstree = fopen(s.c_str(), "w+");
         if(this->debug_vstree == NULL)
         {
-            cerr << "open error: vs.log\n";
+            SLOG_ERROR("open error: vs.log");
             this->debug_vstree = stderr;
         }
     }
@@ -837,7 +854,7 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CORE("dir is not exist.");
         }
         return;
     }
@@ -944,7 +961,7 @@ Util::count_lines(const std::string _file, unsigned int _mode)
     if (_mode == 0)
     {
         std::string cmd = "wc -l " + _file + " | awk '{print $1}'";
-        // cout << "count by cmd: " << cmd << endl;
+        // SLOG_CORE("count by cmd: " << cmd);
         char _cmd[1024] = {0};
         strcpy(_cmd, cmd.c_str());
         FILE *ptr;
@@ -968,7 +985,7 @@ Util::count_lines(const std::string _file, unsigned int _mode)
     }
     else
     {
-        // cout << "count by reader: " << _file << endl;
+        // SLOG_CORE("count by reader: " << _file);
         ifstream reader;
         std::string line;
         reader.open(_file.c_str(),ios::in);
@@ -997,7 +1014,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CORE("dir is not exist.");
         }
         return total_size;
     }
@@ -1374,7 +1391,7 @@ string
 Util::getQueryFromFile(const char* _file_path)
 {
 #ifdef DEBUG_PRECISE
-    cerr << "file to open: " << _file_path <<endl;
+   SLOG_CORE("file to open: " << _file_path);
 #endif
     char buf[10000];
     std::string query_file;
@@ -1406,15 +1423,15 @@ Util::getItemsFromDir(string _path)
 	string ret = "";
 	if((dp = opendir(_path.c_str())) == NULL)
 	{
-		fprintf(stderr, "error opening directory!\n");
+		SLOG_ERROR("error opening directory: " + _path);
 	}
 	else
 	{
 		while((entry = readdir(dp)) != NULL)
 		{
-#ifdef DEBUG_PRECISE
-			fprintf(stderr, "%s\n", entry->d_name);
-#endif
+            #ifdef DEBUG_PRECISE
+			SLOG_CORE(entry->d_name);
+            #endif
 			string name= string(entry->d_name);
 			int len = name.length();
 			if(len <= 3)
@@ -1434,9 +1451,9 @@ Util::getItemsFromDir(string _path)
 		}
 		closedir(dp);
 	}
-#ifdef DEBUG_PRECISE
-	fprintf(stderr, "OUT getItemsFromDir\n");
-#endif
+    #ifdef DEBUG_PRECISE
+	SLOG_CORE("OUT getItemsFromDir");
+    #endif
 	return ret;
 }
 
@@ -1458,12 +1475,12 @@ Util::getSystemOutput(string cmd)
     file += "ans.txt";
     cmd += " > ";
     cmd += file;
-    //cerr << cmd << endl;
+    //SLOG_CORE(cmd);
     int ret = system(cmd.c_str());
     cmd = "rm -rf " + file;
     if(ret < 0)
     {
-        fprintf(stderr, "system call failed:%s\n", cmd.c_str());
+        SLOG_CORE("system call failed:" + cmd);
         // system(cmd.c_str());
         Util::remove_path(file);
         return "";
@@ -1472,7 +1489,7 @@ Util::getSystemOutput(string cmd)
     ifstream fin(file.c_str());
     if(!fin)
     {
-        cerr << "getSystemOutput: Fail to open : " << file << endl;
+        SLOG_CORE("getSystemOutput: Fail to open : " + file);
         return "";
     }
 
@@ -1480,7 +1497,7 @@ Util::getSystemOutput(string cmd)
 	getline(fin, temp);
 	while(!fin.eof())
 	{
-		//cout<<"system line"<<endl;
+		//SLOG_CORE("system line");
 		if(ans == "")
 			ans = temp;
 		else
@@ -1544,9 +1561,7 @@ Util::checkProcessExist(const std::string& processPath, const std::string& currP
     std::string procPath = "/proc";
     DIR *dirp = opendir(procPath.c_str());
     if (dirp == NULL) {
-        #ifdef DEBUG
-        std::cerr << "Error opening /proc directory." << std::endl;
-        #endif
+        SLOG_CORE("Error opening /proc directory.");
         return false;
     }
      // read all files of /proc 
@@ -1878,7 +1893,7 @@ void
 Util::intersect(unsigned*& _id_list, unsigned& _id_list_len, const unsigned* _list1, unsigned _len1, const unsigned* _list2, unsigned _len2)
 {
 	vector<unsigned> res;
-	//cout<<"intersect prevar: "<<_len1<<"   "<<_len2<<endl;
+	//SLOG_CORE("intersect prevar: "<<_len1<<"   "<<_len2);
 	if(_list1 == NULL || _len1 == 0 || _list2 == NULL || _len2 == 0)
 	{
 		_id_list = NULL;
@@ -1962,7 +1977,7 @@ Util::intersect(unsigned*& _id_list, unsigned& _id_list_len, const unsigned* _li
 		break;
 	}
 	default:
-		cerr << "no such method in Util::intersect()" << endl;
+		SLOG_CORE("no such method in Util::intersect()");
 		break;
 	}
 
@@ -2853,7 +2868,7 @@ std::string Util::getArgValue(int argc, char* argv[], std::string argname,std::s
     }
 
   }
-  //cout << argname << " is not exist,using the default value:" << default_value << endl;
+  //SLOG_CORE(argname + " is not exist,using the default value: " + default_value);
   return default_value;
 }
 
@@ -2910,21 +2925,13 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     for(auto row: rows)
         pp.addRow(row);
     stringstream ss;
-    ss << "\n";
+    ss << endl;
     pp.print(ss);
     if (Slog::_logger.getAllAppenders().size() == 0)
     {
         Util::configure_new();
     }
-    
-    if(Slog::_logger.isEnabledFor(log4cplus::INFO_LOG_LEVEL))
-    {
-        SLOG_INFO(ss.str());
-    } 
-    else if (Slog::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
-    {
-        SLOG_DEBUG(ss.str());
-    }
+    SLOG_INFO(ss.str());
 }
 
 std::string Util::urlEncode(const std::string& str)

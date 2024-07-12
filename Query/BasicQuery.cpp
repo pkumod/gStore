@@ -343,7 +343,7 @@ BasicQuery::setReady(int _var)
 void 
 BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _obj_var_id)
 {
-	//cout<<"sub var id: "<<_sub_var_id<<endl;
+	//SLOG_CORE("sub var id: "<<_sub_var_id);
     // update var(sub)_degree & edge_id according to this triple
     int sub_degree = this->var_degree[_sub_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var
@@ -357,7 +357,7 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
 void 
 BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_id, int _sub_var_id)
 {
-	//cout<<"obj var id: "<<_obj_var_id<<endl;
+	//SLOG_CORE("obj var id: "<<_obj_var_id);
     // update var(sub)_degree & edge_id according to this triple
     int obj_degree = this->var_degree[_obj_var_id];
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
@@ -381,9 +381,9 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 	//WARN:?p is ok to exist in both s/o or p position
 	//TODO:return only the entity ID, not the predicate ID?
 	//so the _query_var mix all the variables, not considering the order
-    cout << "IN buildBasicSignature" << endl;
+    SLOG_CORE("IN buildBasicSignature");
     //this->initial();
-    //cout << "after init" << endl;
+    //SLOG_CORE("after init");
 
     this->buildTuple2Freq();
 
@@ -414,13 +414,13 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 
 	//NOTICE: we append the candidates for selected pre_var to original select_var_num columns
     this->select_var_num = this->selected_pre_var_num = 0;
-	cout<<"now to check the query var list order:"<<endl;
-
+    stringstream _ss;
+	_ss << "now to check the query var list order:\n";
 	for(unsigned i = 0; i < _query_var.size(); ++i)
 	{
 		//NOTICE:not place pre var in join
 		string var = _query_var[i];
-//		cout<<i<<" "<<var<<endl;
+		_ss << i <<"\t" << var;
 		int pid = this->getPreVarID(var);
 		if(pid == -1) // not pre var
 		{
@@ -438,19 +438,16 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 		this->pre_var[pid].selected = true;
 		this->selected_pre_var_num++;
 	}
+    SLOG_CORE(_ss.str());
+    _ss.clear();
+    _ss << "select_var_num=" << this->select_var_num;
 
-#ifdef DEBUG
-    stringstream _ss;
-    _ss << "select_var_num=" << this->select_var_num << endl;
-    Util::logging(_ss.str());
-#endif
-
-    cout << "select variables: ";
+    _ss << "select variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); ++i)
     {
-        cout << "[" << this->var_name[i] << ", " << i << " " << this->var_str2id[this->var_name[i]] << "]\t";
+        _ss << "[" << this->var_name[i] << ", " << i << " " << this->var_str2id[this->var_name[i]] << "]\t";
     }
-    cout << endl;
+    SLOG_CORE(_ss.str());
 	//BETTER:ouput the selected pre vars
 
 	this->total_var_num = this->select_var_num;
@@ -460,22 +457,24 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
     // (var_str2id is modified)
     this->graph_var_num = this->var_str2id.size();
 
-    cout<< "graph variables: ";
+    _ss.clear();
+    _ss << "graph variables: ";
     for(unsigned i = 0; i < this->var_str2id.size(); i ++)
     {
-        cout << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
+        _ss << "[" << this->var_name[i] << ", " << i << " " <<  this->var_str2id[this->var_name[i]] << "]\t";
     }
-    cout << endl;
+    SLOG_CORE(_ss.str());
 
     this->candidate_list = new IDList[this->graph_var_num];
-
+    _ss.clear();
+    _ss << "\n";
     for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
         string& sub = this->triple_vt[i].subject;
         string& pre = this->triple_vt[i].predicate;
         string& obj = this->triple_vt[i].object;
 
-//		cout << endl << sub << "  " << pre << "  " << obj << endl;
+		_ss << sub << "\t" << pre << "\t" << obj << "\n";
 
 
 		//int pre_id = -1;    //not found
@@ -488,15 +487,17 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 		{
 			// -1 if not found, this means this query is invalid
 			pre_id = _p_kvstore->getIDByPredicate(pre);
-			{
+
+			// {
 				//stringstream _ss;
-				//_ss << "pre2id: " << pre << "=>" << pre_id << endl;
+            _ss << "pre2id: " << pre << "=>" << pre_id << "\n";
 				//Util::logging(_ss.str());
-			}
+			// }
 		}
 		if(pre_id == -1)
 		{
-			cout << "invalid query because the pre is not found: " << pre << endl;
+            SLOG_CORE(_ss.str());
+			SLOG_CORE("invalid query because the pre is not found: " << pre);
 			return false;
 		}
 
@@ -527,7 +528,7 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 				this->link_with_constant[sub_var_id] = true;
 			}
 			this->updateSubSig(sub_var_id, pre_id, i, obj_var_id);
-			//cout<<"to update sub: "<<sub<<endl<<sub_var_id<<" "<<pre_id<<" "<<obj_id<<" "<<obj<<endl<<obj_var_id<<endl;
+			//SLOG_CORE("to update sub: "<<sub)<<sub_var_id<<" "<<pre_id<<" "<<obj_id<<" "<<obj)<<obj_var_id);
         }
 
         // obj is either a var or a string
@@ -543,10 +544,10 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
             this->updateObjSig(obj_var_id, pre_id, i, sub_var_id);
         }
     }
-
+    SLOG_CORE(_ss.str());
 #ifdef DEBUG
-	//cout<<"yy: "<<Signature::BitSet2str(this->var_sig[2])<<endl;
-	//cout<<this->var_name[2]<<endl;
+	//SLOG_CORE("yy: "<<Signature::BitSet2str(this->var_sig[2]));
+	//SLOG_CORE(this->var_name[2]);
 #endif
 
 	//set need_retrieve for vars in join whose total degree > 1
@@ -560,14 +561,14 @@ BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_v
 		}
 	}
 
-    cout << "OUT encodeBasicQuery" << endl;
+    SLOG_CORE("OUT encodeBasicQuery");
     this->encode_result = true;
 
     for(unsigned i = 0; i < var_str2id.size(); ++i) {
     	if(this->link_with_constant[i]){
-    		cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true" << endl;
+    		SLOG_CORE("var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "true");
     	} else{
-			cout << "var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "false" << endl;
+			SLOG_CORE("var[" << i <<"]: " << var_name[i] <<" is linked with constant: " << "false");
 		}
     }
 	return true;
@@ -918,11 +919,11 @@ BasicQuery::getVarID_FirstProcessWhenJoin()
 		//if(this->isLiteralVariable(i) || this->isSatelliteInJoin(i))
 		if(!this->isReady(i))
         {
-			cout<<"var "<<i<<" is not ready!"<<endl;
+			SLOG_CORE("var "<<i<<" is not ready!");
             continue;
         }
 		else
-			cout<<"var "<<i<<" is ready!"<<endl;
+			SLOG_CORE("var "<<i<<" is ready!");
 
 		unsigned tmp_size = (this->candidate_list[i]).size();
 		//if(this->isLiteralVariable(i))
@@ -986,11 +987,11 @@ string BasicQuery::triple_str()
 {
     stringstream _ss;
 
-    _ss<<"Triple num:"<<this->getTripleNum()<<endl;
+    _ss<<"Triple num:"<<this->getTripleNum() << endl;
 
     for (unsigned i = 0; i < getTripleNum(); i++)
     {
-        _ss<<(this->getTriple(i).toString())<<endl;
+        _ss<<(this->getTriple(i).toString()) << endl;
     }
 
     return _ss.str();
@@ -998,9 +999,8 @@ string BasicQuery::triple_str()
 
 string BasicQuery::to_str()
 {
-    Util::logging("IN BasicQuery::to_str");
+    SLOG_CORE("IN BasicQuery::to_str");
     stringstream _ss;
-
     _ss << "Triples: " << endl;
     for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {
@@ -1041,15 +1041,15 @@ string BasicQuery::to_str()
             //if(edge_sig[i][j].count() != 0)
             //{
                 //_ss << "pre_id=" << edge_pre_id[i][j] << "\t";
-                //_ss << i << ":" << j << "\t" << edge_sig[i][j] << endl;
+                //_ss << i << ":" << j << "\t" << edge_sig[i][j]);
             //}
         //}
-        //_ss << endl;
+        //_ss);
     //}
 
-    Util::logging(_ss.str()); //debug
+    SLOG_CORE(_ss.str()); //debug
 
-    Util::logging("OUT BasicQuery::to_str");
+    SLOG_CORE("OUT BasicQuery::to_str");
 
     return _ss.str();
 }

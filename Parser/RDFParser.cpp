@@ -55,10 +55,10 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	{
 		ofile.open(_error_log,ios::app);
 		if (!ofile)
-			cout << "Error log file cannot be opened." << endl;
+			SLOG_CORE("Error log file cannot be opened.");
 
 	}
-
+	SLOG_CORE("RDFParser parseFile starting...");
 	int numLines = init_line;
 	int prev_line = -1;	// For recognizing errors thrown by TurtleParser in the same line of the input file
 	while (_triple_num < RDFParser::TRIPLE_NUM_PER_GROUP)
@@ -88,7 +88,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 			if (ofile)
 				ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg;
 			else
-				cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg << endl;
+				SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate << "> <"<< rawObject << ">): " << errorMsg);
 			this->_TurtleParser.discardLine();
 			continue;
 		}
@@ -123,8 +123,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 							<< "> <" << rawObject << ">): " << errorMsg;
 					else
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg);
 					continue;
 				}
 				catch (out_of_range& e)
@@ -134,8 +134,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 							<< "> <" << rawObject << ">): " << errorMsg;
 					else
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg);
 					continue;
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
@@ -155,8 +155,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 							<< "> <" << rawObject << ">): " << errorMsg;
 					else
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg);
 					continue;
 				}
 				if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
@@ -167,8 +167,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 						ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 							<< "> <" << rawObject << ">): " << errorMsg;
 					else
-						cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+						SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg);
 					continue;
 				}
 				_object = "\"" + rawObject + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
@@ -190,8 +190,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					catch (out_of_range& e)
@@ -201,8 +201,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 				}
@@ -220,8 +220,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-							<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+							<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					catch (out_of_range& e)
@@ -231,8 +231,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					if (ll < (long long)INT_MIN || ll >(long long)INT_MAX)
@@ -242,8 +242,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 				}
@@ -261,8 +261,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					catch (out_of_range& e)
@@ -272,8 +272,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					if (ll < (long long)SHRT_MIN || ll >(long long)SHRT_MAX)
@@ -283,8 +283,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 				}
@@ -302,8 +302,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					catch (out_of_range& e)
@@ -313,8 +313,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					if (ll < (long long)SCHAR_MIN || ll >(long long)SCHAR_MAX)
@@ -324,8 +324,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 				}
@@ -342,8 +342,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 					if (rawObject.length() == 3 && toupper(rawObject[0]) == 'N' && toupper(rawObject[1]) == 'A'
@@ -354,8 +354,8 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 							ofile << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
 								<< "> <" << rawObject << ">): " << errorMsg;
 						else
-							cout << "Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
-								<< "> <" << rawObject << ">): " << errorMsg << endl;
+							SLOG_CORE("Line " << numLines << " (<" << rawSubject << "> <" << rawPredicate \
+								<< "> <" << rawObject << ">): " << errorMsg);
 						continue;
 					}
 				}
@@ -371,7 +371,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	{
 		ofile.close();
 	}
-	cout << "RDFParser parseFile done!" << endl;
+	SLOG_CORE("RDFParser parseFile done!");
 
 	return numLines;
 }

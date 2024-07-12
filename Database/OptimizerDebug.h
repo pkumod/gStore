@@ -34,14 +34,14 @@ inline long GetTimeDebug(){
 inline void PrintTimeDebug(std::string description, long old_time){
 #ifdef OPTIMIZER_DEBUG_INFO
   long t2 = Util::get_cur_time();
-  std::cout<<  description << ",  used " << (t2 - old_time) << "ms." <<std::endl;
+  SLOG_CORE(description << ",  used " << (t2 - old_time) << "ms.");
 #endif
 }
 
 #define DebugWithLine(x)  (GetLineDescription()+ ": " + x)
 
 #ifdef OPTIMIZER_DEBUG_INFO
-  #define PrintDebugInfoLine(x) {std::cout<< DebugWithLine(x)  <<std::endl;}
+  #define PrintDebugInfoLine(x) {SLOG_CORE(x);}
 #else
   #define PrintDebugInfoLine(x) {}
 #endif

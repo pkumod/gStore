@@ -135,13 +135,13 @@ vector<int> Varset::mapTo(const Varset &_varset) const
 
 void Varset::print() const
 {
-	printf("Varset: ");
+	stringstream _ss;
+	_ss << "Varset: ";
 
 	for (int i = 0; i < (int)this->vars.size(); i++)
 	{
-		printf("%s ", this->vars[i].c_str());
+		_ss << this->vars[i].c_str() << " ";
 	}
-
-	printf("\n");
+	SLOG_CORE(_ss.str());
 }
 
