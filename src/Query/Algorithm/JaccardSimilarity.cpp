@@ -5,12 +5,7 @@ using namespace std;
 
 std::vector<std::pair<int, float>> PathQueryHandler::JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum)
 {
-    //参数uid是待计算Jaccard相似度顶点id,pred_sets是边过滤的谓词集合，k是计算uid k跳内邻居的相似度,retNum是返回相似度最高的retNum个顶点id
-    std::vector<pair<int,float>> JS;
-    
-    std::set<int> adj_oneHop = set<int>();
-    std::set<int> adj_twoHop = set<int>();
-    
+    std::vector<std::pair<int, float>> ret;
     auto getNeighbourWithPredSet=[&](int id,const std::vector<int> &pred_set)
     {
         std::set<int> adj_ret = set<int>();
@@ -31,6 +26,7 @@ std::vector<std::pair<int, float>> PathQueryHandler::JaccardSimilarity(int uid, 
         }
         return adj_ret;
     };
+
     auto binaryInsert = [&](vector<pair<int,float>>& a,pair<int,float> insertPair)
     {
         int l=0,r=a.size();
@@ -49,88 +45,78 @@ std::vector<std::pair<int, float>> PathQueryHandler::JaccardSimilarity(int uid, 
         }          
         a.insert(a.begin()+l,insertPair);
     };
-    if(k>0||k<0)
-    {   
-        //获取uid的一阶邻居，包括入边邻居和出边邻居 
-        adj_oneHop = getNeighbourWithPredSet(uid,pred_sets);
-        //对于每个一阶邻居，计算它们的一阶邻居与uid的一阶邻居的交集，用于计算相似度，同时不在交集内的则加入到uid的二阶邻居
-        for(auto neighbour:adj_oneHop)
+    std::set<int> uids = getNeighbourWithPredSet(uid, pred_sets);
+    if (uids.size() == 0)
+        return ret;
+    std::vector<pair<int,float>> JS;
+    std::set<int> no_used; //二跳未使用节点
+    for (auto neighbour :uids)
+    {
+        std::set<int> comp_neis = getNeighbourWithPredSet(neighbour,pred_sets);
+        float num = 0;
+        float total_num = uids.size() + comp_neis.size();
+        //去除比较节点
+        if (uids.find(neighbour) != uids.end())
+            total_num -= 1;
+        for (int comp_uid : comp_neis)
         {
-            std::set<int> _adj_oneHop = set<int>();
-            _adj_oneHop = getNeighbourWithPredSet(neighbour,pred_sets);
-            int isa = 0;
-            for(auto v:_adj_oneHop)
+            //去除比较节点
+            if (comp_uid == uid)
             {
-                if(v==uid) continue;
-                if(adj_oneHop.find(v)!=adj_oneHop.end())
-                    isa++;
-                else if(adj_twoHop.find(v)==adj_twoHop.end())
-                    adj_twoHop.insert(v);
+                total_num -= 1;
+                continue;
             }
-            float js = (float)(isa)/(_adj_oneHop.size()+adj_oneHop.size()-isa-2);            
+            if (uids.find(comp_uid) == uids.end())
+            {
+                no_used.insert(comp_uid);
+                continue;
+            }
+            num++;
+        }
+        float js = total_num - num > 0 ? num/(total_num - num):0;            
+        binaryInsert(JS,pair<int,float>(neighbour,js));
+    }
+    if (k > 1)
+    {
+        for (auto neighbour :no_used)
+        {
+            std::set<int> comp_neis = getNeighbourWithPredSet(neighbour,pred_sets);
+            float num = 0;
+            float total_num = uids.size() + comp_neis.size();
+            //去除比较节点
+            if (uids.find(neighbour) != uids.end())
+                total_num -= 1;
+            for (int comp_uid : comp_neis)
+            {
+                //去除比较节点
+                if (comp_uid == uid)
+                {
+                    total_num -= 1;
+                    continue;
+                }
+                if (uids.find(comp_uid) == uids.end())
+                {
+                    continue;
+                }
+                num++;
+            }
+            float js = total_num - num > 0 ? num/(total_num - num):0;            
             binaryInsert(JS,pair<int,float>(neighbour,js));
         }
     }
-    if(k>1||k<0)
+    if (JS.size() < retNum)
     {
-        //对于二阶邻居计算交集和相似度
-        for(auto neighbour:adj_twoHop)
+        vector<int> kHop = kHopNeighbor(uid,false,k,pred_sets,retNum);
+        set<int> others = set<int>();
+        for(auto vid:kHop)
         {
-            std::set<int> _adj_oneHop = set<int>();
-            _adj_oneHop = getNeighbourWithPredSet(neighbour,pred_sets);
-            int isa = 0;
-            for(auto v:_adj_oneHop)
+            if(uids.find(vid)==uids.end()&&no_used.find(vid)==no_used.end()&&others.find(vid)==others.end())
             {
-                if(adj_oneHop.find(v)!=adj_oneHop.end())
-                    isa++;
+                JS.emplace_back(pair<int,float>(vid,0));
+                others.insert(vid);
             }
-            float js = (float)(isa)/(_adj_oneHop.size()+adj_oneHop.size()-isa-2);
-            vector<pair<int,float>>::iterator it = JS.begin();
-            binaryInsert(JS,pair<int,float>(neighbour,js));
         }
     }
-    set<int> others = set<int>();
-    //如果顶点在uid两跳范围外，则它们的相似度一定为0
-    if(retNum>JS.size())
-    {
-        if(k<0)
-        {
-            int j=0;
-            while (retNum>JS.size()&&j<2)
-            {
-                for(auto pred=0;csr[j].pre_num;pred++)
-                {
-                    for(int i=0;i<csr[j].id2vid[pred].size();i++)
-                    {
-                        auto vid = csr[j].id2vid[pred][i];
-                        if(adj_oneHop.find(vid)==adj_oneHop.end()&&adj_twoHop.find(vid)==adj_twoHop.end()&&others.find(vid)==others.end())
-                        {
-                            JS.emplace_back(pair<int,float>(vid,0));
-                            others.insert(vid);
-                            if(retNum<=JS.size())
-                                break;
-                        }
-                    }
-                    if(retNum<=JS.size())
-                        break;
-                }
-                j++;
-            }
-        }
-        else
-       {
-            vector<int> kHop = kHopNeighbor(uid,false,k,pred_sets,retNum);
-            for(auto vid:kHop)
-            {
-                if(adj_oneHop.find(vid)==adj_oneHop.end()&&adj_twoHop.find(vid)==adj_twoHop.end()&&others.find(vid)==others.end())
-                {
-                    JS.emplace_back(pair<int,float>(vid,0));
-                    others.insert(vid);
-                }
-            }
-       }
-    }
-    std::vector<std::pair<int, float>> ret;
     //返回相似度最大的retNum个顶点
     for(int i=0;i<retNum&&i<JS.size();i++)
     {
