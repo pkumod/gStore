@@ -81,6 +81,13 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for reason engine
 void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 
+std::string to_json_string(const Json& json)
+{
+	rapidjson::StringBuffer resBuffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> resWriter(resBuffer);
+    json.Accept(resWriter);
+	return resBuffer.GetString();
+}
 
 std::string jsonParam(const Json &json, const std::string &key)
 {
@@ -149,7 +156,7 @@ void sig_handler(int signo)
 		delete pfnUtil;
 		pfnUtil = NULL;
 	}
-	SLOG_DEBUG("grpc server stopped.");
+	SLOG_INFO("grpc server stopped.");
 	wait_group.done();
 	std::cout.flush();
 	_exit(signo);
@@ -169,8 +176,8 @@ int main(int argc, char *argv[])
 	bool loadCSR = 0; // DO NOT load CSR by default
 	if (argc < 2)
 	{
-		SLOG_DEBUG("Server will use the default port: " + port_str);
-		SLOG_DEBUG("Not load any database!");
+		SLOG_INFO("Server will use the default port: " + port_str);
+		SLOG_INFO("Not load any database!");
 		port = atoi(port_str.c_str());
 	}
 	else if (argc == 2)
@@ -219,7 +226,7 @@ int main(int argc, char *argv[])
 	std::string currPid = to_string(getpid());
 	if (Util::checkProcessExist(processPath, currPid))
 	{
-		cout << "grpc server already running." << endl;
+		SLOG_INFO("grpc server already running.");
 		return 0;
 	}
 	// check port
@@ -242,7 +249,7 @@ int main(int argc, char *argv[])
 		cout<<endl;
 		if (bind_return == -1)
 		{			
-			cout<<"Server port "<< port_str <<" is already in use."<<endl;
+			SLOG_INFO("Server port "<< port_str <<" is already in use.");
 			return -1;
 		}
 	} 
@@ -326,11 +333,11 @@ int initialize(unsigned short port, std::string db_name, bool load_src)
 		start_status = grpcServer.start(port);
 		if(start_status == 0)
 		{
-			SLOG_DEBUG("grpc server port " + to_string(port));
+			SLOG_INFO("grpc server port " + to_string(port));
 		}
 		else
 		{
-			SLOG_DEBUG("grpc server start..." + to_string(start_status));
+			SLOG_INFO("grpc server start..." + to_string(start_status));
 			sleep(1);
 		}
 		max_try--;
@@ -455,18 +462,18 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 			}
 		}
 	}
+	SLOG_INFO("receive [shutdown] request from " << ip_addr);
 	std::string ss;
-	ss += "\n------------------------ grpc-api ------------------------";
-	ss += "\nremote_ip: " + ip_addr;
-	ss += "\noperation: shutdown";
-	ss += "\nmethod: " + string(request->get_method());
-	ss += "\nhttp_version: " +  string(request->get_http_version());
-	ss += "\nrequest_uri: " +  string(request->get_request_uri());
+	ss += "\n==================== grpc-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss += "\nrequest_body: \n" + request->body();
+		ss += "\n  request_body: " + request->body();
 	}
-	ss += "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss);
 	std::string error;
 	std::string username = jsonParam(json_data, "username");
@@ -528,16 +535,15 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusFileReadError, "Content-Type not match");
 		return;
 	}
-	
+	SLOG_INFO("receive [uploadfile] request from " << ip_addr);
 	std::string ss;
-	ss += "\n------------------------ grpc-api ------------------------";
-	ss += "\nremote_ip: " + ip_addr;
-	ss += "\noperation: uploadfile";
-	ss += "\nmethod: " +  string(request->get_method());
-	ss += "\nhttp_version: " +  string(request->get_http_version());
-	ss += "\nrequest_uri: " +  string(request->get_request_uri());
-	ss += "\ncontent-length: " + request->header("Content-Length");
-	ss += "\n----------------------------------------------------------";
+	ss += "\n==================== grpc-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
+	ss += "\n  Content-Length: " + request->header("Content-Length");
 	SLOG_DEBUG(ss);
 	Form &form = request->form();
 	if (form.empty())
@@ -617,7 +623,6 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	Json json_data;
 	json_data.SetObject();
 	Json::AllocatorType &allocator = json_data.GetAllocator();
-	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
 	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
 	{
 		Form &form = request->form();
@@ -667,18 +672,19 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 			}
 		}
 	}
+	SLOG_INFO("receive [downloadfile] request from " << ip_addr);
 	std::string ss;
-	ss += "\n------------------------ grpc-api ------------------------";
-	ss += "\nremote_ip: " + ip_addr;
-	ss += "\noperation: downloadfile";
-	ss += "\nmethod: " +  string(request->get_method());
-	ss += "\nhttp_version: " +  string(request->get_http_version());
-	ss += "\nrequest_uri: " + string(request->get_request_uri());
+	ss += "\n==================== grpc-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss += "\nrequest_body: \n" + request->body();
+		ss += "\n  request_body: " + request->body();
 	}
-	ss += "\n----------------------------------------------------------";
+	ss += "\n==================================================";
 	SLOG_DEBUG(ss);
 	std::string error;
 	std::string username = jsonParam(json_data, "username");
@@ -751,7 +757,6 @@ void api(const GRPCReq *request, GRPCResp *response)
 	Json json_data;
 	json_data.SetObject();
 	Json::AllocatorType &allocator = json_data.GetAllocator();
-	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
 	if (request->contentType() == APPLICATION_JSON) //for application/json
 	{
 		Json &json = request->json();
@@ -806,19 +811,19 @@ void api(const GRPCReq *request, GRPCResp *response)
 			return;
 		}
 	}
-	
+	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
 	std::string ss;
-	ss += "\n------------------------ grpc-api ------------------------";
-	ss += "\nremote_ip: " + ip_addr;
-	ss += "\noperation: " + operation;
-	ss += "\nmethod: " +  string(request->get_method());
-	ss += "\nhttp_version: " +  string(request->get_http_version());
-	ss += "\nrequest_uri: " +  string(request->get_request_uri());
+	ss += "\n==================== grpc-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
 	if (!request->body().empty())
 	{
-		ss += "\nrequest_body: \n" + request->body();
+		ss += "\n  request_body: " + request->body();
 	}
-	ss += "\n----------------------------------------------------------";
+	ss += "\n==================================================";
 	SLOG_DEBUG(ss);
 	// add callback task for access log start
 	auto *operation_ptr = new std::string(operation);
@@ -2413,7 +2418,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
-					SLOG_DEBUG("Accept-Encoding:" + request->header("Accept-Encoding"));
 					if (request->hasHeader("Accept-Encoding")) {
 						std::string accept_encoding = request->header("Accept-Encoding");
 						if (accept_encoding.find("gzip") != std::string::npos)
@@ -2421,6 +2425,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 							response->headers["Content-Encoding"] = "gzip";
 						}
 					}
+					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 					response->Json(resp_data);
 				}
 			}
@@ -2441,9 +2446,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 				resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
 
-								response->set_header_pair("Cache-Control", "no-cache");
+				response->set_header_pair("Cache-Control", "no-cache");
 				response->set_header_pair("Pragma", "no-cache");
 				response->set_header_pair("Expires", "0");
+
+				SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 				response->Json(resp_data);
 			}
 			else if (format == "json+file" || format == "file+json")
@@ -2477,9 +2484,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 					resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
 
-										response->set_header_pair("Cache-Control", "no-cache");
+					response->set_header_pair("Cache-Control", "no-cache");
 					response->set_header_pair("Pragma", "no-cache");
 					response->set_header_pair("Expires", "0");
+
+					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 					response->Json(resp_data);
 				}
 			}
@@ -2508,6 +2517,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
 			resp_data.AddMember("AnsNum", ret_val, allocator);
 			resp_data.AddMember("QueryTime", query_time, allocator);
+			SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 			response->Json(resp_data);
 		}
 		else

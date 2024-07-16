@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
 			cout << "version:" << version << ",update_sparql:" << update_sparql << endl;
 			ResultSet _rs;
-			FILE *ofp = stdout;
+			FILE *ofp = nullptr;
 			string msg;
 			_db = new Database(_db_name);
 			_db->load();

@@ -488,8 +488,8 @@ int main(int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		SLOG_DEBUG("Use the default port:" + port_str + "!");
-		SLOG_DEBUG("Not load any database!");
+		SLOG_INFO("Use the default port:" + port_str + "!");
+		SLOG_INFO("Not load any database!");
 		port = Util::string2int(port_str);
 	}
 	else if (argc == 2)
@@ -539,7 +539,7 @@ int main(int argc, char *argv[])
 	std::string currPid = to_string(getpid());
 	if (Util::checkProcessExist(processPath, currPid))
 	{
-		cout << "ghttp server already running." << endl;
+		SLOG_INFO("ghttp server already running.");
 		return 0;
 	}
 	// check port
@@ -562,7 +562,7 @@ int main(int argc, char *argv[])
 		cout<<endl;
 		if (bind_return == -1)
 		{			
-			cout<<"Server port "<< port_str <<" is already in use."<<endl;
+			SLOG_INFO("Server port " + port_str + " is already in use.");
 			return -1;
 		}
 	} 
@@ -715,14 +715,14 @@ int initialize(unsigned short port, std::string db_name, bool load_src)
 		//handle the Ctrl+C signal
 		signal(SIGINT, signalHandler);
 		//Start server
-		SLOG_DEBUG("ghttp server port " + to_string(server.config.port));
+		SLOG_INFO("ghttp server port " + to_string(server.config.port));
 		server.start(); });
 
 	// Wait for server to start so that the client can connect
 	this_thread::sleep_for(std::chrono::seconds(1));
 
 	server_thread.join();
-	SLOG_DEBUG("ghttp server stoped.");
+	SLOG_INFO("ghttp server stoped.");
 	return 0;
 }
 
@@ -738,7 +738,7 @@ void signalHandler(int signum)
 		delete pfnUtil;
 		pfnUtil = NULL;
 	}
-	SLOG_DEBUG("ghttp server stopped.");
+	SLOG_INFO("ghttp server stopped.");
 	std::cout.flush();
 	_exit(signum);
 }
@@ -1050,7 +1050,7 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 	string resJson = CreateJson(code, msg, 0);
 	if (code == 0)
 	{
-		// SLOG_DEBUG("response result:" + resJson);
+		SLOG_DEBUG("response result:" + resJson);
 	}
 	else
 	{
@@ -2759,7 +2759,6 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
 		try
 		{
-			SLOG_DEBUG("begin query...");
 			rs.setUsername(username);
 			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
 			query_time = Util::get_cur_time() - query_time;
@@ -2867,11 +2866,11 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
+					SLOG_DEBUG("response result:\n" << resJson);
 					auto content = request->header.find("Accept-Encoding");
 					if (content != request->header.end())
 					{
 						std::string accept_encoding = content->second;
-						SLOG_DEBUG("Accept-Encoding: " + accept_encoding);
 						if (accept_encoding.find("gzip") != std::string::npos)
 						{
 							char* compress_ = (char*)malloc(resJson.size());
@@ -2924,7 +2923,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				outfile.close();
 
 				rapidjson::StringBuffer s;
-				rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
+				rapidjson::Writer<rapidjson::StringBuffer> writer(s);
 				writer.StartObject();
 				writer.Key("StatusCode");
 				writer.Uint(0);
@@ -2941,7 +2940,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				writer.String(StringRef(filename.c_str()));
 				writer.EndObject();
 				string resJson = s.GetString();
-				
+				SLOG_DEBUG("response result:\n" << resJson);
 				//! Notice: remember to set no-cache in the response of query, Firefox and chrome works well even if you don't set, but IE will act strange if you don't set
 				// beacause IE will defaultly cache the query result after first query request, so the following query request of the same url will not be send if the result in cache isn't expired.
 				// then the following query will show the same result without sending a request to let the service run query
@@ -2985,9 +2984,10 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					resDoc.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 					resDoc.AddMember("FileName", StringRef(filename.c_str()), allocator);
 					StringBuffer resBuffer;
-					PrettyWriter<StringBuffer> resWriter(resBuffer);
+					Writer<StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
+					SLOG_DEBUG("response result:\n" << resJson);
 					*response << "HTTP/1.1 200 OK"
 							  << "\r\nContent-Type: application/json"
 							  << "\r\nContent-Length: " << resJson.length()
@@ -3031,6 +3031,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 				resDoc.Accept(resWriter);
 				string resJson = resBuffer.GetString();
+				SLOG_DEBUG("response result:\n" << resJson);
 				*response << "HTTP/1.1 200 OK"
 							<< "\r\nContent-Type: application/json"
 							<< "\r\nContent-Length: " << resJson.length()

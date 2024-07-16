@@ -94,7 +94,7 @@ main(int argc, char * argv[])
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
 		ResultSet ask_rs;
-		FILE* ask_ofp = stdout;
+		FILE* ask_ofp = nullptr;
 		// todo: check this return value
 		system_db.query(sparql, ask_rs, ask_ofp);
 		// int ret = system_db.query(sparql, ask_rs, ask_ofp);

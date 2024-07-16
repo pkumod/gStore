@@ -99,7 +99,7 @@ main(int argc, char * argv[])
 			//return -1;
 		}
 
-		string _db_path = _db_home + "/" + db_name + _db_suffix;
+		string _db_path = _db_home + db_name + _db_suffix;
 		cout << "database path: " << _db_path << endl;
 		if(Util::file_exist(_db_path)) // if the database has been built
 		{
@@ -144,7 +144,6 @@ main(int argc, char * argv[])
 				flag = _db.build(_rdf);
 			if (flag)
 			{
-				cout<<"Build Database Successfully!"<<endl;
 				ofstream f;
 				f.open(_db_path + "/success.txt");
 				f.close();
@@ -169,7 +168,7 @@ main(int argc, char * argv[])
 			cout<<"insert sparql:"<<sparql<<endl;
 			#endif
 			ResultSet _rs;
-			FILE* ofp = stdout;
+			FILE* ofp = nullptr;
 			string msg;
 			int ret = system_db.query(sparql, _rs, ofp);
 			if (ret >= 0)
