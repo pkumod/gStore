@@ -23,7 +23,7 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&transactionlog_lock, NULL);
     ipWhiteList = std::unique_ptr<IPWhiteList>(new IPWhiteList());
     ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
-    util.configure();
+    // util.configure();
 }
 
 APIUtil::~APIUtil()

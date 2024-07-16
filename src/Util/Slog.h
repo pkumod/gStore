@@ -4,9 +4,11 @@
 #include "log4cplus/configurator.h"
 #include "log4cplus/loggingmacros.h"
 #include "log4cplus/layout.h"
+#include <iostream>
 
 using namespace log4cplus::thread;
 using namespace log4cplus::helpers;
+using namespace std;
 
 #define LOG4CPLUS_CODE(logger, logEvent) LOG4CPLUS_MACRO_BODY(logger, logEvent, TRACE_LOG_LEVEL)
 
