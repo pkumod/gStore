@@ -590,10 +590,10 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 	std::string code_print;
 	if(!node->left_node && !node->right_node) code_print = "leaf node ";
 
-	SLOG_CODE(code_print << node->node->GetString());
+	SLOG_CORE(code_print << node->node->GetString());
 }
 
 void PlanTree::print(BGPQuery* bgpquery) {
-	SLOG_CODE("Plan: " << (bgpquery->distinct_query ? "distinct" : "not distinct"));
+	SLOG_CORE("Plan: " << (bgpquery->distinct_query ? "distinct" : "not distinct"));
 	print_tree_node(root_node, bgpquery);
 }

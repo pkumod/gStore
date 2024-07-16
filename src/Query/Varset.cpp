@@ -142,6 +142,6 @@ void Varset::print() const
 		code_print += this->vars[i] + " ";
 	}
 
-	SLOG_CODE(code_print);
+	SLOG_CORE(code_print);
 }
 

@@ -744,7 +744,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 				x.term_value = row.str[pos - id_cols];
 		} else if (root.oprt == "NOW")
 		{
-			SLOG_CODE("IN NOW");
+			SLOG_CORE("IN NOW");
 			time_t now = time(0);
 			tm *lctm = localtime(&now);
 			x.datatype = EvalMultitypeValue::xsd_datetime;
@@ -1306,25 +1306,25 @@ void TempResult::print(int no)
 	this->getAllVarset().print();
 
 	if (no == -1)
-		SLOG_CODE("temp result:");
+		SLOG_CORE("temp result:");
 	else
-		SLOG_CODE("temp result no." << no << ":");
+		SLOG_CORE("temp result no." << no << ":");
 
 	for (int i = 0; i < (int)this->result.size(); i++)
 	{
-		SLOG_CODE("[" << i << "]");
-		SLOG_CODE("id_varset: ");
+		SLOG_CORE("[" << i << "]");
+		SLOG_CORE("id_varset: ");
 		id_varset.print();
 		std::string code_print;
 		for (int j = 0; j < this->id_varset.getVarsetSize(); j++)
 			code_print += std::to_string(this->result[i].id[j]) + "\t";
-		SLOG_CODE(code_print);
-		SLOG_CODE("str_varset: ");
+		SLOG_CORE(code_print);
+		SLOG_CORE("str_varset: ");
 		str_varset.print();
 		code_print = "";
 		for (int j = 0; j < this->str_varset.getVarsetSize(); j++)
 			code_print += this->result[i].str[j] + "\t";
-		SLOG_CODE(code_print);
+		SLOG_CORE(code_print);
 	}
 }
 
@@ -1395,7 +1395,7 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stri
 		}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doJoin, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("after doJoin, used " << (tv_end - tv_begin) << " ms.");
 	// printf("after doJoin, used %ld ms (find compatible %ld ms, inner join %ld ms).\n", tv_end - tv_begin, totalFindCompTime, totalInnerJoinTime);
 }
 
@@ -1418,7 +1418,7 @@ void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 	}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doUnion, used " << (tv_end - tv_begin) <<" ms.");
+	SLOG_CORE("after doUnion, used " << (tv_end - tv_begin) <<" ms.");
 }
 
 void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
@@ -1469,7 +1469,7 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 	}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doOptional, used " << (tv_end - tv_begin) <<" ms.");
+	SLOG_CORE("after doOptional, used " << (tv_end - tv_begin) <<" ms.");
 }
 
 void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
@@ -1530,7 +1530,7 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *str
 	}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doMinus, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("after doMinus, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_num) {
@@ -1543,8 +1543,8 @@ void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varse
 
     long tv_end = Util::get_cur_time();
     unsigned after_size = results[0].result.size();
-	SLOG_CODE("after doFilter, used " << (tv_end - tv_begin) << " ms.");
-	SLOG_CODE("before filter size " << before_size << ", after filter size " << after_size << ".");
+	SLOG_CORE("after doFilter, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("before filter size " << before_size << ", after filter size " << after_size << ".");
 }
 
 void TempResultSet::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset)
@@ -1561,7 +1561,7 @@ void TempResultSet::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Var
 		this->results[i].doBind(bind, kvstore,entity_literal_varset);
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doBind, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("after doBind, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
@@ -1627,7 +1627,7 @@ void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *s
 		}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doProjection, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("after doProjection, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doDistinct1(TempResultSet &r)
@@ -1688,12 +1688,12 @@ void TempResultSet::doDistinct1(TempResultSet &r)
 	}
 
 	long tv_end = Util::get_cur_time();
-	SLOG_CODE("after doDistinct, used " << (tv_end - tv_begin) << " ms.");
+	SLOG_CORE("after doDistinct, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::print()
 {
-	SLOG_CODE("total temp result: " << this->results.size());
+	SLOG_CORE("total temp result: " << this->results.size());
 	for (int i = 0; i < (int)this->results.size(); i++)
 		this->results[i].print(i);
 }

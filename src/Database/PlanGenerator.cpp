@@ -665,7 +665,7 @@ PlanTree* PlanGenerator::GetBestPlanByNum(int total_var_num) {
 			}
 		}
 	}
-	SLOG_CODE("during enumerate plans, get " << count << " possible best plans.");
+	SLOG_CORE("during enumerate plans, get " << count << " possible best plans.");
 	return best_plan;
 }
 
@@ -988,7 +988,7 @@ void PlanGenerator::AddSatelliteNode(PlanTree* best_plan) {
 // 	  we use heuristic optimization strategy.
 // 4. Else, we use complex DP optimization strategy.
 BGPQueryStrategy PlanGenerator::PlanStrategy(bool use_binary_join) {
-	SLOG_CODE("small query var num = " << SMALL_QUERY_VAR_NUM << ", total var num = " << bgpquery->get_total_var_num());
+	SLOG_CORE("small query var num = " << SMALL_QUERY_VAR_NUM << ", total var num = " << bgpquery->get_total_var_num());
 	if(bgpquery->get_total_var_num() <= SMALL_QUERY_VAR_NUM) return BGPQueryStrategy::Heuristic;
 
 	unsigned candidate_max = 1 << 5;
@@ -1483,37 +1483,37 @@ double PlanGenerator::EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID pre_id, bool 
 // Codes belows for print debug_info
 
 void PlanGenerator::print_plan_generator_info() const {
-	SLOG_CODE("----print plan_generator_info----");
-	SLOG_CODE("triple_num = " << triples_num);
-	SLOG_CODE("limit_literal = " << limitID_literal);
-	SLOG_CODE("limit_entity = " << limitID_entity);
-	SLOG_CODE("limit_predicate = " << limitID_predicate);
-	SLOG_CODE("-------print var and id--------");
+	SLOG_CORE("----print plan_generator_info----");
+	SLOG_CORE("triple_num = " << triples_num);
+	SLOG_CORE("limit_literal = " << limitID_literal);
+	SLOG_CORE("limit_entity = " << limitID_entity);
+	SLOG_CORE("limit_predicate = " << limitID_predicate);
+	SLOG_CORE("-------print var and id--------");
 	for(unsigned i = 0; i < bgpquery->var_vector.size(); ++i){
-		SLOG_CODE("\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "\t\t" << bgpquery->get_vardescrip_by_index(i)->id_);
+		SLOG_CORE("\t" << bgpquery->get_vardescrip_by_index(i)->var_name_ << "\t\t" << bgpquery->get_vardescrip_by_index(i)->id_);
 	}
 }
 
 void PlanGenerator::print_sample_info() {
-	SLOG_CODE("----print var_to_num_map----");
+	SLOG_CORE("----print var_to_num_map----");
 	for(auto var_num_pair : var_to_num_map){
-		SLOG_CODE("var: " << var_num_pair.first << ", num: " << var_num_pair.second);
+		SLOG_CORE("var: " << var_num_pair.first << ", num: " << var_num_pair.second);
 	}
 
-	SLOG_CODE("----print var_sampled_from_candidate----");
+	SLOG_CORE("----print var_sampled_from_candidate----");
 	for(auto var_sampled_pair : var_sampled_from_candidate){
-		SLOG_CODE("var: " << var_sampled_pair.first << ", sampled: " << (var_sampled_pair.second ? "true" : "false"));
+		SLOG_CORE("var: " << var_sampled_pair.first << ", sampled: " << (var_sampled_pair.second ? "true" : "false"));
 	}
 
-	SLOG_CODE("----print var_to_sample_cache----");
+	SLOG_CORE("----print var_to_sample_cache----");
 	for(const auto &var_sample_pair : var_to_sample_cache){
-		SLOG_CODE("var: " << var_sample_pair.first << ", sample_num: " << var_sample_pair.second.size());
+		SLOG_CORE("var: " << var_sample_pair.first << ", sample_num: " << var_sample_pair.second.size());
 	}
 
-	SLOG_CODE("----print s_o_list_average_size----");
+	SLOG_CORE("----print s_o_list_average_size----");
 	for(const auto &s_pair : s_o_list_average_size){
 		for(auto o_pair : s_pair.second){
-			SLOG_CODE(s_pair.first << " to " << o_pair.first << " average size: " << o_pair.second);
+			SLOG_CORE(s_pair.first << " to " << o_pair.first << " average size: " << o_pair.second);
 		}
 	}
 }

@@ -500,7 +500,7 @@ void SITree::PrintTree(SINode* _np)
     unsigned num = _np->GetKeyNum();
     for (unsigned i = 0; i < num; ++i)
     {
-      SLOG_CODE("debug PrintTree leaf:" << "   len:" << _np->getKey(i)->getLen());
+      SLOG_CORE("debug PrintTree leaf:" << "   len:" << _np->getKey(i)->getLen());
     }
     return;
   }
@@ -511,7 +511,7 @@ void SITree::PrintTree(SINode* _np)
   
   unsigned num = _np->GetKeyNum();
 	for (unsigned i = 0; i < num; ++i)
-    SLOG_CODE("debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen());
+    SLOG_CORE("debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen());
 
   // SINode* np = nullptr;
   // for (np = this->leaves_head_; np != NULL; np = np->GetNext())

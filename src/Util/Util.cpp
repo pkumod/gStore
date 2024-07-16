@@ -220,7 +220,7 @@ Util::configure()
         stringstream _ss;
         _ss << "configuration params: " << endl;
         pp.print(_ss);
-        SLOG_CODE(_ss.str());
+        SLOG_CORE(_ss.str());
     }
     return true;
 }
@@ -834,7 +834,7 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
         }
         else
         {
-            SLOG_CODE("dir is not exist.");
+            SLOG_CORE("dir is not exist.");
         }
         return;
     }
@@ -873,7 +873,7 @@ void Util::dir_filepaths(const string _dir, std::vector<std::string> &file_list)
         }
         else
         {
-            SLOG_CODE("dir is not exist.");
+            SLOG_CORE("dir is not exist.");
         }
         return;
     }
@@ -1032,7 +1032,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
         }
         else
         {
-            SLOG_CODE("dir is not exist.");
+            SLOG_CORE("dir is not exist.");
         }
         return total_size;
     }

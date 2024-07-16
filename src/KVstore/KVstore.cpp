@@ -99,7 +99,7 @@ KVstore::release()
 void 
 KVstore::open() 
 {
-	SLOG_CODE("open KVstore");
+	SLOG_CORE("open KVstore");
 
 	this->open_entity2id(KVstore::READ_WRITE_MODE);
 	this->open_id2entity(KVstore::READ_WRITE_MODE);
@@ -1117,7 +1117,7 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 
     while(old_p_offset < old_p_len)
     {
-		SLOG_CODE(" old_p_offset < old_p_len ");
+		SLOG_CORE(" old_p_offset < old_p_len ");
         int next_o_offset;
         if(old_p_offset + 3 > old_p_len){
             next_o_offset = _len; //to the last pid
@@ -4403,7 +4403,7 @@ bool
 KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate, shared_ptr<Transaction> txn) const 
 {
 #ifdef DEBUG_KVSTORE
-	SLOG_CODE("In getsubIDobjIDlistBypreID " << _preid);
+	SLOG_CORE("In getsubIDobjIDlistBypreID " << _preid);
 #endif
 	char* char_tmp = nullptr;
 	unsigned long _len = 0;
@@ -4412,7 +4412,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 		bool _get = this->getValueByKey(this->preID2values, _preid, char_tmp, _len);
 		unsigned* _tmp = (unsigned*)char_tmp;
 #ifdef DEBUG_KVSTORE
-	SLOG_CODE("the length of list: "<<_len);
+	SLOG_CORE("the length of list: "<<_len);
 #endif
 		if (!_get) 
 		{
@@ -4428,7 +4428,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 			_subid_objidlist[2 * i] = _tmp[1 + i];
 			_subid_objidlist[2 * i + 1] = _tmp[1 + _tmp[0] + i];
 #ifdef DEBUG_KVSTORE
-		SLOG_CODE(_subid_objidlist[2*i]<<" "<<_subid_objidlist[2*i+1]);
+		SLOG_CORE(_subid_objidlist[2*i]<<" "<<_subid_objidlist[2*i+1]);
 #endif
 		}
 
@@ -4437,7 +4437,7 @@ KVstore::getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_ob
 	//	if(VList::listNeedDelete(_len))
 	//	{
 #ifdef DEBUG_KVSTORE
-		SLOG_CODE("this is a vlist");
+		SLOG_CORE("this is a vlist");
 #endif
 			delete[] _tmp;
 			//_tmp = NULL;
@@ -5923,7 +5923,7 @@ KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 		}
 		
 		if(base_empty == true){
-			SLOG_CODE("addValueByKey in objID2values");
+			SLOG_CORE("addValueByKey in objID2values");
 			this->addValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);
 		} 
 		else this->setValueByKey(this->objID2values, _obj_id, (char*)_tmp, _len);

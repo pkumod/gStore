@@ -520,7 +520,7 @@ IVStorage::readBstr(Bstr* _bp, unsigned* _next)
 		unsigned addr = 0;
 		fread(&addr, sizeof(unsigned), 1, this->treefp);
 #ifdef DEBUG_VLIST
-		SLOG_CODE("read a vlist in IVStorage - addr: ");
+		SLOG_CORE("read a vlist in IVStorage - addr: ");
 #endif
 		_bp->setLen(addr);
 		_bp->setStr(NULL);
@@ -568,7 +568,7 @@ IVStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
 		//then this is the real block num
 		fwrite(&len, sizeof(unsigned), 1, treefp);
 #ifdef DEBUG_VLIST
-		SLOG_CODE("to write a vlist in IVStorage::writeBstr() - blocknum: "<<len);
+		SLOG_CORE("to write a vlist in IVStorage::writeBstr() - blocknum: "<<len);
 #endif
 		this->WriteAlign(_curnum, _SpecialBlock);
 		return true;
@@ -733,7 +733,7 @@ IVStorage::request(long long _needmem)	//aligned to byte
 bool
 IVStorage::handler(unsigned long long _needmem)	//>0
 {
-	SLOG_CODE("swap happen");
+	SLOG_CORE("swap happen");
 	IVNode* p;
 	unsigned long long size;
 	//if(_needmem < SET_BUFFER_SIZE)		//to recover to SET_BUFFER_SIZE buffer
@@ -745,7 +745,7 @@ IVStorage::handler(unsigned long long _needmem)	//>0
 		//cout<<"get heap top"<<endl;
 		if (p == NULL)
 		{
-			SLOG_CODE("the heap top is null");
+			SLOG_CORE("the heap top is null");
 			return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
 		}
 

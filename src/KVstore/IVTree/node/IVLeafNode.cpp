@@ -127,7 +127,7 @@ IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) con
 	if(this->values[_index].isBstrLongList())
 	{
 #ifdef DEBUG_VLIST
-		SLOG_CODE("this is a vlist in get()");
+		SLOG_CORE("this is a vlist in get()");
 #endif
 		unsigned block_num = this->values[_index].getLen();
 		_vlist->readValue(block_num, _str, _len, this->keys[_index]);

@@ -71,7 +71,7 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 	code_print += "Type: " + *nodeTypeName + ' ';
 
 	// Print what text a node has matched
-	SLOG_CODE(code_print << "Text: " << ctx->getText());
+	SLOG_CORE(code_print << "Text: " << ctx->getText());
 
 }
 
@@ -92,7 +92,7 @@ void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
 	size_t n = root->children.size();
 	code_print += "Type: " + nodeTypeName + ' ';
 	code_print += "Text: " + root->getText() + ' ';
-	SLOG_CODE(code_print << "#Children: " << n);
+	SLOG_CORE(code_print << "#Children: " << n);
 
 	for (size_t i = 0; i < n; i++)
 	{
@@ -612,7 +612,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				// set fun_name
 				proj_var.path_args.fun_name = bicCtx->string()->getText();
 				proj_var.var = varCtx->getText();
-				SLOG_CODE("call personalized function:" << proj_var.path_args.fun_name);
+				SLOG_CORE("call personalized function:" << proj_var.path_args.fun_name);
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{
@@ -796,7 +796,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 	}
 	else 	// >= 3, even #children, must be NOT IN or function call
 	{
-		SLOG_CODE("root->getText() " << root->getText());
+		SLOG_CORE("root->getText() " << root->getText());
 		string left = root->children[1]->getText();
 		transform(left.begin(), left.end(), left.begin(), ::toupper);
 		if (left == "NOT")

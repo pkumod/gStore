@@ -65,7 +65,7 @@ SIHeap::Insert(SINode* _np)
 {
   if (this->length == this->size)	//when full, reallocate
   {
-    SLOG_CODE("check: double the heap");
+    SLOG_CORE("check: double the heap");
     this->heap = (SINode**)realloc(this->heap, 2 * this->size * sizeof(SINode*));
     if (this->heap == NULL)
     {

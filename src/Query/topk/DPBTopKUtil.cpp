@@ -40,7 +40,7 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
     root_candidate.insert(root_id);
   }
 #ifdef TOPK_DEBUG_INFO
-  SLOG_CODE("ROOT has"<< root_candidate.size()<<" ids");
+  SLOG_CORE("ROOT has"<< root_candidate.size()<<" ids");
 #endif
   if(has_coefficient)
     node_score = GetChildNodeScores(coefficient,root_candidate, false, nullptr, nullptr,
@@ -93,7 +93,7 @@ FRIterator *DPBUtil::BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_sea
   }
 
 #ifdef TOPK_DEBUG_INFO
-  SLOG_CODE("ROOT has"<< root_candidate.size()<<"ids "<<", FR has "<<child_fqs.size()<<" FQs");
+  SLOG_CORE("ROOT has"<< root_candidate.size()<<"ids "<<", FR has "<<child_fqs.size()<<" FQs");
 #endif
   return fr;
 }
@@ -133,7 +133,7 @@ DPBUtil::AssemblingFrOw(set<TYPE_ENTITY_LITERAL_ID> &fq_ids,
     id_fqs[fq_id] = fq;
     fq->TryGetNext(k);
 #ifdef SHOW_SCORE
-  SLOG_CODE("FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost);
+  SLOG_CORE("FQ["<<fq_id<<"], the min score are "<<fq->pool_[0].cost);
 #endif
   }
   return id_fqs;
@@ -183,7 +183,7 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
 
   // Return OW iterators
 #ifdef SHOW_SCORE
-  SLOG_CODE("var["<<child_var<<"] has no child, constructing OW iterators");
+  SLOG_CORE("var["<<child_var<<"] has no child, constructing OW iterators");
 #endif
   std::vector<TYPE_ENTITY_LITERAL_ID> children_ids;
   std::vector<double> children_scores;
@@ -195,7 +195,7 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
   for(auto parent_id:parent_var_candidates)
   {
 #ifdef SHOW_SCORE
-    SLOG_CODE("parent var["<<parent_id<<"] has "<<parent_child[parent_id].size()<<" child, its OW ");
+    SLOG_CORE("parent var["<<parent_id<<"] has "<<parent_child[parent_id].size()<<" child, its OW ");
 #endif
     auto ow = make_shared<OWIterator>();
     auto child_it = parent_child[parent_id]->contents_->cbegin();
@@ -216,7 +216,7 @@ DPBUtil::GenerateOWs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
       child_it++;
     }
 #ifdef SHOW_SCORE
-    SLOG_CODE(code_print);
+    SLOG_CORE(code_print);
       //cout<<parent_id<<"'s OW ["<<child_var<<"]";
 #endif
     if(has_coefficient)

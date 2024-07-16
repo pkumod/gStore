@@ -588,9 +588,9 @@ void Database::setPreMap()
 	/*
 	for(int i = 0;i < this->pre_num;i++)
 	{
-		SLOG_CODE("pre2num["<<i<<"]: "<<this->pre2num[i]);
-		SLOG_CODE("pre2sub["<<i<<"]: "<<this->pre2sub[i]);
-		SLOG_CODE("pre2obj["<<i<<"]: "<<this->pre2obj[i]);
+		SLOG_CORE("pre2num["<<i<<"]: "<<this->pre2num[i]);
+		SLOG_CORE("pre2sub["<<i<<"]: "<<this->pre2sub[i]);
+		SLOG_CORE("pre2obj["<<i<<"]: "<<this->pre2obj[i]);
 	}
 	*/
 }
@@ -697,7 +697,7 @@ bool Database::load(Socket &socket, bool loadCSR)
 		SLOG_ERROR("load database info error. @Database::load()");
 		return false;
 	}
-	SLOG_CODE("load database info successfully!");
+	SLOG_CORE("load database info successfully!");
 	if (!(this->kvstore)->load_trie(kv_mode))
 	{
 		SLOG_ERROR("load kvstore failed.");
@@ -705,20 +705,20 @@ bool Database::load(Socket &socket, bool loadCSR)
 	}
 	else
 	{
-		SLOG_CODE("load kvstore successfully!");
+		SLOG_CORE("load kvstore successfully!");
 	}
 
 	msg = "begin to load stringindex!";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
 	this->stringindex->load();
 	msg = "load stringindex  successfully!";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
 	this->readIDinfo();
-	SLOG_CODE("read IDInfo file  successfully!");
+	SLOG_CORE("read IDInfo file  successfully!");
 
 #ifdef THREAD_ON
 	pre2values_thread.join();
@@ -771,18 +771,18 @@ bool Database::load(Socket &socket, bool loadCSR)
 	socket.send(resJson);
 #endif
 	msg = "begin load cache!";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
 	this->load_cache();
 	msg = "load cache successfully!";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
 
 	this->if_loaded = true;
 
-	SLOG_CODE("finish load");
+	SLOG_CORE("finish load");
 	print_data_count();
 
 #ifdef ONLY_READ
@@ -796,7 +796,7 @@ bool Database::load(Socket &socket, bool loadCSR)
 		unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
 		this->csr[0].init(pre_num);
 		this->csr[1].init(pre_num);
-		SLOG_CODE("pre_num: " << pre_num);
+		SLOG_CORE("pre_num: " << pre_num);
 		long begin_time = Util::get_cur_time();
 
 		// Process out-edges (csr[0])
@@ -804,7 +804,7 @@ bool Database::load(Socket &socket, bool loadCSR)
 		for (unsigned i = 0; i < pre_num; i++)
 		{
 			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CODE("pid: " << i << "    pre: " << pre);
+			SLOG_CORE("pid: " << i << "    pre: " << pre);
 			unsigned *sublist = NULL;
 			unsigned sublist_len = 0;
 			(this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
@@ -836,8 +836,8 @@ bool Database::load(Socket &socket, bool loadCSR)
 					offset += len;
 				}
 			}
-			SLOG_CODE(this->csr[0].offset_list[i].size());   // # of this predicate's subjects
-			SLOG_CODE(this->csr[0].adjacency_list[i].size());// # of this predicate's objects
+			SLOG_CORE(this->csr[0].offset_list[i].size());   // # of this predicate's subjects
+			SLOG_CORE(this->csr[0].adjacency_list[i].size());// # of this predicate's objects
 		}
 
 		// Process out-edges (csr[1])
@@ -845,7 +845,7 @@ bool Database::load(Socket &socket, bool loadCSR)
 		for (unsigned i = 0; i < pre_num; i++)
 		{
 			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CODE("pid: " << i << "    pre: " << pre);
+			SLOG_CORE("pid: " << i << "    pre: " << pre);
 			unsigned *objlist = NULL;
 			unsigned objlist_len = 0;
 			(this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
@@ -874,8 +874,8 @@ bool Database::load(Socket &socket, bool loadCSR)
 					offset += len;
 				}
 			}
-			SLOG_CODE(this->csr[1].offset_list[i].size());
-			SLOG_CODE(this->csr[1].adjacency_list[i].size());
+			SLOG_CORE(this->csr[1].offset_list[i].size());
+			SLOG_CORE(this->csr[1].adjacency_list[i].size());
 		}
 		csr[1].n = this->entity_num;
 
@@ -884,11 +884,11 @@ bool Database::load(Socket &socket, bool loadCSR)
 			ret += csr[1].adjacency_list[i].size();
 		csr[1].m = ret;
 
-		SLOG_CODE("total vertices " << csr[1].n);
-		SLOG_CODE("total edges " << csr[1].m);
+		SLOG_CORE("total vertices " << csr[1].n);
+		SLOG_CORE("total edges " << csr[1].m);
 		long end_time = Util::get_cur_time();
-		SLOG_CODE("after creating CSR, used " << (end_time - begin_time) << "ms");
-		SLOG_CODE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
+		SLOG_CORE("after creating CSR, used " << (end_time - begin_time) << "ms");
+		SLOG_CORE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
 	}
 
 	this->loadStatisticsInfoFile();
@@ -908,7 +908,7 @@ bool Database::load(bool loadCSR)
 	//  unsigned vstree_cache = gstore::LRUCache::DEFAULT_CAPACITY;
 	bool flag;
 
-	SLOG_CODE("---------Begin to Load Database `" << name << "`---------");
+	SLOG_CORE("---------Begin to Load Database `" << name << "`---------");
 #ifndef THREAD_ON
 	(this->kvstore)->open();
 #else
@@ -933,7 +933,7 @@ bool Database::load(bool loadCSR)
 		SLOG_ERROR("Load database info error. @Database::load()");
 		return false;
 	}
-	SLOG_CODE("Database info loaded successfully!");
+	SLOG_CORE("Database info loaded successfully!");
 
 	if (!(this->kvstore)->load_trie(kv_mode))
 	{
@@ -942,22 +942,22 @@ bool Database::load(bool loadCSR)
 	}
 	else
 	{
-		SLOG_CODE("Kvstore trie loaded successfully!");
+		SLOG_CORE("Kvstore trie loaded successfully!");
 	}
 
 	// NOTICE: we should also run some heavy work in the main thread
-	SLOG_CODE("Begin to load StringIndex ......");
+	SLOG_CORE("Begin to load StringIndex ......");
 	this->stringindex->load();
-	SLOG_CODE("StringIndex loaded successfully!");
-	SLOG_CODE("Begin to read IDInfo ......");
+	SLOG_CORE("StringIndex loaded successfully!");
+	SLOG_CORE("Begin to read IDInfo ......");
 	this->readIDinfo();
-	SLOG_CODE("Read IDInfo file successfully!");
+	SLOG_CORE("Read IDInfo file successfully!");
 
 #ifdef THREAD_ON
 	pre2values_thread.join();
 #endif
 
-	SLOG_CODE("Begin to set pre map ......");
+	SLOG_CORE("Begin to set pre map ......");
 	this->setPreMap();
 
 #ifdef THREAD_ON
@@ -991,16 +991,16 @@ bool Database::load(bool loadCSR)
 	obj2values_thread.join();
 #endif
 	// load cache of sub2values and obj2values
-	SLOG_CODE("Begin to load p2v, s2v and o2v cache ......");
+	SLOG_CORE("Begin to load p2v, s2v and o2v cache ......");
 	this->load_cache();
-	SLOG_CODE("Cache loaded successfully!");
+	SLOG_CORE("Cache loaded successfully!");
 	// warm up always as finishing build(), to utilize the system buffer
 	// this->warmUp();
 	// DEBUG:the warmUp() calls query(), which will also output results, this is not we want
 
 	// load the statistics file of db
 	this->loadStatisticsInfoFile();
-	SLOG_CODE("Statistics Info file loaded successfully!");
+	SLOG_CORE("Statistics Info file loaded successfully!");
 
 	this->if_loaded = true;
 
@@ -1010,7 +1010,7 @@ bool Database::load(bool loadCSR)
 	// HELP: just for checking infos(like kvstore)
 	print_data_count();
 
-	SLOG_CODE("---------Finish Database `" << name << "` Load---------");
+	SLOG_CORE("---------Finish Database `" << name << "` Load---------");
 
 #ifdef ONLY_READ
 	this->kvstore->close_id2entity();
@@ -1023,7 +1023,7 @@ bool Database::load(bool loadCSR)
 		unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
 		this->csr[0].init(pre_num);
 		this->csr[1].init(pre_num);
-		SLOG_CODE("pre_num: " << pre_num);
+		SLOG_CORE("pre_num: " << pre_num);
 		long begin_time = Util::get_cur_time();
 
 		// Process out-edges (csr[0])
@@ -1031,7 +1031,7 @@ bool Database::load(bool loadCSR)
 		for (unsigned i = 0; i < pre_num; i++)
 		{
 			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CODE("pid: " << i << "    pre: " << pre);
+			SLOG_CORE("pid: " << i << "    pre: " << pre);
 			unsigned *sublist = NULL;
 			unsigned sublist_len = 0;
 			// todo: check return value
@@ -1078,8 +1078,8 @@ bool Database::load(bool loadCSR)
 			// 	else
 			// 		this->csr[0].valid[i] = false;
 			// }
-			SLOG_CODE(this->csr[0].offset_list[i].size());
-			SLOG_CODE(this->csr[0].adjacency_list[i].size());
+			SLOG_CORE(this->csr[0].offset_list[i].size());
+			SLOG_CORE(this->csr[0].adjacency_list[i].size());
 			delete [] sublist;
 			sublist = nullptr;
 		}
@@ -1089,7 +1089,7 @@ bool Database::load(bool loadCSR)
 		for (unsigned i = 0; i < pre_num; i++)
 		{
 			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CODE("pid: " << i << "    pre: " << pre);
+			SLOG_CORE("pid: " << i << "    pre: " << pre);
 			unsigned *objlist = NULL;
 			unsigned objlist_len = 0;
 			// todo: check return value
@@ -1133,8 +1133,8 @@ bool Database::load(bool loadCSR)
 			// 	else
 			// 		this->csr[1].valid[i] = false;
 			// }
-			SLOG_CODE(this->csr[1].offset_list[i].size());
-			SLOG_CODE(this->csr[1].adjacency_list[i].size());
+			SLOG_CORE(this->csr[1].offset_list[i].size());
+			SLOG_CORE(this->csr[1].adjacency_list[i].size());
 			delete [] objlist;
 			objlist = nullptr;
 		}
@@ -1145,11 +1145,11 @@ bool Database::load(bool loadCSR)
 			ret += csr[1].adjacency_list[i].size();
 		csr[1].m = ret;
 
-		SLOG_CODE("total vertices " << csr[1].n);
-		SLOG_CODE("total edges " << csr[1].m);
+		SLOG_CORE("total vertices " << csr[1].n);
+		SLOG_CORE("total edges " << csr[1].m);
 		long end_time = Util::get_cur_time();
-		SLOG_CODE("after creating CSR, used " << (end_time - begin_time) << "ms");
-		SLOG_CODE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
+		SLOG_CORE("after creating CSR, used " << (end_time - begin_time) << "ms");
+		SLOG_CORE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
 	}
 
 	return true;
@@ -1499,10 +1499,10 @@ void Database::load_pre2values(int _mode)
 // @function check some parameters, statues and correctness of the database
 void Database::print_data_count()
 {
-	SLOG_CODE("Triple num: " << this->triples_num);
-	SLOG_CODE("Pre num: " << this->pre_num);
-	SLOG_CODE("Entity num: " << this->entity_num);
-	SLOG_CODE("Literal num: " << this->literal_num);
+	SLOG_CORE("Triple num: " << this->triples_num);
+	SLOG_CORE("Pre num: " << this->pre_num);
+	SLOG_CORE("Entity num: " << this->entity_num);
+	SLOG_CORE("Literal num: " << this->literal_num);
 }
 
 void Database::query_stringIndex(int id)
@@ -1517,7 +1517,7 @@ void Database::query_stringIndex(int id)
 		string_index_buffer = NULL;
 	}
 	
-	SLOG_CODE("thread: " << id << " " << str);
+	SLOG_CORE("thread: " << id << " " << str);
 }
 
 // NOTICE: we ensure that if the unload() exists normally, then all updates have already been written to disk
@@ -1744,7 +1744,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 										 this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
 										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn, this->getfreelist_entity(), this->getentity_num());
 	if (txn != nullptr)
-		SLOG_CODE("query in transaction............................................");
+		SLOG_CORE("query in transaction............................................");
 	long tv_begin = Util::get_cur_time();
 
 	// this->query_parse_lock.lock();
@@ -1769,7 +1769,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	if (!parse_ret)
 		return -101;
 	long tv_parse = Util::get_cur_time();
-	SLOG_CODE("after Parsing, used " << (tv_parse - tv_begin) << "ms.");
+	SLOG_CORE("after Parsing, used " << (tv_parse - tv_begin) << "ms.");
 
 	// for select, -100 by default, -101 means error
 	// for update, non-negative means true(and the num is updated triples num), -1 means error
@@ -1788,7 +1788,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			return -101;
 		}
 		if (txn == nullptr)
-			SLOG_CODE("read priviledge of update lock acquired");
+			SLOG_CORE("read priviledge of update lock acquired");
 
 		// copy the string index for each query thread
 		// StringIndex tmpsi = *this->stringindex;
@@ -1805,7 +1805,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		long t1 = Util::get_cur_time();
 		bool query_ret = general_evaluation.doQuery();
 		long t2 = Util::get_cur_time();
-		SLOG_CODE("GeneralEvaluation::doQuery used " << (t2 - t1) << "ms.");
+		SLOG_CORE("GeneralEvaluation::doQuery used " << (t2 - t1) << "ms.");
 
 		if (!query_ret)
 		{
@@ -1819,7 +1819,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		general_evaluation.getFinalResult(_result_set);
 		// this->getFinalResult_lock.unlock();
 		long tv_afget = Util::get_cur_time();
-		SLOG_CODE("during getFinalResult, used " << (tv_afget - tv_bfget) << "ms.");
+		SLOG_CORE("during getFinalResult, used " << (tv_afget - tv_bfget) << "ms.");
 
 		if (_fp != NULL)
 			need_output_answer = true;
@@ -1836,7 +1836,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		{
 			// if update_flag == 0, means no privilege to do update query, so we throw an error.
 			string exception_msg = "no update prvilege, update query failed.";
-			SLOG_CODE(exception_msg);
+			SLOG_CORE(exception_msg);
 			throw exception_msg;
 		}
 #ifdef ONLY_READ
@@ -1846,11 +1846,11 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 #endif
 		if (txn == nullptr && pthread_rwlock_trywrlock(&(this->update_lock)) != 0)
 		{
-			SLOG_CODE("unable to write lock");
+			SLOG_CORE("unable to write lock");
 			return -101;
 		}
 		if (txn == nullptr)
-			SLOG_CODE("write priviledge of update lock acquired");
+			SLOG_CORE("write priviledge of update lock acquired");
 
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
@@ -1940,7 +1940,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		if (success_num > 0 && query_cache != nullptr)
 		{
 			this->query_cache->clear();
-			SLOG_CODE("QueryCache cleared");
+			SLOG_CORE("QueryCache cleared");
 			if (general_evaluation.getQueryTree().getUpdateType() != QueryTree::Not_Update)
 			{
 				this->saveStatisticsInfoFile();
@@ -1952,8 +1952,8 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	}
 
 	long tv_final = Util::get_cur_time();
-	SLOG_CODE("Query time used (minus parsing): " << tv_final - tv_parse << "ms.");
-	SLOG_CODE("Total time used: " << (tv_final - tv_begin) << "ms.");
+	SLOG_CORE("Query time used (minus parsing): " << tv_final - tv_parse << "ms.");
+	SLOG_CORE("Total time used: " << (tv_final - tv_begin) << "ms.");
 	// if (general_evaluation.needOutputAnswer())
 	//  if(export_flag)
 	//  {
@@ -1962,10 +1962,10 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		long long ans_num = max((long long)_result_set.ansNum - _result_set.output_offset, 0LL);
 		if (_result_set.output_limit != -1)
 			ans_num = min(ans_num, (long long)_result_set.output_limit);
-		SLOG_CODE("There has answer: " << ans_num );
+		SLOG_CORE("There has answer: " << ans_num );
 		if (_fp == stdout)
 		{
-			SLOG_CODE("final result is : ");
+			SLOG_CORE("final result is : ");
 			_result_set.prettyPrint();
 		}
 		else
@@ -2010,7 +2010,7 @@ void Database::InitEmptyDB() {
 
 	string error_log = this->store_path + "/parse_error.log";
 	Util::create_file(error_log);
-	SLOG_CODE("Error log file:" << error_log);
+	SLOG_CORE("Error log file:" << error_log);
 }
 
 void Database::BuildEmptyKVstore() {
@@ -2041,11 +2041,11 @@ bool Database::BuildEmptyDB() {
     delete this->kvstore;
 	this->kvstore = NULL;
 
-	SLOG_CODE("Finish sub2id pre2id obj2id");
-	SLOG_CODE("TripleNum is " << this->triples_num);
-	SLOG_CODE("EntityNum is " << this->entity_num);
-	SLOG_CODE("PreNum is " << this->pre_num);
-	SLOG_CODE("LiteralNum is " << this->literal_num);
+	SLOG_CORE("Finish sub2id pre2id obj2id");
+	SLOG_CORE("TripleNum is " << this->triples_num);
+	SLOG_CORE("EntityNum is " << this->entity_num);
+	SLOG_CORE("PreNum is " << this->pre_num);
+	SLOG_CORE("LiteralNum is " << this->literal_num);
 
 	if (!(this->saveDBInfoFile())) return false;
     if (!(this->saveStatisticsInfoFile())) {
@@ -2063,7 +2063,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 	long tv_build_begin = Util::get_cur_time();
 	InitEmptyDB();
 	string msg = "begin encode RDF from : " + ret + " ...";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	string resJson = CreateJson(1, "building", msg);
 	socket.send(resJson);
 	string error_log = this->store_path + "/parse_error.log";
@@ -2072,7 +2072,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 		return false;
 	}
 	msg = "finish encode.";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "building", msg);
 	socket.send(resJson);
 
@@ -2088,7 +2088,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 	msg = msg + "entityNum is " + to_string(this->entity_num) + "\n";
 	msg = msg + "preNum is " + to_string(this->pre_num) + "\n";
 	msg = msg + "literalNum is " + to_string(this->literal_num) + "\n";
-	SLOG_CODE(msg);
+	SLOG_CORE(msg);
 	resJson = CreateJson(1, "building", msg);
 	socket.send(resJson);
 	this->saveDBInfoFile();
@@ -2100,7 +2100,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 
 bool Database::build(const string &_rdf_file)
 {
-	SLOG_CODE("---------Begin to Build Database `" << name << "`---------");
+	SLOG_CORE("---------Begin to Build Database `" << name << "`---------");
 	// NOTICE: it is not necessary to use multiple threads here, because some process may rely on others
 	// In addition, the memory is a bootleneck and it is dangerous to build serveral indices at a time
 	// For example, if we build id2string indices using different threads, they
@@ -2115,7 +2115,7 @@ bool Database::build(const string &_rdf_file)
 	string log_msg = "Info " + Util::get_date_time() + " build parser info, file path " + ret + "\n";
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
-	SLOG_CODE("Begin encode RDF from : " << ret << " ...");
+	SLOG_CORE("Begin encode RDF from : " << ret << " ...");
 
 	// BETTER+TODO:now require that dataset size < memory
 	// to support really larger datasets, divide and insert into B+ tree and VStree
@@ -2130,7 +2130,7 @@ bool Database::build(const string &_rdf_file)
 	{
 		return false;
 	}
-	SLOG_CODE("finish encode.");
+	SLOG_CORE("finish encode.");
 
 	// this->kvstore->flush();
 	delete this->kvstore;
@@ -2138,11 +2138,11 @@ bool Database::build(const string &_rdf_file)
 	// sync();
 	// this->kvstore->release();
 
-	SLOG_CODE("Finish sub2id pre2id obj2id");
-	SLOG_CODE("TripleNum is " << this->triples_num);
-	SLOG_CODE("EntityNum is " << this->entity_num);
-	SLOG_CODE("PreNum is " << this->pre_num);
-	SLOG_CODE("LiteralNum is " << this->literal_num);
+	SLOG_CORE("Finish sub2id pre2id obj2id");
+	SLOG_CORE("TripleNum is " << this->triples_num);
+	SLOG_CORE("EntityNum is " << this->entity_num);
+	SLOG_CORE("PreNum is " << this->pre_num);
+	SLOG_CORE("LiteralNum is " << this->literal_num);
 
 	// TODO: use fopen w+ to remove signature.binary file
 	// string cmd = "rm -rf " + _entry_file;
@@ -2333,7 +2333,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	// this can be used in vstree, storage and Database
 
 	long t2 = Util::get_cur_time();
-	SLOG_CODE("after encode, used " << (t2 - t1) << "ms.");
+	SLOG_CORE("after encode, used " << (t2 - t1) << "ms.");
 
 	// build stringindex before this->kvstore->id2* trees are closed
 	this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
@@ -2345,7 +2345,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	//(to save memory)
 
 	long t3 = Util::get_cur_time();
-	SLOG_CODE("after stringindex, used " << (t3 - t2) << "ms.");
+	SLOG_CORE("after stringindex, used " << (t3 - t2) << "ms.");
 
 
 	// NOTICE:close these trees now to save memory
@@ -2357,7 +2357,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	this->kvstore->close_id2predicate();
 
 	long t4 = Util::get_cur_time();
-	SLOG_CODE("id2string and string2id closed, used " << (t4 - t3) << "ms.");
+	SLOG_CORE("id2string and string2id closed, used " << (t4 - t3) << "ms.");
 
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
@@ -2369,7 +2369,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	// However, this may be costly due to frequent read/write
 
 	long t5 = Util::get_cur_time();
-	SLOG_CODE("id tuples read, used " << (t5 - t4) << "ms.");
+	SLOG_CORE("id tuples read, used " << (t5 - t4) << "ms.");
 
 	// TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
 
@@ -2377,19 +2377,19 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	this->build_s2xx(_p_id_tuples);
 
 	long t6 = Util::get_cur_time();
-	SLOG_CODE("after s2xx, used " << (t6 - t5) << "ms.");
+	SLOG_CORE("after s2xx, used " << (t6 - t5) << "ms.");
 
 	// this->kvstore->build_objID2values(_p_id_tuples, this->triples_num);
 	this->build_o2xx(_p_id_tuples);
 
 	long t7 = Util::get_cur_time();
-	SLOG_CODE("after o2xx, used " << (t7 - t6) << "ms.");
+	SLOG_CORE("after o2xx, used " << (t7 - t6) << "ms.");
 
 	// this->kvstore->build_preID2values(_p_id_tuples, this->triples_num);
 	this->build_p2xx(_p_id_tuples);
 
 	long t8 = Util::get_cur_time();
-	SLOG_CODE("after p2xx, used " << (t8 - t7) << "ms.");
+	SLOG_CORE("after p2xx, used " << (t8 - t7) << "ms.");
 
 	// WARN:we must free the memory for id_tuples array
 	delete[] _p_id_tuples;
@@ -2409,7 +2409,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	}
 
 	long t9 = Util::get_cur_time();
-	SLOG_CODE("db info saved, used " << (t9 - t8) << "ms.");
+	SLOG_CORE("db info saved, used " << (t9 - t8) << "ms.");
 
 	// Util::logging("finish encodeRDF_new");
 
@@ -2451,7 +2451,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 
 	long t2 = Util::get_cur_time();
 
-	SLOG_CODE("Begin to save StringIndex ......");
+	SLOG_CORE("Begin to save StringIndex ......");
 	// build stringindex before this->kvstore->id2* trees are closed
 	this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
 	this->stringindex->setNum(StringIndexFile::Literal, this->literal_num);
@@ -2462,10 +2462,10 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	//(to save memory)
 
 	long t3 = Util::get_cur_time();
-	SLOG_CODE("Saving StringIndex, used " << (t3 - t2) << "ms.");
+	SLOG_CORE("Saving StringIndex, used " << (t3 - t2) << "ms.");
 
 	// NOTICE:close these trees now to save memory
-	SLOG_CODE("Begin to save id2string and string2id ......");
+	SLOG_CORE("Begin to save id2string and string2id ......");
 	this->kvstore->close_entity2id();
 	this->kvstore->close_id2entity();
 	this->kvstore->close_literal2id();
@@ -2473,7 +2473,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	this->kvstore->close_predicate2id();
 	this->kvstore->close_id2predicate();
 	long t4 = Util::get_cur_time();
-	SLOG_CODE("Finish saving id2string and string2id, used " << (t4 - t3) << "ms.");
+	SLOG_CORE("Finish saving id2string and string2id, used " << (t4 - t3) << "ms.");
 
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
@@ -2485,24 +2485,24 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	// However, this may be costly due to frequent read/write
 
 	long t5 = Util::get_cur_time();
-	SLOG_CODE("id tuples read, used " << (t5 - t4) << "ms.");
+	SLOG_CORE("id tuples read, used " << (t5 - t4) << "ms.");
 
 	// TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
 
-	SLOG_CODE("Begin to build s2values ......");
+	SLOG_CORE("Begin to build s2values ......");
 	this->build_s2xx(_p_id_tuples);
 	long t6 = Util::get_cur_time();
-	SLOG_CODE("Finish building s2values, used " << (t6 - t5) << "ms.");
+	SLOG_CORE("Finish building s2values, used " << (t6 - t5) << "ms.");
 
-	SLOG_CODE("Begin to build o2values ......");
+	SLOG_CORE("Begin to build o2values ......");
 	this->build_o2xx(_p_id_tuples);
 	long t7 = Util::get_cur_time();
-	SLOG_CODE("Finish building o2values, used " << (t7 - t6) << "ms.");
+	SLOG_CORE("Finish building o2values, used " << (t7 - t6) << "ms.");
 
-	SLOG_CODE("Begin to build p2values ......");
+	SLOG_CORE("Begin to build p2values ......");
 	this->build_p2xx(_p_id_tuples);
 	long t8 = Util::get_cur_time();
-	SLOG_CODE("Finish building p2values, used " << (t8 - t7) << "ms.");
+	SLOG_CORE("Finish building p2values, used " << (t8 - t7) << "ms.");
 
 	// WARN:we must free the memory for id_tuples array
 	delete[] _p_id_tuples;
@@ -2513,7 +2513,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		return false;
 	}
 	long t9 = Util::get_cur_time();
-	SLOG_CODE("db info saved, used " << (t9 - t8) << "ms.");
+	SLOG_CORE("db info saved, used " << (t9 - t8) << "ms.");
 
 	flag = this->saveStatisticsInfoFile();
 	if (!flag)
@@ -2620,7 +2620,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	FILE *fp = fopen(fname.c_str(), "wb");
 	if (fp == NULL)
 	{
-		SLOG_CODE("error in Database::sub2id_pre2id_obj2id() -- unable to open file to write " << fname);
+		SLOG_CORE("error in Database::sub2id_pre2id_obj2id() -- unable to open file to write " << fname);
 		return false;
 	}
 	ID_TUPLE tmp_id_tuple;
@@ -2649,7 +2649,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	}
 
 	// Util::logging("finish initial sub2id_pre2id_obj2id");
-	SLOG_CODE("finish initial sub2id_pre2id_obj2id");
+	SLOG_CORE("finish initial sub2id_pre2id_obj2id");
 
 	// BETTER?:close the stdio buffer sync??
 
@@ -2726,7 +2726,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	{
 		int parse_triple_num = 0;
 		_parser.parseFile(triple_array, parse_triple_num);
-		SLOG_CODE("Finish rdfparser, triple_num = " << this->triples_num);
+		SLOG_CORE("Finish rdfparser, triple_num = " << this->triples_num);
 
 		if (parse_triple_num == 0)
 		{
@@ -2950,7 +2950,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	}
 
 	// Util::logging("finish initial sub2id_pre2id_obj2id");
-	SLOG_CODE("Finish initial sub2id_pre2id_obj2id");
+	SLOG_CORE("Finish initial sub2id_pre2id_obj2id");
 
 	// BETTER?:close the stdio buffer sync??
 
@@ -2973,7 +2973,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
 
-	SLOG_CODE("Begin to build Trie ......");
+	SLOG_CORE("Begin to build Trie ......");
 	int num_lines = 0;
 	{
 		long begin = Util::get_cur_time();
@@ -3031,16 +3031,16 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			if (!bar.is_completed())
 				bar.set_progress(100);
 		}
-		SLOG_CODE("Add triples to Trie, begin to build Prefix ......");
+		SLOG_CORE("Add triples to Trie, begin to build Prefix ......");
 		trie->BuildPrefix();
-		SLOG_CODE("Build Prefix and Trie done. used " << Util::get_cur_time() - begin << "ms.");
+		SLOG_CORE("Build Prefix and Trie done. used " << Util::get_cur_time() - begin << "ms.");
 	}
 
 	RDFParser _parser(_fin); // RDFParser is actually invoked twice, see above
 	// Util::logging("==> while(true)");
 
 	num_lines = 0;
-	SLOG_CODE( "this type predicate name is " << this->type_predicate_name );
+	SLOG_CORE( "this type predicate name is " << this->type_predicate_name );
 	// string type="rdf:type";
 	// this->checkIsTypePredicate(type);
 	this->umap.clear();
@@ -3502,7 +3502,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	{
 		return false;
 	}
-	SLOG_CODE("finish loading");
+	SLOG_CORE("finish loading");
 
 	long tv_load = Util::get_cur_time();
 
@@ -3549,7 +3549,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		success_num += this->insert(triple_array, parse_triple_num, _is_restore, txn);
 		// success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
 		long tv_end = Util::get_cur_time();
-		SLOG_CODE("batch insert, used " << (tv_end - tv_begin) << " ms");
+		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 		// some maybe invalid or duplicate
 		// triple_num += parse_triple_num;
 	}
@@ -3557,7 +3557,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	delete[] triple_array;
 	triple_array = NULL;
 	long tv_insert = Util::get_cur_time();
-	SLOG_CODE("after insert, used " << (tv_insert - tv_load) << "ms.");
+	SLOG_CORE("after insert, used " << (tv_insert - tv_load) << "ms.");
 	// BETTER:update kvstore and vstree separately, to lower the memory cost
 	// flag = this->vstree->saveTree();
 	// if (!flag)
@@ -3570,8 +3570,8 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	// return false;
 	//}
 
-	SLOG_CODE("insert rdf triples done.");
-	SLOG_CODE("inserted triples num: " << success_num);
+	SLOG_CORE("insert rdf triples done.");
+	SLOG_CORE("inserted triples num: " << success_num);
 
 	this->kvstore->set_if_single_thread(false);
 	return true;
@@ -3585,7 +3585,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	{
 		return false;
 	}
-	SLOG_CODE("finish loading");
+	SLOG_CORE("finish loading");
 
 	long tv_load = Util::get_cur_time();
 	TYPE_TRIPLE_NUM success_num = 0;
@@ -3625,7 +3625,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		long tv_begin = Util::get_cur_time();
 		success_num += this->remove(triple_array, parse_triple_num, _is_restore, txn);
 		long tv_end = Util::get_cur_time();
-		SLOG_CODE("batch remove, used " << (tv_end - tv_begin) << " ms");
+		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 		// some maybe invalid or duplicate
 		// triple_num -= parse_triple_num;
 	}
@@ -3636,7 +3636,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	delete[] triple_array;
 	triple_array = NULL;
 	long tv_remove = Util::get_cur_time();
-	SLOG_CODE("after remove, used " << (tv_remove - tv_load) << "ms.");
+	SLOG_CORE("after remove, used " << (tv_remove - tv_load) << "ms.");
 
 	// flag = this->vstree->saveTree();
 	// if (!flag)
@@ -3649,8 +3649,8 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	// return false;
 	//}
 
-	SLOG_CODE("remove rdf triples done.");
-	SLOG_CODE("removed triples num: " << success_num );
+	SLOG_CORE("remove rdf triples done.");
+	SLOG_CORE("removed triples num: " << success_num );
 
 	// if(this->vstree->isEmpty())
 	if (this->triples_num == 0)
@@ -3786,7 +3786,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		return -1;
 	}
-	SLOG_CODE("finish loading");
+	SLOG_CORE("finish loading");
 
 	long tv_load = Util::get_cur_time();
 
@@ -3809,7 +3809,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	RDFParser _parser(_fin);
 	//parse error log
 	string error_log = this->store_path + "/parse_error.log";
-	SLOG_CODE("Error log file:" << error_log);
+	SLOG_CORE("Error log file:" << error_log);
 	//write build info to log
 	FILE *fp = fopen(error_log.c_str(), "a");
 	string log_msg = "Info " + Util::get_date_time() + " batch insert parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
@@ -3827,16 +3827,16 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		long tv_begin = Util::get_cur_time();
 		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
 		long tv_end = Util::get_cur_time();
-		SLOG_CODE("batch insert, used " << (tv_end - tv_begin) << " ms");
+		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
 
 	delete[] triple_array;
 	triple_array = NULL;
 	this->saveStatisticsInfoFile();
 	long tv_insert = Util::get_cur_time();
-	SLOG_CODE("after batch insert, used " << (tv_insert - tv_load) << "ms.");
-	SLOG_CODE("insert rdf triples done.");
-	SLOG_CODE("inserted triples num: " << success_num);
+	SLOG_CORE("after batch insert, used " << (tv_insert - tv_load) << "ms.");
+	SLOG_CORE("insert rdf triples done.");
+	SLOG_CORE("inserted triples num: " << success_num);
 
 	return success_num;
 }
@@ -3849,7 +3849,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		return -1;
 	}
-	SLOG_CODE("finish loading");
+	SLOG_CORE("finish loading");
 
 	long tv_load = Util::get_cur_time();
 	unsigned success_num = 0;
@@ -3877,16 +3877,16 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		long tv_begin = Util::get_cur_time();
 		success_num += this->batch_remove(triple_array, parse_triple_num, _is_restore, txn);
 		long tv_end = Util::get_cur_time();
-		SLOG_CODE("batch remove, used " << (tv_end - tv_begin) << " ms");
+		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 	}
 
 	delete[] triple_array;
 	triple_array = NULL;
 	this->saveStatisticsInfoFile();
 	long tv_remove = Util::get_cur_time();
-	SLOG_CODE("after batch remove, used " << (tv_remove - tv_load) << "ms.");
-	SLOG_CODE("remove rdf triples done.");
-	SLOG_CODE("removed triples num: " << success_num);
+	SLOG_CORE("after batch remove, used " << (tv_remove - tv_load) << "ms.");
+	SLOG_CORE("remove rdf triples done.");
+	SLOG_CORE("removed triples num: " << success_num);
 
 	if (this->triples_num == 0)
 	{
@@ -4022,7 +4022,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	if (update_num_triple < update_num_o)
 		update_num_triple = update_num_o;
 
-	SLOG_CODE("update_num_triple:" << update_num_triple << ",update_num_s:" << update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o);
+	SLOG_CORE("update_num_triple:" << update_num_triple << ",update_num_s:" << update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o);
 	// assert(update_num_o == update_num_p);
 	// assert(update_num_s == update_num_o);
 
@@ -4116,7 +4116,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	if (update_num_triple < update_num_o)
 		update_num_triple = update_num_o;
 
-	SLOG_CODE("update_num_triple:" << update_num_triple << ",update_num_s:" << update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o);
+	SLOG_CORE("update_num_triple:" << update_num_triple << ",update_num_s:" << update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o);
 	if (txn == nullptr)
 	{
 		for (auto _sub_id : sub_ids)
@@ -4193,7 +4193,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		this->stringindex->disable(vertices, true);
 		this->stringindex->disable(predicates, false);
 
-		SLOG_CODE("vertices_num:" << vertices.size() << ",predicates:" << predicates.size());
+		SLOG_CORE("vertices_num:" << vertices.size() << ",predicates:" << predicates.size());
 	}
 	return update_num_s;
 }
@@ -4335,7 +4335,7 @@ bool Database::backup()
 	}
 	string backup_path = Util::backup_path + this->name + Util::global_config["db_suffix"];
 
-	SLOG_CODE("Beginning backup, path is: "<< backup_path);
+	SLOG_CORE("Beginning backup, path is: "<< backup_path);
 
 	string sys_cmd;
 	if (Util::dir_exist(backup_path))
@@ -4354,13 +4354,13 @@ bool Database::backup()
 	Util::remove_path(update_log_path);
 	Util::create_file(update_log_path);
 
-	SLOG_CODE("Backup completed!");
+	SLOG_CORE("Backup completed!");
 	return true;
 }
 
 bool Database::restore()
 {
-	SLOG_CODE("Begining restore.");
+	SLOG_CORE("Begining restore.");
 	string sys_cmd;
 
 	multiset<string> insertions;
@@ -4380,8 +4380,8 @@ bool Database::restore()
 
 		num_update += Database::read_update_log(this->store_path + '/' + this->update_log_since_backup, insertions, removals);
 
-		SLOG_CODE("Failed to restore from original db file, trying to restore from backup file.");
-		SLOG_CODE("Your old db file will be stored at " << this->store_path << ".bad");
+		SLOG_CORE("Failed to restore from original db file, trying to restore from backup file.");
+		SLOG_CORE("Your old db file will be stored at " << this->store_path << ".bad");
 
 		Util::remove_path(this->store_path + ".bad");
 		sys_cmd = "cp -r " + this->store_path + ' ' + this->store_path + ".bad";
@@ -4405,7 +4405,7 @@ bool Database::restore()
 		num_update += Database::read_update_log(this->store_path + '/' + this->update_log, insertions, removals);
 	}
 
-	SLOG_CODE("Restoring " << num_update << " updates.");
+	SLOG_CORE("Restoring " << num_update << " updates.");
 
 	if (!this->restore_update(insertions, removals))
 	{
@@ -4413,7 +4413,7 @@ bool Database::restore()
 		return false;
 	}
 
-	SLOG_CODE("Restore completed.");
+	SLOG_CORE("Restore completed.");
 
 	return true;
 }
@@ -4827,7 +4827,7 @@ bool Database::saveStatisticsInfoFile()
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
 	if (Util::file_exist(filepath) == false)
 	{
-		SLOG_CODE("create statistics file.");
+		SLOG_CORE("create statistics file.");
 		Util::create_file(filepath);
 	}
 	file.open(filepath);
@@ -4839,7 +4839,7 @@ bool Database::saveStatisticsInfoFile()
 	}
 	file.flush();
 	file.close();
-	SLOG_CODE("save the statistics file successfully! total " << i << " records have been saved!");
+	SLOG_CORE("save the statistics file successfully! total " << i << " records have been saved!");
 	return true;
 }
 

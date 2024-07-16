@@ -29,7 +29,7 @@ APIUtil::APIUtil()
 APIUtil::~APIUtil()
 {
     // #if defined(DEBUG)
-    SLOG_CODE("call APIUtil delete");
+    SLOG_CORE("call APIUtil delete");
     // #endif
     pthread_rwlock_rdlock(&databases_map_lock);
     std::map<std::string, shared_ptr<Database>>::iterator iter;
@@ -119,7 +119,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
     try
     {
         // #if defined(DEBUG)
-        SLOG_CODE("initialization start");
+        SLOG_CORE("initialization start");
         // #endif
         default_port = get_configure_value("default_port", default_port);
         thread_pool_num = get_configure_value("thread_num", thread_pool_num);
@@ -154,13 +154,13 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         }
         if (whiteList) {
             // #if defined(DEBUG)
-            SLOG_CODE("IP white List enabled.");
+            SLOG_CORE("IP white List enabled.");
             // #endif
             ipWhiteList->Load(ipWhiteFile);
         }
         else if (blackList) {
             // #if defined(DEBUG)
-            SLOG_CODE("IP black list enabled.");
+            SLOG_CORE("IP black list enabled.");
             // #endif
             ipBlackList->Load(ipBlackFile);
         }
@@ -183,7 +183,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         
         system_database->load();
         // #if defined(DEBUG)
-        SLOG_CODE("add system database");
+        SLOG_CORE("add system database");
         // #endif
         APIUtil::add_database(SYSTEM_DB_NAME, system_database);
 
@@ -229,7 +229,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             }
             #if defined(DEBUG)
             doc.Accept(jsonWriter);
-            SLOG_CODE(jsonBuffer.GetString());
+            SLOG_CORE(jsonBuffer.GetString());
             #endif
             // insert systemdb into already_build
             // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
@@ -309,7 +309,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             }
             #if defined(DEBUG)
             doc.Accept(jsonWriter);
-            SLOG_CODE(jsonBuffer.GetString());
+            SLOG_CORE(jsonBuffer.GetString());
             #endif
             pthread_rwlock_unlock(&users_map_lock);
         }
@@ -360,7 +360,7 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             add_database(db_name, current_database);
         }
         // #if defined(DEBUG)
-        SLOG_CODE("initialization end");
+        SLOG_CORE("initialization end");
         // #endif
         return 1;
     }
@@ -377,7 +377,7 @@ bool APIUtil::unlock_already_build_map()
     if ( rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("already_build_map unlock ok");
+        SLOG_CORE("already_build_map unlock ok");
         // #endif
         return true;
     }
@@ -407,7 +407,7 @@ vector<string> APIUtil::ip_list(string type)
     if(type == "2")
     {
         // #if defined(DEBUG)
-        SLOG_CODE("IP white List enabled.");
+        SLOG_CORE("IP white List enabled.");
         // #endif
         for (std::set<std::string>::iterator it = ipWhiteList->ipList.begin(); it!=ipWhiteList->ipList.end();it++)
         {
@@ -417,7 +417,7 @@ vector<string> APIUtil::ip_list(string type)
     else
     {
         // #if defined(DEBUG)
-        SLOG_CODE("IP black List enabled.");
+        SLOG_CORE("IP black List enabled.");
         // #endif
         for (std::set<std::string>::iterator it = ipBlackList->ipList.begin(); it!=ipBlackList->ipList.end();it++)
         {
@@ -561,7 +561,7 @@ int APIUtil::db_copy(string src_path, string dest_path)
         // check the destnation path
         // #if defined(DEBUG)
         log_info = "the path: " + dest_path + " is not exists, system will create it.";
-        SLOG_CODE(log_info);
+        SLOG_CORE(log_info);
         // #endif
         util.create_dirs(dest_path);
     }
@@ -579,14 +579,14 @@ bool APIUtil::add_database(const std::string &db_name, shared_ptr<Database> &db)
         return false;
     }
     // #if defined(DEBUG)
-    SLOG_CODE("database_map write lock ok");
+    SLOG_CORE("database_map write lock ok");
     // #endif
     databases.insert(pair<std::string, shared_ptr<Database>>(db_name, db));
     rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database_map unlock ok");
+        SLOG_CORE("database_map unlock ok");
         // #endif
         return true;
     } 
@@ -634,7 +634,7 @@ bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     else
     {
         // #if defined(DEBUG)
-        SLOG_CODE("try write lock database[" + dbinfo->getName() + "] ok");
+        SLOG_CORE("try write lock database[" + dbinfo->getName() + "] ok");
         // #endif
         return true;
     }
@@ -646,7 +646,7 @@ bool APIUtil::rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("read lock database[" + dbinfo->getName() + "] ok");
+        SLOG_CORE("read lock database[" + dbinfo->getName() + "] ok");
         // #endif
         return true;
     }
@@ -671,7 +671,7 @@ bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database [" + dbinfo->getName() + "] unlock ok");
+        SLOG_CORE("database [" + dbinfo->getName() + "] unlock ok");
         // #endif
         return true;
     }
@@ -691,7 +691,7 @@ bool APIUtil::insert_txn_managers(shared_ptr<Database> &current_database, std::s
         if (pthread_rwlock_unlock(&txn_m_lock) == 0)
         {
             // #if defined(DEBUG)
-            SLOG_CODE("add txn manager for " + database + " ok");
+            SLOG_CORE("add txn manager for " + database + " ok");
             // #endif
             return true;
         }
@@ -724,7 +724,7 @@ bool APIUtil::db_checkpoint(string db_name)
         return false;
     }
     // #if defined(DEBUG)
-    SLOG_CODE("txn_m write lock ok");
+    SLOG_CORE("txn_m write lock ok");
     // #endif
 	if (txn_managers.find(db_name) == txn_managers.end())
 	{
@@ -740,8 +740,8 @@ bool APIUtil::db_checkpoint(string db_name)
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("txn_m unlock ok");
-        SLOG_CODE(db_name + " checkpoint success!");
+        SLOG_CORE("txn_m unlock ok");
+        SLOG_CORE(db_name + " checkpoint success!");
         // #endif
         return true;
     }
@@ -798,14 +798,14 @@ bool APIUtil::delete_from_databases(string db_name)
         return false;
     }
     // #if defined(DEBUG)
-    SLOG_CODE("database_map write lock ok");
+    SLOG_CORE("database_map write lock ok");
     // #endif
     databases.erase(db_name);
     rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database_map unlock ok");
+        SLOG_CORE("database_map unlock ok");
         // #endif
         return true;
     } 
@@ -924,8 +924,8 @@ string APIUtil::begin_process(string db_name, int level , string username)
         return result;
     }
 	txn_id_t TID = txn_m->Begin(static_cast<IsolationLevelType>(level));
-	// SLOG_CODE("Transcation Id:"<< to_string(TID));
-	// SLOG_CODE(to_string(txn_m->Get_Transaction(TID)->GetStartTime()));
+	// SLOG_CORE("Transcation Id:"<< to_string(TID));
+	// SLOG_CORE(to_string(txn_m->Get_Transaction(TID)->GetStartTime()));
 	string begin_time = to_string(txn_m->Get_Transaction(TID)->GetStartTime());
 	string Time_TID = begin_time + "_" + to_string(TID);
 	add_transactionlog(db_name, username, Time_TID, begin_time, "RUNNING", "INF");
@@ -986,12 +986,12 @@ bool APIUtil::get_database(const std::string &db_name, shared_ptr<Database> &db)
     if (rwlock_code != 0) 
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database_map read lock error: " + to_string(rwlock_code));
+        SLOG_CORE("database_map read lock error: " + to_string(rwlock_code));
         // #endif
         return false;
     }
     // #if defined(DEBUG)
-    SLOG_CODE("database_map read lock ok");
+    SLOG_CORE("database_map read lock ok");
     // #endif
     std::map<std::string, shared_ptr<Database>>::iterator iter = databases.find(db_name);
     if (iter != databases.end())
@@ -1006,14 +1006,14 @@ bool APIUtil::get_database(const std::string &db_name, shared_ptr<Database> &db)
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database_map unlock ok");
+        SLOG_CORE("database_map unlock ok");
         // #endif
         return true;
     } 
     else
     {
         // #if defined(DEBUG)
-        SLOG_CODE("database_map unlock error:" + to_string(rwlock_code));
+        SLOG_CORE("database_map unlock error:" + to_string(rwlock_code));
         // #endif
         return false;
     }
@@ -1042,7 +1042,7 @@ bool APIUtil::add_already_build(const std::string &db_name, const std::string &c
         return false;
     }
     // #if defined(DEBUG)
-	SLOG_CODE("already_build_map write lock ok.");
+	SLOG_CORE("already_build_map write lock ok.");
     // #endif
     shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name, creator, build_time);
     already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(db_name, temp_db));
@@ -1053,7 +1053,7 @@ bool APIUtil::add_already_build(const std::string &db_name, const std::string &c
     if (update_result)
         refresh_sys_db();
     // #if defined(DEBUG)
-    SLOG_CODE("database add done.");
+    SLOG_CORE("database add done.");
     // #endif
     return update_result;
 }
@@ -1349,7 +1349,7 @@ bool APIUtil::update_sys_db(string query)
         return 0;
     }
     // #if defined(DEBUG)
-    SLOG_CODE("update sparql: " + query);
+    SLOG_CORE("update sparql: " + query);
     // #endif
     pthread_rwlock_wrlock(&system_db_lock);
     ResultSet _rs;
@@ -1367,7 +1367,7 @@ bool APIUtil::update_sys_db(string query)
             msg = "query failed.";
         }
         // #if defined(DEBUG)
-        SLOG_CODE(msg);
+        SLOG_CORE(msg);
         // #endif
         pthread_rwlock_unlock(&system_db_lock);
         return false;
@@ -1378,7 +1378,7 @@ bool APIUtil::update_sys_db(string query)
         {
             // #if defined(DEBUG)
             msg = "update num: " + util.int2string(ret);
-            SLOG_CODE(msg);
+            SLOG_CORE(msg);
             // #endif
             pthread_rwlock_unlock(&system_db_lock);
             return true;
@@ -1401,7 +1401,7 @@ bool APIUtil::refresh_sys_db()
 	system_database = make_shared<Database>(SYSTEM_DB_NAME);
 	bool flag = system_database->load();
     // #if defined(DEBUG)
-	SLOG_CODE("system database refresh");
+	SLOG_CORE("system database refresh");
     // #endif
     if (flag) 
     {
@@ -1431,7 +1431,7 @@ std::string APIUtil::query_sys_db(const std::string& sparql)
 	if(ret)
 	{
         // #if defined(DEBUG)
-		SLOG_CODE("search system db returned successfully.");
+		SLOG_CORE("search system db returned successfully.");
         // #endif
 		string success = rs.to_JSON();
 		pthread_rwlock_unlock(&system_db_lock);
@@ -1469,7 +1469,7 @@ bool APIUtil::user_add(const string& username, const string& password)
     if(users.find(username) == users.end())
     {
         // #if defined(DEBUG)
-        SLOG_CODE("user ready to add.");
+        SLOG_CORE("user ready to add.");
         // #endif
         shared_ptr<struct DBUserInfo> temp_user = make_shared<DBUserInfo>(username, password);
         users.insert(pair<std::string, shared_ptr<struct DBUserInfo>>(username, temp_user));
@@ -1792,7 +1792,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		pthread_rwlock_unlock(&(it->second->export_priv_set_lock));
 	}
     // #if defined(DEBUG)
-	SLOG_CODE("check ["+ username + "] [" + db_name + "] [" + type + "] privilege: " + to_string(check_result));
+	SLOG_CORE("check ["+ username + "] [" + db_name + "] [" + type + "] privilege: " + to_string(check_result));
     // #endif
 	pthread_rwlock_unlock(&users_map_lock);
 	return check_result;
@@ -1963,7 +1963,7 @@ bool APIUtil::init_privilege(const std::string& username, const std::string& db_
         }
     }
     // #if defined(DEBUG)
-	SLOG_CODE("no privileges to copy");
+	SLOG_CORE("no privileges to copy");
     // #endif
     return 1;
  }
@@ -2038,10 +2038,10 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     string iplogfile = access_log_path + iplog_name + ".log";
     if (util.file_exist(iplogfile) == false)
     {
-        SLOG_CODE("ip access log file is not exist, now create it.");
+        SLOG_CORE("ip access log file is not exist, now create it.");
         util.create_file(iplogfile);
     }
-    // SLOG_CODE("accesslog: " + iplogfile);
+    // SLOG_CORE("accesslog: " + iplogfile);
     FILE *ip_logfp = fopen(iplogfile.c_str(), "a");
     if (ip_logfp == NULL)
     {
@@ -2070,7 +2070,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     util.Csync(ip_logfp);
     // long logSize = ftell(ip_logfp);
     fclose(ip_logfp);
-    // SLOG_CODE("logSize:" + to_string(logSize);
+    // SLOG_CORE("logSize:" + to_string(logSize);
     pthread_rwlock_unlock(&access_log_lock);
 }
 
@@ -2084,7 +2084,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     string file_temp_name = access_log_path + iplog_name + "temp.log";
     if (util.file_exist(filename) == false)
     {
-        SLOG_CODE("error ip access log file is not exist");
+        SLOG_CORE("error ip access log file is not exist");
         return;
     }
     FILE* file = fopen(filename.c_str(), "r");
@@ -2139,7 +2139,7 @@ bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
     string filename = access_log_path + iplog_name + ".log";
     if (util.file_exist(filename) == false)
     {
-        SLOG_CODE("error ip access log file is not exist");
+        SLOG_CORE("error ip access log file is not exist");
         return false;
     }
     FILE* file = fopen(filename.c_str(), "r");
@@ -2218,10 +2218,10 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
     std::string querylog_file = query_log_path + queyrlog_name + ".log";
     if (util.file_exist(querylog_file) == false)
     {
-        SLOG_CODE("query log file is not exist, now create it.");
+        SLOG_CORE("query log file is not exist, now create it.");
         util.create_file(querylog_file);
     }
-    // SLOG_CODE("querylog: " + to_string(querylog_file);
+    // SLOG_CORE("querylog: " + to_string(querylog_file);
     FILE *querylog_fp = fopen(querylog_file.c_str(), "a");
     if (querylog_fp == NULL)
     {
@@ -2239,7 +2239,7 @@ void APIUtil::write_query_log(struct DBQueryLogInfo *queryLogInfo)
     util.Csync(querylog_fp);
     // long logSize = ftell(querylog_fp);
     std::fclose(querylog_fp);
-    // SLOG_CODE("logSize: " + to_string(logSize));
+    // SLOG_CORE("logSize: " + to_string(logSize));
     pthread_rwlock_unlock(&query_log_lock);
 }
 
@@ -2247,7 +2247,7 @@ void APIUtil::init_transactionlog()
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
     if (util.file_exist(TRANSACTION_LOG_PATH)) {
-        SLOG_CODE("transaction log has been created.");
+        SLOG_CORE("transaction log has been created.");
         pthread_rwlock_unlock(&transactionlog_lock);
         return;
     }

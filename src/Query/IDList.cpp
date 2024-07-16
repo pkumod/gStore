@@ -258,7 +258,7 @@ IDList::intersectList(const unsigned* _id_list, unsigned _list_len)
                           _id_list,_list_len);
 	}
 	default:
-		SLOG_CODE("no such method in IDList::intersectList()");
+		SLOG_CORE("no such method in IDList::intersectList()");
 		break;
 	}
 
@@ -494,7 +494,7 @@ IDList::intersect(const IDList& _id_list, const unsigned* _list, unsigned _len)
 		break;
 	}
 	default:
-		SLOG_CODE("no such method in IDList::intersectList()");
+		SLOG_CORE("no such method in IDList::intersectList()");
 		break;
 	}
 

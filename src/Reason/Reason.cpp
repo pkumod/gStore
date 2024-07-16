@@ -271,8 +271,8 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
     results.delete_sparql=delete_sparql;
 
     results.issuccess = 1;
-    SLOG_CODE("insert_sparql:" << insert_sparql);
-    SLOG_CODE("delete_sparql:" << delete_sparql);
+    SLOG_CORE("insert_sparql:" << insert_sparql);
+    SLOG_CORE("delete_sparql:" << delete_sparql);
     
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
@@ -289,7 +289,7 @@ ReasonSparql ReasonHelper::executeReasonRule(string rulename, string db_name,str
   ReasonSparql results;
   string _db_path = db_home + db_name + db_suffix;
   string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
-  SLOG_CODE("rulefilepath:"<<rulefilepath);
+  SLOG_CORE("rulefilepath:"<<rulefilepath);
   string searchsparql = "";
   string updatesparql = "";
 
@@ -319,7 +319,7 @@ ReasonSparql ReasonHelper::executeReasonRule(string rulename, string db_name,str
     if (doc.HasMember("insert_sparql"))
     {
       sparql = doc["insert_sparql"].GetString();
-      SLOG_CODE("start loading the database......");
+      SLOG_CORE("start loading the database......");
       results.insert_sparql=sparql;
       results.issuccess=1;
       return results;
@@ -401,7 +401,7 @@ ReasonSparql ReasonHelper::disableReasonRule(string rulename,string db_name,stri
   ReasonSparql results;
   string _db_path = db_home + db_name + db_suffix;
   string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
-  SLOG_CODE("rulefilepath:"<<rulefilepath);
+  SLOG_CORE("rulefilepath:"<<rulefilepath);
   string searchsparql = "";
   string updatesparql = "";
 

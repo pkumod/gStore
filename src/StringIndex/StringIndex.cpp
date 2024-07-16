@@ -163,7 +163,7 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)request.size())
 	{
-		SLOG_CODE(code_print << "sequence access.");
+		SLOG_CORE(code_print << "sequence access.");
 
 #ifndef PARALLEL_SORT
 		sort(request.begin(), request.end());
@@ -253,7 +253,7 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	}
 	else
 	{
-		SLOG_CODE(code_print << "random access.");
+		SLOG_CORE(code_print << "random access.");
 
 		for (int i = 0; i < (int)request.size(); i++)
 			this->randomAccess(request[i].id, request[i].str, buffer, buffer_size, real);

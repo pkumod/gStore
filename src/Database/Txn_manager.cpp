@@ -22,7 +22,7 @@ Txn_manager::~Txn_manager()
 {
 	abort_all_running();
 	Checkpoint();
-	SLOG_CODE("Checkpoint done");
+	SLOG_CORE("Checkpoint done");
 	txn_table.clear();
 	out.close();
 	out_all.close();
@@ -111,7 +111,7 @@ bool Txn_manager::redo(string str, txn_id_t TID)
 		this->db->query(redo_sparql, rs, output);
 	else
 	{
-		SLOG_CODE("error! database has been flushed or removed");
+		SLOG_CORE("error! database has been flushed or removed");
 		return false;
 	}
 	return true;
@@ -148,7 +148,7 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 	txn_id_t TID = this->ArrangeTID();
 	if(TID == INVALID_ID)
 	{
-		SLOG_CODE("TID wrapped, please run garbage clean!");
+		SLOG_CORE("TID wrapped, please run garbage clean!");
 		checkpoint_lock.unlock();
 		return TID;
 	}
@@ -181,7 +181,7 @@ int Txn_manager::Commit(txn_id_t TID)
 		db->TransactionCommit(txn);
 	else
 	{
-		SLOG_CODE("error! database has been flushed or removed");
+		SLOG_CORE("error! database has been flushed or removed");
 		// checkpoint_lock.unlock();
 		return -1;
 	}
@@ -211,7 +211,7 @@ int Txn_manager::Abort(txn_id_t TID)
 		db->TransactionRollback(txn);
 	else
 	{
-		SLOG_CODE("error! database has been flushed or removed");
+		SLOG_CORE("error! database has been flushed or removed");
 		return -1;
 	}
 	//writelog(log_str);
@@ -254,12 +254,12 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	if(db != nullptr)
 		ret_val = this->db->query(sparql, rs, output , true, false, txn);
 	else{
-		SLOG_CODE("error! database has been flushed or removed");
+		SLOG_CORE("error! database has been flushed or removed");
 		return -10;
 	}
 	if(txn->GetState() == TransactionState::ABORTED)
 	{
-		SLOG_CODE("Transaction Abort due to Query failed. TID:" << TID);
+		SLOG_CORE("Transaction Abort due to Query failed. TID:" << TID);
 		Abort(TID);
 		return -20;
 	}
@@ -277,9 +277,9 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 
 void Txn_manager::Checkpoint()
 {
-	SLOG_CODE("set checkpoint_lock lockExclusive begin...");
+	SLOG_CORE("set checkpoint_lock lockExclusive begin...");
 	checkpoint_lock.lockExclusive();
-	SLOG_CODE("set checkpoint_lock lockExclusive ok.");
+	SLOG_CORE("set checkpoint_lock lockExclusive ok.");
 	vector<unsigned> sub_ids , obj_ids, obj_literal_ids, pre_ids;
 	sub_ids.insert(sub_ids.begin(), DirtyKeys[0].begin(), DirtyKeys[0].end());
 	pre_ids.insert(pre_ids.begin(), DirtyKeys[1].begin(), DirtyKeys[1].end());

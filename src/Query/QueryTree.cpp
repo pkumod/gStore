@@ -415,7 +415,7 @@ void GroupPattern::print(int dep)
 {
 	std::string code_print;
 	for (int t = 0; t < dep; t++)	code_print += "\t";
-	SLOG_CODE(code_print << "{");
+	SLOG_CORE(code_print << "{");
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
@@ -424,7 +424,7 @@ void GroupPattern::print(int dep)
 		{
 			code_print = "";
 			for (int t = 0; t <= dep; t++)	code_print += "\t";
-			SLOG_CODE(code_print<<this->sub_group_pattern[i].pattern.subject.value
+			SLOG_CORE(code_print<<this->sub_group_pattern[i].pattern.subject.value
 				<<"\t"<<this->sub_group_pattern[i].pattern.predicate.value
 				<<"\t"<<this->sub_group_pattern[i].pattern.object.value);
 		}
@@ -436,7 +436,7 @@ void GroupPattern::print(int dep)
 				{
 					code_print = "";
 					for (int t = 0; t <= dep; t++)	code_print += "\t";
-					SLOG_CODE("UNION");
+					SLOG_CORE("UNION");
 				}
 				this->sub_group_pattern[i].unions[j].print(dep + 1);
 			}
@@ -445,40 +445,40 @@ void GroupPattern::print(int dep)
 		{
 			code_print = "";
 			for (int t = 0; t <= dep; t++)	code_print += "\t";
-			if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type)	SLOG_CODE(code_print<<"OPTIONAL");
-			if (this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)	SLOG_CODE(code_print<<"MINUS");
+			if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type)	SLOG_CORE(code_print<<"OPTIONAL");
+			if (this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)	SLOG_CORE(code_print<<"MINUS");
 			this->sub_group_pattern[i].optional.print(dep + 1);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
 		{
 			code_print = "";
 			for (int t = 0; t <= dep; t++)	code_print += "\t";
-			SLOG_CODE(code_print<<"FILTER\t");
+			SLOG_CORE(code_print<<"FILTER\t");
 			this->sub_group_pattern[i].filter.print(dep + 1);
-			SLOG_CODE("");
+			SLOG_CORE("");
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
 		{
 			code_print = "";
 			for (int t = 0; t <= dep; t++)	code_print += "\t";
-			SLOG_CODE(code_print<<"BIND(");
+			SLOG_CORE(code_print<<"BIND(");
 			this->sub_group_pattern[i].bind.bindExpr.print(dep + 1);
-			SLOG_CODE("AS\t"<<this->sub_group_pattern[i].bind.var);
+			SLOG_CORE("AS\t"<<this->sub_group_pattern[i].bind.var);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Subquery_type)
 		{
 			code_print = "";
 			for (int t = 0; t <= dep; t++)	code_print += "\t";
-			SLOG_CODE(code_print);
+			SLOG_CORE(code_print);
             this->sub_group_pattern[i].subquery.getResultProjectionVarset().print();
-            SLOG_CODE("<<");
+            SLOG_CORE("<<");
 			this->sub_group_pattern[i].subquery.print();
-            SLOG_CODE(">>");
+            SLOG_CORE(">>");
 		}
 
 	code_print = "";
 	for (int t = 0; t < dep; t++)	code_print += "\t";
-	SLOG_CODE("}");
+	SLOG_CORE("}");
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -913,18 +913,18 @@ void QueryTree::print()
 {
 	std::string code_print;
 	for (int j = 0; j < 80; j++)			code_print += "=";
-	SLOG_CODE(code_print);
+	SLOG_CORE(code_print);
 
 	if (this->update_type == Not_Update)
 	{
 		if (this->query_form == Select_Query)
 		{
 			if (singleBGP)
-				SLOG_CODE("Single BGP");
+				SLOG_CORE("Single BGP");
 			code_print = "SELECT";
 			if (this->projection_modifier == Modifier_Distinct)
 				code_print += " DISTINCT";
-			SLOG_CODE(code_print);
+			SLOG_CORE(code_print);
 
 			code_print = "Var: \t";
 			for (int i = 0; i < (int)this->projection.size(); i++)
@@ -964,7 +964,7 @@ void QueryTree::print()
 						code_print += "kHopEnumerate(";
 					if (this->projection[i].aggregate_type == ProjectionVar::CompTree_type)
 					{
-						SLOG_CODE(code_print);
+						SLOG_CORE(code_print);
 						code_print = "";
 						projection[i].comp_tree_root.print(0);
 					}
@@ -1014,12 +1014,12 @@ void QueryTree::print()
 			}
 			if (this->projection_asterisk && !this->checkAtLeastOneAggregateFunction())
 				code_print += "*";
-			SLOG_CODE(code_print);
+			SLOG_CORE(code_print);
 			code_print = "";
 		}
-		else SLOG_CODE("ASK");
+		else SLOG_CORE("ASK");
 
-		SLOG_CODE("GroupPattern:");
+		SLOG_CORE("GroupPattern:");
 		this->group_pattern.print(0);
 
 		if (this->query_form == Select_Query)
@@ -1031,7 +1031,7 @@ void QueryTree::print()
 				for (int i = 0; i < (int)this->group_by.vars.size(); i++)
 					code_print += this->group_by.vars[i] + "\t";
 
-				SLOG_CODE(code_print);
+				SLOG_CORE(code_print);
 			}
 
 			if (!this->order_by.empty())
@@ -1043,44 +1043,44 @@ void QueryTree::print()
 					if (!this->order_by[i].descending)	code_print += "ASC(";
 					else code_print += "DESC(";
 					// printf("%s)\t", this->order_by[i].var.c_str());
-					SLOG_CODE(code_print);
+					SLOG_CORE(code_print);
 					code_print = "";
 					order_by[i].comp_tree_root.print(0);
 					code_print = ")\t";
 				}
-				SLOG_CODE(code_print);
+				SLOG_CORE(code_print);
 			}
 			if (this->offset != 0)
-				SLOG_CODE("OFFSET\t" << this->offset);
+				SLOG_CORE("OFFSET\t" << this->offset);
 			if (this->limit != -1)
-				SLOG_CODE("LIMIT\t" << this->limit);
+				SLOG_CORE("LIMIT\t" << this->limit);
 		}
 	}
 	else
 	{
-		SLOG_CODE("UPDATE");
+		SLOG_CORE("UPDATE");
 		if (this->update_type == Delete_Data || this->update_type == Delete_Where ||
 				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
-			SLOG_CODE("Delete:");
+			SLOG_CORE("Delete:");
 			this->delete_patterns.print(0);
 		}
 		if (this->update_type == Insert_Data || this->update_type == Insert_Clause || this->update_type == Modify_Clause)
 		{
-			SLOG_CODE("Insert:");
+			SLOG_CORE("Insert:");
 			this->insert_patterns.print(0);
 		}
 		if (this->update_type == Delete_Where || this->update_type == Insert_Clause ||
 				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
-			SLOG_CODE("GroupPattern:");
+			SLOG_CORE("GroupPattern:");
 			this->group_pattern.print(0);
 		}
 	}
 
 	code_print = "";
 	for (int j = 0; j < 80; j++)			code_print +="=";
-	SLOG_CODE(code_print);
+	SLOG_CORE(code_print);
 }
 
 /**
@@ -1171,20 +1171,20 @@ void CompTreeNode::print(int dep)
 		std::string code_print;
 		for (int i = 0; i < dep; i++)
 			code_print += '\t';
-		SLOG_CODE(code_print<<"Value: " << val);
+		SLOG_CORE(code_print<<"Value: " << val);
 	}
 	else
 	{
 		std::string code_print;
 		for (int i = 0; i < dep; i++)
 			code_print += '\t';
-		SLOG_CODE(code_print<<"Operator " << oprt);
+		SLOG_CORE(code_print<<"Operator " << oprt);
 		for (size_t i = 0; i < children.size(); i++)
 		{
 			code_print = "";
 			for (int j = 0; j < dep; j++)
 				code_print += '\t';
-			SLOG_CODE(code_print<<"child[" << i << "]:");
+			SLOG_CORE(code_print<<"child[" << i << "]:");
 			children[i].print(dep + 1);
 		}
 	}
@@ -1225,7 +1225,7 @@ void QueryTree::relabel(QueryTreeRelabeler& qtr){
     for(vector<Order>::iterator it=order_by.begin(); it!=order_by.end(); it++)
 		it->relabel(qtr);
     group_pattern.relabel(qtr);
-	SLOG_CODE("");
+	SLOG_CORE("");
 }
 
 void QueryTree::relabel_full(QueryTreeRelabeler& qtr){

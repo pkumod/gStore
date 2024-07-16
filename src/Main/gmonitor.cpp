@@ -76,11 +76,11 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-		SLOG_CODE("start loading the database......");
+		SLOG_CORE("start loading the database......");
 		Database _db(db_name);
 		// _db.load();
 		_db.loadDBInfoFile();
-		SLOG_CODE("finish load database info");
+		SLOG_CORE("finish load database info");
 
 		sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
 		ResultSet _rs;

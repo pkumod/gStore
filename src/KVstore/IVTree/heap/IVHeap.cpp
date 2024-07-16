@@ -69,7 +69,7 @@ IVHeap::insert(IVNode* _np)
 {
 	if (this->length == this->size)	//when full, reallocate
 	{
-		SLOG_CODE("check: double the heap");
+		SLOG_CORE("check: double the heap");
 		this->heap = (IVNode**)realloc(this->heap, 2 * this->size * sizeof(IVNode*));
 		if (this->heap == NULL)
 		{

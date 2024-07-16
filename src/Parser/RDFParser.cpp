@@ -371,7 +371,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 	{
 		ofile.close();
 	}
-	SLOG_CODE("RDFParser parseFile done!");
+	SLOG_CORE("RDFParser parseFile done!");
 
 	return numLines;
 }

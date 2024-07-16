@@ -271,8 +271,8 @@ tuple<bool,shared_ptr<IntermediateResult>> Optimizer::DoQuery(SPARQLquery &sparq
 tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
 
 #ifdef TOPK_DEBUG_INFO
-  SLOG_CODE("Optimizer:: limit used:"<<query_info.limit_);
-  SLOG_CODE("Optimizer::DoQuery limit num:"<<query_info.limit_num_);
+  SLOG_CORE("Optimizer:: limit used:"<<query_info.limit_);
+  SLOG_CORE("Optimizer::DoQuery limit num:"<<query_info.limit_num_);
 #endif
   bool ranked = false;
   auto var_candidates_cache = bgp_query->get_all_candidates();
@@ -290,27 +290,27 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     for (auto &constant_generating_step : *const_candidates)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
     long t2 = Util::get_cur_time();
-    SLOG_CODE("get var cache, used " << (t2 - t1) << "ms.");
-    SLOG_CODE("id_list.size = " << var_candidates_cache->size());
-    SLOG_CODE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
+    SLOG_CORE("get var cache, used " << (t2 - t1) << "ms.");
+    SLOG_CORE("id_list.size = " << var_candidates_cache->size());
+    SLOG_CORE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
 
     auto second_run_candidates_plan = plan_generator.CompleteCandidate();
     long t3 = Util::get_cur_time();
-    SLOG_CODE("complete candidate done, size = " << second_run_candidates_plan.size());
+    SLOG_CORE("complete candidate done, size = " << second_run_candidates_plan.size());
     for(const auto& constant_generating_step: second_run_candidates_plan)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
     long t4 = Util::get_cur_time();
     PlanTree* best_plan_tree = plan_generator.GetPlan(true);
     long t5 = Util::get_cur_time();
-    SLOG_CODE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
+    SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());
-    SLOG_CODE("plan print done");
+    SLOG_CORE("plan print done");
 
     long t6 = Util::get_cur_time();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
     long t7 = Util::get_cur_time();
-    SLOG_CODE("execution, used " << (t7 - t6) << "ms.");
+    SLOG_CORE("execution, used " << (t7 - t6) << "ms.");
 
     auto bfs_table = get<1>(bfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
@@ -318,8 +318,8 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     long t8 = Util::get_cur_time();
     CopyToResult(bgp_query, bfs_table);
     long t9 = Util::get_cur_time();
-    SLOG_CODE("copy to result, used " << (t9 - t8) <<"ms.");
-    SLOG_CODE("total execution, used " << (t9 - t1) <<"ms.");
+    SLOG_CORE("copy to result, used " << (t9 - t8) <<"ms.");
+    SLOG_CORE("total execution, used " << (t9 - t1) <<"ms.");
   }
   else if(strategy == BasicQueryStrategy::TopK)
   {
@@ -338,10 +338,10 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     }
 
 #ifdef TOPK_DEBUG_INFO
-    SLOG_CODE("Top-k Constant Filtering Candidates Info");
+    SLOG_CORE("Top-k Constant Filtering Candidates Info");
     for(const auto& pair:*var_candidates_cache)
-      SLOG_CODE("var["<<pair.first<<"]  "<<pair.second->size());
-    SLOG_CODE("Top-k Constant Filtering Candidates Info End");
+      SLOG_CORE("var["<<pair.first<<"]  "<<pair.second->size());
+    SLOG_CORE("Top-k Constant Filtering Candidates Info End");
 #endif
 
     auto search_plan = make_shared<TopKSearchPlan>(bgp_query, this->kv_store_,
@@ -351,7 +351,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
                          (*query_info.ordered_by_expressions_)[0],
                          var_candidates_cache);
 #ifdef TOPK_DEBUG_INFO
-    SLOG_CODE("Top-k Search Plan");
+    SLOG_CORE("Top-k Search Plan");
     search_plan->DebugInfo(bgp_query,kv_store_);
 #endif
     auto top_k_result = this->ExecutionTopK(bgp_query,search_plan,query_info,var_candidates_cache);
@@ -369,29 +369,29 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     for (auto &constant_generating_step : *const_candidates)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
     long t2 = Util::get_cur_time();
-    SLOG_CODE("get var cache, used " << (t2 - t1) << "ms.");
-    SLOG_CODE("id_list.size = " << var_candidates_cache->size());
-    SLOG_CODE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
+    SLOG_CORE("get var cache, used " << (t2 - t1) << "ms.");
+    SLOG_CORE("id_list.size = " << var_candidates_cache->size());
+    SLOG_CORE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
 
     auto second_run_candidates_plan = plan_generator.CompleteCandidate();
     long t3 = Util::get_cur_time();
-    SLOG_CODE("complete candidate done, size = " << second_run_candidates_plan.size());
+    SLOG_CORE("complete candidate done, size = " << second_run_candidates_plan.size());
     for(const auto& constant_generating_step: second_run_candidates_plan)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
     long t4 = Util::get_cur_time();
     PlanTree* best_plan_tree = plan_generator.GetPlan(false);
     long t5 = Util::get_cur_time();
-    SLOG_CODE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
+    SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());
-    SLOG_CODE("plan print done");
+    SLOG_CORE("plan print done");
 
     long t6 = Util::get_cur_time();
     auto dfs_query_plan = make_shared<DFSPlan>(best_plan_tree->root_node);
     auto dfs_result = this->ExecutionDepthFirst(bgp_query, dfs_query_plan,
                                                 query_info,var_candidates_cache);
     long t7 = Util::get_cur_time();
-    SLOG_CODE("execution, used " << (t7 - t6) << "ms.");
+    SLOG_CORE("execution, used " << (t7 - t6) << "ms.");
 
     auto bfs_table = get<1>(dfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
@@ -399,8 +399,8 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     long t8 = Util::get_cur_time();
     CopyToResult(bgp_query, bfs_table);
     long t9 = Util::get_cur_time();
-    SLOG_CODE("copy to result, used " << (t9 - t8) <<"ms.");
-    SLOG_CODE("total execution, used " << (t9 - t1) <<"ms.");
+    SLOG_CORE("copy to result, used " << (t9 - t8) <<"ms.");
+    SLOG_CORE("total execution, used " << (t9 - t1) <<"ms.");
   }
   return make_tuple<bool, bool>(true,std::move(ranked));
 
@@ -696,7 +696,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
   env->limitID_literal = this->limitID_literal_;
   env->bgp_query = bgp_query;
   env->id_caches = id_caches;
-  SLOG_CODE(" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size());
+  SLOG_CORE(" Optimizer::ExecutionTopK  env->id_caches "<<  env->id_caches->size());
   env->k = query_info.limit_num_;
   env->coefficients = var_coefficients;
   env->txn = this->txn_;
@@ -807,7 +807,7 @@ tuple<bool,IntermediateResult> Optimizer::ExecutionTopK(shared_ptr<BGPQuery> bgp
         code_print +=" "+kv_store_->getPredicateByID(rec[j]) + std::to_string(rec[j]);
       else
         code_print += kv_store_->getStringByID(rec[j])+"["+std::to_string(rec[j])+"]";
-    SLOG_CODE(code_print);
+    SLOG_CORE(code_print);
     it++;
   }
 #endif

@@ -250,7 +250,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
   std::string code_print = "JoinTable public_variables_ ";
   for(auto public_var_id : *join_nodes)
     code_print += std::to_string(public_var_id) + " ";
-  SLOG_CODE(code_print);
+  SLOG_CORE(code_print);
 #endif
   // build index in big table
   auto& big_table = records_a->size() > records_b->size() ? records_a : records_b;
@@ -1313,7 +1313,7 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
     auto edge_info = (*edge_info_vector)[i];
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
     TYPE_ENTITY_LITERAL_ID this_edge_list_len;
-    SLOG_CODE("edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_));
+    SLOG_CORE("edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_));
     switch (edge_info.join_method_) {
       case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
         auto s_var_constant_id = edge_info.s_;
@@ -1407,7 +1407,7 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
 		  assert(false);
 	  }
     }
-    SLOG_CODE("get "<<this_edge_list_len<<" result in this edge ");
+    SLOG_CORE("get "<<this_edge_list_len<<" result in this edge ");
     UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
   }
   return id_candidate;

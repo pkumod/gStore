@@ -10,7 +10,7 @@ using namespace log4cplus::thread;
 using namespace log4cplus::helpers;
 using namespace std;
 
-#define LOG4CPLUS_CODE(logger, logEvent) LOG4CPLUS_MACRO_BODY(logger, logEvent, TRACE_LOG_LEVEL)
+#define LOG4CPLUS_CORE(logger, logEvent) LOG4CPLUS_MACRO_BODY(logger, logEvent, TRACE_LOG_LEVEL)
 
 #define SLOG_TRACE(logEvent)     LOG4CPLUS_TRACE(Slog::_logger, logEvent)
 #define SLOG_DEBUG(logEvent)     LOG4CPLUS_DEBUG(Slog::_logger, logEvent)
@@ -18,7 +18,7 @@ using namespace std;
 #define SLOG_WARN(logEvent)      LOG4CPLUS_WARN(Slog::_logger, logEvent)
 #define SLOG_ERROR(logEvent)     LOG4CPLUS_ERROR(Slog::_logger, logEvent)
 #define SLOG_FATAL(logEvent)     LOG4CPLUS_FATAL(Slog::_logger, logEvent)
-#define SLOG_CODE(logEvent)      LOG4CPLUS_CODE(Slog::_logger, logEvent)
+#define SLOG_CORE(logEvent)      LOG4CPLUS_CORE(Slog::_logger, logEvent)
 
 class Slog
 {
