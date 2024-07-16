@@ -2098,28 +2098,30 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = Util::replace_all(fun_name, "\"", "");
-					#if defined(DEBUG)
-					cout<<">>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
-						<<"iri_id_set=";
+					// #if defined(DEBUG)
+					stringstream _ss;
+					_ss << "PFN arguments" << endl;
+					_ss <<"\tiri_id_set = [";
 					for (size_t i = 0; i < iri_id_set.size(); i++)
 					{
 						if (i > 0)
-							cout << ", ";
-						cout << iri_id_set[i];
-					}	
-					cout<< "\ndirected=" << directed
-						<< "\nk=" << hopConstraint
-						<< "\npred_id_set=";
+							_ss << ", ";
+						_ss << iri_id_set[i];
+					}
+					_ss << "]" << endl;
+					_ss << "\tdirected = " << directed << endl;
+					_ss << "\tk = " << hopConstraint << endl;
+					_ss << "\tpred_id_set = [";
 					for (size_t i = 0; i < pred_id_set.size(); i++)
 					{
 						if (i > 0)
-							cout << ", ";
-						cout << pred_id_set[i];
+							_ss << ", ";
+						_ss << pred_id_set[i];
 					}
-					cout << "\nfun_name=" << fun_name 
-						<<"\n>>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
-						<< endl;
-					#endif
+					_ss << "]" << endl;
+					_ss << "\tfun_name = " << fun_name;
+					SLOG_CORE(_ss.str());
+					// #endif
 					stringstream ss;
 					std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 					std::map<std::string, std::string>::iterator iter = rt.find("return_type");
@@ -2753,23 +2755,23 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								bool directed = proj[i].path_args.directed;
 								string fun_name = proj[i].path_args.fun_name;
 								fun_name = Util::replace_all(fun_name, "\"", "");
-								#if defined(DEBUG)
-								cout<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n" 
-									<< "uid=" << uid 
-									<< "\nvid=" << vid 
-									<< "\ndirected=" << directed
-									<< "\nk=" << hopConstraint
-									<< "\npred_id_set=";
+								// #if defined(DEBUG)
+								stringstream _ss;
+								_ss << "PFN arguments" << endl;
+								_ss <<"\tuvpair = [" << uid << ", " << vid << "]" << endl;
+								_ss << "\tdirected = " << directed << endl;
+								_ss << "\tk = " << hopConstraint << endl;
+								_ss << "\tpred_id_set = [";
 								for (size_t i = 0; i < pred_id_set.size(); i++)
 								{
 									if (i > 0)
-										cout << ", ";
-									cout << pred_id_set[i];
+										_ss << ", ";
+									_ss << pred_id_set[i];
 								}
-								cout << "\nfun_name=" << fun_name 
-									<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n"
-									<< endl;
-								#endif
+								_ss << "]" << endl;
+								_ss << "\tfun_name = " << fun_name;
+								SLOG_CORE(_ss.str());
+								// #endif
 								vector<int> iri_id_set;
 								iri_id_set.push_back(uid);
 								iri_id_set.push_back(vid);
@@ -4077,21 +4079,24 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 {
 	try
 	{
+		SLOG_CORE("execuse dynamic function begin...");
+		long startTime = Util::get_cur_time();
 		std::map<std::string, std::string> returnMap;
 		// check funInfo from json file.
 		string pfn_base_path = Util::getConfigureValue("pfn_base_path");
-		string pfn_cpp_path = pfn_base_path + "cpp/";
-		string pfn_lib_path = pfn_base_path + "lib/";
+		string pfn_file_path = pfn_base_path + "cpp/" + username;
+        string pfn_lib_path =  pfn_base_path + "lib/" + username;
 		
-		string json_file_path = pfn_cpp_path + username + "/data.json";
-		#if defined(DEBUG)
-		cout << "pfn lib path: " << pfn_lib_path << endl;
-		cout << "open json file: " << json_file_path << endl;
-		#endif // 
+		string json_file_path = pfn_file_path + "/data.json";
+		// #if defined(DEBUG)
+		SLOG_CORE("lib path: " << pfn_lib_path);
+		SLOG_CORE("json path: " << json_file_path);
+		// #endif
 		ifstream in;
 		in.open(json_file_path, ios::in);
 		if (!in.is_open())
 		{
+			SLOG_ERROR("open json file error.");
 			throw runtime_error("open function json file error.");
 		}
 		string line;
@@ -4114,7 +4119,10 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 						if (doc.HasMember("funStatus"))
 							fun_status = doc["funStatus"].GetString();
 						if (fun_status != "2")
-							throw runtime_error("function " + fun_name + " not compile yet");
+						{
+							SLOG_ERROR("abort function '" << fun_name << "' not compile yet");
+							throw runtime_error("function '" + fun_name + "' not compile yet");
+						}
 						if (doc.HasMember("funArgs"))
 							fun_args = doc["funArgs"].GetString();
 						if (doc.HasMember("funReturn"))
@@ -4133,29 +4141,30 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		in.close();
 		if (!isMatch)
 		{
-			throw runtime_error("function '" + fun_name + "' not exists");
+			SLOG_ERROR("abort function '" << fun_name << "' not exist");
+			throw runtime_error("function '" + fun_name + "' not exist");
 		}
 		// check funInfo end
 		string error_msg;
 		string fileName, soFile;
 		fileName = fun_name;
 		std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
-		soFile = pfn_lib_path + username + "/lib" + fileName + md5Str + ".so";
+		soFile = pfn_lib_path + "/lib" + fileName + md5Str + ".so";
 		void *handle;
 		string result;
-		SLOG_CORE("================================================\nopening " << soFile);
 		handle = dlopen(soFile.c_str(), RTLD_LAZY);
 		if (!handle)
 		{
 			error_msg = "load so file error:" + string(dlerror());
+			SLOG_ERROR("abort " + error_msg);
 			throw runtime_error(error_msg);
 		}
 		char *error;
 		if (fun_args == "1")
 		{
-			#if defined(DEBUG)
-			std::cout << "begin 1 for " << fun_name << endl;
-			#endif 
+			// #if defined(DEBUG)
+			SLOG_CORE(fun_name + "(vector<int> iri_set, bool directed, vector<int> pred_set, PathQueryHandler * pathUtil)");
+			// #endif 
 			// int uid, int vid, bool directed, vector<int> pred_set, CSR * _csr
 			typedef string (*personalized_fun)(vector<int>, bool, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
@@ -4164,23 +4173,24 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			{
 				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
 				dlclose(handle);
+				SLOG_ERROR("abort " + error_msg);
 				throw runtime_error(error_msg);
 			}
 			// call function
 			result = p_fun(iri_set, directed, pred_set, pqHandler.get());
-			SLOG_CORE("end with: " << result);
 			SLOG_CORE("return type: " << fun_return);
-			SLOG_CORE("================================================");
+			SLOG_CORE("result: " + result);
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
 			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			SLOG_CORE("execuse dynamic function end");
 			return returnMap;
 		}
 		else if (fun_args == "2")
 		{
-			#if defined(DEBUG)
-			std::cout << "begin 2 for " << fun_name << endl;
-			#endif
+			// #if defined(DEBUG)
+			SLOG_CORE(fun_name + "(vector<int> iri_set, bool directed, int k, vector<int> pred_set, PathQueryHandler * pathUtil)");
+			// #endif
 			// int uid, int vid, bool directed, int k, vector<int> pred_set
 			typedef string (*personalized_fun)(vector<int>, bool, int, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
@@ -4189,32 +4199,34 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			{
 				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
 				dlclose(handle);
+				SLOG_ERROR("abort " + error_msg);
 				throw runtime_error(error_msg);
 			}
 			// call function
 			result = p_fun(iri_set, directed, k, pred_set, pqHandler.get());
-			SLOG_CORE("end with: " << result);
 			SLOG_CORE("return type: " << fun_return);
-			SLOG_CORE("================================================");
+			SLOG_CORE("result: " + result);
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
 			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			SLOG_CORE("execuse dynamic function end");
 			return returnMap;
 		}
 		else
 		{
+			SLOG_ERROR("abort unkonw function argment type '" + fun_args + "'");
 			throw runtime_error("unkown function argment type '" + fun_args + "'");
 		}
 	}
 	catch (const std::exception &e)
     {
-		string content = "run personalized function fail: " + string(e.what());
-		SLOG_ERROR(content);
+		string content = "run dynamic function fail: " + string(e.what());
+        SLOG_ERROR(content);
 		throw runtime_error(content);
     }
 	catch (...)
 	{
-		string content = "run personalized function fail: unknown error";
+		string content = "run dynamic function fail: unknown error";
 		SLOG_ERROR(content);
 		throw runtime_error(content);
 	}
