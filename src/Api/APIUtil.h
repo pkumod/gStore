@@ -800,6 +800,7 @@ private:
     size_t max_user_num = 1000;
     string query_log_mode = "0";
     string query_log_path = "logs/endpoint/";
+    string access_log_mode = "0";
     string access_log_path = "logs/ipaccess/";
     string query_result_path = "logs/query_result/";
     std::string upload_path = "./upload/";

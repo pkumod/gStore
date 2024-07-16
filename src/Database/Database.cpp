@@ -4827,7 +4827,7 @@ bool Database::saveStatisticsInfoFile()
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
 	if (Util::file_exist(filepath) == false)
 	{
-		SLOG_ERROR("the statistics file is not exist");
+		SLOG_CODE("create statistics file.");
 		Util::create_file(filepath);
 	}
 	file.open(filepath);
