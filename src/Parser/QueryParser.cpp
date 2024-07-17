@@ -946,6 +946,10 @@ antlrcpp::Any QueryParser::visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
         for(int i=1;i<=12;i++) qtr.suffix[i]+=rand()%26;
         group_pattern.getLastSubquery().relabel(qtr);
     }
+	auto &v2t = this->query_tree_ptr->getVar2Type();
+    const auto &inner_v2t = new_parser.query_tree_ptr->getVar2Type();
+    for (const auto &p : inner_v2t)
+        v2t[p.first] = p.second;
     // cout<<"##Result visitSubSelect##"<<endl;
     // group_pattern.print(0);
     // cout<<"##Exit visitSubSelect##"<<endl;
