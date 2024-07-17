@@ -154,6 +154,7 @@ public:
 		group_pattern = _qt.group_pattern;
 		insert_patterns = _qt.insert_patterns;
 		delete_patterns = _qt.delete_patterns;
+		var2type = _qt.var2type;
 
 		return *this;
 	}

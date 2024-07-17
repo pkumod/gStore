@@ -727,6 +727,24 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				curr_node.val = root->getText();
 			}
 		}
+		std::string node_val = curr_node.val;
+		if (!node_val.empty())
+		{
+			size_t sufIdx = node_val.find("^^");
+			if (sufIdx != string::npos)
+			{
+				std::string suffix = node_val.substr(sufIdx + 2);
+				std::string val = node_val.substr(1, sufIdx - 2);
+				replacePrefix(suffix);
+				node_val = '"' + val + "\"^^" + suffix;
+				curr_node.val = node_val;
+			}
+			else
+			{
+				replacePrefix(node_val);
+				curr_node.val = node_val;
+			}
+		}
 	}
 	else if (root->children.size() == 2)
 	{
@@ -928,6 +946,10 @@ antlrcpp::Any QueryParser::visitSubSelect(SPARQLParser::SubSelectContext *ctx, \
         for(int i=1;i<=12;i++) qtr.suffix[i]+=rand()%26;
         group_pattern.getLastSubquery().relabel(qtr);
     }
+	auto &v2t = this->query_tree_ptr->getVar2Type();
+    const auto &inner_v2t = new_parser.query_tree_ptr->getVar2Type();
+    for (const auto &p : inner_v2t)
+        v2t[p.first] = p.second;
     // cout<<"##Result visitSubSelect##"<<endl;
     // group_pattern.print(0);
     // cout<<"##Exit visitSubSelect##"<<endl;
