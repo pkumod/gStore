@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 			else if(line.find("product_name")!=string::npos)
 			{
 				product_name=line.substr(13,line.size()-13); //len(product_name):12
-				cout<<"product_name:"<<product_name<<endl;
+				// cout<<"product_name:"<<product_name<<endl;
 			}
 		}
 		fin.close();

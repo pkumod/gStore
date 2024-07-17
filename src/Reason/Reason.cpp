@@ -385,6 +385,8 @@ string ReasonHelper::updateReasonRuleStatus(string rulename,string db_name,strin
     return "";
 }
 
+
+
 ReasonSparql ReasonHelper::disableReasonRule(string rulename,string db_name,string db_home,string db_suffix)
 {
   ReasonSparql results;
