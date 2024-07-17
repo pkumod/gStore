@@ -11,7 +11,7 @@ using namespace std;
 	@param directed 图是否存在方向（为false时认为是无向图）
 	@return 社区数.
 */
-void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase,std::vector<int> &pred_set,bool directed, std::pair<size_t, std::set<std::set<int> > > &result){
+void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase,std::vector<int> &pred_set,bool directed, std::set<std::set<int> > &result){
 	//所有节点id
   	set<int> vids;
 	//当前存在的节点/超节点,以及存在于哪个社区
@@ -258,10 +258,8 @@ void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase
 		weights=new_weights;
 		super2vid=new_super2vid;
 	}
-	
-	result.first=super2vid.size();
 	for(auto v:super2vid)
 	{
-		result.second.insert(v.second);
+		result.insert(v.second);
 	}
 }

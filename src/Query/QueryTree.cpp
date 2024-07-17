@@ -413,18 +413,20 @@ void GroupPattern::mergePatternBlockID(int x, int y)
 */
 void GroupPattern::print(int dep)
 {
-	for (int t = 0; t < dep; t++)	printf("\t");
-	printf("{\n");
+	std::string code_print;
+	for (int t = 0; t < dep; t++)	code_print += "\t";
+	SLOG_CORE(code_print << "{");
 
 	for (int i = 0; i < (int)this->sub_group_pattern.size(); i++)
 		if (sub_group_pattern[i].type == SubGroupPattern::Group_type)
 			sub_group_pattern[i].group_pattern.print(dep + 1);
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Pattern_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
-			printf("%s\t%s\t%s.\n",	this->sub_group_pattern[i].pattern.subject.value.c_str(),
-									this->sub_group_pattern[i].pattern.predicate.value.c_str(),
-									this->sub_group_pattern[i].pattern.object.value.c_str());
+			code_print = "";
+			for (int t = 0; t <= dep; t++)	code_print += "\t";
+			SLOG_CORE(code_print<<this->sub_group_pattern[i].pattern.subject.value
+				<<"\t"<<this->sub_group_pattern[i].pattern.predicate.value
+				<<"\t"<<this->sub_group_pattern[i].pattern.object.value);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Union_type)
 		{
@@ -432,47 +434,51 @@ void GroupPattern::print(int dep)
 			{
 				if (j != 0)
 				{
-					for (int t = 0; t <= dep; t++)	printf("\t");
-					printf("UNION\n");
+					code_print = "";
+					for (int t = 0; t <= dep; t++)	code_print += "\t";
+					SLOG_CORE("UNION");
 				}
 				this->sub_group_pattern[i].unions[j].print(dep + 1);
 			}
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type || this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
-			if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type)	printf("OPTIONAL\n");
-			if (this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)	printf("MINUS\n");
+			code_print = "";
+			for (int t = 0; t <= dep; t++)	code_print += "\t";
+			if (this->sub_group_pattern[i].type == SubGroupPattern::Optional_type)	SLOG_CORE(code_print<<"OPTIONAL");
+			if (this->sub_group_pattern[i].type == SubGroupPattern::Minus_type)	SLOG_CORE(code_print<<"MINUS");
 			this->sub_group_pattern[i].optional.print(dep + 1);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Filter_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
-			printf("FILTER\t");
+			code_print = "";
+			for (int t = 0; t <= dep; t++)	code_print += "\t";
+			SLOG_CORE(code_print<<"FILTER\t");
 			this->sub_group_pattern[i].filter.print(dep + 1);
-			printf("\n");
+			SLOG_CORE("");
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Bind_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
-			printf("BIND(");
+			code_print = "";
+			for (int t = 0; t <= dep; t++)	code_print += "\t";
+			SLOG_CORE(code_print<<"BIND(");
 			this->sub_group_pattern[i].bind.bindExpr.print(dep + 1);
-			printf("AS\t%s)", this->sub_group_pattern[i].bind.var.c_str());
-			// printf("BIND(%s\tAS\t%s)", this->sub_group_pattern[i].bind.str.c_str(), this->sub_group_pattern[i].bind.var.c_str());
-			printf("\n");
+			SLOG_CORE("AS\t"<<this->sub_group_pattern[i].bind.var);
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Subquery_type)
 		{
-			for (int t = 0; t <= dep; t++)	printf("\t");
+			code_print = "";
+			for (int t = 0; t <= dep; t++)	code_print += "\t";
+			SLOG_CORE(code_print);
             this->sub_group_pattern[i].subquery.getResultProjectionVarset().print();
-            cout<<"<<";
+            SLOG_CORE("<<");
 			this->sub_group_pattern[i].subquery.print();
-            cout<<">>";
-			printf("\n");
+            SLOG_CORE(">>");
 		}
 
-	for (int t = 0; t < dep; t++)	printf("\t");
-	printf("}\n");
+	code_print = "";
+	for (int t = 0; t < dep; t++)	code_print += "\t";
+	SLOG_CORE("}");
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -905,64 +911,66 @@ bool QueryTree::checkSelectAggregateFunctionGroupByValid()
 */
 void QueryTree::print()
 {
-	for (int j = 0; j < 80; j++)			printf("=");
-	printf("\n");
+	std::string code_print;
+	for (int j = 0; j < 80; j++)			code_print += "=";
+	SLOG_CORE(code_print);
 
 	if (this->update_type == Not_Update)
 	{
 		if (this->query_form == Select_Query)
 		{
 			if (singleBGP)
-				printf("Single BGP\n");
-			printf("SELECT");
+				SLOG_CORE("Single BGP");
+			code_print = "SELECT";
 			if (this->projection_modifier == Modifier_Distinct)
-				printf(" DISTINCT");
-			printf("\n");
+				code_print += " DISTINCT";
+			SLOG_CORE(code_print);
 
-			printf("Var: \t");
+			code_print = "Var: \t";
 			for (int i = 0; i < (int)this->projection.size(); i++)
 			{
 				if (this->projection[i].aggregate_type == ProjectionVar::None_type)
-					printf("%s\t", this->projection[i].var.c_str());
+					code_print += this->projection[i].var + "\t";
 				else
 				{
-					printf("(");
+					code_print +="(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Count_type)
-						printf("COUNT(");
+						code_print += "COUNT(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Sum_type)
-						printf("SUM(");
+						code_print += "SUM(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Min_type)
-						printf("MIN(");
+						code_print += "MIN(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Max_type)
-						printf("MAX(");
+						code_print += "MAX(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Avg_type)
-						printf("AVG(");
+						code_print += "AVG(";
 					if (this->projection[i].aggregate_type == ProjectionVar::Sample_type)
-						printf("SAMPLE(");
+						code_print += "SAMPLE(";
 					if (this->projection[i].aggregate_type == ProjectionVar::simpleCyclePath_type)
-						printf("simpleCyclePath(");
+						code_print += "simpleCyclePath(";
 					if (this->projection[i].aggregate_type == ProjectionVar::simpleCycleBoolean_type)
-						printf("simpleCycleBoolean(");
+						code_print += "simpleCycleBoolean(";
 					if (this->projection[i].aggregate_type == ProjectionVar::cyclePath_type)
-						printf("cyclePath(");
+						code_print += "cyclePath(";
 					if (this->projection[i].aggregate_type == ProjectionVar::cycleBoolean_type)
-						printf("cycleBoolean(");
+						code_print += "cycleBoolean(";
 					if (this->projection[i].aggregate_type == ProjectionVar::shortestPath_type)
-						printf("shortestPath(");
+						code_print += "shortestPath(";
 					if (this->projection[i].aggregate_type == ProjectionVar::shortestPathLen_type)
-						printf("shortestPathLen(");
+						code_print += "shortestPathLen(";
 					if (this->projection[i].aggregate_type == ProjectionVar::kHopReachable_type)
-						printf("kHopReachable(");
+						code_print += "kHopReachable(";
 					if (this->projection[i].aggregate_type == ProjectionVar::kHopEnumerate_type)
-						printf("kHopEnumerate(");
+						code_print += "kHopEnumerate(";
 					if (this->projection[i].aggregate_type == ProjectionVar::CompTree_type)
 					{
-						cout << endl;
+						SLOG_CORE(code_print);
+						code_print = "";
 						projection[i].comp_tree_root.print(0);
 					}
 					
 					if (this->projection[i].distinct)
-						printf("DISTINCT ");
+						code_print += "DISTINCT ";
 
 					if (this->projection[i].aggregate_type == ProjectionVar::Count_type
 						|| this->projection[i].aggregate_type == ProjectionVar::Sum_type
@@ -970,105 +978,109 @@ void QueryTree::print()
 						|| this->projection[i].aggregate_type == ProjectionVar::Max_type
 						|| this->projection[i].aggregate_type == ProjectionVar::Avg_type
 						|| this->projection[i].aggregate_type == ProjectionVar::Sample_type)
-						printf("%s", this->projection[i].aggregate_var.c_str());
+						code_print += this->projection[i].aggregate_var;
 					else
 					{
-						printf("%s, ", this->projection[i].path_args.src.c_str());
-						printf("%s, ", this->projection[i].path_args.dst.c_str());
+						code_print += this->projection[i].path_args.src;
+						code_print += this->projection[i].path_args.dst;
 						if (this->projection[i].aggregate_type == ProjectionVar::simpleCyclePath_type
 							|| this->projection[i].aggregate_type == ProjectionVar::simpleCycleBoolean_type
 							|| this->projection[i].aggregate_type == ProjectionVar::cyclePath_type
 							|| this->projection[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 						{
 							if (this->projection[i].path_args.directed)
-								printf("true, ");
+								code_print += "true, ";
 							else
-								printf("false, ");
+								code_print += "false, ";
 						}
 						else if (this->projection[i].aggregate_type == ProjectionVar::kHopReachable_type
 							|| this->projection[i].aggregate_type == ProjectionVar::kHopEnumerate_type)
-							printf("%d, ", this->projection[i].path_args.k);
-						printf("{");
+							code_print += std::to_string(this->projection[i].path_args.k);
+						code_print += "{";
 						for (unsigned j = 0; j < this->projection[i].path_args.pred_set.size(); j++)
 						{
-							printf("%s", this->projection[i].path_args.pred_set[j].c_str());
+							code_print += this->projection[i].path_args.pred_set[j];
 							if (j != this->projection[i].path_args.pred_set.size() - 1)
-								printf(", ");
+								code_print += ", ";
 						}
-						printf("}");
+						code_print += "}";
 						if (this->projection[i].aggregate_type == ProjectionVar::kHopReachable_type
 							|| this->projection[i].aggregate_type == ProjectionVar::kHopEnumerate_type)
-							printf(", %f", this->projection[i].path_args.confidence);
+							code_print += std::to_string(this->projection[i].path_args.confidence);
 					}
 
-					printf(") AS %s)\t", this->projection[i].var.c_str());
+					code_print += ") AS " + this->projection[i].var+ ")\t";
 				}
 			}
 			if (this->projection_asterisk && !this->checkAtLeastOneAggregateFunction())
-				printf("*");
-			printf("\n");
+				code_print += "*";
+			SLOG_CORE(code_print);
+			code_print = "";
 		}
-		else printf("ASK\n");
+		else SLOG_CORE("ASK");
 
-		printf("GroupPattern:\n");
+		SLOG_CORE("GroupPattern:");
 		this->group_pattern.print(0);
 
 		if (this->query_form == Select_Query)
 		{
 			if (!this->group_by.empty())
 			{
-				printf("GROUP BY\t");
+				code_print = "GROUP BY\t";
 
 				for (int i = 0; i < (int)this->group_by.vars.size(); i++)
-					printf("%s\t", this->group_by.vars[i].c_str());
+					code_print += this->group_by.vars[i] + "\t";
 
-				printf("\n");
+				SLOG_CORE(code_print);
 			}
 
 			if (!this->order_by.empty())
 			{
-				printf("ORDER BY\t");
+				code_print = "ORDER BY\t";
 
 				for (int i = 0; i < (int)this->order_by.size(); i++)
 				{
-					if (!this->order_by[i].descending)	printf("ASC(");
-					else printf("DESC(");
+					if (!this->order_by[i].descending)	code_print += "ASC(";
+					else code_print += "DESC(";
 					// printf("%s)\t", this->order_by[i].var.c_str());
+					SLOG_CORE(code_print);
+					code_print = "";
 					order_by[i].comp_tree_root.print(0);
-					printf(")\t");
+					code_print = ")\t";
 				}
-				printf("\n");
+				SLOG_CORE(code_print);
 			}
 			if (this->offset != 0)
-				printf("OFFSET\t%d\n", this->offset);
+				SLOG_CORE("OFFSET\t" << this->offset);
 			if (this->limit != -1)
-				printf("LIMIT\t%d\n", this->limit);
+				SLOG_CORE("LIMIT\t" << this->limit);
 		}
 	}
 	else
 	{
-		printf("UPDATE\n");
+		SLOG_CORE("UPDATE");
 		if (this->update_type == Delete_Data || this->update_type == Delete_Where ||
 				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
-			printf("Delete:\n");
+			SLOG_CORE("Delete:");
 			this->delete_patterns.print(0);
 		}
 		if (this->update_type == Insert_Data || this->update_type == Insert_Clause || this->update_type == Modify_Clause)
 		{
-			printf("Insert:\n");
+			SLOG_CORE("Insert:");
 			this->insert_patterns.print(0);
 		}
 		if (this->update_type == Delete_Where || this->update_type == Insert_Clause ||
 				this->update_type == Delete_Clause || this->update_type == Modify_Clause)
 		{
-			printf("GroupPattern:\n");
+			SLOG_CORE("GroupPattern:");
 			this->group_pattern.print(0);
 		}
 	}
 
-	for (int j = 0; j < 80; j++)			printf("=");
-	printf("\n");
+	code_print = "";
+	for (int j = 0; j < 80; j++)			code_print +="=";
+	SLOG_CORE(code_print);
 }
 
 /**
@@ -1156,20 +1168,23 @@ void CompTreeNode::print(int dep)
 {
 	if (children.empty())
 	{
+		std::string code_print;
 		for (int i = 0; i < dep; i++)
-			cout << '\t';
-		cout << "Value: " << val << endl;
+			code_print += '\t';
+		SLOG_CORE(code_print<<"Value: " << val);
 	}
 	else
 	{
+		std::string code_print;
 		for (int i = 0; i < dep; i++)
-			cout << '\t';
-		cout << "Operator " << oprt << endl;
+			code_print += '\t';
+		SLOG_CORE(code_print<<"Operator " << oprt);
 		for (size_t i = 0; i < children.size(); i++)
 		{
+			code_print = "";
 			for (int j = 0; j < dep; j++)
-				cout << '\t';
-			cout << "child[" << i << "]:" << endl;
+				code_print += '\t';
+			SLOG_CORE(code_print<<"child[" << i << "]:");
 			children[i].print(dep + 1);
 		}
 	}
@@ -1210,7 +1225,7 @@ void QueryTree::relabel(QueryTreeRelabeler& qtr){
     for(vector<Order>::iterator it=order_by.begin(); it!=order_by.end(); it++)
 		it->relabel(qtr);
     group_pattern.relabel(qtr);
-	cout << endl;
+	SLOG_CORE("");
 }
 
 void QueryTree::relabel_full(QueryTreeRelabeler& qtr){

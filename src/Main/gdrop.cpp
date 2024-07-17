@@ -82,7 +82,7 @@ int main(int argc, char * argv[])
 			Database system_db("system");
 			system_db.load();
 			ResultSet _rs;
-			FILE* ofp = stdout;
+			FILE* ofp = nullptr;
 			string msg;
 			int ret;
 			string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}";

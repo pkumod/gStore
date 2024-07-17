@@ -325,8 +325,7 @@ ISLeafNode::coalesce(ISNode* _father, int _index)
 		p->subNum();
 		break;
 	default:
-		//print("error in coalesce: Invalid case!");
-		cout<<"error in coalesce: Invalid case!"<<endl;
+		SLOG_ERROR("error in coalesce: Invalid case!");
 	}
 	_father->setDirty();
 	p->setDirty();

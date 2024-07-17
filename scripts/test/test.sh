@@ -13,6 +13,6 @@ bash scripts/test/parser_test.sh
 echo "parser test end"
 # update test gtest
 echo "repeatedly insertion/deletion test num:20......"
-scripts/test/update_test 20
+scripts/test/update_test 20 > /dev/null
 echo "repeatedly insertion/deletion test end"
 

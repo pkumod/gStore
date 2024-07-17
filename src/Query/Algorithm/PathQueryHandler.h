@@ -389,20 +389,25 @@ public:
     double clusteringCoeff(bool directed, const std::vector<int> &pred_set);
     std::vector<int> coreTruss(const std::vector<int> &pred_set, int alpha, int beta);
     std::vector<int> maximumKplex(const std::vector<int> &pred_set, int k);
-    unsigned int diameterEstimation(const std::vector<int> &pred_sets);
-    double betweennessCentrality(int id, bool directed, const std::vector<int> &pred_sets);
-    std::vector<int> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
+    std::vector<std::pair<int, float>> JaccardSimilarity(int uid, const std::vector<int> &pred_sets, int k, int retNum);
     double degreeCorrelation(int uid, int k, const std::vector<int> &pred_sets);
 	
     std::vector<int> BFS(int uid, bool directed, const std::vector<int> &pred_set, bool forward=true);
     int kHopCount(int uid, bool directed, int k, const std::vector<int> &pred_set);
     std::vector<int> kHopNeighbor(int uid, bool directed, int k, const std::vector<int> &pred_set, int retNum);
     int shortestPathCount(int uid, int vid, bool directed, const std::vector<int> &pred_set);
-    void louvain(int phase1_loop_num, float min_modularity_increase, std::vector<int> &pred_set, bool directed, std::pair<size_t, std::set<std::set<int> > > &result);
+    void louvain(int phase1_loop_num, float min_modularity_increase, std::vector<int> &pred_set, bool directed, std::set<std::set<int> > &result);
     void getPostComments(int vid, int hasCreatorPred, int typePred, int postId, int commentId,
     std::vector<int> &postVec, std::vector<int> &commentVec);
     void getCommReplyOf(int replyPred, const std::vector<int> &commentVec, std::unordered_set<int> &commReplyOf);
-    int shortPathCountForBetweennessCentrality(int uid, int vid, bool directed, const std::vector<int> &pred_set);
+    // betweennessCentrality
+    double betweennessCentrality(int id, bool directed, const std::vector<int> &pred_sets);
+    std::set<int> getAllNeighborsById(int uid, bool directed, const std::vector<int> &pred_sets);
+    void betweennessCentrality_dfs(int uid, int vid, std::vector<int>& temp, std::map<int, std::vector<int>>& dis_l, std::vector<std::vector<int>>& path_l, int passid, bool& pass);
+    double shortestPathScalePassId(int uid, int passid, bool directed, const std::vector<int> &pred_sets);
+    // diameterEstimation2
+    unsigned int diameterEstimation(const std::vector<int> &pred_sets);
+    std::pair<int, int> diameterEstimationByuid(int uid, const std::vector<int> &pred_set);
 	std::string getPathString(std::vector<int> &path_set);
 private:
     // Helper functions for SSPPR

@@ -63,14 +63,15 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 	int dep = ctx->depth();
 
 	// Print tabs according to node's depth in tree
+	std::string code_print;
 	for (int i = 0; i < dep; i++)
-		cout << '\t';
+		code_print += '\t';
 
 	// Print node type
-	cout << "Type: " << nodeTypeName << ' ';
+	code_print += "Type: " + *nodeTypeName + ' ';
 
 	// Print what text a node has matched
-	cout << "Text: " << ctx->getText() << endl;
+	SLOG_CORE(code_print << "Text: " << ctx->getText());
 
 }
 
@@ -83,14 +84,15 @@ void QueryParser::printNode(antlr4::ParserRuleContext *ctx,
 void QueryParser::printTree(antlr4::tree::ParseTree *root, int dep)
 {
 	// Print tabs according to node's depth in tree
+	std::string code_print;
 	for (int i = 0; i < dep; i++)
-		cout << '-';
+		code_print += '-';
 
 	string nodeTypeName = typeid(*root).name();
 	size_t n = root->children.size();
-	cout << "Type: " << nodeTypeName << ' ';
-	cout << "Text: " << root->getText() << ' ';
-	cout << "#Children: " << n << endl;
+	code_print += "Type: " + nodeTypeName + ' ';
+	code_print += "Text: " + root->getText() + ' ';
+	SLOG_CORE(code_print << "#Children: " << n);
 
 	for (size_t i = 0; i < n; i++)
 	{
@@ -610,7 +612,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				// set fun_name
 				proj_var.path_args.fun_name = bicCtx->string()->getText();
 				proj_var.var = varCtx->getText();
-				cout<< "call personalized function:" << proj_var.path_args.fun_name << endl;
+				SLOG_CORE("call personalized function:" << proj_var.path_args.fun_name);
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{
@@ -794,7 +796,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 	}
 	else 	// >= 3, even #children, must be NOT IN or function call
 	{
-		cout << "root->getText() " << root->getText() << endl;
+		SLOG_CORE("root->getText() " << root->getText());
 		string left = root->children[1]->getText();
 		transform(left.begin(), left.end(), left.begin(), ::toupper);
 		if (left == "NOT")

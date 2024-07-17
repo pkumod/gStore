@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 			system_db.load();
 			string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
 			ResultSet ask_rs;
-			FILE *ask_ofp = stdout;
+			FILE *ask_ofp = nullptr;
 			system_db.query(sparql, ask_rs, ask_ofp);
 			if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 			{

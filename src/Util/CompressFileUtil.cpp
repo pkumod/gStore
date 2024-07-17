@@ -93,7 +93,7 @@ namespace CompressUtil
 
     bool FileHelper::compressExportZip(const std::string& dst_path, const std::string& zip_path)
     {
-        std::cout<<"compressFile->start:"<<zip_path<<std::endl;
+        SLOG_CORE("compressFile->start:"<<zip_path);
         zipFile zfile = zipOpen64(zip_path.c_str(), APPEND_STATUS_CREATE);
         if (zfile == nullptr)
         {
@@ -149,7 +149,7 @@ namespace CompressUtil
             err = ZIP_ERRNO;
         else
             err = zipCloseFileInZip(zfile);
-        std::cout<<"compressFile->success, err:"<<err<<std::endl;
+        SLOG_CORE("compressFile->success, err:"<<err);
         free(read_buf);
         zipClose(zfile, nullptr);
         return err == ZIP_OK ? true : false;    
@@ -203,7 +203,7 @@ namespace CompressUtil
             return false;
 
         std::string file_path = getDirPath() + "/" + filename;
-        std::cout<<"unCompress start:file_path"<<file_path<<"size:"<<file_info.uncompressed_size<<std::endl;
+        SLOG_CORE("unCompress start:file_path"<<file_path<<"size:"<<file_info.uncompressed_size);
         if (FileHelper::isFileDir(filename))
         {
             mkdir(file_path.c_str(), 0775);
@@ -250,7 +250,7 @@ namespace CompressUtil
             else
                 unzCloseCurrentFile(unfile);
             if (err != UNZ_OK)
-                std::cout<<"UnCompress file unzCloseCurrentFile error:"<<file_path<<std::endl;
+                SLOG_CORE("UnCompress file unzCloseCurrentFile error:"<<file_path);
             free(read_buffer);
         }
         return err == UNZ_OK ? true : false;
@@ -375,7 +375,7 @@ namespace CompressUtil
         err = zipOpenNewFileInZip(zf, newFileName.c_str(), &zi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION);
         if (ZIP_OK != err)
         {
-            std::cout << "open path file error:" << relativeInZip << std::endl;
+            SLOG_ERROR("open path file error:" << relativeInZip);
             return false;
         }
         ret = InnerWriteFileToZip(zf, sourcePath);
@@ -393,7 +393,7 @@ namespace CompressUtil
         ret = zipOpenNewFileInZip(zf, newRelative.c_str(), &zi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION);
         if (ZIP_OK != ret)
         {
-            std::cout << "open path dir error:" << relative << std::endl;
+            SLOG_ERROR("open path dir error:" << relative);
             return false;
         }
         ret = zipCloseFileInZip(zf);
@@ -405,14 +405,14 @@ namespace CompressUtil
         FILE* fin = fopen(path.c_str(), "rb");
         if (NULL == fin)
         {
-            std::cout << "open write path error:" << path << std::endl;
+            SLOG_ERROR("open write path error:" << path);
             return false;
         }
         void* read_buf = nullptr;
         read_buf = (void*)malloc(WRITEBUFFERSIZE);
         if (read_buf == nullptr)
         {
-            std::cout << "error:compress memery not enough" << std::endl;
+            SLOG_ERROR("error:compress memery not enough");
             fclose(fin);
             return false;
         }
@@ -445,7 +445,7 @@ namespace CompressUtil
     {
         if (!Util::dir_exist(sourcePath))
         {
-            std::cout << "compressFile dir not exist" << std::endl;
+            SLOG_ERROR("compressFile dir not exist");
             return false;
         }
         std::string dir_path = sourcePath;
@@ -456,7 +456,7 @@ namespace CompressUtil
         std::string dir_name = dir_path;
         if (pos2 != std::string::npos)
             dir_name = dir_path.substr(pos2+1);
-        std::cout << "compressFile dir ->start:" << dir_path << "  dir_name:" << dir_name << std::endl;
+        SLOG_ERROR("compressFile dir ->start:" << dir_path << "  dir_name:" << dir_name);
         
         int ret { ZIP_ERRNO };
         zipFile zf = zipOpen(zipPath.c_str(), APPEND_STATUS_CREATE);
@@ -473,17 +473,17 @@ namespace CompressUtil
                 zip_path = rdf_file.substr(pos2+1);
             if (Util::dir_exist(rdf_file))
             {
-                std::cout << "compress dir:" << rdf_file << std::endl;
+                SLOG_ERROR("compress dir:" << rdf_file);
                 AddDirToZip(zf, zip_path);
             }
             else
             {
-                std::cout << "compress file:" << rdf_file << std::endl;
+                SLOG_ERROR("compress file:" << rdf_file);
                 AddFileToZip(zf, zip_path, rdf_file);
             }
         }
         ret = zipClose(zf, NULL);
-        std::cout<<"compressFile dir ->end:"<< zipPath << "error:" << ret <<std::endl;
+        SLOG_ERROR("compressFile dir ->end:"<< zipPath << "error:" << ret);
         return ZIP_OK == ret;
     }
 }

@@ -247,10 +247,10 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   auto join_nodes = join_plan->public_variables_;
 #ifdef EXECUTOR_DEBUG_INFO
-  cout<<"JoinTable public_variables_ ";
+  std::string code_print = "JoinTable public_variables_ ";
   for(auto public_var_id : *join_nodes)
-    cout<<public_var_id<<" ";
-  cout<<endl;
+    code_print += std::to_string(public_var_id) + " ";
+  SLOG_CORE(code_print);
 #endif
   // build index in big table
   auto& big_table = records_a->size() > records_b->size() ? records_a : records_b;
@@ -576,7 +576,7 @@ tuple<bool,TableContentShardPtr> gstore::Executor::OneEdgeConstraintFilter(EdgeI
         break;
       }
 	  default: {
-		  cout << "Error in Executor::OneEdgeConstraintFilter, unknown join method" << endl;
+      SLOG_ERROR("Error in Executor::OneEdgeConstraintFilter, unknown join method");
 	  }
     }
     auto validate_list = make_shared<vector<TYPE_ENTITY_LITERAL_ID>>(edge_candidate_list,edge_candidate_list+this_edge_list_len);
@@ -905,7 +905,7 @@ bool gstore::Executor::AddConstantCandidates(EdgeInfo edge_info,TYPE_ENTITY_LITE
       break;
     }
 	default: {
-		cout << "Error in Executor::AddConstantCandidates, unknown join method" << endl;
+    SLOG_ERROR("Error in Executor::AddConstantCandidates, unknown join method");
 		assert(false);
 	}
   }
@@ -1313,7 +1313,7 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
     auto edge_info = (*edge_info_vector)[i];
     TYPE_ENTITY_LITERAL_ID *edge_candidate_list;
     TYPE_ENTITY_LITERAL_ID this_edge_list_len;
-    cout<<"edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_)<<endl;
+    SLOG_CORE("edge["<<i<<"] \n\t"<< edge_info.toString() << "\n\t join method:"<<JoinMethodToString(edge_info.join_method_));
     switch (edge_info.join_method_) {
       case JoinMethod::s2p: { // Because if we don't add a pair of '{}', the editor will report a error of redefinition
         auto s_var_constant_id = edge_info.s_;
@@ -1403,11 +1403,11 @@ shared_ptr<IDList> gstore::Executor::CandidatesWithConstantEdge(shared_ptr<vecto
         break;
       }
 	  default: {
-		  cout << "Error in Executor::CandidatesWithConstantEdge, unknown join method" << endl;
+      SLOG_ERROR("Error in Executor::CandidatesWithConstantEdge, unknown join method");
 		  assert(false);
 	  }
     }
-    cout<<"get "<<this_edge_list_len<<" result in this edge "<<endl;
+    SLOG_CORE("get "<<this_edge_list_len<<" result in this edge ");
     UpdateIDList(id_candidate,edge_candidate_list,this_edge_list_len,i > 0);
   }
   return id_candidate;

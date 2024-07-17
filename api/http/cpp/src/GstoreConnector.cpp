@@ -17,6 +17,7 @@ GstoreConnector::GstoreConnector(std::string _ip, int _port, std::string _http_t
 	if (_http_type == "grpc")
 	{
 		this->Url = this->Url + "grpc/api";
+		this->content_type = "Content-Type:application/json";
 	}
 	this->username = _user;
 	this->password = _passwd;
@@ -166,6 +167,12 @@ int GstoreConnector::Post(const std::string& strUrl, const std::string& strPost,
 	{
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	if (!this->content_type.empty())
+	{
+		struct curl_slist* headerlist = NULL;
+		headerlist = curl_slist_append(headerlist, this->content_type.c_str());
+    	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
 	}
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);

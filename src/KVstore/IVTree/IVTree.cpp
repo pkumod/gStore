@@ -280,7 +280,7 @@ IVTree::modify(unsigned _key, char* _str, unsigned _len)
 	IVNode* ret = this->find(_key, &store, true);
 	if (ret == NULL || store == -1 || _key != ret->getKey(store))	//tree is empty or not found
 	{
-		cerr << "tree is empty or not found" << endl;
+		SLOG_ERROR("tree is empty or not found");
 		return false;
 	}
 	//cout<<"IVTree::modify() - key is found, now to remove"<<endl;

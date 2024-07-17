@@ -147,9 +147,9 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "server", "ip_deny_path");
     // log
     Util::setGlobalConfig(ini_parser, "log", "log_mode");
-    Util::setGlobalConfig(ini_parser, "log", "querylog_mode");
+    Util::setGlobalConfig(ini_parser, "log", "querylog_mode", "1");
     Util::setGlobalConfig(ini_parser, "log", "querylog_path", "logs/endpoint/");
-    Util::setGlobalConfig(ini_parser, "log", "accesslong_mode");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_mode", "0");
     Util::setGlobalConfig(ini_parser, "log", "accesslog_path", "logs/ipaccess/");
     Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
     // backup
@@ -208,18 +208,20 @@ Util::configure()
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
     slog.init(log_mode.c_str());
-    #ifdef DEBUG
-    if (slog._logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
+    if (slog._logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
     {
-        SLOG_DEBUG("the current settings are as below (key:value): ");
-        SLOG_DEBUG("----------------------------------");
+        vector<std::string> headers = {"name", "value"};
+        PrettyPrint pp(headers);
+        std::vector<std::vector<std::string>> rows;
         for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
         {
-            SLOG_DEBUG(it->first + " : " + it->second);
+            pp.addRow({it->first, it->second});
         }
-        SLOG_DEBUG("----------------------------------");
+        stringstream _ss;
+        _ss << "configuration params: " << endl;
+        pp.print(_ss);
+        SLOG_CORE(_ss.str());
     }
-    #endif
     return true;
 }
 
@@ -832,7 +834,7 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CORE("dir is not exist.");
         }
         return;
     }
@@ -871,7 +873,7 @@ void Util::dir_filepaths(const string _dir, std::vector<std::string> &file_list)
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CORE("dir is not exist.");
         }
         return;
     }
@@ -1030,7 +1032,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
         }
         else
         {
-            cout << "dir is not exist." << endl;
+            SLOG_CORE("dir is not exist.");
         }
         return total_size;
     }

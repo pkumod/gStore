@@ -152,17 +152,18 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 		max_end = max(max_end, request[i].offset + long(request[i].length));
 	}
 
+	std::string code_print;
 	if (this->type == Entity)
-		cout << "Entity StringIndex ";
+		code_print = "Entity StringIndex ";
 	if (this->type == Literal)
-		cout << "Literal StringIndex ";
+		code_print = "Literal StringIndex ";
 	if (this->type == Predicate)
-		cout << "Predicate StringIndex ";
+		code_print = "Predicate StringIndex ";
 
 	long current_offset = 0;
 	if ((max_end - min_begin) / 800000L < (long)request.size())
 	{
-		cout << "sequence access." << endl;
+		SLOG_CORE(code_print << "sequence access.");
 
 #ifndef PARALLEL_SORT
 		sort(request.begin(), request.end());
@@ -252,7 +253,7 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	}
 	else
 	{
-		cout << "random access." << endl;
+		SLOG_CORE(code_print << "random access.");
 
 		for (int i = 0; i < (int)request.size(); i++)
 			this->randomAccess(request[i].id, request[i].str, buffer, buffer_size, real);

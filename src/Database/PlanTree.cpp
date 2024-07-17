@@ -13,7 +13,7 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 	if(join_two_node){
 			return var_descrip->so_edge_type_[edge_index] == Util::EDGE_IN ? JoinMethod::s2po : JoinMethod::o2ps;
 	} else{
-		cout << "not support" << endl;
+		SLOG_ERROR("not support");
 		exit(-1);
 	}
 }
@@ -587,12 +587,13 @@ void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 	if(node->right_node != nullptr)
 		print_tree_node(node->right_node, bgpquery);
 
-	if(!node->left_node && !node->right_node) cout << "leaf node ";
+	std::string code_print;
+	if(!node->left_node && !node->right_node) code_print = "leaf node ";
 
-	cout << node->node->GetString() << endl;
+	SLOG_CORE(code_print << node->node->GetString());
 }
 
 void PlanTree::print(BGPQuery* bgpquery) {
-	cout << "Plan: " << (bgpquery->distinct_query ? "distinct" : "not distinct") << endl;
+	SLOG_CORE("Plan: " << (bgpquery->distinct_query ? "distinct" : "not distinct"));
 	print_tree_node(root_node, bgpquery);
 }

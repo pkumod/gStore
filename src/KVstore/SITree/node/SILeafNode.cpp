@@ -71,7 +71,7 @@ SILeafNode::GetValue(int _index) const
   if (_index < 0 || _index >= num)
   {
     //print(string("error in GetValue: Invalid index ") + Util::int2string(_index));
-    std::cout << "error GetValue:" << _index << std::endl;
+    SLOG_ERROR("error GetValue:" << _index);
     return 0;
   }
   else
@@ -268,7 +268,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
 
   if (neighbour == nullptr)
   {
-    std::cout << "error Coalesce neighbour is null:" << std::endl;
+    SLOG_ERROR("error Coalesce neighbour is null:");
     return NULL;
   }
   switch (coalesce_method)

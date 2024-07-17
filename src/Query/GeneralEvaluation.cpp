@@ -137,7 +137,7 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringinde
 void
 GeneralEvaluation::loadCSR()
 {
-	cout << "GeneralEvaluation::loadCSR" << endl;
+	SLOG_CORE("GeneralEvaluation::loadCSR");
 
 	if (csr)
 		delete [] csr;
@@ -146,7 +146,8 @@ GeneralEvaluation::loadCSR()
 	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 	csr[0].init(pre_num);
 	csr[1].init(pre_num);	
-	cout << "pre_num: " << pre_num << endl;
+	SLOG_CORE("pre_num: " << pre_num);
+
 	long begin_time = Util::get_cur_time();
 
 	// Process out-edges (csr[0])
@@ -154,17 +155,15 @@ GeneralEvaluation::loadCSR()
 	for(unsigned i = 0; i < pre_num; i++)
 	{
 		string pre = kvstore->getPredicateByID(i);
-		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		SLOG_CORE("pid: "<<i<<"    pre: "<<pre);
 		unsigned* sublist = NULL;
 		unsigned sublist_len = 0;
 		kvstore->getsubIDlistBypreID(i, sublist, sublist_len, true);
-		//cout<<"    sub_num: "<<sublist_len<<endl;
 		unsigned offset = 0;
 		unsigned index = 0;
 		for(unsigned j=0;j<sublist_len;j++)
 		{
 			string sub = kvstore->getEntityByID(sublist[j]);
-			//cout<<"    sid: "<<sublist[j]<<"    sub: "<<sub<<endl;
 			unsigned* objlist = NULL;
 			unsigned objlist_len = 0;
 			kvstore->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len); 
@@ -189,8 +188,8 @@ GeneralEvaluation::loadCSR()
 			delete [] objlist;
 			objlist = nullptr;
 		}
-		cout<<csr[0].offset_list[i].size()<<endl;	// # of this predicate's subjects
-		cout<<csr[0].adjacency_list[i].size()<<endl;	// # of this predicate's objects
+		SLOG_CORE(csr[0].offset_list[i].size());    // # of this predicate's subjects
+		SLOG_CORE(csr[0].adjacency_list[i].size()); // # of this predicate's objects
 		delete [] sublist;
 		sublist = nullptr;
 	}
@@ -200,11 +199,10 @@ GeneralEvaluation::loadCSR()
 	for(unsigned i = 0;i<pre_num;i++)
 	{
 		string pre = kvstore->getPredicateByID(i);
-		cout<<"pid: "<<i<<"    pre: "<<pre<<endl;
+		SLOG_CORE("pid: "<<i<<"    pre: "<<pre);
 		unsigned* objlist = NULL;
 		unsigned objlist_len = 0;
 		kvstore->getobjIDlistBypreID(i, objlist, objlist_len, true);
-		//cout<<"    obj_num: "<<objlist_len<<endl;
 		unsigned offset = 0;
 		unsigned index = 0;
 		for(unsigned j=0;j<objlist_len;j++)
@@ -232,8 +230,8 @@ GeneralEvaluation::loadCSR()
 			delete [] sublist;
 			sublist = nullptr;
 		}
-		cout<<csr[1].offset_list[i].size()<<endl;
-		cout<<csr[1].adjacency_list[i].size()<<endl;
+		SLOG_CORE(csr[1].offset_list[i].size());
+		SLOG_CORE(csr[1].adjacency_list[i].size());
 		delete [] objlist;
 		objlist = nullptr;
 	}
@@ -252,7 +250,7 @@ GeneralEvaluation::loadCSR()
 	csr[1].m = ret;
 
 	long end_time = Util::get_cur_time();
-	cout << "Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms" << endl;
+	SLOG_CORE("Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms");
 }
 
 void
@@ -279,18 +277,17 @@ bool GeneralEvaluation::parseQuery(const string &_query)
 	}
 	catch (const char *e)
 	{
-		printf("%s\n", e);
+		SLOG_ERROR(e);
 		return false;
 	}
 	catch(const runtime_error& e2)
 	{
-		//cout<<"catch the runtime error"<<endl;
 		throw runtime_error(e2.what());
 		return false;
 	}
 	catch (...)
 	{
-		cout<<"GeneralEvaluation::parseQuery "<<" catch some error."<<endl;
+		SLOG_CORE("GeneralEvaluation::parseQuery "<<" catch some error.");
 		throw  runtime_error("Some syntax errors in sparql");
 		return false;
 	}
@@ -316,13 +313,13 @@ bool GeneralEvaluation::doQuery()
 
 	if (this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty() && !this->query_tree.getGroupByVarset().empty())
 	{
-		printf("[ERROR]	Select * and Group By can't appear at the same time.\n");
+		SLOG_ERROR("[ERROR]	Select * and Group By can't appear at the same time.");
 		return false;
 	}
 
 	if (!this->query_tree.checkSelectAggregateFunctionGroupByValid())
 	{
-		printf("[ERROR]	The vars/aggregate functions in the Select Clause are invalid.\n");
+		SLOG_ERROR("[ERROR]	The vars/aggregate functions in the Select Clause are invalid.");
 		return false;
 	}
 
@@ -417,16 +414,16 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 	if (well_designed == 0)	// Not well-designed, semantic-based evaluation
 	{
-		printf("=================================\n");
-		printf("||not well-designed at dep = %d||\n", dep);
-		printf("=================================\n");
+		SLOG_CORE("=================================");
+		SLOG_CORE("||not well-designed at dep = " <<dep<<"||");
+		SLOG_CORE("=================================");
 		group_pattern = rewriting_evaluation_stack[dep].group_pattern;
 	}
 	else if (well_designed == 1)	// Well-designed, rewriting-based evaluation
 	{
-		printf("=============================\n");
-		printf("||well-designed at dep = %d||\n", dep);
-		printf("=============================\n");
+		SLOG_CORE("=================================");
+		SLOG_CORE("||well-designed at dep = " <<dep<<"||");
+		SLOG_CORE("=================================");
 
 		/// Construct group_pattern_union, which will consist of all expansion results ///
 		/// (group-patterns without UNIONs, whose results will have to be UNION'ed to get ///
@@ -548,15 +545,14 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 												basic_query.push_back(group_pattern.sub_group_pattern[k].pattern);
 											}
 
-									printf("select vars: ");
+									SLOG_CORE("select vars: ");
 									occur.print();
 
-									printf("triple patterns: \n");
+									SLOG_CORE("triple patterns: ");
 									for (int k = 0; k < (int)basic_query.size(); k++)
-										printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
-											basic_query[k].predicate.value.c_str(),
-											basic_query[k].object.value.c_str()
-										);
+										SLOG_CORE(basic_query[k].subject.value<<"\t"
+												<<basic_query[k].predicate.value<<"\t"
+												<<basic_query[k].object.value);
 
 									bool success = false;
 									// if (this->query_cache != NULL)
@@ -601,7 +597,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 					long tv_encode = Util::get_cur_time();
-					printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
+					SLOG_CORE("during Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// TODO: refine the fillcand strategy regarding the same layer
 					// Now only consider dep == 0
@@ -620,7 +616,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#endif
 					// }
 					long tv_fillcand = Util::get_cur_time();
-					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					#ifndef TEST_BGPQUERY
 					this->optimizer_->DoQuery(sparql_query,query_info);
@@ -639,7 +635,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#endif
 
 					long tv_handle = Util::get_cur_time();
-					printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+					SLOG_CORE("during Handle, used "<<(tv_handle - tv_encode)<<" ms.");
 
 					//collect and join the result of each BGP
 					// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
@@ -666,10 +662,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							long tv_bftry = Util::get_cur_time();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
-							if (success)	printf("QueryCache cached\n");
-							else			printf("QueryCache didn't cache\n");
+							if (success)	SLOG_CORE("QueryCache cached");
+							else			SLOG_CORE("QueryCache didn't cache");
 							long tv_aftry = Util::get_cur_time();
-							printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
 						if (sub_result->results.empty())
@@ -780,11 +776,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// Prepare and print //
 					this->rewriting_evaluation_stack[dep].group_pattern = group_pattern.sub_group_pattern[i].unions[j];
 
-					for (int k = 0; k < 80; k++)			printf("=");
-					printf("\n");
+					std::string code_print;
+					for (int k = 0; k < 80; k++)			code_print +="=";
+					SLOG_CORE(code_print);
 					rewriting_evaluation_stack[dep].group_pattern.print(dep);
-					for (int k = 0; k < 80; k++)			printf("=");
-					printf("\n");
+					// for (int k = 0; k < 80; k++)			printf("=");
+					SLOG_CORE(code_print);
 
 					sub_result = new TempResultSet();
 
@@ -809,7 +806,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						if (triple_pattern.sub_group_pattern[l].type == GroupPattern::SubGroupPattern::Pattern_type \
 							&& !triple_pattern.sub_group_pattern[l].pattern.kleene)
 						{
-							// cout << "l = " << l << ", not kleene" << endl;
 							for (int k = 0; k < l; k++)
 								if (triple_pattern.sub_group_pattern[k].type == GroupPattern::SubGroupPattern::Pattern_type \
 									&& !triple_pattern.sub_group_pattern[k].pattern.kleene)
@@ -845,14 +841,13 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								local_useful = occur;
 
 							//// Print useful vars and triple patterns ////
-							printf("useful vars (SELECT + GROUPBY + ORDERBY): ");
+							SLOG_CORE("useful vars (SELECT + GROUPBY + ORDERBY): ");
 							local_useful.print();
-							printf("triple patterns: \n");
+							SLOG_CORE("triple patterns: ");
 							for (int k = 0; k < (int)basic_query.size(); k++)
-								printf("%s\t%s\t%s\n", basic_query[k].subject.value.c_str(),
-									basic_query[k].predicate.value.c_str(),
-									basic_query[k].object.value.c_str()
-								);
+								SLOG_CORE(basic_query[k].subject.value<<"\t"
+										<<basic_query[k].predicate.value<<"\t"
+										<<basic_query[k].object.value);
 							bool success = false;
 							// if (this->query_cache != NULL && dep == 0)
 							// 	success = checkBasicQueryCache(basic_query, sub_result, useful);
@@ -897,7 +892,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 					long tv_encode = Util::get_cur_time();
-					printf("after Encode, used %ld ms.\n", tv_encode - tv_begin);
+					SLOG_CORE("after Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
 					// TODO: check if this affects BGPQuery execution
@@ -910,7 +905,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						#endif
 					}
 					long tv_fillcand = Util::get_cur_time();
-					printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					/* PLEASE REPLACE WITH OPTIMIZER */
 					QueryInfo query_info;
@@ -945,7 +940,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					#endif
 
 					long tv_handle = Util::get_cur_time();
-					printf("after Handle, used %ld ms.\n", tv_handle - tv_fillcand);
+					SLOG_CORE("after Handle, used "<< (tv_handle - tv_fillcand) <<  " ms.");
 
 					// Collect and join the result of each BasicQuery //
 					// Each BGP's results are copied out to temp, and then joined with sub_result //
@@ -964,7 +959,6 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						copyBgpResult2TempResult(bgp_query_vec[l], varnum, temp->results[0]);
 						#endif
 						
-						// cout << "Use count = " << bgp_query_vec[l].use_count() << endl;
 						bgp_query_vec[l] = nullptr;
 
 						if (this->query_cache != NULL && dep == 0)
@@ -975,10 +969,10 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							long tv_bftry = Util::get_cur_time();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
-							if (success)	printf("QueryCache cached\n");
-							else			printf("QueryCache didn't cache\n");
+							if (success)	SLOG_CORE("QueryCache cached");
+							else			SLOG_CORE("QueryCache didn't cache");
 							long tv_aftry = Util::get_cur_time();
-							printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
 						if (sub_result->results.empty())
@@ -1126,7 +1120,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 								} else
 									sub_result->doFilter(rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].filter, kvstore,\
 										rewriting_evaluation_stack[dep].group_pattern.group_pattern_subject_object_maximal_varset);
-								printf("IN SECOND doFilter\n");
+								SLOG_CORE("IN SECOND doFilter");
 							}
 						}
 					}
@@ -1213,24 +1207,25 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
             if(sub_query.getOffset()==0&&sub_query.getLimit()==-1&&sub_query.getGroupByVarset().empty()&&sub_query.getOrderVarVector().empty() \
 				&& sub_query.getProjectionModifier() == QueryTree::Modifier_None)
 			{
-                cout<<"### Subtree (simp.) print start###\n";
+				SLOG_CORE("### Subtree (simp.) print start###");
 		    	sub_query.getGroupPattern().print(0);
-                cout<<"### Subtree (simp.) print end###\n";
+				SLOG_CORE("### Subtree (simp.) print end###");
 		    	// group_pattern.sub_group_pattern[i].group_pattern.getVarset();
                 this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 				this->rewriting_evaluation_stack.back().group_pattern = sub_query.getGroupPattern();
 				this->rewriting_evaluation_stack.back().result = NULL;
 				this->rewriting_evaluation_stack[dep].result = result;
 				TempResultSet *temp = queryEvaluation(dep + 1); //TODO: IF parent IS NOT NULL, IT SHOULD BE JOINED
-                cout<<"<SIMP> number of results: ";
+                std::string debug_print;
+				debug_print = "<SIMP> number of results: ";
                 for(std::vector<TempResult>::iterator it=temp->results.begin();it!=temp->results.end(); it++) {
                     Varset rvs=it->getAllVarset();
                     for(std::vector<std::string>::iterator it2=rvs.vars.begin();it2!=rvs.vars.end(); it2++){
-                        cout<<*it2<<",";
+                        debug_print = debug_print + *it2 + ",";
                     }
-                    cout<<it->result.size()<<"; ";
+					debug_print = debug_print + std::to_string(it->result.size()) + "; ";
                 }
-                cout<<endl;
+				SLOG_CORE(debug_print);
 		    	if (result->results.empty())
 		    	{
 		    		delete result;
@@ -1252,14 +1247,14 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
                 GeneralEvaluation tmp_GeneralEvaluation=*this;
                 
 		    	tmp_GeneralEvaluation.getQueryTree()=sub_query;
-                cout<<"### Subtree print start###\n";
+				SLOG_CORE("### Subtree print start###");
                 tmp_GeneralEvaluation.getQueryTree().print();
-                cout<<"### Subtree print end###\n";
+				SLOG_CORE("### Subtree print end###");
 		    	// group_pattern.sub_group_pattern[i].group_pattern.getVarset();
                 tmp_GeneralEvaluation.doQuery();
 		    	ResultSet* temp_rs = new ResultSet();
                 tmp_GeneralEvaluation.getFinalResult(*temp_rs);
-                cout<<"<NONSIMP> number of results: "<<temp_rs->ansNum<<endl;
+				SLOG_CORE("<NONSIMP> number of results: "<<temp_rs->ansNum);
                 TempResultSet *temp_trs = new TempResultSet();
                 temp_trs->results.push_back(temp_rs->to_tempresult());
 				// release
@@ -1281,7 +1276,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					result = new_result;
 				}
             }
-            cout<<"### Subquery ###"<<endl;
+			SLOG_CORE("### Subquery ###");
 		}
 	}
 
@@ -1545,7 +1540,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						for (auto pred : proj[0].path_args.pred_set)
 						{
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
 								pred_id_set.push_back(pred_id);
 						}
@@ -1569,7 +1563,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					bool notFirstOutput = 0;	// For outputting commas
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
 					ss << "\"{\"paths\":[";
-					cout<<"proj[0].aggregate_type :"<<proj[0].aggregate_type <<endl;
+					SLOG_CORE("proj[0].aggregate_type :"<<proj[0].aggregate_type);
 					if (proj[0].aggregate_type == ProjectionVar::maximumKplex_type)
 					{
 						auto kplex = pqHandler->maximumKplex(pred_id_set, proj[0].path_args.k);
@@ -1759,7 +1753,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "\"true\"}";
 								else
 									ss << "\"false\"}";
-								// cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
 							}
 							else if (proj[0].aggregate_type == ProjectionVar::ppr_type)
 							{
@@ -2005,12 +1998,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								if (!doneOnceOp)
 								{
-									pair<size_t, std::set<std::set<int>>> result;
+									std::set<std::set<int> > result;
 									float min_modularity_increase = proj[0].path_args.misc[0];
 									int phase1_loop_num = proj[0].path_args.misc[1];
 									pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[0].path_args.directed, result);
-									ss << "{\"count\":" << result.first << ", \"community\":[";
-									for (std::set<int> it: result.second)
+									ss << "{\"count\":" << result.size() << ", \"community\":[";
+									for (std::set<int> it: result)
 									{
 										if (notFirstOutput)
 											ss << ",";
@@ -2024,7 +2017,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 												ss << ",";
 											else 
 												hasMore = true;
-											ss << "\"" + to_string(mid) + "\"";
+											ss << mid;
 										}
 										ss << "]";
 									}
@@ -2053,7 +2046,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							break;
 					}
 					ss << "]}\"";
-					// cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
 					if (proj[0].aggregate_type == ProjectionVar::cycleBoolean_type)
 					{
 						if (exist)
@@ -2089,7 +2081,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						for (auto pred : proj[0].path_args.pred_set)
 						{
 							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-							// cout << "pred_set id:" << pred_id << endl;
 							if (pred_id != static_cast<int>(INVALID))
 								pred_id_set.push_back(pred_id);
 						};
@@ -2107,28 +2098,30 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = Util::replace_all(fun_name, "\"", "");
-					#if defined(DEBUG)
-					cout<<">>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
-						<<"iri_id_set=";
+					// #if defined(DEBUG)
+					stringstream _ss;
+					_ss << "PFN arguments" << endl;
+					_ss <<"\tiri_id_set = [";
 					for (size_t i = 0; i < iri_id_set.size(); i++)
 					{
 						if (i > 0)
-							cout << ", ";
-						cout << iri_id_set[i];
-					}	
-					cout<< "\ndirected=" << directed
-						<< "\nk=" << hopConstraint
-						<< "\npred_id_set=";
+							_ss << ", ";
+						_ss << iri_id_set[i];
+					}
+					_ss << "]" << endl;
+					_ss << "\tdirected = " << directed << endl;
+					_ss << "\tk = " << hopConstraint << endl;
+					_ss << "\tpred_id_set = [";
 					for (size_t i = 0; i < pred_id_set.size(); i++)
 					{
 						if (i > 0)
-							cout << ", ";
-						cout << pred_id_set[i];
+							_ss << ", ";
+						_ss << pred_id_set[i];
 					}
-					cout << "\nfun_name=" << fun_name 
-						<<"\n>>>>>>>>>>>>> PFN-1 args <<<<<<<<<<<<<<<\n"
-						<< endl;
-					#endif
+					_ss << "]" << endl;
+					_ss << "\tfun_name = " << fun_name;
+					SLOG_CORE(_ss.str());
+					// #endif
 					stringstream ss;
 					std::map<std::string, std::string> rt = dynamicFunction(iri_id_set, directed, hopConstraint, pred_id_set, fun_name, ret_result.getUsername());
 					std::map<std::string, std::string>::iterator iter = rt.find("return_type");
@@ -2282,14 +2275,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										if (proj[i].aggregate_type == ProjectionVar::Sum_type
 											|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 										{
-											cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+											SLOG_ERROR("[ERROR] Invalid type for SUM or AVG.");
 											continue;
 										}
 										else if ((proj[i].aggregate_type == ProjectionVar::Min_type
 											|| proj[i].aggregate_type == ProjectionVar::Max_type)
 											&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 										{
-											cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+											SLOG_ERROR("[ERROR] Invalid type for MIN or MAX.");
 											continue; 
 										}
 									}
@@ -2351,8 +2344,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									}
 								}
 								// for (auto elem : count_set)
-								// 	cout << elem << ' ';
-								cout << endl;
+								SLOG_CORE("");
 								count = (int)count_set.size();
 								if (proj[i].aggregate_type == ProjectionVar::Sum_type
 									|| proj[i].aggregate_type == ProjectionVar::Avg_type)
@@ -2408,14 +2400,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										if (proj[i].aggregate_type == ProjectionVar::Sum_type
 											|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 										{
-											cout << "[ERROR] Invalid type for SUM or AVG." << endl;
+											SLOG_ERROR("[ERROR] Invalid type for SUM or AVG.");
 											continue;
 										}
 										else if ((proj[i].aggregate_type == ProjectionVar::Min_type
 											|| proj[i].aggregate_type == ProjectionVar::Max_type)
 											&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
 										{
-											cout << "[ERROR] Invalid type for MIN or MAX." << endl;
+											SLOG_ERROR("[ERROR] Invalid type for MIN or MAX.");
 											continue; 
 										}
 									}
@@ -2439,7 +2431,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										numeric_sum = numeric_sum + tmp;
-										cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
+										SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 									{
@@ -2529,7 +2521,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (proj[i].aggregate_type == ProjectionVar::Sum_type
 								|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 							{
-								cout << "numeric_sum.term_value = " << numeric_sum.term_value << endl;
+								SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
 								ss << numeric_sum.term_value;
 							}
 							else if (proj[i].aggregate_type == ProjectionVar::Min_type)
@@ -2587,7 +2579,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								pos1 = Varset(arg1).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
 								if (pos1 == -1)
 								{
-									cout << "[ERROR] Cannot get arg1 in CONTAINS." << endl;
+									SLOG_ERROR("[ERROR] Cannot get arg1 in CONTAINS.");
 									break;
 								}
 								isel1 = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(arg1);
@@ -2607,7 +2599,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								pos2 = Varset(arg2).mapTo(query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset)[0];
 								if (pos2 == -1)
 								{
-									cout << "[ERROR] Cannot get arg2 in CONTAINS." << endl;
+									SLOG_ERROR("[ERROR] Cannot get arg2 in CONTAINS.");
 									break;
 								}
 								isel2 = query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset.findVar(arg2);
@@ -2649,8 +2641,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										small_str = small_str.substr(1, idx - 1);
 								}
 
-								cout << "big_str = " << big_str << endl;
-								cout << "small_str = " << small_str << endl;
+								SLOG_CORE("big_str = " << big_str);
+								SLOG_CORE("small_str = " << small_str);
 
 								if (group2temp.empty()) {
 									if (big_str.find(small_str) != string::npos)
@@ -2685,7 +2677,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
 							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+								SLOG_ERROR("[ERROR] src must be an entity!");    // TODO: throw exception
 							else
 							{
 								for (int j = begin; j <= end; j++)
@@ -2704,9 +2696,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 						{
 							int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
-							cout << "vid var2temp = " << var2temp << endl;
+							SLOG_CORE("vid var2temp = " << var2temp);
 							if (var2temp >= result0_id_cols)
-								cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
+								SLOG_CORE("[ERROR] dst must be an entity!");    // TODO: throw exception
 							else
 							{
 								for (int j = begin; j <= end; j++)
@@ -2727,7 +2719,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							for (auto pred : proj[i].path_args.pred_set)
 							{
 								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-								// cout << "pred_set id:" << pred_id << endl;
 								if (pred_id != static_cast<int>(INVALID))
 									pred_id_set.push_back(pred_id);
 							}
@@ -2750,7 +2741,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						stringstream ss;
 						bool notFirstOutput = 0;	// For outputting commas
 						ss << "\"[";
-						cout<<"proj["<<i<<"].aggregate_type :"<<proj[i].aggregate_type <<endl;
+						SLOG_CORE("proj["<<i<<"].aggregate_type :"<<proj[i].aggregate_type);
 						for (int uid : uid_ls)
 						{
 							for (int vid : vid_ls)
@@ -2764,23 +2755,23 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								bool directed = proj[i].path_args.directed;
 								string fun_name = proj[i].path_args.fun_name;
 								fun_name = Util::replace_all(fun_name, "\"", "");
-								#if defined(DEBUG)
-								cout<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n" 
-									<< "uid=" << uid 
-									<< "\nvid=" << vid 
-									<< "\ndirected=" << directed
-									<< "\nk=" << hopConstraint
-									<< "\npred_id_set=";
+								// #if defined(DEBUG)
+								stringstream _ss;
+								_ss << "PFN arguments" << endl;
+								_ss <<"\tuvpair = [" << uid << ", " << vid << "]" << endl;
+								_ss << "\tdirected = " << directed << endl;
+								_ss << "\tk = " << hopConstraint << endl;
+								_ss << "\tpred_id_set = [";
 								for (size_t i = 0; i < pred_id_set.size(); i++)
 								{
 									if (i > 0)
-										cout << ", ";
-									cout << pred_id_set[i];
+										_ss << ", ";
+									_ss << pred_id_set[i];
 								}
-								cout << "\nfun_name=" << fun_name 
-									<<">>>>>>>>>>>>> PFN-2 args <<<<<<<<<<<<<<<\n"
-									<< endl;
-								#endif
+								_ss << "]" << endl;
+								_ss << "\tfun_name = " << fun_name;
+								SLOG_CORE(_ss.str());
+								// #endif
 								vector<int> iri_id_set;
 								iri_id_set.push_back(uid);
 								iri_id_set.push_back(vid);
@@ -2895,7 +2886,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								int var2temp = Varset(proj[i].path_args.src).mapTo(result0.getAllVarset())[0];
 								if (var2temp >= result0_id_cols)
-									cout << "[ERROR] src must be an entity!" << endl;	// TODO: throw exception
+									SLOG_ERROR("[ERROR] src must be an entity!");	// TODO: throw exception
 								else
 								{
 									for (int j = begin; j <= end; j++)
@@ -2917,9 +2908,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (proj[i].path_args.dst[0] == '?')	// dst is a variable
 							{
 								int var2temp = Varset(proj[i].path_args.dst).mapTo(result0.getAllVarset())[0];
-								cout << "vid var2temp = " << var2temp << endl;
+								SLOG_CORE("vid var2temp = " << var2temp);
 								if (var2temp >= result0_id_cols)
-									cout << "[ERROR] dst must be an entity!" << endl;	// TODO: throw exception
+									SLOG_CORE("[ERROR] dst must be an entity!");	// TODO: throw exception
 								else
 								{
 									for (int j = begin; j <= end; j++)
@@ -3095,7 +3086,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									bool reachRes = pqHandler->kHopReachable(uid, vid, proj[i].path_args.directed, hopConstraint, pred_id_set);
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\",\"dst\":\"" \
 										<< kvstore->getStringByID(vid) << "\",\"value\":";
-									cout << "src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid) << endl;
+									SLOG_CORE("src = " << kvstore->getStringByID(uid) << ", dst = " << kvstore->getStringByID(vid));
 									if (reachRes)
 										ss << "\"true\"}";
 									else
@@ -3419,12 +3410,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									if (!doneOnceOp)
 									{
-										pair<size_t, std::set<std::set<int> > > result;
+										std::set<std::set<int> > result;
 										float min_modularity_increase = proj[i].path_args.misc[0];
 										int phase1_loop_num = proj[i].path_args.misc[1];
 										pqHandler->louvain(phase1_loop_num, min_modularity_increase, pred_id_set, proj[i].path_args.directed, result);
-										ss << "{\"count\":" << result.first << ", \"community\":[";
-										for (set<int> it : result.second)
+										ss << "{\"count\":" << result.size() << ", \"community\":[";
+										for (set<int> it : result)
 										{
 											if (notFirstOutput)
 												ss << ",";
@@ -3438,7 +3429,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 													ss << ",";
 												else 
 													hasMore = true;
-												ss << "\"" + to_string(mid) + "\"";
+												ss << mid;
 											}
 											ss << "]";
 										}
@@ -3467,7 +3458,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								break;
 						}
 						ss << "]}\"";
-						// cout << "max #paths:" << uid_ls.size() * vid_ls.size() << endl;
 						if (proj[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)
@@ -3500,8 +3490,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 		{
-			// cout << "Modifier_Distinct!!!" << endl;
-
 			TempResultSet *new_temp_result = new TempResultSet();
 
 			this->temp_result->doDistinct1(*new_temp_result);
@@ -3540,7 +3528,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		if (Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();
-			printf("set use Stream\n");
+			SLOG_CORE("set use Stream");
 		}
 #endif
 
@@ -3888,14 +3876,14 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 		long tv_bfcheck = Util::get_cur_time();
 		success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
 		long tv_afcheck = Util::get_cur_time();
-		printf("after checkCache, used %ld ms.\n", tv_afcheck - tv_bfcheck);
+		SLOG_CORE("after checkCache, used "<<(tv_afcheck - tv_bfcheck)<<" ms.");
 
 		// If query cache hit, save partial result //
 		// Note the semantics of doJoin: sub_result is joined with temp, and saved into new_result //
 		if (success)
 		{
-			printf("QueryCache hit\n");
-			printf("Final result size: %d\n", (int)temp->results[0].result.size());
+			SLOG_CORE("QueryCache hit");
+			SLOG_CORE("Final result size: "<<temp->results[0].result.size());
 
 			TempResultSet *new_result = new TempResultSet();
 			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
@@ -3906,7 +3894,7 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 			sub_result = new_result;
 		}
 		else
-			printf("QueryCache miss\n");
+			SLOG_CORE("QueryCache miss");
 
 		temp->release();
 		delete temp;
@@ -3968,7 +3956,7 @@ void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec
 				// basic_query.getCandidateList(basic_query.getIDByVarName(basic_query_encode_varset[k])).copy(result_vector);
 				// basic_query.setReady(basic_query.getIDByVarName(basic_query_encode_varset[k]));
 
-				printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
+				SLOG_CORE("fill var "<<basic_query_encode_varset[k]<<" CandidateList size "<< result_vector.size());
 			}
 		}
 	}
@@ -4016,7 +4004,7 @@ void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<
 				basic_query.getCandidateList(basic_query.getIDByVarName(basic_query_encode_varset[k])).copy(result_vector);
 				basic_query.setReady(basic_query.getIDByVarName(basic_query_encode_varset[k]));
 
-				printf("fill var %s CandidateList size %d\n", basic_query_encode_varset[k].c_str(), (int)result_vector.size());
+				SLOG_CORE("fill var "<<basic_query_encode_varset[k]<<" CandidateList size "<< result_vector.size());
 			}
 		}
 	}
@@ -4055,10 +4043,10 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 			long tv_bftry = Util::get_cur_time();
 			// bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
 			bool success = false;
-			if (success)	printf("QueryCache cached\n");
-			else			printf("QueryCache didn't cache\n");
+			if (success)	SLOG_CORE("QueryCache cached");
+			else			SLOG_CORE("QueryCache didn't cache");
 			long tv_aftry = Util::get_cur_time();
-			printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+			SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 		}
 
 		if (sub_result->results.empty())
@@ -4081,9 +4069,9 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 		}
 	}
 
-	printf("In joinBasicQueryResult, print varset\n");
+	SLOG_CORE("In joinBasicQueryResult, print varset");
 	sub_result->results[0].getAllVarset();
-	printf("11111\n");
+	SLOG_CORE("11111");
 }
 
 
@@ -4091,21 +4079,24 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 {
 	try
 	{
+		SLOG_CORE("execuse dynamic function begin...");
+		long startTime = Util::get_cur_time();
 		std::map<std::string, std::string> returnMap;
 		// check funInfo from json file.
 		string pfn_base_path = Util::getConfigureValue("pfn_base_path");
-		string pfn_cpp_path = pfn_base_path + "cpp/";
-		string pfn_lib_path = pfn_base_path + "lib/";
+		string pfn_file_path = pfn_base_path + "cpp/" + username;
+        string pfn_lib_path =  pfn_base_path + "lib/" + username;
 		
-		string json_file_path = pfn_cpp_path + username + "/data.json";
-		#if defined(DEBUG)
-		cout << "pfn lib path: " << pfn_lib_path << endl;
-		cout << "open json file: " << json_file_path << endl;
-		#endif // 
+		string json_file_path = pfn_file_path + "/data.json";
+		// #if defined(DEBUG)
+		SLOG_CORE("lib path: " << pfn_lib_path);
+		SLOG_CORE("json path: " << json_file_path);
+		// #endif
 		ifstream in;
 		in.open(json_file_path, ios::in);
 		if (!in.is_open())
 		{
+			SLOG_ERROR("open json file error.");
 			throw runtime_error("open function json file error.");
 		}
 		string line;
@@ -4128,7 +4119,10 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 						if (doc.HasMember("funStatus"))
 							fun_status = doc["funStatus"].GetString();
 						if (fun_status != "2")
-							throw runtime_error("function " + fun_name + " not compile yet");
+						{
+							SLOG_ERROR("abort function '" << fun_name << "' not compile yet");
+							throw runtime_error("function '" + fun_name + "' not compile yet");
+						}
 						if (doc.HasMember("funArgs"))
 							fun_args = doc["funArgs"].GetString();
 						if (doc.HasMember("funReturn"))
@@ -4147,29 +4141,30 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		in.close();
 		if (!isMatch)
 		{
-			throw runtime_error("function '" + fun_name + "' not exists");
+			SLOG_ERROR("abort function '" << fun_name << "' not exist");
+			throw runtime_error("function '" + fun_name + "' not exist");
 		}
 		// check funInfo end
 		string error_msg;
 		string fileName, soFile;
 		fileName = fun_name;
 		std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
-		soFile = pfn_lib_path + username + "/lib" + fileName + md5Str + ".so";
+		soFile = pfn_lib_path + "/lib" + fileName + md5Str + ".so";
 		void *handle;
 		string result;
-		std::cout << "================================================\nopening " << soFile << endl;
 		handle = dlopen(soFile.c_str(), RTLD_LAZY);
 		if (!handle)
 		{
 			error_msg = "load so file error:" + string(dlerror());
+			SLOG_ERROR("abort " + error_msg);
 			throw runtime_error(error_msg);
 		}
 		char *error;
 		if (fun_args == "1")
 		{
-			#if defined(DEBUG)
-			std::cout << "begin 1 for " << fun_name << endl;
-			#endif 
+			// #if defined(DEBUG)
+			SLOG_CORE(fun_name + "(vector<int> iri_set, bool directed, vector<int> pred_set, PathQueryHandler * pathUtil)");
+			// #endif 
 			// int uid, int vid, bool directed, vector<int> pred_set, CSR * _csr
 			typedef string (*personalized_fun)(vector<int>, bool, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
@@ -4178,23 +4173,24 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			{
 				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
 				dlclose(handle);
+				SLOG_ERROR("abort " + error_msg);
 				throw runtime_error(error_msg);
 			}
 			// call function
 			result = p_fun(iri_set, directed, pred_set, pqHandler.get());
-			std::cout << "end with: " << result << endl;
-			std::cout << "return type: " << fun_return << endl;
-			std::cout<< "================================================\n";
+			SLOG_CORE("return type: " << fun_return);
+			SLOG_CORE("result: " + result);
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
 			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			SLOG_CORE("execuse dynamic function end");
 			return returnMap;
 		}
 		else if (fun_args == "2")
 		{
-			#if defined(DEBUG)
-			std::cout << "begin 2 for " << fun_name << endl;
-			#endif
+			// #if defined(DEBUG)
+			SLOG_CORE(fun_name + "(vector<int> iri_set, bool directed, int k, vector<int> pred_set, PathQueryHandler * pathUtil)");
+			// #endif
 			// int uid, int vid, bool directed, int k, vector<int> pred_set
 			typedef string (*personalized_fun)(vector<int>, bool, int, vector<int>, PathQueryHandler *);
 			personalized_fun p_fun;
@@ -4203,33 +4199,35 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 			{
 				error_msg = "cannot load symbol '" + fun_name + "': " + string(error);
 				dlclose(handle);
+				SLOG_ERROR("abort " + error_msg);
 				throw runtime_error(error_msg);
 			}
 			// call function
 			result = p_fun(iri_set, directed, k, pred_set, pqHandler.get());
-			std::cout << "end with: " << result << endl;
-			std::cout << "return type: " << fun_return << endl;
-			cout<< "================================================\n";
+			SLOG_CORE("return type: " << fun_return);
+			SLOG_CORE("result: " + result);
 			dlclose(handle);
 			returnMap.insert(pair<std::string, std::string>("return_type", fun_return));
 			returnMap.insert(pair<std::string, std::string>("return_value", result));
+			SLOG_CORE("execuse dynamic function end");
 			return returnMap;
 		}
 		else
 		{
+			SLOG_ERROR("abort unkonw function argment type '" + fun_args + "'");
 			throw runtime_error("unkown function argment type '" + fun_args + "'");
 		}
 	}
 	catch (const std::exception &e)
     {
-		string content = "run personalized function fail: " + string(e.what());
-        std::cout << content << endl;
+		string content = "run dynamic function fail: " + string(e.what());
+        SLOG_ERROR(content);
 		throw runtime_error(content);
     }
 	catch (...)
 	{
-		string content = "run personalized function fail: unknown error";
-		std::cout << content << endl;
+		string content = "run dynamic function fail: unknown error";
+		SLOG_ERROR(content);
 		throw runtime_error(content);
 	}
 }
@@ -4274,7 +4272,7 @@ void GeneralEvaluation::addAllTriples(const GroupPattern &group_pattern)
 void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr, \
 	const string &subject, const string &predicate, const string &object, int dep)
 {
-	cout << "kleeneClosure, subject = " << subject << ", predicate = " << predicate << ", object = " << object << endl;
+	SLOG_CORE("kleeneClosure, subject = " << subject << ", predicate = " << predicate << ", object = " << object);
 	// TempResult *tr = NULL;	// Use `tr` to store BFS starting vertices
 	// <s> <p>* ?o
 	TempResult *cand = NULL;
@@ -4360,7 +4358,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 		set<unsigned> sid_set, tid_set;
 		if (!cand || cand->result.size() == 0)
 		{
-			// // cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (1)" << endl;
 			// all entity -> sid_set/tid_set 
 			for(TYPE_ENTITY_LITERAL_ID id = all_entity_id.init(); id!=INVALID_ENTITY_LITERAL_ID; id=all_entity_id.next())
 				sid_set.insert(id);
@@ -4387,7 +4384,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 					objectInId = false;
 				else{
 					not_case2 = false;
-					// // cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (2)" << endl;
 					// all entity -> sid_set/tid_set 
 					for(TYPE_ENTITY_LITERAL_ID id = all_entity_id.init(); id!=INVALID_ENTITY_LITERAL_ID; id=all_entity_id.next())
 						sid_set.insert(id);
@@ -4424,7 +4420,6 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 			// for (size_t i = 0; i < tr->result.size(); i++)
 			// {
 			// 	unsigned sid = tr->result[i].id[subjectIdx];
-			// 	// cout << "sid = " << sid << endl;
 			// 	vector<int> reach = pqHandler->BFS(sid, true,
 			// 		vector<int>(1, kvstore->getIDByPredicate(predicate)), true);
 			// 	for (int tid : reach)
@@ -4455,7 +4450,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 			// }
 		}
 		else
-			cout << "[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (3)" << endl;
+			SLOG_ERROR("[ERROR]	Cannot process ?s <p>* ?o as the only graph pattern in WHERE clause. (3)");
 	}
 }
 
@@ -4494,7 +4489,6 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 				if(outList[i] >= Util::LITERAL_FIRST_ID)
 					continue;
 				outNei = outList[i];
-				// cout << "outNei = " << outNei << endl;
 				if (ret_set.find(outNei) == ret_set.end())
 				{
 					ret.push(outNei);
@@ -4619,13 +4613,15 @@ void GeneralEvaluation::copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_q
 void GeneralEvaluation::diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set)
 {
 	unsigned int ret = pqHandler->diameterEstimation(pred_id_set);
-	ss << "{\"Maximum steps\":" << ret << "}";
+	ss << ret;
 }
 
-void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set)
+void GeneralEvaluation::betweennessCentrality(std::stringstream &ss, int uid, bool directed, const std::vector<int> &pred_id_set)
 {
-	double ret = pqHandler->betweennessCentrality(id, directed, pred_id_set);
-	ss << "{\"src\":\"" << kvstore->getStringByID(id) << "\", \"centrality\":" << ret << "}";
+	if (uid < 0)
+		return;
+	double ret = pqHandler->betweennessCentrality(uid, directed, pred_id_set);
+	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"result\":" << ret << "}";
 }
 
 void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum)
@@ -4634,19 +4630,16 @@ void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const 
 		return;
 	int max_depth = k < 0 ? 999 : k;
 	int max_retNum = retNum < 0 ? 10 : retNum;
-	std::vector<int> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
-	ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
-		<< "\", \"result\":["; 
+	std::vector<std::pair<int, float>> ret = pqHandler->JaccardSimilarity(uid, pred_id_set, max_depth, max_retNum);
 	bool hasMore = false;
-	for (int nid : ret)
+	for (auto m : ret)
 	{
 		if (hasMore)
 			ss << ","; 
 		else 
 			hasMore = true;
-		ss << "\"" + to_string(nid) + "\"";
+		ss << "{\"dst\":"<< m.first << ", \"value\":" << m.second << "}";
 	}
-	ss << "]}";
 }
 
 void GeneralEvaluation::degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set)
@@ -4655,5 +4648,5 @@ void GeneralEvaluation::degreeCorrelation(std::stringstream &ss, int uid, int k,
 		return;
 	int max_depth = k < 0 ? 999 : k;
 	double ret = pqHandler->degreeCorrelation(uid, max_depth, pred_id_set);
-	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"degree correlation\":" << ret << "}";
+	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"result\":" << ret << "}";
 }

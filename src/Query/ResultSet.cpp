@@ -423,7 +423,7 @@ ResultSet::to_JSON()
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
 		{
-			  cout<<"the size is out than the output_limit"<<endl;
+			  SLOG_CORE("the size is out than the output_limit");
               break;
 		}
 		if (this->useStream)

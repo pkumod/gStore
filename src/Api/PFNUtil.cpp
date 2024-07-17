@@ -214,10 +214,14 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
         // update function status to 2
         fun_info->setFunStatus("2");
         //delete old so
-        if (fun_info->getLastTime().empty() == false) 
+        string oldLibPrefix = "lib" + file_name;
+        vector<std::string> oldLibFiles = PFNUtil::get_files(pfn_lib_path.c_str(), oldLibPrefix);
+        for (std::string oldLibFile : oldLibFiles)
         {
-            string oldMd5Str = Util::md5(fun_info->getLastTime());
-            string oldLibPath = pfn_lib_path +"/lib" + file_name + oldMd5Str + ".so";
+            #if defined(DEBUG)
+            SLOG_DEBUG("delete old so file: " << oldLibFile);
+            #endif
+            std::string oldLibPath = pfn_lib_path + "/" + oldLibFile;
             Util::remove_path(oldLibPath);
         }
         //mv the new into using Path
@@ -381,10 +385,11 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                     string sourcePath = pfn_cpp_path + "/" + file_name + ".cpp";
                     Util::remove_path(sourcePath);
-                    if (fun_info->getLastTime().empty() == false) 
+                    if (fun_info_tmp->getLastTime().empty() == false) 
                     {
                         string md5str = Util::md5(fun_info_tmp->getLastTime());
                         string libPath = pfn_lib_path + "/lib" + file_name + md5str + ".so";
+                        SLOG_DEBUG("remove lib file: " + libPath);
                         Util::remove_path(libPath);
                     }
                 }
@@ -524,4 +529,41 @@ void PFNUtil::build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo* pfn_info
 	{
 		pfn_info->setFunReturn(fun_info["funReturn"].GetString());
 	}
+}
+
+//get all specific file type files in a directory
+vector<string> 
+PFNUtil::get_files(const char *src_dir, const string& prefix)
+{
+    vector<string> result;
+    string directory(src_dir);
+
+    DIR *dir = opendir(src_dir);
+    if ( dir == NULL )
+    {
+        printf("[ERROR] %s is not a directory or not exist!", src_dir);
+        return result;
+    }
+ 
+    struct dirent* d_ent = NULL;
+ 
+    char dot[3] = ".";
+    char dotdot[6] = "..";
+ 
+    while ( (d_ent = readdir(dir)) != NULL )
+    {
+        if ( (strcmp(d_ent->d_name, dot) != 0) && (strcmp(d_ent->d_name, dotdot) != 0) )
+        {
+            if ( d_ent->d_type != DT_DIR)
+            {
+                string d_name(d_ent->d_name);
+                if (d_name.find(prefix) != std::string::npos)
+                {
+                    result.push_back(d_name);
+                }
+            }
+        }
+    }
+    closedir(dir);
+    return result;
 }
