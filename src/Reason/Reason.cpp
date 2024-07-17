@@ -115,6 +115,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
   // string updatesparql = "";
   string insert_sparql="";
   string delete_sparql="";
+  string check_sparql="";
 
   if (Util::file_exist(rulefilepath) == false)
   {
@@ -158,10 +159,10 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
           Value pattern = patterns[j].GetObject();
           subwhere = subwhere + " " + pattern["subject"].GetString() + " " + pattern["predicate"].GetString() + " " + pattern["object"].GetString() + ".";
         }
-        if (patterns.Size() > 0)
-        {
-          subwhere = "{ " + subwhere + " }";
-        }
+        // if (patterns.Size() > 0)
+        // {
+        //   subwhere = "{ " + subwhere + " }";
+        // }
       }
 
       string subfilter = "";
@@ -178,9 +179,10 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
         }
         if (filters.Size() > 0)
         {
-          subfilter = " filter( " + subfilter + ")";
+          subfilter = " filter( " + subfilter + ").";
         }
       }
+      subwhere="{"+subwhere+subfilter+"}";
 
       if (conditions_length > 1 && i < conditions_length-1)
       {
@@ -241,8 +243,11 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
       {
         insert_sparql="insert { "+source+" <Rule:" + label + "> "+target+". } where "+wheresparql;
       }
+      
       delete_sparql="delete where {?x <Rule:" + label + "> ?y.}";
     }
+    check_sparql="select (count(*) as ?result) where { "+wheresparql+" }";
+
     Document::AllocatorType &allocator = doc.GetAllocator();
    
     doc.SetObject();
@@ -265,10 +270,17 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
     else{
       doc.AddMember("delete_sparql",StringRef(delete_sparql.c_str()),allocator);
     }
-   
+     if(doc.HasMember("check_sparql"))
+    {
+      doc["check_sparql"].SetString(StringRef(check_sparql.c_str()),allocator);
+    }
+    else{
+      doc.AddMember("check_sparql",StringRef(check_sparql.c_str()),allocator);
+    }
     //doc.AddMember("updatesparql", StringRef(updatesparql.c_str()), allocator);
     results.insert_sparql = insert_sparql;
     results.delete_sparql=delete_sparql;
+    results.check_sparql=check_sparql;
 
     results.issuccess = 1;
     SLOG_CORE("insert_sparql:" << insert_sparql);
@@ -397,6 +409,48 @@ string ReasonHelper::updateReasonRuleStatus(string rulename,string db_name,strin
 }
 
 
+string ReasonHelper::updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix)
+{
+  string result="";
+  string _db_path = db_home + db_name + db_suffix;
+  string rulefilepath2 = _db_path + "/reason_rule_files/" + rulename + ".json";
+   
+    StringBuffer buffer;
+    if(Util::dir_exist(_db_path)==false)
+    {
+      result="the database directory is not exists";
+      return result;
+    }
+    if (Util::file_exist(rulefilepath2) == false)
+    {
+       result="the reason file is not exists";
+      return result;
+    }
+    std::ifstream ifs(rulefilepath2);
+    std::string jsonStr((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+    Document doc;
+    doc.SetObject();
+    doc.Parse(jsonStr.c_str());
+    ifs.close();
+    Document::AllocatorType &allocator = doc.GetAllocator();
+    if (doc.HasMember("effectNum"))
+    {
+      int old_num=doc["effectNum"].GetInt();
+      effectNum=old_num+effectNum;
+       doc["effectNum"].SetInt(effectNum);
+      
+    }
+    else{
+      doc.AddMember("effectNum",effectNum,allocator);
+    }
+     Writer<StringBuffer> writer(buffer);
+     doc.Accept(writer);
+     std::ofstream file(rulefilepath2);
+       file << buffer.GetString();
+       file.close();
+    return "";
+}
+
 
 ReasonSparql ReasonHelper::disableReasonRule(string rulename,string db_name,string db_home,string db_suffix)
 {
@@ -504,5 +558,58 @@ ReasonOperationResult ReasonHelper::removeReasonRule(string rulename,string db_n
     return result;
 }
 
+
+ReasonSparql ReasonHelper::getCheckSparql(string rulename,string db_name,string db_home,string db_suffix)
+{
+  ReasonSparql results;
+  string _db_path = db_home + db_name + db_suffix;
+  string rulefilepath = _db_path + "/reason_rule_files/" + rulename + ".json";
+  SLOG_CORE("rulefilepath:"<<rulefilepath);
+  string searchsparql = "";
+  string updatesparql = "";
+
+  if (Util::file_exist(rulefilepath)==false)
+  {
+    results.error_message = "the reason file is not exist";
+    results.issuccess=0;
+    return results;
+  }
+  else
+  {
+    std::ifstream ifs(rulefilepath);
+    std::string jsonStr((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+    Document doc;
+    doc.SetObject();
+    doc.Parse(jsonStr.c_str());
+
+    if (doc.HasParseError())
+    {
+      results.error_message = "the reason file is not fit the json format";
+      results.issuccess=0;
+      return results;
+    }
+    
+    string sparql = "";
+
+    if (doc.HasMember("check_sparql"))
+    {
+      sparql = doc["check_sparql"].GetString();
+      results.check_sparql=sparql;
+      results.issuccess=1;
+      // cout << "start loading the database......" << endl;
+      return results;
+      // ResultSet ask_rs;
+      // FILE *ask_ofp = stdout;
+      // _db.query(sparql, ask_rs, ask_ofp);
+    }
+    else
+    {
+      results.error_message = "The  sparql  of the reason rule is not exist! ";
+      results.issuccess=0;
+      return results;
+    }
+  }
+  return results;
+}
 
 

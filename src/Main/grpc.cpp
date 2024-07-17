@@ -3694,6 +3694,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			doc.AddMember("StatusCode",0,allocator);
 			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
 			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
+			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
 		
 			 response->Json(doc);
 			}
@@ -3944,6 +3945,129 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 					response->Error(StatusOperationFailed,resultInfo2.error_message);
 					return;
 				}
+			}
+		}
+		else if (type == "8")
+		{
+			operation = "statisticsEffectNum";
+			string rulename=json_data["rulename"].GetString();
+			ReasonSparql resultInfo= ReasonHelper::getCheckSparql(rulename,db_name,_db_home,_db_suffix);
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			if(resultInfo.issuccess==0)
+			{
+				response->Error(StatusOperationFailed,resultInfo.error_message);
+			    
+			}
+			else
+			{
+			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
+			string username=json_data["username"].GetString();
+			if(apiUtil->check_db_exist(db_name)==false)
+			{
+				error="the database is not exist!";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+            shared_ptr<Database> current_database;
+			bool update_flag_bool=true;
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				response->Error(StatusOperationFailed,error);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.check_sparql;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				response->Error(StatusOperationFailed,content);
+				return;
+			}
+			
+            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+            cout << "ans:" << ret_val << endl;
+			//doc.AddMember("AnsNum",ret_val,allocator);
+			string json=rs.to_JSON();
+            //cout << "ans:" << ret_val << endl;
+			// doc.AddMember("result",StringRef(json.c_str()),allocator);
+          
+		    Document doc2;
+			doc2.SetObject();
+			doc2.Parse(json.c_str());
+			if(doc2.HasParseError())
+			{
+				doc.AddMember("effectNum","query result is not json format!",allocator);
+			}
+			if(doc2.HasMember("results"))
+			{
+				Value results=doc2["results"].GetObject();
+				if(results.HasMember("bindings"))
+				{
+					Value bindings=results["bindings"].GetArray();
+					if(bindings.Size()>0)
+					{
+						Value resultobj=bindings[0]["result"].GetObject();
+						if(resultobj.HasMember("value"))
+						{
+							string result_value=resultobj["value"].GetString();
+							// int result_value_int=Util::string2int(result_value);
+							doc.AddMember("effectNum",StringRef(result_value.c_str()),allocator);
+						}
+						else
+						{
+							doc.AddMember("effectNum","0",allocator);
+						}
+					}
+					else
+					{
+						doc.AddMember("effectNum","0",allocator);
+					}
+				}
+			}
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+		      response->Json(doc);
 			}
 		}
 		else

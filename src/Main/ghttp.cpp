@@ -1915,12 +1915,13 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 
 			doc.AddMember("insert_sparql", StringRef(resultInfo.insert_sparql.c_str()), allocator);
 			doc.AddMember("delete_sparql", StringRef(resultInfo.delete_sparql.c_str()), allocator);
+			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()), allocator);
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
 			sendResponseMsg(doc, operation, request, response);
 			return;
 			// // rapidjson::StringBuffer buffer;
-			// // rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+			// // rapidjson::Writer<rapidj son::StringBuffer> writer(buffer);
 
 			// // 将Document对象写入StringBuffer，使用PrettyWriter进行格式化
 			// if (doc.Accept(writer))
@@ -2022,6 +2023,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			//_db.unload();
 			//_db.save();
 			ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行", _db_home, _db_suffix);
+			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,ret_val,_db_home, _db_suffix);
 			sendResponseMsg(doc, operation, request, response);
 			return;
 			// rapidjson::StringBuffer buffer;
@@ -2122,6 +2124,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			doc.AddMember("AnsNum",ret_val,allocator);
 			
             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+			int effectNum=0-ret_val;
+			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix);
 		
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
@@ -2202,6 +2206,132 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 					return;
 				}
 			}
+		}
+		else if (typeint == 8)
+		{
+			operation = "statisticsEffectNum";
+			string rulename=document["rulename"].GetString();
+			string username=document["username"].GetString();
+			ReasonSparql resultInfo= ReasonHelper::getCheckSparql(rulename,db_name,_db_home,_db_suffix);
+			Document doc;
+			bool update_flag_bool=true;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			if(resultInfo.issuccess==0)
+			{
+				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
+			    return;
+			}
+			
+			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
+			if(apiUtil->check_db_exist(db_name)==false)
+			{
+				error="the database is not exist!";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+            shared_ptr<Database> current_database;
+			
+			// check database load status
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == NULL)
+			{
+				throw runtime_error("Database not load yet.");
+			}
+			bool lock_rt = apiUtil->rdlock_database(db_name);
+			if (lock_rt)
+			{
+				SLOG_DEBUG("get current database read lock success: " + db_name);
+			}
+			else
+			{
+				//throw runtime_error("get current database read lock fail.");
+				error="get current database read lock fail.";
+				sendResponseMsg(1005, error, operation, request, response);
+			    return;
+			}
+			ResultSet rs;
+			int ret_val;
+			FILE *output = NULL;
+			string sparql = resultInfo.check_sparql;
+			try
+			{
+				// SLOG_DEBUG("begin query...");
+				rs.setUsername(username);
+				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				
+			}
+			catch (string exception_msg)
+			{
+				string content = exception_msg;
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (const std::runtime_error &e2)
+			{
+				string content = e2.what();
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			catch (...)
+			{
+				string content = "unknow error";
+				apiUtil->unlock_database(db_name);
+				sendResponseMsg(1005, content, operation, request, response);
+				return;
+			}
+			
+            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+            string json=rs.to_JSON();
+			// SLOG_INFO(json);
+			Document doc2;
+			doc2.SetObject();
+			doc2.Parse(json.c_str());
+			if(doc2.HasParseError())
+			{
+				doc.AddMember("effectNum","query result is not json format!",allocator);
+			}
+			if(doc2.HasMember("results"))
+			{
+				Value results=doc2["results"].GetObject();
+				if(results.HasMember("bindings"))
+				{
+					Value bindings=results["bindings"].GetArray();
+					if(bindings.Size()>0)
+					{
+						Value resultobj=bindings[0]["result"].GetObject();
+						if(resultobj.HasMember("value"))
+						{
+							string result_value=resultobj["value"].GetString();
+							// int result_value_int=Util::string2int(result_value);
+							doc.AddMember("effectNum",StringRef(result_value.c_str()),allocator);
+						}
+						else
+						{
+							doc.AddMember("effectNum","0",allocator);
+						}
+					}
+					else
+					{
+						doc.AddMember("effectNum","0",allocator);
+					}
+				}
+			}
+            // cout << "ans:" << ret_val << endl;
+		
+			
+            // ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+			// int effectNum=0-ret_val;
+			// ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix);
+		
+			doc.AddMember("StatusCode", 0, allocator);
+			doc.AddMember("StatusMsg", "ok", allocator);
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+			sendResponseMsg(doc, operation, request, response);
+			return;
 		}
 		else
 		{

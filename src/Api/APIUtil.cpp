@@ -1148,18 +1148,18 @@ std::string APIUtil::check_indentity(const std::string &username, const std::str
     string error = "";
     if (it == users.end())
     {
-        error = "Username or password is wrong.";
+        error = "Username or password is wrong, username:"+username+",password:"+password;
     }
     else if (encryption == "1")
     {
         if (util.md5(it->second->getPassword()) != password)
         {
-            error = "Username or password is wrong.";
+            error = "Username or password is wrong.username:"+username+",password:"+password;
         }
     }
     else if (it->second->getPassword() != password)
     {
-        error = "Username or password is wrong.";
+        error = "Username or password is wrong.username:"+username+",password:"+password;
     }
     pthread_rwlock_unlock(&users_map_lock);
     return error;
