@@ -14,7 +14,6 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	Util util;
-	util.configure_new();
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	size_t _len_suffix = _db_suffix.length();

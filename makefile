@@ -748,7 +748,7 @@ dist: clean
 tarball:
 	tar -czvf gstore.tar.gz api tools/*.gz tools/*.tar scripts data \
 		Main Database KVstore Util Query Signature Parser Server StringIndex Trie GRPC \
-		makefile init.conf conf.ini backup.json ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
+		makefile conf.ini backup.json ipAllow.config ipDeny.config slog.properties slog.stdout.properties \
 		README.md LICENSE
  
 APIexample: $(api_cpp) $(api_socket) 

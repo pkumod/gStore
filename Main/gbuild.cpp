@@ -87,7 +87,6 @@ main(int argc, char * argv[])
 		std::string unz_dir_path;
 		std::vector<std::string> zip_files;
 		//check if the db_path is the path of system.nt
-		// util.configure_new();
 		if (_rdf == Util::system_path)
 		{
 			cout<<"You have no rights to access system files"<<endl;

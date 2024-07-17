@@ -163,7 +163,6 @@ int main(int argc, char *argv[])
 		ofp >> system_password;
 		ofp.close();
 
-		util.configure_new();
 		string system_user = util.getConfigureValue("system_username");
 		string res;
 		string postdata;

@@ -472,9 +472,8 @@ public:
 	//NOTICE: this function must be called out of any Database to config the basic settings
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
-	static bool configure();  //read init.conf and set the parameters for this system
-	static bool configure_new(); //read gstore.ini and set the parameters for this system
-	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
+	static bool configure();  //read conf.ini and set the parameters for this system
+	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname, string default_value="");
 	static string getConfigureValue(string keyname);
 	static bool config_setting();
 	// static bool config_advanced();
@@ -528,6 +527,7 @@ public:
 
     //the function of string
     static bool iscontain(const string& _parent,const string& _child);
+	static void string_suffix(string& str, const char suffix);
 
 	//for cpu mem disk
 	static float get_cpu_usage(int pid);

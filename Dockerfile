@@ -71,7 +71,6 @@ COPY --from=builder /usr/src/gstore/.tmp/ /gstore/.tmp/
 COPY --from=builder /usr/src/gstore/Query/ /gstore/Query/
 COPY --from=builder /usr/src/gstore/Database/ /gstore/Database/
 COPY --from=builder /usr/src/gstore/backup.json /gstore/
-COPY --from=builder /usr/src/gstore/init.conf /gstore/
 COPY --from=builder /usr/src/gstore/conf.ini /gstore/
 COPY --from=builder /usr/src/gstore/ipAllow.config /gstore/
 COPY --from=builder /usr/src/gstore/ipDeny.config /gstore/

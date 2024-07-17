@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
 			_db = NULL;
 			Util::init_backuplog();
 			cout << "init backuplog successfully!" << endl;
-			Util::configure_new();
 			string version = Util::getConfigureValue("version");
 			string root_pwd = Util::getConfigureValue("root_password");
 			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
@@ -123,7 +122,6 @@ int main(int argc, char *argv[])
 
 					Util::init_backuplog();
 					cout << "init backuplog successfully!" << endl;
-					Util::configure_new();
 					string version = Util::getConfigureValue("version");
 					string root_pwd = Util::getConfigureValue("root_password");
 					string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";

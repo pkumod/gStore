@@ -24,7 +24,6 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&fun_data_lock, NULL);
     ipWhiteList = std::unique_ptr<IPWhiteList>(new IPWhiteList());
     ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
-    util.configure_new();
 }
 
 APIUtil::~APIUtil()

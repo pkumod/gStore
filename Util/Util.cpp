@@ -16,8 +16,7 @@ using namespace rapidjson;
 //configure() to config the basic options of gStore system
 //==================================================================================================================
 
-//string Util::profile = "../init.conf";
-string Util::profile = "init.conf";
+string Util::profile = "./conf.ini";
 
 map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;
@@ -125,109 +124,94 @@ Util::a_trim(char * szOutput, const char * szInput)
 bool
 Util::configure()
 {
-    const unsigned len = 505;
-    char *buf, *c;
-    char buf_i[len], buf_o[len];
-    FILE *fp = NULL;
-	char keyname[len];
-	char keyval[len];
+    INIParser ini_parser;
+    ini_parser.ReadINI("./conf.ini");
+    // system
+    Util::setGlobalConfig(ini_parser, "system", "version");
+    Util::setGlobalConfig(ini_parser, "system", "db_home", "./");
+    Util::setGlobalConfig(ini_parser, "system", "db_suffix", ".db");
+    Util::setGlobalConfig(ini_parser, "system", "system_path", "data/system/system.nt");
+    Util::setGlobalConfig(ini_parser, "system", "root_username", "root");
+    Util::setGlobalConfig(ini_parser, "system", "root_password", "123456");
+    Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
+    // Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
+    Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
+    Util::system_path = Util::getConfigureValue("system_path");
+    Util::setGlobalConfig(ini_parser, "system", "pfn_file_path", "fun/");
+    Util::setGlobalConfig(ini_parser, "system", "pfn_lib_path", "lib/");
+    // server
+    Util::setGlobalConfig(ini_parser, "server", "default_port");
+    Util::setGlobalConfig(ini_parser, "server", "thread_num");
+    Util::setGlobalConfig(ini_parser, "server", "max_database_num");
+    Util::setGlobalConfig(ini_parser, "server", "max_user_num");
+    Util::setGlobalConfig(ini_parser, "server", "max_output_size");
+    Util::setGlobalConfig(ini_parser, "server", "ip_allow_path");
+    Util::setGlobalConfig(ini_parser, "server", "ip_deny_path");
+    // log
+    Util::setGlobalConfig(ini_parser, "log", "log_mode");
+    Util::setGlobalConfig(ini_parser, "log", "querylog_mode", "1");
+    Util::setGlobalConfig(ini_parser, "log", "querylog_path", "logs/endpoint/");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_mode", "0");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_path", "logs/ipaccess/");
+    Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
+    // backup
+    Util::setGlobalConfig(ini_parser, "backup", "backup_path", "./backups/");
+    Util::setGlobalConfig(ini_parser, "backup", "auto_backup");
+    Util::setGlobalConfig(ini_parser, "backup", "max_backups");
+    Util::setGlobalConfig(ini_parser, "backup", "backup_time");
+    // upload
+    Util::setGlobalConfig(ini_parser, "upload", "upload_path", "./upload/");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages");
+    
+    // create backup_path
+    string temp_str = Util::getConfigureValue("backup_path");
+    Util::string_suffix(temp_str, '/');
+    Util::backup_path = temp_str;
+    Util::global_config["backup_path"] = temp_str;
+    Util::create_dirs(temp_str);
 
-	//initialize the settings
-	Util::global_config["gstore_mode"] = "single";
-	//NOTICE+BETTER+TODO:use macro is better to avoid too many judging on this variable(add a DEBUG macro at the outer)
-	Util::global_config["debug_level"] = "simple";
-	Util::global_config["log_mode"] = "0";
-	Util::global_config["db_home"] = ".";
-	Util::global_config["db_suffix"] = ".db";
-	Util::global_config["buffer_maxium"] = "100";
-	Util::global_config["thread_maxium"] = "1000";
-	//TODO:to be recoverable
-	Util::global_config["operation_logs"] = "true";
+    // create upload_path
+    temp_str = Util::global_config["upload_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["upload_path"] = temp_str;
+    Util::create_dirs(temp_str);
 
-#ifdef DEBUG
-	SLOG_CORE("profile: " << profile);
-#endif
-    if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
+    // create logs path
+    temp_str = Util::global_config["querylog_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["querylog_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    temp_str = Util::global_config["accesslog_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["accesslog_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    temp_str = Util::global_config["queryresult_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["queryresult_path"] = temp_str;
+    Util::create_dirs(temp_str);
+   // init slog
+    string log_mode = Util::getConfigureValue("log_mode");
+    Slog &slog = Slog::getInstance();
+    slog.init(log_mode.c_str());
+    if (slog._logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
     {
-#ifdef DEBUG
-        SLOG_CORE("openfile " + profile + " error " + strerror(errno));
-#endif
-        return false;
+        vector<std::string> headers = {"name", "value"};
+        PrettyPrint pp(headers);
+        std::vector<std::vector<std::string>> rows;
+        for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+        {
+            pp.addRow({it->first, it->second});
+        }
+        stringstream _ss;
+        _ss << "configuration params: " << endl;
+        pp.print(_ss);
+        SLOG_CORE(_ss.str());
     }
-    fseek(fp, 0, SEEK_SET);
-
-    while(!feof(fp) && fgets(buf_i, len, fp) != NULL)
-    {
-		//fprintf(stderr, "buffer: %s\n", buf_i);
-        Util::l_trim(buf_o, buf_i);
-        if(strlen(buf_o) <= 0)
-            continue;
-        buf = NULL;
-        buf = buf_o;
-		if(buf[0] == '#')
-		{
-			continue;
-		}
-		else if(buf[0] == '[') 
-		{
-			continue;
-		} 
-		if((c = (char*)strchr(buf, '=')) == NULL)
-			continue;
-		memset(keyname, 0, sizeof(keyname));
-		sscanf(buf, "%[^=|^ |^\t]", keyname);
-#ifdef DEBUG
-		SLOG_CORE("keyname: " + keyname);
-#endif
-		sscanf(++c, "%[^\n]", keyval);
-		char *keyval_o = (char *)calloc(strlen(keyval) + 1, sizeof(char));
-		if(keyval_o != NULL) 
-		{
-			Util::a_trim(keyval_o, keyval);
-#ifdef DEBUG
-            SLOG_CORE("keyval: " + keyval_o);
-#endif
-			if(keyval_o && strlen(keyval_o) > 0)
-			{
-				//strcpy(keyval, keyval_o);
-                const char* hashPos = strchr(keyval_o, '#');
-                if (hashPos != NULL)
-                {   
-                    size_t len = hashPos - keyval_o;
-                    char *p0 = new char[len + 1];
-                    char *p1 = new char[len + 1];
-                    strncpy(p0, keyval_o, len);
-                    Util::a_trim(p1, p0);
-				    global_config[string(keyname)] = string(p1);
-                    delete p0;
-                    delete p1;
-                }
-                else
-                {
-                    global_config[string(keyname)] = string(keyval_o);
-                }
-			}
-			xfree(keyval_o);
-		}
-	}
-
-    fclose(fp);
-	//display all settings here
-	/*cout<<"the current settings are as below: "<<endl;
-	cout<<"key : value"<<endl;
-	cout<<"------------------------------------------------------------"<<endl;
-	for(map<string, string>::iterator it = global_config.begin(); it != global_config.end(); ++it)
-	{
-		cout<<it->first<<" : "<<it->second<<endl;
-	}
-	cout<<endl;*/
-    if (Util::dir_exist(Util::global_config["db_home"]) == false)
-    {
-        Util::create_dirs(Util::global_config["db_home"]);
-    }
-
-	return true;
-	//return Util::config_setting() && Util::config_debug() && Util::config_advanced();
+    return true;
 }
 
 // bool
@@ -262,11 +246,13 @@ Util::configure()
 // 	return true;
 // }
 
-bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
+bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname, string default_value)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
         Util::global_config[keyname] = replace_all(value,"\"","");
+    else
+        Util::global_config[keyname] = default_value;
     return true;
 }
 
@@ -278,63 +264,6 @@ string Util::getConfigureValue(string keyname)
 		    return iter->second;
 	}
 	return "";
-}
-
-bool Util::configure_new()
-{
-    INIParser ini_parser;
-    ini_parser.ReadINI("conf.ini");
-    /*string value=ini_parser.GetValue("ghttp", "max_out_limit");
-    Util::global_config["max_out_limit"] = value;*/
-    Util::setGlobalConfig(ini_parser, "ghttp", "default_port");
-    Util::setGlobalConfig(ini_parser, "ghttp", "thread_num");
-    Util::setGlobalConfig(ini_parser, "ghttp", "max_database_num");
-    Util::setGlobalConfig(ini_parser, "ghttp", "max_user_num");
-    Util::setGlobalConfig(ini_parser, "ghttp", "max_output_size");
-    Util::setGlobalConfig(ini_parser, "ghttp", "querylog_mode");
-    Util::setGlobalConfig(ini_parser, "ghttp", "querylog_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "accesslog_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_log");
-    Util::setGlobalConfig(ini_parser, "ghttp", "queryresult_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "pfn_file_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "pfn_lib_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "ip");
-    Util::setGlobalConfig(ini_parser, "ghttp", "ip_allow_path");
-    Util::setGlobalConfig(ini_parser, "ghttp", "ip_deny_path");
-    Util::setGlobalConfig(ini_parser, "system", "version");
-    Util::setGlobalConfig(ini_parser, "system", "log_mode");
-    Util::setGlobalConfig(ini_parser, "system", "licensetype");
-    Util::setGlobalConfig(ini_parser, "system", "root_username");
-    Util::setGlobalConfig(ini_parser, "system", "root_password");
-    Util::setGlobalConfig(ini_parser, "system", "system_username");
-    Util::setGlobalConfig(ini_parser, "system", "backup_path");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_path");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
-    Util::setGlobalConfig(ini_parser, "backup", "max_backups");
-    if (Util::getConfigureValue("backup_path").empty() == false)
-    {
-        Util::backup_path = Util::getConfigureValue("backup_path");
-    }
-   // init slog
-    string log_mode = Util::getConfigureValue("log_mode");
-    Slog &slog = Slog::getInstance();
-    slog.init(log_mode.c_str());
-    if (Slog::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
-    {
-        vector<std::string> headers = {"name", "value"};
-        PrettyPrint pp(headers);
-        std::vector<std::vector<std::string>> rows;
-        for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
-        {
-            pp.addRow({it->first, it->second});
-        }
-        stringstream _ss;
-        _ss << "configuration params: " << endl;
-        pp.print(_ss);
-        SLOG_CORE(_ss.str());
-    }
-    return true;
 }
 
 bool
@@ -2929,7 +2858,7 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     pp.print(ss);
     if (Slog::_logger.getAllAppenders().size() == 0)
     {
-        Util::configure_new();
+        Util::configure();
     }
     SLOG_INFO(ss.str());
 }
@@ -3161,4 +3090,12 @@ float Util::get_memory_usage(int pid)
     #endif
     // return MB
     return available_disk>>20;
+}
+
+void Util::string_suffix(string& str, const char suffix)
+{
+    if (str[str.length()-1] != suffix)
+    {
+        str.push_back(suffix);
+    }
 }

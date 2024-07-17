@@ -8,6 +8,7 @@
  */
 
 #include "Slog.h"
+#include <iostream>
 
 log4cplus::Logger Slog::_logger = log4cplus::Logger::getRoot();
 
@@ -28,12 +29,15 @@ Slog& Slog::getInstance(){
 
 void Slog::init(const char* log_mode)
 {
-	if (std::string(log_mode) == "0")
+	std::ifstream log_config_file(log_mode);
+	if (log_config_file.good())
 	{
-		log4cplus::PropertyConfigurator::doConfigure(LOG4CPLUS_TEXT("./slog.stdout.properties"));
+		log_config_file.close();
+		log4cplus::PropertyConfigurator::doConfigure(LOG4CPLUS_TEXT(log_mode));
 	}
 	else
 	{
-		log4cplus::PropertyConfigurator::doConfigure(LOG4CPLUS_TEXT("./slog.properties"));
+		std::cout << "log config file not exist, use default config" << std::endl;
+		log4cplus::BasicConfigurator::doConfigure();
 	}
 }

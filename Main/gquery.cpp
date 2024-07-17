@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	// chdir(dirname(argv[0]));
 	//#ifdef DEBUG
 	Util util;
-	util.configure_new();
 	//#endif
 	// Log.init("slog.properties");
 	string _db_home = util.getConfigureValue("db_home");
