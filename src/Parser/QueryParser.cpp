@@ -727,6 +727,24 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				curr_node.val = root->getText();
 			}
 		}
+		std::string node_val = curr_node.val;
+		if (!node_val.empty())
+		{
+			size_t sufIdx = node_val.find("^^");
+			if (sufIdx != string::npos)
+			{
+				std::string suffix = node_val.substr(sufIdx + 2);
+				std::string val = node_val.substr(1, sufIdx - 2);
+				replacePrefix(suffix);
+				node_val = '"' + val + "\"^^" + suffix;
+				curr_node.val = node_val;
+			}
+			else
+			{
+				replacePrefix(node_val);
+				curr_node.val = node_val;
+			}
+		}
 	}
 	else if (root->children.size() == 2)
 	{
