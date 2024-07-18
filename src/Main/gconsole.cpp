@@ -1123,14 +1123,14 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 #endif //_GCONSOLE_SHOW_SYSDB_QUERY
 
 	vector<int> retv;
-    cout<<"begin to query system:"<<endl;
+    // cout<<"begin to query system:"<<endl;
 	// redirect stdout to bin/.gconsole_tmp_out: for silencing load&query output of system.db
 	{
 		RedirectStdout silence("bin/.gconsole_tmp_out");
 
 		Database system_db("system");
 		system_db.load();
-        cout<<"sparql1:"<<query<<endl;
+        // cout<<"sparql1:"<<query<<endl;
 		stringstream ss(query);
 		string sparql;
 		int has_success_update = 0;
@@ -1142,7 +1142,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 			would first copy elements to new mem then call DESTRUCTOR on previous elements,
 			which would release all pointers of destructing objects;
 			and copy assignment operator only carry out LOW copy */
-			cout<<"sparql2:"<<sparql<<endl;
+			// cout<<"sparql2:"<<sparql<<endl;
 			int ret = system_db.query(sparql, _rs[sz]);
 			cout << "System db query executed. The query is: " << query <<",the result is " <<ret<< endl;
 			if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
@@ -1175,7 +1175,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 
 	// remove tmpout file //TODO: check this return value
 	// system("rm -rf bin/.gconsole_tmp_out");
-	//Util::remove_path("bin/.gconsole_tmp_out");
+	Util::remove_path("bin/.gconsole_tmp_out");
 
 	return std::move(retv);
 }
@@ -1915,7 +1915,7 @@ int showdbs_handler(const vector<string> &args)
 		sparql = "SELECT ?dbname ?usr WHERE { " + addstr + "?dbname <built_by> ?usr. } }; SELECT ?dbname ?stat WHERE { " + addstr + "?dbname <database_status> ?stat. } };";
 	}
 	vector<ResultSet> rsv(2);
-	cout<<"sparql:"<<sparql<<endl;
+
 	vector<int> retv = silence_sysdb_query(sparql, rsv);
 	if (retv.size() != 2 || retv[0] || retv[1])
 	{
@@ -1926,7 +1926,7 @@ int showdbs_handler(const vector<string> &args)
     
 	int sz = rsv[1].ansNum;
 	string **ans = rsv[1].answer;
-	cout<<sz<<","<<ans<<endl;
+	// cout<<sz<<","<<ans<<endl;
 	for (int i = 0; i < sz; ++i)
 	{
 		db2stat[ans[i][0]] = Util::replace_all(ans[i][1], "\"", "");
