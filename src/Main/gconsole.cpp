@@ -1142,9 +1142,8 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 			would first copy elements to new mem then call DESTRUCTOR on previous elements,
 			which would release all pointers of destructing objects;
 			and copy assignment operator only carry out LOW copy */
-			ResultSet rs_tmp;
 			cout<<"sparql2:"<<sparql<<endl;
-			int ret = system_db.query(sparql, rs_tmp);
+			int ret = system_db.query(sparql, _rs[sz]);
 			cout << "System db query executed. The query is: " << query <<",the result is " <<ret<< endl;
 			if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
 			{
@@ -1160,7 +1159,6 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 				retv.push_back(0);
 			}
 			++sz;
-            rs_tmp.~ResultSet();
 			/*NOTE: this would fail:
 			ResultSet rs; //would call destructor after this turn while scope
 			_rs.push_back(rs); //call copy assignment operator: LOW copy
