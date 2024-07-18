@@ -373,7 +373,7 @@ string StepOperation::StepEffect::GetString() const {
 			oss << effect_pointer_.two_table->GetString();
 			break;
 		case OpRangeType::NullRange:
-			cout << "Error in StepOperation::StepEffect::GetString(). NullRange Error!" << endl;
+      SLOG_ERROR("Error in StepOperation::StepEffect::GetString(). NullRange Error!");
 			break;
 	}
 	return oss.str();

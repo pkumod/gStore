@@ -42,13 +42,13 @@ IVBlockManager::IVBlockManager(string& _filename, string& _mode, unsigned _keynu
 	}
 	else
 	{
-		cout << "Error in BLockManager: Invalid Mode" << endl;
+		SLOG_ERROR("Error in BLockManager: Invalid Mode");
 		return;
 	}
 
 	if (FreeBlockList == NULL || ValueFile == NULL)
 	{
-		cout << "Error in IVBlockManager: Open error" << endl;
+		SLOG_ERROR("Error in IVBlockManager: Open error");
 		return;
 	}
 
@@ -147,7 +147,7 @@ IVBlockManager::ReadValue(unsigned _blk_index, char *&_str, unsigned long&_len)
 
 	if (_str == NULL)
 	{
-		cout << "IVBlockManager Error: fail when new" << endl;
+		SLOG_ERROR("IVBlockManager Error: fail when new");
 		return false;
 	}
 
@@ -297,7 +297,7 @@ IVBlockManager::WriteValue(const char *_str, const unsigned long _len)
 
 	if (len_left > 0)
 	{
-		cout << "Get Where To Write error: space is not enough" << endl;
+		SLOG_ERROR("Get Where To Write error: space is not enough");
 		return 0;
 	}
 

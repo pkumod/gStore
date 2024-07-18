@@ -47,7 +47,7 @@ SIIntlNode::GetChild(int _index) const
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)  //num keys, num+1 childs
 	{
-		std::cout << "error SIIntlNode::GetChild" << std::endl;
+		SLOG_ERROR("error SIIntlNode::GetChild");
 		return nullptr;
 	}
 	else

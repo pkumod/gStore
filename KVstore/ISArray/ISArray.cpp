@@ -64,7 +64,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 	
 		if (BM == NULL || array == NULL || ISfile == NULL)
 		{
-			cout << "Initialize ISArray ERROR" << endl;
+			SLOG_ERROR("Initialize ISArray ERROR");
 		}
 	}
 	else // open mode
@@ -80,14 +80,14 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		BM = new ISBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
-			cout << _filename << ": Fail to initialize ISBlockManager" << endl;
+			SLOG_ERROR(_filename << ": Fail to initialize ISBlockManager");
 			exit(0);
 		}
 
 		array = new ISEntry [CurEntryNum];
 		if (array == NULL)
 		{
-			cout << _filename << ": Fail to malloc enough space in main memory for array." << endl;
+			SLOG_ERROR(_filename << ": Fail to malloc enough space in main memory for array.");
 			exit(0);
 		}
 		for(unsigned i = 0; i < CurEntryNum; i++)
@@ -233,7 +233,7 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	{
 		if (!SwapOut())
 		{
-			cout << "Error in SwapOut: CurCacheSize is " << CurCacheSize << " , MaxSize is " << MAX_CACHE_SIZE << " , need size " << _len << endl;
+			SLOG_ERROR("Error in SwapOut: CurCacheSize is " << CurCacheSize << " , MaxSize is " << MAX_CACHE_SIZE << " , need size " << _len);
 			// false means cache is empty
 			exit(0);
 			//	CurCacheSize = 0;
@@ -332,8 +332,8 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	
 	if (_key >= ISArray::MAX_KEY_NUM)
 	{
-		cout << _key << ' ' << MAX_KEY_NUM << endl;
-		cout << "ISArray insert error: Key is bigger than MAX_KEY_NUM" << endl;
+		SLOG_ERROR(_key << ' ' << MAX_KEY_NUM);
+		SLOG_ERROR("ISArray insert error: Key is bigger than MAX_KEY_NUM");
 		this->AccessLock.unlock();
 		return false;
 	}
@@ -353,7 +353,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		//maybe using realloc and then initialize manually
 		if (newp == NULL)
 		{
-			cout << "ISArray insert error: main memory full" << endl;
+			SLOG_ERROR("ISArray insert error: main memory full");
 			this->AccessLock.unlock();
 			return false;
 		}
