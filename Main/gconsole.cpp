@@ -1121,7 +1121,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 		string sparql;
 		int has_success_update = 0;
 		int sz = 0;
-		while (getline(ss, sparql, ';'))
+		while (sz < _rs.size() && getline(ss, sparql, ';'))
 		{
 			/* vector<ResultSet> grow step by step is dangerous(eg: _rs.resize(sz + 1)):
 			when reallocating is needed,
@@ -2510,7 +2510,7 @@ int setpswd_handler(const vector<string> &args)
 
 	// write new_pswd(for tar_usr) to sysdb: delete then insert
 	string query = "DELETE WHERE { <" + tar_usr + "> <has_password> ?pswd. }; INSERT DATA { <" + tar_usr + "> <has_password> \"" + new_pswd + "\". }";
-	vector<ResultSet> rs;
+	vector<ResultSet> rs(2);
 	vector<int> re = silence_sysdb_query(query, rs);
 	if (re.size() != 2 || re[0] || re[1])
 	{
