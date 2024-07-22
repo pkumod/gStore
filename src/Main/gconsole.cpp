@@ -2800,9 +2800,9 @@ int showusrs_handler(const vector<string> &args)
 		return -1;
 	}
 
-	cout << root_username << "\n"
-		 << string(root_username.size(), '-') << "\nall privilege on all db\n"
-		 << endl;
+	std::vector<std::string> headers = {"user", "privilege"};
+	std::vector<std::vector<std::string>> rows;
+	rows.push_back({root_username, "all privilege on all db"});
 
 	// print all usr
 	ResultSet allusr_rs;
@@ -2819,8 +2819,6 @@ int showusrs_handler(const vector<string> &args)
 
 		if (tar_usr == root_username)
 			continue;
-		cout << tar_usr << "\n"
-			 << string(tar_usr.size(), '-') << "\n";
 
 		// print all db which tar_usr has some priv on
 		ResultSet rs;
@@ -2831,29 +2829,30 @@ int showusrs_handler(const vector<string> &args)
 			continue;
 		}
 
-		// cout << "rs.ansNum: " << rs.ansNum << endl;
+		std::string privilege;
 		for (unsigned j = 0; j < rs.ansNum; ++j)
 		{
-			string db_name = rs.answer[j][0];
-			db_name = db_name.substr(1, db_name.size() - 2); // strip <>
+			std::string db_name = rs.answer[j][0];
+			db_name = db_name.substr(1, db_name.size() - 2);
+			privilege += db_name + ": ";
 			unsigned priv = get_priv(tar_usr, db_name);
-			cout << db_name << ": ";
 			if (priv == -1u)
 			{
-				cout << "<fetch privilege from sysdb failed>" << endl;
+				privilege = "<fetch privilege from sysdb failed>";
 				continue;
 			}
 			for (int i = 0; i < PRIVILEGE_NUM; ++i)
 			{
 				if (priv & 1)
 				{
-					cout << priv_offset2name[i] << " ";
+					privilege += priv_offset2name[i];
+					privilege += " ";
 				}
 				priv = (priv >> 1);
 			}
-			cout << endl;
 		}
-		cout << endl;
+		rows.push_back({tar_usr, privilege});
 	}
+	Util::printConsole(headers, rows);
 	return 0;
 }
