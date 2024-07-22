@@ -85,11 +85,14 @@ main(int argc, char * argv[])
 				_db_backup_path.push_back('/');
 			}
 			
+			std::vector<std::string> headers = { "Backup Path" };
+			std::vector<std::vector<std::string>> rows;
 			Util::dir_files(_db_backup_path, db_name, file_list);
 			for (size_t i = 0; i < file_list.size(); i++)
 			{
-				cout << _db_backup_path << file_list[i] << endl; 
+				rows.push_back({ _db_backup_path + file_list[i] });
 			}
+			util.printConsole(headers, rows);
 			return 0;
 		}
 		
@@ -155,7 +158,7 @@ main(int argc, char * argv[])
 			}
 			string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>." + "<" + db_name + "> <built_time> \"" + time + "\".}";
 			ResultSet _rs;
-			FILE *ofp = stdout;
+			FILE *ofp = nullptr;
 			string msg;
 			int ret = system_db.query(sparql, _rs, ofp);
 
