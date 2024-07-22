@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
 		ResultSet ask_rs;
-		FILE *ask_ofp = stdout;
+		FILE *ask_ofp = nullptr;
 		system_db.query(sparql, ask_rs, ask_ofp);
 		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
@@ -133,7 +133,8 @@ int main(int argc, char *argv[])
 			system(cmd.c_str());
 		}
 		long tv_end = Util::get_cur_time();
-		cout << "Used " << (tv_end - tv_begin) << " ms" << endl;
+		cout << "Backup path: " << backup_path + "/" + new_folder << endl;
+		cout << "Backup successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
 		return 0;
 	}
 }
