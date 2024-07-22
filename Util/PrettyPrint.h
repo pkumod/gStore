@@ -156,8 +156,7 @@ protected:
   unsigned int getUtf8CHNum(const std::string& str)
   {
       unsigned int num = 0;
-      int i = 0;
-      for (int i = 0; i < str.size(); i++)
+      for (size_t i = 0; i < str.size(); i++)
       {
         if ((unsigned char)str[i] > 0x80)  
         {
