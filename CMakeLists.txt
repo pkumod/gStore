@@ -68,7 +68,7 @@ add_custom_target( "clean_pre" DEPENDS CLEAN )
 #make test
 add_custom_command( OUTPUT TEST
     COMMAND echo "basic build/query/add/sub/drop test......"
-	COMMAND bash scripts/test/basic_test.sh
+	COMMAND bash scripts/test/test.sh "."
 	COMMAND echo "parser test......"
 	COMMAND bash scripts/test/parser_test.sh
     COMMAND echo "repeatedly insertion/deletion test num:20......"
