@@ -508,6 +508,7 @@ int enter_pswd(string prompt)
 	while (wrong_pswd_cnt < MAX_WRONG_PSWD_TIMES)
 	{
 		cout << prompt;
+		cout.flush();
 		char c;
 		while ((c = getchar()) != -1 && c != '\n' && c != '\r')
 		{
@@ -1128,7 +1129,7 @@ vector<int> silence_sysdb_query(const string &query, vector<ResultSet> &_rs)
 			which would release all pointers of destructing objects;
 			and copy assignment operator only carry out LOW copy */
 			// cout<<"sparql2:"<<sparql<<endl;
-			int ret = system_db.query(sparql, _rs[sz]);
+			int ret = system_db.query(sparql, _rs[sz], nullptr);
 			cout << "System db query executed. The query is: " << query <<",the result is " <<ret<< endl;
 			if ((ret <= -100 && ret != -100) || (ret > -100 && ret < 0)) // select query failed or update query failed
 			{
@@ -2068,7 +2069,7 @@ int create_handler(const vector<string> &args)
 		_db.save();
 		Util::remove_path(unz_dir_path);
 	}
-	cout << "Database " << db_name << "created successfully. " << endl;
+	cout << "Database " << db_name << " created successfully. " << endl;
 
 	// if (usrname == root_username)
 	// {
@@ -2224,7 +2225,7 @@ int restore_handler(const vector<string> &args)
 	bool is_current_db = 0;
 	if (current_database && db_name == current_database->getName())
 	{
-		cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it." << endl;
+		SLOG_DEBUG("WARNNING: The database you restored just now is current database(" << db_name << "), will restore then reload it.");
 		delete current_database;
 		// current_database->unload(); // destructor of Database would call unload()
 		current_database = 0;
@@ -2313,8 +2314,8 @@ int restore_handler(const vector<string> &args)
 		current_database = new Database(db_name);
 		if (current_database->load() == 0)
 		{
-			cout << "WARNNING: The database you restored just now is current database(" << db_name << "), and we tried to reload it but failed.\nWe suggest type `USE " << db_name << "` command to reload current database." << std::endl;
 			cout << "Database(current database) " << db_name << " restored successfully, but reload failed." << endl;
+			cout << "suggest type `USE " << db_name << "` command to reload current database again." << std::endl;
 			return -1;
 		}
 	}
@@ -2596,7 +2597,7 @@ int setpriv_handler(const vector<string> &args)
 	system_db.load();
 	string sparql = "ASK WHERE{<" + db + "> <database_status> \"already_built\".}";
 	ResultSet ask_rs;
-	FILE* ask_ofp = stdout;
+	FILE* ask_ofp = nullptr;
 	system_db.query(sparql, ask_rs, ask_ofp);
 	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 	{
