@@ -265,6 +265,17 @@ int main(int argc, char **argv)
 	product_name = util.getConfigureValue("product_name");
 	product_name_lower = product_name;
 	product_name_lower[0] = std::tolower(product_name_lower[0]);
+
+	string _db_home = util.getConfigureValue("db_home");
+	string _db_suffix = util.getConfigureValue("db_suffix");
+	string system_db_name = "system";
+	string system_db_path = _db_home + "/" + system_db_name + _db_suffix;
+    if (Util::dir_exist(system_db_path) == false)
+    {
+        cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
+        return 0;
+    }
+	
 	read_pswd(root_username, root_password);
 
 	if (argc == 2)
