@@ -3334,7 +3334,7 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 
 		if (_triple_exist)
 		{
-			SLOG_ERROR("this triple already exist");
+			SLOG_WARN("this triple already exist");
 			return false;
 		}
 		else

@@ -2023,7 +2023,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			//_db.unload();
 			//_db.save();
 			ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行", _db_home, _db_suffix);
-			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,ret_val,_db_home, _db_suffix);
+			// ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,ret_val,_db_home, _db_suffix,"ok");
 			sendResponseMsg(doc, operation, request, response);
 			return;
 			// rapidjson::StringBuffer buffer;
@@ -2124,8 +2124,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			doc.AddMember("AnsNum",ret_val,allocator);
 			
             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
-			int effectNum=0-ret_val;
-			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix);
+			// int effectNum=0-ret_val;
+			// ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,"ok");
 		
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
@@ -2216,6 +2216,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			Document doc;
 			bool update_flag_bool=true;
 			doc.SetObject();
+			int effectNum=0;
+			string checkMsg="ok";
 			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
@@ -2254,6 +2256,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			int ret_val;
 			FILE *output = NULL;
 			string sparql = resultInfo.check_sparql;
+			
 			try
 			{
 				// SLOG_DEBUG("begin query...");
@@ -2266,6 +2269,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 				string content = exception_msg;
 				apiUtil->unlock_database(db_name);
 				sendResponseMsg(1005, content, operation, request, response);
+			
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			catch (const std::runtime_error &e2)
@@ -2273,6 +2278,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 				string content = e2.what();
 				apiUtil->unlock_database(db_name);
 				sendResponseMsg(1005, content, operation, request, response);
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			catch (...)
@@ -2280,6 +2286,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 				string content = "unknow error";
 				apiUtil->unlock_database(db_name);
 				sendResponseMsg(1005, content, operation, request, response);
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			
@@ -2289,11 +2296,16 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			Document doc2;
 			doc2.SetObject();
 			doc2.Parse(json.c_str());
+		
 			if(doc2.HasParseError())
 			{
-				doc.AddMember("effectNum","query result is not json format!",allocator);
+				checkMsg="query result is not json format!";
+				effectNum=0;
+				doc.AddMember("effectNum",effectNum,allocator);
+				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
+				
 			}
-			if(doc2.HasMember("results"))
+			else if(doc2.HasMember("results"))
 			{
 				Value results=doc2["results"].GetObject();
 				if(results.HasMember("bindings"))
@@ -2305,12 +2317,18 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 						if(resultobj.HasMember("value"))
 						{
 							string result_value=resultobj["value"].GetString();
-							// int result_value_int=Util::string2int(result_value);
-							doc.AddMember("effectNum",StringRef(result_value.c_str()),allocator);
+						
+							effectNum=Util::string2int(result_value);
+							doc.AddMember("effectNum",effectNum,allocator);
+							
+							
 						}
 						else
 						{
-							doc.AddMember("effectNum","0",allocator);
+							// effectNum="0";
+							effectNum=0;
+							doc.AddMember("effectNum",effectNum,allocator);
+
 						}
 					}
 					else
@@ -2318,13 +2336,14 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 						doc.AddMember("effectNum","0",allocator);
 					}
 				}
+				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
 			}
             // cout << "ans:" << ret_val << endl;
 		
 			
             // ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
 			// int effectNum=0-ret_val;
-			// ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix);
+            ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,checkMsg);
 		
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);

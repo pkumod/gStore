@@ -41,7 +41,7 @@ public:
     static string updateReasonRuleInfo(string rulename,string db_name,Document ruleinfo,string db_home,string db_suffix);
     static string updateReasonRuleStatus(string rulename,string db_name,string status,string db_home,string db_suffix);
     static ReasonSparql disableReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    static string updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix);
+    static string updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix,string checkResultMsg);
     static ReasonSparql getCheckSparql(string rulename,string db_name,string db_home,string db_suffix);
 };
 

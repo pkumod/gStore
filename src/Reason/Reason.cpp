@@ -186,7 +186,7 @@ ReasonSparql ReasonHelper::compileReasonRule(string rulename, string db_name,str
 
       if (conditions_length > 1 && i < conditions_length-1)
       {
-        if (logic == 1)
+        if (logic == 0)
         {
           subwhere = subwhere + " union ";
         }
@@ -409,7 +409,7 @@ string ReasonHelper::updateReasonRuleStatus(string rulename,string db_name,strin
 }
 
 
-string ReasonHelper::updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix)
+string ReasonHelper::updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix,string checkResultMsg)
 {
   string result="";
   string _db_path = db_home + db_name + db_suffix;
@@ -435,14 +435,22 @@ string ReasonHelper::updateReasonRuleEffectNum(string rulename,string db_name,in
     Document::AllocatorType &allocator = doc.GetAllocator();
     if (doc.HasMember("effectNum"))
     {
-      int old_num=doc["effectNum"].GetInt();
-      effectNum=old_num+effectNum;
+      // int old_num=doc["effectNum"].GetInt();
+      // effectNum=old_num+effectNum;
        doc["effectNum"].SetInt(effectNum);
       
     }
     else{
       doc.AddMember("effectNum",effectNum,allocator);
     }
+    if(doc.HasMember("checkResult"))
+    {
+      doc["checkResult"].SetString(StringRef(checkResultMsg.c_str()));
+    }
+    else
+   {
+     doc.AddMember("checkResult",StringRef(checkResultMsg.c_str()),allocator);
+   }
      Writer<StringBuffer> writer(buffer);
      doc.Accept(writer);
      std::ofstream file(rulefilepath2);
