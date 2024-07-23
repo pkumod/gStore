@@ -2,15 +2,6 @@
 
 #FIND TRACE
 
-first_line=$(head -n 1 ./conf/slog.properties)
-log_level=$(echo $first_line | sed -n 's/^log4cplus.rootLogger=\([^,]*\).*/\1/p')
-echo "Log level: $log_level"
-if [ "$log_level" != "TRACE" ]; then
-    echo "Log level is not TRACE, exiting script..."
-    exit 1
-    
-fi
-
 #set -v 
   
 #test

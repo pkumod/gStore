@@ -1,8 +1,23 @@
 #!/bin/bash
 
 # go to gstore dir
+if $0 != '.'
+then
+    cd ../../
+fi
+
+log_mode=$(grep -m 1 'log_mode=' ./conf/conf.ini)
+if [ ${log_mode:9:${#log_mode}-9} = '"./conf/slog.properties"' ]
+then
+	first_line=$(head -n 1 ./conf/slog.properties)
+	log_level=$(echo $first_line | sed -n 's/^log4cplus.rootLogger=\([^,]*\).*/\1/p')
+	if [ "$log_level" != "TRACE" ]; then
+		echo "please set "log4cplus.rootLogger=TRACE" in the slog.properties ."
+		exit
+	fi
+fi
+
 # basic test
-cd ../../
 echo "basic build/query/add/sub/drop test start......"
 bash scripts/test/basic_test.sh
 echo "basic build/query/add/sub/drop test end"
