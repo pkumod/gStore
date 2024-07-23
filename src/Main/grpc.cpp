@@ -3862,7 +3862,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			}
 			
             // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-            cout << "ans:" << ret_val << endl;
+            //cout << "ans:" << ret_val << endl;
 			doc.AddMember("AnsNum",ret_val,allocator);
 			
           
@@ -3949,11 +3949,13 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 		}
 		else if (type == "8")
 		{
-			operation = "statisticsEffectNum";
+			operation = "checkReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::getCheckSparql(rulename,db_name,_db_home,_db_suffix);
 			Document doc;
 			doc.SetObject();
+			int effectNum=0;
+			string checkMsg="ok";
 			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
@@ -4005,6 +4007,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				string content = exception_msg;
 				apiUtil->unlock_database(db_name);
 				response->Error(StatusOperationFailed,content);
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			catch (const std::runtime_error &e2)
@@ -4012,6 +4015,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				string content = e2.what();
 				apiUtil->unlock_database(db_name);
 				response->Error(StatusOperationFailed,content);
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			catch (...)
@@ -4019,11 +4023,12 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				string content = "unknow error";
 				apiUtil->unlock_database(db_name);
 				response->Error(StatusOperationFailed,content);
+				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
 			
             // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-            cout << "ans:" << ret_val << endl;
+           // cout << "ans:" << ret_val << endl;
 			//doc.AddMember("AnsNum",ret_val,allocator);
 			string json=rs.to_JSON();
             //cout << "ans:" << ret_val << endl;
@@ -4034,7 +4039,10 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			doc2.Parse(json.c_str());
 			if(doc2.HasParseError())
 			{
-				doc.AddMember("effectNum","query result is not json format!",allocator);
+				checkMsg="query result is not json format!";
+				effectNum=0;
+				doc.AddMember("effectNum",effectNum,allocator);
+				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
 			}
 			if(doc2.HasMember("results"))
 			{
@@ -4049,24 +4057,30 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 						{
 							string result_value=resultobj["value"].GetString();
 							// int result_value_int=Util::string2int(result_value);
-							doc.AddMember("effectNum",StringRef(result_value.c_str()),allocator);
+							effectNum=Util::string2int(result_value);
+							doc.AddMember("effectNum",effectNum,allocator);
 						}
 						else
 						{
-							doc.AddMember("effectNum","0",allocator);
+							effectNum=0;
+						    doc.AddMember("effectNum",effectNum,allocator);
 						}
 					}
 					else
 					{
-						doc.AddMember("effectNum","0",allocator);
+						effectNum=0;
+						doc.AddMember("effectNum",effectNum,allocator);
 					}
 				}
+				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
 			}
+			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,checkMsg);
+		
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
 			current_database->save();
 			apiUtil->unlock_database(db_name);
-             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已校验",_db_home,_db_suffix);
 		      response->Json(doc);
 			}
 		}

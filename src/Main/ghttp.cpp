@@ -1952,7 +1952,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 				sendResponseMsg(1005, resultInfo.error_message, operation, request, response);
 			    return;
 			}
-			SLOG_DEBUG("insert_sparql:"+resultInfo.insert_sparql);
+			//SLOG_DEBUG("insert_sparql:"+resultInfo.insert_sparql);
 			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
 			if(apiUtil->check_db_exist(db_name)==false)
 			{
@@ -2120,7 +2120,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			}
 			
             // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-            cout << "ans:" << ret_val << endl;
+            //cout << "ans:" << ret_val << endl;
 			doc.AddMember("AnsNum",ret_val,allocator);
 			
             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
@@ -2209,7 +2209,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 		}
 		else if (typeint == 8)
 		{
-			operation = "statisticsEffectNum";
+			operation = "checkReasonRule";
 			string rulename=document["rulename"].GetString();
 			string username=document["username"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::getCheckSparql(rulename,db_name,_db_home,_db_suffix);
@@ -2333,7 +2333,8 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 					}
 					else
 					{
-						doc.AddMember("effectNum","0",allocator);
+						effectNum=0;
+						doc.AddMember("effectNum",effectNum,allocator);
 					}
 				}
 				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
@@ -2341,7 +2342,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
             // cout << "ans:" << ret_val << endl;
 		
 			
-            // ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已校验",_db_home,_db_suffix);
 			// int effectNum=0-ret_val;
             ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,checkMsg);
 		
