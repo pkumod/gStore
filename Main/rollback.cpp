@@ -6,33 +6,6 @@
 using namespace std;
 using namespace rapidjson;
 
-const string USERNAME = "root";
-
-int get_all_folders(string path, string folder_name, vector<string> &folders)
-{
-    DIR *dp = NULL;
-
-    dp = opendir(path.c_str());
-    if (!dp) {
-        fprintf(stderr, "opendir: %s\n", strerror(errno));
-        return -1;
-    }
-
-    struct dirent *dirp;
-    while ((dirp = readdir(dp))) {
-        if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
-            continue;
-        string folder = dirp->d_name;
-        if (folder.find(folder_name.c_str()) != string::npos)
-        {
-            folders.push_back(folder);
-        }
-    }
-    closedir(dp);
-
-    return 0;
-}
-
 string undo_sparql(string line)
 {
     string undo_sparql;
@@ -83,32 +56,44 @@ int gc_check(GstoreConnector &gc, string _type, string _port, string &res)
     return ret;
 }
 
-int gc_unload(GstoreConnector &gc, string _type, string _port, string _pwd, string _db_name, string &res)
+bool gc_load_status(GstoreConnector &gc, string _type, string _port, string _username, string _pwd, string _db_name)
 {
     string strUrl = gc_getUrl(_type, _port);
-    std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + _db_name + "\", \"username\": \"" + USERNAME + "\", \"password\": \"" + _pwd + "\"}";
+    std::string strPost = "{\"operation\": \"show\", \"username\": \"" + _username + "\", \"password\": \"" + _pwd + "\"}";
+    string res = "";
     int ret = gc.Post(strUrl, strPost, res);
-    // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
-    return ret;
+    Document document;
+    document.SetObject();
+    document.Parse(res.c_str());
+    if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+    {
+        Document::Array array = document["ResponseBody"].GetArray();
+        for (int i = 0; i < array.Size(); i++)
+        {   
+            string db_name = array[i]["database"].GetString();
+            string db_status = array[i]["status"].GetString();
+            SLOG_DEBUG("database: "<< db_name << ", status: " << db_status);
+            if (db_name == _db_name)
+            {
+                if (db_status == "loaded")
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+    return false;
 }
 
 int
 main(int argc, char * argv[])
 {
-//#ifdef DEBUG
 	Util util;
-//#endif= 
     fstream ofp;
-    // ofp.open("./system.db/port.txt", ios::in);
-    // int ch = ofp.get();
-    // if(ofp.eof()){
-    //     cout << "ghttp is not running!" << endl;
-    //     return 0;
-    // }
-    // ofp.close();
     string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
-    string _default_backup_path = util.backup_path;
+    string _default_backup_path = util.getConfigureValue("backup_path");
+    string _root_name = util.getConfigureValue("root_username");
 	size_t _len_suffix = _db_suffix.length();
     string db_name, backup_date, backup_time, restore_time;
     if (argc < 2 || (2 < argc && argc < 7))
@@ -159,10 +144,9 @@ main(int argc, char * argv[])
 
     }
 
-    cout << "argc: " << argc << endl;
-    cout << "DB_store: " << db_name << endl;
-    cout << "Restore Point(date): " << backup_date << endl;
-    cout << "Restore Point(time): " << backup_time << endl;
+    SLOG_INFO("Database Name: " + db_name);
+    SLOG_INFO("Restore Point(date): " + backup_date);
+    SLOG_INFO("Restore Point(time): " + backup_time);
     
     // check date format
     std::regex datePattern("(\\d{4})-(0\\d{1}|1[0-2])-(0\\d{1}|[12]\\d{1}|3[01])");
@@ -185,36 +169,33 @@ main(int argc, char * argv[])
 
     vector<string> folders;
     string folder_name = db_name +_db_suffix + "_";
-    get_all_folders(_default_backup_path, folder_name, folders);
+    util.dir_files(_default_backup_path, folder_name, folders);
     if(folders.size() == 0){
         cout << "Backups Folder Empty, Please check " + _default_backup_path << endl;
         return 0;
     }
-    cout << restore_time << endl;
-    int timestamp = Util::time_to_stamp(restore_time);
-    cout << timestamp << endl;
-    if(timestamp >  Util::get_cur_time() / 1000){
+    time_t timestamp = Util::time_to_stamp(restore_time);
+    time_t cur_time = Util::get_cur_time() / 1000l;
+    if(timestamp >  cur_time){
         cout << "Restore Time Error, Rollback Failed." << endl;
         return 0;
     }
     string backup_name = db_name + _db_suffix + "_" + get_postfix(restore_time);
-    cout << backup_name << endl;
     sort(folders.begin(), folders.end());
     size_t inx = lower_bound(folders.begin(), folders.end(), backup_name) - folders.begin();
-    cout << "match folder is: " << folders[inx] << endl;
     if(inx >= folders.size() || folders[inx].find(db_name + _db_suffix) == string::npos){
         cout << "No Backups for Database " + db_name << "!" << endl;
         return 0;
     }
-
+    SLOG_INFO("Match folder is: " + folders[inx]);
     // check http server status
     string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
     if (Util::file_exist(system_port_path))
     {
-        cout << "http server is running!" << endl;
         string port;
         string type;
         string type_port;
+        string res;
         GstoreConnector gc;
         ofp.open(system_port_path, ios::in);
         ofp >> type_port;
@@ -227,32 +208,41 @@ main(int argc, char * argv[])
             {
                 type = res[0];
                 port = res[1];
-            } 
+            }
         }
         else if (Util::is_number(type_port))
         {
+            // for old version
             port = type_port;
-            string res;
             gc_check(gc, "ghttp", port, res);
             Document document;
             document.SetObject();
             document.Parse(res.c_str());
             // ghttp server is running
-            if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+            if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
             {
                 type = "ghttp";
             }
             else
             {
-                type = "grpc";
+                gc_check(gc, "grpc", port, res);
+                document.Parse(res.c_str());
+                if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+                {
+                    type = "grpc";
+                } else {
+                    cout << "unknown http server status, if the server is closed but system/port.txt still exists, please delete port.txt and try again" << endl;
+                    return 0;
+                }
             }
         }
         else
         {
-            cout << "http server port is invalid: " << type_port << endl;
+            cout << "unknown http server status, if the server is closed but system/port.txt still exists, please delete port.txt and try again" << endl;
             return 0;
         }
-        string res = "";
+        SLOG_DEBUG(type + " server is running!");
+        res = "";
         gc_check(gc, type, port, res);
         Document document;
         document.SetObject();
@@ -262,27 +252,18 @@ main(int argc, char * argv[])
             Database system_db("system");
             system_db.load();
             string root_pwd = "";
-            string query_sparql = "select ?x where{<"+USERNAME+"> <has_password> ?x.}";
+            string query_sparql = "select ?x where { <" + _root_name + "> <has_password> ?x.}";
             ResultSet query_rs;
-            FILE* query_ofp = stdout;
+            FILE* query_ofp = nullptr;
             system_db.query(query_sparql, query_rs, query_ofp);
             root_pwd = query_rs.answer[0][0];
             root_pwd = Util::replace_all(root_pwd, "\"", "");
-            // cout << "root_pwd: " << root_pwd << endl;
             system_db.unload();
-            //unload
-            res = "";
-            gc_unload(gc, type, port, root_pwd, db_name, res);
-            cout << "Unload result: " << res << endl;
-            document.Parse(res.c_str());
-            if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() != 0 && document["StatusCode"].GetInt() != 304)
-            {
-                res = document["StatusMsg"].GetString();
-                if (res != "the database not load yet.")
-                {   
-                    cout << "Rollback Failed: please unload the database from "<< type << endl;
-                    return 0;
-                }
+            bool load_status = gc_load_status(gc, type, port, _root_name, root_pwd, db_name);
+            if (load_status)
+            {   
+                cout << "Rollback Failed: please unload the database from "<< type << endl;
+                return 0;
             }
         }
     }
@@ -292,12 +273,11 @@ main(int argc, char * argv[])
     string db_path = _db_home + "/" + db_name + _db_suffix;
     cmd = "cp -r " + _default_backup_path + "/" + folders[inx] + " " + _db_home;
     system(cmd.c_str());
-    cout << cmd << endl;
+    SLOG_DEBUG(cmd);
     Util::remove_path(db_path);
-    cout << cmd << endl;
     cmd = "mv " + _db_home + "/" + folders[inx] + " " + db_path;
     system(cmd.c_str());
-    cout << cmd << endl;
+    SLOG_DEBUG(cmd);
 
     //load
     // gc.load(db_name);
@@ -320,23 +300,19 @@ main(int argc, char * argv[])
         }
         if (rec[0] != 'I' && rec[0] != 'R') continue;
         rec = undo_sparql(rec);
-        cout << "rollback sparql: "<< rec << endl;
+        SLOG_CORE("rollback sparql: " << rec);
         ResultSet rs;
         // gc.query(db_name, "json", rec, "POST");
         ret_val = current_database->query(rec, rs, nullptr, true, false, nullptr);
-        cout << "rollback result: "<< ret_val << endl;
+        SLOG_CORE("rollback result: " << ret_val);
     }
     // save databse
     current_database->save();
     delete current_database;
     //undo updates according to log
     if(flag == 1)
-        cout << "Database " << db_name << " has restored to time: "
-             << Util::stamp2time(undo_point) << endl;
+        SLOG_INFO("Database " + db_name + " has restored to time: " << Util::stamp2time(undo_point));
     else
-        cout << "Database " << db_name << " has restored to time: " 
-             << folders[inx] << endl;
-    //gc.unload(db_name);
-    //gc.load(db_name);
+        SLOG_INFO("Database " + db_name + " has restored to time: " << folders[inx]);
     return 0;
 }
