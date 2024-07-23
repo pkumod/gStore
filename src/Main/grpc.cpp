@@ -1029,6 +1029,11 @@ void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip)
 		string version = Util::getConfigureValue("version");
 		resp_data.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
 		string licensetype = Util::getConfigureValue("licensetype");
+		string product_name = Util::getConfigureValue("product_name");
+		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
+		if (product_name != "gstore") {
+			licensetype = "";
+		}
 		resp_data.AddMember("licensetype", StringRef(licensetype.c_str()), allocator);
 		string cur_path = Util::get_cur_path();
 		resp_data.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);

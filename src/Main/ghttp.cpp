@@ -3333,6 +3333,11 @@ void login_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		string version = Util::getConfigureValue("version");
 		resDoc.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
 		string licensetype = Util::getConfigureValue("licensetype");
+		string product_name = Util::getConfigureValue("product_name");
+		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
+		if (product_name != "gstore") {
+			licensetype = "";
+		}
 		resDoc.AddMember("licensetype", StringRef(licensetype.c_str()), allocator);
 		string cur_path = Util::get_cur_path();
 		resDoc.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
