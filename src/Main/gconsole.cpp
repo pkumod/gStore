@@ -955,7 +955,7 @@ int load_history()
 
 	if (fin.is_open() == 0)
 	{
-		cout << "File open failed: bin/.gconsole_history/" + usrname << endl;
+		// cout << "File open failed: bin/.gconsole_history/" + usrname << endl;
 		return -1;
 	}
 
