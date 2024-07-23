@@ -1066,6 +1066,11 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 		string version = Util::getConfigureValue("version");
 		resp_data.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
 		string licensetype = Util::getConfigureValue("licensetype");
+		string product_name = Util::getConfigureValue("product_name");
+		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
+		if (product_name != "gstore") {
+			licensetype = "";
+		}
 		resp_data.AddMember("licensetype", StringRef(licensetype.c_str()), allocator);
 		resp_data.AddMember("type", HTTP_TYPE, allocator);
 		response->Json(resp_data);
