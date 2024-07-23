@@ -2292,6 +2292,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 					resDoc.Accept(resWriter);
 					string resJson = resBuffer.GetString();
+					resJson = resJson + "\r\n";
 					auto content = request->header.find("Accept-Encoding");
 					if (content != request->header.end())
 					{
@@ -5091,7 +5092,9 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 		writer.String(StringRef(ResponseBody.c_str()));
 	}
 	writer.EndObject();
-	return s.GetString();
+	string json_str = s.GetString();
+	json_str = json_str + "\r\n";
+	return json_str;
 }
 
 /**
