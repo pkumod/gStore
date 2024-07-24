@@ -2240,6 +2240,14 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
+		std::string min_memory = Util::getConfigureValue("min_memory").c_str();
+		int memoryLeft = Util::memoryLeft();
+		if (memoryLeft < atoi(min_memory.c_str()))
+		{
+			std::string error = "memory not enough, available:" + std::to_string(memoryLeft) + "GB, need minimum:" + min_memory + "GB";
+			response->Error(StatusOperationFailed, error);
+			return;
+		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string sparql = jsonParam(json_data, "sparql");
 		std::string format = jsonParam(json_data, "format", "json");

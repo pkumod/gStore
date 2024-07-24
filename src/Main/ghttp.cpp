@@ -2843,6 +2843,14 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 	string operation = "query";
 	try
 	{
+		std::string min_memory = Util::getConfigureValue("min_memory").c_str();
+		int memoryLeft = Util::memoryLeft();
+		if (memoryLeft < atoi(min_memory.c_str()))
+		{
+			error = "memory not enough, available:" + std::to_string(memoryLeft) + "GB, need minimum:" + min_memory + "GB";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
+		}
 		// check db_name paramter
 		error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)

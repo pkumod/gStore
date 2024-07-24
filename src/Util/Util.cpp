@@ -136,6 +136,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
+    Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
     Util::system_path = Util::getConfigureValue("system_path");
     // server
     Util::setGlobalConfig(ini_parser, "server", "default_port");
