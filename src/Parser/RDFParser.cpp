@@ -82,7 +82,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
 				continue;
 			}
 
-			errorMsg = errorMsg.substr(0, num_l - 9) + errorMsg.substr(num_r);
+			errorMsg = errorMsg.substr(0, num_l - 9) + errorMsg.substr(num_r) + '\n';
 
 			// TODO: get the actual corresponding line
 			if (ofile)
