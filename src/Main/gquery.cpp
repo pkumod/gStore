@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gquery -h\" for help." << endl;
 			return 0;
 		}
-		if (Util::dir_exist(_db_home + "/system" + _db_suffix) == false)
+		if (Util::dir_exist(_db_home + "system" + _db_suffix) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;

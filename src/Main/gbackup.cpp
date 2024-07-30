@@ -96,12 +96,14 @@ int main(int argc, char *argv[])
 		system_db.query(sparql, ask_rs, ask_ofp);
 		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
 		{
-			cout << "The database does not exist." << endl;
+			cout << "The database" << db_name << "does not exist." << endl;
 			return 0;
 		}
 		// create it if backup path does not exist
-		if (Util::dir_exist(backup_path) == false)
+		Util::string_suffix(backup_path, '/');
+		if (!Util::dir_exist(backup_path))
 		{
+			cout << "Backup path " + backup_path + " is not exist, create it now..." << endl;
 			Util::create_dirs(backup_path);
 		}
 		Database _db(db_name);
@@ -109,13 +111,13 @@ int main(int argc, char *argv[])
 		bool flag = _db.backup();
 		if(flag == false) 
 		{
-			cout << "Backup Failed!" << endl;
+			cout << "Database " <<db_name << " backup failed." << endl;
 			return 0;
 		}
 		string timestamp = Util::get_timestamp();
 		string new_folder =  db_name + _db_suffix + "_" + timestamp;
-		string _path = backup_path + "/" + new_folder;
-		string backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
+		string _path = backup_path + new_folder;
+		string backup_store_path = default_backup_path + db_name + _db_suffix;
 		if (backup_zip == "1")
 		{
 			_path = _path + ".zip";
@@ -133,7 +135,7 @@ int main(int argc, char *argv[])
 			system(cmd.c_str());
 		}
 		long tv_end = Util::get_cur_time();
-		cout << "Backup path: " << backup_path + "/" + new_folder << endl;
+		cout << "Backup path: " << backup_path + new_folder << endl;
 		cout << "Backup successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
 		return 0;
 	}
