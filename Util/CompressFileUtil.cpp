@@ -93,7 +93,7 @@ namespace CompressUtil
 
     bool FileHelper::compressExportZip(const std::string& dst_path, const std::string& zip_path)
     {
-        std::cout<<"compressFile->start:"<<zip_path<<std::endl;
+        SLOG_CORE("compressFile->start:"<<zip_path);
         zipFile zfile = zipOpen64(zip_path.c_str(), APPEND_STATUS_CREATE);
         if (zfile == nullptr)
         {
@@ -149,7 +149,7 @@ namespace CompressUtil
             err = ZIP_ERRNO;
         else
             err = zipCloseFileInZip(zfile);
-        std::cout<<"compressFile->success, err:"<<err<<std::endl;
+        SLOG_CORE("compressFile->success, err: " << err);
         free(read_buf);
         zipClose(zfile, nullptr);
         return err == ZIP_OK ? true : false;    
@@ -203,7 +203,7 @@ namespace CompressUtil
             return false;
 
         std::string file_path = getDirPath() + "/" + filename;
-        std::cout<<"unCompress start:file_path"<<file_path<<"size:"<<file_info.uncompressed_size<<std::endl;
+        SLOG_CORE("unCompress start, file_path: "<< file_path <<" size: "<<file_info.uncompressed_size);
         if (FileHelper::isFileDir(filename))
         {
             mkdir(file_path.c_str(), 0775);
@@ -250,7 +250,7 @@ namespace CompressUtil
             else
                 unzCloseCurrentFile(unfile);
             if (err != UNZ_OK)
-                std::cout<<"UnCompress file unzCloseCurrentFile error:"<<file_path<<std::endl;
+                SLOG_ERROR("UnCompress file unzCloseCurrentFile error: " << file_path);
             free(read_buffer);
         }
         return err == UNZ_OK ? true : false;

@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include "Slog.h"
 #include "../tools/zlib-1.3/include/unzip.h"
 #include "../tools/zlib-1.3/include/zip.h"
 
