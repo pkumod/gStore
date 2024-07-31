@@ -1,5 +1,18 @@
 #!/bin/bash
 
+
+log_mode=$(grep -m 1 'log_mode=' ./conf.ini)
+if [ ${log_mode:9:${#log_mode}-9} = '"slog.properties"' ]
+then
+	first_line=$(head -n 1 ./slog.properties)
+	log_level=$(echo $first_line | sed -n 's/^log4cplus.rootLogger=\([^,]*\).*/\1/p')
+	if [ "$log_level" != "TRACE" ]; then
+		echo "please set "log4cplus.rootLogger=TRACE" in the slog.properties ."
+		exit -1
+	fi
+fi
+
+
 #set -v
 
 #test
@@ -43,7 +56,7 @@ do
 		continue
 	else
 		echo -e "\033[43;35m build ${db[$i]}.db fails \033[0m"
-		exit
+		exit -1
 	fi
 done
 
