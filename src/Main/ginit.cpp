@@ -17,6 +17,60 @@
 // #include "../Util/Slog.h"
 using namespace std;
 
+int init_system_db(string _db_path, string _db_name, string _db_suffix)
+{
+	string _rdf = Util::system_path;
+	long tv_begin = Util::get_cur_time();
+	SLOG_INFO("begin init the system database ....");
+	if (Util::dir_exist(_db_path))
+	{
+		Util::remove_path(_db_path);
+	}
+	Database *_db = new Database(_db_name);
+	bool flag = _db->build(_rdf);
+	if (flag)
+	{
+		ofstream f;
+		f.open(_db_path + "/success.txt");
+		f.close();
+
+		SLOG_CORE(_db_name + _db_suffix + " rebuild successfully!");
+		delete _db;
+		_db = NULL;
+		Util::init_backuplog();
+		SLOG_CORE("init backuplog successfully!");
+		string version = Util::getConfigureValue("version");
+		string root_pwd = Util::getConfigureValue("root_password");
+		string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
+		SLOG_CORE("version: " << version << ", update_sparql:" << update_sparql);
+		ResultSet _rs;
+		FILE *ofp = nullptr;
+		string msg;
+		_db = new Database(_db_name);
+		_db->load();
+		int ret = _db->query(update_sparql, _rs, ofp);
+		if (ret >= 0)
+		{	
+			long tv_end = Util::get_cur_time();
+			SLOG_INFO("Insert data success, update num : " << ret);
+			SLOG_INFO(_db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl);
+		}
+		else // update error
+		{	
+			Util::remove_path(_db_path);
+			SLOG_ERROR(_db_name + _db_suffix + " init failure!");
+		}	
+		delete _db;
+		_db = NULL;
+		return 0;
+	}
+	else
+	{
+		SLOG_ERROR(_db_name + _db_suffix + " init failure!");
+		return 0;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -27,60 +81,10 @@ int main(int argc, char *argv[])
 	int _suffix_len = _db_suffix.length();
 	string _db_name = "system";
 	string _db_path = _db_home + "/" + _db_name + _db_suffix;
-	string _rdf = Util::system_path;
 	if (argc == 1)
 	{
-		/*cout << "please input the complete command:\t" << endl;
-		cout << "\t bin/gadd -h" << endl;*/
-		long tv_begin = Util::get_cur_time();
-		cout << "begin rebuild the system database ...." << endl;
-		if (Util::dir_exist(_db_path))
-		{
-			Util::remove_path(_db_path);
-		}
-		Database *_db = new Database(_db_name);
-		bool flag = _db->build(_rdf);
-		if (flag)
-		{
-			ofstream f;
-			f.open(_db_path + "/success.txt");
-			f.close();
-
-			cout << _db_name + _db_suffix + " rebuild successfully!" << endl;
-			delete _db;
-			_db = NULL;
-			Util::init_backuplog();
-			cout << "init backuplog successfully!" << endl;
-			string version = Util::getConfigureValue("version");
-			string root_pwd = Util::getConfigureValue("root_password");
-			string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
-			cout << "version:" << version << ",update_sparql:" << update_sparql << endl;
-			ResultSet _rs;
-			FILE *ofp = nullptr;
-			string msg;
-			_db = new Database(_db_name);
-			_db->load();
-			int ret = _db->query(update_sparql, _rs, ofp);
-			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
-			else // update error
-				msg = "update failed.";
-			if (ret != -100)
-				cout << "Insert data result:" + msg << endl;
-
-			delete _db;
-			_db = NULL;
-			long tv_end = Util::get_cur_time();
-			// stringstream ss;
-			cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
-			// Log.Info(ss.str().c_str());
-			return 0;
-		}
-		else
-		{
-			cout << "Build RDF database failure!" << endl;
-			return 0;
-		}
+		int ret = init_system_db(_db_path, _db_name, _db_suffix);
+		return ret;
 	}
 	else if (argc == 2)
 	{
@@ -106,56 +110,13 @@ int main(int argc, char *argv[])
 		{
 			if (Util::dir_exist(_db_path) == false)
 			{
-				cout << _db_name + _db_suffix + " is not exist. Now create it." << endl;
-				long tv_begin = Util::get_cur_time();
-				Database *_db = new Database(_db_name);
-				bool flag = _db->build(_rdf);
-				if (flag)
-				{
-					ofstream f;
-					f.open(_db_path + "/success.txt");
-					f.close();
-
-					cout << _db_name + _db_suffix + " built successfully!" << endl;
-					delete _db;
-					_db = NULL;
-
-					Util::init_backuplog();
-					cout << "init backuplog successfully!" << endl;
-					string version = Util::getConfigureValue("version");
-					string root_pwd = Util::getConfigureValue("root_password");
-					string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
-
-					ResultSet _rs;
-					FILE *ofp = stdout;
-					string msg;
-					_db = new Database(_db_name);
-					_db->load();
-					int ret = _db->query(update_sparql, _rs, ofp);
-					if (ret >= 0)
-						msg = "update num : " + Util::int2string(ret);
-					else // update error
-						msg = "update failed.";
-					if (ret != -100)
-						cout << "Insert data result:" + msg << endl;
-
-					delete _db;
-					_db = NULL;
-					long tv_end = Util::get_cur_time();
-					// stringstream ss;
-					cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
-					// Log.Info(ss.str().c_str());
-					return 0;
-				}
-				else
-				{
-					cout << "Build RDF database failure!" << endl;
-					return 0;
-				}
+				int ret = init_system_db(_db_path, _db_name, _db_suffix);
+				return ret;
 			}
 			else
 			{
-				cout << "the system database is exist, skip the init system database." << endl;
+				SLOG_INFO("the system database is exist, skip the init system database.");
+				return 0;
 			}
 		}
 		else
