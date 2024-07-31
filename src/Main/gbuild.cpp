@@ -137,14 +137,7 @@ main(int argc, char * argv[])
 			cout << "the database path already exists. Please check database "<< db_name <<", or use bin/gdrop to remove it at first."<<endl;
 			return -1;
 		}
-		std::string::size_type pos1 = _rdf.find_last_of("/");
-		if (pos1 == std::string::npos)
-			pos1 = 0;
-		else
-			pos1++;
-		std::string zfile = _rdf.substr(pos1, -1);
-		std::string::size_type pos2 = zfile.find_last_of(".");
-		if (pos2 != std::string::npos && zfile.substr(pos2 + 1, -1)=="zip")
+		if (Util::fileSuffix(_rdf) == "zip")
 			is_zip = true;
 		if (is_zip)
 		{

@@ -1982,14 +1982,7 @@ int create_handler(const vector<string> &args)
 		nt_file = args[1];
 
 	bool is_zip = false;
-	std::string::size_type pos1 = nt_file.find_last_of("/");
-	if (pos1 == std::string::npos)
-		pos1 = 0;
-	else
-		pos1++;
-	std::string zfile = nt_file.substr(pos1, -1);
-	std::string::size_type pos2 = zfile.find_last_of(".");
-	if (pos2 != std::string::npos && zfile.substr(pos2 + 1, -1)=="zip")
+	if (Util::fileSuffix(nt_file) == "zip")
 		is_zip = true;
 	std::string unz_dir_path;
 	std::vector<std::string> zip_files;
