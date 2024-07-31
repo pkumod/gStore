@@ -250,7 +250,7 @@ namespace CompressUtil
             else
                 unzCloseCurrentFile(unfile);
             if (err != UNZ_OK)
-                SLOG_CORE("UnCompress file unzCloseCurrentFile error:"<<file_path);
+                SLOG_ERROR("UnCompress file unzCloseCurrentFile error:"<<file_path);
             free(read_buffer);
         }
         return err == UNZ_OK ? true : false;
@@ -456,7 +456,7 @@ namespace CompressUtil
         std::string dir_name = dir_path;
         if (pos2 != std::string::npos)
             dir_name = dir_path.substr(pos2+1);
-        SLOG_ERROR("compressFile dir ->start:" << dir_path << "  dir_name:" << dir_name);
+        SLOG_CORE("compressFile dir ->start:" << dir_path << "  dir_name:" << dir_name);
         
         int ret { ZIP_ERRNO };
         zipFile zf = zipOpen(zipPath.c_str(), APPEND_STATUS_CREATE);
@@ -483,7 +483,7 @@ namespace CompressUtil
             }
         }
         ret = zipClose(zf, NULL);
-        SLOG_ERROR("compressFile dir ->end:"<< zipPath << "error:" << ret);
+        SLOG_CORE("compressFile dir ->end:"<< zipPath << "error:" << ret);
         return ZIP_OK == ret;
     }
 }
