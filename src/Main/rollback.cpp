@@ -44,14 +44,43 @@ string gc_getUrl(string _type, string _port)
     return _url;
 }
 
-int gc_check(HttpUtil &gc, string _type, string _port, string &res)
+int gc_check(string _type, string _port, string &res)
 {
     string strUrl = gc_getUrl(_type, _port);
     std::string strPost;
 	strPost = "{\"operation\": \"check\"}";
-    int ret = gc.Post(strUrl, strPost, res);
+    int ret = HttpUtil::Post(strUrl, strPost, res);
     // cout << "url: " << strUrl << ", ret: " << ret << ", res: " << res << endl;
     return ret;
+}
+
+bool gc_load_status(string _type, string _port, string _username, string _pwd, string _db_name)
+{
+    string strUrl = gc_getUrl(_type, _port);
+    std::string strPost = "{\"operation\": \"show\", \"username\": \"" + _username + "\", \"password\": \"" + _pwd + "\"}";
+    string res = "";
+    int ret = HttpUtil::Post(strUrl, strPost, res);
+    Document document;
+    document.SetObject();
+    document.Parse(res.c_str());
+    if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+    {
+        Document::Array array = document["ResponseBody"].GetArray();
+        for (int i = 0; i < array.Size(); i++)
+        {   
+            string db_name = array[i]["database"].GetString();
+            string db_status = array[i]["status"].GetString();
+            SLOG_DEBUG("database: "<< db_name << ", status: " << db_status);
+            if (db_name == _db_name)
+            {
+                if (db_status == "loaded")
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+    return false;
 }
 
 int
@@ -62,6 +91,7 @@ main(int argc, char * argv[])
     string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
     string _default_backup_path = util.getConfigureValue("backup_path");
+    string _root_name = util.getConfigureValue("root_username");
 	size_t _len_suffix = _db_suffix.length();
     string db_name, backup_date, backup_time, restore_time;
     if (argc < 2 || (2 < argc && argc < 7))
@@ -164,7 +194,7 @@ main(int argc, char * argv[])
         string port;
         string type;
         string type_port;
-        HttpUtil gc;
+        string res;
         ofp.open(system_port_path, ios::in);
         ofp >> type_port;
         ofp.close();
@@ -176,13 +206,63 @@ main(int argc, char * argv[])
             {
                 type = res[0];
                 port = res[1];
-            } 
+            }
         }
-        string res = "";
-        if (gc_check(gc, type, port, res) == 0)
+        else if (Util::is_number(type_port))
         {
-            cout << "http server is running!, please shutdown this server to avoid data loss." << endl;
+            // for old version
+            port = type_port;
+            gc_check("ghttp", port, res);
+            Document document;
+            document.SetObject();
+            document.Parse(res.c_str());
+            // ghttp server is running
+            if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+            {
+                type = "ghttp";
+            }
+            else
+            {
+                gc_check("grpc", port, res);
+                document.Parse(res.c_str());
+                if(!document.HasParseError() && document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+                {
+                    type = "grpc";
+                } else {
+                    cout << "unknown http server status, if the server is closed but system/port.txt still exists, please delete port.txt and try again" << endl;
+                    return 0;
+                }
+            }
+        }
+        else
+        {
+            cout << "unknown http server status, if the server is closed but system/port.txt still exists, please delete port.txt and try again" << endl;
             return 0;
+        }
+        SLOG_DEBUG(type + " server is running!");
+        res = "";
+        gc_check(type, port, res);
+        Document document;
+        document.SetObject();
+        document.Parse(res.c_str());
+        if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
+        {
+            Database system_db("system");
+            system_db.load();
+            string root_pwd = "";
+            string query_sparql = "select ?x where { <" + _root_name + "> <has_password> ?x.}";
+            ResultSet query_rs;
+            FILE* query_ofp = nullptr;
+            system_db.query(query_sparql, query_rs, query_ofp);
+            root_pwd = query_rs.answer[0][0];
+            root_pwd = Util::replace_all(root_pwd, "\"", "");
+            system_db.unload();
+            bool load_status = gc_load_status(type, port, _root_name, root_pwd, db_name);
+            if (load_status)
+            {   
+                cout << "Rollback Failed: please unload the database from "<< type << endl;
+                return 0;
+            }
         }
     }
         
