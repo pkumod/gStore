@@ -1056,6 +1056,7 @@ void sendResponseMsg(int code, string msg, std::string operation, const shared_p
 	{
 		SLOG_ERROR("response result:" + resJson);
 	}
+	resJson = resJson + "\r\n";
 	string remote_ip = getRemoteIp(request);
 	apiUtil->write_access_log(operation, remote_ip, code, msg);
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << resJson.length() << "\r\n\r\n"
@@ -1089,8 +1090,15 @@ void sendResponseMsg(rapidjson::Document &doc, std::string operation, const shar
 	rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 	doc.Accept(resWriter);
 	string json_str = resBuffer.GetString();
-
-	SLOG_DEBUG("response result: " + json_str);
+	if (code == 0)
+	{
+		SLOG_DEBUG("response result:" + json_str);
+	}
+	else
+	{
+		SLOG_ERROR("response result:" + json_str);
+	}
+	json_str = json_str + "\r\n";
 	*response << "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " << json_str.length() << "\r\n\r\n"
 			  << json_str;
 }
@@ -5972,9 +5980,7 @@ std::string CreateJson(int StatusCode, string StatusMsg, bool body, string Respo
 		writer.String(StringRef(ResponseBody.c_str()));
 	}
 	writer.EndObject();
-	string json_str = s.GetString();
-	json_str = json_str + "\r\n";
-	return json_str;
+	return s.GetString();
 }
 
 /**
