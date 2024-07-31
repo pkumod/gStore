@@ -160,7 +160,7 @@ main(int argc, char * argv[])
 			}
 			else
 			{
-				unzip.getFileList(zip_files, _rdf);
+				unzip.getFileList(zip_files, "");
 			}
 		}
 		long tv_begin = Util::get_cur_time();

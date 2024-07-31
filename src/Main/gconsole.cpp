@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	string system_db_name = "system";
-	string system_db_path = _db_home + "/" + system_db_name + _db_suffix;
+	string system_db_path = _db_home + system_db_name + _db_suffix;
     if (Util::dir_exist(system_db_path) == false)
     {
         cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
@@ -1055,7 +1055,7 @@ unsigned read_priv(string usr, string db_name)
 unsigned get_priv(string usr, string db_name)
 {
 	// db not exist
-	if (access(string(db_home + "/" + db_name + db_suffix).c_str(), F_OK))
+	if (access(string(db_home + db_name + db_suffix).c_str(), F_OK))
 	{
 		cout << "Database " << db_name << " does not exist." << endl;
 		return -1u;
@@ -1964,21 +1964,19 @@ int create_handler(const vector<string> &args)
 	   bit in mode asked for a permission that is denied, or mode is
 	   F_OK and the file does not exist, or some other error occurred),
 	   -1 is returned, and errno is set to indicate the error.*/
-	if (access(string(db_home + "/" + db_name + db_suffix).c_str(), F_OK) == 0)
-	{
-		cout << "Database " << db_name << " has been created. Database create failed." << endl;
-		return -1;
-	}
+	string _db_path = db_home + db_name + db_suffix;
+	cout << "database path: " << _db_path << endl;
+	if (access(_db_path.c_str(), F_OK) == 0)
+ 	{
+		cout << "the database path already exists. Please check database "<< db_name <<", or use drop to remove it at first."<<endl;
+ 		return -1;
+ 	}
 
 	string nt_file;
 	if (args.size() == 1)
 	{
-		// create tmp nt file
-		string time = Util::get_date_time();
-		nt_file = "bin/.tmp_nt.nt";
-		ofstream fout(nt_file);
-		fout << "<" << db_name << "><built_time>\"" << time << "\"." << endl;
-		fout.close();
+		nt_file = "";
+		std::cout << "will build an empty database" << std::endl;
 	}
 	else
 		nt_file = args[1];
@@ -2008,93 +2006,70 @@ int create_handler(const vector<string> &args)
 		}
 		else
 		{
-			nt_file = unzip.getMaxFilePath();
-			unzip.getFileList(zip_files, nt_file);
+			unzip.getFileList(zip_files, "");
 		}
 	}
 
 	Database *tmp_database = new Database(db_name);
-	int flag = tmp_database->build(nt_file);
+	bool flag = true;
+	if (nt_file.empty() || is_zip) 
+		flag = tmp_database->BuildEmptyDB();
+	else
+		flag = tmp_database->build(nt_file);
 	delete tmp_database;
-	if (args.size() == 1)
+	tmp_database = nullptr;
+	if (!flag) //if fails, drop database and return
 	{
-		// rm bin/.tmp_nt.nt
-		// system("rm -rf bin/.tmp_nt.nt");
-		Util::remove_path("bin/.tmp_nt.nt");
-	}
-
-	if (flag == 0)
-	{
-		cout << "Database create failed. " << endl;
-		// system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
-		Util::remove_path(db_home + "/" + db_name + db_suffix + " " + unz_dir_path);
+		cout<<"Build Database Failed!"<<endl;
+		Util::remove_path(_db_path);
 		return -1;
 	}
-
-	// sysdb
-	string time = Util::get_date_time();
-	string record_newdb_sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <" + usrname + ">." + "<" + db_name + "> <built_time> \"" + time + "\".}";
-	{
-		ResultSet rs;
-		if (silence_sysdb_query(record_newdb_sparql, rs))
-		{
-			cout << "Newly created db record added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
-			// system(string("rm -rf " + db_home + "/" + db_name + db_suffix + " " + unz_dir_path).c_str());
-			Util::remove_path(db_home + "/" + db_name + db_suffix + " " + unz_dir_path);
-			return -1;
-		}
-	}
-
 	if (is_zip)
 	{
 		unsigned success_num = 0;
-		unsigned total_num = 0;
-		unsigned parse_error_num = 0 ;
-		Database _db(db_name);
-		_db.load();
-		string error_log = db_home + "/" + db_name + db_suffix + "/parse_error.log";
-		total_num = Util::count_lines(error_log);
+		tmp_database = new Database(db_name);
+		tmp_database->load();
 		for (string rdf_file : zip_files)
 		{
-			cout << "begin insert data from " << rdf_file << endl;
-			success_num += _db.batch_insert(rdf_file, false, nullptr);
+			success_num = tmp_database->batch_insert(rdf_file, false, nullptr);
+			cout << "Begin insert data from " << rdf_file << ", success num " << success_num << endl;
 		}
-		// exclude Info line
-		parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
-		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num << endl;
-		if (parse_error_num > 0)
-		{
-			cout<< "See parse error log file for details " << error_log << endl;
-		}
-		_db.save();
+		delete tmp_database;
 		Util::remove_path(unz_dir_path);
 	}
-	cout << "Database " << db_name << " created successfully. " << endl;
-
-	// if (usrname == root_username)
-	// {
-	// 	return 0;
-	// }
-	// // assign ALL priv to current usr on this db
-	// db2priv[db_name] = ALL_PRIVILEGE_BIT;
-	// string add_priv_sparql = "INSERT DATA{";
-	// for (auto p : privstr2bitset)
-	// {
-	// 	add_priv_sparql += ("<" + usrname + ">" + p.first + "<" + db_name + ">.");
-	// }
-	// add_priv_sparql += "}";
-
-	// {
-	// 	ResultSet rs;
-	// 	if (silence_sysdb_query(add_priv_sparql, rs))
-	// 	{
-	// 		cout << "Priv added failed! Database create failed.\nWarn: Please check contents of system" + db_suffix + "." << endl;
-	// 		db2priv.erase(db_name);
-	// 		system(string("rm -rf " + db_home + "/" + db_name + db_suffix).c_str());
-	// 		return -1;
-	// 	}
-	// }
-
+	// save db info
+	string time = Util::get_date_time();
+	string record_newdb_sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"; <built_by> <root>; <built_time> \"" + time + "\".}";
+	ResultSet rs;
+	int ret = silence_sysdb_query(record_newdb_sparql, rs);
+	if (ret == 0)
+	{
+		cout << "Add database info success." << endl;
+		Util::add_backuplog(db_name);
+		ofstream f;
+		f.open(_db_path + "/success.txt");
+		f.close();
+	}
+	else
+	{
+		cout << "Add database info failed, please check system db." << endl;
+		Util::remove_path(_db_path);
+		return -1;
+	}
+	string error_log = _db_path + "/parse_error.log";
+	// exclude Info line
+	size_t parse_error_num = Util::count_lines(error_log);
+	if (is_zip > 0)
+	{
+		parse_error_num += 1;
+		parse_error_num -= zip_files.size();
+	}
+	if (parse_error_num > 1)
+	{
+		cout<< "RDF parse error num " << parse_error_num - 1 << endl;
+		cout<< "See log file for details " << error_log << endl;
+	}
+	cout << "Build RDF database " << db_name << " successfully!" << endl;
 	return 0;
 }
 
@@ -2118,18 +2093,37 @@ int drop_handler(const vector<string> &args)
 		return -1;
 	}
 
+	cout<<"Begin to drop database...."<<endl;
+	long tv_begin = Util::get_cur_time();
+	string db_path = db_home + db_name + db_suffix;
+	if (!Util::dir_exist(db_path))
+	{
+		cout<<"The database that you want to drop does not exist."<<endl;
+		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+		ResultSet ask_rs;
+		silence_sysdb_query(sparql, ask_rs);
+		if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+		{
+			return 0;
+		}
+		else
+		{
+			SLOG_INFO("The database db file " + db_path + " not exist but system info exist.");
+		}
+	}
+
 	//! REMARK: will delete the user who has same name
 	// string sparql = "DELETE WHERE { <" + db_name + "> ?x ?y. }; DELETE WHERE { ?x ?y <" + db_name + ">. }";
 	//! NOTE to Main/gdrop.cpp: DELETE WHERE { ?x ?y \"" + db_name + "\" is needed too! But gdrop.cpp doesn't contain it
-	string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}; DELETE WHERE {<" + db_name + "> <built_time> ?y.}; DELETE WHERE {<" + db_name + "> <database_status> ?y.}";
-	vector<ResultSet> rs(3);
-	vector<int> ret = silence_sysdb_query(sparql, rs);
-	if (ret[0] || ret[1] || ret[2])
+	string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?bb; <built_time> ?bt; <database_status> ?bs.}";
+	ResultSet rs;
+	int ret = silence_sysdb_query(sparql, rs);
+	if (ret == -1)
 	{
-		cout << "Warn: Drop info about database " << db_name << " failed! Please check system db. \nNote that " << db_name << db_suffix << " and backlog are removed." << endl;
+		cout << "WARN: Drop info about database " << db_name << " failed! Please check system db. " << endl;
 	}
 
-	string cmd = db_home + "/" + db_name + db_suffix;
+	string cmd = db_home + db_name + db_suffix;
 	Util::remove_path(cmd);
 	Util::delete_backuplog(db_name);
 
@@ -2184,32 +2178,37 @@ int backup_handler(const vector<string> &args)
 	}
 	if (backup_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(db_home.c_str()))
 	{
-		cout << "<backup_path> is the same as current storage. Please choose another <backup_path>." << endl;
-		cout << "Database " << current_database->getName() << " backup failed." << endl;
+		cout << "Backup path can not be root or \"" + db_home + "\", Backup Failed!" << endl;
 		return -1;
 	}
-
-	// string db_path = current_database->getDBInfoFile();
-	// {
-	// 	size_t idx = db_path.find_last_of('/');
-	// 	db_path = db_path.substr(0, idx);
-	// }
-	// int ret = copy(db_path, backup_path);
-	// if (ret)
-
+	Util::string_suffix(backup_path, '/');
+	if (!Util::dir_exist(backup_path)) 
+	{
+		cout << "Backup path " + backup_path + " is not exist, create it now..." << endl;
+		Util::create_dirs(backup_path);
+	}
+	// check database exist
+	string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+	ResultSet ask_rs;
+	silence_sysdb_query(sparql, ask_rs);
+	if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+	{
+		cout << "The database" << db_name << "does not exist." << endl;
+		return -1;
+	}
 	if (current_database->backup() == 0)
 	{
-		cout << "Database " << current_database->getName() << " backup failed." << endl;
+		cout << "Database " << db_name << " backup failed." << endl;
 		return -1;
 	}
 
 	// rename backup folder with current timestamp
 	string timestamp = Util::get_timestamp();
 	string new_folder = db_name + db_suffix + "_" + timestamp;
-	string sys_cmd = "mv " + default_backup_path + "/" + db_name + db_suffix + " " + backup_path + "/" + new_folder;
+	string sys_cmd = "mv " + default_backup_path + db_name + db_suffix + " " + backup_path + new_folder;
 	system(sys_cmd.c_str());
-
-	cout << "Database " << current_database->getName() << " backup successfully." << endl;
+	cout << "Backup path: " << backup_path + new_folder << endl;
+	cout << "Database " << db_name << " backup successfully." << endl;
 	return 0;
 }
 
@@ -2257,12 +2256,13 @@ int restore_handler(const vector<string> &args)
 			cout << "Backup Path Does not Match DataBase Name, Restore Failed" << endl;
 			return 0;
 		}
-		string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"." + "<" + db_name + "> <built_by> <root>." + "<" + db_name + "> <built_time> \"" + time + "\".}";
+		string sparql = "INSERT DATA {<" + db_name + "> <database_status> \"already_built\"; <built_by> <root>; <built_time> \"" + time + "\".}";
 		ResultSet _rs;
 		int ret = silence_sysdb_query(sparql, _rs);
-
-		if (ret >= 0)
-			cout << "update num : " + Util::int2string(ret) << endl;
+		if (ret == 0)
+		{	
+			cout << "Add database info success." << endl;
+		}
 		else
 		{
 			// update error
@@ -2285,7 +2285,7 @@ int restore_handler(const vector<string> &args)
 		return -1;
 	}
 
-	string db_path = db_home + "/" + db_name + db_suffix;
+	string db_path = db_home  + db_name + db_suffix;
 	sys_cmd = "rm -rf " + db_path;
 	cout << "[" << sys_cmd << "]" << std::endl;
 	if (system(sys_cmd.c_str()))
@@ -2299,7 +2299,7 @@ int restore_handler(const vector<string> &args)
 	// 	size_t idx = backup_path.find_last_of('/');
 	// 	path = backup_path.substr(idx + 1);
 	// }
-	sys_cmd = "mv " + db_home + "/" + folder_name + ' ' + db_path;
+	sys_cmd = "mv " + db_home + folder_name + ' ' + db_path;
 	// sys_cmd = "cp -r " + path + ' ' + db_path;
 	cout << "[" << sys_cmd << "]" << std::endl;
 	if (system(sys_cmd.c_str()))
