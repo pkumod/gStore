@@ -71,47 +71,39 @@ int main(int argc, char * argv[])
 				cout << "the database name can not be system." << endl;
 				return 0;
 			}
-			string db_path = _db_home + "/" + db_name + _db_suffix;
-			if (!Util::dir_exist(db_path))
-			{
-				cout<<"The database that you want to drop does not exist."<<endl;
-				return 0;
-			}
 			cout<<"Begin to drop database...."<<endl;
 			long tv_begin = Util::get_cur_time();
 			Database system_db("system");
 			system_db.load();
+			string db_path = _db_home + db_name + _db_suffix;
+			if (!Util::dir_exist(db_path))
+			{
+				cout<<"The database that you want to drop does not exist."<<endl;
+				string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
+				ResultSet ask_rs;
+				system_db.query(sparql, ask_rs, nullptr);
+				if (ask_rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
+				{
+					return 0;
+				}
+				else
+				{
+					SLOG_INFO("The database db file " + db_path + " not exist but system info exist.");
+				}
+			}
 			ResultSet _rs;
-			FILE* ofp = nullptr;
-			string msg;
 			int ret;
-			string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?y.}";
-			ret = system_db.query(sparql, _rs, ofp);
-			sparql = "DELETE WHERE {<" + db_name + "> <built_time> ?y.}";
-			ret += system_db.query(sparql, _rs, ofp);
-			sparql = "DELETE WHERE {<" + db_name + "> <database_status> ?y.}";
-			ret += system_db.query(sparql, _rs, ofp);
-			if (ret <= -100) // select query
-			{
-				if (ret == -100)
-					msg = _rs.to_str();
-				else //query error
-					msg = "query failed";
-			}
-			else //update query
-			{
-				if (ret >= 0)
-					msg = "update num : " + Util::int2string(ret);
-				else //update error
-					msg = "update failed.";
-			}
-			cout<<"Delete the database info from system database successfully!"<<endl;
+			string sparql = "DELETE WHERE {<" + db_name + "> <built_by> ?bb; <built_time> ?bt; <database_status> ?bs.}";
+			ret = system_db.query(sparql, _rs, nullptr);
+			SLOG_DEBUG("delete num: " + to_string(ret));
+			if (ret > 0)
+				system_db.save();
+			else
+				cout << "WARN: Drop info about database " << db_name << " failed! Please check system db." << endl;
 			Util::remove_path(db_path);
 			Util::delete_backuplog(db_name);
 			long tv_end = Util::get_cur_time();
-			//stringstream ss;
-			cout << db_name << _db_suffix + " is dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
-			//Log.Info(ss.str().c_str());
+			cout << "Database " << db_name << " dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			return 0;
 		}
 	}
