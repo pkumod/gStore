@@ -66,7 +66,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 25
+#define TOTAL_COMMAND_NUM 26
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -89,6 +89,7 @@ int restore_handler(const vector<string> &);
 int export_handler(const vector<string> &);
 int sparql_handler(const vector<string> &);
 int raw_sparql_handler(string query);
+int unload_handler(const std::vector<std::string>&);
 
 int flushpriv_handler(const vector<string> &);
 int pusr_handler(const vector<string> &);
@@ -127,6 +128,7 @@ COMMAND commands[] =
 		{"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
 		{"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
+        {"unload",unload_handler,"Unload the current database.","unload",UNLOAD_PRIVILEGE_BIT},
 
 		// id and usr manage
 		{"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
@@ -2373,6 +2375,18 @@ int use_handler(const vector<string> &args)
 	}
 
 	cout << "Current database switch to " << new_db_name << " successfully." << endl;
+	return 0;
+}
+
+int unload_handler(const std::vector<std::string> &args)
+{
+	if (current_database == nullptr)
+	{
+		cout<<"Use no database!";
+		return -1;
+	}
+	delete current_database;
+	current_database = nullptr;
 	return 0;
 }
 
