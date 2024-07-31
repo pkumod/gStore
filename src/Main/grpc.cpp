@@ -1579,8 +1579,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				response->Error(code, result);
 				return;
 			}
-			db_path = upfile.getMaxFilePath();
-			upfile.getFileList(zip_files, db_path);
+			upfile.getFileList(zip_files, "");
 		}
 		std::string opt_id = apiUtil->generateUid();
 		string remote_ip = task_of(response)->peer_addr();
@@ -1594,16 +1593,15 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				(GRPCResp *response)
 				{
 					string _db_path = _db_home + "/" + db_name + _db_suffix;
-					string dataset = db_path;
 					string database = db_name;
 					SLOG_DEBUG("Import dataset to build database...");
-					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
+					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + db_path);
 					string result;
 					shared_ptr<Database> current_database = make_shared<Database>(database);
 					// TODO progress notification
 					bool flag = true;
-					if (!dataset.empty())
-						flag = current_database->build(dataset);
+					if (!db_path.empty())
+						flag = current_database->build(db_path);
 					else
 						flag = current_database->BuildEmptyDB();
 					int success_num = current_database->getTripleNum();

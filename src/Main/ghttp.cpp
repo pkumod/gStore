@@ -890,8 +890,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				sendResponseMsg(code, error, operation, request, response);
 				return;
 			}
-			db_path = upfile.getMaxFilePath();
-			upfile.getFileList(zip_files, db_path);
+			upfile.getFileList(zip_files, "");
 		}
 		std::string opt_id = apiUtil->generateUid();
 		string remote_ip = getRemoteIp(request);
@@ -901,15 +900,14 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 				(const shared_ptr<HttpServer::Request> &request, const shared_ptr<HttpServer::Response> &response)
 				{
 					string _db_path = _db_home + "/" + db_name + _db_suffix;
-					string dataset = db_path;
 					string database = db_name;
 					SLOG_DEBUG("Import dataset to build database...");
-					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + dataset);
+					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + db_path);
 					string result;
 					shared_ptr<Database> current_database = make_shared<Database>(database);
 					bool flag = false;
-					if (!dataset.empty())
-						flag = current_database->build(dataset);
+					if (!db_path.empty())
+						flag = current_database->build(db_path);
 					else
 						flag = current_database->BuildEmptyDB();
 					int success_num = current_database->getTripleNum();
