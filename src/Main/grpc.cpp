@@ -3346,6 +3346,39 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
+		std::vector<std::string> zip_files;
+		std::string unz_dir_path;
+		std::string file_suffix = GRPCUtil::fileSuffix(file);
+		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+		if (is_zip)
+		{
+			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+				{
+					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
+						return false;
+					return true;
+				});
+			if( code != CompressUtil::UnZipOK )
+			{
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			std::string file_name = GRPCUtil::fileName(file);
+			size_t pos = file_name.size() - file_suffix.size() - 1;
+            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+			code = upfile.unCompress();
+			if (code != CompressUtil::UnZipOK)
+			{
+				Util::remove_path(unz_dir_path);
+				string error = "uncompress is failed error.";
+				response->Error(code, error);
+				return;
+			}
+			upfile.getFileList(zip_files, "");
+		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
@@ -3362,13 +3395,22 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			std::string async = jsonParam(json_data, "async");
 			std::string callback = jsonParam(json_data, "callback");
-			auto remove_helper = [db_name,operation,file,opt_id,async,callback]
+			auto remove_helper = [db_name,operation,file,opt_id,is_zip,zip_files,async,callback]
 				(GRPCResp *response)
 				{
 					shared_ptr<Database> current_database;
 					apiUtil->get_database(db_name, current_database);
 					string success = "Batch remove data successfully.";
-					unsigned success_num = current_database->batch_remove(file, false, nullptr);
+					unsigned success_num = 0;
+					if (is_zip)
+					{
+						for (string rdf_file : zip_files)
+						{
+							success_num += current_database->batch_remove(rdf_file, false, nullptr);
+						}
+					}
+					else
+						current_database->batch_remove(file, false, nullptr);
 					current_database->save();
 					apiUtil->unlock_database(db_name);
 					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);

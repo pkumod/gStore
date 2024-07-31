@@ -10,6 +10,7 @@
 
 #include "../Database/Database.h"
 #include "../Util/Util.h"
+#include "../Util/CompressFileUtil.h"
 
 //NOTICE+WARN:
 //ok to remove the whole tree
@@ -106,10 +107,35 @@ main(int argc, char * argv[])
 		Database _db(db_folder);
 		_db.load();
 		cout << "finish loading" << endl;
-		//_db.insert(argv[2]);
-		//_db.remove(argv[2]);
+		bool is_zip = false;
+		if (Util::fileSuffix(filename) == "zip")
+			is_zip = true;
 		long tv_begin = Util::get_cur_time();
-		_db.batch_remove(filename, false, nullptr);
+		if (is_zip)
+		{
+			std::string unz_dir_path;
+			std::vector<std::string> zip_files;
+			unz_dir_path = filename + "_" + Util::getTimeString2();
+			std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
+			mkdir(unz_dir_path.c_str(), 0775);
+			CompressUtil::UnCompressZip unzip(filename, unz_dir_path);
+			if (unzip.unCompress() != CompressUtil::UnZipOK)
+			{
+				Util::remove_path(unz_dir_path);
+				cout<<"zip file uncompress faild "<<endl;
+				return -1;
+			}
+			else
+			{
+				unzip.getFileList(zip_files, "");
+			}
+			for (string rdf_file : zip_files)
+			{
+				_db.batch_remove(rdf_file, false, nullptr);
+			}
+		}
+		else
+			_db.batch_remove(filename, false, nullptr);
 		long tv_end = Util::get_cur_time();
 		cout << "after remove, used " << (tv_end - tv_begin) << " ms" << endl;
 		_db.save();
