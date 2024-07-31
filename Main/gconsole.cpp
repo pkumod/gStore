@@ -2350,14 +2350,13 @@ int use_handler(const vector<string> &args)
 
 int unload_handler(const std::vector<std::string> &args)
 {
-	if (current_database == NULL)
+	if (current_database == nullptr)
 	{
-		cout<<"Please select a database to use first! ";
+		cout<<"Use no database!";
 		return -1;
 	}
-	cout<<"Unload "<<current_database->getName()<<" successfully!"<<endl;
 	delete current_database;
-	current_database=NULL;
+	current_database = nullptr;
 	return 0;
 }
 
