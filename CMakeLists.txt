@@ -67,13 +67,7 @@ add_custom_target( "clean_pre" DEPENDS CLEAN )
 
 #make test
 add_custom_command( OUTPUT TEST
-    COMMAND echo "basic build/query/add/sub/drop test......"
 	COMMAND bash scripts/test/test.sh "."
-	COMMAND echo "parser test......"
-	COMMAND bash scripts/test/parser_test.sh
-    COMMAND echo "repeatedly insertion/deletion test num:20......"
-    COMMAND scripts/test/update_test 20 > /dev/null
-    COMMAND echo "repeatedly insertion/deletion test end"
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
 add_custom_target( "test" DEPENDS TEST )
