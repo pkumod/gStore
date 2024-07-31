@@ -182,8 +182,8 @@ COMMAND commands[] =
 #define CROSS_LINE_PROMPT "     -> "
 #define PROMPT_LEN 8
 #define PRINT_ENTER_HELP_MSG                                                                                                 \
-	cout << product_name<<" Ver " << gstore_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
-	cout << product_name<<" Console(gconsole), an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl; \
+	cout << product_name << " Ver " << product_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
+	cout << product_name << " Console(gconsole), an interactive shell based utility to communicate with " << product_name_lower << " repositories." << endl; \
 	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;                                               \
 	cout << "" << endl;                                                                                                      \
 	cout << "Usage: bin/gconsole [OPTIONS]" << endl;                                                                         \
@@ -202,7 +202,7 @@ COMMAND commands[] =
 	cout << "System db query failed. The query is: " << sparql << endl; \
 	return -1;
 #define PRINT_VERSION                                                               \
-	cout << product_name<<" version: " << gstore_version << " Source distribution" << endl; \
+	cout << product_name<<" version: " << product_version << " Source distribution" << endl; \
 	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;
 #define CHECK_CURRENT_DB_LOADED                                                                                    \
 	if (current_database == 0)                                                                                     \
@@ -252,48 +252,20 @@ int current_cmd_offset = -1;			 // current_cmd offset in commands
 unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, avoiding fetch from sysdb everytime
 
 string db_home, db_suffix, default_backup_path;
-string gstore_version, root_username, root_password;
-string product_name;
+string product_name, product_name_lower, product_version;
+string root_username, root_password;
 
 int main(int argc, char **argv)
 {
 	Util util; // This is needed for database loading(Database_instance.load()) and other Util static member fetching situation
 	//  read conf from conf.ini: version, root_name, root_pswd
-	{
-		ifstream fin(INIT_CONF_FILE);
-		if (fin.is_open() == 0)
-		{
-			cout << string("File opened failed: ") << INIT_CONF_FILE << endl;
-			return 0;
-		}
-		string line;
-		while (getline(fin, line))
-		{
-			if (line.find("root_username") != string::npos) // len(root_username):13
-				root_username = line.substr(15, line.size() - 16);
-			else if (line.find("root_password") != string::npos)
-			{
-				// read_pswd(root_username, root_password);
-				root_password=line.substr(15,line.size()-16);
-				// cout<<"root_password:"<<root_password<<endl;
-			}
-			else if (line.find("version") != string::npos) // len(version):7
-				gstore_version = line.substr(8, line.size() - 8);
-			else if(line.find("product_name")!=string::npos)
-			{
-				product_name=line.substr(13,line.size()-13); //len(product_name):12
-				// cout<<"product_name:"<<product_name<<endl;
-			}
-		}
-		fin.close();
 
-#ifdef _GCONSOLE_TRACE
-		cout << "[root_username:]" << root_username << endl;
-		cout << "[root_password:]" << root_password << endl;
-		cout << "[version:]" << gstore_version << endl;
-		cout <<" [product_name:]"<<product_name<<endl;
-#endif //_GCONSOLE_TRACE
-	}
+	root_username = util.getConfigureValue("root_username");
+	product_version = util.getConfigureValue("version");
+	product_name = util.getConfigureValue("product_name");
+	product_name_lower = product_name;
+	product_name_lower[0] = std::tolower(product_name_lower[0]);
+	read_pswd(root_username, root_password);
 
 	if (argc == 2)
 	{
@@ -377,7 +349,7 @@ int main(int argc, char **argv)
 
 	/* welcome and work */
 	cout << endl;
-	cout << product_name<<" Console , an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl;
+	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
 	PRINT_VERSION
 	cout << "" << endl;
 	cout << "Welcome to the "<<product_name<<" Console." << endl;
@@ -602,11 +574,11 @@ void single_cmd()
 		string msg = "";
 		if (current_database == NULL)
 		{
-			msg = product_name+"[no database]> ";
+			msg = product_name + "[no database]> ";
 		}
 		else
 		{
-			msg = product_name+"[" + current_database->getName() + "]> ";
+			msg = product_name + "[" + current_database->getName() + "]> ";
 		}
 		// cout << "msg:" << msg << endl;
 		volatile ReadlineWrapper rl(in_readline, line, msg.c_str());
@@ -961,7 +933,7 @@ int save_history()
 
 	if (fout.is_open() == 0)
 	{
-		cout << "File open failed: bin/.gconsole_history/" + usrname << ". will create one." << endl;
+		// cout << "File open failed: bin/.gconsole_history/" + usrname << ". will create one." << endl;
 		return -1;
 	}
 
@@ -1669,13 +1641,13 @@ int help_handler(const vector<string> &args)
 	// all info
 	if (args.size() == 0)
 	{
-		cout << product_name<<" Console , an interactive shell based utility to communicate with "<<product_name<<" repositories." << endl;
+		cout << product_name << " Console , an interactive shell based utility to communicate with " << product_name_lower << " repositories." << endl;
 		cout << "" << endl;
-		// cout << "For information about "<<product_name<<" products and services, visit:" << endl;
-		// cout << "   http://www.gstore.cn/" << endl;
-		// cout << "For developer information, including the gStore Reference Manual, visit:" << endl;
-		// cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
-		// cout << "" << endl;
+		cout << "For information about " << product_name_lower << " products and services, visit:" << endl;
+		cout << "   http://www.gstore.cn/" << endl;
+		cout << "For developer information, including the " << product_name_lower << " Reference Manual, visit:" << endl;
+		cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
+		cout << "" << endl;
 		cout << "Commands end with ;. Cross line input is allowed." << endl;
 		cout << "Comment start with #." << endl;
 		cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
