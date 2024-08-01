@@ -172,7 +172,6 @@ main(int argc, char * argv[])
 		if (is_zip)
 		{
 			unsigned success_num = 0;
-			_db.unload();
 			Database _db_new(db_name);
 			_db_new.load();
 			for (string rdf_file : zip_files)
