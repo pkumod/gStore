@@ -2612,6 +2612,7 @@ int setpriv_handler(const vector<string> &args)
 	cout << "[" << PRIVILEGE_NUM << "]all\nEnter privilege number to assign separated by whitespace: " << endl;
 	string line;
 	// getchar(); // absorb from enter_pswd stage
+	cin.clear();
 	getline(cin, line);
 #ifdef _GCONSOLE_TRACE
 	cout << "[priv str from usr input:]" << line << endl;
@@ -2692,7 +2693,9 @@ int adddelusr_handler(int add, string usr)
 		}
 		cout << "Enter password for new user: ";
 		string new_pswd;
+		cin.clear();
 		cin >> new_pswd;
+		cin.ignore(1, '\n');
 		query = "INSERT DATA { <" + usr + "> <has_password> \"" + new_pswd + "\". }";
 	}
 	else
