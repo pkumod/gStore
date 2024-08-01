@@ -2359,10 +2359,12 @@ int unload_handler(const std::vector<std::string> &args)
 {
 	if (current_database == nullptr)
 	{
-		cout<<"Use no database!";
+		cout << "Use no database!";
 		return -1;
 	}
+	string database_name = current_database -> getName();
 	delete current_database;
+	cout << "unload " << database_name <<" successfully." << endl;
 	current_database = nullptr;
 	return 0;
 }
