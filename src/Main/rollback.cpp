@@ -256,7 +256,6 @@ main(int argc, char * argv[])
             system_db.query(query_sparql, query_rs, query_ofp);
             root_pwd = query_rs.answer[0][0];
             root_pwd = Util::replace_all(root_pwd, "\"", "");
-            system_db.unload();
             bool load_status = gc_load_status(type, port, _root_name, root_pwd, db_name);
             if (load_status)
             {   
