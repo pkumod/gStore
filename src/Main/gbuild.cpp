@@ -157,18 +157,21 @@ main(int argc, char * argv[])
 			}
 		}
 		long tv_begin = Util::get_cur_time();
-		Database _db(db_name);
-		bool flag = true;
-		if (_rdf.empty() || is_zip) 
-			flag = _db.BuildEmptyDB();
-		else
-			flag = _db.build(_rdf);
-		if (!flag) //if fails, drop database and return
+		do
 		{
-			cout<<"Build Database Failed!"<<endl;
-			Util::remove_path(_db_path);
-			return 0;
-		}
+			Database _db(db_name);
+			bool flag = true;
+			if (_rdf.empty() || is_zip) 
+				flag = _db.BuildEmptyDB();
+			else
+				flag = _db.build(_rdf);
+			if (!flag) //if fails, drop database and return
+			{
+				cout<<"Build Database Failed!"<<endl;
+				Util::remove_path(_db_path);
+				return 0;
+			}
+		}while(0);
 		if (is_zip)
 		{
 			unsigned success_num = 0;
