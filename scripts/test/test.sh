@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # go to gstore dir
-if $0 != '.'
+if $1 != '.'
 then
     cd ../../
 fi
