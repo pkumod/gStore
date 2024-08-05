@@ -1,4 +1,18 @@
-#!/bin/bash
+#/bin/bash
+
+# 根据打包环境修改os和architecture的配置
+os="linux"
+architecture="arm"
+version=$(awk -F '=' '/version/ {print$2}' "conf/conf.ini")
+product_name=$(awk -F '=' '/product_name/ {print$2}' "conf/conf.ini")
+product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
+static_pkg_name="$product_name_lower-$version-static-$os-$architecture"
+
+echo "系统: $os"
+echo "架构: $architecture"
+echo "版本: $version"
+echo "产品名称: $product_name"
+echo "安装包名: $static_pkg_name"
 
 echo "start build static package-------"
 
@@ -11,7 +25,8 @@ if [ $? -eq 0 ]; then
 else
     echo "build dir not exist"
     mkdir -p build
-    cd build/ 
+    cd build/
+    make pre 
 fi
 cmake .. -DCMAKE_BUILD_TYPE=Static
 if [ $? -eq 0 ]; then
@@ -19,20 +34,20 @@ if [ $? -eq 0 ]; then
     if [ $? -eq 0 ]; then
         cd ..
         echo "begin build package-------"
-        rm -rf gstore-1.3-static-centos-x86_64.tar.gz
-        rm -rf gstore-1.3-static
-        mkdir -p gstore-1.3-static/logs
-        mkdir -p gstore-1.3-static/.tmp
-        mkdir -p gstore-1.3-static/scripts
-        mkdir -p gstore-1.3-static/conf
-        mkdir -p gstore-1.3-static/dbhome
-        cp -r conf backups bin docs data LICENSE README.md gstore-1.3-static/
-        cp -r dbhome/system.db gstore-1.3-static/dbhome/
-        cp -f conf/* gstore-1.3-static/conf/
-        cp -rf scripts/test gstore-1.3-static/scripts/
-        rm -f gstore-1.3-static/bin/.gitignore
-        rm -f gstore-1.3-static/backups/.gitkeep
-        tar -czvf gstore-1.3-static-centos-x86_64.tar.gz gstore-1.3-static/
+        rm -rf ${static_pkg_name}.tar.gz
+        rm -rf ${product_name_lower}
+        mkdir -p ${product_name_lower}/logs
+        mkdir -p ${product_name_lower}/.tmp
+        mkdir -p ${product_name_lower}/scripts
+        mkdir -p ${product_name_lower}/conf
+        mkdir -p ${product_name_lower}/dbhome
+        cp -r conf backups bin docs data LICENSE README.md ${product_name_lower}/
+        cp -r dbhome/system.db ${product_name_lower}/dbhome/
+        cp -f conf/* ${product_name_lower}/conf/
+        cp -rf scripts/test ${product_name_lower}/scripts/
+        rm -f ${product_name_lower}/bin/.gitignore
+        rm -f ${product_name_lower}/backups/.gitkeep
+        tar -czvf ${static_pkg_name}.tar.gz ${product_name_lower}
         echo "build static package successfully!!!"
     else
         echo "build static package make fail!!!"
