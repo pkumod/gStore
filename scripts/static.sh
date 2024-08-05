@@ -2,7 +2,7 @@
 
 # 根据打包环境修改os和architecture的配置
 os="linux"
-architecture="arm"
+architecture="x86_64"
 version=$(awk -F '=' '/version/ {print$2}' "conf/conf.ini")
 product_name=$(awk -F '=' '/product_name/ {print$2}' "conf/conf.ini")
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
@@ -22,13 +22,14 @@ cd build/
 if [ $? -eq 0 ]; then
     make clean
     rm -rf *
+    cmake .. -DCMAKE_BUILD_TYPE=Static
 else
     echo "build dir not exist"
     mkdir -p build
     cd build/
+    cmake .. -DCMAKE_BUILD_TYPE=Static
     make pre 
 fi
-cmake .. -DCMAKE_BUILD_TYPE=Static
 if [ $? -eq 0 ]; then
     make -j4 && make init
     if [ $? -eq 0 ]; then
