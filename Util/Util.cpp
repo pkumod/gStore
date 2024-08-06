@@ -195,6 +195,11 @@ Util::configure()
     Util::string_suffix(temp_str, '/');
     Util::global_config["queryresult_path"] = temp_str;
     Util::create_dirs(temp_str);
+
+    // init backup
+    if (!file_exist(BACKUP_LOG_PATH))
+        init_backuplog();
+
    // init slog
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
@@ -2520,6 +2525,8 @@ Util::add_backuplog(string db_name)
         SLOG_ERROR("system can not be duplicated");
         return -1;
     }
+    if (!file_exist(BACKUP_LOG_PATH))
+        init_backuplog();
     if(has_record_backuplog(db_name)) return 1;
     pthread_rwlock_wrlock(&backuplog_lock);
     FILE* fp = fopen(BACKUP_LOG_PATH, "a");
@@ -2554,6 +2561,8 @@ Util::delete_backuplog(string db_name)
         SLOG_ERROR("system can not be deleted!");
         return -1;
     }
+    if (!file_exist(BACKUP_LOG_PATH))
+        init_backuplog();
     pthread_rwlock_wrlock(&backuplog_lock);
     FILE* fp = fopen(BACKUP_LOG_PATH, "r");
     FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
