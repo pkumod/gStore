@@ -175,7 +175,9 @@ do
             *)
                 echo "Invalid input..."
                 ;;
-	    esac
+        esac
+    else
+         cp -rf $old_db_home_path$database_name'.db' $new_db_home_path
     fi
 done
 
