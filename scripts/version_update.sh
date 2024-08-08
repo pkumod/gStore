@@ -168,7 +168,6 @@ do
         read -r -p "the new version already has a $database_name.db, overwrite [Y/n] " input
         case $input in
             [yY][eE][sS]|[yY])
-                echo $database_name
                 rm -rf $new_path
                 cp -rf $old_db_home_path$database_name'.db' $new_db_home_path
                 echo "overwrite succeffully"
