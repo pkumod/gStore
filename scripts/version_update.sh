@@ -161,10 +161,14 @@ do
     old_path=$old_db_home_path$database_name'.db'
     new_path=$new_db_home_path$database_name'.db'
     # echo $old_path $new_path
-    if [ -d $new_path ];then
+    if [ -d $new_path ]; then
+        if [ "$database_name" = "system" ]; then
+            continue
+        fi
         read -r -p "the new version already has a $database_name.db, overwrite [Y/n] " input
         case $input in
             [yY][eE][sS]|[yY])
+                echo $database_name
                 rm -rf $new_path
                 cp -rf $old_db_home_path$database_name'.db' $new_db_home_path
                 echo "overwrite succeffully"
