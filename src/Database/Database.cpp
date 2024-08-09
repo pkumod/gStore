@@ -678,17 +678,18 @@ bool Database::load(Socket &socket, bool loadCSR)
 	string resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
 
-	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
-	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
-	thread literal2id_thread(&Database::load_literal2id, this, kv_mode);
-	thread id2literal_thread(&Database::load_id2literal, this, kv_mode);
-	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode);
+	bool load_success = true;
+	thread entity2id_thread(&Database::load_entity2id, this, kv_mode, ref(load_success));
+	thread id2entity_thread(&Database::load_id2entity, this, kv_mode, ref(load_success));
+	thread literal2id_thread(&Database::load_literal2id, this, kv_mode, ref(load_success));
+	thread id2literal_thread(&Database::load_id2literal, this, kv_mode, ref(load_success));
+	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode, ref(load_success));
 #ifndef ONLY_READ
-	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode);
+	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode, ref(load_success));
 #endif
-	thread sub2values_thread(&Database::load_sub2values, this, kv_mode);
-	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
-	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
+	thread sub2values_thread(&Database::load_sub2values, this, kv_mode, ref(load_success));
+	thread obj2values_thread(&Database::load_obj2values, this, kv_mode, ref(load_success));
+	thread pre2values_thread(&Database::load_pre2values, this, kv_mode, ref(load_success));
 #endif
 
 	flag = this->loadDBInfoFile();
@@ -769,6 +770,11 @@ bool Database::load(Socket &socket, bool loadCSR)
 	msg = "load_obj2values successfully!";
 	resJson = CreateJson(1, "loading", msg);
 	socket.send(resJson);
+	if (!load_success)
+	{
+		SLOG_ERROR(getName() << " data has been corrupted");
+		throw runtime_error("data has been corrupted");
+	}
 #endif
 	msg = "begin load cache!";
 	SLOG_CORE(msg);
@@ -912,18 +918,19 @@ bool Database::load(bool loadCSR)
 #ifndef THREAD_ON
 	(this->kvstore)->open();
 #else
+	bool load_success = true;
 	int kv_mode = KVstore::READ_WRITE_MODE;
-	thread entity2id_thread(&Database::load_entity2id, this, kv_mode);
-	thread id2entity_thread(&Database::load_id2entity, this, kv_mode);
-	thread literal2id_thread(&Database::load_literal2id, this, kv_mode);
-	thread id2literal_thread(&Database::load_id2literal, this, kv_mode);
-	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode);
+	thread entity2id_thread(&Database::load_entity2id, this, kv_mode, ref(load_success));
+	thread id2entity_thread(&Database::load_id2entity, this, kv_mode, ref(load_success));
+	thread literal2id_thread(&Database::load_literal2id, this, kv_mode, ref(load_success));
+	thread id2literal_thread(&Database::load_id2literal, this, kv_mode, ref(load_success));
+	thread predicate2id_thread(&Database::load_predicate2id, this, kv_mode, ref(load_success));
 #ifndef ONLY_READ
-	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode);
+	thread id2predicate_thread(&Database::load_id2predicate, this, kv_mode, ref(load_success));
 #endif
-	thread sub2values_thread(&Database::load_sub2values, this, kv_mode);
-	thread obj2values_thread(&Database::load_obj2values, this, kv_mode);
-	thread pre2values_thread(&Database::load_pre2values, this, kv_mode);
+	thread sub2values_thread(&Database::load_sub2values, this, kv_mode, ref(load_success));
+	thread obj2values_thread(&Database::load_obj2values, this, kv_mode, ref(load_success));
+	thread pre2values_thread(&Database::load_pre2values, this, kv_mode, ref(load_success));
 #endif
 
 	// this is very fast
@@ -989,6 +996,11 @@ bool Database::load(bool loadCSR)
 	predicate2id_thread.join();
 	sub2values_thread.join();
 	obj2values_thread.join();
+	if (!load_success)
+	{
+		SLOG_ERROR(getName() << " data has been corrupted");
+		throw runtime_error("data has been corrupted");
+	}
 #endif
 	// load cache of sub2values and obj2values
 	SLOG_CORE("Begin to load p2v, s2v and o2v cache ......");
@@ -1449,49 +1461,184 @@ void Database::get_important_objID()
 	}
 }
 
-void Database::load_entity2id(int _mode)
+void Database::load_entity2id(int _mode, bool& load_success)
 {
-	this->kvstore->open_entity2id(_mode);
+	try
+	{
+		this->kvstore->open_entity2id(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_id2entity(int _mode)
+void Database::load_id2entity(int _mode, bool& load_success)
 {
-	this->kvstore->open_id2entity(_mode);
+	try
+	{
+		this->kvstore->open_id2entity(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_literal2id(int _mode)
+void Database::load_literal2id(int _mode, bool& load_success)
 {
-	this->kvstore->open_literal2id(_mode);
+	try
+	{
+		this->kvstore->open_literal2id(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_id2literal(int _mode)
+void Database::load_id2literal(int _mode, bool& load_success)
 {
-	this->kvstore->open_id2literal(_mode);
+	try
+	{
+		this->kvstore->open_id2literal(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_predicate2id(int _mode)
+void Database::load_predicate2id(int _mode, bool& load_success)
 {
-	this->kvstore->open_predicate2id(_mode);
+	try
+	{
+		this->kvstore->open_predicate2id(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_id2predicate(int _mode)
+void Database::load_id2predicate(int _mode, bool& load_success)
 {
-	this->kvstore->open_id2predicate(_mode);
+	try
+	{
+		this->kvstore->open_id2predicate(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_sub2values(int _mode)
+void Database::load_sub2values(int _mode, bool& load_success)
 {
-	this->kvstore->open_subID2values(_mode);
+	try
+	{
+		this->kvstore->open_subID2values(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_obj2values(int _mode)
+void Database::load_obj2values(int _mode, bool& load_success)
 {
-	this->kvstore->open_objID2values(_mode);
+	try
+	{
+		this->kvstore->open_objID2values(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
-void Database::load_pre2values(int _mode)
+void Database::load_pre2values(int _mode, bool& load_success)
 {
-	this->kvstore->open_preID2values(_mode);
+	try
+	{
+		this->kvstore->open_preID2values(_mode);
+	}
+	catch (const std::runtime_error &e2)
+	{
+		load_success = false;
+		string content = e2.what();
+		SLOG_ERROR(content);
+	}
+	catch (...)
+	{
+		load_success = false;
+		string content = "unknow error";
+		SLOG_ERROR(content);
+	}
 }
 
 // @author bookug

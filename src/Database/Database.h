@@ -221,15 +221,15 @@ private:
 	void print_data_count();
 	// used for multiple threads
 	//  void load_vstree(unsigned _vstree_size);
-	void load_entity2id(int _mode);
-	void load_id2entity(int _mode);
-	void load_literal2id(int _mode);
-	void load_id2literal(int _mode);
-	void load_predicate2id(int _mode);
-	void load_id2predicate(int _mode);
-	void load_sub2values(int _mode);
-	void load_obj2values(int _mode);
-	void load_pre2values(int _mode);
+	void load_entity2id(int _mode, bool& load_success);
+	void load_id2entity(int _mode, bool& load_success);
+	void load_literal2id(int _mode, bool& load_success);
+	void load_id2literal(int _mode, bool& load_success);
+	void load_predicate2id(int _mode, bool& load_success);
+	void load_id2predicate(int _mode, bool& load_success);
+	void load_sub2values(int _mode, bool& load_success);
+	void load_obj2values(int _mode, bool& load_success);
+	void load_pre2values(int _mode, bool& load_success);
 
 	// functions used to build cache
 	void load_cache();

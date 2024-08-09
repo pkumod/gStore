@@ -141,6 +141,11 @@ SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
   // because we have already read block 0 ,so pos starts from 1
   while (pos > 0)
   {
+    if (pos > h)
+    {
+        SLOG_ERROR(filepath << " error file bad: pos > h");
+        throw runtime_error("error file bad: pos > h");
+    }
     unsigned int j = pos - 1;// nodes[j] is nodes[pos]'s parent
     if (nodes[j]->isLeaf() || used[j] == total[j])	//LeafNode or ready IntlNode
     {
