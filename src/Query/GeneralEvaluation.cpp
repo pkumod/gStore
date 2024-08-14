@@ -4638,7 +4638,7 @@ void GeneralEvaluation::JaccardSimilarity(std::stringstream &ss, int uid, const 
 			ss << ","; 
 		else 
 			hasMore = true;
-		ss << "{\"dst\":"<< m.first << ", \"value\":" << m.second << "}";
+		ss << "{\"dst\":"<< kvstore->getStringByID(m.first) << ", \"value\":" << m.second << "}";
 	}
 }
 
