@@ -201,6 +201,8 @@ using namespace std;
 			{
 				int t = getOutVertID(temp_u, x, j);
                 double degree_t = degree[t];
+                if (degree_t == 0)
+                    continue;
                 dpair.push_back(std::make_pair(degree_u, degree_t));
                 averageD1 += (double)degree_u;
                 averageD2 += (double)degree_t;

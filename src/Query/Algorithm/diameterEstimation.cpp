@@ -124,11 +124,9 @@ std::pair<int, int> PathQueryHandler::diameterEstimationByuid(int uid, const std
 	std::queue<int> q_l;
 	int num_of_pred = pred_set.size();
 	std::map<int, int> dis_u;
-	std::map<int, std::vector<int>> dis_pre;
 	q_l.push(uid);
 	dis_u[uid] = 0;
 	visited.insert(uid);
-    std::set<int> visited_s;
 
 	while (!q_l.empty())
 	{
@@ -149,16 +147,16 @@ std::pair<int, int> PathQueryHandler::diameterEstimationByuid(int uid, const std
 				{
 					dis_u[t] = distance;
 				}
-				else if (dis_u[t] < distance && t != uid)
+				else if (dis_u[t] > distance)
 				{
 					dis_u[t] = distance;
 				}
-                //不重复记录已访问的点，避免环路
-                if (dis_u[t] > ret.first && visited_s.find(t) == visited_s.end())
-                {
-                    ret.first = dis_u[t];
-                    ret.second= t;
-                }
+
+				if (ret.first < dis_u[t])
+				{
+					ret.first = dis_u[t];
+					ret.second = t;
+				}
 			}
 		}
 		for (auto m : nl)
@@ -169,7 +167,6 @@ std::pair<int, int> PathQueryHandler::diameterEstimationByuid(int uid, const std
 				q_l.push(m);
 			}
 		}
-        visited_s.insert(temp_u);
 	}
 
     return ret;
