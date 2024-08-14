@@ -22,9 +22,13 @@ void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase
 	map<int,set<int> > community;
 	//所有从节点i指其他节点的权重（包括自己）（出边）
 	map<int,map<int,double> > weights;
-	//首先，遍历满足谓词集合的点和边，初始化上面的变量
-	for (int pred : pred_set){
-		vids.insert(csr[1].adjacency_list[pred].begin(), csr[1].adjacency_list[pred].end());
+  	//修改初始化-》谓词筛选的顶点现在无误了
+	int Sz = getVertNum();
+	for(int i=0;i<Sz;i++)
+	{
+		int predCnt = getSetInSize(i,pred_set)+getSetOutSize(i,pred_set);
+		if(predCnt)
+		vids.insert(i);
 	}
 	for(int vid:vids){
 		super_nodes[vid]=vid;
