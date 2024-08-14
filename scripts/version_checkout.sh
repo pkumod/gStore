@@ -199,9 +199,6 @@ if [[ -z $old_db_home_path ]]; then
     fi
 fi
 
-if [[ $old_db_home_path = '.' ]]; then
-    old_db_home_path=""
-fi
 
 new_db_home_path=''
 if [[ $new_version < "1.3" ]]; then
