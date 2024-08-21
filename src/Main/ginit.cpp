@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		sparql = sparql + "}";
 		FILE *ofp = stdout;
 		string msg;
-
+        cout<<"sparql:"<<sparql<<endl;
 		ResultSet _rs;
 		Database *_db = new Database(_db_name);
 		_db->load();
