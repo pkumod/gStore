@@ -202,6 +202,7 @@ int main(int argc, char *argv[])
 		delete _db;
 		_db = NULL;
 		long tv_end = Util::get_cur_time();
+		cout<<"operation result:"<<msg<<endl;
 		// stringstream ss;
 		cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
 		// Log.Info(ss.str().c_str());
