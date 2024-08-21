@@ -1904,8 +1904,9 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	catch (const std::runtime_error &e2)
 	{
 		SLOG_ERROR("catch run_time error exception");
-		throw std::runtime_error(e2.what());
 		SLOG_ERROR(e2.what() << "\n");
+		throw std::runtime_error(e2.what());
+		
 	}
 	catch (const std::exception &e)
 	{
