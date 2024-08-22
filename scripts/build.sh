@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # build cmake
+source /etc/profile
 mkdir -p ./build
 cd ./build/
 cmake ..
