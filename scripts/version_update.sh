@@ -255,6 +255,6 @@ do
         bin/ginit -db $database_name
     fi
 done
-
+echo "version update successfully."
 
 
