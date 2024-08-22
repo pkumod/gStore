@@ -2080,13 +2080,17 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
-				// success_num = insert(update_triple, update_triple_num, false, txn);
-				success_num = batch_insert(update_triple, update_triple_num, false, txn);
+				if (txn)
+					success_num = insert(update_triple, update_triple_num, false, txn);
+				else
+					success_num = batch_insert(update_triple, update_triple_num, false, txn);
 			}
 			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 			{
-				// success_num = remove(update_triple, update_triple_num, false, txn);
-				success_num = batch_remove(update_triple, update_triple_num, false, txn);
+				if (txn)
+					success_num = remove(update_triple, update_triple_num, false, txn);
+				else
+					success_num = batch_remove(update_triple, update_triple_num, false, txn);
 			}
 		}
 		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
@@ -2102,8 +2106,10 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				//{
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
-				// success_num = remove(update_triple, update_triple_num, false, txn);
-				success_num = batch_remove(update_triple, update_triple_num, false, txn);
+				if (txn)
+					success_num = remove(update_triple, update_triple_num, false, txn);
+				else
+					success_num = batch_remove(update_triple, update_triple_num, false, txn);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
@@ -2112,8 +2118,10 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				//{
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
-				// success_num = insert(update_triple, update_triple_num, false, txn);
-				success_num = batch_insert(update_triple, update_triple_num, false, txn);
+				if (txn)
+					success_num = insert(update_triple, update_triple_num, false, txn);
+				else
+					success_num = batch_insert(update_triple, update_triple_num, false, txn);
 			}
 		}
 
