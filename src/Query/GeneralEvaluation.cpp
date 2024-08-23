@@ -251,12 +251,15 @@ GeneralEvaluation::loadCSR()
 
 	long end_time = Util::get_cur_time();
 	SLOG_CORE("Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms");
+	this->kvstore->setCSRUpdate(false);
 }
 
 void
 GeneralEvaluation::prepPathQuery()
 {
 	if (!csr)
+		loadCSR();
+	else if (kvstore->isCSRUpdate())
 		loadCSR();
 	if (!pqHandler)
 		pqHandler = make_shared<PathQueryHandler>(csr);
