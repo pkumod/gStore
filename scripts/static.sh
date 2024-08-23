@@ -41,9 +41,7 @@ if [ $? -eq 0 ]; then
         mkdir -p ${product_name_lower}/.tmp
         mkdir -p ${product_name_lower}/scripts
         mkdir -p ${product_name_lower}/conf
-        mkdir -p ${product_name_lower}/dbhome
         cp -r conf backups bin docs data LICENSE README.md ${product_name_lower}/
-        cp -r dbhome/system.db ${product_name_lower}/dbhome/
         cp -f conf/* ${product_name_lower}/conf/
         cp -rf scripts/test ${product_name_lower}/scripts/
         rm -f ${product_name_lower}/bin/.gitignore
