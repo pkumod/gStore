@@ -45,7 +45,9 @@ echo -e "Optional: requests for python api, pthreads and curl-devel for php api,
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md \n"
 sleep 5s
 
+apt-get install zlib1g zlib1g-dev
 ldconfig -v
+
 echo -e "dynamic libraries path set \n"
 echo -e "\033[43;35m Please run [ldconfig -v] again if you install other softwares \033[0m \n"
 sleep 5s
@@ -59,6 +61,7 @@ echo "*    -    noproc    65535" >> /etc/security/limits.conf
 echo -e "system environment variables set \n"
 
 echo -e "when running program if you get a [can not find -lxxx] prompt, please search this dynamic library by [ldconfig -p|grep xxx] \n"
+
 
 #sleep 5s
 # compile the gStore system here
