@@ -276,6 +276,8 @@ private:
 	static unsigned short buffer_oID2values_query;
 	static unsigned short buffer_pID2values_query;
 
+	// csr update (insert, remove)
+	bool csr_update;
 
 	//===============================================================================
 
@@ -352,6 +354,9 @@ private:
 	void o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) ;
 	void o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) ;
 	void p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn) ;
+public:
+	void setCSRUpdate(bool update) { this->csr_update = update; }
+	bool isCSRUpdate(){return this->csr_update; }
 };
 
 #endif //_KVSTORE_KVSTORE_H

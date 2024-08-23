@@ -3935,6 +3935,7 @@ Database::insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num,
 	// update string index
 	this->stringindex->change(vertices, *this->kvstore, true);
 	this->stringindex->change(predicates, *this->kvstore, false);
+	this->kvstore->setCSRUpdate(true);
 
 	return valid_num;
 }
@@ -3999,6 +4000,7 @@ Database::remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num,
 		this->resetIDinfo();
 	}
 
+	this->kvstore->setCSRUpdate(true);
 	return valid_num;
 }
 
@@ -4258,6 +4260,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	// update string index
 	this->stringindex->change(vertices, *this->kvstore, true);
 	this->stringindex->change(predicates, *this->kvstore, false);
+	
+	this->kvstore->setCSRUpdate(true);
 
 	return update_num_s;
 }
@@ -4424,6 +4428,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 
 		SLOG_CORE("vertices_num:" + to_string(vertices.size()) + ",predicates:" + to_string(predicates.size()));
 	}
+	this->kvstore->setCSRUpdate(true);
 	return update_num_s;
 }
 

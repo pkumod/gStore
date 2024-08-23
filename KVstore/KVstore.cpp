@@ -32,6 +32,7 @@ KVstore::KVstore(string _store_path)
 	this->preID2values = NULL;
 	this->objID2values = NULL;
 	this->objID2values_literal = NULL;
+	this->csr_update = false;
 }
 
 //Release all the memory used in this KVstore before destruction
