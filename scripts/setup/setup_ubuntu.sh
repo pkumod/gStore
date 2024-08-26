@@ -29,8 +29,39 @@ echo -e "libboost-all-dev installed \n"
 apt install -y curl libcurl4 libcurl4-openssl-dev libssl-dev
 echo -e "libcurl-devel installed \n"
 
-apt install -y cmake
-echo -e "cmake installed \n"
+# apt install -y cmake
+# echo -e "cmake installed \n"
+
+####
+if [ -n "`cmake -version|grep -P '3.23.2'`" ]; then
+echo -e "cmake installed"
+echo `cmake -version`
+else
+cd /var/local/
+if [ ! -d "cmake" ];then
+mkdir cmake
+fi
+cd cmake
+if [ ! -e "cmake-3.23.2.tar.gz" ]; then
+wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz 2>&1
+fi
+if [ ! -e "cmake-3.23.2.tar.gz" ]; then
+echo "download cmake-3.23.2.tar.gz fail!"
+exit
+fi
+#decompression
+echo "decompression cmake-3.23.2.tar.gz"
+tar -xvf cmake-3.23.2.tar.gz
+cd cmake-3.23.2
+./bootstrap
+make -j4
+make install
+echo -e "cmake 3.23.2 installed"
+cd ..
+rm -rf cmake-3.23.2
+sleep 5s
+fi
+###
 
 apt install -y pkg-config
 echo -e "pkg-config installed \n"
