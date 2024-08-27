@@ -9,5 +9,6 @@ make pre
 make -j4
 # init system.db
 make init
+make APIexample
 
 echo "Compilation ends successfully!"

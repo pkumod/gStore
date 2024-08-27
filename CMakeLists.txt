@@ -91,11 +91,11 @@ add_custom_command( OUTPUT TARBALL
 add_custom_target( "tarball" DEPENDS TARBALL )
 
 #make APIexample
-# add_custom_command( OUTPUT APIEXAMPLE
-#     # COMMAND 
-#     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-# )
-# add_custom_target( "APIexample" DEPENDS APIEXAMPLE )
+add_custom_command( OUTPUT APIEXAMPLE
+    COMMAND bash scripts/APIexample.sh
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
+add_custom_target( "APIexample" DEPENDS APIEXAMPLE )
 
 #make gtest
 # add_custom_command( OUTPUT GTEST

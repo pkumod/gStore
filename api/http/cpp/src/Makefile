@@ -1,7 +1,7 @@
 CXX=g++ -std=c++11
 
 lib_dir=../lib/
-inc_log=-I../../../../tools/log4cplus/include
+inc_log=-I../../../../include/
 
 all: $(lib_dir)libgstoreconnector.a
 
