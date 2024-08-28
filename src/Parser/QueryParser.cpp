@@ -402,7 +402,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
 				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \ 
 				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14" \
-				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" || tmp == "DEGREECORRELATION")	// Path calls
+				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" \
+				|| tmp == "DEGREECORRELATION" || tmp == "KHOPSHORTESTPATHS" || tmp == "KHOPALLNEIGHBORS")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -467,6 +468,10 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::JaccardSimilarity_type;
 				else if (tmp == "DEGREECORRELATION")
 					proj_var.aggregate_type = ProjectionVar::degreeCorrelation_type;
+				else if (tmp == "KHOPSHORTESTPATHS")
+					proj_var.aggregate_type = ProjectionVar::kHopShortestPaths_type;
+				else if (tmp == "KHOPALLNEIGHBORS")
+					proj_var.aggregate_type = ProjectionVar::kHopAllNeighbors_type;
 
 				if (bicCtx->varOrIri().size() >= 1)
 				{
@@ -509,7 +514,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				}
 
 				if (tmp == "KHOPREACHABLE" || tmp == "KHOPREACHABLEPATH" || tmp == "PPR" \
-					|| tmp == "KHOPENUMERATE" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR")
+					|| tmp == "KHOPENUMERATE" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" || tmp == "KHOPALLNEIGHBORS")
 				{
 					if (bicCtx->integerLiteral(0))
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));

@@ -2044,6 +2044,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								degreeCorrelation(ss, uid, proj[0].path_args.k, pred_id_set);
 							}
+							else if (proj[0].aggregate_type == ProjectionVar::kHopShortestPaths_type)
+							{
+								kHopShortestPaths(ss, uid, vid, proj[0].path_args.directed, pred_id_set, notFirstOutput);
+							}
+							else if (proj[0].aggregate_type == ProjectionVar::kHopAllNeighbors_type)
+							{
+								kHopAllNeighbors(ss, uid, proj[0].path_args.directed, proj[0].path_args.k, pred_id_set, proj[0].path_args.retNum);
+							}
 						}
 						if (earlyBreak)
 							break;
@@ -3456,6 +3464,14 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									degreeCorrelation(ss, uid, proj[i].path_args.k, pred_id_set);
 								}
+								else if (proj[i].aggregate_type == ProjectionVar::kHopShortestPaths_type)
+								{
+									kHopShortestPaths(ss, uid, vid, proj[i].path_args.directed, pred_id_set, notFirstOutput);
+								}
+								else if (proj[i].aggregate_type == ProjectionVar::kHopAllNeighbors_type)
+								{
+									kHopAllNeighbors(ss, uid, proj[i].path_args.directed, proj[i].path_args.k, pred_id_set, proj[i].path_args.retNum);
+								}
 							}
 							if (earlyBreak)
 								break;
@@ -4652,4 +4668,51 @@ void GeneralEvaluation::degreeCorrelation(std::stringstream &ss, int uid, int k,
 	int max_depth = k < 0 ? 999 : k;
 	double ret = pqHandler->degreeCorrelation(uid, max_depth, pred_id_set);
 	ss << "{\"src\":\"" << kvstore->getStringByID(uid) << "\", \"result\":" << ret << "}";
+}
+
+void GeneralEvaluation::kHopShortestPaths(std::stringstream &ss, int uid, int vid, bool directed, const std::vector<int> &pred_id_set, bool &notFirstOutput)
+{
+	if (uid < 0 || vid < 0)
+		return;
+	if (uid == vid)
+	{
+		if (notFirstOutput)
+			ss << ",";
+		else
+			notFirstOutput = 1;
+		vector<int> path; // Empty path
+		pathVec2JSON(uid, vid, path, ss);
+		return;
+	}
+	std::vector<std::vector<int>> paths = pqHandler->kHopShortestPaths(uid, vid, directed, pred_id_set);
+	if (!paths.empty())
+	{
+		for (auto path : paths)
+		{
+			if (notFirstOutput)
+				ss << ",";
+			else
+				notFirstOutput = 1;
+			pathVec2JSON(uid, vid, path, ss);
+		}
+	}
+}
+void GeneralEvaluation::kHopAllNeighbors(std::stringstream &ss, int uid, bool directed, int k, const std::vector<int> &pred_id_set, int retNum)
+{
+	if (uid < 0)
+		return;
+	int max_depth = k < 0 ? 999 : k;
+	int max_retNum = retNum < 0 ? 100 : retNum;
+	std::vector<int> ret = pqHandler->kHopAllNeighbors(uid, directed, max_depth, pred_id_set, max_retNum);
+	bool hasMore = false;
+	ss << "{\"results\":[";
+	for (auto &m : ret)
+	{
+		if (hasMore)
+			ss << ","; 
+		else 
+			hasMore = true;
+		ss << "\""<< kvstore->getStringByID(m) << "\"";
+	}
+	ss << "]}";
 }

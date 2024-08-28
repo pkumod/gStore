@@ -415,7 +415,8 @@ public:
 		maximumKplex_type, coreTruss_type,
 		CompTree_type, Contains_type, Custom_type, PFN_type, 
 		kHopCount_type, kHopNeighbor_type, shortestPathCount_type, louvain_type, IC14_type,
-		diameterEstimation_type, betweennessCentrality_type, JaccardSimilarity_type, degreeCorrelation_type};
+		diameterEstimation_type, betweennessCentrality_type, JaccardSimilarity_type, degreeCorrelation_type,
+		kHopShortestPaths_type, kHopAllNeighbors_type};
 	AggregateType aggregate_type;
 
 	std::string separator;	// For GROUP_CONCAT

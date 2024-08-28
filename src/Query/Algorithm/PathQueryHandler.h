@@ -405,6 +405,9 @@ public:
     std::set<int> getAllNeighborsById(int uid, bool directed, const std::vector<int> &pred_sets);
     void betweennessCentrality_dfs(int uid, int vid, std::vector<int>& temp, std::map<int, std::vector<int>>& dis_l, std::vector<std::vector<int>>& path_l, int passid, bool& pass);
     double shortestPathScalePassId(int uid, int passid, bool directed, const std::vector<int> &pred_sets);
+    void djstl_dfs(int uid, int vid, std::vector<int>& temp, std::map<int, std::vector<int>>& dis_l, std::vector<std::vector<int>>& path_l);
+    std::vector<std::vector<int>> kHopShortestPaths(int uid, int vid, bool directed, const std::vector<int>& pred_set);
+    std::vector<int> kHopAllNeighbors(int uid, bool direction, int k, const std::vector<int> &pred_set, int retNum);
     // diameterEstimation2
     unsigned int diameterEstimation(const std::vector<int> &pred_sets);
     std::pair<int, int> diameterEstimationByuid(int uid, const std::vector<int> &pred_set);

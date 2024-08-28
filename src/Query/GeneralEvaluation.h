@@ -162,6 +162,8 @@ class GeneralEvaluation
 		void betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set);
 		void JaccardSimilarity(std::stringstream &ss, int uid, const std::vector<int> &pred_id_set, int k, int retNum);
 		void degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set);
+		void kHopShortestPaths(std::stringstream &ss, int uid, int vid, bool directed, const std::vector<int> &pred_id_set, bool &notFirstOutput);
+		void kHopAllNeighbors(std::stringstream &ss, int uid, bool directed, int k, const std::vector<int> &pred_id_set, int retNum);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H
