@@ -1,6 +1,23 @@
 ## Code Version Update Log
 
+### **gStore 1.3 Version**
 
+- Update Time：2024-8-30
+- Update functions
+
+  - **Directory Structure Refactoring**: Refactored the directory structure and optimized the compilation method, improving compilation efficiency by 30%.
+  - **New Inference Engine Module**: Supports dynamic management and real-time invocation of inference rules, and supports property inference and relationship inference based on ontology models.
+  - **New Built-in Advanced Functions**: Added four advanced functions: Diameter Estimation (diameterEstimation), Betweenness Centrality (betweennessCentrality), Jaccard Similarity (JaccardSimilarity), and Degree Correlation (degreeCorrelation).
+  - **New Aggregate Function SAMPLE**: Supports calling in SELECT queries.
+  - **New API Interfaces**: Added `checkOperationState` and `reasonManage` interfaces.
+  - **Kernel Logging Refactor**: Supports configuration of five logging levels and expression-based logging content configuration.
+  - **Optimization of CSR Resource Update Mechanism**: CSR resources are dynamically updated based on query needs after data updates.
+  - **Cache Management Optimization**: Optimized the issue where system caches were not being actively released, leading to excessive server memory consumption.
+  - **Data Update Logic Optimization**: Improved the logic for batch addition and deletion of data, increasing execution efficiency by more than 40%.
+  - **Added Data Compression Mechanism**: The HTTP API now supports gzip compression, reducing data transfer size to within 20% of the original data, and shortening data transmission time.
+  - **API Interface Optimization**: Added asynchronous mode and callback mode to some time-consuming interfaces.
+  - **Local Command Optimization**: Optimized local commands, such as build, batch add, and delete, with support for zip file types.
+  - **Bug Fixes**: Fixed a series of bugs.
 
 ### gStore 1.2 Version  
 
@@ -61,6 +78,13 @@
   - Expand the data structure to accommodate large-scale graphs of up to 5 billion triples.
 
 ## Document Version Update Log   
+**2024.8.30   gStore 1.3**
+
+- Modified the contents about Qucik Start to match gStore 1.3 version
+- Modified the contents about Installation Instructions to match gStore 1.3 version
+- Modified common API content to match gStore 1.3 version
+- Modified SPARQL query language content to match gStore 1.3 version
+- Added update log to record the version of gStore and related document updates
 
 **2023.11.11 gStore 1.2** <a class="dow-hre" href="./pdf/gStore1.2 Version User Guide.pdf" download="./pdf/gStore1.2 Version User Guide.pdf" style="float:right;">Download</a>
 

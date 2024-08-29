@@ -257,13 +257,145 @@ WHERE
 
 <br/>
 
+### 内建函数(Built-in Function)
+
+**（1）ISIRI**
+
+是否IRI数据
+
+**例子：**
+
+下面的查询将给出示例数据中天龙八部的主演是否iri数据：
+
+```sparql
+SELECT ?name
+WHERE
+{
+    <天龙八部> <主演> ?name .
+    FILTER ISIRI(?name)
+}
+```
+
+结果如下：
+
+| ?name     |
+| --------- |
+| \<刘亦菲> |
+| <林志颖>  |
+| <胡军>    |
+
+**（2）ISLITERAL**
+
+是否字面量数据
+
+**例子：**
+
+下面的查询将给出示例数据中刘亦菲的姓名是否STR字符串：
+
+```sparql
+SELECT ?name
+WHERE
+{
+    <刘亦菲> <姓名> ?name .
+    FILTER ISLITERAL(?name)
+}
+```
+
+结果如下：
+
+| ?name         |
+| ------------- |
+| "刘亦菲"      |
+| "Crystal Liu" |
+
+**（3）ISNUMERIC**
+
+是否数值类型数据
+
+**例子：**
+
+下面的查询将给出示例数据中宾语为数值类型的所有数据：
+
+```sparql
+SELECT ?p, ?x, ?name
+WHERE
+{
+    ?p ?x ?name .
+    FILTER ISNUMERIC(?name)
+}
+```
+
+结果如下：
+
+| ?p           | ?x         | ?name                                           |
+| ------------ | ---------- | ----------------------------------------------- |
+| <恋爱大赢家> | <豆瓣评分> | "6.1"^^<http://www.w3.org/2001/XMLSchema#float> |
+| <天龙八部>   | <豆瓣评分> | "8.3"^^<http://www.w3.org/2001/XMLSchema#float> |
+
+**(4)  CONCAT**
+
+拼接多个字符
+
+```cpp
+CONCAT(val_1, val_2,...val_n)
+```
+
+**参数**
+
+`val_i`: string类型的字符串值
+
+**例子：**
+
+将查询到的人物姓名、性别、工作连接在一起输出：
+
+```SPARQL
+SELECT (CONCAT(?name, ",", ?gender, ",", ?work) as ?info) WHERE
+{
+        ?s <姓名> ?name.
+        ?s <性别> ?gender.
+        ?s <职业> ?work.
+}
+```
+
+最终的结果输出如下（为方便阅读，省略了字符串最外层的双引号和内部双引号转义）：
+
+```json
+{
+    "bindings": [
+        {
+            "info": {"type": "literal","value": "刘亦菲,女,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "Crystal Liu,女,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "林志颖,男,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "林志颖,男,导演"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,演员"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,导演"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,配音"}
+        },
+        {
+            "info": {"type": "literal","value": "胡军,男,制片"}
+        }
+    ]
+}
+```
 
 
 ## 赋值（Assignment）
 
 以下关键词属于赋值函数，可在查询体内进行变量定义或提供内联数据 。
 
-### BIND: 绑定变量
+**（1）BIND: 绑定变量**
 
 ```
 BIND(value, name)
@@ -275,7 +407,7 @@ BIND(value, name)
 
 `name`: 自定义的参数名称
 
-**示例：**
+**示例1：**
 
 查询刘亦菲或胡军的职业，并在返回的结果中分类标记：
 
@@ -323,28 +455,22 @@ SELECT ?info ?work WHERE
 }
 ```
 
-后续还会进一步完善BIND表达式/函数，比如支持实体对象的赋值绑定等。
+**示例2：**
 
-### CONCAT: 拼接多个字符
-
-```
-CONCAT(val_1, val_2,...val_n)
-```
-
-**参数**
-
-`val_i`: string类型的字符串值
-
-**示例：**
-
-将查询到的人物姓名、性别、工作连接在一起输出：
+绑定实体查询刘亦菲或林志颖的职业，并在返回的结果中分类标记：
 
 ```SPARQL
-SELECT (CONCAT(?name, ",", ?gender, ",", ?work) as ?info) WHERE
+SELECT ?info ?work WHERE
 {
-        ?s <姓名> ?name.
-        ?s <性别> ?gender.
-        ?s <职业> ?work.
+   {
+       BIND(<刘亦菲> as ?info).
+       <刘亦菲> <职业> ?work .
+   }
+   UNION
+   {
+       BIND(<林志颖> as ?info).
+       <林志颖> <职业> ?work.
+   }
 }
 ```
 
@@ -352,35 +478,22 @@ SELECT (CONCAT(?name, ",", ?gender, ",", ?work) as ?info) WHERE
 
 ```json
 {
-    "bindings": [
+	"bindings": [
         {
-            "info": {"type": "literal","value": "刘亦菲,女,演员"}
+            "info": {"type": "literal","value": "刘亦菲"},
+            "work": {"type": "literal","value": "演员"}
         },
         {
-            "info": {"type": "literal","value": "Crystal Liu,女,演员"}
+            "info": {"type": "literal","value": "林志颖"},
+            "work": {"type": "literal","value": "演员"}
         },
         {
-            "info": {"type": "literal","value": "林志颖,男,演员"}
-        },
-        {
-            "info": {"type": "literal","value": "林志颖,男,导演"}
-        },
-        {
-            "info": {"type": "literal","value": "胡军,男,演员"}
-        },
-        {
-            "info": {"type": "literal","value": "胡军,男,导演"}
-        },
-        {
-            "info": {"type": "literal","value": "胡军,男,配音"}
-        },
-        {
-            "info": {"type": "literal","value": "胡军,男,制片"}
+            "info": {"type": "literal","value": "林志颖"},
+            "work": {"type": "literal","value": "导演"}
         }
     ]
 }
 ```
-
 
 
 ## 聚合函数 (Aggregates)
@@ -520,6 +633,28 @@ GROUP BY ?occupation
 | "导演"      | "2"^^\<http://www.w3.org/2001/XMLSchema#integer> |
 | "配音"      | "1"^^\<http://www.w3.org/2001/XMLSchema#integer> |
 | "制片"      | "1"^^\<http://www.w3.org/2001/XMLSchema#integer> |
+
+**SAMPLE**
+
+如果希望从包含多个值的集合中随机返回其中一个值，可以使用关键词 SAMPLE 。例如，下面的查询将给出从有豆瓣评分的电影中随机返回一个电影名：
+
+```sparql
+SELECT (SAMPLE(?movie) AS ?sample_movie)
+WHERE
+{
+    ?movie <豆瓣评分> ?score .
+}
+```
+
+结果如下：
+
+```bash
+------------------
+|  ?sample_movie |
+------------------
+| <天龙八部>     |
+------------------
+```
 
 <br/>
 
@@ -684,7 +819,7 @@ SELECT ?movie ?scoreWHERE{	?movie <豆瓣评分> ?score .}ORDER BY DESC(?score)L
 
 ## 图更新
 
-通过 **INSERT DATA** ，**DELETE DATA** 和 **DELETE WHERE** 查询，我们可以向数据库中插入或从数据库中删除三元组。
+通过 **INSERT DATA** ，**INSERT WHERE**，**DELETE DATA** 和 **DELETE WHERE** 查询，我们可以向数据库中插入或从数据库中删除三元组。
 
 **INSERT DATA**
 
@@ -722,11 +857,27 @@ WHERE
 | \<恋爱大赢家> |
 | \<仙剑奇侠传> |
 
+**INSERT WHRER**
+
+INSERT WHERE用于向数据库中插入符合条件的三元组。相比起 INSERT DATA ，它的 WHRER 语句与 SELECT 查询的 WHERE 语句是完全相同的，也就是说三元组中允许含有变量。例如，下面的查询插入示例数据中武侠影视作品的国家信息
+
+```sparql
+INSERT 
+{
+    ?movie <国家> "中国" .
+} 
+WHERE 
+{
+    ?movie <类型> <武侠片> .
+}
+
+```
+
 **DELETE DATA**
 
 DELETE DATA 用于从数据库中删除三元组。其用法与 INSERT DATA 完全类似。
 
-DELETE WHERE
+**DELETE WHERE**
 
 DELETE DATA 用于从数据库中删除符合条件的三元组；相比起 DELETE DATA ，它的 WHERE 语句与 SELECT 查询的 WHERE 语句是完全相同的，也就是说三元组中允许含有变量。例如，下面的查询删除示例数据中所有武侠片的相关信息：
 
@@ -813,7 +964,7 @@ WHERE
 
 查询是否存在包含结点 `u`  和 `v` 的一个环。
 
-```
+```cpp
 cyclePath(u, v, directed, pred_set)
 cycleBoolean(u, v, directed, pred_set)
 ```
@@ -863,14 +1014,43 @@ WHERE
 
 ```json
 {
-	"paths":[{
-    "src":"<Eve>",
-    "dst":"<Carol>",
-    "edges":
-    [{"fromNode":2,"toNode":3,"predIRI":"<喜欢>"},{"fromNode":3,"toNode":1,"predIRI":"<喜欢>"},{"fromNode":1,"toNode":2,"predIRI":"<喜欢>"}],
-    "nodes":
-    [{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"}]
-	}]
+    "paths": [
+        {
+            "src": "<Eve>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<喜欢>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -882,7 +1062,7 @@ WHERE
 
 查询从结点 `u` 到结点`v` 的最短路径。
 
-```
+```cpp
 shortestPath(u, v, directed, pred_set)
 shortestPathLen(u, v, directed, pred_set)
 ```
@@ -921,14 +1101,47 @@ WHERE
 
 ```json
 {
-	"paths":[{
-		"src":"<Francis>",
-		"dst":"<Alice>",
-		"edges":
-		[{"fromNode":4,"toNode":3,"predIRI":"<喜欢>"},{"fromNode":3,"toNode":1,"predIRI":"<喜欢>"},{"fromNode":1,"toNode":0,"predIRI":"<关注>"}],
-		"nodes":
-		[{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":4,"nodeIRI":"<Francis>"}]
-		}]
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "edges": [
+                {
+                    "fromNode": 4,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 0,
+                    "predIRI": "<focus>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 4,
+                    "nodeIRI": "<Francis>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -946,7 +1159,15 @@ WHERE
 结果如下：（为方便阅读，省略了字符串最外层的双引号和内部双引号的转义）
 
 ```json
-{"paths":[{"src":"<Francis>","dst":"<Alice>","length":3}]}
+{
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "length": 3
+        }
+    ]
+}
 ```
 
 **（3）单源最短路径**
@@ -970,7 +1191,7 @@ SSSPLen(u, directed, pred_set)
 
 `SSSP` 返回最短路径，返回值为以下形式，其中 src 为 u 对应的 IRI；dst 为某可达节点对应的 IRI ；nodes 包含路径中涉及节点的下标和IRI；edges 包含路径中涉及边的首尾节点下标和谓词 IRI 。
 
-```cpp
+```json
 {
     "paths": [
         {
@@ -1001,7 +1222,7 @@ SSSPLen(u, directed, pred_set)
 
 `SSSPLen` 返回最短路径长度，返回值为以下形式，其中 src 为 u 对应的 IRI；dst为某可达节点对应的IRI ；length为src到dst的最短路长度。
 
-```cpp
+```json
 {
     "paths": [
         {
@@ -1018,7 +1239,7 @@ SSSPLen(u, directed, pred_set)
 
 查询从结点 `u` 到结点 `v` 是否可达 / 是否 K 跳可达（即存在以 `u` 为起点、以 `v` 为终点，长度小于或等于 `K` 的路径）。
 
-```
+```cpp
 kHopReachable(u, v, directed, k, pred_set)
 kHopReachablePath(u, v, directed, k, pred_set)
 ```
@@ -1073,7 +1294,15 @@ WHERE
 结果如下：
 
 ```json
-{"paths":[{"src":"<Francis>","dst":"<Alice>","value":"true"}]}
+{
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "value": "false"
+        }
+    ]
+}
 ```
 
 若希望返回一条两人之间满足条件的路径，则可以调用`kHopReachablePath`函数：
@@ -1091,14 +1320,47 @@ WHERE
 
 ```json
 {
-	"paths":[{
-		"src":"<Francis>",
-		"dst":"<Alice>",
-		"edges":
-		[{"fromNode":4,"toNode":3,"predIRI":"<喜欢>"},{"fromNode":3,"toNode":1,"predIRI":"<喜欢>"},{"fromNode":1,"toNode":0,"predIRI":"<关注>"}],
-		"nodes":
-		[{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":4,"nodeIRI":"<Francis>"}]
-		}]
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "edges": [
+                {
+                    "fromNode": 4,
+                    "toNode": 3,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 0,
+                    "predIRI": "<关注>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 4,
+                    "nodeIRI": "<Francis>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -1149,11 +1411,86 @@ WHERE
 
 ```json
 {
-    "paths":[{
-        "src":"<Alice>",
-        "dst":"<Carol>",
-        "edges":[{"fromNode":0,"toNode":1,"predIRI":"<喜欢>"},{"fromNode":1,"toNode":2,"predIRI":"<喜欢>"},{"fromNode":2,"toNode":3,"predIRI":"<喜欢>"}],
-        "nodes":[{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"},{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"}]},{"src":"<Alice>","dst":"<Carol>","edges":[{"fromNode":0,"toNode":1,"predIRI":"<关注>"},{"fromNode":1,"toNode":2,"predIRI":"<喜欢>"},{"fromNode":2,"toNode":3,"predIRI":"<喜欢>"}],"nodes":[{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"},{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"}]}]
+    "paths": [
+        {
+            "src": "<Alice>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 0,
+                    "toNode": 1,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<喜欢>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                },
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                }
+            ]
+        },
+        {
+            "src": "<Alice>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 0,
+                    "toNode": 1,
+                    "predIRI": "<关注>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<喜欢>"
+                },
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<喜欢>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                },
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -1179,7 +1516,7 @@ kHopCount(u, directed, k, pred_set)
 
 返回值为以下形式，其中 src 为 u 对应的 IRI ；depth 为所处层数/高度（等于参数k）；count 为所处层数访问到的结点总数，类型为整型。
 
-```cpp
+```json
 {
     "paths":[
         { "src": "<Alice>", "depth": 3, "count": 1}
@@ -1211,7 +1548,7 @@ kHopNeighbor(u, directed, k, pred_set, ret_num)
 
 返回值为以下形式，其中 src 为 u 对应的 IRI ；depth 为所处层数/高度（等于参数k）；dst为所处层数访问到的结点列表。
 
-```cpp
+```json
 {
     "paths":[
         { 
@@ -1245,7 +1582,7 @@ bfsCount(u, directed, pred_set)
 
 返回值为以下形式，其中 src 为 u 对应的 IRI ；depth 为所处层数/高度（默认 depth 为 0 时只访问 u 自身）；count 为所处层数访问到的结点总数，类型为整型。
 
-```cpp
+```json
 {"paths":
     [
         {"src":"<Alice>",
@@ -1259,20 +1596,50 @@ bfsCount(u, directed, pred_set)
 
 下面的查询返回以Alice为源节点的有向宽度优先遍历计数，边上的关系可以是喜欢、关注或不喜欢，查询语句为：
 
-```cpp
+```SPARQL
 SELECT(bfsCount(<Alice>,true,{<喜欢>,<关注>,<不喜欢>}) AS ?y)
 WHERE{}
 ```
 
 结果如下：
 
-```cpp
+```json
 {"paths":
     [
         {"src":"<Alice>",
          "results":[{"depth":0, "count":1}, {"depth":1, "count":2}, {"depth":2, "count":1}, {"depth":3, "count":1}, {"depth":4, "count":1}]
         }
     ]
+}
+```
+
+**（9）直径估算**
+
+直径估计算法, 返回最长的最短路径长度。
+
+```cpp
+diameterEstimation(pred_set)
+```
+
+**参数**
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+**例子：**
+
+下面的查询边上关系可以为喜欢、关注或不喜欢的直径：
+
+```sparql
+SELECT (diameterEstimation({<喜欢>, <关注>, <不喜欢>}) AS ?y)WHERE{}
+```
+
+**返回值**
+
+返回值为以下形式：
+
+```json
+{
+    "paths": [4]
 }
 ```
 
@@ -1318,7 +1685,7 @@ PR(directed, pred_set, alpha, maxIter, tol)
 **（2）Personalized PageRank**
 
 
-```
+```cpp
 PPR(u, hopCnt, pred_set, retNum)
 ```
 
@@ -1342,7 +1709,7 @@ PPR(u, hopCnt, pred_set, retNum)
 
 （注：由于 FORA 是具有随机性的近似算法，每次的返回值有微小差别是正常的。）
 
-```
+```json
 {"paths":
 	[
 		{"src":"<Francis>", "results":
@@ -1368,7 +1735,7 @@ where
 
 查询某节点到达其他节点的难易程度。
 
-```SPARQL
+```cpp
 closenessCentrality(u, directed, pred_set)
 ```
 
@@ -1503,11 +1870,65 @@ select (triangleCounting(true, {<喜欢>}) as ?y) where {}
 }
 ```
 
-**（5）标签传播**
+**（5）介度中心度**
+
+ 计算图中点的介数中心度值, 值越高表示有越多的最短路径经过了该点。
+
+```cpp
+betweennessCentrality(uid, directed, pred_set)
+```
+
+**参数**
+
+`uid`：变量或结点 IRI
+
+`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+**例子：**
+
+下面的查询途径节点为Eve的介度中心度，边上关系可以为喜欢、关注和不喜欢：
+
+```sparql
+SELECT (betweennessCentrality(<Eve>, true, {<喜欢>, <关注>, <不喜欢>}) AS ?y) WHERE{}
+```
+
+**返回值**
+
+返回值为以下形式
+
+```json
+{
+    "paths":[
+        {"src":"<Eve>", "result":6.5}
+    ]
+}
+```
+
+### 社区发现分析查询
+
+**（1）弱连通分量**
+
+返回图的所有弱连通分量。
+
+```cpp
+WCC(pred_set)
+```
+
+**参数**
+
+`pred_set` ：构成弱连通分量的边上允许出现的谓词集合。若设置为空 `{}` ，则表示允许出现数据中的所有谓词
+
+**返回值**
+
+嵌套数组，形式与标签传播的返回值相同。
+
+**（2）标签传播**
 
 基于标签传播查询图中各结点的聚类情况，可用于社区发现等多种应用。
 
-```
+```cpp
 labelProp(directed, pred_set)
 ```
 
@@ -1523,7 +1944,7 @@ labelProp(directed, pred_set)
 
 返回值为数组的数组（嵌套数组），其中元素为节点 IRI ，对应图中节点的一个划分。
 
-```cpp
+```json
 {
     "paths": [
         [
@@ -1537,94 +1958,9 @@ labelProp(directed, pred_set)
 }
 ```
 
-**（6）弱连通分量**
+**（3）鲁汶算法**
 
-返回图的所有弱连通分量。
-
-```
-WCC(pred_set)
-```
-
-**参数**
-
-`pred_set` ：构成弱连通分量的边上允许出现的谓词集合。若设置为空 `{}` ，则表示允许出现数据中的所有谓词
-
-**返回值**
-
-嵌套数组，形式与标签传播的返回值相同。
-
-**（7）局部集聚系数**
-
-查询结点 u 的局部集聚系数，即所有与它相连的结点之间所连的边的数量（即实际形成的以 u 为顶点的三角形数目），除以这些结点之间可以连出的最大边数（即最大可能形成的以 u 为顶点的三角形数目）。
-
-```
-clusterCoeff(u, directed, pred_set)
-```
-
-**参数**
-
-`u`：变量或结点 IRI
-
-`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 。将图视为有向时，仅计数 cycle 类型三角形（详见三角形计数的介绍）
-
-`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
-
-**返回值**
-
-返回值为结点 u 的局部集聚系数，对应的值为双精度浮点数（形式详见以下例子）。
-
-**（8）整体集聚系数**
-
-查询图的整体集聚系数。
-
-```
-clusterCoeff(directed, pred_set)
-```
-
-**参数**
-
-`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 。将图视为有向时，仅计数 cycle 类型三角形（详见三角形计数的介绍）
-
-`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
-
-**返回值**
-
-返回值为图的整体集聚系数，对应的值为双精度浮点数。
-
-**（9） 紧密中心度**
-
-返回结点 u 的紧密中心度。
-
-```cpp
-closenessCentrality(u, directed, pred_set)
-```
-
-**参数**
-
-`u`：变量或结点 IRI，表示源结点 
-
-`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 
-
-`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
-
-**返回值**
-
-返回值为以下形式，其中 src 为 u 对应的 IRI ；result 为结点 u 在图中的紧密中心度，类型为浮点型。
-
-```cpp
-{
-    "paths": [
-        {
-            "src": "<Alice>",
-            "results": 0.1
-        }
-    ]
-}
-```
-
-**（10）Louvain**
-
-鲁汶算法。
+ 鲁汶社区发现算法, 通过不断合并点社区来最大化图的模块度，能够发现层次性的社区结构。
 
 ```cpp
 louvain(directed, pred_set, maxIter, increase)
@@ -1644,7 +1980,7 @@ louvain(directed, pred_set, maxIter, increase)
 
 返回值为以下形式，count为划分的社区数量，details为划分的各社区信息，包括社区编号communityId、成员数量menberNum
 
-```cpp
+```json
 {
     "count": 3,
     "details": [
@@ -1655,6 +1991,122 @@ louvain(directed, pred_set, maxIter, increase)
 }
 ```
 
+### 关联性分析查询
 
+**（1）局部集聚系数**
+
+查询结点 u 的局部集聚系数，即所有与它相连的结点之间所连的边的数量（即实际形成的以 u 为顶点的三角形数目），除以这些结点之间可以连出的最大边数（即最大可能形成的以 u 为顶点的三角形数目）。
+
+```cpp
+clusterCoeff(u, directed, pred_set)
+```
+
+**参数**
+
+`u`：变量或结点 IRI
+
+`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 。将图视为有向时，仅计数 cycle 类型三角形（详见三角形计数的介绍）
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+**返回值**
+
+返回值为结点 u 的局部集聚系数，对应的值为双精度浮点数（形式详见以下例子）。
+
+**（2）整体集聚系数**
+
+查询图的整体集聚系数。
+
+```cpp
+clusterCoeff(directed, pred_set)
+```
+
+**参数**
+
+`directed`：布尔值，为真表示有向，为假表示无向（图中所有边视为双向） 。将图视为有向时，仅计数 cycle 类型三角形（详见三角形计数的介绍）
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+**返回值**
+
+返回值为图的整体集聚系数，对应的值为双精度浮点数。
+
+**（3）杰卡德系数**
+
+计算点对之间的杰卡德系数, 来比较点之间的相似度。
+
+```cpp
+JaccardSimilarity(uid, pred_set, k, retNum)
+```
+
+**参数**
+
+`uid`： 变量或结点 IRI
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+`k`： 若置为非负整数，则为路径长度上限（查询 k跳以内包含k跳）；若置为负数，则不限制上限
+
+`ret_num`：整数，选填，默认为10，表示最多返回 `ret_num` 个结点 IRI （若总结点数不足 `ret_num` 个，则返回所有结点 IRI ）
+
+**例子：**
+
+下面的查询与Alice最相似的点集合，最大跳数为2跳，最大返回数量10：
+
+```sparql
+SELECT (JaccardSimilarity(<Alice>, {}, 2, 10) AS ?y) WHERE{}
+```
+
+**返回值**
+
+返回值为以下形式，dst为相似节点，value为相似度
+
+```json
+{
+    "paths":[
+        {"dst":<Francis>, "value":0.5},
+        {"dst":<Carol>, "value":0.5},
+        {"dst":<Eve>, "value":0.5},
+        {"dst":<Dave>, "value":0.333333},
+        {"dst":<Bob>, "value":0.333333}
+    ]
+}
+```
+
+**（4）度数关联度**
+
+通过计算任意相邻点对之间的皮尔逊系数来计算图的度数关联度。
+
+```cpp
+degreeCorrelation(uid, k, pred_set)
+```
+
+**参数**
+
+`uid`： 变量或结点 IRI
+
+`k`： 若置为非负整数，则为路径长度上限（查询 k跳以内包含k跳）；若置为负数，则不限制上限
+
+`pred_set`：考虑的谓词集合（若设置为空 `{}` ，则表示允许出现数据中的所有谓词）
+
+**例子：**
+
+下面的查询以节点Alice构成的子图的度数关联度
+
+```sparql
+SELECT (degreeCorrelation(<Alice>, -1, {}) AS ?y) WHERE{}
+```
+
+**返回值**
+
+返回值为以下形式:
+
+```json
+{
+    "paths":[
+        {"src":"<Alice>", "result":0.0429273}
+    ]
+}
+```
 
 <div STYLE="page-break-after: always;"></div>

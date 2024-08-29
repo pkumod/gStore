@@ -152,24 +152,9 @@ example：
 
 ```shell
 [root@localhost gStore]$ bin/ginit -db lubm
-================================================================================
-UPDATE
-Insert:
-{
-	<system>	<built_time>	"2021-02-21 22:50:05".
-	<lubm>	<database_status>	"already_built".
-	<lubm>	<built_by>	<root>.
-	<lubm>	<built_time>	"2021-02-21 22:50:05".
-}
-================================================================================
-parse query  successfully! .
-unlock the query_parse_lock .
-after Parsing, used 96ms.
-write priviledge of update lock acquired
-QueryCache cleared
-Total time used: 97ms.
-update num : 4
-system.db is built successfully!
+The database lubm is not exist, now create it.
+...
+system.db init successfully! Used 24 ms
 ```
 
 ## Create database
@@ -187,15 +172,18 @@ bin/gbuild -db dbname -f filename
 Parameter definition：
 
 	dbname：database name
-	filename：filepath of files with ".nt" or ".n3" as suffix
+	filename：filepath of files with ".nt" or ".n3" as suffix ,filepath of files with ".zip "as suffix containing files with ".nt" or ".n3" as suffix
 
 For example, we build a database called "lubm.db" from lubm.nt, which can be found in the data folder.
 
 ```shell
 [root@localhost gStore]$ bin/gbuild -db lubm -f ./data/lubm/lubm.nt 
-gbuild...
-argc: 3 DB_store:lubm      RDF_data: ./data/lubm/lubm.nt  
-begin encode RDF from : ./data/lubm/lubm.nt ...
+database path: ./dbhome/lubm.db
+...
+Save the database info to system database....
+...
+Add database info success, update num : 3
+Build RDF database lubm successfully! Used 2869 ms
 ```
 
 Note：
@@ -239,14 +227,15 @@ example：
 
 ```shell
 [root@localhost gStore]$ bin/gshow 
-========================================
-database: system
-creator: root
-built_time: "2019-07-28 10:26:00"
-========================================
-database: lubm
-creator: root
-built_time: "2019-07-28 10:27:24"
+--------------------------------------------
+| database | creator |     built_time      |
+--------------------------------------------
+| system   | root    |                     |
+| small    | root    | 2024-08-08 10:24:01 |
+| lubm     | root    | 2024-08-08 14:00:22 |
+| num      | root    | 2024-08-08 10:31:42 |
+| bbug     | root    | 2024-08-08 10:24:01 |
+--------------------------------------------
 ```
 
 
@@ -286,15 +275,20 @@ parameter definition：
 example：
 
 ```shell
-[root@localhost gStore]$ bin/gmonitor -db lubm
-database: lubm
-creator: root
-built_time: "2019-07-28 10:27:24"
-triple num: 99550
-entity num: 28413
-literal num: 0
-subject num: 14569
-predicate num: 17
+[root@localhost gStore]$ bin/gmonitor -db test1
+---------------------------------------
+|     name      |        value        |
+---------------------------------------
+| database      | lubm                |
+| creator       | root                |
+| built_time    | 2024-08-08 14:00:22 |
+| triple_num    | 99550               |
+| entity_num    | 28413               |
+| literal_num   | 0                   |
+| subject_num   | 16196               |
+| predicate_num | 17                  |
+| disk_used     | 21 MB               |
+---------------------------------------
 ```
 
 
@@ -333,25 +327,27 @@ For example, we execute the SPARQL statement in./data/lubm/ lubM_q0.sql to query
 The query result is：
 
 ```shell
-[root@localhost gStore]$ bin/gquery -db lubm -f ./data/lubm/lubm_q0.sql
-There has answer: 15
-final result is :
-?x
-<http://www.Department0.University0.edu/FullProfessor0>
-<http://www.Department1.University0.edu/FullProfessor0>
-<http://www.Department2.University0.edu/FullProfessor0>
-<http://www.Department3.University0.edu/FullProfessor0>
-<http://www.Department4.University0.edu/FullProfessor0>
-<http://www.Department5.University0.edu/FullProfessor0>
-<http://www.Department6.University0.edu/FullProfessor0>
-<http://www.Department7.University0.edu/FullProfessor0>
-<http://www.Department8.University0.edu/FullProfessor0>
-<http://www.Department9.University0.edu/FullProfessor0>
-<http://www.Department10.University0.edu/FullProfessor0>
-<http://www.Department11.University0.edu/FullProfessor0>
-<http://www.Department12.University0.edu/FullProfessor0>
-<http://www.Department13.University0.edu/FullProfessor0>
-<http://www.Department14.University0.edu/FullProfessor0>
+[root@localhost gStore]$ bin/gquery -db lubm -q ./data/lubm/lubm_q0.sql
+------------------------------------------------------------
+|                            ?x                            |
+------------------------------------------------------------
+| <http://www.Department0.University0.edu/FullProfessor0>  |
+| <http://www.Department1.University0.edu/FullProfessor0>  |
+| <http://www.Department2.University0.edu/FullProfessor0>  |
+| <http://www.Department3.University0.edu/FullProfessor0>  |
+| <http://www.Department4.University0.edu/FullProfessor0>  |
+| <http://www.Department5.University0.edu/FullProfessor0>  |
+| <http://www.Department6.University0.edu/FullProfessor0>  |
+| <http://www.Department7.University0.edu/FullProfessor0>  |
+| <http://www.Department8.University0.edu/FullProfessor0>  |
+| <http://www.Department9.University0.edu/FullProfessor0>  |
+| <http://www.Department10.University0.edu/FullProfessor0> |
+| <http://www.Department11.University0.edu/FullProfessor0> |
+| <http://www.Department12.University0.edu/FullProfessor0> |
+| <http://www.Department13.University0.edu/FullProfessor0> |
+| <http://www.Department14.University0.edu/FullProfessor0> |
+------------------------------------------------------------
+query database successfully, Used 72 ms
 ```
 
 2.To learn more about how to use gQuery, enter the following command:
@@ -380,24 +376,32 @@ he program displays a command prompt (" gsql > ") where you can enter command:
 (base) [root@iz8vb0u9hafhzz1mn5xcklz gStore]# bin/gquery -db lubm
 
 gsql>sparql ./data/lubm/lubm_q0.sql
-... ...
-Total time used: 4ms.
-final result is : 
-<http://www.Department0.University0.edu/FullProfessor0>
-<http://www.Department1.University0.edu/FullProfessor0>
-<http://www.Department2.University0.edu/FullProfessor0>
-<http://www.Department3.University0.edu/FullProfessor0>
-<http://www.Department4.University0.edu/FullProfessor0>
-<http://www.Department5.University0.edu/FullProfessor0>
-<http://www.Department6.University0.edu/FullProfessor0>
-<http://www.Department7.University0.edu/FullProfessor0>
-<http://www.Department8.University0.edu/FullProfessor0>
-<http://www.Department9.University0.edu/FullProfessor0>
-<http://www.Department10.University0.edu/FullProfessor0>
-<http://www.Department11.University0.edu/FullProfessor0>
-<http://www.Department12.University0.edu/FullProfessor0>
-<http://www.Department13.University0.edu/FullProfessor0>
-<http://www.Department14.University0.edu/FullProfessor0>
+query is:
+select ?x where
+{
+        ?x      <ub:name>       <FullProfessor0>.
+}
+
+
+------------------------------------------------------------
+|                            ?x                            |
+------------------------------------------------------------
+| <http://www.Department0.University0.edu/FullProfessor0>  |
+| <http://www.Department1.University0.edu/FullProfessor0>  |
+| <http://www.Department2.University0.edu/FullProfessor0>  |
+| <http://www.Department3.University0.edu/FullProfessor0>  |
+| <http://www.Department4.University0.edu/FullProfessor0>  |
+| <http://www.Department5.University0.edu/FullProfessor0>  |
+| <http://www.Department6.University0.edu/FullProfessor0>  |
+| <http://www.Department7.University0.edu/FullProfessor0>  |
+| <http://www.Department8.University0.edu/FullProfessor0>  |
+| <http://www.Department9.University0.edu/FullProfessor0>  |
+| <http://www.Department10.University0.edu/FullProfessor0> |
+| <http://www.Department11.University0.edu/FullProfessor0> |
+| <http://www.Department12.University0.edu/FullProfessor0> |
+| <http://www.Department13.University0.edu/FullProfessor0> |
+| <http://www.Department14.University0.edu/FullProfessor0> |
+------------------------------------------------------------
 
 gsql>help
 help - print commands message
@@ -454,13 +458,13 @@ example：
 
 ```shell
 [root@localhost gStore]# bin/gexport -db lubm	
-after Handle, used 0 ms.
-QueryCache didn't cache
-after tryCache, used 0 ms.
-in getFinal Result the first half use 0  ms
-after getFinalResult, used 0ms.
-Total time used: 1ms.
-finish exporting the database.
+gexport...
+...
+start exporting the database......
+...
+finish loading
+lubm.db exported successfully! Used 187 ms
+lubm.db export path: lubm_240808141125.nt
 ```
 
 
@@ -500,11 +504,9 @@ example：
 
 ```shell
 [root@localhost gStore]$ bin/drop -db lubm2
-after tryCache, used 0 ms.
-QueryCache cleared
-Total time used: 97ms.
-update num : 3
-lubm2.db is dropped successfully!
+Begin to drop database....
+...
+Database lubm2 dropped successfully! Used 20 ms
 ```
 
 To delete the database, you should not just type `rm -r db_name. Db` because this will not update the built-in database named `system`. Instead, you should type `bin/ gdrop-db db_name`.
@@ -543,19 +545,16 @@ bin/gadd -db db_name -f rdf_triple_file_path
 
 parameter definition：
 
-	db_name：database name
-	rdf_triple_file_path：The file path with the suffix ".nt" or ".n3"
+	dbname：database name
+	filename：filepath of files with ".nt" or ".n3" as suffix ,filepath of files with ".zip "as suffix containing files with ".nt" or ".n3" as suffix
 
 example：
 
 ```shell
 [bookug@localhost gStore]$ bin/gadd -db lubm -f ./data/lubm/lubm.nt
 ...
-argc: 3 DB_store:lubm   insert file:./data/lubm/lubm.nt
-get important pre ID
-...
-insert rdf triples done.
-inserted triples num: 99550
+finish loading
+after inserted triples num 0,failed num 0,used 2452 ms
 ```
 
 **Note:**   
@@ -608,22 +607,22 @@ gsub is used to remove triples from files in an existing database.
 
 instruction：
 
-```
-bin/gsub db_name rdf_triple_file_path
+```bash
+bin/gsub -db db_name -f rdf_triple_file_path
 ```
 
 parameter definition：
 
-	rdf_triple_file_path：The path to the data file to be deleted with the suffix ".nt" or ".n3"
+	rdf_triple_file_path：filepath of files with ".nt" or ".n3" as suffix ,filepath of files with ".zip "as suffix containing files with ".nt" or ".n3" as suffix
 
 example：
 
-    [root@localhost gStore]$ bin/gsub lubm ./data/lubm/lubm.nt
-    ...
-    argc: 3 DB_store:lubm  remove file: ./data/lubm/lubm.nt
-    ...
-    remove rdf triples done.
-    removed triples num: 99550
+```shell
+[root@localhost gStore]$ bin/gsub -db lubm -f ./data/lubm/lubm.nt
+...
+finish loading
+after remove, used 2580 ms
+```
 
 
 
@@ -691,15 +690,15 @@ A prompt for input will appear if `usr_name` is missing.
 Enter user name: root
 Enter password: 
 
-Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories.
-Gstore version: 1.2 Source distribution
-Copyright (c) 2016, 2022, pkumod and/or its affiliates.
+Gstore Console , an interactive shell based utility to communicate with gstore repositories.
+Gstore version: 1.3 Source distribution
+Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates.
 
-Welcome to the gStore Console.
+Welcome to the Gstore Console.
 Commands end with ;. Cross line input is allowed.
 Comment start with #. Redirect (> and >>) is supported.
 CTRL+C to quit current command. CTRL+D to exit this console.
-Type 'help;' for help.
+Type 'help;' for help. 
 
 gstore> 
 ```
@@ -712,17 +711,15 @@ bin/gconsole --help
 
 ```bash
 # bin/gconsole --help
-Gstore Ver 1.0.0 for Linux on x86_64 (Source distribution)
-Gstore Console(gconsole), an interactive shell based utility to communicate with gStore repositories.
-Copyright (c) 2016, 2022, pkumod and/or its affiliates.
+Gstore Ver 1.3 for Linux on x86_64 (Source distribution)
+Gstore Console(gconsole), an interactive shell based utility to communicate with gstore repositories.
+Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates.
 
 Usage: bin/gconsole [OPTIONS]
--?, --help Display this help and exit.
--u, --user username.
-
+  -?, --help          Display this help and exit.
+  -u, --user          username. 
+  
 Supported command in gconsole: Type "?" or "help" in the console to see info of all commands.
-
-For bug reports and suggestions, see https://github.com/pkumod/gStore
 ```
 
 **(3)Commands**
@@ -755,9 +752,10 @@ create <database_name> [<nt_file_path>]
 - \<nt_file_path>：file path
 
 ```
-gstore> create eg my_test_data/eg_rdf.nt;
+gstore> create example friend.nt；
 ... (this is build database process output, omitted in this document)
-Database eg created successfully
+Add database info success.
+Build RDF database example successfully!
 ```
 
 **(2)Delete database**
@@ -777,7 +775,6 @@ gstore> drop <database_name>;
 
 ```
 use <database_name>
-
 ```
 
 - Load/switch the current database: unload the previous current database from memory (if any) and load the specified database
@@ -785,10 +782,9 @@ use <database_name>
 - \<database_name>：can only be specified as the name of a database for which the current user have load and unload permissions
 
 ```
-gstore> use mytest;
+gstore> use example;
 ... (this is load process output, omitted in this document)
-Current database switch to mytest successfully.
-
+Current database switch to example successfully.
 ```
 
 **(4)Query/update database**
@@ -800,17 +796,31 @@ Current database switch to mytest successfully.
 
 ```bash
 gstore> # show all in db
-	-> SELECT ?x ?y ?z
-	-> WHERE{
-	-> ?x ?y ?z. # comment
-	-> } ;
+     -> SELECT ?x ?y ?z 
+     -> WHERE{
+     ->     ?x ?y ?z. # comment
+     -> } ;
 ... (this is query process output, omitted in this document)
-final result is :
-?x ?y ?z
-<root> <has_password> "123456"
-<system> <built_by> <root>
-<CoreVersion> <value> "1.0.0"
-query database successfully, Used 15 ms
+---------------------------------------
+|    ?x     |     ?y      |    ?z     |
+---------------------------------------
+| <Alice>   | <关注>      | <Bob>     |
+| <Bob>     | <关注>      | <Alice>   |
+| <Carol>   | <关注>      | <Bob>     |
+| <Dave>    | <关注>      | <Alice>   |
+| <Dave>    | <关注>      | <Eve>     |
+| <Alice>   | <喜欢>      | <Bob>     |
+| <Bob>     | <喜欢>      | <Eve>     |
+| <Eve>     | <喜欢>      | <Carol>   |
+| <Carol>   | <喜欢>      | <Bob>     |
+| <Francis> | <喜欢>      | <Carol>   |
+| <Alice>   | <不喜欢>    | <Eve>     |
+| <Carol>   | <不喜欢>    | <Francis> |
+| <Francis> | <不喜欢>    | <Eve>     |
+| <Francis> | <不喜欢>    | <Dave>    |
+| <Dave>    | <不喜欢>    | <Francis> |
+---------------------------------------
+query database successfully, Used 127 ms
 
 ```
 
@@ -828,46 +838,47 @@ Redirect output to file: my_test_data/output
 
 **(6)sparql <sparql_file>**
 
+```shell
+sparql sparql_file
+## sparql_fileis a SPARQL query file, which can be either a relative path or an absolute path.
+```
+
 - Specify the sparql file: the file contains multiple sparql statements that need to be separated by `;` and the last `;` is optional
 - The file content supports single-line comments starting with #
 
 ```bash
-gstore> sparql query.sparql ;
+gstore> sparql all.sparql ;
 ... (this is query process output, omitted in this document)
-final result is : 
-?x      ?y      ?z
-<root>  <has_password>  "123456"
-<system>        <built_by>      <root>
-<CoreVersion>   <value> "1.0.0"
-query database successfully, Used 15 ms
-
+----------------------------------
+|    ?s     |    ?p    |   ?o    |
+----------------------------------
+| <Alice>   | <关注>   | <Bob>   |
+| <Bob>     | <关注>   | <Alice> |
+| <Carol>   | <关注>   | <Bob>   |
+| <Dave>    | <关注>   | <Alice> |
+| <Dave>    | <关注>   | <Eve>   |
+| <Alice>   | <喜欢>   | <Bob>   |
+| <Bob>     | <喜欢>   | <Eve>   |
+| <Eve>     | <喜欢>   | <Carol> |
+| <Carol>   | <喜欢>   | <Bob>   |
+| <Francis> | <喜欢>   | <Carol> |
+----------------------------------
+query database successfully, Used 121 ms
 ```
 
 - An example of query.sparql content:
 
 ```sql
-# comment
-SELECT ?t1_time
-WHERE
-{
-	# comment
-	<t1><built_time>?t1_time. # comment
-};
-# comment
-SELECT ?t2_time
-WHERE
-{
-	# comment
-	<t2><built_time>?t2_time. # comment
-};
-
+SELECT	?x ?y ?z
+WHERE {
+    ?x ?y ?z.
+}
 ```
 
 **(7)Display database information**
 
 ```
 show [<database_name>] [-n <displayed_triple_num>]
-
 ```
 
 - Display meta information and the first displayed_triple_num triples (the first 10 triples are displayed by default)
@@ -875,64 +886,72 @@ show [<database_name>] [-n <displayed_triple_num>]
 - -n <displayed_triple_num>: number of lines displayed
 
 ```
-gstore> show eg;
+gstore> show example;
 ... (this is load and query process output, omitted in this document)
-===================================================
-Name: eg
-TripleNum: 15
-EntityNum: 6
-LiteralNum: 0
-SubNum: 3
-PreNum: 3
-===================================================
-<Alice> <follow> <Bob>
-<Bob> <follow> <Alice>
-<Carol> <follow> <Bob>
-<Dave> <follow> <Alice>
-<Dave> <follow> <Eve>
-<Alice> <like> <Bob>
-<Bob> <like> <Eve>
-<Eve> <like> <Carol>
-<Carol> <like> <Bob>
-<Francis> <like> <Carol>
-
+---------------------------------------
+|     name      |        value        |
+---------------------------------------
+| database      | example             |
+| creator       | root                |
+| built_time    | 2024-08-06 17:23:47 |
+| triple_num    | 15                  |
+| entity_num    | 6                   |
+| literal_num   | 0                   |
+| subject_num   | 6                   |
+| predicate_num | 3                   |
+---------------------------------------
+----------------------------------
+|    ?s     |    ?p    |   ?o    |
+----------------------------------
+| <Alice>   | <关注>   | <Bob>   |
+| <Bob>     | <关注>   | <Alice> |
+| <Carol>   | <关注>   | <Bob>   |
+| <Dave>    | <关注>   | <Alice> |
+| <Dave>    | <关注>   | <Eve>   |
+| <Alice>   | <喜欢>   | <Bob>   |
+| <Bob>     | <喜欢>   | <Eve>   |
+| <Eve>     | <喜欢>   | <Carol> |
+| <Carol>   | <喜欢>   | <Bob>   |
+| <Francis> | <喜欢>   | <Carol> |
+----------------------------------
 ```
 
 **(8)View all databases**
 
 ```
 showdbs
-
 ```
 
 - Only the databases for which the current user has query permissions can be displayed.
 
 ```bash
 gstore> showdbs;
-"database" "creater" status"
-<system> <root>
-<eg> <yuanzhiqiu> "already_built"
-
+--------------------------------------
+| database | creater |    status     |
+--------------------------------------
+| system   | root    |               |
+| test1    | root    | already_built |
+| test     | root    | already_built |
+| test2    | root    | already_built |
+| test3    | root    | already_built |
+| example  | root    | already_built |
 ```
 
 **(9)Display current database name**
 
 ```
 pdb
-
 ```
 
 ```
 gstore> pdb;
-eg
-
+example
 ```
 
 **(10)Backup current database**
 
 ```
 backup [<backup_folder>]
-
 ```
 
 - \<backup_folder> specifies the backup path.
@@ -940,47 +959,41 @@ backup [<backup_folder>]
 ```
 gstore> backup;
 ... (this is backup process output, omitted in this document)
-Database eg backup successfully.
-
+Database example backup successfully.
 ```
 
 ```
 gstore> backup back;
 ... (this is backup process output, omitted in this document)
-Database eg backup successfully.
-
+Database example backup successfully.
 ```
 
 **(11)Export current database**
 
 ```
 export <file_path>
-
 ```
 
 - \<file_path> specifies the export path.
 
 ```
-gstore> export eg.nt;
-Database eg export successfully.
-
+gstore> export example.nt;
+Database example export successfully.
 ```
 
 **(12)Restore database**
 
 ```
 restore <database_name> <backup_path>
-
 ```
 
 - \<database_name>: database name.
 - \<backup_path>: backup file path.
 
 ```
-gstore> restore eg backups/eg.db_220929114732/
+gstore> restore example backups/example.db_220929114732/
 ... (this is restore process output, omitted in this document)
-Database eg restore successfully.
-
+Database example restore successfully.
 ```
 
 ### User Identity
@@ -989,7 +1002,6 @@ Database eg restore successfully.
 
 ```bash
 flushpriv
-
 ```
 
 Read db and refresh current user permissions
@@ -997,14 +1009,12 @@ Read db and refresh current user permissions
 ```bash
 gstore> flushpriv;
 Privilige Flushed for current user successfully.
-
 ```
 
 **(2)Display current username and permissions**
 
 ```bash
 pusr [<database_name>]
-
 ```
 
 - `pusr` displays the current username
@@ -1013,7 +1023,8 @@ pusr [<database_name>]
 ```bash
 gstore> pusr;
 usrname: yuanzhiqiu
-gstore> pusr eg;
+
+gstore> pusr example;
 usrname: yuanzhiqiu
 privilege on eg: query load unload update backup restore export
 
@@ -1023,7 +1034,6 @@ privilege on eg: query load unload update backup restore export
 
 ```
 setpswd
-
 ```
 
 - Password verification is required.
@@ -1046,43 +1056,38 @@ Password set successfully.
 
 ```
 settings [<conf_name>]
-
 ```
 
 - Show all configuration information.
 
 ```
 gstore> settings;
-Settings:
-thread_num 30
+Settings: 
+thread_num      30
 ... (this is other settings, omitted in this document)
-You can Edit configuration file to change settings: conf.ini
-
+You can Edit configuration file to change settings: ./conf/conf.ini
 ```
 
 - \<conf_name> displays the configuration information of the specified conf_name.
 
 ```bash
 gstore> settings ip_deny_path;
-"ipDeny.config"
-You can Edit configuration file to change settings: conf.ini
-
+"./conf/ipDeny.config"
+You can Edit configuration file to change settings: ./conf/conf.ini
 ```
 
 **(2)View version**
 
 ```bash
 version
-
 ```
 
 - Output current version information.
 
 ```bash
 gstore> version;
-Gstore version: 1.0 Source distribution
-Copyright (c) 2016, 2022, pkumod and/or its affiliates.
-
+Gstore version: 1.3 Source distribution
+Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates.
 ```
 
 ### Permissions management
@@ -1095,18 +1100,16 @@ Only system users have the permission to execute commands related to permissions
 
   ```
   [1]query [2]load [3]unload [4]update [5]backup [6]restore [7]export
-  
   ```
-
-   Users who have all seven permissions are considered to have full permissions.
-
+  
+ Users who have all seven permissions are considered to have full permissions.
+  
 - System users have full permissions on all databases. (System users are defined in conf.ini and system.db.)
 
 **(1)Set user's permissions**
 
 ```
 setpriv <usrname> <database_name>
-
 ```
 
 - A password is required to verify root identity.
@@ -1128,7 +1131,6 @@ Privilege set successfully.
 
 ```bash
 pusr <database_name> <usrname>
-
 ```
 
 - \<usrname> : the user name.
@@ -1137,14 +1139,12 @@ pusr <database_name> <usrname>
 ```bash
 gstore> pusr eg yuanzhiqiu;
 privilege on eg: query load unload update backup restore export
-
 ```
 
 **(3)View all users and their permissions**
 
 ```bash
 showusrs
-
 ```
 
 Show which users there are and the database permissions for each user (non-root users only; only databases with has_xxx_priv for this user are displayed.)
@@ -1152,25 +1152,19 @@ Show which users there are and the database permissions for each user (non-root 
 Output format:
 
 ```bash
-usrname
+usr
 ------------------------
 privilege on databases
 
 ```
 
 ```bash
-gstore> showusrs;
-root
-----
-all privilege on all db
-yuanzhiqiu
-----------
-eg: query load unload update backup restore export
-mytest1: query load unload
-zero
-----
-mytest2: query load unload
-
+----------------------------------------------------------
+| user |                    privilege                    |
+----------------------------------------------------------
+| root | all privilege on all db                         |
+| uki  | unload: query load unload update backup export  |
+----------------------------------------------------------
 ```
 
 ### User management
@@ -1181,7 +1175,6 @@ Only system users have the permission to execute user management commands.
 
 ```bash
 addusr <usrname>
-
 ```
 
 - A password is required to verify root identity.
@@ -1192,14 +1185,12 @@ gstore> addusr uki;
 Enter your password:
 Enter password for new user: hello
 Add usr uki successfully.
-
 ```
 
 **(2)Delete users**
 
 ```bash
 delusr <usrname>
-
 ```
 
 - A password is required to verify root identity.
@@ -1209,14 +1200,12 @@ delusr <usrname>
 gstore> delusr cat;
 Enter your password:
 Del usr cat successfully.
-
 ```
 
 **(3)Reset passwords**
 
 ```bash
 setpswd <usrname>
-
 ```
 
 - A password is required to verify root identity.
@@ -1228,24 +1217,21 @@ Enter your password:
 Enter new password:
 Enter new password again:
 Password set successfully.
-
 ```
 
 **(4)View all users**
 
 ```bash
 showusrs
-
 ```
 
 ```bash
-gstore> showusrs;
-root
-----
-all privilege on all db
-lubm
-----
-
+----------------------------------------------------------
+| user |                    privilege                    |
+----------------------------------------------------------
+| root | all privilege on all db                         |
+| uki  | unload: query load unload update backup export  |
+----------------------------------------------------------
 ```
 
 ### Help and miscellaneous
@@ -1363,14 +1349,12 @@ create          Build a database from a dataset or create an empty database.
 gstore> help use;
 use 	Set current database.
 		use <database_name>;
-
 ```
 
 **(4)Clear screen**
 
 ```bash
 gstore> clear;
-
 ```
 
 **(5)View current working path**

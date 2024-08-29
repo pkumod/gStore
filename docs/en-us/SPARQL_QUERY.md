@@ -269,74 +269,85 @@ Results are as follows：
 | ----------- |
 | \<YifeiLiu> |
 
+### Built-in Function
 
+**（1）ISIRI**
 
-## Assignment
+Checks if the data is an IRI.
 
-The following keywords belong to assignment functions and can be used to define variables in the query body or provide inline data.
+**Example：**
 
-### BIND: assigning to a variable
+The following query checks if the lead actors of "Demi-Gods and Semi-Devils" in the sample data are IRIs:
 
-```
-BIND(value, name)
-```
-
-**Parameter**
-
-`value`: a string value
-`name`: name of a variable that has not yet appeared in the query
-
-**Sample**
-
-Query the occupation of YifeiLiu, JunHu and categorize the tags in the results returned:
-
-```sql
-SELECT ?a ?x WHERE
+```sparql
+SELECT ?name
+WHERE
 {
-	{
-		BIND("YifeiLiu" as ?info).
-		<YifeiLiu> <occupation> ?profession.
-	}
-	UNION
-	{
-		BIND("JunHu" as ?info).
-		<JunHu> <accupation> ?profession.
-	}
+    <Demi-Gods and Semi-Devils> <LeadActor> ?name .
+    FILTER ISIRI(?name)
 }
 ```
 
-The result is as follows: (For the convenience of reading, the escaping of the outermost double quotes and the inner double quotes of the string is omitted)
+The results are as follows:
 
-```json
+| ?name     |
+| --------- |
+| \<Liu Yifei> |
+| \<Jimmy Lin>  |
+| \<Hun Jun>    |
+
+
+**（2）ISLITERAL**
+
+Checks if the data is a literal.
+
+**Example:**
+
+The following query checks if the names of Liu Yifei in the sample data are string literals:
+
+```sparql
+SELECT ?name
+WHERE
 {
-	"bindings": [
-		{
-			"info": {"type": "literal", "value": "YifeiLiu"},
-			"profession": {"type": "literal", "value": "actor"}
-		},
-		{
-			"info": {"type": "literal", "value": "JunHu"},
-			"profession": {"type": "literal", "value": "actor"}
-		},
-		{
-			"info": {"type": "literal", "value": "JunHu"},
-			"profession": {"type": "literal", "value": "voice actors"}
-		},
-		{
-			"info": {"type": "literal", "value": "JunHu"},
-			"profession": {"type": "literal", "value": "producer"}
-		},
-		{
-			"info": {"type": "literal", "value": "JunHu"},
-			"profession": {"type": "literal", "value": "director"}
-		}
-	]
+    <Liu Yifei> <Name> ?name .
+    FILTER ISLITERAL(?name)
 }
 ```
 
-Further improvements will be made to BIND expressions/functions, such as support for binding an entity  (IRI) to a variable.
+The results are as follows:
 
-### CONCAT: concat multiple characters
+| ?name         |
+| ------------- |
+| "Liu Yifei"      |
+| "Crystal Liu" |
+
+**（3）ISNUMERIC**
+
+Checks if the data is of numeric type.
+
+**Example：**
+
+The following query retrieves all data from the sample where the object is a numeric type:
+
+```sparql
+SELECT ?p, ?x, ?name
+WHERE
+{
+    ?p ?x ?name .
+    FILTER ISNUMERIC(?name)
+}
+```
+
+结果如下：
+
+| ?p           | ?x         | ?name                                           |
+| ------------ | ---------- | ----------------------------------------------- |
+| \<Love Winner> | \<DoubanScore> | "6.1"^^<http://www.w3.org/2001/XMLSchema#float> |
+| \<Demi-Gods and Semi-Devils>   | \<DoubanScore> | "8.3"^^<http://www.w3.org/2001/XMLSchema#float> |
+
+**(4)  CONCAT**
+
+Concat multiple characters
 
 ```
 CONCAT(val_1, val_2,...val_n)
@@ -346,7 +357,7 @@ CONCAT(val_1, val_2,...val_n)
 
 `val_i`: string-typed string value
 
-**Sample：**
+**Example：**
 
 Connect the name, gender and profession of the people found with each other：
 
@@ -389,6 +400,110 @@ The final result output is as follows (for ease of reading, the outer double quo
             "info": {"type": "literal","value": "JunHu,male,producer"}
         }
     ]
+}
+```
+
+
+## Assignment
+
+The following keywords belong to assignment functions and can be used to define variables in the query body or provide inline data.
+
+**（1）BIND: assigning to a variable**
+
+```
+BIND(value, name)
+```
+
+**Parameter**
+
+`value`: a string value
+`name`: name of a variable that has not yet appeared in the query
+
+**Sample 1**
+
+Query the occupation of YifeiLiu, JunHu and categorize the tags in the results returned:
+
+```sql
+SELECT ?info ?profession WHERE
+{
+	{
+		BIND("YifeiLiu" as ?info).
+		<YifeiLiu> <occupation> ?profession.
+	}
+	UNION
+	{
+		BIND("JunHu" as ?info).
+		<JunHu> <accupation> ?profession.
+	}
+}
+```
+
+The result is as follows: (For the convenience of reading, the escaping of the outermost double quotes and the inner double quotes of the string is omitted)
+
+```json
+{
+	"bindings": [
+		{
+			"info": {"type": "literal", "value": "YifeiLiu"},
+			"profession": {"type": "literal", "value": "actor"}
+		},
+		{
+			"info": {"type": "literal", "value": "JunHu"},
+			"profession": {"type": "literal", "value": "actor"}
+		},
+		{
+			"info": {"type": "literal", "value": "JunHu"},
+			"profession": {"type": "literal", "value": "voice actors"}
+		},
+		{
+			"info": {"type": "literal", "value": "JunHu"},
+			"profession": {"type": "literal", "value": "producer"}
+		},
+		{
+			"info": {"type": "literal", "value": "JunHu"},
+			"profession": {"type": "literal", "value": "director"}
+		}
+	]
+}
+```
+
+**Sample 2**
+
+Binding entity(IRI) query the occupation of YifeiLiu, ZhiyingLin and categorize the tags in the results returned:
+
+```sql
+SELECT ?info ?profession WHERE
+{
+	{
+		BIND("YifeiLiu" as ?info).
+		<YifeiLiu> <occupation> ?profession.
+	}
+	UNION
+	{
+		BIND("ZhiyingLin" as ?info).
+		<ZhiyingLin> <accupation> ?profession.
+	}
+}
+```
+
+The result is as follows: (For the convenience of reading, the escaping of the outermost double quotes and the inner double quotes of the string is omitted)
+
+```json
+{
+	"bindings": [
+		{
+			"info": {"type": "literal", "value": "YifeiLiu"},
+			"profession": {"type": "literal", "value": "actor"}
+		},
+		{
+			"info": {"type": "literal", "value": "ZhiyingLin"},
+			"profession": {"type": "literal", "value": "actor"}
+		},
+		{
+			"info": {"type": "literal", "value": "ZhiyingLin"},
+			"profession": {"type": "literal", "value": "voice actors"}
+		}
+	]
 }
 ```
 
@@ -537,6 +652,26 @@ Results are as follows：
 | "director"     | "2"^^\<http://www.w3.org/2001/XMLSchema#integer> |
 | "voice actors" | "1"^^\<http://www.w3.org/2001/XMLSchema#integer> |
 | "producer"     | "1"^^\<http://www.w3.org/2001/XMLSchema#integer> |
+
+**SAMPLE**
+
+If you want to randomly return one value from a set that contains multiple values, you can use the SAMPLE keyword. For example, the following query randomly returns one movie name from the films that have a Douban score:
+
+```sparql
+SELECT (SAMPLE(?movie) AS ?sample_movie)
+WHERE
+{
+?movie <score> ?score .
+}
+```
+
+```bash
+------------------
+|  ?sample_movie |
+------------------
+| <Tanlongbabu>     |
+------------------
+```
 
 <br/>
 
@@ -737,6 +872,21 @@ After inserting the above data, the result becomes:
 | \<TheLoveWinner> |
 | \<Paladin>       |
 
+**INSERT WHRER**
+
+The INSERT WHERE clause is used to insert triples into a database that meet specific conditions. Unlike INSERT DATA, the WHERE clause in INSERT WHERE is identical to the WHERE clause in a SELECT query, meaning that the triples can include variables. For example, the following query inserts country information for martial arts films in the sample data:
+
+```sparql
+INSERT 
+{
+    ?movie <country> "China" .
+} 
+WHERE 
+{
+    ?movie <type> <ActionMovie> .
+}
+```
+
 **DELETE DATA**
 
 DELETE DATA is used to DELETE triples from a database. The usage is exactly similar to INSERT DATA.
@@ -826,7 +976,7 @@ The final return value represents a set of paths/rings/subgraphs as follows :(wh
 
 Queries for the existence of a cycle containing nodes ` u `and `v`
 
-```
+```cpp
 cyclePath(u, v, directed, pred_set)
 cycleBoolean(u, v, directed, pred_set)
 ```
@@ -872,14 +1022,43 @@ Results are as follows，It can be seen that one of the rings satisfying the con
 
 ```json
 {
-	"paths":[{
-    "src":"<Eve>",
-    "dst":"<Carol>",
-    "edges":
-    [{"fromNode":2,"toNode":3,"predIRI":"<like>"},{"fromNode":3,"toNode":1,"predIRI":"<like>"},{"fromNode":1,"toNode":2,"predIRI":"<like>"}],
-    "nodes":
-    [{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"}]
-	}]
+    "paths": [
+        {
+            "src": "<Eve>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<like>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
@@ -891,7 +1070,7 @@ The red part below is the ring:
 
 Query the shortest path from node `u` to node `v`
 
-```
+```cpp
 shortestPath(u, v, directed, pred_set)
 shortestPathLen(u, v, directed, pred_set)
 ```
@@ -914,7 +1093,10 @@ Used in SELECT statements, using the same syntax as aggregate function.
 The following query returns the shortest path from Francis to a person (Alice in the example data) that Bob likes, cares about, or dislikes, and is not disliked by Francis, with a relationship that can be like or care about.
 
 ```sparql
-SELECT (shortestPath(<Francis>, ?x, true, {<like>, <focus>}) AS ?y)WHERE{	<Bob> ?pred ?x .	MINUS { <Francis> <dislike> ?x . }}
+SELECT (shortestPath(<Francis>, ?x, true, {<like>, <focus>}) AS ?y)
+WHERE{	<Bob> ?pred ?x .	
+      MINUS { <Francis> <dislike> ?x . }
+     }
 ```
 
 The red part below is the shortest path:
@@ -924,26 +1106,145 @@ The red part below is the shortest path:
 Results are as follows：(For easy reading, the outermost double quotation mark and the escape of the inner double quotation mark are omitted.)
 
 ```json
-{	"paths":[{		"src":"<Francis>",		"dst":"<Alice>",		"edges":		[{"fromNode":4,"toNode":3,"predIRI":"<like>"},{"fromNode":3,"toNode":1,"predIRI":"<like>"},{"fromNode":1,"toNode":0,"predIRI":"<focus>"}],		"nodes":		[{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":4,"nodeIRI":"<Francis>"}]		}]}
+{
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "edges": [
+                {
+                    "fromNode": 4,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 0,
+                    "predIRI": "<focus>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 4,
+                    "nodeIRI": "<Francis>"
+                }
+            ]
+        }
+    ]
+}
 ```
 
 If you want to output only the shortest path length, use the following query:
 
 ```sparql
-SELECT (shortestPathLen(<Francis>, ?x, true, {<like>, <focus>}) AS ?y)WHERE{	<Bob> ?pred ?x .	MINUS { <Francis> <dislike> ?x . }}
+SELECT (shortestPathLen(<Francis>, ?x, true, {<like>, <focus>}) AS ?y)
+WHERE{	<Bob> ?pred ?x .	
+      MINUS { <Francis> <dislike> ?x .}
+     }
 ```
 
 Results are as follows：(For easy reading, the outermost double quotation mark and the escape of the inner double quotation mark are omitted)
 
 ```json
-{"paths":[{"src":"<Francis>","dst":"<Alice>","length":3}]}
+{
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "length": 3
+        }
+    ]
+}
 ```
 
-**(3) Reachability/K-hop reachability query**
+**（3）Single-Source Shortest Path**
+
+Queries the shortest path from a source node `u` to all other nodes.
+
+```cpp
+SSSP(u, directed, pred_set)
+SSSPLen(u, directed, pred_set)
+```
+
+**Parameters**
+
+`u`：A variable or node IRI representing the source node.
+
+`directed`： A boolean value; if true, the graph is directed; if false, all edges in the graph are considered bidirectional.
+
+`pred_set`： A set of predicates to consider. If set to `{}`, all predicates in the data are allowed.
+
+
+**Return Values**
+
+`SSSP`returns the shortest paths. The return value is in the following format, where `src` is the IRI corresponding to `u`; `dst `is the IRI corresponding to a reachable node; `nodes` contains the indices and IRIs of the nodes involved in the path; `edges` contains the start and end node indices and the predicate IRI involved in the path.
+
+```json
+{
+    "paths": [
+        {
+            "src": "<src_IRI>",
+            "dst": "<dst_IRI>",
+            "edges": [
+                {
+                    "fromNode": 0,
+                    "toNode": 1,
+                    "predIRI": "<pred>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<src_IRI>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<dst_IRI>"
+                }
+            ]
+        },
+        ...
+    ]
+}
+```
+
+`SSSPLen`  returns the shortest path lengths. The return value is in the following format, where `src` is the IRI corresponding to `u`; `dst` is the IRI corresponding to a reachable node; `length` is the shortest path length from `src` to `dst`.
+
+```JSON
+{
+    "paths": [
+        {
+            "src": "<src_IRI>",
+            "dst": "<dst_IRI>",
+            "length": 0
+        },
+        ...
+    ]
+}
+```
+
+**(4) Reachability/K-hop reachability query**
 
 Query whether node `u` is reachable or K-hop reachable to node `v` (i.e., there exists a path with `u` as its source and `v` as its destination whose length does not exceed `k`).
 
-```
+```cpp
 kHopReachable(u, v, directed, k, pred_set)kHopReachablePath(u, v, directed, k, pred_set)
 ```
 
@@ -965,7 +1266,10 @@ kHopReachable(u, v, directed, k, pred_set)kHopReachablePath(u, v, directed, k, p
 The following query follows the example query from the previous section, "Shortest path Query" : It starts with Francis and ends with a person that Bob likes, cares about, or dislikes, and is not disliked by Francis (which is Alice in the example data). Ask if the relationship between the two people is 2 hops or within reach through liking or following.
 
 ```sparql
-SELECT (kHopReachable(<Francis>, ?x, true, 2, {<like>, <focus>}) AS ?y)WHERE{	<Bob> ?pred ?x .	MINUS { <Francis> <dislike> ?x . }}
+SELECT (kHopReachable(<Francis>, ?x, true, 2, {<like>, <focus>}) AS ?y)
+WHERE{	<Bob> ?pred ?x .	
+      MINUS { <Francis> <dislike> ?x . }
+     }
 ```
 
 Since the shortest path length satisfying the condition is known to be 3:
@@ -981,7 +1285,10 @@ Therefore, the above query results are false：
 Francis and Alice, on the other hand, are reachable, but the shortest path length exceeds the above limit. So a query for reachability (with `k` set to negative) returns true:
 
 ```sparql
-SELECT (kHopReachable(<Francis>, ?x, true, -1, {<like>, <focus>}) AS ?y)WHERE{	<Bob> ?pred ?x .	MINUS { <Francis> <dislike> ?x . }}
+SELECT (kHopReachable(<Francis>, ?x, true, -1, {<like>, <focus>}) AS ?y)
+WHERE{	<Bob> ?pred ?x .	
+      MINUS { <Francis> <dislike> ?x . }
+     }
 ```
 
 Results are as follows：
@@ -993,20 +1300,65 @@ Results are as follows：
 If you want to return a path that satisfies the condition between two people, you can call the `kHopReachablePath` function：
 
 ```SPARQL
-SELECT (kHopReachablePath(<Francis>, ?x, true, -1, {<like>, <focus>}) AS ?y)WHERE{	<Bob> ?pred ?x .	MINUS { <Francis> <dislike> ?x . }}
+SELECT (kHopReachablePath(<Francis>, ?x, true, -1, {<like>, <focus>}) AS ?y)
+WHERE{	<Bob> ?pred ?x .	
+      MINUS { <Francis> <dislike> ?x . }
+     }
 ```
 
 The result may be the shortest path described above：
 
 ```json
-{	"paths":[{		"src":"<Francis>",		"dst":"<Alice>",		"edges":		[{"fromNode":4,"toNode":3,"predIRI":"<like>"},{"fromNode":3,"toNode":1,"predIRI":"<like>"},{"fromNode":1,"toNode":0,"predIRI":"<focus>"}],		"nodes":		[{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"},{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":4,"nodeIRI":"<Francis>"}]		}]}
+{
+    "paths": [
+        {
+            "src": "<Francis>",
+            "dst": "<Alice>",
+            "edges": [
+                {
+                    "fromNode": 4,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 3,
+                    "toNode": 1,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 0,
+                    "predIRI": "<focus>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                },
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 4,
+                    "nodeIRI": "<Francis>"
+                }
+            ]
+        }
+    ]
+}
 ```
 
 It could also be a non-shortest path with a ring in it, as shown in the figure below:
 
 <img src="https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/%E7%A4%BE%E4%BA%A4%E5%9B%BE4.png" alt="社交图4" style="zoom:50%;" />
 
-**(4) All K-hop paths**
+**(5) All K-hop paths**
 
 Query all K-hop reachable paths from node `u` to node `v`.
 
@@ -1033,12 +1385,13 @@ Return all paths (if reachable) or K-hop paths (if K-hop reachable, depending on
 
 The return value is in the following form, where SRC is the result of IRI or variable query corresponding to u. Which destination nodes DST contains depends on the second argument to the function; The corresponding PPR value is a double precision floating point number.
 
-```
+```SPARQL
 SELECT (kHopEnumerate(<Alice>, ?x, true, 3, {<like>, <focus>}) AS ?y) 
 WHERE 
 {
     <Francis> ?pred ?x.
-    MINUS { <Alice> <dislike> 
+    MINUS { <Alice> <dislike> }
+    }
 ```
 
 Query the path between Alice and Francis, who is liked, followed, or disliked by Francis and not disliked by Alice. The path should be reachable within 3 hops through liking or following relationship. (Example data: Carol)
@@ -1049,23 +1402,98 @@ Query the path between Alice and Francis, who is liked, followed, or disliked by
 
 
 
-```
+```json
 {
-    "paths":[{
-        "src":"<Alice>",
-        "dst":"<Carol>",
-        "edges":[{"fromNode":0,"toNode":1,"predIRI":"<like>"},{"fromNode":1,"toNode":2,"predIRI":"<like>"},{"fromNode":2,"toNode":3,"predIRI":"<like>"}],
-        "nodes":[{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"},{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"}]},{"src":"<Alice>","dst":"<Carol>","edges":[{"fromNode":0,"toNode":1,"predIRI":"<focus>"},{"fromNode":1,"toNode":2,"predIRI":"<like>"},{"fromNode":2,"toNode":3,"predIRI":"<like>"}],"nodes":[{"nodeIndex":3,"nodeIRI":"<Carol>"},{"nodeIndex":2,"nodeIRI":"<Eve>"},{"nodeIndex":0,"nodeIRI":"<Alice>"},{"nodeIndex":1,"nodeIRI":"<Bob>"}]}]
+    "paths": [
+        {
+            "src": "<Alice>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 0,
+                    "toNode": 1,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                },
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                }
+            ]
+        },
+        {
+            "src": "<Alice>",
+            "dst": "<Carol>",
+            "edges": [
+                {
+                    "fromNode": 0,
+                    "toNode": 1,
+                    "predIRI": "<focus>"
+                },
+                {
+                    "fromNode": 1,
+                    "toNode": 2,
+                    "predIRI": "<like>"
+                },
+                {
+                    "fromNode": 2,
+                    "toNode": 3,
+                    "predIRI": "<like>"
+                }
+            ],
+            "nodes": [
+                {
+                    "nodeIndex": 3,
+                    "nodeIRI": "<Carol>"
+                },
+                {
+                    "nodeIndex": 2,
+                    "nodeIRI": "<Eve>"
+                },
+                {
+                    "nodeIndex": 0,
+                    "nodeIRI": "<Alice>"
+                },
+                {
+                    "nodeIndex": 1,
+                    "nodeIRI": "<Bob>"
+                }
+            ]
+        }
+    ]
 }
 ```
 
 
 
-**(5) kHopCount** 
+**(6) kHopCount** 
 
 Query the number of nodes accessible from node `u` within k layers.
 
-```c++
+```cpp
 kHopCount(u, directed, k, pred_set)
 ```
 
@@ -1080,7 +1508,7 @@ kHopCount(u, directed, k, pred_set)
 
 The return value is in the following format, where src is the IRI corresponding to u; depth is the level/height at which the node is located (equal to the parameter k); and count is the total number of nodes visited at the current level, with a type of integer.
 
-```
+```json
 {
     "paths":[
         { "src": "<Alice>", "depth": 3, "count": 1}
@@ -1088,11 +1516,11 @@ The return value is in the following format, where src is the IRI corresponding 
 }
 ```
 
-**(6) KHopNeighbor**
+**(7) KHopNeighbor**
 
 Query the nodes that are reachable from node u within k layers.
 
-```sql
+```cpp
 kHopNeighbor(u, directed, k, pred_set, ret_num)
 ```
 
@@ -1123,11 +1551,11 @@ The return value is in the following format, where src is the IRI corresponding 
 
 
 
-**(7) bfsCount**
+**(8) bfsCount**
 
 The query starts from node u and outputs the number of nodes accessed in different layers in the breadth-first traversal order.
 
-```
+```cpp
 bfsCount(u, directed, pred_set)
 ```
 
@@ -1155,7 +1583,7 @@ The return value is in the following form, where src is the IRI corresponding to
 
 The following query returns the directed breadth-first traversal count with Alice as the source node. The relationship on the edge can be like, follow, or dislike, and the query is:
 
-```json
+```SPARQL
 SELECT(bfsCount(<Alice>,true,{<like>,<focus>,<dislike>}) AS ?y)
 WHERE{}
 ```
@@ -1172,11 +1600,41 @@ The results are as follows:
 }
 ```
 
+**（9）diameterEstimation**
+
+Diameter estimation algorithm, returns the length of the longest shortest path.
+
+```cpp
+diameterEstimation(pred_set)
+```
+
+**Parameters**
+
+`pred_set`：The set of predicates to consider (if set to an empty `{}`, it indicates that all predicates in the data are allowed).
+
+**Example：**
+
+The following query calculates the diameter based on the relationships "likes", "follows", or "dislikes":：
+
+```sparql
+SELECT (diameterEstimation({<likes>, <follows>, <dislikes>}) AS ?y)WHERE{}
+```
+
+**Return Value**
+
+The return value is in the following format：
+
+```json
+{
+    "paths": [4]
+}
+```
+
 ### Importance analysis
 
 **(1) PageRank**
 
-```
+```cpp
 PR(directed, pred_set, alpha, maxIter, tol)
 ```
 
@@ -1209,7 +1667,7 @@ The return value is in the following format, where src is the IRI of the node; r
 
 **(2) Personalized PageRank**
 
-```
+```cpp
 PPR(u, hopCnt, pred_set, retNum)
 ```
 
@@ -1245,7 +1703,7 @@ The return value is in the following form, where src is u's IRI, or its query re
 
 Return the three people (and their PPR values) with top-3 PPR values corresponding to all the people Bob likes, follows, or dislikes:
 
-```sql
+```SPARQL
 select (PPR(?x, -1, {}, 3) as ?y)
 where
 {
@@ -1257,7 +1715,7 @@ where
 
 Query how easy it is for a node to reach other nodes.
 
-```
+```cpp
 closenessCentrality(u, directed, pred_set)
 ```
 
@@ -1286,7 +1744,7 @@ The return value is in the following form, where src is the IRI corresponding to
 
 Example 1. The query returns the closeness centrality of **Alice** in an **undirected graph** (all edges in the graph are regarded as bidirectional), and the relationship between edges can be **like** or **follow**. The SPARQL query is:
 
-```sql
+```SPARQL
 SELECT (closenessCentrality(<Alice>, false, {<like>, <focus>}) AS ?x) WHERE{}
 ```
 
@@ -1317,7 +1775,7 @@ In the above query, the shortest distance for Alice to reach the other nodes is 
 
 Example 2. The query returns **Alice**'s closeness centrality in the **directed graph**, and the relationship of edges can be **like** or **follow**. The SPARQL query is:
 
-```sql
+```SPARQL
 SELECT (closenessCentrality(<Alice>, true, {<like>, <focus>}) AS ?x) WHERE{}
 ```
 
@@ -1348,7 +1806,7 @@ In the above query, the shortest distance for Alice to reach the other nodes is 
 
 Count the number of triangles in the graph.
 
-```
+```cpp
 triangleCounting(directed, pred_set)
 ```
 
@@ -1372,7 +1830,7 @@ The return value is in the following form:
 
 Query the number of directed triangles in the graph, and the edges that form it can only be labeled by the **like** relation. The SPARQL query statement is:
 
-```sql
+```SPARQL
 select (triangleCounting(true, {<like>}) as ?y) where {}
 ```
 
@@ -1387,11 +1845,67 @@ The result is as follows. The number of directed triangles in the graph whose si
 ```
 
 <div STYLE="page-break-after: always;"></div>
-**(5) tag propagation**
+
+**（5）betweennessCentrality**
+
+Calculate the intermediate centrality value of the point in the graph. The higher the value is, the more shortest paths pass through the point.
+
+```cpp
+betweennessCentrality(uid, directed, pred_set)
+```
+
+**Parameters**
+
+`uid`：Variable or node IRI
+
+`directed`： Boolean, true for directed, false for undirected (all edges in the graph are treated as bidirectional) 
+
+`pred_set`：The set of predicates to consider (if set to `{}`, it means all predicates in the data are allowed)
+
+**Example：**
+
+The following query calculates the betweenness centrality for the node Eve, considering the relationships "likes", "follows", and "dislikes" as edges:
+
+```sparql
+SELECT (betweennessCentrality(<Eve>, true, {<likes>, <follows>, <dislikes>}) AS ?y) WHERE{}
+```
+
+**Return value**
+
+The return value is in the following format:
+
+```json
+{
+    "paths":[
+        {"src":"<Eve>", "result":6.5}
+    ]
+}
+```
+
+
+### Community detection analysis query
+
+**(1) Weakly Connected Components**
+
+Return all weakly connected components of the graph.
+
+```cpp
+WCC(pred_set)
+```
+
+**Parameters**
+
+`pred_set`: The set of predicates allowed on the edges that form the weakly connected components. If set to an empty `{}`, it means that all predicates in the data are allowed to appear.
+
+**Return value**
+
+Nested arrays, with the same form as the return value of label propagation.
+
+**(2) tag propagation**
 
 Based on tag propagation, it is possible to query the clustering status of each node in a graph and apply it to various applications such as community detection.
 
-```
+```cpp
 labelProp(directed, pred_set)
 ```
 
@@ -1407,7 +1921,7 @@ labelProp(directed, pred_set)
 
 The returned value is an array of arrays (nested arrays), where the elements are node IRIs, corresponding to a partition of the nodes in the graph.
 
-```cpp
+```json
 {
     "paths": [
         [
@@ -1421,92 +1935,9 @@ The returned value is an array of arrays (nested arrays), where the elements are
 }
 ```
 
-**(6) Weakly Connected Components**
+**(3) Louvain**
 
-Return all weakly connected components of the graph.
-
-```
-WCC(pred_set)
-```
-
-**Parameters**
-
-`pred_set`: The set of predicates allowed on the edges that form the weakly connected components. If set to an empty `{}`, it means that all predicates in the data are allowed to appear.
-
-**Return value**
-
-Nested arrays, with the same form as the return value of label propagation.
-
-**(7) Local Agglomeration Coefficient**
-
-Query the local clustering coefficient of node u, which is the number of edges between all nodes connected to it (i.e., the number of triangles formed with u as the vertex), divided by the maximum number of edges that can be connected between these nodes (i.e., the maximum number of triangles that can be formed with u as the vertex).
-
-```
-clusterCoeff(u, directed, pred_set)
-```
-
-**Parameters**
-
-`u`: variable or node IRI
-
-`directed`: Boolean value, true indicates directed, false indicates undirected (all edges in the graph are considered bidirectional). When the graph is considered directed, only cycle-type triangles are counted (see the introduction to triangle counting for details).
-
-`pred_set`: the set of predicates considered (if set to an empty `{}`, it means that all predicates in the data are allowed to appear)
-
-**Return value**
-
-The return value is the local clustering coefficient of node u, and the corresponding value is a double-precision floating-point number (see the following example for details).
-
-**(9) Overall agglomeration coefficient**
-
-Query the overall clustering coefficient of the graph.
-
-```
-clusterCoeff(directed, pred_set)
-```
-
-**Parameters**
-
-`directed`: Boolean value, true indicates directed, false indicates undirected (all edges in the graph are considered bidirectional). When the graph is considered directed, only cycle-type triangles are counted (see the introduction to triangle counting for details).
-
-`pred_set`: the set of predicates considered (if set to an empty `{}`, it means that all predicates in the data are allowed to appear)
-
-**Return value**
-
-The return value is the overall clustering coefficient of the graph, and the corresponding value is a double-precision floating-point number.
-
-**(10) Closeness centrality**
-
-Return the closeness centrality of node u.
-
-```cpp
-closenessCentrality(u, directed, pred_set)
-```
-
-**Parameters**
-
-`u`: variable or node IRI representing the source node.
-
-`directed`: Boolean value, true indicating directed, false indicating undirected (all edges in the graph are considered bidirectional).
-
-`pred_set`: the set of predicates considered (if set to an empty `{}`, it means that all predicates in the data are allowed to appear)
-
-**Return value**
-
-The return value is in the following format: src is the IRI corresponding to u; result is the closeness centrality of node u in the graph, which is of type float.
-
-```cpp
-{
-    "paths": [
-        {
-            "src": "<Alice>",
-            "results": 0.1
-        }
-    ]
-}
-```
-
-**(11) Louvain**
+Louvain Community Discovery algorithm, by constantly merging point communities to maximize the modularity of the graph, can discover the hierarchical community structure
 
 ```cpp
 louvain(directed, pred_set, maxIter, increase)
@@ -1526,7 +1957,7 @@ louvain(directed, pred_set, maxIter, increase)
 
 The return value is in the following format: count is the number of communities divided, details is the information of each divided community, including community ID (communityId) and member number (memberNum).
 
-```cpp
+```json
 {
     "count": 3,
     "details": [
@@ -1537,10 +1968,123 @@ The return value is in the following format: count is the number of communities 
 }
 ```
 
+### Correlation analysis query
 
+**(1) Local Agglomeration Coefficient**
 
+Query the local clustering coefficient of node u, which is the number of edges between all nodes connected to it (i.e., the number of triangles formed with u as the vertex), divided by the maximum number of edges that can be connected between these nodes (i.e., the maximum number of triangles that can be formed with u as the vertex).
 
+```cpp
+clusterCoeff(u, directed, pred_set)
+```
 
+**Parameters**
+
+`u`: variable or node IRI
+
+`directed`: Boolean value, true indicates directed, false indicates undirected (all edges in the graph are considered bidirectional). When the graph is considered directed, only cycle-type triangles are counted (see the introduction to triangle counting for details).
+
+`pred_set`: the set of predicates considered (if set to an empty `{}`, it means that all predicates in the data are allowed to appear)
+
+**Return value**
+
+The return value is the local clustering coefficient of node u, and the corresponding value is a double-precision floating-point number (see the following example for details).
+
+**(2) Overall agglomeration coefficient**
+
+Query the overall clustering coefficient of the graph.
+
+```cpp
+clusterCoeff(directed, pred_set)
+```
+
+**Parameters**
+
+`directed`: Boolean value, true indicates directed, false indicates undirected (all edges in the graph are considered bidirectional). When the graph is considered directed, only cycle-type triangles are counted (see the introduction to triangle counting for details).
+
+`pred_set`: the set of predicates considered (if set to an empty `{}`, it means that all predicates in the data are allowed to appear)
+
+**Return value**
+
+The return value is the overall clustering coefficient of the graph, and the corresponding value is a double-precision floating-point number.
+
+**（3）JaccardSimilarity**
+
+Calculate the Jaccard coefficient between point pairs to compare the similarity between points.
+
+```cpp
+JaccardSimilarity(uid, pred_set, k, retNum)
+```
+
+**Parameters**
+
+`uid`： Variable or node IRI
+
+`pred_set`：The set of predicates to consider (if set to `{}`, it means all predicates in the data are allowed)
+
+`k`： If set to a non-negative integer, it represents the maximum path length (query includes paths within k hops); if set to a negative number, there is no upper limit
+
+`ret_num`：Integer, optional, default is 10, indicating the maximum number of node IRIs to return (if the total number of nodes is less than `ret_num`, return all node IRIs)
+
+**Example：**
+
+The following query returns the set of nodes most similar to Alice, with a maximum hop count of 2 and a maximum return quantity of 10：
+
+```sparql
+SELECT (JaccardSimilarity(<Alice>, {}, 2, 10) AS ?y) WHERE{}
+```
+
+**Return value**
+
+The return value is in the following format, where `dst` is the similar node, and `value` is the similarity score:
+
+```json
+{
+    "paths":[
+        {"dst":<Francis>, "value":0.5},
+        {"dst":<Carol>, "value":0.5},
+        {"dst":<Eve>, "value":0.5},
+        {"dst":<Dave>, "value":0.333333},
+        {"dst":<Bob>, "value":0.333333}
+    ]
+}
+```
+
+**（4）degreeCorrelation**
+
+The degree correlation of the graph is calculated by calculating the Pearson coefficient between any pair of adjacent points.
+
+```cpp
+degreeCorrelation(uid, k, pred_set)
+```
+
+**Parameters**
+
+`uid`： Variable or node IRI
+
+`k`：If set to a non-negative integer, it represents the maximum path length (query includes paths within k hops); if set to a negative number, there is no upper limit
+
+`pred_set`：The set of predicates to consider (if set to `{}`, it means all predicates in the data are allowed)
+
+**Example：**
+
+The following query calculates the degree correlation of the subgraph formed by the node Alice:
+
+```sparql
+SELECT (degreeCorrelation(<Alice>, -1, {}) AS ?y) WHERE{}
+```
+
+**Return value**
+
+The return value is in the following format:
+
+```json
+{
+    "paths":[
+        {"src":"<Alice>", "result":0.0429273}
+    ]
+}
+```
 
 
 

@@ -3,17 +3,18 @@
 | Project          | Requirement                                                  |
 | :--------------- | :----------------------------------------------------------- |
 | Operating System | Linux, such as CentOS, Ubuntu etc.                           |
-| Framework        | x86_64                                                       |
+| Framework        | x86_64, amd64, arm64, aarch64, loongarch64                   |
 | Disk Size        | Depends on the size of the data set                          |
 | Memory Size      | Depends on the size of the data set                          |
+| unzip/bzip2      | Must install                                                 |
 | glibc            | Must install version >= 2.14                                 |
-| gcc              | Must install version >= 5.0                                  |
-| g++              | Must install version >= 5.0                                  |
+| gcc              | Must install , recommend version >= 9.3.0                    |
+| g++              | Must install , recommend version >= 9.3.0                    |
 | make             | Must install                                                 |
-| cmake            | Must install version >= 3.17                                  |
+| cmake            | Must install version >= 3.23.2                               |
 | pkg-config       | Must install                                                 |
 | uuid-devel       | Must install                                                 |
-| boost            | Must install version >= 1.56 && <= 1.59                      |
+| boost            | Must install , recommend version >= 1.74                     |
 | readline-devel   | Must install                                                 |
 | curl-devel       | Must install                                                 |
 | openssl-devel    | Must install version >= 1.1                                  |
@@ -25,12 +26,20 @@
 | realpath         | If using gconsole, must install                              |
 | ccache           | Optional, used to speed up compilation                       |
 
-## Installation Environment
+## Compilation and Installation 
 
-Running the corresponding scripts in scripts/setup/ for your operating system will automatically solve most of your problems for you. For example, if you are an Ubuntu user, you can execute the following command:  
+### Installation Environment
+
+Running the corresponding scripts in scripts/setup/ for your operating system will automatically solve most of your problems for you(recommend). For example, if you are an Ubuntu user, you can execute the following command:  
 
 ```bash
 $ . scripts/setup/setup_ubuntu.sh
+```
+
+If you are a Centos user,you can execute the following command:
+
+```shell
+$ . scripts/setup/setup_centos.sh
 ```
 
 **Before running the script, **we recommend you install gcc and g++ 5.0 or later.
@@ -43,7 +52,27 @@ Please input your password
 [sudo] xxx's password：
 ```
 
-### gcc and g++ installation
+#### unzip/bzip2 installation
+
+Used for extracting the gStore zip and bz2 packages during offline installation
+
+Determine if unzip is installed
+
+```bash
+$ yum list installed | grep unzip		#centos系统
+$ dpkg -s unzip  						#ubuntu系统
+```
+
+If not installed ,install
+
+```bash
+$ yum install -y unzip	            #centos系统
+$ apt-get install -y unzip         #ubuntu系统
+```
+
+Change the unzip in the above command to bzip2 can install bzip2
+
+#### gcc and g++ installation
 
 Check g++ version：
 
@@ -51,42 +80,44 @@ Check g++ version：
 $ g++ --version
 ```
 
-If the version is earlier than 5.0, reinstall 5.0 or later version. Using 5.4.0 as an example :(for Ubuntu and CentOS) 
+Using 9.3.0 as an example :(for Ubuntu and CentOS) 
 
 ```bash
-$ wget http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/gcc-5.4.0/gcc-5.4.0.tar.gz
-$ tar xvf gcc-5.4.0.tar.gz 
-$ cd gcc-5.4.0
+$ cd /var/local/
+$ mkdir gcc
+$ cd gcc
+$ wget https://mirror.linux-ia64.org/gnu/gcc/releases/gcc-9.3.0/gcc-9.3.0.tar.gz 2>&1
+$ tar -zxf gcc-9.3.0.tar.gz
+$ yum install -y gcc-c++ unzip bzip2 ntpdate m4
+$ ntpdate -u ntp.api.bz
+$ cd gcc-9.3.0
 $ ./contrib/download_prerequisites
-$ cd .. 
-$ mkdir gcc-build-5.4.0 
-$ cd gcc-build-5.4.0 
-$ ../gcc-5.4.0/configure --prefix=/opt/gcc-5.4.0 --enable-checking=release --enable-languages=c,c++ --disable-multilib
-$ sudo make -j4   #Allows four compile commands to be executed simultaneously, speeding up the compilation process
-$ sudo make install
+$ ln -sf gmp-6.1.0 gmp
+$ ln -sf mpfr-3.1.4 mpfr
+$ ln -sf mpc-1.0.3 mpc
+$ mkdir gcc-make-tmp
+$ cd gcc-make-tmp
+$ ../configure --prefix=/opt/gcc/9.3.0 --enable-checking=release --enable-languages=c,c++ --disable-multilib 2>&1
+$ make -j4 2>&1
+$ make install 2>&1
+$ echo "/opt/gcc/9.3.0/lib64" >> /etc/ld.so.conf.d/libgcc-x86_64.conf
+$ mv /opt/gcc/9.3.0/lib64/libstdc++.so.6.0.28-gdb.py /opt/gcc/9.3.0
+$ echo 'export PATH=$PATH:'"/opt/gcc/9.3.0/bin" >> /etc/profile
+$ yum remove -y gcc
+$ yum remove -y gcc-c++
+$ cd ../../
+$ rm -rf gcc-9.3.0
+$ ldconfig
+$ source /etc/profile
 ```
 
 Ubuntu can also be installed directly using the following commands:
 
 ```bash
-$ apt install -y gcc-5 g++-5
+$ apt install -y gcc-9 g++-9
 ```
 
-After successful installation,
-
-- **You need to change the default versions of GCC and g++** If gcc and g++ 5.0 or later are installed in the '/prefix/bin' directory, run the following command：
-
-  ```bash
-  $ export PATH=/prefix:$PATH
-  ```
-
-- **The dynamic link library path needs to be modified: **If gcc and g++ dynamic link libraries above 5.0 are in the '/prefix/lib' path, you need to run the following comman：
-
-  ```bash
-  $ export LD_LIBRARY_PATH=/prefix/lib:$LD_LIBRARY_PATH
-  ```
-
-### readline-devel installation
+#### readline-devel installation
 
 Check whether readline-devel is installed
 
@@ -102,7 +133,39 @@ $ sudo yum install readline-devel		# CentOS
 $ sudo apt install -y libreadline-dev	# Ubuntu
 ```
 
-### boost installation（Please use 1.56-1.59）
+#### pkg-config installation
+
+Check whether pkg-config is installed
+
+```bash
+$ pkg-config --version		#centos
+$ pkg-config --version		#ubuntu
+```
+if not , install it
+
+```bash
+$ yum install -y pkgconfig.x86_64      #centos
+$ apt install -y pkg-config            #ubuntu
+```
+#### uuid-devel installation
+
+Check whether uuid-devel is installed
+
+```bash
+$ yum list installed | grep libuuid-devel    #centos
+$ dpkg -s uuid-dev                           #ubuntu
+```
+
+if not, install it
+
+```bash
+$ yum install -y libuuid-devel	    #centos
+$ apt install -y uuid-dev		    #ubuntu
+```
+
+#### boost installation
+
+Recommend using version 1.74.0 to install
 
 Check whether boost is installed 
 
@@ -111,48 +174,52 @@ $ yum list installed | grep boost	    # CentOS
 $ dpkg -s boost					        # Ubuntu
 ```
 
-If not, install it：（use version 1.56.0 as example）
+If not, install it：（use version 1.74.0 as example）
 
-version:1.56.0
+version:1.74.0
 
-address: http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz
+address: http://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.gz
 
 Installation script: (for CentOS and Ubuntu)
 
 ```bash
-$ wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz$ tar -xzvf boost_1_56_0.tar.gz$ cd boost_1_56_0$ ./bootstrap.sh$ sudo ./b2$ sudo ./b2 install
+$ wget http://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.gz
+$ tar -xzvf boost_1_74_0.tar.gz
+$ cd boost_1_74_0
+$ ./bootstrap.sh --with-libraries=system,regex,thread,filesystem
+$ ./b2 -j4
+$ ./b2 install
 ```
-
 Ubuntu can also be installed directly using the following commands:
 
 ```bash
 $ sudo apt install -y libboost-all-dev
 ```
 
-**Note: please install boost after ensuring that the g++ version is above 5.0** Undefined reference to 'boost::...' - undefined reference to 'boost::... '"), most likely because you compiled Boost with GCC versions lower than 5.0. At this point, recompile Boost using the following step:
+**Note: please install boost after ensuring that the g++ version is above 9.3.0** Undefined reference to 'boost::...' - undefined reference to 'boost::... '"), most likely because you compiled Boost with GCC versions lower than 9.3.0. At this point, recompile Boost using the following step:
 
 - Clear old files: `./b2 --clean-all`
-- In the user-config.jam file under./tools/build/ SRC (if this file does not exist under this path, Please find a sample user-config.jam file under./tools/build/example or some other directory and copy it to./tools/build/ SRC) to add  ：`using gcc : 5.4.0 : gcc-5.4.0's path ;`
+- In the user-config.jam file under./tools/build/ SRC (if this file does not exist under this path, Please find a sample user-config.jam file under./tools/build/example or some other directory and copy it to./tools/build/ SRC) to add  ：`using gcc : 9.3.0 : gcc-9.3.0's path ;`
 - Run under ./  `./bootstrap.sh --with-toolset=gcc`
 - `sudo ./b2 install --with-toolset=gcc`
 
 Then recompile gStore (please start from 'make pre')
 
-After successful installation，
+```shell
+# change directory
+$ cd build
+# clean 3rd lib
+$ make clean_pre
+# precompile again
+$ make pre
+# compile
+$ make -j4
+# init database
+$ make init
+```
 
-- **Need to modify the dynamic link library path:** Assuming boost's dynamically linked library is in the '/prefix/lib' path, you need to execute the following command：
 
-  ```bash
-  $ export LD_LIBRARY_PATH=/prefix/lib:$LD_LIBRARY_PATH
-  ```
-
-- **The header file path needs to be changed: **Assuming boost's header file is in the '/prefix/include' path, you need to execute the following command:
-
-  ```bash
-  $ export CPATH=/prefix/include:$CPATH
-  ```
-
-### curl-devel installation 
+#### curl-devel installation 
 
 Check whether curl-devel is installed
 
@@ -185,7 +252,7 @@ $ yum install -y curl libcurl-devel              # CentOS
 $ apt-get install -y curl libcurl4-openssl-dev   # Ubuntu
 ```
 
-### openssl-devel installation
+#### openssl-devel installation
 
 Check whether openssl-devel is installed
 
@@ -201,7 +268,7 @@ $ yum install -y openssl-devel                # CentOS
 $ apt-get install -y libssl-dev zlib1g-dev    # Ubuntu
 ```
 
-### cmake installation
+#### cmake installation
 
 Check whether cmake is installed
 
@@ -222,7 +289,7 @@ Installation scripts (for CentOS and Ubuntu)
 $ wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz
 $ tar -xvf cmake-3.23.2.tar.gz && cd cmake-3.23.2/
 $ ./bootstrap
-$ make
+$ make -j4
 $ make install
 ```
 
@@ -232,103 +299,47 @@ Ubuntu can also be installed directly using the following commands:
 $ sudo apt install -y cmake
 ```
 
-### pkg-config installation
-
-Check whether pkg-config is installed
-
-```bash
-$ pkg-config --version		# CentOS
-$ pkg-config --version		# Ubuntu
-```
-
-if not, install
-
-```bash
-$ sudo yum install pkgconfig.x86_64         # CentOS
-$ sudo apt install -y pkg-config            # Ubuntu
-```
-
-### uuid-devel installation
-
-Check whether uuid-devel is installed 
-
-```bash
-$ yum list installed | grep libuuid-devel    # CentOS
-$ dpkg -s uuid-dev                           # Ubuntu
-```
-
-if not, install
-
-```bash
-$ sudo yum install libuuid-devel	    # CentOS
-$ sudo apt install -y uuid-dev		    # Ubuntu
-```
-
-### unzip/bzip2 installation (Optional)
-
-Used to decompress zip and bz2 packages during an offline installation of gStore (where there is no Internet connection and all dependencies are compressed packages); unnecessary during online installation.
-
-Check whether unzip is installed:
-
-```bash
-$ yum list installed | grep unzip		# CentOS
-$ dpkg -s unzip  						# Ubuntu
-```
-
-if not, install
-
-```bash
-$ sudo yum install -y unzip			# CentOS
-$ sudo apt-get install unzip		# Ubuntu
-```
-
-Replace "unzip" with "bzip2" in the above commands to check whether bzip2 is installed and install it if necessary.
-
-### OpenJDK installation (Optional)
-
-OpenJDK is only necessary if you need to use the Java API. You can first check whether there is an existing JDK environment with the following commands; if there is an existing JDK environment, and its version is 1.8.X, re-installation is unnecessary.
-
-```bash
-$ java -version
-$ javac -version
-```
-
-if there is no existing JDK 1.8.X environment, install
-
-```bash
-$ yum install -y java-1.8.0-openjdk-devel # CentOS
-$ sudo apt install -y openjdk-8-jdk       # Ubuntu
-```
-
-<div STYLE="page-break-after: always;"></div>
-### jemalloc installation
+#### jemalloc installation
 
 Determine whether jemalloc is installed
 
 ```bash
-$ yum list installed | grep jemalloc		#centos system
-$ dpkg -s libjemalloc-dev				#ubuntu system
+$ yum list installed | grep jemalloc		#Centos
+$ dpkg -s libjemalloc-dev				#Ubuntu
 ```
 
 If not installed, install it
 
 ```bash
-$ yum install -y jemalloc 		           #centos system
-$ apt-get install -y libjemalloc-dev    #ubuntu system
+$ yum install -y jemalloc 		           #Centos 
+$ apt-get install -y libjemalloc-dev    #Ubuntu 
+```
+
+create soft link
+
+```bash
+# Locate the dynamic library, the default installation path is usually /usr/lib64
+$ find / -name libjemalloc*
+/usr/lib64/libjemalloc.so.1
+
+# if /usr/lib64/libjemalloc.so not find，create soft link
+$ cd /usr/lib64
+$ ln -s libjemalloc.so.1 libjemalloc.so
 ```
 
 
 
-## gStore obtainment
+<div STYLE="page-break-after: always;"></div>
+### gStore obtainment
 
 If you encounter permission issues, please prefix the command with `sudo` .
 
-### Method 1: download 
+#### Method 1: download 
 
 gStore has been uploaded to gitee (code cloud), which is recommended for faster download for users in mainland China. The website is https://gitee.com/PKUMOD/gStore.
 You can also open https://github.com/pkumod/gStore, download gStore.zip, then decompress the zip package.
 
-### Method 2: clone (Recommended)
+#### Method 2: clone (Recommended)
 
 Run the following code to clone:
 
@@ -336,9 +347,9 @@ Run the following code to clone:
 $ git clone https://gitee.com/PKUMOD/gStore.git  # gitee (code cloud) faster for users in mainland China
 $ git clone https://github.com/pkumod/gStore.git # GitHub
 
-# using the -b parameter when getting historical versions, such as -b 0.9.1
-$ git clone -b 0.9.1 https://gitee.com/PKUMOD/gStore.git
-$ git clone -b 0.9.1 https://github.com/pkumod/gStore.git
+# using the -b parameter when getting historical versions, such as -b 1.2
+$ git clone -b 1.2 https://gitee.com/PKUMOD/gStore.git
+$ git clone -b 1.2 https://github.com/pkumod/gStore.git
 ```
 
 Note: Git need to be installed first.
@@ -348,65 +359,45 @@ $ sudo yum install git		# CentOS
 $ sudo apt-get install git	# Ubuntu
 ```
 
-## gStore compilation
+### gStore compilation
 
 Switch to the gStore directory:
 
 ```bash
+$ cd gstore
+```
+
+There are two methods to compile gstore , compile by script (recommend) and compile manually
+
+compile by script(recommend)
+
+```bash
+$ bash scripts/build.sh
+#若编译顺利完成，最后会出现 Compilation ends successfully! 结果
+```
+compile manually
+
+```bash
+#change dirctory
 $ cd gStore
-```
-
-Execute the following commands:
-
-#### Method 1
-
-```bash
-$ sudo bash scripts/build.sh
-#If the compilation completes successfully, the following string will appear at the end: Compilation ends successfully!
-```
-
-#### Method 2
-```bash
-# Create build directory
+# create build dirctory
 $ mkdir build
 $ cd build
-# Generate makefiles and other files
+# create the makefile  and other files
 $ cmake ..
 # precompile
 $ make pre
 # compile
 $ make -j4
-# Initialize the system.db database
+# init databases
 $ make init
-```
-
-If 'make pre' still asks for g++ 5.0 or later after installing g++ 5.0 or later, locate g++ 5.0 or later and
-run the following command in the gStore directory:
-
-```bash
-$ export CXX=<5.0 or later g++'s path>
-```
-
-Then `make pre` again. If the same error is reported after this step, please manually delete `CMakeCache.txt` and the `CMakeFiles` directory under ` tools/antlr4-cpp-runtime-4/` and `make pre ` again.
-
-#### 针对开发人员使用
-
-```bash
-$ cd build
-# compile
-$ make -j4
-# Test script
-$ make test
-# Clear lib,include files generated by 3rdparty precompilation (Run this command only when 3rdparty changes).
-$ make clean_pre
-# Clean up files such *.o generated by compilation
-$ make clean
-# test update_test gtest script (equivalent to make test)
-$ cd scripts/test
-$ bash test.sh
+# the following result shows compilation and initalzation successful
+---Compilation ends successfully!
+---system.db is built successfully!
 ```
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## Deploy gStore using Docker 
 
 > We provide two ways to deploy gStore from containers:  
@@ -417,7 +408,7 @@ $ bash test.sh
 
 ### environment preparation
 
-Docker, refer to the address [docker](https://blog.csdn.net/A632189007/article/details/78662741)
+Docker, refer to the address [docker](https://docs.docker.com/desktop/)
 
 ### Run by pulling the image directly(recommend)
 
@@ -474,9 +465,9 @@ exit
 
 
 
-## Build the image from Dockerfile 
+### Build and run image locally
 
-### Build an image named gstore
+#### Build an image named gstore
 
 ```bash
 # build docker image
@@ -490,7 +481,7 @@ docker image list
 
 ![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-docker.jpg)
 
-### Start the locally built image
+#### Start the locally built image
 
 ```shell
 # Map host 9999 port to container 9000 port(Default port for the gstore API service) 
@@ -503,7 +494,7 @@ docker ps -a
 #317e4ce0a667   a5d51ff4f121   "bash /docker-entryp…"   6 minutes ago   Up 6 minutes   0.0.0.0:9999->9000/tcp, :::9999->9000/tcp   awesome_greider
 ```
 
-### Check API Service
+#### Check API Service
 
 ```bash
 curl http://127.0.0.1:9999 -X POST -H 'Content-Type: application/json' -d '{"operation":"check"}'
@@ -515,3 +506,82 @@ curl http://127.0.0.1:9999 -X POST -H 'Content-Type: application/json' -d '{"ope
 ------
 
 There are probably a lot of other things that need to be added, so for now I've just added a basic version. The basic environment build is just the first step in containerization.	
+
+## Deploy gStore Using a Static Installation Package
+
+### Static Package Download Links
+We now offer four types of static installation packages for download and installation:
+
+```
+http://file.gstore.cn/f/eb7fa4c9d0d3421695f7/?dl=1   #linux-arm
+http://file.gstore.cn/f/bb59558af0be44a6970d/?dl=1   #linux-x86
+http://file.gstore.cn/f/158654beb04343ba9afe/?dl=1   #ubuntu-arm_64
+http://file.gstore.cn/f/db5a9ac955ea45bfba27/?dl=1   #ubuntu-x86_64
+```
+
+### Download static installation package
+
+```shell
+$ wget --content-disposition http://file.gstore.cn/f/75643cb217604efca75b/?dl=1  #the address of the static package
+$ tar -zxvf gstore-1.3-static-linux-arm.tar.gz  
+```
+### Initialize system
+
+```shell
+$ bin/ginit
+```
+
+## Version upgrade
+
+### Method 1：Older versions are deployed as an upgrade by clone
+
+#### Preparation before upgrade
+
+```shell
+# Go to the directory where gstore is deployed
+$ cd gstore
+# Pull the update script
+$ git pull
+# Check whether the version_checkout.sh file exists
+$ ls scripts/version_checkout.sh
+# If not, specify a branch fetch, such as 1.2
+$ git status
+1.2
+$ git pull origin 1.2
+# Check whether the upgrade version exists on the remote device, such as 1.3
+$ git branch -r | grep origin/1.3
+# Check whether there are conflicting branch names in the local area, such as 1.3(if yes, back up the branch and delete the conflicting branch)
+$ git branch | grep 1.3
+```
+
+#### upgrade
+
+```shell
+# Go to the directory where gstore is deployed
+$ cd gstore
+# Specify the upgrade version and execute the script to upgrade, such as1.3
+$ bash scripts/version_checkout.sh 1.3
+# To choose whether to overwrite the database, enter y or n
+the new version already has a xxx.db, overwrite [Y/n]
+# Upgrade successfully
+version update successfully .
+```
+
+Important data will be backed up. File directory: version+Version number+Date
+
+### Method 2：Older versions are deployed by downloading zip packages or static packages
+
+```shell
+# Get the old version gstore path
+$ pwd
+/xxx/xxxx/gstore
+# Unzip the update package and go to the gstore directory
+$ cd gstore/
+# Specify the path of the old version and execute the script to upgrade
+$ bash scripts/version_update.sh /xxx/xxxx/gstore
+# To choose whether to overwrite the database, enter y or n
+the new version already has a xxx.db, overwrite [Y/n]
+# Upgrade successfully
+version update successfully .
+```
+
