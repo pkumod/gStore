@@ -3,7 +3,7 @@
 | 项目           | 需求                                           |
 | :------------- | ---------------------------------------------- |
 | 操作系统       | Linux, 例如CentOS, Ubuntu等                    |
-| 架构           | x86_64, amd64, arm64, aarch64, loongarch64                                  |
+| 架构           | x86_64, amd64, arm64, aarch64, loongarch64    |
 | 磁盘容量       | 根据数据集的大小                               |
 | 内存大小       | 根据数据集的大小                               |
 | glibc          | 必须安装 version >= 2.14                       |
@@ -23,7 +23,6 @@
 | requests       | 如果使用Python http api，则需要                |
 | node           | 如果使用Nodejs http api则需要 version >=10.9.0 |
 | pthreads       | 如果使用php http api，则需要                   |
-| realpath       | 如果使用gconsole，则需要                       |
 | ccache         | 可选，用于加速编译                             |
 
 ## 编译安装

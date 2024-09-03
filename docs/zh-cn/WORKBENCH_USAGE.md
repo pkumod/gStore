@@ -147,17 +147,163 @@ http://workbench自己部署的服务器ip:8080/gworkbench/views/user/login.html
 
 ![image-20220929170724740](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20220929170724740.png)
 
+### 知识逐级探索
+
+知识逐级探索主要通过用户选择数据库、实体、实体属性、属性值来进行查询，使得数据查询得到简化，除属性值需要输入外，前三向均在下拉选项中选择，从左到右逐级细化。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E9%80%90%E7%BA%A7%E6%8E%A2%E7%B4%A21.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084916744&Signature=Jbt1iZLkiY4ENz8JMeyGgxMXPpM%3D)
+
+将信息填写完整后可进行查询如下（最后一项可不填写）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E9%80%90%E7%BA%A7%E6%8E%A2%E7%B4%A22.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084916870&Signature=UpyW1BkLAl8Y6X9kJG2MvmPw9y4%3D)
+
+此处功能与上文普通查询描述的功能一致不再赘述
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E9%80%90%E7%BA%A7%E6%8E%A2%E7%B4%A23.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084916930&Signature=LhC0aCiGvrLuSfISCEVVuBnerO8%3D)
+
+### 知识关联分析
+
+在知识关联分析界面中，旨在帮助您深入探索实体与实体之间的复杂关系、实体的类型以及实体的属性值。，通过知识关联分析您不仅可以对比不同实体之间的关系，还能查询两个实体之间在指定跳数内存在的关联。揭示知识图谱中隐藏的深层关系。为方便说明此处用A和B来指代两个节点，此处分析的便是这两个节点间的关系。
+
+ 选择使用的数据库
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E5%85%B3%E8%81%94%E5%88%86%E6%9E%901.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084917104&Signature=KE0vPp%2BHwq2tivxFgzyn9wI%2FZvY%3D)
+
+下面的两个红框框选的就是我们选择的节点（注意如果属性值不填写，那么就是有该属性的实体集合和另外的一个节点间的关系，此处两个节点都选择了属性的话，你也可以认为是两个都只有一个元素的集合间的关系）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E5%85%B3%E8%81%94%E5%88%86%E6%9E%902.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084917126&Signature=Ifxwqx1cJkQDYFt9%2FD6scUm4GHI%3D)
+
+这里的层数表示最多经过几次跳转到达目标节点
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E5%85%B3%E8%81%94%E5%88%86%E6%9E%903.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084917154&Signature=FgTDy2L6GB2fm%2FDfwKytIOZ0lXw%3D)
+
+## 知识管理
+
+### 知识更新
+
+知识更新主要包括新增节点、更新关系、更新属性、切换布局四个功能，也可进行数据库查询和历史记录查看。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B01.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919226&Signature=2IcrVi5pHMbtn9EU1cRu6FAJu4Y%3D)
+
+点击新增节点，新增行可添加多个节点名称。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B02.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919249&Signature=dq4MeraCttXOnQTzjhmzPLScU3Y%3D)
+
+点击更新关系，可选新增关系和编辑关系，点击新增关系可添加多个节点关系。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B03.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919273&Signature=avXGHxWudiHKNTYlIqhSOGDZcGI%3D)
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B04.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919291&Signature=MVT5XWUj7n3nWG290TCCIKIrgvE%3D)
+
+点击更新关系中编辑关系，可以编辑查询到的数据库中节点、关系、节点信息。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B05.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919312&Signature=k1jKnUNII%2F8yKw%2BIYM0CfOfzIHI%3D)
+
+点击更新属性，可选新增属性和编辑属性，点击新增属性可添加多个节点，属性名称和属性值。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B06.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919331&Signature=6T%2FgHo3VCMs7jfUQg%2BFLEhpjyj0%3D)
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B07.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919349&Signature=U7BFILl1o1MSiGW32MaAZ%2BIX5eM%3D)
+
+点击更新属性，编辑属性，可查询和对节点、属性名称及属性值修改和删除。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B08.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919366&Signature=FAabrKbII%2FRjlOdn9wP%2BncESGLs%3D)
+
+弹性布局可支持多种形式图谱布局。
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B09.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919381&Signature=DvozsPXS3gtRZ6aP2dUMM%2BvjJVo%3D)
+
+右键点击一个实体的节点，出现以下功能
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B010.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919403&Signature=C8rlxb2WaNVONK9%2BBLAI3P4KdrI%3D)
+
+（1）节点信息
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B011.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919418&Signature=t8gRSdKQnhKQqOJEO7nvmQKAUHI%3D)
+
+（2）编辑节点（修改节点名称）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B012.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919434&Signature=r1RezU%2FX%2Fx2yjousrM3Nr9cKDwk%3D)
+
+（3）新增关系（通过出现的线条指向一个实体节点）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B013.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919525&Signature=dCbPnaATd9u8saAgrWJIyjHDVBI%3D)
+
+输入关系名称并提交保存
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B014.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919539&Signature=mOYbxrGu%2BaT6iLtoaYG0XxYJP1w%3D)
+
+（4）新增属性（和上文的新增属性操作一致）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B015.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919554&Signature=VcTSiPFkpHDo0ImGTlhluE3czeQ%3D)
+
+（5）删除节点（删除该实体节点）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B016.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919568&Signature=vIbzYWPUckhWMmjEX7n%2FB6bn91Q%3D)
+
+（6）展开关系（展示和该节点有关系的节点）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B017.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919586&Signature=KepvusknNBhxaPyIGPo3VyUH03o%3D)
+
+（7）展开属性（展开选择的节点的属性）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B018.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919601&Signature=OeHjF2nBYe4bICtLB%2BTX6TfYzmo%3D)
+
+右键点击一个实体节点的属性，出现以下功能
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B019.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919621&Signature=Y3WAo5P9nvMu1QQOCoK5oAiE2%2Fg%3D)
+
+（1）编辑属性（对属性的名称和值做改变）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B020.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919638&Signature=YoGPTRKa9AvOBKgxlfbG1TyyiY8%3D)
+
+（2）删除属性（删除该节点的该属性）
+
+搜索（输入节点名称，查找到对应节点在图中的位置）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B021.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919764&Signature=btyjdHxAUbf5HFmsErpD0KB6spA%3D)
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B022.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919786&Signature=Ff%2FvKQmTGjZ7bl4g%2BXY%2BFGphjjg%3D)
+
+查看更新
+
+（1）操作按钮所在
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B023.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919804&Signature=hw%2FJpocGO6IO5rIlFOeLz3hVovk%3D)
+
+（2）显示的内容
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B024.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919819&Signature=BW4uCK8dvmLjwGMz5MTj4XNGz1g%3D)
+
+（3）保存
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B025.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919833&Signature=9XMPrMNoEFTOOeF1kmcq3SopLvw%3D)
+
+知识更新保存
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B026.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919848&Signature=QzA8Fs%2BfBP3t0ayef4TSTCsMu5E%3D)
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B027.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919871&Signature=3NXJXJcYBfQ0VeQWO22AtJc8HRs%3D)
+
+知识更新取消保存（取消之前未保存的更新操作）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E7%9F%A5%E8%AF%86%E6%9B%B4%E6%96%B028.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084919889&Signature=qCgMl%2FLHm11O5UOVi0Z1jZx15hA%3D)
+
+
+
 ## 高级设置
 
 用户可以通过高级设置模块自定义函数，这些函数也能够在图数据库查询模块中直接调用。
 
-### 查询自定义函数
+### 自定义函数
+
+**查询自定义函数**
 
 点击【高级设置】—【自定义函数】模块，输入待查询自定义函数名称，选择函数状态，点击【搜索】，即可查找到目标自定义函数。
 
 ![查询自定义函数](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20220929180053731.png)
 
-### 新增自定义函数
+**新增自定义函数**
 
 点击【高级设置】—【自定义函数】模块，点击【新增】。
 
@@ -177,11 +323,91 @@ http://workbench自己部署的服务器ip:8080/gworkbench/views/user/login.html
 
 ![image-20220930101711773](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20220930101711773.png)
 
-### 执行自定义函数
+**执行自定义函数**
 
 点击【高级设置】—【自定义函数】模块，点击【执行】，输入数据库、执行函数、节点信息、K跳值等信息，点击【执行】即可获得结果。
 
 ![excute](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20220929180639035.png)
+
+### 推理引擎管理
+
+推理引擎会根据我们在规则中填写的一些信息自动地在数据库中进行数据库的更新，具体我会在下面的示例中给出。我准备了下面的数据
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E1.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921183&Signature=ANHwKkvIVjFJdJic2DC0KJin20U%3D)
+
+选择数据库
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E2.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921204&Signature=RUFqVBWztp1mt4sghkLuMA3JoKE%3D)
+
+新增规则
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E3.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921264&Signature=yxG6boMed58wJY78RlphyMlw2uA%3D)
+
+前三个选项的作用如下
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E4.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921279&Signature=sAU8NmksTsIIpP%2Bsi96LATUEaaY%3D)
+
+关系推理规则
+
+（1）AND（两个推理条件都要满足）
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E5.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921296&Signature=Vw%2FxXCoAGj3xxKiObbK0QsTs4mM%3D)
+
+先在此处编译，此时会生成将执行的语句
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E6.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921310&Signature=c6%2FLmVNrxRFejjYfUACns4yR97Q%3D)
+
+预览
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E7.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921325&Signature=KINU1lL8PKCC%2B2hLiFZTiBh7w2A%3D)
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E8.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921339&Signature=82vropvhb86%2FVu1AJfIbmzOwpII%3D)
+
+执行
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E9.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921354&Signature=XyhUmqyidEGZxQco1Qzjv0681Ow%3D)
+
+结果如下
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E10.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921369&Signature=PY73ArKIpSA7%2BHjZpGsZM4zaiFw%3D)
+
+点击失效将撤回这个操作
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E11.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921386&Signature=iMFBR%2FtfL%2FIumI1cqRU74xnMvYs%3D)
+
+（2）OR（推理条件只需满足一个即可）
+
+此处仅仅需要将之前规则上修改此处
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E12.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921398&Signature=yDRRC9Tw4YaVdOTm8IKjqBimBsY%3D)
+
+其余操作与AND一致
+
+结果如下
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E13.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921415&Signature=9Rs3bJebznH26YNVAyg%2BdTBzbc0%3D)
+
+属性规则
+
+属性规则是在满足条件后改变或新增对应节点的我们指定的属性，其余操作和上面的规则推理一致于是只展示改变的页面和结果。
+
+选择推理类型、填写推理条件、填写返回结果。
+
+这是原始的数据
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E14.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921435&Signature=aCXiDPiqo8nLjb9xE4XdqC8yvoI%3D)
+
+这是规则
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E15.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921450&Signature=aFQ3g6wESVpnDEWjMfdxbgp22b4%3D)
+
+结果如下
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E16.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921462&Signature=j%2FHcU%2B2lHiJYxly0DBfZS4B16X8%3D)
+
+过滤条件的使用，例如y只能是张翠山
+
+![](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/workbench%2F%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E17.png?OSSAccessKeyId=LTAI4FqEvNC5Seewy6qYrjKp&Expires=2084921476&Signature=ykUQ3Y3P%2B4baEPrXCd1Dwxou6K8%3D)
 
 ## 系统管理
 
@@ -223,7 +449,9 @@ http://workbench自己部署的服务器ip:8080/gworkbench/views/user/login.html
 
 ![wkbackup](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/liwenjie-image/image-20220929172541859.png)
 
-### 用户管理（只有root用户有该权限)
+### 用户管理
+
+**说明：只有root用户有该权限**
 
 **（1）新增用户**
 

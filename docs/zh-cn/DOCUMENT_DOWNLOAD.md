@@ -1,10 +1,10 @@
 ## gStore 1.3版本文档【下载】
 
-[gStore帮助手册-1.3版本]()
+[gStore帮助手册-1.3版本](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/gstoreweb/gStore%E5%B8%AE%E5%8A%A9%E6%89%8B%E5%86%8C-1.3%E7%89%88%E6%9C%AC.pdf)
 
-[gStore User Guide - 1.3 Version]()
+[gStore User Guide - 1.3 Version](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/gstoreweb%2FgStore%20User%20Guide%20-%201.3%20Version.pdf)
 
-[gStore可视化工具Workbench使用手册 [for gStore1.3版本]]()
+[gStore可视化工具Workbench使用手册 [for gStore1.3版本]](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/gstoreweb%2FgStore%20Workbench%E7%94%A8%E6%88%B7%E6%89%8B%E5%86%8CV1.3.pdf)
 
 
 

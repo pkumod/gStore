@@ -1,6 +1,6 @@
 ## gStore 1.3 Version Document 【DOWNLOAD】
 
-[gStore User Guide -1.3 Version]()
+[gStore User Guide -1.3 Version](http://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/gstoreweb%2FgStore%20User%20Guide%20-%201.3%20Version.pdf)
 
 ## gStore 1.2 Version Document【DOWNLOAD】
 
@@ -13,3 +13,4 @@
 ## gStore 0.9.1 Version Document【DOWNLOAD】
 
 [gStore  User Guide - 0.9.1 Version](https://gstore-bucket.oss-cn-zhangjiakou.aliyuncs.com/gstoreweb/gStore0.9.1%20Version%20User%20Guide.pdf)
+

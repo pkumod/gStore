@@ -23,7 +23,6 @@
 | requests         | If using the Python http API, must install                   |
 | node             | If using the Node.js http API, must install version >=10.9.0 |
 | pthreads         | If using the PHP http API, must install                      |
-| realpath         | If using gconsole, must install                              |
 | ccache           | Optional, used to speed up compilation                       |
 
 ## Compilation and Installation 

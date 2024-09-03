@@ -996,6 +996,14 @@ gstore> restore example backups/example.db_220929114732/
 Database example restore successfully.
 ```
 
+**(13)Unload database**
+
+```bash
+gstore[lubm]> unload;
+unload lubm successfully.
+gstore[no database]> 
+```
+
 ### User Identity
 
 **(1)Refresh permissions**
@@ -1101,9 +1109,9 @@ Only system users have the permission to execute commands related to permissions
   ```
   [1]query [2]load [3]unload [4]update [5]backup [6]restore [7]export
   ```
-  
+
  Users who have all seven permissions are considered to have full permissions.
-  
+
 - System users have full permissions on all databases. (System users are defined in conf.ini and system.db.)
 
 **(1)Set user's permissions**

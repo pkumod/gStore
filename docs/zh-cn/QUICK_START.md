@@ -127,6 +127,7 @@ JSON-LD是一种轻巧的链接数据格式。人类很容易读写。它基于�
 
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 初始化系统数据库
 
 只要下载并编译gStore系统的代码，就会自动创建一个名为system（真实目录名称system.db）的数据库。这是管理系统统计信息的数据库，包括所有用户和所有数据库。您可以使用gquery命令查询此数据库，但禁止使用编辑器对其进行修改。
@@ -161,6 +162,7 @@ system.db init successfully! Used 24 ms
 ```
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 创建数据库
 
 创建数据库操作是gStore最重要的操作之一，也是用户安装gStore后需要做的第一个操作，gStore提供多种方式进行数据库创建操作。
@@ -267,6 +269,7 @@ gStore提供了gServer组件作为Socket API服务组件，用户可以通过向
 
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 数据库状态查询
 
 数据库状态查询功能是获取指定数据库的统计信息，有如下几种方式。
@@ -319,6 +322,7 @@ gStore提供了ghttp组件作为http api服务组件，用户可以通过向ghtt
 
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 数据库查询
 
 ​       数据库查询是gStore最重要的功能之一，gStore支持W3C定义的SPARQL 1.1查询语言，用户可以通过如下几种方式使用gStore数据库查询功能。
@@ -453,6 +457,7 @@ gStore提供了gServer组件作为Socket API服务组件，用户可以通过向
 
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 数据库导出
 
 导出数据库功能可以将数据库导出成.nt文件。有如下三种形式：
@@ -501,6 +506,7 @@ gWorkbench是gStore的一个可视化管理工具，通过gWorkbench可以连接
 gStore提供了ghttp组件作为http api服务组件，用户可以通过向ghttp发送http请求实现相关功能，ghttp中通过`export`功能，具体内容详见【开发文档】-【常用API】-【ghttp接口说明】
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 数据库删除
 
 删除数据库功能可以删除指定数据库，有如下三种形式
@@ -551,6 +557,7 @@ gStore提供了ghttp组件作为http api服务组件，用户可以通过向ghtt
 gStore提供了gServer组件作为Socket API服务组件，用户可以通过向gServer发送socket请求实现相关功能，gServer中通过`drop`请求来删除图数据库，具体内容详见【开发文档】-【常用API】-【gServer接口说明】
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 新增数据
 
 插入RDF数据是gStore常规操作，用户可以通过如下几种方式来执行数据插入操作。
@@ -624,6 +631,7 @@ gStore提供了gServer组件作为Socket API服务组件，用户可以通过向
 
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## 删除数据
 
 删除RDF数据是gStore常规操作，用户可以通过如下几种方式来执行数据删除操作。
@@ -1026,6 +1034,14 @@ restore <database_name> <backup_path>
 gstore> restore example backups/example.db_220929114732/
 ... (this is restore process output, omitted in this document)
 Database example restore successfully.
+```
+
+**(12)卸载数据库**
+
+```bash
+gstore[lubm]> unload;
+unload lubm successfully.
+gstore[no database]> 
 ```
 
 ### 身份
@@ -1443,6 +1459,7 @@ bin/shutdown
 ghttp 和 gRPC 提供了丰富的 API 接口，以便用户可以远程操作 gStore 大部分功能，具体接口详见【开发文档】-【常用API】-【gRPC接口说明】和【gHttp接口说明】。
 
 <!-- <div STYLE="page-break-after: always;"></div> -->
+
 ## Socket API服务
 
 gServer是gStore提供的外部访问接口，是一个socket API服务，用户通过socket双向通信，可以实现对gStore的远程连接和远程操作 。
