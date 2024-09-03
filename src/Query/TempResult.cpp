@@ -1200,7 +1200,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		for (int i = 1; i < (int)root.children.size(); i++)
 		{
 			EvalMultitypeValue y;
-			y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
+			y = doComp(root.children[i], row, id_cols, kvstore, this_varset, isel);
 			EvalMultitypeValue equal = (x == y);
 			if (i == 1)
 				ret_femv = equal;
@@ -1222,7 +1222,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 		for (int i = 1; i < (int)root.children.size(); i++)
 		{
 			EvalMultitypeValue y;
-			y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
+			y = doComp(root.children[i], row, id_cols, kvstore, this_varset, isel);
 			EvalMultitypeValue inequal = (x != y);
 			if (i == 1)
 				ret_femv = inequal;
