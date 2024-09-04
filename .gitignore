@@ -7,7 +7,10 @@
 *.x86_64
 *.hex
 bin/g*
-api/http/cpp/example/example
+api/http/cpp/example/Benchmark
+api/http/cpp/example/GET-example
+api/http/cpp/example/POST-example
+api/http/cpp/example/Transaction-example
 
 Parser/Sparql*
 
