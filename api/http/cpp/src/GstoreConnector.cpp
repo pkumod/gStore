@@ -295,22 +295,6 @@ int GstoreConnector::Posts(const std::string& strUrl, const std::string& strPost
 	return res;
 }
 
-std::string GstoreConnector::build(std::string db_name, std::string db_path, std::string request_type)
-{
-	std::string res;
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&username=" + this->username + "&password=" + this->password;
-		int ret = this->Get(strUrl, res);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
-		int ret = this->Post(this->Url, strPost, res);
-	}
-	return res;
-}
-
 std::string GstoreConnector::check(std::string request_type)
 {
 	std::string res;
@@ -322,6 +306,156 @@ std::string GstoreConnector::check(std::string request_type)
 	else if (request_type == "POST")
 	{
 		std::string strPost = "{\"operation\": \"check\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::login(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=login&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"login\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::testConnect(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=testConnect&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"testConnect\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::getCoreVersion(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=getCoreVersion&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"getCoreVersion\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::ipmanage(std::string type, std::string ip_type, std::string ips, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=ipmanage&username=" + this->username + "&password=" + this->password
+				+ "&type=" + type + "&ip_type=" + ip_type + "&ips=" + ips;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"ipmanage\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+				+ "\", \"type\": \"" + type  + "\", \"ip_type\": \"" + ip_type  + "\", \"ips\": \"" + ips + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::upload(std::string file_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=upload&username=" + this->username + "&password=" + this->password 
+				+ "&filepath=" + file_path;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"upload\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password
+				+ "\", \"filepath\": \"" + file_path + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::download(std::string file_path, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=upload&username=" + this->username + "&password=" + this->password 
+				+ "&filepath=" + file_path;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"upload\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password
+				+ "\", \"filepath\": \"" + file_path + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::stat(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=stat&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"stat\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::shutdown(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=shutdown&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"shutdown\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::show(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=show&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"show\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -343,6 +477,22 @@ std::string GstoreConnector::load(std::string db_name, std::string csr, std::str
 	return res;
 }
 
+std::string GstoreConnector::unload(std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=unload&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
 std::string GstoreConnector::monitor(std::string db_name, std::string request_type)
 {
 	std::string res;
@@ -359,17 +509,19 @@ std::string GstoreConnector::monitor(std::string db_name, std::string request_ty
 	return res;
 }
 
-std::string GstoreConnector::unload(std::string db_name, std::string request_type)
+std::string GstoreConnector::build(std::string db_name, std::string db_path, std::string async, std::string callback, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=unload&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=build&db_name=" + db_name + "&db_path=" + db_path + "&async=" + async + "&callback=" + callback 
+				+ "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"unload\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"build\", \"db_name\": \"" + db_name + "\", \"db_path\": \"" + db_path + "\", \"async\": \"" + async + "\", \"callback\": \"" + callback 
+				+ "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -399,97 +551,52 @@ std::string GstoreConnector::drop(std::string db_name, bool is_backup, std::stri
 	return res;
 }
 
-std::string GstoreConnector::show(std::string request_type)
+std::string GstoreConnector::backup(std::string db_name, std::string backup_path, std::string async, std::string callback, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=show&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=backup&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&backup_path=" + backup_path + "&async=" + async + "&callback=" + callback;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"show\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"backup\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name 
+				+ "\", \"backup_path\": \"" + backup_path + "\", \"async\": \"" + async + "\", \"callback\": \"" + callback + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
 }
 
-std::string GstoreConnector::usermanage(std::string type, std::string op_username, std::string op_password, std::string request_type)
+std::string GstoreConnector::backuppath(std::string db_name, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=usermanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&op_password=" + op_password;
+		std::string strUrl = this->Url + "?operation=backuppath&db_name=" + db_name + "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"usermanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"op_password\": \"" + op_password + "\"}";
+		std::string strPost = "{\"operation\": \"backuppath\", \"db_name\": \"" + db_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
 }
 
-std::string GstoreConnector::showuser(std::string request_type)
+std::string GstoreConnector::restore(std::string db_name, std::string backup_path, std::string async, std::string callback, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=showuser&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=restore&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name
+			+ "&backup_path=" + backup_path + "&async=" + async + "&callback=" + callback;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"showuser\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
-		int ret = this->Post(this->Url, strPost, res);
-	}
-	return res;
-}
-
-std::string GstoreConnector::userprivilegemanage(std::string type, std::string op_username, std::string privileges, std::string db_name, std::string request_type)
-{
-	std::string res;
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "operation=userprivilegemanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&privileges=" + privileges + "&db_name=" + db_name;
-		int ret = this->Get(strUrl, res);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"userprivilegemanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"privileges\": \"" + privileges + "\", \"db_name\": \"" + db_name + "\"}";
-		int ret = this->Post(this->Url, strPost, res);
-	}
-	return res;
-}
-
-std::string GstoreConnector::backup(std::string db_name, std::string backup_path, std::string request_type)
-{
-	std::string res;
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "?operation=backup&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&backup_path=" + backup_path;
-		int ret = this->Get(strUrl, res);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"backup\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
-		int ret = this->Post(this->Url, strPost, res);
-	}
-	return res;
-}
-
-std::string GstoreConnector::restore(std::string db_name, std::string backup_path, std::string request_type)
-{
-	std::string res;
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "?operation=restore&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&backup_path=" + backup_path;
-		int ret = this->Get(strUrl, res);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"restore\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"backup_path\": \"" + backup_path + "\"}";
+		std::string strPost = "{\"operation\": \"restore\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name 
+			+ "\", \"backup_path\": \"" + backup_path + "\", \"async\": \"" + async + "\", \"callback\": \"" + callback + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -511,21 +618,6 @@ std::string GstoreConnector::query(std::string db_name, std::string format, std:
 	return res;
 }
 
-void GstoreConnector::fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type)
-{
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "?operation=query&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
-		int ret = this->Get(strUrl, filename);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"query\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
-		int ret = this->Post(this->Url, strPost, filename);
-	}
-	return;
-}
-
 std::string GstoreConnector::exportDB(std::string db_name, std::string db_path, std::string request_type)
 {
 	std::string res;
@@ -542,17 +634,69 @@ std::string GstoreConnector::exportDB(std::string db_name, std::string db_path, 
 	return res;
 }
 
-std::string GstoreConnector::login(std::string request_type)
+std::string GstoreConnector::batchInsert(std::string db_name, std::string file, std::string dir, std::string async, std::string callback, std::string request_type)
 {
 	std::string res;
 	if (request_type == "GET")
 	{
-		std::string strUrl = this->Url + "?operation=login&username=" + this->username + "&password=" + this->password;
+		std::string strUrl = this->Url + "?operation=batchInsert&db_name=" + db_name + "&file=" + file + "&dir=" + dir + "&async=" + async + "&callback=" + callback 
+				+ "&username=" + this->username + "&password=" + this->password;
 		int ret = this->Get(strUrl, res);
 	}
 	else if (request_type == "POST")
 	{
-		std::string strPost = "{\"operation\": \"login\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		std::string strPost = "{\"operation\": \"batchInsert\", \"db_name\": \"" + db_name + "\", \"file\": \"" + file + "\", \"dir\": \"" + dir +  "\", \"async\": \"" + async + "\", \"callback\": \"" + callback 
+				+ "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::batchRemove(std::string db_name, std::string file, std::string async, std::string callback, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=batchRemove&db_name=" + db_name + "&file=" + file + "&async=" + async + "&callback=" + callback 
+				+ "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"batchRemove\", \"db_name\": \"" + db_name + "\", \"file\": \"" + file +  "\", \"async\": \"" + async + "\", \"callback\": \"" + callback 
+				+ "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::rename(std::string db_name, std::string new_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=rename&db_name=" + db_name + "&new_name=" + new_name + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"rename\", \"db_name\": \"" + db_name + "\", \"new_name\": \"" + new_name + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::checkOperationState(std::string opt_id, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=checkOperationState&opt_id=" + opt_id + "&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"checkOperationState\", \"opt_id\": \"" + opt_id + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
 	return res;
@@ -623,22 +767,6 @@ std::string GstoreConnector::rollback(std::string db_name, std::string tid, std:
 	return res;
 }
 
-std::string GstoreConnector::getTransLog(std::string request_type)
-{
-	std::string res;
-	if (request_type == "GET")
-	{
-		std::string strUrl = this->Url + "?operation=txnlog&username=" + this->username + "&password=" + this->password;
-		int ret = this->Get(strUrl, res);
-	}
-	else if (request_type == "POST")
-	{
-		std::string strPost = "{\"operation\": \"txnlog\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
-		int ret = this->Post(this->Url, strPost, res);
-	}
-	return res;
-}
-
 std::string GstoreConnector::checkpoint(std::string db_name, std::string request_type)
 {
 	std::string res;
@@ -652,6 +780,239 @@ std::string GstoreConnector::checkpoint(std::string db_name, std::string request
 		std::string strPost = "{\"operation\": \"checkpoint\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\"}";
 		int ret = this->Post(this->Url, strPost, res);
 	}
+	return res;
+}
+
+std::string GstoreConnector::showuser(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=showuser&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"showuser\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::usermanage(std::string type, std::string op_username, std::string op_password, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=usermanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&op_password=" + op_password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"usermanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"op_password\": \"" + op_password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::userprivilegemanage(std::string type, std::string op_username, std::string privileges, std::string db_name, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=userprivilegemanage&type=" + type + "&username=" + this->username + "&password=" + this->password + "&op_username=" + op_username + "&privileges=" + privileges + "&db_name=" + db_name;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"userprivilegemanage\", \"type\": \"" + type + "\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"op_username\": \"" + op_username + "\", \"privileges\": \"" + privileges + "\", \"db_name\": \"" + db_name + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::userpassword(std::string re_username, std::string re_password, std::string op_password, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=userpassword&username=" + re_username + "&password=" + re_password + "&op_password=" + op_password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"userpassword\", \"username\": \"" + re_username + "\", \"password\": \"" + re_password + "\", \"op_password\": \"" + op_password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::funquery(std::string funInfo, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=funquery&username=" + this->username + "&password=" + this->password + "&funInfo=" + funInfo;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"funquery\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"funInfo\": \"" + funInfo + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+void GstoreConnector::fquery(std::string db_name, std::string format, std::string sparql, std::string filename, std::string request_type)
+{
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=query&username=" + this->username + "&password=" + this->password + "&db_name=" + db_name + "&format=" + format + "&sparql=" + sparql;
+		int ret = this->Get(strUrl, filename);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"query\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"db_name\": \"" + db_name + "\", \"format\": \"" + format + "\", \"sparql\": \"" + sparql + "\"}";
+		int ret = this->Post(this->Url, strPost, filename);
+	}
+	return;
+}
+
+std::string GstoreConnector::funcudb(std::string type, std::string funInfo, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=funcudb&username=" + this->username + "&password=" + this->password 
+				+ "&type=" + type + "&funInfo=" + funInfo;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"funcudb\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+				+ "\", \"type\": \"" + type + "\", \"funInfo\": \"" + funInfo + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::funreview(std::string funInfo, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=funreview&username=" + this->username + "&password=" + this->password + "&funInfo=" + funInfo;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"funreview\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\", \"funInfo\": \"" + funInfo + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::txnlog(std::string pageNo, std::string pageSize, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=txnlog&username=" + this->username + "&password=" + this->password 
+				+ "&pageNo=" + pageNo + "&pageSize=" + pageSize;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"txnlog\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+				+ "\", \"pageNo\": \"" + pageNo + "\", \"pageSize\": \"" + pageSize + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::querylogdate(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=querylogdate&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"querylogdate\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::querylog(std::string date, std::string pageNo, std::string pageSize, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=querylog&username=" + this->username + "&password=" + this->password 
+				+ "&date=" + date + "&pageNo=" + pageNo + "&pageSize=" + pageSize;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"querylog\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+				+ "\", \"date\": \"" + date + "\", \"pageNo\": \"" + pageNo + "\", \"pageSize\": \"" + pageSize + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::accesslogdate(std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=accesslogdate&username=" + this->username + "&password=" + this->password;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"accesslogdate\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::accesslog(std::string date, std::string pageNo, std::string pageSize, std::string request_type)
+{
+	std::string res;
+	if (request_type == "GET")
+	{
+		std::string strUrl = this->Url + "?operation=accesslog&username=" + this->username + "&password=" + this->password 
+				+ "&date=" + date + "&pageNo=" + pageNo + "&pageSize=" + pageSize;
+		int ret = this->Get(strUrl, res);
+	}
+	else if (request_type == "POST")
+	{
+		std::string strPost = "{\"operation\": \"accesslog\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+				+ "\", \"date\": \"" + date + "\", \"pageNo\": \"" + pageNo + "\", \"pageSize\": \"" + pageSize + "\"}";
+		int ret = this->Post(this->Url, strPost, res);
+	}
+	return res;
+}
+
+std::string GstoreConnector::addReason(std::string type, std::string db_name, std::string ruleinfo)
+{
+	std::string res;
+	std::string strPost = "{\"operation\": \"reasonManage\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+			+ "\", \"type\": \"" + type + "\", \"db_name\": \"" + db_name + "\", \"ruleinfo\":" + ruleinfo + "}";
+	int ret = this->Post(this->Url, strPost, res);
+	return res;
+}
+
+std::string GstoreConnector::reasonManage(std::string type, std::string db_name, std::string rulename)
+{
+	std::string res;
+	std::string strPost = "{\"operation\": \"reasonManage\", \"username\": \"" + this->username + "\", \"password\": \"" + this->password 
+			+ "\", \"type\": \"" + type + "\", \"db_name\": \"" + db_name + "\", \"rulename\": \"" + rulename + "\"}";
+	int ret = this->Post(this->Url, strPost, res);
 	return res;
 }
 

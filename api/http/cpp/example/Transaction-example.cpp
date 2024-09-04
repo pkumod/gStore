@@ -120,7 +120,15 @@ int main(int argc, char* argv[])
 	cout << res << endl;
 
 	//transaction log
-	res = gc.getTransLog();
+	res = gc.txnlog();
+	cout << res << endl;
+
+	//transaction log date
+	res = gc.querylogdate();
+	cout << res << endl;
+
+	//transaction access log date
+	res = gc.accesslogdate();
 	cout << res << endl;
 
 	return 0;
