@@ -35,8 +35,8 @@ std::string getValue(const std::string &key, const std::string &json)
 int main(int argc, char* argv[])
 {
 	std::string IP = "127.0.0.1";
-	int Port = 20355;
-	std::string httpType = "grpc";
+	int Port = 9000;
+	std::string httpType = "ghttp";
 	std::string username = "root";
 	std::string password = "123456";
 	std::string sparql = "select ?x where \
