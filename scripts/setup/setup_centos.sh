@@ -18,10 +18,23 @@ INSTALL_BASE="/opt/gcc/"
 GCC_CONFIGURE_WITH='--enable-checking=release --enable-languages=c,c++'
 # mirror url
 MIRRORS_URL="http://mirror.linux-ia64.org/gnu/gcc"
-if [ -n "`g++ --version|grep -P '9.3.0'`" ]; then
+# arrchitecture
+ARCH=`uname -m`
+# install zip unzip bzip2 tar
+yum -y install zip unzip bzip2 tar
+# check gcc version
+yum -y install gcc gcc-c++
+GCC_INSTALL_VERSION=`gcc --version|grep -P 'gcc'|awk '{print $3}'`
+if [ -n $GCC_INSTALL_VERSION ]; then
+VERSION_FIRST_NUM=`echo $GCC_INSTALL_VERSION | cut -d '.' -f1`
+if [ "$VERSION_FIRST_NUM" -gt 9 ]; then
 echo -e "g++ installed "
 echo `g++ --version`
 else
+GCC_INSTALL_VERSION=""
+fi
+fi
+if [ -z $GCC_INSTALL_VERSION ]; then
 cd $SRC_PATH
 if [ ! -d "gcc" ];then
 mkdir gcc
@@ -47,7 +60,7 @@ echo "gcc-$GCC_VERSIONdir is not exists "
 exit
 fi
 echo "install gcc gcc-c++ dependence"
-yum install -y gcc-c++ unzip bzip2 ntpdate m4
+yum install -y gcc-c++ ntpdate m4
 ntpdate -u ntp.api.bz
 cd gcc-$GCC_VERSION
 # download configure file
@@ -61,7 +74,7 @@ ln -sf mpfr-3.1.4 mpfr
 ln -sf mpc-1.0.3 mpc
 echo "install gcc"
 # disable multilib
-if [ -n "`uname -a|grep -P 'x86_64'`" ]; then
+if [ $ARCH = x86_64 ]; then
 GCC_CONFIGURE_WITH=$GCC_CONFIGURE_WITH' --disable-multilib'
 fi
 mkdir gcc-make-tmp
@@ -75,8 +88,8 @@ if [ ! -d "$INSTALL_BASE$GCC_VERSION"] || [ -z "`ls $INSTALL_BASE$GCC_VERSION`" 
 echo -e "[error] install gcc-$GCC_VERSION fail!"
 exit
 else
-if [ ! -e "/etc/ld.so.conf.d/libgcc-x86_64.conf" ]; then
-echo "$INSTALL_BASE$GCC_VERSION/lib64" >> /etc/ld.so.conf.d/libgcc-x86_64.conf
+if [ ! -e "/etc/ld.so.conf.d/libgcc-$ARCH.conf" ]; then
+echo "$INSTALL_BASE$GCC_VERSION/lib64" >> /etc/ld.so.conf.d/libgcc-$ARCH.conf
 fi
 # mv py file to parent dir
 for PY_FILE in `find $INSTALL_BASE$GCC_VERSION/lib64/ -name "*.py"`
@@ -109,7 +122,16 @@ echo -e "readline-devel installed"
 yum install -y libcurl-devel openssl-devel
 echo -e "libcurl-devel installed"
 
+if [ $ARCH = x86_64 ]; then
+if [ -n "`yum list |grep -P 'pkgconfig.x86_64'`" ]; then
 yum install -y pkgconfig.x86_64
+else
+yum install -y pkgconf.x86_64
+fi
+else
+yum install -y pkgconf
+fi
+
 echo -e "pkg-config installed"
 
 yum install -y libuuid-devel
@@ -182,13 +204,13 @@ fi
 yum install -y jemalloc
 if [ ! -e "/usr/lib64/libjemalloc.so" ] && [ -n "`ls /usr/lib64 |grep -P 'libjemalloc.so.\d+$'`" ]; then
 LIB_JEMALLOC=echo "`ls /usr/lib64 |grep -P 'libjemalloc.so.\d+$'`"
-ln -sf $LIB_JEMALLOC /usr/lib64/libjemalloc.so
+ln -sf /usr/lib64/$LIB_JEMALLOC /usr/lib64/libjemalloc.so
 if [ ! -e "/etc/ld.so.preload" ] || [-z "`cat /etc/ld.so.preload|grep '/usr/lib64/libjemalloc.so'`"]; then
 echo "/usr/lib64/libjemalloc.so" >> /etc/ld.so.preload
 fi
 echo -e "jemalloc installed"
 else
-if [ -e "/usr/local/lib/libjemalloc.so" ]; then
+if [ -e "/usr/lib64/libjemalloc.so" ]; then
 echo -e "jemalloc installed"
 else
 cd $SRC_PATH
@@ -228,8 +250,8 @@ echo -e "Optional: requests for python api, pthreads and curl-devel for php api,
 echo -e "For help: https://github.com/pkumod/gStore/blob/master/docs/DEMAND.md"
 sleep 5s
 
-if [ ! -e "/etc/ld.so.conf.d/libboost-x86_64.conf" ]; then
-echo "/usr/local/lib" >> /etc/ld.so.conf.d/libboost-x86_64.conf
+if [ ! -e "/etc/ld.so.conf.d/libboost-$ARCH.conf" ]; then
+echo "/usr/local/lib" >> /etc/ld.so.conf.d/libboost-$ARCH.conf
 fi
 if [ -z "`cat ~/.bash_profile|grep 'CPATH=/usr/local/include'`" ]; then
 echo "export CPATH=/usr/local/include" >> ~/.bash_profile
