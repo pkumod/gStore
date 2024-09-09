@@ -36,8 +36,23 @@ const gc = new GstoreConnector(
 );
 
 (async function () {
+    // check server
+    var res = await gc.check();
+    console.log(JSON.stringify(res, ","));
+
+    // login server
+    res = await gc.login();
+    console.log(JSON.stringify(res, ","));
+
+    // query version
+    res = await gc.getCoreVersion();
+    console.log(JSON.stringify(res, ","));
+
+    res = await gc.stat();
+    console.log(JSON.stringify(res, ","));
+
     // build a database with a RDF graph
-    var res = await gc.build("lubm", "data/lubm/lubm.nt");
+    res = await gc.build("lubm", "data/lubm/lubm.nt");
     console.log(JSON.stringify(res, ","));
 
     // load the database
@@ -66,6 +81,38 @@ const gc = new GstoreConnector(
 
     // export the database
     res = await gc.exportDB("lubm", "export/lubm/get");
+    console.log(JSON.stringify(res, ","));
+
+    // insert nt
+    res = await gc.batchInsert("lubm", "data/bbug/bbug.nt");
+    console.log(JSON.stringify(res, ","));
+    res = await gc.checkOperationState(res.opt_id);
+    console.log(JSON.stringify(res, ","));
+
+    // remove nt
+    res = await gc.batchRemove("lubm", "data/bbug/bbug.nt");
+    console.log(JSON.stringify(res, ","));
+    res = await gc.checkOperationState(res.opt_id);
+    console.log(JSON.stringify(res, ","));
+
+    // user mange
+    // show user
+    res = await gc.showuser();
+    console.log(JSON.stringify(res, ","));
+    // add usr
+    res = await gc.usermanage("1", "test", "123456");
+    console.log(JSON.stringify(res, ","));
+    // set user privile
+    res = await gc.userprivilegemanage("1", "test", "1,2,3", "lubm");
+    console.log(JSON.stringify(res, ","));
+    // clean user privile
+    res = await gc.userprivilegemanage("3", "test");
+    console.log(JSON.stringify(res, ","));
+    // update user password
+    res = await gc.userpassword("test", "123456", "111111");
+    console.log(JSON.stringify(res, ","));
+    // delete user
+    res = await gc.usermanage("2", "test");
     console.log(JSON.stringify(res, ","));
 
     // unload the database
