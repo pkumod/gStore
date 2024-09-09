@@ -115,7 +115,7 @@ const gc = new GstoreConnector(
     var reason_info = "{\"rulename\":\"1\",\"description\":\"互相关注的人为朋友\",\"isenable\": 1,\"type\": 1,\"logic\": 1,\"conditions\": [{\"patterns\": [{\"subject\": \"?x\",	\"predicate\": \"<关注>\",\"object\":\"?y\"},{\"subject\": \"?y\",\"predicate\": \"<关注>\",\"object\": \"?x\"}],\"filters\": [],\"count_info\": {}}],\"return\": {\"source\": \"?x\",\"target\": \"?k\",\"label\": \"朋友\",\"value\": \"\"}}";
     await gc.build("friend_reason", "scripts/test/parser_test/parser_d33.ttl", "", "", "POST");
     await gc.load("friend_reason", "0", "POST");
-    res = await gc.show("friend_reason", "POST");
+    res = await gc.show("POST");
     console.log(JSON.stringify(res, ","));
 
     // add reason

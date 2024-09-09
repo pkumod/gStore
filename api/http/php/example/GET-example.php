@@ -21,6 +21,20 @@ $filename = "res.txt";
 // start a gc with given IP, Port, username and password
 $gc = new GstoreConnector($IP, $Port, $httpTye, $username, $password);
 
+// check server
+$res = $gc->login();
+echo $res . PHP_EOL;
+
+// query version
+$res = $gc->getCoreVersion();
+echo $res . PHP_EOL;
+
+$res = $gc->check();
+echo $res . PHP_EOL;
+
+$res = $gc->stat();
+echo $res . PHP_EOL;
+
 // build a database with a RDF graph
 $res = $gc->build("lubm", "data/lubm/lubm.nt");
 echo $res . PHP_EOL;
@@ -54,6 +68,38 @@ echo $res. PHP_EOL;
 
 // export the database
 $res = $gc->exportDB("lubm", "export/lubm/get");
+echo $res . PHP_EOL;
+
+// insert nt
+$res = $gc->batchInsert("lubm", "data/bbug/bbug.nt");
+echo $res . PHP_EOL;
+
+// remove nt
+$res = $gc->batchRemove("lubm", "data/bbug/bbug.nt");
+echo $res . PHP_EOL;
+
+// show user
+$res = $gc->showuser();
+echo $res . PHP_EOL;
+
+// add usr
+$res = $gc->usermanage("1", "test", "123456");
+echo $res . PHP_EOL;
+
+// set user privile
+$res = $gc->userprivilegemanage("1", "test", "1,2,3", "lubm");
+echo $res . PHP_EOL;
+
+// clean user privile
+$res = $gc->userprivilegemanage("3", "test");
+echo $res . PHP_EOL;
+
+// update user password
+$res = $gc->userpassword("test", "123456", "111111");
+echo $res . PHP_EOL;
+
+// delete user
+$res = $gc->usermanage("2", "test");
 echo $res . PHP_EOL;
 
 // unload the database
