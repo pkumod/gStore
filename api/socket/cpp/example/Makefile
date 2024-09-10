@@ -1,7 +1,7 @@
 CC=g++ -std=c++11
 
 src_dir=../src/
-inc_log=-I../../../../tools/log4cplus/include
+inc_log=-I../../../../include/
 
 all: example 
 

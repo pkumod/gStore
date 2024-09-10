@@ -8,7 +8,7 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#include "../../../../Server/Socket.h"
+#include "../../../../src/Server/Socket.h"
 #include <cstring>
 #include <iostream>
 
