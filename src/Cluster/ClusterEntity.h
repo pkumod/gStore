@@ -21,6 +21,6 @@ namespace cluster
         virtual ClusterRoleType getCluterRoleType()const = 0;
         virtual void startHeardBeat(){}
         virtual uint32 startNotify(uint32 term, uint32 index){return 0;}
-        virtual uint32 startSyncNum(uint32 term, uint32 index, const std::string& nt){return 0;}
+        virtual uint32 startSync(uint32 term, uint32 index, const std::string& file_path){return 0;}
     };
 }

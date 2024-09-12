@@ -26,6 +26,6 @@ namespace cluster
         void startHeardBeat()override;
         // 开启通知应答，一次性定时器，可复用
         uint32 startNotify(uint32 term, uint32 index)override;
-        uint32 startSyncNum(uint32 term, uint32 index, const std::string& nt)override;
+        uint32 startSync(uint32 term, uint32 index, const std::string& file_path)override;
     };
 }

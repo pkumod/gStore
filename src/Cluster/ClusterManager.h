@@ -39,12 +39,20 @@ namespace cluster
         // 启动更新通知, 返回应答数量
         uint32 startNotify(uint32 term, uint32 index);
         // 启动同步通知, 返回应答数量
-        uint32 startSyncNum(uint32 term, uint32 index, const std::string& nt);
+        uint32 startSync(uint32 term, uint32 index, const std::string& file_path);
 
         //日志模块
         //新增日志
-        void addLog();
+        static void addLog(uint32 term, uint32 index, uint32 status);
         // 更新日志状态
-        void updateLog();
+        static void updateLogStatus(uint32 term, uint32 index, uint32 status);
+        // 增加响应节点数量
+        static void addLogReplyNum(uint32 index, uint32 replyNum);
+        // 增加同步节点数量
+        static void addLogSyncNum(uint32 index, uint32 replyNum);
+        // 获取通知响应数量
+        static uint32 getLogReplyNum(uint32 index);
+        // 获取同步数量
+        static uint32 getLogSyncNum(uint32 index);
     };
 }

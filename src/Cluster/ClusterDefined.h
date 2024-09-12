@@ -107,6 +107,6 @@ namespace cluster
         ClusterLogStatus type;
         int term;
         int index;
-        std::string sync_nt; //数据流数据
+        std::string file_path; //数据luj
     };
 }

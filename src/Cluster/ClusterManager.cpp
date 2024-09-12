@@ -51,8 +51,38 @@ namespace cluster
         return role_->startNotify(term, index);
     }
 
-    uint32 CluterManager::startSyncNum(uint32 term, uint32 index, const std::string& nt)
+    uint32 CluterManager::startSync(uint32 term, uint32 index, const std::string& file_path)
     {
-        return role_->startSyncNum(term, index, nt);
+        return role_->startSync(term, index, file_path);
+    }
+
+    void CluterManager::addLog(uint32 term, uint32 index, uint32 status)
+    {
+
+    }
+
+    void CluterManager::updateLogStatus(uint32 term, uint32 index, uint32 status)
+    {
+
+    }
+
+    void CluterManager::addLogReplyNum(uint32 index, uint32 replyNum)
+    {
+
+    }
+
+    void CluterManager::addLogSyncNum(uint32 index, uint32 replyNum)
+    {
+
+    }
+
+    uint32 CluterManager::getLogReplyNum(uint32 index)
+    {
+
+    }
+
+    uint32 CluterManager::getLogSyncNum(uint32 index)
+    {
+
     }
 }

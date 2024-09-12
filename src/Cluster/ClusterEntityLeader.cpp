@@ -70,7 +70,7 @@ namespace cluster
 
     uint32 ClusterEntityLeader::startNotify(uint32 term, uint32 index)
     {
-        postHeartBeat(ClusterLogStatus_HeartBeat, term, index);
+        postHeartBeat(ClusterLogStatus_pending, term, index);
         uint32 end_time = Util::get_cur_time() + relpy_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;
@@ -94,13 +94,35 @@ namespace cluster
         return pass_num;
     }
 
-    void ClusterEntityLeader::postSync(ClusterLogStatus type, uint32 term, uint32 index, std::string nt)
+    void ClusterEntityLeader::postSync(ClusterLogStatus type, uint32 term, uint32 index, std::string file_path)
     {
-
+        // file_path以二进制打开文件读取数据
     }
 
-    uint32 ClusterEntityLeader::startSyncNum(uint32 term, uint32 index, const std::string& nt)
+    uint32 ClusterEntityLeader::startSync(uint32 term, uint32 index, const std::string& file_path)
     {
+        postSync(ClusterLogStatus_sync, term, index, file_path);
+        uint32 end_time = Util::get_cur_time() + sync_timeout_;
+        TimerProvider oneTimer;
+        int once_run = 1000;
+        uint32 pass_num = 0;
+        int need_num = (followNodeL_.size() + 1) / 2;
+        while (1)
+        {
+            if (once_run > (end_time - Util::get_cur_time()))
+                once_run = end_time - Util::get_cur_time();
+            oneTimer.AsyncWait(once_run, [this, &pass_num]
+            {
+                pass_num = ClusterLog::getNodeNum();
+            });
+
+            if (pass_num >= need_num)
+                break;
+            if (Util::get_cur_time() >= end_time)
+                break;
+        }
+
+        return pass_num;
         return 0;
     }
 }
