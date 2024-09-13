@@ -38,7 +38,7 @@ namespace cluster
         // 启动更新通知, 返回应答数量
         int startNotify(std::string db_name, uint32 term, uint32 index);
         // 启动同步通知, 返回应答数量
-        int startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path);
+        int startSync(std::string db_name, uint32 term, uint32 index, ClusterOperation operation, const std::string& file_path);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -46,7 +46,7 @@ namespace cluster
 
         //日志模块
         //新增日志
-        void addLog(std::string db_name, uint64 index, int status);
+        void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
         // 更新日志状态
         void updateLogStatus(std::string db_name, uint64 index, int status);
         // 增加响应节点数量
@@ -60,6 +60,6 @@ namespace cluster
         // 更换主节点
         void updateTerm(std::string db_name, uint32 term);
         // 更换主节点索引
-        void updateTermIndex(std::string db_name, uint32 term, uint64 index);
+        void updateTermIndex(std::string db_name, uint64 index);
     };
 }

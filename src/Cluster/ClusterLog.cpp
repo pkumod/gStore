@@ -21,6 +21,8 @@ namespace cluster
         s.at("index").get_to(t.index);
         s.at("status").get_to(t.status);
         s.at("nodeNum").get_to(t.nodeNum);
+        s.at("operation").get_to(t.operation);
+        s.at("file_path").get_to(t.file_path);
     }
 
     void to_json(nlohmann::json& s, const LogInfo& t)
@@ -28,6 +30,8 @@ namespace cluster
         s["index"]   = t.index;
         s["status"]  = t.status;
         s["nodeNum"] = t.nodeNum;
+        s["operation"] = t.operation;
+        s["file_path"] = t.file_path;
     }
 
     // ClusterLogInfo
@@ -109,7 +113,7 @@ namespace cluster
         }
     }
 
-    bool ClusterLogInfo::addLog(uint64 index, int status)
+    bool ClusterLogInfo::addLog(uint64 index, int status, ClusterOperation operation)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -121,6 +125,7 @@ namespace cluster
         log.setIndex(index);
         log.setStatus(status);
         log.setNodeNum(0);
+        log.setOperation(operation);
         logs_[index] = log;
     }
 
@@ -198,5 +203,15 @@ namespace cluster
             return 0;
         }
         return it->second.getNodeNum();
+    }
+
+    void ClusterLogInfo::updateTerm(uint32 term)
+    {
+        termInfo_.setTerm(term);
+    }
+
+    void ClusterLogInfo::updateTermIndex(std::string db_name, uint64 index)
+    {
+        termInfo_.setIndex(index);
     }
 }

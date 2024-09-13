@@ -24,11 +24,13 @@ namespace cluster
         public:
         virtual void init() = 0;
         virtual ClusterRoleType getCluterRoleType()const = 0;
-        virtual void addLog(std::string db_name, uint64 index, int status);
+        virtual void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
         virtual void updateLogStatus(std::string db_name, uint64 index, int status);
         virtual void addLogReplyNum(std::string db_name, uint64 index);
         virtual void addLogSyncNum(std::string db_name, uint64 index);
         virtual uint32 getLogReplyNum(std::string db_name, uint64 index);
         virtual uint32 getLogSyncNum(std::string db_name, uint64 index);
+        virtual void updateTerm(std::string db_name, uint32 term);
+        virtual void updateTermIndex(std::string db_name, uint64 index);
     };
 }

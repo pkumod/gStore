@@ -69,7 +69,7 @@ namespace cluster
         return leader->startNotify(db_name, term, index);
     }
 
-    int ClusterManager::startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path)
+    int ClusterManager::startSync(std::string db_name, uint32 term, uint32 index, ClusterOperation operation, const std::string& file_path)
     {
         if (!isEnable() || !role_)
             return -1;
@@ -79,7 +79,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return -1;
         }
-        return leader->startSync(db_name, term, index, file_path);
+        return leader->startSync(db_name, term, index, operation, file_path);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)
@@ -103,17 +103,18 @@ namespace cluster
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
             return false;
-        if (!leader->FindFollower(ip).empty())
+        ClusterNode node = leader->FindFollower(ip);
+        if (!node.empty() && node.getIp() == ip)
             return true;
         return false;
     }
 
-    void ClusterManager::addLog(std::string db_name, uint64 index, int status)
+    void ClusterManager::addLog(std::string db_name, uint64 index, int status, ClusterOperation operation)
     {
         if (!isEnable() || !role_)
             return;
 
-        role_->addLog(db_name, index, status);
+        role_->addLog(db_name, index, status, operation);
     }
 
     void ClusterManager::updateLogStatus(std::string db_name, uint64 index, int status)
@@ -153,11 +154,16 @@ namespace cluster
 
     void ClusterManager::updateTerm(std::string db_name, uint32 term)
     {
-
+        if (!isEnable() || !role_)
+            return;
+        
+        role_->updateTerm(db_name, term);
     }
 
-    void ClusterManager::updateTermIndex(std::string db_name, uint32 term, uint64 index)
+    void ClusterManager::updateTermIndex(std::string db_name, uint64 index)
     {
-
+        if (!isEnable() || !role_)
+            return;
+        role_->updateTermIndex(db_name, index);
     }
 }

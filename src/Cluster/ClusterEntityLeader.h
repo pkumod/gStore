@@ -15,12 +15,12 @@ namespace cluster
         TimerProvider head_beat_timer_;
         public:
         ClusterNode FindFollower(const std::string& ip)const;
-        void postHeartBeat(ClusterLogStatus type, uint32 term, uint32 index);
-        void postReply(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index);
-        void postSync(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index, std::string nt);
+        void postHeartBeat();
+        void postNotify(std::string db_name, uint32 term, uint64 index);
+        void postSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, std::string file_path);
         void startHeardBeat();
-        uint32 startNotify(std::string db_name, uint32 term, uint32 index);
-        uint32 startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path);
+        uint32 startNotify(std::string db_name, uint32 term, uint64 index);
+        uint32 startSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, const std::string& file_path);
 
         // virtual function in here
         public:
