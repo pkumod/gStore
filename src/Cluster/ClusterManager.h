@@ -39,6 +39,10 @@ namespace cluster
         int startNotify(std::string db_name, uint32 term, uint32 index);
         // 启动同步通知, 返回应答数量
         int startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path);
+        // IP是否来自Leader节点
+        bool fromLeader(const std::string& ip);
+        // IP是否来自Follower节点
+        bool fromFollower(const std::string& ip);
 
         //日志模块
         //新增日志
