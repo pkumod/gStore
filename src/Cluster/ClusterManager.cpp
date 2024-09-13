@@ -36,6 +36,14 @@ namespace cluster
         }
     }
 
+    void ClusterManager::initClusterDir(const std::vector<std::string>& dbList)
+    {
+        for (const auto m: dbList)
+        {
+            std::string db_path = Util::getConfigureValue("db_home");
+        }
+    }
+
     bool ClusterManager::isLeader()
     {
         if (getCluterRole() == cluster::ClusterRoleType_Leader)
@@ -165,5 +173,15 @@ namespace cluster
         if (!isEnable() || !role_)
             return;
         role_->updateTermIndex(db_name, index);
+    }
+
+    void ClusterManager::addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
+    {
+
+    }
+
+    void ClusterManager::appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
+    {
+        
     }
 }

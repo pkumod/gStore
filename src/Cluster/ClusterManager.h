@@ -4,6 +4,7 @@
 #include "ClusterEntity.h"
 #include "ClusterEntityLeader.h"
 #include "ClusterEntityFollower.h"
+#include "ClusterCached.h"
 #include "ClusterLog.h"
 #include "../Util/Util.h"
 
@@ -31,6 +32,8 @@ namespace cluster
         bool isLeader();
         // 窘机恢复
         void tryRecover();
+        // 初始化数据量集群数据
+        void initClusterDir(const std::vector<std::string>& dbList);
 
         //主从互通模块
         // 启动心跳超时检测
@@ -61,5 +64,12 @@ namespace cluster
         void updateTerm(std::string db_name, uint32 term);
         // 更换主节点索引
         void updateTermIndex(std::string db_name, uint64 index);
+
+        // nt数据存储模块
+        // 普通数据更新，每次操作，单独文件进行存储
+        // 事务操作, 一次完整操作, 存储一个文件
+        void addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
+        // 事务操作进行追加
+        void appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
     };
 }
