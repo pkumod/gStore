@@ -61,9 +61,13 @@ namespace cluster
         // 获取同步数量
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         // 更换主节点
-        void updateTerm(std::string db_name, uint32 term);
+        void updateTerm(uint32 term);
         // 更换主节点索引
-        void updateTermIndex(std::string db_name, uint64 index);
+        void updateDbIndex(std::string db_name, uint64 index);
+        // 获取任期
+        void getTerm();
+        // 获取数据库成功提交的最新日志索引
+        void getDbIndex(std::string db_name, uint64 index);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
@@ -71,5 +75,7 @@ namespace cluster
         void addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
         // 事务操作进行追加
         void appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
+        // 存储follower接收到的nt文件, 返回文件路径
+        std::string saveFromFollowerFile(const std::pair<std::string, std::string>& file_info, const std::string& db_name);
     };
 }

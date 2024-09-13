@@ -48,17 +48,13 @@ namespace cluster
         void addNodeNum(){ nodeNum += 1; }
     };
 
-    class ClusterLogInfo
+    class ClusterDbNameLogInfo
     {
-        TermInfo termInfo_;
         std::map<uint64, LogInfo> logs_; //index, logInfo
         std::map<int, uint64> posL_; // pos, index;
 
         public:
-        void setTermInfo(const nlohmann::json& s);
         void setLogs(const nlohmann::json& s);
-        void setTerm(uint32 value){ termInfo_.setTerm(value); }
-        void setIndex(uint64 value){ termInfo_.setIndex(value); }
         void covertJson(nlohmann::json& s)const;
         bool addLog(uint64 index, int status, ClusterOperation operation);
         void updateLogStatus(uint64 index, int status);
@@ -69,7 +65,48 @@ namespace cluster
         void updateTerm(uint32 term);
         void updateTermIndex(std::string db_name, uint64 index);
 
-        static bool from_json(const nlohmann::json& s, ClusterLogInfo& t);
-        static bool to_json(nlohmann::json& s, const ClusterLogInfo& t);
+        static bool from_json(const nlohmann::json& s, ClusterDbNameLogInfo& t);
+        static bool to_json(nlohmann::json& s, const ClusterDbNameLogInfo& t);
+    };
+
+    struct TermDbLog
+    {
+        std::string db_name;
+        uint64 index;
+        public:
+        TermDbLog()
+        {
+            db_name = "";
+            index   = 0;
+        }
+
+        TermDbLog(const std::string& db_name_, uint64 index_)
+        {
+            db_name = db_name_;
+            index   = index_;
+        }
+        void setDbName(const std::string& value){ db_name = value; }
+        void setIndex(uint64 value){ index = value; }
+        uint64 getIndex()const{ return index; }
+    };
+
+    class ClusterTermInfo
+    {
+        uint32 term_;
+        std::map<std::string, TermDbLog> db_logs_; //db_name, logInfo
+        public:
+        ClusterTermInfo()
+        {
+            term_  = 0;
+        }
+        void covertJson(nlohmann::json& s)const;
+        void setLogs(const nlohmann::json& s);
+        void setTerm(uint32 value){ term_ = value; }
+        void setDbIndex(const std::string& db, uint64 index);
+        uint32 getTerm()const{ return term_; }
+        uint64 getDbIndex(const std::string& db_name);
+
+        static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
+        static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);
     };
 }

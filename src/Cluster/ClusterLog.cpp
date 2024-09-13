@@ -2,19 +2,6 @@
 
 namespace cluster
 {
-    // TermInfo
-    void from_json(const nlohmann::json& s, TermInfo& t)
-    {
-        s.at("term").get_to(t.term);
-        s.at("index").get_to(t.index);
-    }
-
-    void to_json(nlohmann::json& s, const TermInfo& t)
-    {
-        s["term"]  = t.term;
-        s["index"] = t.index;
-    }
-
     // LogInfo
     void from_json(const nlohmann::json& s, LogInfo& t)
     {
@@ -34,19 +21,18 @@ namespace cluster
         s["file_path"] = t.file_path;
     }
 
-    // ClusterLogInfo
-    void from_json(const nlohmann::json& s, ClusterLogInfo& t)
+    // ClusterDbNameLogInfo
+    void from_json(const nlohmann::json& s, ClusterDbNameLogInfo& t)
     {
-        t.setTermInfo(s["termInfo"]);
         t.setLogs(s["logs"]);
     }
 
-    void to_json(nlohmann::json& s, const ClusterLogInfo& t)
+    void to_json(nlohmann::json& s, const ClusterDbNameLogInfo& t)
     {
         t.covertJson(s);
     }
 
-    bool ClusterLogInfo::from_json(const nlohmann::json& s, ClusterLogInfo& t)
+    bool ClusterDbNameLogInfo::from_json(const nlohmann::json& s, ClusterDbNameLogInfo& t)
     {
         try
         {
@@ -60,7 +46,7 @@ namespace cluster
         return true;
     }
 
-    bool ClusterLogInfo::to_json(nlohmann::json& s, const ClusterLogInfo& t)
+    bool ClusterDbNameLogInfo::to_json(nlohmann::json& s, const ClusterDbNameLogInfo& t)
     {
         try
         {
@@ -74,12 +60,7 @@ namespace cluster
         return true;
     }
 
-    void ClusterLogInfo::setTermInfo(const nlohmann::json& s)
-    {
-        termInfo_ = s;
-    }
-
-    void ClusterLogInfo::setLogs(const nlohmann::json& s)
+    void ClusterDbNameLogInfo::setLogs(const nlohmann::json& s)
     {
         int size = s.size();
         for (int i = 0; i < size; i++)
@@ -90,9 +71,8 @@ namespace cluster
         }
     }
 
-    void ClusterLogInfo::covertJson(nlohmann::json& s)const
+    void ClusterDbNameLogInfo::covertJson(nlohmann::json& s)const
     {
-        s["termInfo"]  = termInfo_;
         int size = logs_.size();
         for (int i = 0; i < size; i++)
         {
@@ -113,7 +93,7 @@ namespace cluster
         }
     }
 
-    bool ClusterLogInfo::addLog(uint64 index, int status, ClusterOperation operation)
+    bool ClusterDbNameLogInfo::addLog(uint64 index, int status, ClusterOperation operation)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -129,7 +109,7 @@ namespace cluster
         logs_[index] = log;
     }
 
-    void ClusterLogInfo::updateLogStatus(uint64 index, int status)
+    void ClusterDbNameLogInfo::updateLogStatus(uint64 index, int status)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -141,7 +121,7 @@ namespace cluster
         it->second.setNodeNum(0);
     }
 
-    void ClusterLogInfo::addLogReplyNum(uint64 index)
+    void ClusterDbNameLogInfo::addLogReplyNum(uint64 index)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -157,7 +137,7 @@ namespace cluster
         it->second.addNodeNum();
     }
 
-    void ClusterLogInfo::addLogSyncNum(uint64 index)
+    void ClusterDbNameLogInfo::addLogSyncNum(uint64 index)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -173,7 +153,7 @@ namespace cluster
         it->second.addNodeNum();
     }
 
-    uint32 ClusterLogInfo::getLogReplyNum(uint64 index)const
+    uint32 ClusterDbNameLogInfo::getLogReplyNum(uint64 index)const
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -189,7 +169,7 @@ namespace cluster
         return it->second.getNodeNum();
     }
 
-    uint32 ClusterLogInfo::getLogSyncNum(uint64 index)const
+    uint32 ClusterDbNameLogInfo::getLogSyncNum(uint64 index)const
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -205,13 +185,99 @@ namespace cluster
         return it->second.getNodeNum();
     }
 
-    void ClusterLogInfo::updateTerm(uint32 term)
+    // ClusterTermInfo
+    // TermDbLog
+    void from_json(const nlohmann::json& s, TermDbLog& t)
     {
-        termInfo_.setTerm(term);
+        s.at("db_name").get_to(t.db_name);
+        s.at("index").get_to(t.index);
     }
 
-    void ClusterLogInfo::updateTermIndex(std::string db_name, uint64 index)
+    void to_json(nlohmann::json& s, const TermDbLog& t)
     {
-        termInfo_.setIndex(index);
+        s["db_name"]  = t.db_name;
+        s["index"] = t.index;
+    }
+
+    // ClusterTermInfo
+    void from_json(const nlohmann::json& s, ClusterTermInfo& t)
+    {
+        t.setTerm(s["term"]);
+        t.setLogs(s["db_logs"]);
+    }
+
+    void to_json(nlohmann::json& s, const ClusterTermInfo& t)
+    {
+        s["term"] = t.getTerm();
+        t.covertJson(s);
+    }
+
+    void ClusterTermInfo::setLogs(const nlohmann::json& s)
+    {
+        int size = s.size();
+        for (int i = 0; i < size; i++)
+        {
+            std::string db_name = s[i].at("db_name");
+            db_logs_[db_name] = s[i];
+        }
+    }
+
+    void ClusterTermInfo::covertJson(nlohmann::json& s)const
+    {
+        int i = 0;
+        for (const auto& m : db_logs_)
+        {
+            s["db_logs"][i] = m.second;
+            i++;
+        }
+    }
+
+    bool ClusterTermInfo::from_json(const nlohmann::json& s, ClusterTermInfo& t)
+    {
+        try
+        {
+            t = s;
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("update log format is error, message:" << e.what() << ", exception id: " << e.id );
+            return false;
+        }
+        return true;
+    }
+
+    bool ClusterTermInfo::to_json(nlohmann::json& s, const ClusterTermInfo& t)
+    {
+        try
+        {
+            s = t;
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("update log format is error, message:" << e.what() << ", exception id: " << e.id );
+            return false;
+        }
+        return true;
+    }
+
+    void ClusterTermInfo::setDbIndex(const std::string& db_name, uint64 index)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+        {
+            TermDbLog log(db_name, index);
+            db_logs_.insert(std::make_pair(db_name, log));
+            return;
+        }
+        it->second.setIndex(index);
+    }
+
+    uint64 ClusterTermInfo::getDbIndex(const std::string& db_name)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+            return 0;
+
+        return it->second.getIndex();
     }
 }

@@ -160,19 +160,33 @@ namespace cluster
         return role_->getLogSyncNum(db_name, index);
     }
 
-    void ClusterManager::updateTerm(std::string db_name, uint32 term)
+    void ClusterManager::updateTerm(uint32 term)
     {
         if (!isEnable() || !role_)
             return;
         
-        role_->updateTerm(db_name, term);
+        role_->updateTerm(term);
     }
 
-    void ClusterManager::updateTermIndex(std::string db_name, uint64 index)
+    void ClusterManager::updateDbIndex(std::string db_name, uint64 index)
     {
         if (!isEnable() || !role_)
             return;
-        role_->updateTermIndex(db_name, index);
+        role_->updateDbIndex(db_name, index);
+    }
+
+    void ClusterManager::getTerm()
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->getTerm();
+    }
+
+    void ClusterManager::getDbIndex(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->getDbIndex(db_name);
     }
 
     void ClusterManager::addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
@@ -183,5 +197,21 @@ namespace cluster
     void ClusterManager::appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
     {
         
+    }
+
+    std::string ClusterManager::saveFromFollowerFile(const std::pair<std::string, std::string>& file_info, const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return std::string();
+        std::string file_path = role_->getClusterDir() + db_name + file_info.first;
+        ofstream fout(file_path.c_str());
+        if (!fout)
+        {
+            SLOG_ERROR("file open fail");
+            return std::string();
+        }
+        fout << file_info.second;
+        fout.close();
+        return file_path;
     }
 }

@@ -15,22 +15,28 @@ namespace cluster
     {
         public:
         std::mutex log_mutex_;
+        static std::string cluster_dir_path_;
         ClusterEntity(){};
         virtual ~ClusterEntity(){}
-        bool readFromFile(std::string name, ClusterLogInfo &logInfo);
-        bool writeToFile(std::string name, ClusterLogInfo &logInfo);
+        bool readFromUpdateFile(std::string name, ClusterDbNameLogInfo &logInfo);
+        bool writeToUpdateFile(std::string name, ClusterDbNameLogInfo &logInfo);
+        bool readFromTermFile(ClusterTermInfo &logInfo);
+        bool writeToTermFile(ClusterTermInfo &logInfo);
 
         // virtual function in here
         public:
         virtual void init() = 0;
         virtual ClusterRoleType getCluterRoleType()const = 0;
-        virtual void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
-        virtual void updateLogStatus(std::string db_name, uint64 index, int status);
-        virtual void addLogReplyNum(std::string db_name, uint64 index);
-        virtual void addLogSyncNum(std::string db_name, uint64 index);
-        virtual uint32 getLogReplyNum(std::string db_name, uint64 index);
-        virtual uint32 getLogSyncNum(std::string db_name, uint64 index);
-        virtual void updateTerm(std::string db_name, uint32 term);
-        virtual void updateTermIndex(std::string db_name, uint64 index);
+        void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
+        void updateLogStatus(std::string db_name, uint64 index, int status);
+        void addLogReplyNum(std::string db_name, uint64 index);
+        void addLogSyncNum(std::string db_name, uint64 index);
+        uint32 getLogReplyNum(std::string db_name, uint64 index);
+        uint32 getLogSyncNum(std::string db_name, uint64 index);
+        void updateTerm(uint32 term);
+        void updateDbIndex(std::string db_name, uint64 index);
+        uint32 getTerm();
+        uint64 getDbIndex(const std::string& db_name);
+        std::string getClusterDir()const{ return cluster_dir_path_; };
     };
 }
