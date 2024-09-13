@@ -206,3 +206,90 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const 
 	fclose(fw);
 	return res;
 }
+
+httpentities::ShutdownResponse HttpUtil::shutdown(const std::string& url, httpentities::ShutdownRequest& request)
+{
+	std::string json_str;
+	request.to_json(json_str);
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+	{
+		return httpentities::ShutdownResponse(body_str);
+	}
+	else
+	{
+		return httpentities::ShutdownResponse(-1, "curl error");
+	}
+}
+
+httpentities::CheckResponse HttpUtil::check(const std::string& url, httpentities::CheckRequest& request)
+{
+	std::string param_str = request.to_params();
+	std::string body_str;
+	std::string strUrl = url + "?" + param_str;
+	int status = Get(strUrl, body_str);
+	if (status == CURLE_OK)
+	{
+		return httpentities::CheckResponse(body_str);
+	}
+	else
+	{
+		return httpentities::CheckResponse(-1, "curl error");
+	}
+}
+
+httpentities::TestConnectionResponse HttpUtil::testConnection(const std::string& url, const bool& inner, httpentities::TestConnectionRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+	{
+		return httpentities::TestConnectionResponse(body_str);
+	}
+	else
+	{
+		return httpentities::TestConnectionResponse(-1, "curl error");
+	}
+}
+
+httpentities::LoadResponse HttpUtil::load(const std::string& url, const bool& inner, httpentities::LoadRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+	{
+		return httpentities::LoadResponse(body_str);
+	}
+	else
+	{
+		return httpentities::LoadResponse(-1, "curl error");
+	}
+}
+
+httpentities::ClusterResponse HttpUtil::reply(const std::string& url, httpentities::ReplyRequest& request)
+{
+	std::string json_str;
+	request.to_json(json_str);
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+	{
+		return httpentities::ClusterResponse(body_str);
+	}
+	else
+	{
+		return httpentities::ClusterResponse(-1, "curl error");
+	}
+}
