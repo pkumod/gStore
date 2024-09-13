@@ -1,6 +1,6 @@
 #include "ClusterEntity.h"
 #include "ClusterEntityLeader.h"
-#include "ClusterEntityFollow.h"
+#include "ClusterEntityFollower.h"
 
 namespace cluster
 {
@@ -68,9 +68,43 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startNotify(uint32 term, uint32 index)
+    void ClusterEntityLeader::postReply(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index)
     {
-        postHeartBeat(ClusterLogStatus_pending, term, index);
+        ClusterHeartBeat postdata;
+        postdata.setType(type);
+        postdata.setTerm(term);
+        postdata.setIndex(index);
+
+        auto helper = [this, postdata](ClusterNode node)
+        {
+            string res;
+            std::string remote = node.ip + node.port;
+            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.username, node.password), res);
+            if (error != CURLE_OK)
+            {
+                faileL_[node.ip] += 1;
+                return;
+            }
+            faileL_[node.ip] = 0;
+        };
+
+        for (const auto& node : followNodeL_)
+        {
+            std::string ip = node.second.ip;
+            auto it = faileL_.find(ip);
+            if (it == faileL_.end())
+                continue;
+            if (it->second > headBeat_max_fail_num_)
+                continue;
+            
+            thread postHearBeat(helper, node.second);
+            postHearBeat.detach();
+        }
+    }
+
+    uint32 ClusterEntityLeader::startNotify(std::string db_name, uint32 term, uint32 index)
+    {
+        postReply(db_name, ClusterLogStatus_pending, term, index);
         uint32 end_time = Util::get_cur_time() + relpy_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;
@@ -82,7 +116,7 @@ namespace cluster
                 once_run = end_time - Util::get_cur_time();
             oneTimer.AsyncWait(once_run, [this, &pass_num]
             {
-                pass_num = ClusterLog::getNodeNum();
+                // pass_num = ClusterLog::getNodeNum();
             });
 
             if (pass_num >= need_num)
@@ -94,14 +128,14 @@ namespace cluster
         return pass_num;
     }
 
-    void ClusterEntityLeader::postSync(ClusterLogStatus type, uint32 term, uint32 index, std::string file_path)
+    void ClusterEntityLeader::postSync(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index, std::string file_path)
     {
         // file_path以二进制打开文件读取数据
     }
 
-    uint32 ClusterEntityLeader::startSync(uint32 term, uint32 index, const std::string& file_path)
+    uint32 ClusterEntityLeader::startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path)
     {
-        postSync(ClusterLogStatus_sync, term, index, file_path);
+        postSync(db_name, ClusterLogStatus_sync, term, index, file_path);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;
@@ -113,7 +147,7 @@ namespace cluster
                 once_run = end_time - Util::get_cur_time();
             oneTimer.AsyncWait(once_run, [this, &pass_num]
             {
-                pass_num = ClusterLog::getNodeNum();
+                // pass_num = ClusterLog::getNodeNum();
             });
 
             if (pass_num >= need_num)

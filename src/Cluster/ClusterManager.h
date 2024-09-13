@@ -3,22 +3,21 @@
 #include "ClusterTypedef.h"
 #include "ClusterEntity.h"
 #include "ClusterEntityLeader.h"
-#include "ClusterEntityFollow.h"
+#include "ClusterEntityFollower.h"
 #include "ClusterLog.h"
 #include "../Util/Util.h"
 
 namespace cluster
 {
-    class CluterManager
+    class ClusterManager
     {
         private:
         bool on_;
-        ClusterLogPtr log_;
         ClusterEntityPtr role_;
 
         public:
-        CluterManager();
-        ~CluterManager();
+        ClusterManager();
+        ~ClusterManager();
 
         // 从配置表读取数据, 初始化主从节点
         void init();
@@ -35,24 +34,28 @@ namespace cluster
 
         //主从互通模块
         // 启动心跳超时检测
-        void startHeartBeatTimeOut() { role_->startHeardBeat(); }
+        void startHeartBeat();
         // 启动更新通知, 返回应答数量
-        uint32 startNotify(uint32 term, uint32 index);
+        int startNotify(std::string db_name, uint32 term, uint32 index);
         // 启动同步通知, 返回应答数量
-        uint32 startSync(uint32 term, uint32 index, const std::string& file_path);
+        int startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path);
 
         //日志模块
         //新增日志
-        static void addLog(uint32 term, uint32 index, uint32 status);
+        void addLog(std::string db_name, uint64 index, int status);
         // 更新日志状态
-        static void updateLogStatus(uint32 term, uint32 index, uint32 status);
+        void updateLogStatus(std::string db_name, uint64 index, int status);
         // 增加响应节点数量
-        static void addLogReplyNum(uint32 index, uint32 replyNum);
+        void addLogReplyNum(std::string db_name, uint64 index);
         // 增加同步节点数量
-        static void addLogSyncNum(uint32 index, uint32 replyNum);
+        void addLogSyncNum(std::string db_name, uint64 index);
         // 获取通知响应数量
-        static uint32 getLogReplyNum(uint32 index);
+        uint32 getLogReplyNum(std::string db_name, uint64 index);
         // 获取同步数量
-        static uint32 getLogSyncNum(uint32 index);
+        uint32 getLogSyncNum(std::string db_name, uint64 index);
+        // 更换主节点
+        void updateTerm(std::string db_name, uint32 term);
+        // 更换主节点索引
+        void updateTermIndex(std::string db_name, uint32 term, uint64 index);
     };
 }

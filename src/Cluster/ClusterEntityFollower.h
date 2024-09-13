@@ -4,7 +4,7 @@
 
 namespace cluster
 {
-    class ClusterEntityFollow : public cluster::ClusterEntity
+    class ClusterEntityFollower : public cluster::ClusterEntity
     {
         ClusterNode leaderNode;
         public:

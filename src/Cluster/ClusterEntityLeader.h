@@ -15,17 +15,15 @@ namespace cluster
         TimerProvider head_beat_timer_;
         public:
         void postHeartBeat(ClusterLogStatus type, uint32 term, uint32 index);
-        void postSync(ClusterLogStatus type, uint32 term, uint32 index, std::string nt);
-        void getNotifyNum()const;
+        void postReply(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index);
+        void postSync(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index, std::string nt);
+        void startHeardBeat();
+        uint32 startNotify(std::string db_name, uint32 term, uint32 index);
+        uint32 startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path);
 
         // virtual function in here
         public:
         void init()override;
         ClusterRoleType getCluterRoleType()const override { return cluster::ClusterRoleType_Leader; }
-        // 开启心跳检测, 永久性定时器
-        void startHeardBeat()override;
-        // 开启通知应答，一次性定时器，可复用
-        uint32 startNotify(uint32 term, uint32 index)override;
-        uint32 startSync(uint32 term, uint32 index, const std::string& file_path)override;
     };
 }

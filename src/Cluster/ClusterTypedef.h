@@ -3,20 +3,21 @@
 #include <functional>
 #include "ClusterDefined.h"
 
-typedef unsigned int uint32;
-typedef int          int32;
-typedef long long    int64;
+typedef unsigned int      uint32;
+typedef int               int32;
+typedef long long         int64;
+typedef unsigned long int uint64;
 namespace cluster
 {
     class ClusterLog;
     class ClusterEntity;
     class ClusterEntity;
     class ClusterEntityLeader;
-    class ClusterEntityFollow;
+    class ClusterEntityFollower;
     typedef std::shared_ptr<ClusterLog> ClusterLogPtr;
     typedef std::shared_ptr<ClusterEntity> ClusterEntityPtr;
     typedef std::shared_ptr<ClusterEntityLeader> ClusterEntityLeaderPtr;
     typedef std::weak_ptr<ClusterEntityLeader> ClusterEntityLeaderWeaker;
-    typedef std::shared_ptr<ClusterEntityFollow> ClusterEntityFollowPtr;
-    typedef std::weak_ptr<ClusterEntityFollow> ClusterEntityFollowWeaker;
+    typedef std::shared_ptr<ClusterEntityFollower> ClusterEntityFollowerPtr;
+    typedef std::weak_ptr<ClusterEntityFollower> ClusterEntityFollowerWeaker;
 }

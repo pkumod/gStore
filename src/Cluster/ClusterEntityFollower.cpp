@@ -1,12 +1,11 @@
 #include "ClusterEntity.h"
 #include "ClusterEntityLeader.h"
-#include "ClusterEntityFollow.h"
+#include "ClusterEntityFollower.h"
 
 namespace cluster
 {
-    void ClusterEntityFollow::init()
+    void ClusterEntityFollower::init()
     {
         
     }
-
 }

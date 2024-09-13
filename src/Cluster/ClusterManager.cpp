@@ -2,18 +2,17 @@
 
 namespace cluster
 {
-    CluterManager::CluterManager()
+    ClusterManager::ClusterManager()
     {
         on_   = false;
-        log_  = nullptr;
         role_ = nullptr;
     }
 
-    CluterManager::~CluterManager()
+    ClusterManager::~ClusterManager()
     {
     }
 
-    void CluterManager::init()
+    void ClusterManager::init()
     {
         string cluster_on = Util::getConfigureValue("cluster_on");
         if (cluster_on == "yes")
@@ -25,7 +24,7 @@ namespace cluster
             }
             else if (cluster_role == "follow")
             {
-                role_ = std::make_shared<ClusterEntityFollow>();
+                role_ = std::make_shared<ClusterEntityFollower>();
             }
             else
             {
@@ -33,55 +32,105 @@ namespace cluster
                 return;
             }
             on_ = true;
-            log_ = std::make_shared<ClusterLog>();
             role_->init();
-            log_->init();
         }
     }
 
-    bool CluterManager::isLeader()
+    bool ClusterManager::isLeader()
     {
         if (getCluterRole() == cluster::ClusterRoleType_Leader)
             return true;
         return false;
     }
 
-    uint32 CluterManager::startNotify(uint32 term, uint32 index)
+    void ClusterManager::startHeartBeat()
     {
-        return role_->startNotify(term, index);
+        if (!isEnable() || !role_)
+            return;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return;
+        }
+        leader->startHeardBeat();
     }
 
-    uint32 CluterManager::startSync(uint32 term, uint32 index, const std::string& file_path)
+    int ClusterManager::startNotify(std::string db_name, uint32 term, uint32 index)
     {
-        return role_->startSync(term, index, file_path);
+        if (!isEnable() || !role_)
+            return -1;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return -1;
+        }
+        return leader->startNotify(db_name, term, index);
     }
 
-    void CluterManager::addLog(uint32 term, uint32 index, uint32 status)
+    int ClusterManager::startSync(std::string db_name, uint32 term, uint32 index, const std::string& file_path)
+    {
+        if (!isEnable() || !role_)
+            return -1;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return -1;
+        }
+        return leader->startSync(db_name, term, index, file_path);
+    }
+
+    void ClusterManager::addLog(std::string db_name, uint64 index, int status)
+    {
+        if (!isEnable() || !role_)
+            return;
+
+        role_->addLog(db_name, index, status);
+    }
+
+    void ClusterManager::updateLogStatus(std::string db_name, uint64 index, int status)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->updateLogStatus(db_name, index, status);
+    }
+
+    void ClusterManager::addLogReplyNum(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->addLogReplyNum(db_name, index);
+    }
+
+    void ClusterManager::addLogSyncNum(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->addLogSyncNum(db_name, index);
+    }
+
+    uint32 ClusterManager::getLogReplyNum(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return 0;
+        return role_->getLogReplyNum(db_name, index);
+    }
+
+    uint32 ClusterManager::getLogSyncNum(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return 0;
+        return role_->getLogSyncNum(db_name, index);
+    }
+
+    void ClusterManager::updateTerm(std::string db_name, uint32 term)
     {
 
     }
 
-    void CluterManager::updateLogStatus(uint32 term, uint32 index, uint32 status)
-    {
-
-    }
-
-    void CluterManager::addLogReplyNum(uint32 index, uint32 replyNum)
-    {
-
-    }
-
-    void CluterManager::addLogSyncNum(uint32 index, uint32 replyNum)
-    {
-
-    }
-
-    uint32 CluterManager::getLogReplyNum(uint32 index)
-    {
-
-    }
-
-    uint32 CluterManager::getLogSyncNum(uint32 index)
+    void ClusterManager::updateTermIndex(std::string db_name, uint32 term, uint64 index)
     {
 
     }
