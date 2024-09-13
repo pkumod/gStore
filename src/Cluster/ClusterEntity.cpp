@@ -4,7 +4,7 @@
 
 namespace cluster
 {
-    void ClusterEntity::readFromFile(std::string db_name, ClusterLogInfo &logInfo)
+    bool ClusterEntity::readFromFile(std::string db_name, ClusterLogInfo &logInfo)
     {
         std::lock_guard<std::mutex> lock(log_mutex_);
         ifstream fp;
@@ -12,72 +12,126 @@ namespace cluster
         if (!fp.is_open())
         {
             SLOG_ERROR("update.log open fail!");
-            return;
+            return false;
         }
         nlohmann::json rjson;
-        ClusterLogInfo::from_json(rjson, logInfo);
+        fp >> rjson;
+        if (!ClusterLogInfo::from_json(rjson, logInfo))
+        {
+            SLOG_ERROR("json convert fail!");
+            fp.close();
+            return false;
+        }
         fp.close();
+        return true;
     }
 
-    void ClusterEntity::writeToFile(std::string db_name, ClusterLogInfo &logInfo)
+    bool ClusterEntity::writeToFile(std::string db_name, ClusterLogInfo &logInfo)
     {
         std::lock_guard<std::mutex> lock(log_mutex_);
+        nlohmann::json wjson;
+        if (!ClusterLogInfo::to_json(wjson, logInfo))
+        {
+            SLOG_ERROR("json convert fail!");
+            return false;
+        }
+        
         ofstream fp;
         fp.open("update.log",ios::out);
         if (!fp.is_open())
         {
             SLOG_ERROR("update.log open fail!");
-            return;
+            fp.close();
+            return false;
         }
-        nlohmann::json wjson;
-        ClusterLogInfo::to_json(wjson, logInfo);
         fp << wjson;
         fp.close();
+        return true;
     }
 
     void ClusterEntity::addLog(std::string db_name, uint64 index, int status)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("add log fail!" << db_name << index << status);
+            return;
+        }
         log.addLog(index, status);
-        writeToFile(db_name, log);
+        if (!writeToFile(db_name, log))
+        {
+            SLOG_ERROR("add log fail!" << db_name << index << status);
+            return;
+        }
     }
 
     void ClusterEntity::updateLogStatus(std::string db_name, uint64 index, int status)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index << status);
+            return;
+        }
         log.updateLogStatus(index, status);
-        writeToFile(db_name, log);
+        if (!writeToFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index << status);
+            return;
+        }
     }
 
     void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return;
+        }
         log.addLogReplyNum(index);
-        writeToFile(db_name, log);
+        if (!writeToFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return;
+        }
     }
 
     void ClusterEntity::addLogSyncNum(std::string db_name, uint64 index)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return;
+        }
         log.addLogSyncNum(index);
-        writeToFile(db_name, log);
+        if (!writeToFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return;
+        }
     }
 
     uint32 ClusterEntity::getLogReplyNum(std::string db_name, uint64 index)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return 0;
+        }
         return log.getLogReplyNum(index);
     }
 
     uint32 ClusterEntity::getLogSyncNum(std::string db_name, uint64 index)
     {
         ClusterLogInfo log;
-        readFromFile(db_name, log);
+        if (!readFromFile(db_name, log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name << index);
+            return 0;
+        }
         return log.getLogSyncNum(index);
     }
 }

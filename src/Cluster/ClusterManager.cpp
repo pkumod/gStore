@@ -82,6 +82,32 @@ namespace cluster
         return leader->startSync(db_name, term, index, file_path);
     }
 
+    bool ClusterManager::fromLeader(const std::string& ip)
+    {
+        if (ip.empty())
+            return false;
+        
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+            return false;
+        if (follower->getLeaderIp() == ip)
+            return true;
+        return false;
+    }
+
+    bool ClusterManager::fromFollower(const std::string& ip)
+    {
+        if (ip.empty())
+            return false;
+        
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+            return false;
+        if (!leader->FindFollower(ip).empty())
+            return true;
+        return false;
+    }
+
     void ClusterManager::addLog(std::string db_name, uint64 index, int status)
     {
         if (!isEnable() || !role_)

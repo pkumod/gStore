@@ -6,8 +6,9 @@ namespace cluster
 {
     class ClusterEntityFollower : public cluster::ClusterEntity
     {
-        ClusterNode leaderNode;
+        ClusterNode leaderNode_;
         public:
+        std::string getLeaderIp()const{ return leaderNode_.ip; }
 
         // virtual function in here
         public:

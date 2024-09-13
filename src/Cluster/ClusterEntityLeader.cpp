@@ -26,6 +26,14 @@ namespace cluster
         sync_timeout_ = std::atoi(Util::getConfigureValue("sync_timeout_").c_str());
     }
 
+    ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip)const
+    {
+        auto it = followNodeL_.find(ip);
+        if (it == followNodeL_.end())
+            return ClusterNode();
+        return it->second;
+    }
+
     void ClusterEntityLeader::startHeardBeat()
     {
         head_beat_timer_.StartTimer(heartbeat_, [this]()

@@ -14,6 +14,7 @@ namespace cluster
         std::map<std::string, uint32> faileL_; //ip:失败次数，大于多少次（代表此从节点应答失败，不在发送心跳包）
         TimerProvider head_beat_timer_;
         public:
+        ClusterNode FindFollower(const std::string& ip)const;
         void postHeartBeat(ClusterLogStatus type, uint32 term, uint32 index);
         void postReply(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index);
         void postSync(std::string db_name, ClusterLogStatus type, uint32 term, uint32 index, std::string nt);

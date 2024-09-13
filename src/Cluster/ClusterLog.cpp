@@ -42,14 +42,32 @@ namespace cluster
         t.covertJson(s);
     }
 
-    void ClusterLogInfo::from_json(const nlohmann::json& s, ClusterLogInfo& t)
+    bool ClusterLogInfo::from_json(const nlohmann::json& s, ClusterLogInfo& t)
     {
-        t = s;
+        try
+        {
+            t = s;
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("update log format is error, message:" << e.what() << ", exception id: " << e.id );
+            return false;
+        }
+        return true;
     }
 
-    void ClusterLogInfo::to_json(nlohmann::json& s, const ClusterLogInfo& t)
+    bool ClusterLogInfo::to_json(nlohmann::json& s, const ClusterLogInfo& t)
     {
-        s = t;
+        try
+        {
+            s = t;
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("update log format is error, message:" << e.what() << ", exception id: " << e.id );
+            return false;
+        }
+        return true;
     }
 
     void ClusterLogInfo::setTermInfo(const nlohmann::json& s)

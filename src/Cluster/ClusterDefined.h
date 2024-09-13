@@ -62,6 +62,7 @@ namespace cluster
             url += "http://" + ip + ":" + port + "/grpc/api";
             return url;
         }
+        bool empty()const{ return ip.empty(); }
     };
 
     struct ClusterHeartBeat

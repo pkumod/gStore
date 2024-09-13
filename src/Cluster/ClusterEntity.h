@@ -17,8 +17,8 @@ namespace cluster
         std::mutex log_mutex_;
         ClusterEntity(){};
         virtual ~ClusterEntity(){}
-        void readFromFile(std::string name, ClusterLogInfo &logInfo);
-        void writeToFile(std::string name, ClusterLogInfo &logInfo);
+        bool readFromFile(std::string name, ClusterLogInfo &logInfo);
+        bool writeToFile(std::string name, ClusterLogInfo &logInfo);
 
         // virtual function in here
         public:

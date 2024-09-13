@@ -57,7 +57,7 @@ namespace cluster
         uint32 getLogReplyNum(uint64 index)const;
         uint32 getLogSyncNum(uint64 index)const;
 
-        static void from_json(const nlohmann::json& s, ClusterLogInfo& t);
-        static void to_json(nlohmann::json& s, const ClusterLogInfo& t);
+        static bool from_json(const nlohmann::json& s, ClusterLogInfo& t);
+        static bool to_json(nlohmann::json& s, const ClusterLogInfo& t);
     };
 }
