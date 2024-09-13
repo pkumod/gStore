@@ -91,7 +91,7 @@ namespace cluster
         }
     }
 
-    bool ClusterLogInfo::addLog(uint64 index, uint32 status)
+    bool ClusterLogInfo::addLog(uint64 index, int status)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -163,7 +163,7 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return 0;
         }
-        it->second.getNodeNum();
+        return it->second.getNodeNum();
     }
 
     uint32 ClusterLogInfo::getLogSyncNum(uint64 index)const
@@ -179,6 +179,6 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return 0;
         }
-        it->second.getNodeNum();
+        return it->second.getNodeNum();
     }
 }

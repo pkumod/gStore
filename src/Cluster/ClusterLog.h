@@ -16,7 +16,7 @@ namespace cluster
             index = 0;
         }
         uint32 getTerm()const{ return term; }
-        uint64 getStatus()const{ return index; }
+        uint64 getIndex()const{ return index; }
     };
 
     struct LogInfo
@@ -50,7 +50,7 @@ namespace cluster
         void setTermInfo(const nlohmann::json& s);
         void setLogs(const nlohmann::json& s);
         void covertJson(nlohmann::json& s)const;
-        bool addLog(uint64 index, uint32 status);
+        bool addLog(uint64 index, int status);
         void updateLogStatus(uint64 index, int status);
         void addLogReplyNum(uint64 index);
         void addLogSyncNum(uint64 index);
