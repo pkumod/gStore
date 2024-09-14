@@ -2,6 +2,7 @@
 #include "ClusterDefined.h"
 #include "../Util/Util.h"
 #include "../Api/NlohmanJson.hpp"
+#include "ClusterCached.h"
 
 namespace cluster
 {
@@ -108,5 +109,73 @@ namespace cluster
 
         static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);
+    };
+
+    struct TripleInfo
+    {
+        ClusterOperation operation;
+        std::string subject;
+        std::string predicate;
+        std::string object;
+        uint64 batch_index;
+        public:
+        TripleInfo()
+        {
+            operation = ClusterOperation_None;
+            subject = "";
+            predicate = "";
+            object = "";
+            batch_index = 0;
+        }
+        std::string toString()const
+        {
+            if (operation == ClusterOperation_None)
+                return std::string();
+            std::string triple = "";
+            if (batch_index == 0)
+            {
+                triple = std::to_string(operation)
+                + " " + subject
+                + " " + predicate
+                + " " + object;
+            }
+            else
+            {
+                triple = std::to_string(operation)
+                + " " + subject
+                + " " + predicate
+                + " " + object
+                + " " + std::to_string(batch_index);
+            }
+            return triple;
+        }
+        bool convert(const std::vector<std::string>& triple)
+        {
+            if (triple.size() < 4)
+                return false;
+            if (triple.size() == 4)
+            {
+                operation = (ClusterOperation)atoi(triple[0].c_str());
+                subject = triple[1];
+                predicate = triple[1];
+                object = triple[2];
+            }
+            else
+            {
+                operation = (ClusterOperation)atoi(triple[0].c_str());
+                subject = triple[1];
+                predicate = triple[1];
+                object = triple[2];
+                batch_index = strtoul(triple[3].c_str(), nullptr, 0);
+            }
+            return true;
+        }
+    };
+
+    class ClusterTripleArray
+    {
+        std::vector<TripleInfo> triples_;
+        public:
+        void addTriple(const TripleInfo& triple);
     };
 }

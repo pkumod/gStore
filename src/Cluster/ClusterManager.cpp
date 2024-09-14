@@ -2,6 +2,7 @@
 
 namespace cluster
 {
+    std::string ClusterManager::cluster_dir_path_ = "./Cluster/";
     ClusterManager::ClusterManager()
     {
         on_   = false;
@@ -189,21 +190,25 @@ namespace cluster
         role_->getDbIndex(db_name);
     }
 
-    void ClusterManager::addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
+    void ClusterManager::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
-
+        if (!isEnable() || !role_)
+            return;
+        role_->addCachedNtFile(triples, db_name, file_name);
     }
 
-    void ClusterManager::appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path)
+    void ClusterManager::appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
-        
+        if (!isEnable() || !role_)
+            return;
+        role_->appendCachedNtData(triples, db_name, file_name);
     }
 
     std::string ClusterManager::saveFromFollowerFile(const std::pair<std::string, std::string>& file_info, const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return std::string();
-        std::string file_path = role_->getClusterDir() + db_name + file_info.first;
+        std::string file_path = getClusterDir() + db_name + file_info.first;
         ofstream fout(file_path.c_str());
         if (!fout)
         {
@@ -213,5 +218,15 @@ namespace cluster
         fout << file_info.second;
         fout.close();
         return file_path;
+    }
+
+    void ClusterManager::getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        if (file_name.empty())
+            return;
+        
+        role_->getNtFileData(triples, db_name, file_name);
     }
 }

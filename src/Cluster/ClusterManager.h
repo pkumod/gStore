@@ -15,6 +15,7 @@ namespace cluster
         private:
         bool on_;
         ClusterEntityPtr role_;
+        static std::string cluster_dir_path_;
 
         public:
         ClusterManager();
@@ -34,6 +35,8 @@ namespace cluster
         void tryRecover();
         // 初始化数据量集群数据
         void initClusterDir(const std::vector<std::string>& dbList);
+        // 获取集群存放目录
+        static std::string getClusterDir(){ return cluster_dir_path_; }
 
         //主从互通模块
         // 启动心跳超时检测
@@ -72,10 +75,12 @@ namespace cluster
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
         // 事务操作, 一次完整操作, 存储一个文件
-        void addCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
+        void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         // 事务操作进行追加
-        void appendCachedData(const std::vector<TripleInfo>& triple, ClusterOperation operation, const std::string file_path);
+        void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         // 存储follower接收到的nt文件, 返回文件路径
         std::string saveFromFollowerFile(const std::pair<std::string, std::string>& file_info, const std::string& db_name);
+        // 获取操作文件nt数据
+        void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
     };
 }

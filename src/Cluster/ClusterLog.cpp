@@ -280,4 +280,10 @@ namespace cluster
 
         return it->second.getIndex();
     }
+
+    // ClusterTripleArray
+    void ClusterTripleArray::addTriple(const TripleInfo& triple)
+    {
+        triples_.push_back(triple);
+    }
 }

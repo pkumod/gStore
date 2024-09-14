@@ -14,10 +14,12 @@ namespace cluster
     class ClusterEntity;
     class ClusterEntityLeader;
     class ClusterEntityFollower;
+    class ClusterDb;
     typedef std::shared_ptr<ClusterLog> ClusterLogPtr;
     typedef std::shared_ptr<ClusterEntity> ClusterEntityPtr;
     typedef std::shared_ptr<ClusterEntityLeader> ClusterEntityLeaderPtr;
     typedef std::weak_ptr<ClusterEntityLeader> ClusterEntityLeaderWeaker;
     typedef std::shared_ptr<ClusterEntityFollower> ClusterEntityFollowerPtr;
     typedef std::weak_ptr<ClusterEntityFollower> ClusterEntityFollowerWeaker;
+    typedef std::shared_ptr<ClusterDb> ClusterDbPtr;
 }

@@ -14,14 +14,13 @@ namespace cluster
     class ClusterEntity : public std::enable_shared_from_this<ClusterEntity>
     {
         public:
-        std::mutex log_mutex_;
-        static std::string cluster_dir_path_;
+        std::mutex term_mutex_;
+        std::map<std::string, ClusterDbPtr> databaseL_; // db_name
         ClusterEntity(){};
         virtual ~ClusterEntity(){}
-        bool readFromUpdateFile(std::string name, ClusterDbNameLogInfo &logInfo);
-        bool writeToUpdateFile(std::string name, ClusterDbNameLogInfo &logInfo);
         bool readFromTermFile(ClusterTermInfo &logInfo);
         bool writeToTermFile(ClusterTermInfo &logInfo);
+        ClusterDbPtr findDb(const std::string& db_name);
 
         // virtual function in here
         public:
@@ -37,6 +36,8 @@ namespace cluster
         void updateDbIndex(std::string db_name, uint64 index);
         uint32 getTerm();
         uint64 getDbIndex(const std::string& db_name);
-        std::string getClusterDir()const{ return cluster_dir_path_; };
+        void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
+        void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
+        void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
     };
 }

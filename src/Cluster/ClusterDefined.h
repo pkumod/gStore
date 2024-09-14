@@ -64,7 +64,7 @@ namespace cluster
         std::string getUrlString()const
         {
             std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/api";
+            url += "http://" + ip + ":" + port + "/grpc/cluster";
             return url;
         }
         bool empty()const{ return ip.empty(); }
@@ -123,7 +123,7 @@ namespace cluster
 
         ClusterSync()
         {
-            operation  = ClusterOperation_None;
+            operation = ClusterOperation_None;
             status    = ClusterLogStatus_HeartBeat;
             term      = 0;
             index     = 0;
