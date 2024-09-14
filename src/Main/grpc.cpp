@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "workflow/WFFacilities.h"
+#include "../Api/HttpUtil.h"
 #include "../GRPC/grpc_server.h"
 #include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
@@ -7,7 +8,6 @@
 #include "../Api/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
-#include "../Api/HttpUtil.h"
 #include "../Cluster/ClusterManager.h"
 #include "../Cluster/ClusterOperation.h"
 
@@ -42,7 +42,7 @@ bool stopServer();
 void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
-void cluster_api(const GRPCReq *request, GRPCResp *response, cluster::cluster_operation& operation);
+void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation);
 void api(const GRPCReq *request, GRPCResp *response);
 void upload_file(const GRPCReq *request, GRPCResp *response);
 void download_file(const GRPCReq *request, GRPCResp *response);
@@ -5222,8 +5222,9 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	Json json_data;
 	parseRequest(request, json_data);
 	std::string expection = jsonParam(json_data, "expection", "");
-	cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
+	const cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	uint32 leader_term = jsonParam(json_data, "term", -1);
+	uint32 local_term = -1;
 	string db_name = jsonParam(json_data, "db_name", "");
 	uint64 leader_index = jsonParam(json_data, "index", -1ll);
 	Json resp_data;
@@ -5231,73 +5232,73 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	Json::AllocatorType &allocator = resp_data.GetAllocator();
 	switch (expectionEnum)
 	{
-	case cluster::EXPECTION_CHECK:
-		// compare term and index with leader
-		uint32 local_term = -1; // TODO get local term
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "ok", allocator);
-		resp_data.AddMember("term", local_term, allocator);
-		if (!db_name.empty()) 
-		{
-			uint64 local_index = -1ll; // TODO get local index
-			resp_data.AddMember("db_name", StringRef(db_name.c_str()), allocator);
-			resp_data.AddMember("index", local_index, allocator);
-		}
-		response->Json(resp_data);
-		break;
-	case cluster::EXPECTION_PREPARE:
-		// prepare for log append
-		// check local db is available
-		std::thread([db_name, leader_term, leader_index]() {
-			shared_ptr<Database> current_database = nullptr;
-			if (!apiUtil->check_db_exist(db_name))
+		case cluster::EXPECTION_CHECK:
+			// compare term and index with leader
+			local_term = -1; // TODO get local term
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "ok", allocator);
+			resp_data.AddMember("term", local_term, allocator);
+			if (!db_name.empty()) 
 			{
-				current_database = make_shared<Database>(db_name);
-				// build empty db
-				if (current_database->BuildEmptyDB()) 
-				{
-					// init privilege
-					apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
-					apiUtil->init_privilege(ROOT_USERNAME, db_name);
-					string _db_path = _db_home + "/" + db_name + _db_suffix;
-					ofstream f;
-					f.open(_db_path + "/success.txt");
-					f.close();
-					// add backup.log
-					Util::add_backuplog(db_name);
-					current_database.reset();
-					current_database = make_shared<Database>(db_name);
-					current_database->load();
-					apiUtil->add_database(db_name, current_database);
-					apiUtil->insert_txn_managers(current_database, db_name);
-					current_database.reset();
-				}
-			} 
-			apiUtil->get_database(db_name, current_database);
-			if (current_database == nullptr)
-			{
-				// load db
-				current_database = make_shared<Database>(db_name);
-				current_database->load();
-				apiUtil->add_database(db_name, current_database);
-				apiUtil->insert_txn_managers(current_database, db_name);
-				current_database.reset();
+				uint64 local_index = -1ll; // TODO get local index
+				resp_data.AddMember("db_name", StringRef(db_name.c_str()), allocator);
+				resp_data.AddMember("index", local_index, allocator);
 			}
-			// send ready response
-			std::string reply_url = "/grpc/cluster/reply";
-			std::string username = "root";
-			std::string password = MD5("123456").toStr();
-			httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index);
-			HttpUtil::reply(reply_url, reply_request, username, password);
-		}).detach();
-		response->Success("ok");
-		break;
-	case cluster::EXPECTION_COMMIT:
-		// update local log status to committed
-		break;
-	default:
-		response->Success("ok");
-		break;
+			response->Json(resp_data);
+			break;
+		case cluster::EXPECTION_PREPARE:
+			// prepare for log append
+			// check local db is available
+			// std::thread([db_name, leader_term, leader_index]() {
+			// 	shared_ptr<Database> current_database = nullptr;
+			// 	if (!apiUtil->check_db_exist(db_name))
+			// 	{
+			// 		current_database = make_shared<Database>(db_name);
+			// 		// build empty db
+			// 		if (current_database->BuildEmptyDB()) 
+			// 		{
+			// 			// init privilege
+			// 			apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
+			// 			apiUtil->init_privilege(ROOT_USERNAME, db_name);
+			// 			string _db_path = _db_home + "/" + db_name + _db_suffix;
+			// 			ofstream f;
+			// 			f.open(_db_path + "/success.txt");
+			// 			f.close();
+			// 			// add backup.log
+			// 			Util::add_backuplog(db_name);
+			// 			current_database.reset();
+			// 			current_database = make_shared<Database>(db_name);
+			// 			current_database->load();
+			// 			apiUtil->add_database(db_name, current_database);
+			// 			apiUtil->insert_txn_managers(current_database, db_name);
+			// 			current_database.reset();
+			// 		}
+			// 	} 
+			// 	apiUtil->get_database(db_name, current_database);
+			// 	if (current_database == nullptr)
+			// 	{
+			// 		// load db
+			// 		current_database = make_shared<Database>(db_name);
+			// 		current_database->load();
+			// 		apiUtil->add_database(db_name, current_database);
+			// 		apiUtil->insert_txn_managers(current_database, db_name);
+			// 		current_database.reset();
+			// 	}
+			// 	// send ready response
+			// 	std::string reply_url = "/grpc/cluster/reply";
+			// 	std::string username = "root";
+			// 	std::string password = MD5("123456").toStr();
+			// 	httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index);
+			// 	HttpUtil::reply(reply_url, reply_request, username, password);
+			// }).detach();
+			response->Success("ok");
+			break;
+		case cluster::EXPECTION_COMMIT:
+			// update local log status to committed
+			break;
+		default:
+			response->Success("ok");
+			break;
 	}
 }
 
@@ -5343,4 +5344,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		clusterManagerPtr->saveFromFollowerFile(std::move(fileinfo), db_dir);
 	}).detach();
 	response->Success("ok");
+}
+
+void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
+{
+
 }
