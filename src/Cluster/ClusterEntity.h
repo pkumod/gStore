@@ -14,6 +14,7 @@ namespace cluster
     class ClusterEntity : public std::enable_shared_from_this<ClusterEntity>
     {
         public:
+        uint32 term_;
         std::mutex term_mutex_;
         std::mutex fail_ip_mutex_;
         std::map<std::string, ClusterDbPtr> databaseL_; // db_name
@@ -33,7 +34,7 @@ namespace cluster
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         void updateTerm(uint32 term);
         void updateDbIndex(std::string db_name, uint64 index);
-        uint32 getTerm();
+        uint32 getTerm(){ return term_; }
         uint64 getDbIndex(const std::string& db_name);
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);

@@ -152,16 +152,16 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntity::getTerm()
-    {
-        ClusterTermInfo log;
-        if (!readFromTermFile(log))
-        {
-            SLOG_ERROR("term log status fail!");
-            return 0;
-        }
-        return log.getTerm();
-    }
+    // uint32 ClusterEntity::getTerm()
+    // {
+    //     ClusterTermInfo log;
+    //     if (!readFromTermFile(log))
+    //     {
+    //         SLOG_ERROR("term log status fail!");
+    //         return 0;
+    //     }
+    //     return log.getTerm();
+    // }
 
     uint64 ClusterEntity::getDbIndex(const std::string& db_name)
     {

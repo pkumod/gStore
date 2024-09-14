@@ -42,16 +42,6 @@ namespace cluster
         }
     }
 
-    void ClusterManager::initClusterDir(const std::vector<std::string>& dbList)
-    {
-        if (!isEnable() || !role_)
-            return;
-        for (const auto m: dbList)
-        {
-            std::string db_path = Util::getConfigureValue("db_home");
-        }
-    }
-
     bool ClusterManager::isLeader()
     {
         if (!isEnable() || !role_)
