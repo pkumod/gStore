@@ -13,8 +13,16 @@ namespace cluster
         static std::string cluster_dir_path_;
 
         public:
+        ClusterDb()
+        {
+            db_name_ = "";
+        };
+        void init();
+        void setDbname(const std::string& db_name){ db_name_ = db_name; }
         // 获取集群存放目录
         static std::string getClusterDir(){ return cluster_dir_path_; }
+        std::string getDbDirPath(){ return getClusterDir() + db_name_ + "/"; }
+        std::string getUpdatePath(){ return getDbDirPath() + "/update.json"; }
         // nt file
         bool readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name);
         bool writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append = false);

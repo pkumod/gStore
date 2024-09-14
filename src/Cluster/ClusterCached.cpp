@@ -3,10 +3,19 @@
 namespace cluster
 {
     std::string ClusterDb::cluster_dir_path_ = "./Cluster/";
+
+    void ClusterDb::init()
+    {
+        if (!Util::dir_exist(getDbDirPath()))
+        {
+            Util::create_dir(getDbDirPath());
+        }
+    }
+
     bool ClusterDb::readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name)
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
-        std::string file_path = ClusterDb::getClusterDir() + db_name_ + "/" + file_name;
+        std::string file_path = getDbDirPath() + file_name;
         ifstream fp;
         fp.open(file_path, ios::in);
         if (!fp.is_open())
@@ -34,7 +43,7 @@ namespace cluster
     bool ClusterDb::writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append)
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
-        std::string file_path = ClusterDb::getClusterDir() + db_name_ + "/" + file_name;
+        std::string file_path = getDbDirPath() + file_name;
         ofstream fp;
         if (append)
         {
@@ -70,7 +79,7 @@ namespace cluster
     bool ClusterDb::readFromUpdateFile(ClusterDbNameLogInfo &logInfo)
     {
         std::lock_guard<std::mutex> lock(update_log_mutex_);
-        std::string file_path = ClusterDb::getClusterDir() + db_name_ + "/update.json";
+        std::string file_path = getUpdatePath();
         ifstream fp;
         fp.open(file_path,ios::in);
         if (!fp.is_open())
@@ -100,7 +109,7 @@ namespace cluster
             return false;
         }
         
-        std::string file_path = ClusterDb::getClusterDir() + db_name_ + "/update.json";
+        std::string file_path = getUpdatePath();
         ofstream fp;
         fp.open(file_path,ios::out);
         if (!fp.is_open())

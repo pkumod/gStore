@@ -21,11 +21,9 @@ namespace cluster
         bool readFromTermFile(ClusterTermInfo &logInfo);
         bool writeToTermFile(ClusterTermInfo &logInfo);
         ClusterDbPtr findDb(const std::string& db_name);
+        void addClusterDb(const std::string& db_name);
 
-        // virtual function in here
-        public:
-        virtual void init() = 0;
-        virtual ClusterRoleType getCluterRoleType()const = 0;
+        // log
         void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
         void updateLogStatus(std::string db_name, uint64 index, int status);
         void addLogReplyNum(std::string db_name, uint64 index);
@@ -39,5 +37,10 @@ namespace cluster
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
+
+        // virtual function in here
+        public:
+        virtual void init() = 0;
+        virtual ClusterRoleType getCluterRoleType()const = 0;
     };
 }

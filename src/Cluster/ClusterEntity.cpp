@@ -4,6 +4,18 @@
 
 namespace cluster
 {
+    void ClusterEntity::addClusterDb(const std::string& db_name)
+    {
+        auto it = databaseL_.find(db_name);
+        if (it != databaseL_.end())
+        {
+            SLOG_CORE("cluster db is exit, not repeated add, db name:" << db_name);
+            return;
+        }
+        ClusterDbPtr db = std::make_shared<ClusterDb>();
+        db->init();
+        databaseL_.insert(std::make_pair(db_name, db));
+    }
     bool ClusterEntity::readFromTermFile(ClusterTermInfo &logInfo)
     {
         std::lock_guard<std::mutex> lock(term_mutex_);

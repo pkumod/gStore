@@ -32,7 +32,13 @@ namespace cluster
                 return;
             }
             on_ = true;
+            if (!Util::dir_exist(ClusterDb::getClusterDir()))
+            {
+                Util::create_dir(ClusterDb::getClusterDir());
+            }
             role_->init();
+
+            SLOG_CORE("cluster success on");
         }
     }
 
@@ -68,6 +74,7 @@ namespace cluster
     {
         if (!isEnable() || !role_)
             return -1;
+        role_->addClusterDb(db_name);
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
         {
