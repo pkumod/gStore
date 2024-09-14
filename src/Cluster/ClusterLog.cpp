@@ -231,7 +231,7 @@ namespace cluster
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
-            if (!s.contains("db_name"))
+            if (!s[i].contains("db_name"))
                 continue;
             std::string db_name = s[i].at("db_name");
             db_logs_[db_name] = s[i];
