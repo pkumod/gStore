@@ -134,7 +134,8 @@ namespace cluster
     void ClusterEntityLeader::postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_path)
     {
         uint32 term = getTerm();
-        httpentities::AppenEntriesRequest request(term, db_name, index, operation, file_path);
+        std::string operation_str = to_string(operation);
+        httpentities::AppenEntriesRequest request(term, db_name, index, operation_str, file_path);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
             httpentities::AppenEntriesRequest request_ = request;
