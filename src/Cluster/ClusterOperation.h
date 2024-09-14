@@ -16,7 +16,7 @@
 namespace cluster
 {
     // OP(name,string)
-    #define OPERATION_TYPES_MAP(OP)                       \
+    #define CLUSTER_OPERATION_TYPES_MAP(OP)                       \
         OP(LEADER_HEARTBEAT,                   heartbeat) \
         OP(LEADER_APPEND,                  appendEntries) \
         OP(FOLLOWER_REPLY,                         reply) \
@@ -27,9 +27,9 @@ namespace cluster
     enum cluster_operation
     {
     #define OP(name, string) name,
-        OPERATION_TYPE_NONE,
-        OPERATION_TYPES_MAP(OP)
-        OPERATION_TYPE_UNDEFINE
+        CLUSTER_OPERATION_TYPE_NONE,
+        CLUSTER_OPERATION_TYPES_MAP(OP)
+        CLUSTER_OPERATION_TYPE_UNDEFINE
     #undef OP
     };
 
@@ -56,14 +56,14 @@ namespace cluster
     {
         if (type_str.empty())
         {
-            return OPERATION_TYPE_NONE;
+            return CLUSTER_OPERATION_TYPE_NONE;
         }
     #define OP(name, string) \
         if (type_str == #string) { \
             return name; \
         }
-        OPERATION_TYPES_MAP(OP)
+        CLUSTER_OPERATION_TYPES_MAP(OP)
     #undef OP
-        return OPERATION_TYPE_UNDEFINE;
+        return CLUSTER_OPERATION_TYPE_UNDEFINE;
     }
 }
