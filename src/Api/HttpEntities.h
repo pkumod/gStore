@@ -31,7 +31,7 @@ namespace httpentities {
             this->username = username;
             this->password = password;
         }
-        virtual void to_json_str(std::string& json_str) = 0;
+        virtual void to_json(std::string& json_str) = 0;
         virtual void to_inner_json(std::string& json_str)
         {
             nlohmann::json json = nlohmann::json{{"operation", this->op},{"username", this->username},{"password", ""},{"inner", "true"}};
@@ -55,7 +55,7 @@ namespace httpentities {
         {
             this->index = index;
         }
-        virtual void to_json_str(std::string& json_str) = 0;
+        virtual void to_json(std::string& json_str) = 0;
     };
 
     struct BaseResponse {
@@ -85,7 +85,7 @@ namespace httpentities {
     struct ShutdownRequest : public BaseRequest {
         ShutdownRequest() : BaseRequest("shutdown") {}
         ShutdownRequest(std::string username, std::string password) : BaseRequest("shutdown", username, password) {}
-        void to_json_str (std::string& json_str) override
+        void to_json (std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"operation", this->op},{"username", this->username},{"password", this->password}};
             json_str = json.dump();
@@ -100,7 +100,7 @@ namespace httpentities {
     struct TestConnectionRequest : public BaseRequest {
         TestConnectionRequest() : BaseRequest("testConnect") {}
         TestConnectionRequest(std::string username, std::string password) : BaseRequest("testConnect", username, password) {}
-        void to_json_str (std::string& json_str) override
+        void to_json (std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"operation", this->op},{"username", this->username},{"password", this->password}};
             json_str = json.dump();
@@ -120,7 +120,7 @@ namespace httpentities {
         {
             return "operation="+op;
         }
-        void to_json_str(std::string& json_str) override
+        void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"operation", this->op}};
             json_str = json.dump();
@@ -143,7 +143,7 @@ namespace httpentities {
             this->db_name = db_name;
             this->csr = csr;
         }
-        void to_json_str(std::string& json_str) override
+        void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{
                 {"operation", this->op},
@@ -163,7 +163,7 @@ namespace httpentities {
 
     struct ReplyRequest: public ClusterRequest {
         ReplyRequest(int32_t term, std::string db_name, int64_t index): ClusterRequest(term, db_name, index) {}
-        void to_json_str(std::string& json_str) override
+        void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
             json_str = json.dump();
@@ -175,7 +175,7 @@ namespace httpentities {
         AppenEntriesRequest(int32_t term, std::string db_name, int64_t index, std::string filepath): ClusterRequest(term, db_name, index) {
             this->filepath = filepath;
         }
-        void to_json_str(std::string& json_str) override
+        void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
             json_str = json.dump();
