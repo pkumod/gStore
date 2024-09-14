@@ -12,7 +12,7 @@ public:
 	~HttpUtil();
 private:
 	static bool m_bDebug;
-
+	static const size_t OnReadFile(void* ptr, size_t size, size_t nmemb, void* stream);
 public:
 	/**
 	* @brief: HTTP POST request

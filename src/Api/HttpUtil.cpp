@@ -348,7 +348,7 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
 }
 
 // 文件读取回调函数
-size_t OnReadFile(void* ptr, size_t size, size_t nmemb, void* stream)
+const size_t HttpUtil::OnReadFile(void* ptr, size_t size, size_t nmemb, void* stream)
 {
     std::string* filePath = (std::string*)stream;
     FILE* file = fopen(filePath->c_str(), "rb");

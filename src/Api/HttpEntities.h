@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
+#include <cstdio>
 #include "../Api/NlohmanJson.hpp"
-
+using namespace nlohmann;
 namespace httpentities {
 
     // void to_json(nlohmann::json& s, const ClusterRequest& t) {
@@ -65,9 +66,9 @@ namespace httpentities {
         nlohmann::json json;
         BaseResponse(int StatusCode, std::string StatusMsg) : StatusCode(StatusCode), StatusMsg(StatusMsg) {}
         BaseResponse(const std::string& body) : body(body) {
-            if (json.accept(this->body))
+            if (nlohmann::json::accept(body))
             {
-                json.parse(this->body);
+                json = nlohmann::json::parse(body.c_str());
                 json.at("StatusCode").get_to(this->StatusCode);
                 json.at("StatusMsg").get_to(this->StatusMsg);
             }
