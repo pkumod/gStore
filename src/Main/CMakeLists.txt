@@ -53,42 +53,42 @@ set( LIB_GSTROE_DEP
         cluster
 )
 set( BIN_LIST
-        gadd
-        gbackup
-        gbuild
+        # gadd
+        # gbackup
+        # gbuild
         gconsole
-        gdrop
-        gexport
-        ghttp
+        # gdrop
+        # gexport
+        # ghttp
         ginit
-        gmonitor          
-        gquery      
-        grestore     
-        grpc         
-        gserver     
-        gserver_backup_scheduler     
-        gshow     
-        gsub
-        greason     
+        # gmonitor          
+        # gquery      
+        # grestore     
+        gserver         
+        # gserver     
+        # gserver_backup_scheduler     
+        # gshow     
+        # gsub
+        # greason     
 )
 set( MAIN_LIST 
-        gadd.cpp  
-        gbackup.cpp 
-        gbuild.cpp   
+        # gadd.cpp  
+        # gbackup.cpp 
+        # gbuild.cpp   
         gconsole.cpp 
-        gdrop.cpp   
-        gexport.cpp                  
-        ghttp.cpp 
+        # gdrop.cpp   
+        # gexport.cpp                  
+        # ghttp.cpp 
         ginit.cpp 
-        gmonitor.cpp 
-        gquery.cpp  
-        grestore.cpp 
+        # gmonitor.cpp 
+        # gquery.cpp  
+        # grestore.cpp 
         grpc.cpp     
-        gserver.cpp 
-        gserver_backup_scheduler.cpp 
-        gshow.cpp
-        gsub.cpp
-        greason.cpp
+        # gserver.cpp 
+        # gserver_backup_scheduler.cpp 
+        # gshow.cpp
+        # gsub.cpp
+        # greason.cpp
 )
 include_directories( ${INCLUDE_3RD_PATH} )
 link_directories( 
@@ -101,12 +101,12 @@ add_library( gpathqueryhandler SHARED ${ALGORITHM_LIST} )
 target_link_libraries( gpathqueryhandler gcsr )
 set_target_properties( gcsr gpathqueryhandler PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_PFNLIB_DIR} )
 
-add_executable( shutdown shutdown.cpp )
-target_link_libraries( shutdown ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
-add_executable( rollback rollback.cpp )
-target_link_libraries( rollback ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
-add_executable( gpara gpara.cpp )
-target_link_libraries( gpara ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+# add_executable( shutdown shutdown.cpp )
+# target_link_libraries( shutdown ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+# add_executable( rollback rollback.cpp )
+# target_link_libraries( rollback ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+# add_executable( gpara gpara.cpp )
+# target_link_libraries( gpara ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
 
 foreach( bin_name main_name IN ZIP_LISTS BIN_LIST MAIN_LIST )
    message( STATUS "bin_name = ${bin_name} main_name = ${main_name}" )
