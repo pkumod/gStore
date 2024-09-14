@@ -50,6 +50,10 @@ namespace cluster
         std::vector<std::string> getFollowrUrlArray();
         // 获取主节点url
         std::string getLeaderUrl();
+        // 获取主节点
+        ClusterNode getLearrNode();
+        // 获取从节点列表
+        std::vector<ClusterNode> getFollowNodeL();
 
         //日志模块
         //新增日志

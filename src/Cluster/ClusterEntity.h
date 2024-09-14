@@ -42,5 +42,10 @@ namespace cluster
         public:
         virtual void init() = 0;
         virtual ClusterRoleType getCluterRoleType()const = 0;
+        virtual std::string getLeaderIp()const { return std::string(); }
+        virtual std::string getLeaderUrl()const{ return std::string(); }
+        virtual ClusterNode getLearrNode()const{ return ClusterNode(); }
+        virtual std::vector<std::string> getFollowrUrlArray()const{ return std::vector<std::string>(); }
+        virtual std::vector<ClusterNode> getFollowNodeL()const{ return std::vector<ClusterNode>(); }
     };
 }

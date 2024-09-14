@@ -11,15 +11,20 @@ namespace cluster
 		Util::split(cluster_node, ":", node);
         if (node.size() < 4)
             return;
-        leaderNode_.ip       = node[0];
-        leaderNode_.port     = node[1];
-        leaderNode_.username = node[2];
-        leaderNode_.password = node[3];
+        leaderNode_.setIp(node[0]);
+        leaderNode_.setPort(node[1]);
+        leaderNode_.setUsername(node[2]);
+        leaderNode_.setPassword(node[3]);
     }
 
-    std::string ClusterEntityFollower::getLeaderUrl()
+    std::string ClusterEntityFollower::getLeaderUrl()const
     {
         std::string url = "http://" + leaderNode_.getIp() + ":" + leaderNode_.getPort();
         return url;
+    }
+
+    ClusterNode ClusterEntityFollower::getLearrNode()const
+    {
+        return leaderNode_;
     }
 }

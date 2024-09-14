@@ -50,19 +50,18 @@ namespace cluster
         auto helper = [this, postdata](ClusterNode node)
         {
             string res;
-            std::string remote = node.ip + node.port;
-            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.username, node.password), res);
+            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.getUsername(), node.getPassword()), res);
             if (error != CURLE_OK)
             {
-                faileL_[node.ip] += 1;
+                faileL_[node.getIp()] += 1;
                 return;
             }
-            faileL_[node.ip] = 0;
+            faileL_[node.getIp()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.ip;
+            std::string ip = node.second.getIp();
             auto it = faileL_.find(ip);
             if (it == faileL_.end())
                 continue;
@@ -85,19 +84,18 @@ namespace cluster
         auto helper = [this, db_name, index, postdata](ClusterNode node)
         {
             string res;
-            std::string remote = node.ip + node.port;
-            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.username, node.password), res);
+            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.getUsername(), node.getPassword()), res);
             if (error != CURLE_OK)
             {
-                faileL_[node.ip] += 1;
+                faileL_[node.getIp()] += 1;
                 return;
             }
-            faileL_[node.ip] = 0;
+            faileL_[node.getIp()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.ip;
+            std::string ip = node.second.getIp();
             auto it = faileL_.find(ip);
             if (it == faileL_.end())
                 continue;
@@ -174,7 +172,7 @@ namespace cluster
         return pass_num;
     }
 
-    std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()
+    std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()const
     {
         std::vector<std::string> urlL;
         std::string url;
@@ -185,5 +183,16 @@ namespace cluster
             url.clear();
         }
         return urlL;
+    }
+
+    std::vector<ClusterNode> ClusterEntityLeader::getFollowNodeL()const
+    {
+        std::vector<ClusterNode> nodeL;
+        std::string url;
+        for (const auto&m : followNodeL_)
+        {
+            nodeL.push_back(m.second);
+        }
+        return nodeL;
     }
 }

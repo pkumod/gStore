@@ -128,20 +128,28 @@ namespace cluster
     {
         if (!isEnable() || !role_)
             return std::vector<std::string>();
-        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-        if (!leader)
-            return std::vector<std::string>();
-        return leader->getFollowrUrlArray();
+        return role_->getFollowrUrlArray();
     }
 
     std::string ClusterManager::getLeaderUrl()
     {
         if (!isEnable() || !role_)
             return std::string();
-        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
-        if (!follower)
-            return std::string();
-        return follower->getLeaderUrl();
+        return role_->getLeaderUrl();
+    }
+
+    ClusterNode ClusterManager::getLearrNode()
+    {
+        if (!isEnable() || !role_)
+            return ClusterNode();
+        return role_->getLearrNode();
+    }
+
+    std::vector<ClusterNode> ClusterManager::getFollowNodeL()
+    {
+        if (!isEnable() || !role_)
+            return std::vector<ClusterNode>();
+        return role_->getFollowNodeL();
     }
 
     void ClusterManager::addLog(std::string db_name, uint64 index, int status, ClusterOperation operation)

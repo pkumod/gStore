@@ -35,10 +35,12 @@ namespace cluster
 
     struct ClusterNode
     {
+        private:
         std::string ip;
         std::string port;
         std::string username;
         std::string password;
+        public:
         ClusterNode()
         {
             ip       = "";

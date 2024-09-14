@@ -107,6 +107,7 @@ namespace cluster
         log.setNodeNum(0);
         log.setOperation(operation);
         logs_[index] = log;
+        return true;
     }
 
     void ClusterDbNameLogInfo::updateLogStatus(uint64 index, int status)
