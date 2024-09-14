@@ -21,6 +21,7 @@ namespace cluster
         void startHeardBeat();
         uint32 startNotify(std::string db_name, uint32 term, uint64 index);
         uint32 startSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, const std::string& file_path);
+        std::vector<std::string> getFollowrUrlArray();
 
         // virtual function in here
         public:

@@ -1,10 +1,10 @@
 #pragma once
-#include "ClusterDefined.h"
 #include "ClusterTypedef.h"
+#include "ClusterDefined.h"
+#include "ClusterCached.h"
 #include "ClusterEntity.h"
 #include "ClusterEntityLeader.h"
 #include "ClusterEntityFollower.h"
-#include "ClusterCached.h"
 #include "ClusterLog.h"
 #include "../Util/Util.h"
 
@@ -49,6 +49,10 @@ namespace cluster
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
         bool fromFollower(const std::string& ip);
+        // 获取从节点url列表, http://127.0.0.1:9000
+        std::vector<std::string> getFollowrUrlArray();
+        // 获取主节点url
+        std::string getLeaderUrl();
 
         //日志模块
         //新增日志

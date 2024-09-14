@@ -9,6 +9,7 @@ namespace cluster
         ClusterNode leaderNode_;
         public:
         std::string getLeaderIp()const{ return leaderNode_.ip; }
+        std::string getLeaderUrl();
 
         // virtual function in here
         public:

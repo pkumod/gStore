@@ -93,9 +93,9 @@ namespace cluster
 
     bool ClusterManager::fromLeader(const std::string& ip)
     {
-        if (ip.empty())
+        if (!isEnable() || !role_ || ip.empty())
             return false;
-        
+
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
             return false;
@@ -106,7 +106,7 @@ namespace cluster
 
     bool ClusterManager::fromFollower(const std::string& ip)
     {
-        if (ip.empty())
+        if (!isEnable() || !role_ || ip.empty())
             return false;
         
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
@@ -116,6 +116,26 @@ namespace cluster
         if (!node.empty() && node.getIp() == ip)
             return true;
         return false;
+    }
+
+    std::vector<std::string> ClusterManager::getFollowrUrlArray()
+    {
+        if (!isEnable() || !role_)
+            return std::vector<std::string>();
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+            return std::vector<std::string>();
+        return leader->getFollowrUrlArray();
+    }
+
+    std::string ClusterManager::getLeaderUrl()
+    {
+        if (!isEnable() || !role_)
+            return std::string();
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+            return std::string();
+        return follower->getLeaderUrl();
     }
 
     void ClusterManager::addLog(std::string db_name, uint64 index, int status, ClusterOperation operation)

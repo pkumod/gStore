@@ -93,7 +93,6 @@ namespace cluster
                 return;
             }
             faileL_[node.ip] = 0;
-            this->addLogReplyNum(db_name, index);
         };
 
         for (const auto& node : followNodeL_)
@@ -173,5 +172,18 @@ namespace cluster
         }
 
         return pass_num;
+    }
+
+    std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()
+    {
+        std::vector<std::string> urlL;
+        std::string url;
+        for (const auto&m : followNodeL_)
+        {
+            url = "http://" + m.second.getIp() + ":" + m.second.getPort();
+            urlL.push_back(url);
+            url.clear();
+        }
+        return urlL;
     }
 }

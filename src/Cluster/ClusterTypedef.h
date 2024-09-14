@@ -9,13 +9,12 @@ typedef long long         int64;
 typedef unsigned long int uint64;
 namespace cluster
 {
-    class ClusterLog;
-    class ClusterEntity;
+    class ClusterDb;
+    class ClusterDbNameLogInfo;
     class ClusterEntity;
     class ClusterEntityLeader;
     class ClusterEntityFollower;
-    class ClusterDb;
-    typedef std::shared_ptr<ClusterLog> ClusterLogPtr;
+    typedef std::shared_ptr<ClusterDbNameLogInfo> ClusterLogPtr;
     typedef std::shared_ptr<ClusterEntity> ClusterEntityPtr;
     typedef std::shared_ptr<ClusterEntityLeader> ClusterEntityLeaderPtr;
     typedef std::weak_ptr<ClusterEntityLeader> ClusterEntityLeaderWeaker;

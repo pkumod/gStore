@@ -1,9 +1,7 @@
 #pragma once
 #include "ClusterDefined.h"
 #include "../Util/Util.h"
-#include "../Api/NlohmanJson.hpp"
 #include "ClusterLog.h"
-#include "ClusterTypedef.h"
 #include "ClusterManager.h"
 
 namespace cluster

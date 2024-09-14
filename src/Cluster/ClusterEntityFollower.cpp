@@ -16,4 +16,10 @@ namespace cluster
         leaderNode_.username = node[2];
         leaderNode_.password = node[3];
     }
+
+    std::string ClusterEntityFollower::getLeaderUrl()
+    {
+        std::string url = "http://" + leaderNode_.getIp() + ":" + leaderNode_.getPort();
+        return url;
+    }
 }
