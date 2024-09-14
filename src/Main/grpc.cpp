@@ -142,7 +142,7 @@ std::string jsonParam(const Json &json, const std::string &key, const std::strin
 	}
 }
 
-int jsonParam(const Json &json, const std::string &key, const int &default_val)
+int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
@@ -152,7 +152,28 @@ int jsonParam(const Json &json, const std::string &key, const int &default_val)
 		}
 		else if (json[key.c_str()].IsString())
 		{
-			return atoi(json[key.c_str()].GetString());
+			return std::stoi(json[key.c_str()].GetString());
+		} else {
+			return default_val;
+		}
+	}
+	else
+	{
+		return default_val;
+	}
+}
+
+uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val)
+{
+	if (json.HasMember(key.c_str()))
+	{
+		if (json[key.c_str()].IsUint())
+		{
+			return json[key.c_str()].GetUint();
+		}
+		else if (json[key.c_str()].IsString())
+		{
+			return std::stol(json[key.c_str()].GetString());
 		} else {
 			return default_val;
 		}
@@ -164,7 +185,7 @@ int jsonParam(const Json &json, const std::string &key, const int &default_val)
 }
 
 
-int64 jsonParam(const Json &json, const std::string &key, const int64 &default_val)
+int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
@@ -174,7 +195,28 @@ int64 jsonParam(const Json &json, const std::string &key, const int64 &default_v
 		}
 		else if (json[key.c_str()].IsString())
 		{
-			return atoll(json[key.c_str()].GetString());
+			return std::stoll(json[key.c_str()].GetString());
+		} else {
+			return default_val;
+		}
+	}
+	else
+	{
+		return default_val;
+	}
+}
+
+uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val)
+{
+	if (json.HasMember(key.c_str()))
+	{
+		if (json[key.c_str()].IsInt64())
+		{
+			return json[key.c_str()].GetInt64();
+		}
+		else if (json[key.c_str()].IsString())
+		{
+			return std::stoul(json[key.c_str()].GetString());
 		} else {
 			return default_val;
 		}
@@ -5223,10 +5265,10 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	std::string expection = jsonParam(json_data, "expection", "");
 	const cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
-	uint32 leader_term = jsonParam(json_data, "term", -1);
-	uint32 local_term = -1;
+	uint32_t leader_term = jsonParam(json_data, "term", 0u);
+	uint32_t local_term = 0u;
 	string db_name = jsonParam(json_data, "db_name", "");
-	uint64 leader_index = jsonParam(json_data, "index", -1ll);
+	uint64_t leader_index = jsonParam(json_data, "index", 0ul);
 	Json resp_data;
 	resp_data.SetObject();
 	Json::AllocatorType &allocator = resp_data.GetAllocator();
@@ -5234,13 +5276,13 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	{
 		case cluster::EXPECTION_CHECK:
 			// compare term and index with leader
-			local_term = -1; // TODO get local term
+			local_term = clusterManagerPtr->getTerm(); // TODO get local term
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", "ok", allocator);
 			resp_data.AddMember("term", local_term, allocator);
 			if (!db_name.empty()) 
 			{
-				uint64 local_index = -1ll; // TODO get local index
+				int64_t local_index = -1ll; // TODO get local index
 				resp_data.AddMember("db_name", StringRef(db_name.c_str()), allocator);
 				resp_data.AddMember("index", local_index, allocator);
 			}
@@ -5249,48 +5291,49 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 		case cluster::EXPECTION_PREPARE:
 			// prepare for log append
 			// check local db is available
-			// std::thread([db_name, leader_term, leader_index]() {
-			// 	shared_ptr<Database> current_database = nullptr;
-			// 	if (!apiUtil->check_db_exist(db_name))
-			// 	{
-			// 		current_database = make_shared<Database>(db_name);
-			// 		// build empty db
-			// 		if (current_database->BuildEmptyDB()) 
-			// 		{
-			// 			// init privilege
-			// 			apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
-			// 			apiUtil->init_privilege(ROOT_USERNAME, db_name);
-			// 			string _db_path = _db_home + "/" + db_name + _db_suffix;
-			// 			ofstream f;
-			// 			f.open(_db_path + "/success.txt");
-			// 			f.close();
-			// 			// add backup.log
-			// 			Util::add_backuplog(db_name);
-			// 			current_database.reset();
-			// 			current_database = make_shared<Database>(db_name);
-			// 			current_database->load();
-			// 			apiUtil->add_database(db_name, current_database);
-			// 			apiUtil->insert_txn_managers(current_database, db_name);
-			// 			current_database.reset();
-			// 		}
-			// 	} 
-			// 	apiUtil->get_database(db_name, current_database);
-			// 	if (current_database == nullptr)
-			// 	{
-			// 		// load db
-			// 		current_database = make_shared<Database>(db_name);
-			// 		current_database->load();
-			// 		apiUtil->add_database(db_name, current_database);
-			// 		apiUtil->insert_txn_managers(current_database, db_name);
-			// 		current_database.reset();
-			// 	}
-			// 	// send ready response
-			// 	std::string reply_url = "/grpc/cluster/reply";
-			// 	std::string username = "root";
-			// 	std::string password = MD5("123456").toStr();
-			// 	httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index);
-			// 	HttpUtil::reply(reply_url, reply_request, username, password);
-			// }).detach();
+			std::thread([db_name, leader_term, leader_index, expection]() {
+				shared_ptr<Database> current_database = nullptr;
+				if (!apiUtil->check_db_exist(db_name))
+				{
+					current_database = make_shared<Database>(db_name);
+					// build empty db
+					if (current_database->BuildEmptyDB()) 
+					{
+						// init privilege
+						apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
+						apiUtil->init_privilege(ROOT_USERNAME, db_name);
+						string _db_path = _db_home + "/" + db_name + _db_suffix;
+						ofstream f;
+						f.open(_db_path + "/success.txt");
+						f.close();
+						// add backup.log
+						Util::add_backuplog(db_name);
+						current_database.reset();
+						current_database = make_shared<Database>(db_name);
+						current_database->load();
+						apiUtil->add_database(db_name, current_database);
+						apiUtil->insert_txn_managers(current_database, db_name);
+						current_database.reset();
+					}
+				} 
+				apiUtil->get_database(db_name, current_database);
+				if (current_database == nullptr)
+				{
+					// load db
+					current_database = make_shared<Database>(db_name);
+					current_database->load();
+					apiUtil->add_database(db_name, current_database);
+					apiUtil->insert_txn_managers(current_database, db_name);
+					current_database.reset();
+				}
+				// send ready response
+				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
+				std::string reply_url = leader_node.getReplyUrl();
+				std::string username = leader_node.getUsername();
+				std::string password = MD5(leader_node.getPassword()).toStr();
+				httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
+				HttpUtil::reply(reply_url, reply_request, username, password);
+			}).detach();
 			response->Success("ok");
 			break;
 		case cluster::EXPECTION_COMMIT:
@@ -5310,7 +5353,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusFileReadError, "Form data is empty");
 		return;
 	}
-	if (form.find("file") == form.end() || form.find("db_name") == form.end())
+	if (form.find("file") == form.end() || form.find("db_name") == form.end() 
+		|| form.find("term") == form.end() || form.find("index") == form.end() 
+		|| form.find("operation") == form.end())
 	{
 		response->Error(StatusFileReadError, "Form data is illegal");
 		return;
@@ -5321,14 +5366,14 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	std::pair<std::string, std::string>& fileinfo = form.at("file");
 	if(fileinfo.first.empty())
 	{
-		error = "Upload file can not be empty!";
+		error = "append file can not be empty!";
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
 	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
 	if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
 	{
-		error = "The type of upload file is not supported!";
+		error = "The type of append file is not supported!";
 		response->Error(StatusOperationFailed, error);
 		return;
 	}
@@ -5339,14 +5384,65 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusOperationFailed, error);
 		return;
 	}
-	thread([fileinfo, db_name]{
-		std::string db_dir = db_name + _db_suffix;
-		clusterManagerPtr->saveFromFollowerFile(std::move(fileinfo), db_dir);
-	}).detach();
+	uint32_t leader_term = std::stol(form.at("term").second);
+	uint64_t leader_index = std::stoul(form.at("index").second);
+	// TODO check leader term and index with local
+
+	const std::string zip_file_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix + "/" + fileinfo.first;
+	const std::string operation = form.at("operation").second;
+	const std::string content = std::move(fileinfo.second);
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, operation](WFFileIOTask *pwrite_task){
+		// save success
+		long ret = pwrite_task->get_retval();
+		if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
+			return;
+		}
+		if(!apiUtil->trywrlock_database(db_name)) {
+			return;
+		}
+		shared_ptr<Database> current_database;
+		apiUtil->get_database(db_name, current_database);
+		// TODO unzip file
+		std::string nt_file_path = zip_file_path;
+		ClusterOperation log_operation;
+		if (operation == "1") {
+			// batch insert
+			current_database->batch_insert(nt_file_path);
+			log_operation = ClusterOperation::ClusterOperation_Insert;
+		} else if (operation == "2") {
+			// batch remove
+			current_database->batch_remove(nt_file_path);
+			log_operation = ClusterOperation::ClusterOperation_Delete;
+		}
+		current_database->save();
+		apiUtil->unlock_database(db_name);
+
+		// update local log trem and index
+		clusterManagerPtr->updateTerm(leader_term);
+		clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_handling, log_operation);
+
+		// send appendEntrites ok response
+		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
+		std::string reply_url = leader_node.getReplyUrl();
+		std::string username = leader_node.getUsername();
+		std::string password = MD5(leader_node.getPassword()).toStr();
+		std::string expection = ClusterOperationHandle::to_str(cluster::cluster_operation::LEADER_APPEND);
+		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
+		HttpUtil::reply(reply_url, reply_request, username, password);
+	});
+	pwrite_task->start();
 	response->Success("ok");
 }
 
 void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 {
-
+	Json json_data;
+	parseRequest(request, json_data);
+	uint32_t term = jsonParam(json_data, "term", 0u);
+	uint64_t index = jsonParam(json_data, "index", 0ul);
+	std::string db_name = jsonParam(json_data, "db_name");
+	std::string expection = jsonParam(json_data, "expection");
+	// TODO from follower reply, go into leader process 
+	// clusterManagerPtr->reply(term, index, db_name, expection);
+	response->Success("ok");
 }
