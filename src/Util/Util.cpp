@@ -166,6 +166,14 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages");
+    // cluster
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_on", "off");
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_role");
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_node"); 
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_heartbeat", "3"); 
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_relpy_timeout", "5"); 
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_sync_timeout", "300"); 
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_data_path", "./cluster/"); 
 
     // create db_home
     string temp_str = Util::global_config["db_home"];
@@ -208,7 +216,14 @@ Util::configure()
     Util::string_suffix(temp_str, '/');
     Util::global_config["queryresult_path"] = temp_str;
     Util::create_dirs(temp_str);
-   // init slog
+    
+    // create cluster path
+    temp_str = Util::global_config["cluster_data_path"];
+    Util::string_suffix(temp_str, '/');
+    Util::global_config["cluster_data_path"] = temp_str;
+    Util::create_dirs(temp_str);
+
+    // init slog
     string log_mode = Util::getConfigureValue("log_mode");
     Slog &slog = Slog::getInstance();
     slog.init(log_mode.c_str());
