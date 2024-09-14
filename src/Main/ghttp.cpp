@@ -482,7 +482,7 @@ int main(int argc, char *argv[])
 	_db_suffix = apiUtil->get_Db_suffix();
 	size_t _len_suffix = _db_suffix.length();
 	string db_name = "";
-	string port_str = apiUtil->get_default_port();
+	string port_str = apiUtil->get_configure_value("port");
 	unsigned short port = 9000;
 	bool loadCSR = 0; // DO NOT load CSR by default
 
@@ -636,7 +636,7 @@ int main(int argc, char *argv[])
 int initialize(unsigned short port, std::string db_name, bool load_src)
 {	
 	// call apiUtil initialized
-	if (apiUtil->initialize(HTTP_TYPE, to_string(port), db_name, load_src) == -1)
+	if (apiUtil->initialize() == -1)
 	{
 		return -1;
 	}
@@ -1143,7 +1143,7 @@ void load_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			if (!apiUtil->trywrlock_database(db_name))
 			{
@@ -1261,7 +1261,7 @@ void monitor_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 		apiUtil->unlock_databaseinfo(database_info);
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL) {
+		if (current_database == nullptr) {
 			current_database = make_shared<Database>(db_name);
 			current_database->loadDBInfoFile();
 			current_database->loadStatisticsInfoFile();
@@ -1970,7 +1970,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -2077,7 +2077,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -2242,7 +2242,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 			
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -2887,7 +2887,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			}
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -3258,7 +3258,7 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		// check if database named [db_name] is already load
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			string error = "Database not load yet.";
 			sendResponseMsg(1004, error, operation, request, response);
@@ -3499,7 +3499,7 @@ void tquery_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			error = "Get database transaction manager error.";
 			sendResponseMsg(1008, error, operation, request, response);
@@ -3606,7 +3606,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			error = "Database not load yet.";
 			sendResponseMsg(1004, error, operation, request, response);
@@ -3614,7 +3614,7 @@ void commit_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			error = "Get database transaction manager error.";
 			sendResponseMsg(1008, error, operation, request, response);
@@ -3712,7 +3712,7 @@ void rollback_thread_new(const shared_ptr<HttpServer::Request> &request, const s
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			string error = "Get database transaction manager error.";
 			sendResponseMsg(1008, error, operation, request, response);
@@ -3824,7 +3824,7 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			error = "Database not load yet.";
 			sendResponseMsg(1004, error, operation, request, response);
@@ -3839,7 +3839,7 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 		{
 			shared_ptr<Txn_manager> txn_m;
 			apiUtil->get_Txn_ptr(db_name, txn_m);
-			if (txn_m == NULL)
+			if (txn_m == nullptr)
 			{
 				error = "Get database transaction manager error.";
 				apiUtil->unlock_database(db_name);
