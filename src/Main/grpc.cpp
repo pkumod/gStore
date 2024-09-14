@@ -8,11 +8,16 @@
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
 #include "../Api/HttpUtil.h"
+#include "../Cluster/ClusterManager.h"
+#include "../Cluster/ClusterOperation.h"
 
-#define HTTP_TYPE "grpc"
+#define HTTP_TYPE "http"
+#define BASE_URL "http://127.0.0.1:" + _server_port + "/grpc"
 
 using namespace std;
 using namespace grpc;
+using namespace cluster;
+typedef unsigned short uint8;
 
 static WFFacilities::WaitGroup wait_group(1);
 
@@ -20,17 +25,22 @@ APIUtil *apiUtil = nullptr;
 
 PFNUtil *pfnUtil = nullptr;
 
+std::shared_ptr<cluster::ClusterManager> clusterManagerPtr =  nullptr;
+
 Latch latch;
 
 std::string _db_home;
 
 std::string _db_suffix;
 
-int initialize(unsigned short port, std::string db_name, bool load_src);
+std::string _server_port;
 
+bool startServer();
+bool stopServer();
 void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
+void cluster_api(const GRPCReq *request, GRPCResp *response, cluster::cluster_operation& operation);
 void api(const GRPCReq *request, GRPCResp *response);
 void upload_file(const GRPCReq *request, GRPCResp *response);
 void download_file(const GRPCReq *request, GRPCResp *response);
@@ -80,6 +90,18 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for reason engine
 void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+// for cluster
+void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response);
+void cluster_append_task(const GRPCReq *request, GRPCResp *response);
+void cluster_reply_task(const GRPCReq *request, GRPCResp *response);
+
+// common function
+std::string to_json_string(const Json& json);
+std::string jsonParam(const Json &json, const std::string &key);
+std::string jsonParam(const Json &json, const std::string &key, const std::string &default_val);
+int jsonParam(const Json &json, const std::string &key, const int &default_val);
+bool hasJsonParam(const Json &json, const std::string &key);
+void parseRequest(const GRPCReq *request, Json &json_data);
 
 std::string to_json_string(const Json& json)
 {
@@ -139,13 +161,82 @@ int jsonParam(const Json &json, const std::string &key, const int &default_val)
 	}
 }
 
+
+int64 jsonParam(const Json &json, const std::string &key, const int64 &default_val)
+{
+	if (json.HasMember(key.c_str()))
+	{
+		if (json[key.c_str()].IsInt64())
+		{
+			return json[key.c_str()].GetInt64();
+		}
+		else if (json[key.c_str()].IsString())
+		{
+			return atoll(json[key.c_str()].GetString());
+		} else {
+			return default_val;
+		}
+	}
+	else
+	{
+		return default_val;
+	}
+}
+
 bool hasJsonParam(const Json &json, const std::string &key)
 {
 	return json.HasMember(key.c_str());
 }
 
+void parseRequest(const GRPCReq *request, Json &json_data)
+{
+	json_data.SetObject();
+	Json::AllocatorType &allocator = json_data.GetAllocator();
+	if (request->contentType() == APPLICATION_JSON) //for application/json
+	{
+		Json &json = request->json();
+		json_data.CopyFrom(json, allocator);
+	}
+	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
+	{
+		std::map<std::string, std::string> &form_data = request->formData();
+		std::map<std::string, std::string>::iterator iter = form_data.begin();
+		std::string v;
+		while (iter != form_data.end())
+		{
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
+			{
+				StringUtil::url_decode(v);
+			}
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			iter++;
+		}
+	}
+	else // for get
+	{
+		std::map<std::string, std::string> params = request->queryList();
+		if (params.empty() == false)
+		{
+			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::string v;
+			while (iter != params.end())
+			{
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					StringUtil::url_decode(v);
+				}
+				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+				iter++;
+			}
+		}
+	}
+}
+
 void sig_handler(int signo)
 {
+	SLOG_INFO("grpc server stopped.");
 	if (apiUtil)
 	{
 		delete apiUtil;
@@ -156,7 +247,6 @@ void sig_handler(int signo)
 		delete pfnUtil;
 		pfnUtil = NULL;
 	}
-	SLOG_INFO("grpc server stopped.");
 	wait_group.done();
 	std::cout.flush();
 	_exit(signo);
@@ -167,68 +257,140 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	apiUtil = new APIUtil();
 	pfnUtil = new PFNUtil();
- 	_db_home = apiUtil->get_Db_path();
-	_db_suffix = apiUtil->get_Db_suffix();
-	size_t _len_suffix = _db_suffix.length();
-	unsigned short port = 9000;
-	string db_name = "";
-	string port_str = apiUtil->get_default_port();
-	bool loadCSR = 0; // DO NOT load CSR by default
-	if (argc < 2)
+	_server_port = apiUtil->get_configure_value("port");
+	string command;
+	if (argc == 1)
 	{
-		SLOG_INFO("Server will use the default port: " + port_str);
-		SLOG_INFO("Not load any database!");
-		port = atoi(port_str.c_str());
+		command = "-s";
 	}
-	else if (argc == 2)
+	else
 	{
-		string command = argv[1];
-		if (command == "-h" || command == "--help")
+		command = argv[1];
+	}
+	if (command == "-h" || command == "--help")
+	{
+		cout << endl;
+		cout << "gStore API Server(gserver)" << endl;
+		cout << endl;
+		cout << "Usage:\tbin/gserver [option]" << endl;
+		cout << endl;
+		cout << "Options:" << endl;
+		cout << "\t-h,--help\t\tDisplay this message." << endl;
+		cout << "\t-s,--start[default]\t\tStart gServer." << endl;
+		cout << "\t-db,--database[option],\t\tthe database name.Default value is empty."<< endl;
+		cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+		cout << "\t-t,--stop\t\tSafe shutdow gServer." << endl;
+		cout << "\t-k,--kill\t\tForce shutdow gServer." << endl;
+		cout << "\t-S,--status\t\tShow gServer status." << endl;
+		cout << endl;
+		return 0;
+	}
+	else if ((command == "-s" || command == "--start") && (argc == 1 || argc == 2 || argc == 4 || argc == 6))
+	{
+		// check server thread
+		string check_url = BASE_URL + "/api";
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(check_url, check_request);
+		if (check_response.success())
 		{
-			cout << endl;
-			cout << "gStore RPC Server(grpc)" << endl;
-			cout << endl;
-			cout << "Usage:\tbin/grpc -p [port] -db [dbname] -c [enable]" << endl;
-			cout << endl;
-			cout << "Options:" << endl;
-			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database[option],\t\tthe database name.Default value is empty. Notice that the name can not end with "<< _db_suffix<< endl;
-			cout << "\t-p,--port[option],\t\tthe listen port. Default value is 9000." << endl;
-			cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
-			cout << endl;
+			cout << "the server already running." << endl;
+			return -1;
+		}
+		_db_home = apiUtil->get_Db_path();
+		_db_suffix = apiUtil->get_Db_suffix();
+		size_t _len_suffix = _db_suffix.length();
+		if (startServer())
+		{
+			sleep(1);
+			// init cluster
+			clusterManagerPtr = make_shared<cluster::ClusterManager>();
+			if (clusterManagerPtr->isEnable()) {
+				clusterManagerPtr->init();
+			}
+			// load db
+			if(argc == 4 || argc == 6)
+			{
+				string db_name = Util::getArgValue(argc, argv, "db", "database");
+				string csr = Util::getArgValue(argc, argv, "c", "csr", "0");
+				string load_url = BASE_URL + "/api";
+				httpentities::LoadRequest load_requst(db_name, csr);
+				httpentities::LoadResponse load_response = HttpUtil::load(load_url, true, load_requst);
+				if (load_response.success())
+				{
+					SLOG_INFO("load " + db_name + " success.");
+				}
+				else
+				{
+					SLOG_INFO("load failed: unknow error.");
+				}
+			}
+			else
+			{
+				SLOG_INFO("No database is loaded!");
+			}
 			return 0;
 		}
 		else
 		{
-			cout << "Invalid arguments! Input \"bin/grpc -h\" for help." << endl;
-			return 0;
+			return -1;
 		}
+	}
+	else if (command == "-t" || command == "--stop")
+	{
+		// stop server
+		stopServer();
+		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
+		return 0;
+	}
+	else if (command  == "-k" || command == "--kill")
+	{
+		// kill server
+		cout << "The service will be forcibly stopped!" << endl;
+		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
+		// remove pid file
+		std::string system_path = apiUtil->get_Db_path() + "system" + apiUtil->get_Db_suffix();
+		std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
+		std::string file_path;
+		for (size_t i=0; i<pid_files.size(); i++)
+		{
+			file_path = system_path + "/" + pid_files[i];
+			SLOG_DEBUG("pid path: " + file_path);
+			Util::remove_path(file_path);
+		}
+		return 0;
+	}
+	else if (command == "-S" || command == "--status")
+	{
+		// show server status
+		string port = apiUtil->get_configure_value("port");
+		string check_url = BASE_URL + "/api";
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(check_url, check_request);
+		cout << "gStore API Server(gserver)" << endl;
+		if (check_response.success())
+		{
+			cout << "\tActive: active (running)" << endl;
+			cout << "\tMain PID: " << check_response.getStatusMsg() << endl;
+		}
+		else
+		{
+			cout << "\tActive: inactive (dead)" << endl;
+			cout << "\tProcess: bin/gserver" << endl;
+		}
+		cout << "\tDocs: https://www.gstore.cn" << endl;
+		return 0;
 	}
 	else
 	{
-		db_name = Util::getArgValue(argc, argv, "db", "database");
-		if (db_name.length() > _len_suffix && db_name.substr(db_name.length() - _len_suffix, _len_suffix) == _db_suffix)
-		{
-			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/grpc -h\" for help." << endl;
-			return -1;
-		}
-		else if (db_name == "system")
-		{
-			SLOG_ERROR("The database name can not be system.");
-			return -1;
-		}
-		port_str = Util::getArgValue(argc, argv, "p", "port", port_str);
-		port = atoi(port_str.c_str());
-		loadCSR = Util::string2int(Util::getArgValue(argc, argv, "c", "csr", "0"));
+		cout << "Invalid arguments! Input \"bin/grpc -h\" for help." << endl;
+		return -1;
 	}
-	// check grpc thread
-	std::string processPath = Util::getExactPath(argv[0]);
-	std::string currPid = to_string(getpid());
-	if (Util::checkProcessExist(processPath, currPid))
-	{
-		SLOG_INFO("grpc server already running.");
-		return 0;
-	}
+}
+
+bool startServer() 
+{
+	string port_str = apiUtil->get_configure_value("port");
+	uint8 port = atoi(port_str.c_str());
 	// check port
 	int max_try = 20;
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -249,8 +411,8 @@ int main(int argc, char *argv[])
 		cout<<endl;
 		if (bind_return == -1)
 		{			
-			SLOG_INFO("Server port "<< port_str <<" is already in use.");
-			return -1;
+			SLOG_INFO("Server port "+ port_str + " is already in use.");
+			return false;
 		}
 	} 
 	max_try = 20;
@@ -268,95 +430,151 @@ int main(int argc, char *argv[])
 	}
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
-	while (true)
+	pid_t fpid = fork();
+	// child
+	if (fpid == 0)
 	{
-		pid_t fpid = fork();
-		// cout << "fpid:" << fpid << endl;
-		if (fpid == 0)
+		int status;
+		string daemon;
+		while (true)
 		{
-			int ret = initialize(port, db_name, loadCSR);
-			std::cout.flush();
-			_exit(ret);
-		}
-		else if (fpid > 0)
-		{
-			int status;
-			waitpid(fpid, &status, 0);
-			if (WIFEXITED(status))
+			daemon = apiUtil->get_configure_value("daemon");
+			if (daemon == "on")
+				fpid = fork();
+			else
+				fpid = 0;
+			// child, main process
+			if (fpid == 0)
 			{
-				return 0;
+				// init config
+				int rt = apiUtil->initialize();
+				if (rt == -1)
+				{
+					return false;
+				}
+				GRPCServer grpcServer;
+				// register rest service
+				register_service(grpcServer);
+				int max_try = 30;
+				int start_status = -1;
+				do
+				{
+					// try starting until success of more than max_try
+					start_status = grpcServer.start(port);
+					if(start_status != 0)
+					{
+						SLOG_INFO("grpc server try starting " + to_string(start_status));
+						sleep(1000);
+					}
+					max_try--;
+				} while (start_status == -1 && max_try > 0);
+				if(start_status != 0)
+				{
+					SLOG_ERROR("grpc server start failed.");
+					latch.lockExclusive();
+					if (apiUtil)
+					{
+						delete apiUtil;
+						apiUtil = NULL;
+						apiUtil = new APIUtil();
+					}
+					latch.unlock();
+					return false;
+				}
+				// handle the Ctrl+C signal
+				signal(SIGINT, sig_handler);
+				wait_group.wait();
+				grpcServer.stop();
+				SLOG_DEBUG("grpc server stoped.");
+				std::cout.flush();
+				exit(0);
+				return true;
 			}
+			// parent, deamon process
+			else if (fpid > 0)
+			{
+				waitpid(fpid, &status, 0);
+				if (WIFEXITED(status))
+				{
+					exit(0);
+					return true;
+				}
+				else
+				{
+					string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
+					if (Util::file_exist(system_port_path))
+					{
+						Util::remove_path(system_port_path);
+					}
+					SLOG_WARN("Stopped abnormally, restarting server...");
+					latch.lockExclusive();
+					if (apiUtil)
+					{
+						delete apiUtil;
+						apiUtil = NULL;
+						apiUtil = new APIUtil();
+					}
+					latch.unlock();
+				}
+			}
+			// fork failure
 			else
 			{
-				string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
-				if (Util::file_exist(system_port_path))
-				{
-					Util::remove_path(system_port_path);
-				}
-				SLOG_WARN("Stopped abnormally, restarting server...");
-				latch.lockExclusive();
-				if (apiUtil)
-				{
-					delete apiUtil;
-					apiUtil = NULL;
-					apiUtil = new APIUtil();
-				}
-				latch.unlock();
+				SLOG_ERROR("Failed to start server: deamon fork failure.");
+				return false;
 			}
 		}
-		else
-		{
-			SLOG_ERROR("Failed to start server: deamon fork failure.");
-			return -1;
-		}
 	}
-
-	return 0;
+	// parent
+	else if (fpid > 0)
+	{
+		SLOG_INFO("grpc server port " + port_str);
+		return true;
+	}
+	// fork failure
+	else 
+	{
+		SLOG_ERROR("Failed to start server: fork failure.");
+		return false;
+	}
 }
 
-int initialize(unsigned short port, std::string db_name, bool load_src)
+bool stopServer()
 {
-
-	// call apiUtil initialized
-	if (apiUtil->initialize("grpc", to_string(port), db_name, load_src) == -1)
+	string system_path = apiUtil->get_Db_path() + "system" + apiUtil->get_Db_suffix();
+	std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
+	if (pid_files.empty())
 	{
-		return -1;
+		return false;
 	}
-
-	GRPCServer grpcServer;
-	// register rest service
-	register_service(grpcServer);
-	int max_try = 30;
-	int start_status = -1;
-	do
+	fstream ofp;
+	string system_user = apiUtil->get_configure_value("system_username");
+	string port = apiUtil->get_configure_value("port");
+	string shutdown_url = BASE_URL + "/shutdown";
+	bool stop_flag = true;
+	for (size_t i = 0; i < pid_files.size(); i++)
 	{
-		start_status = grpcServer.start(port);
-		if(start_status == 0)
+		string pid_path = system_path + "/" + pid_files[i];
+		string system_password;
+		ofp.open(pid_path, ios::in);
+		ofp >> system_password;
+		ofp.close();
+		httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
+		httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(shutdown_url, shutdwon_request);
+		if (shutdown_response.success())
 		{
-			SLOG_INFO("grpc server port " + to_string(port));
+			// cout << "the Server [" + pid_files[i] + "] is stopped successfully!" << endl;
+			stop_flag = stop_flag && true;
 		}
 		else
 		{
-			SLOG_INFO("grpc server start..." + to_string(start_status));
-			sleep(1);
+			// cout << "the server stop fail." << endl;
+			stop_flag = false;
 		}
-		max_try--;
-	} while (start_status == -1 && max_try > 0);
-	
-	if(start_status != 0)
-	{
-		SLOG_ERROR("grpc server start failed.");
-		delete apiUtil;
-		return -1;
+		// remove pid file
+		Util::remove_file(pid_path);
 	}
-
-	// handle the Ctrl+C signal
-	signal(SIGINT, sig_handler);
-
-	wait_group.wait();
-	grpcServer.stop();
-	SLOG_DEBUG("grpc server stoped.");
-	return 0;
+	return stop_flag;
 }
 
 void register_service(GRPCServer &svr)
@@ -370,11 +588,42 @@ void register_service(GRPCServer &svr)
 		methods);
 
 	svr.ROUTE(
+		"/grpc/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			cluster_api(request, response, cluster::cluster_operation::LEADER_HEARTBEAT);
+		},
+		ReqMethod::POST);
+
+	svr.ROUTE(
+		"/grpc/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			cluster_api(request, response, cluster::cluster_operation::LEADER_APPEND);
+		},
+		ReqMethod::POST);
+
+	svr.ROUTE(
+		"/grpc/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
+		{
+			response->add_header_pair("Access-Control-Allow-Origin", "*");
+			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->String("ok");
+		},
+		ReqMethod::OPTIONS);
+
+	svr.ROUTE(
+		"/grpc/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_REPLY);
+		},
+		ReqMethod::POST);
+
+	svr.ROUTE(
 		"/grpc/api", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			api(request, response);
 		},
 		methods);
+
 	svr.ROUTE(
 		"/grpc/file/upload", [](const GRPCReq *request, GRPCResp *response)
 		{
@@ -390,12 +639,14 @@ void register_service(GRPCServer &svr)
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
+
 	svr.ROUTE(
 		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
 		{
 			download_file(request, response);
 		},
 		ReqMethod::POST);
+
 	svr.ROUTE(
 		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
 		{
@@ -510,7 +761,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		delete apiUtil;
 		apiUtil = NULL;
 		std::cout.flush();
-		_exit(1);
+		_exit(0);
 	});
 	std::string msg = "Server stopped successfully.";
 	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
@@ -742,6 +993,75 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	}
 }
 
+void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation)
+{
+	if (!clusterManagerPtr->isEnable()) {
+		response->Error(StatusOperationFailed, "The cluster config is turned off");
+		return;
+	}
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	// check cluster ip
+	bool ipCheckResult;
+	if (clusterManagerPtr->isLeader())
+		ipCheckResult = clusterManagerPtr->fromFollower(ip_addr);
+	else
+		ipCheckResult = clusterManagerPtr->fromLeader(ip_addr);
+	if (ipCheckResult == false)
+	{
+		SLOG_DEBUG(ip_addr + " does not belong to the cluster whitelist");
+		response->Error(StatusIPBlocked, "The ip address does not belong to the cluster whitelist");
+		return;
+	}
+	std::string op_str = cluster::ClusterOperationHandle::to_str(operation);
+	grpc::content_type content_type = request->contentType();
+	SLOG_INFO("receive [" << op_str << "] request from " << ip_addr);
+	std::string ss;
+	ss += "\n==================== cluster-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(content_type);
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
+	if (content_type != MULTIPART_FORM_DATA && !request->body().empty())
+	{
+		ss += "\n  request_body: " + request->body();
+	}
+	ss += "\n==================================================";
+	SLOG_DEBUG(ss);
+	std::string username = request->header("username");
+	std::string password = request->header("password");
+	// check username and password
+	std::string checkidentityresult = apiUtil->check_indentity(username, password, "1");
+	if (checkidentityresult.empty() == false)
+	{
+		response->Error(StatusAuthenticationFailed, checkidentityresult);
+		return;
+	}
+	// operation
+	switch (operation)
+	{
+	case cluster::LEADER_HEARTBEAT:
+		// from leader heartbeat
+		cluster_heartbeat_task(request, response);
+		break;
+	case cluster::LEADER_APPEND:
+		// from leader append entries
+		cluster_append_task(request, response);
+		break;
+	case cluster::FOLLOWER_REPLY:
+		// from follower reply
+		cluster_reply_task(request, response);
+		break;
+	default:
+		SLOG_ERROR("Unkown operation:" + op_str);
+		response->Error(StatusOperationUndefined);
+		break;
+	}
+}
+
+
 void api(const GRPCReq *request, GRPCResp *response)
 {
 	// check ip address
@@ -755,48 +1075,8 @@ void api(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	Json json_data;
-	json_data.SetObject();
+	parseRequest(request, json_data);
 	Json::AllocatorType &allocator = json_data.GetAllocator();
-	if (request->contentType() == APPLICATION_JSON) //for application/json
-	{
-		Json &json = request->json();
-		json_data.CopyFrom(json, allocator);
-	}
-	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
-	{
-		std::map<std::string, std::string> &form_data = request->formData();
-		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::string v;
-		while (iter != form_data.end())
-		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
-			{
-				StringUtil::url_decode(v);
-			}
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-			iter++;
-		}
-	}
-	else // for get
-	{
-		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty() == false)
-		{
-			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::string v;
-			while (iter != params.end())
-			{
-				v = iter->second;
-				if (UrlEncode::is_url_encode(v))
-				{
-					StringUtil::url_decode(v);
-				}
-				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-				iter++;
-			}
-		}
-	}
 	// add remote_ip param
 	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
 	std::string operation = jsonParam(json_data, "operation", "");
@@ -813,7 +1093,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 	}
 	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
 	std::string ss;
-	ss += "\n==================== grpc-api ====================";
+	ss += "\n==================== http-api ====================";
 	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
 	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
 	ss += "\n  method: " +  string(request->get_method());
@@ -860,13 +1140,17 @@ void api(const GRPCReq *request, GRPCResp *response)
 	std::string password = jsonParam(json_data, "password");
 	std::string encryption = jsonParam(json_data, "encryption", "");
 	std::string db_name =jsonParam(json_data, "db_name");
-	// check username and password
-	std::string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
-	if (checkidentityresult.empty() == false)
+	// if inner request break
+	if(!hasJsonParam(json_data, "inner") || "127.0.0.1" != ip_addr) 
 	{
-		apiUtil->update_access_ip_error_num(ip_addr);
-		response->Error(StatusAuthenticationFailed, checkidentityresult);
-		return;
+		// check username and password
+		std::string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
+		if (checkidentityresult.empty() == false)
+		{
+			apiUtil->update_access_ip_error_num(ip_addr);
+			response->Error(StatusAuthenticationFailed, checkidentityresult);
+			return;
+		}
 	}
 	// check privilege
 	if (apiUtil->check_privilege(username, operation, db_name) == 0)
@@ -1007,7 +1291,8 @@ void api(const GRPCReq *request, GRPCResp *response)
  */
 void check_task(const GRPCReq *request, GRPCResp *response)
 {
-	std::string success = "the grpc server is running...";
+	// std::string success = "the grpc server is running...";
+	std::string success = to_string(getpid());
 	response->Success(success);
 }
 
@@ -1273,7 +1558,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			if (!apiUtil->trywrlock_database(db_name))
 			{
@@ -1438,7 +1723,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		apiUtil->unlock_databaseinfo(database_info);
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL) {
+		if (current_database == nullptr) {
 			current_database = make_shared<Database>(db_name);
 			current_database->loadDBInfoFile();
 			current_database->loadStatisticsInfoFile();
@@ -2292,7 +2577,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				error = "Database not load yet.";
 				response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -2587,7 +2872,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// check if database named [db_name] is already load
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			string error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -2775,7 +3060,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			error = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, error);
@@ -2881,7 +3166,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -2889,7 +3174,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			error = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, error);
@@ -2980,7 +3265,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -2988,7 +3273,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == NULL)
+		if (txn_m == nullptr)
 		{
 			error = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, error);
@@ -3045,7 +3330,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		if (current_database == NULL)
+		if (current_database == nullptr)
 		{
 			error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
@@ -3060,7 +3345,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 		{
 			shared_ptr<Txn_manager> txn_m;
 			apiUtil->get_Txn_ptr(db_name, txn_m);
-			if (txn_m == NULL)
+			if (txn_m == nullptr)
 			{
 				error = "Get database transaction manager error.";
 				apiUtil->unlock_database(db_name);
@@ -3783,7 +4068,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -3871,7 +4156,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			bool update_flag_bool=true;
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -4034,7 +4319,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			bool update_flag_bool=true;
 			// check database load status
 			apiUtil->get_database(db_name, current_database);
-			if (current_database == NULL)
+			if (current_database == nullptr)
 			{
 				throw runtime_error("Database not load yet.");
 			}
@@ -4944,4 +5229,132 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &
 		error = "checkbatchInsertUid fail:" + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
+}
+
+void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
+{
+	Json json_data;
+	parseRequest(request, json_data);
+	std::string expection = jsonParam(json_data, "expection", "");
+	cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
+	uint32 leader_term = jsonParam(json_data, "term", -1);
+	string db_name = jsonParam(json_data, "db_name", "");
+	uint64 leader_index = jsonParam(json_data, "index", -1ll);
+	Json resp_data;
+	resp_data.SetObject();
+	Json::AllocatorType &allocator = resp_data.GetAllocator();
+	switch (expectionEnum)
+	{
+	case cluster::EXPECTION_CHECK:
+		// compare term and index with leader
+		uint32 local_term = -1; // TODO get local term
+		resp_data.AddMember("StatusCode", 0, allocator);
+		resp_data.AddMember("StatusMsg", "ok", allocator);
+		resp_data.AddMember("term", local_term, allocator);
+		if (!db_name.empty()) 
+		{
+			uint64 local_index = -1ll; // TODO get local index
+			resp_data.AddMember("db_name", StringRef(db_name.c_str()), allocator);
+			resp_data.AddMember("index", local_index, allocator);
+		}
+		response->Json(resp_data);
+		break;
+	case cluster::EXPECTION_PREPARE:
+		// prepare for log append
+		// check local db is available
+		std::thread([db_name, leader_term, leader_index]() {
+			shared_ptr<Database> current_database = nullptr;
+			if (!apiUtil->check_db_exist(db_name))
+			{
+				current_database = make_shared<Database>(db_name);
+				// build empty db
+				if (current_database->BuildEmptyDB()) 
+				{
+					// init privilege
+					apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
+					apiUtil->init_privilege(ROOT_USERNAME, db_name);
+					string _db_path = _db_home + "/" + db_name + _db_suffix;
+					ofstream f;
+					f.open(_db_path + "/success.txt");
+					f.close();
+					// add backup.log
+					Util::add_backuplog(db_name);
+					current_database.reset();
+					current_database = make_shared<Database>(db_name);
+					current_database->load();
+					apiUtil->add_database(db_name, current_database);
+					apiUtil->insert_txn_managers(current_database, db_name);
+					current_database.reset();
+				}
+			} 
+			apiUtil->get_database(db_name, current_database);
+			if (current_database == nullptr)
+			{
+				// load db
+				current_database = make_shared<Database>(db_name);
+				current_database->load();
+				apiUtil->add_database(db_name, current_database);
+				apiUtil->insert_txn_managers(current_database, db_name);
+				current_database.reset();
+			}
+			// send ready response
+			std::string reply_url = "/grpc/cluster/reply";
+			std::string username = "root";
+			std::string password = MD5("123456").toStr();
+			httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index);
+			HttpUtil::reply(reply_url, reply_request, username, password);
+		}).detach();
+		response->Success("ok");
+		break;
+	case cluster::EXPECTION_COMMIT:
+		// update local log status to committed
+		break;
+	default:
+		response->Success("ok");
+		break;
+	}
+}
+
+void cluster_append_task(const GRPCReq *request, GRPCResp *response)
+{
+	Form &form = request->form();
+	if (form.empty())
+	{   
+		response->Error(StatusFileReadError, "Form data is empty");
+		return;
+	}
+	if (form.find("file") == form.end() || form.find("db_name") == form.end())
+	{
+		response->Error(StatusFileReadError, "Form data is illegal");
+		return;
+	}
+	
+	std::string error;
+	// filename : filecontent
+	std::pair<std::string, std::string>& fileinfo = form.at("file");
+	if(fileinfo.first.empty())
+	{
+		error = "Upload file can not be empty!";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
+	{
+		error = "The type of upload file is not supported!";
+		response->Error(StatusOperationFailed, error);
+		return;
+	}
+	std::string db_name = form.at("db_name").second;
+	if (db_name.empty())
+	{
+		error = "db_name can not be empty!";
+		response->Error(StatusOperationFailed, error);
+		return;
+	}
+	thread([fileinfo, db_name]{
+		std::string db_dir = db_name + _db_suffix;
+		clusterManagerPtr->saveFromFollowerFile(std::move(fileinfo), db_dir);
+	}).detach();
+	response->Success("ok");
 }
