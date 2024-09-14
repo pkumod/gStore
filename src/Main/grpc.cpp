@@ -13,6 +13,8 @@
 
 #define HTTP_TYPE "http"
 #define BASE_URL "http://127.0.0.1:" + _server_port + "/grpc"
+#define API_URL BASE_URL + "/api"
+#define OFF_URL BASE_URL + "/shutdown"
 
 using namespace std;
 using namespace grpc;
@@ -21,9 +23,9 @@ typedef unsigned short uint8;
 
 static WFFacilities::WaitGroup wait_group(1);
 
-APIUtil *apiUtil = nullptr;
+shared_ptr<APIUtil> apiUtil = nullptr;
 
-PFNUtil *pfnUtil = nullptr;
+shared_ptr<PFNUtil> pfnUtil = nullptr;
 
 std::shared_ptr<cluster::ClusterManager> clusterManagerPtr =  nullptr;
 
@@ -237,16 +239,6 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 void sig_handler(int signo)
 {
 	SLOG_INFO("grpc server stopped.");
-	if (apiUtil)
-	{
-		delete apiUtil;
-		apiUtil = NULL;
-	}
-	if (pfnUtil)
-	{
-		delete pfnUtil;
-		pfnUtil = NULL;
-	}
 	wait_group.done();
 	std::cout.flush();
 	_exit(signo);
@@ -255,8 +247,8 @@ void sig_handler(int signo)
 int main(int argc, char *argv[])
 {
 	srand(time(NULL));
-	apiUtil = new APIUtil();
-	pfnUtil = new PFNUtil();
+	apiUtil = make_shared<APIUtil>();
+	pfnUtil = make_shared<PFNUtil>();
 	_server_port = apiUtil->get_configure_value("port");
 	string command;
 	if (argc == 1)
@@ -288,9 +280,8 @@ int main(int argc, char *argv[])
 	else if ((command == "-s" || command == "--start") && (argc == 1 || argc == 2 || argc == 4 || argc == 6))
 	{
 		// check server thread
-		string check_url = BASE_URL + "/api";
 		httpentities::CheckRequest check_request;
-		httpentities::CheckResponse check_response = HttpUtil::check(check_url, check_request);
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if (check_response.success())
 		{
 			cout << "the server already running." << endl;
@@ -312,9 +303,8 @@ int main(int argc, char *argv[])
 			{
 				string db_name = Util::getArgValue(argc, argv, "db", "database");
 				string csr = Util::getArgValue(argc, argv, "c", "csr", "0");
-				string load_url = BASE_URL + "/api";
 				httpentities::LoadRequest load_requst(db_name, csr);
-				httpentities::LoadResponse load_response = HttpUtil::load(load_url, true, load_requst);
+				httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_requst);
 				if (load_response.success())
 				{
 					SLOG_INFO("load " + db_name + " success.");
@@ -363,9 +353,8 @@ int main(int argc, char *argv[])
 	{
 		// show server status
 		string port = apiUtil->get_configure_value("port");
-		string check_url = BASE_URL + "/api";
 		httpentities::CheckRequest check_request;
-		httpentities::CheckResponse check_response = HttpUtil::check(check_url, check_request);
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		cout << "gStore API Server(gserver)" << endl;
 		if (check_response.success())
 		{
@@ -474,9 +463,8 @@ bool startServer()
 					latch.lockExclusive();
 					if (apiUtil)
 					{
-						delete apiUtil;
-						apiUtil = NULL;
-						apiUtil = new APIUtil();
+						apiUtil.reset();
+						apiUtil = make_shared<APIUtil>();
 					}
 					latch.unlock();
 					return false;
@@ -510,9 +498,8 @@ bool startServer()
 					latch.lockExclusive();
 					if (apiUtil)
 					{
-						delete apiUtil;
-						apiUtil = NULL;
-						apiUtil = new APIUtil();
+						apiUtil.reset();
+						apiUtil = make_shared<APIUtil>();
 					}
 					latch.unlock();
 				}
@@ -550,7 +537,6 @@ bool stopServer()
 	fstream ofp;
 	string system_user = apiUtil->get_configure_value("system_username");
 	string port = apiUtil->get_configure_value("port");
-	string shutdown_url = BASE_URL + "/shutdown";
 	bool stop_flag = true;
 	for (size_t i = 0; i < pid_files.size(); i++)
 	{
@@ -560,7 +546,7 @@ bool stopServer()
 		ofp >> system_password;
 		ofp.close();
 		httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
-		httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(shutdown_url, shutdwon_request);
+		httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
 		if (shutdown_response.success())
 		{
 			// cout << "the Server [" + pid_files[i] + "] is stopped successfully!" << endl;
@@ -758,8 +744,8 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	rpc_task->add_callback([](GRPCTask *grpcTask){
 		SLOG_DEBUG("Server stopped successfully.");
 		// free apiUtil
-		delete apiUtil;
-		apiUtil = NULL;
+		apiUtil.reset();
+		pfnUtil.reset();
 		std::cout.flush();
 		_exit(0);
 	});
