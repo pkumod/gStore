@@ -1,10 +1,10 @@
 #pragma once
 #include "ClusterDefined.h"
+#include "ClusterLog.h"
 #include "../Util/Util.h"
 #include "../Api/TimerProvider.h"
 #include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"
-#include "ClusterLog.h"
 #include "../Api/NlohmanJson.hpp"
 #include <map>
 #include <thread>

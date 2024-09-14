@@ -7,7 +7,7 @@ namespace cluster
     bool ClusterEntity::readFromTermFile(ClusterTermInfo &logInfo)
     {
         std::lock_guard<std::mutex> lock(term_mutex_);
-        std::string file_path = ClusterManager::getClusterDir() + "term.json";
+        std::string file_path = ClusterDb::getClusterDir() + "term.json";
         ifstream fp;
         fp.open(file_path,ios::in);
         if (!fp.is_open())
@@ -37,7 +37,7 @@ namespace cluster
             return false;
         }
         
-        std::string file_path = ClusterManager::getClusterDir() + "term.json";
+        std::string file_path = ClusterDb::getClusterDir() + "term.json";
         ofstream fp;
         fp.open(file_path,ios::out);
         if (!fp.is_open())

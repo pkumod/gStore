@@ -15,7 +15,6 @@ namespace cluster
         private:
         bool on_;
         ClusterEntityPtr role_;
-        static std::string cluster_dir_path_;
 
         public:
         ClusterManager();
@@ -35,8 +34,6 @@ namespace cluster
         void tryRecover();
         // 初始化数据量集群数据
         void initClusterDir(const std::vector<std::string>& dbList);
-        // 获取集群存放目录
-        static std::string getClusterDir(){ return cluster_dir_path_; }
 
         //主从互通模块
         // 启动心跳超时检测

@@ -2,7 +2,6 @@
 
 namespace cluster
 {
-    std::string ClusterManager::cluster_dir_path_ = "./Cluster/";
     ClusterManager::ClusterManager()
     {
         on_   = false;
@@ -228,7 +227,7 @@ namespace cluster
     {
         if (!isEnable() || !role_)
             return std::string();
-        std::string file_path = getClusterDir() + db_name + file_info.first;
+        std::string file_path = ClusterDb::getClusterDir() + db_name + file_info.first;
         ofstream fout(file_path.c_str());
         if (!fout)
         {
