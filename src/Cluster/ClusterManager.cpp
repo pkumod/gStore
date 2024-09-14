@@ -218,11 +218,11 @@ namespace cluster
         role_->updateDbIndex(db_name, index);
     }
 
-    void ClusterManager::getTerm()
+    uint32 ClusterManager::getTerm()
     {
         if (!isEnable() || !role_)
-            return;
-        role_->getTerm();
+            return INVALID;
+        return role_->getTerm();
     }
 
     void ClusterManager::getDbIndex(std::string db_name, uint64 index)

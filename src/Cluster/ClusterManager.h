@@ -71,7 +71,7 @@ namespace cluster
         // 更换主节点索引
         void updateDbIndex(std::string db_name, uint64 index);
         // 获取任期
-        void getTerm();
+        uint32 getTerm();
         // 获取数据库成功提交的最新日志索引
         void getDbIndex(std::string db_name, uint64 index);
 
