@@ -6,6 +6,7 @@ namespace cluster
 {
     void ClusterEntityFollower::init()
     {
+        getTerm();
         string cluster_node = Util::getConfigureValue("cluster_node");
         std::vector<std::string> node;
 		Util::split(cluster_node, ":", node);

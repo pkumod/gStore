@@ -12,15 +12,21 @@ namespace cluster
             SLOG_CORE("cluster db is exit, not repeated add, db name:" << db_name);
             return nullptr;
         }
-        ClusterDbPtr db = std::make_shared<ClusterDb>();
+        ClusterDbPtr db = std::make_shared<ClusterDb>(db_name);
         db->init();
         databaseL_.insert(std::make_pair(db_name, db));
         return db;
     }
     bool ClusterEntity::readFromTermFile(ClusterTermInfo &logInfo)
     {
-        std::lock_guard<std::mutex> lock(term_mutex_);
         std::string file_path = ClusterDb::getClusterDir() + "term.json";
+        if (!Util::file_exist(file_path))
+        {
+            SLOG_TRACE("init term log file");
+            logInfo.setTerm(1);
+            return writeToTermFile(logInfo);
+        }
+        std::lock_guard<std::mutex> lock(term_mutex_);
         ifstream fp;
         fp.open(file_path,ios::in);
         if (!fp.is_open())
@@ -67,7 +73,10 @@ namespace cluster
     {
         auto it = databaseL_.find(db_name);
         if (it == databaseL_.end())
+        {
+            SLOG_ERROR("db is not exist, db name:" << db_name);
             return nullptr;
+        }
         return it->second;
     }
 
@@ -129,6 +138,7 @@ namespace cluster
             return;
         }
         log.setTerm(term);
+        term_ = term;
         if (!writeToTermFile(log))
         {
             SLOG_ERROR("term log status fail! ,term:" << term);
@@ -152,16 +162,19 @@ namespace cluster
         }
     }
 
-    // uint32 ClusterEntity::getTerm()
-    // {
-    //     ClusterTermInfo log;
-    //     if (!readFromTermFile(log))
-    //     {
-    //         SLOG_ERROR("term log status fail!");
-    //         return 0;
-    //     }
-    //     return log.getTerm();
-    // }
+    uint32 ClusterEntity::getTerm()
+    {
+        if (term_ != 0)
+            return term_;
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!");
+            return 0;
+        }
+        term_ = log.getTerm();
+        return term_;
+    }
 
     uint64 ClusterEntity::getDbIndex(const std::string& db_name)
     {

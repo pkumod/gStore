@@ -2,12 +2,11 @@
 
 namespace cluster
 {
-    std::string ClusterDb::cluster_dir_path_ = "./Cluster/";
-
     void ClusterDb::init()
     {
         if (!Util::dir_exist(getDbDirPath()))
         {
+            SLOG_TRACE("init db dir, db name:" << db_name_);
             Util::create_dir(getDbDirPath());
         }
     }
@@ -78,8 +77,8 @@ namespace cluster
     // update.log
     bool ClusterDb::readFromUpdateFile(ClusterDbNameLogInfo &logInfo)
     {
-        std::lock_guard<std::mutex> lock(update_log_mutex_);
         std::string file_path = getUpdatePath();
+        std::lock_guard<std::mutex> lock(update_log_mutex_);
         ifstream fp;
         fp.open(file_path,ios::in);
         if (!fp.is_open())
@@ -125,6 +124,17 @@ namespace cluster
     void ClusterDb::addLog(uint64 index, int status, ClusterOperation operation)
     {
         ClusterDbNameLogInfo log;
+        std::string file_path = getUpdatePath();
+        if (!Util::file_exist(file_path))
+        {
+            log.addLog(index, status, operation);
+            SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", status:" << index << " ,operation:" << operation);
+            if (!writeToUpdateFile(log))
+            {
+                SLOG_ERROR("add log fail!" << db_name_ << index << status);
+            }
+            return;
+        }
         if (!readFromUpdateFile(log))
         {
             SLOG_ERROR("add log fail!" << db_name_ << index << status);

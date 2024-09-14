@@ -7,6 +7,7 @@ namespace cluster
     uint32 ClusterEntityLeader::headBeat_max_fail_num_ = 5;
     void ClusterEntityLeader::init()
     {
+        getTerm();
         string cluster_node = Util::getConfigureValue("cluster_node");
         std::vector<std::string> nodes;
 		Util::split(cluster_node, ",", nodes);

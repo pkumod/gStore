@@ -5,11 +5,16 @@ namespace cluster
     // LogInfo
     void from_json(const nlohmann::json& s, LogInfo& t)
     {
-        s.at("index").get_to(t.index);
-        s.at("status").get_to(t.status);
-        s.at("nodeNum").get_to(t.nodeNum);
-        s.at("operation").get_to(t.operation);
-        s.at("file_path").get_to(t.file_path);
+        if (s.contains("index"))
+            s.at("index").get_to(t.index);
+        if (s.contains("status"))
+            s.at("status").get_to(t.status);
+        if (s.contains("nodeNum"))
+            s.at("nodeNum").get_to(t.nodeNum);
+        if (s.contains("operation"))
+            s.at("operation").get_to(t.operation);
+        if (s.contains("file_path"))
+            s.at("file_path").get_to(t.file_path);
     }
 
     void to_json(nlohmann::json& s, const LogInfo& t)
@@ -24,7 +29,8 @@ namespace cluster
     // ClusterDbNameLogInfo
     void from_json(const nlohmann::json& s, ClusterDbNameLogInfo& t)
     {
-        t.setLogs(s["logs"]);
+        if (s.contains("logs"))
+            t.setLogs(s["logs"]);
     }
 
     void to_json(nlohmann::json& s, const ClusterDbNameLogInfo& t)
@@ -65,6 +71,8 @@ namespace cluster
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
+            if (!s[i].contains("index"))
+                continue;
             uint64 index = s[i].at("index");
             logs_[index] = s[i];
             posL_[i] = index;
@@ -106,6 +114,7 @@ namespace cluster
         log.setStatus(status);
         log.setNodeNum(0);
         log.setOperation(operation);
+        posL_[logs_.size()] = index;
         logs_[index] = log;
         return true;
     }
@@ -190,8 +199,10 @@ namespace cluster
     // TermDbLog
     void from_json(const nlohmann::json& s, TermDbLog& t)
     {
-        s.at("db_name").get_to(t.db_name);
-        s.at("index").get_to(t.index);
+        if (s.contains("db_name"))
+            s.at("db_name").get_to(t.db_name);
+        if (s.contains("index"))
+            s.at("index").get_to(t.index);
     }
 
     void to_json(nlohmann::json& s, const TermDbLog& t)
@@ -203,8 +214,10 @@ namespace cluster
     // ClusterTermInfo
     void from_json(const nlohmann::json& s, ClusterTermInfo& t)
     {
-        t.setTerm(s["term"]);
-        t.setLogs(s["db_logs"]);
+        if (s.contains("term"))
+            t.setTerm(s["term"]);
+        if (s.contains("db_logs"))
+            t.setLogs(s["db_logs"]);
     }
 
     void to_json(nlohmann::json& s, const ClusterTermInfo& t)
@@ -218,6 +231,8 @@ namespace cluster
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
+            if (!s.contains("db_name"))
+                continue;
             std::string db_name = s[i].at("db_name");
             db_logs_[db_name] = s[i];
         }

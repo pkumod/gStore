@@ -10,19 +10,18 @@ namespace cluster
         std::mutex update_log_mutex_;
         std::mutex cached_nt_mutex_;
         std::string db_name_;
-        static std::string cluster_dir_path_;
 
         public:
-        ClusterDb()
+        ClusterDb(const std::string& db_name)
         {
-            db_name_ = "";
+            db_name_ = db_name;
         };
         void init();
         void setDbname(const std::string& db_name){ db_name_ = db_name; }
         // 获取集群存放目录
-        static std::string getClusterDir(){ return cluster_dir_path_; }
+        static std::string getClusterDir(){ return Util::getConfigureValue("cluster_data_path"); }
         std::string getDbDirPath(){ return getClusterDir() + db_name_ + "/"; }
-        std::string getUpdatePath(){ return getDbDirPath() + "/update.json"; }
+        std::string getUpdatePath(){ return getDbDirPath() + "update.json"; }
         // nt file
         bool readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name);
         bool writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append = false);

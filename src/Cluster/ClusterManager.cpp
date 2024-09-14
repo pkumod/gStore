@@ -4,8 +4,11 @@ namespace cluster
 {
     ClusterManager::ClusterManager()
     {
-        on_   = false;
         role_ = nullptr;
+        if (Util::getConfigureValue("cluster_on") == "on")
+            on_ = true;
+        else
+            on_ = false;
     }
 
     ClusterManager::~ClusterManager()
@@ -14,8 +17,7 @@ namespace cluster
 
     void ClusterManager::init()
     {
-        string cluster_on = Util::getConfigureValue("cluster_on");
-        if (cluster_on == "yes")
+        if (isEnable())
         {
             string cluster_role = Util::getConfigureValue("cluster_role");
             if (cluster_role == "leader")
@@ -31,7 +33,6 @@ namespace cluster
                 SLOG_ERROR("cluster_role config is error");
                 return;
             }
-            on_ = true;
             if (!Util::dir_exist(ClusterDb::getClusterDir()))
             {
                 Util::create_dir(ClusterDb::getClusterDir());

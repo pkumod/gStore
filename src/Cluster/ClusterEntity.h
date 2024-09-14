@@ -18,7 +18,7 @@ namespace cluster
         std::mutex term_mutex_;
         std::mutex fail_ip_mutex_;
         std::map<std::string, ClusterDbPtr> databaseL_; // db_name
-        ClusterEntity(){};
+        ClusterEntity(){term_ = 0;}
         virtual ~ClusterEntity(){}
         bool readFromTermFile(ClusterTermInfo &logInfo);
         bool writeToTermFile(ClusterTermInfo &logInfo);
@@ -34,7 +34,7 @@ namespace cluster
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         void updateTerm(uint32 term);
         void updateDbIndex(std::string db_name, uint64 index);
-        uint32 getTerm(){ return term_; }
+        uint32 getTerm();
         uint64 getDbIndex(const std::string& db_name);
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
