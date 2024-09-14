@@ -104,24 +104,25 @@ APIUtil::~APIUtil()
 
     ipBlackList = nullptr;
 
-    if (Util::file_exist(system_password_path))
+    std::string system_path = get_Db_path() + "system" + get_Db_suffix();
+    std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
+    
+    std::string file_path;
+    for (size_t i=0; i<pid_files.size(); i++)
     {
-        Util::remove_path(system_password_path);
-    }
-    if (Util::file_exist(system_port_path))
-    {
-        Util::remove_path(system_port_path);
+        file_path = system_path + "/" + pid_files[i];
+        SLOG_DEBUG("pid path: " + file_path);
+        Util::remove_path(file_path);
     }
 }
 
-int APIUtil::initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr)
+int APIUtil::initialize()
 {
     try
     {
         // #if defined(DEBUG)
         SLOG_CORE("initialization start");
         // #endif
-        default_port = get_configure_value("default_port", default_port);
         thread_pool_num = get_configure_value("thread_num", thread_pool_num);
         system_username = get_configure_value("system_username", system_username);
         max_database_num = get_configure_value("max_database_num", max_database_num);
@@ -205,10 +206,10 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
             #endif
             for (unsigned int i = 0; i < rs.ansNum; i++)
             {
-                string db_name = util.clear_angle_brackets(rs.answer[i][0]);
-                shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name);
+                string _db_name = util.clear_angle_brackets(rs.answer[i][0]);
+                shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(_db_name);
                 
-                sparql = "select ?x ?y where{<" + db_name + "> <built_by> ?x. <" + db_name + "> <built_time> ?y.}";
+                sparql = "select ?x ?y where{<" + _db_name + "> <built_by> ?x. <" + _db_name + "> <built_time> ?y.}";
                 ret_val = system_database->query(sparql, _db_rs, output);
                 if (ret_val == -100 && _db_rs.ansNum > 0)
                 {
@@ -220,11 +221,11 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                     rapidjson::Value jsonValue = temp_db->toJSON(allocator);
                     doc.PushBack(jsonValue, allocator);
                     #endif
-                    already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(db_name, temp_db));
+                    already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(_db_name, temp_db));
                 }
                 else
                 {
-                    SLOG_ERROR("query dabase ["+ db_name + "] properties error: return value " + to_string(ret_val));
+                    SLOG_ERROR("query dabase ["+ _db_name + "] properties error: return value " + to_string(ret_val));
                 }
             }
             #if defined(DEBUG)
@@ -272,32 +273,32 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
                     for(unsigned j = 0; j < _user_rs.ansNum; j++)
                     {
                         std::string type = util.clear_angle_brackets(_user_rs.answer[j][0]);
-                        std::string db_name = util.clear_angle_brackets(_user_rs.answer[j][1]);
+                        std::string _db_name = util.clear_angle_brackets(_user_rs.answer[j][1]);
                         if(type == "has_query_priv")
                         {
-                            user->query_priv.insert(db_name);
+                            user->query_priv.insert(_db_name);
                         }
                         else if(type == "has_update_priv")
                         {
-                            user->update_priv.insert(db_name);
+                            user->update_priv.insert(_db_name);
                         }
                         else if(type == "has_load_priv")
                         {
-                            user->load_priv.insert(db_name);
+                            user->load_priv.insert(_db_name);
                         }
                         else if(type == "has_unload_priv")
                         {
-                            user->unload_priv.insert(db_name);
+                            user->unload_priv.insert(_db_name);
                         }
                         else if(type == "has_restore_priv")
                         {
-                            user->restore_priv.insert(db_name);
+                            user->restore_priv.insert(_db_name);
                         }else if(type == "has_backup_priv")
                         {
-                            user->backup_priv.insert(db_name);
+                            user->backup_priv.insert(_db_name);
                         }else if(type == "has_export_priv")
                         {
-                            user->export_priv.insert(db_name);
+                            user->export_priv.insert(_db_name);
                         }
                     }
                 }
@@ -320,45 +321,12 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         init_transactionlog();
         // create system password file
         fstream ofp;
+        string pid = to_string(getpid());
         system_password = util.int2string(util.getRandNum());
-        system_password_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/password" + port + ".txt";
+        system_password_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/" + pid + ".pid";
         ofp.open(system_password_path, ios::out);
         ofp << system_password;
         ofp.close();
-        // create port file
-        system_port_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/port.txt";
-        ofp.open(system_port_path, ios::out);
-        ofp << server_type;
-        ofp << ":";
-        ofp << port;
-        ofp.close();
-        // load user database
-        if(!db_name.empty())
-        {
-            string result = check_param_value("db_name",db_name);
-            if(!result.empty())
-            {
-                SLOG_ERROR(result);
-                return -1;
-            }           
-            sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
-            system_database->query(sparql, rs, output);
-            if (rs.answer[0][0] == "\"false\"^^<http://www.w3.org/2001/XMLSchema#boolean>")
-            {
-                SLOG_ERROR("Database " + db_name + " not built yet.");
-			    return -1;
-            }
-            shared_ptr<Database> current_database = make_shared<Database>(db_name);
-            bool flag = current_database->load(load_csr);
-            if (!flag)
-            {
-                SLOG_ERROR("Failed to load the database.");
-                current_database.reset();
-                return -1;
-            }
-            insert_txn_managers(current_database, db_name);
-            add_database(db_name, current_database);
-        }
         // #if defined(DEBUG)
         SLOG_CORE("initialization end");
         // #endif
@@ -902,7 +870,7 @@ bool APIUtil::get_Txn_ptr(const std::string& db_name, shared_ptr<Txn_manager> &t
 	}
     else
     {
-        txn_manager = NULL;
+        txn_manager = nullptr;
     }
 	pthread_rwlock_unlock(&txn_m_lock);
     return rt;
@@ -1000,7 +968,7 @@ bool APIUtil::get_database(const std::string &db_name, shared_ptr<Database> &db)
     }
     else
     {
-        db = NULL;
+        db = nullptr;
     }
     rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
     if (rwlock_code == 0)
@@ -2391,11 +2359,6 @@ string APIUtil::get_Db_suffix()
 string APIUtil::get_query_result_path()
 {
     return query_result_path;
-}
-
-string APIUtil::get_default_port()
-{
-    return default_port;
 }
 
 int APIUtil::get_thread_pool_num() 

@@ -792,7 +792,6 @@ class APIUtil
 private:
     Util util;
     GenerateUidManager uid_mgr_;
-    string default_port = "9000";
     int thread_pool_num = 30;
     
     int max_output_size = 10000000;
@@ -843,7 +842,7 @@ private:
 public:
     APIUtil();
     ~APIUtil();
-    int initialize(const std::string server_type, const std::string port, const std::string db_name, bool load_csr);
+    int initialize();
     bool unlock_already_build_map();
     bool add_database(const std::string& db_name, shared_ptr<Database> &db);
     bool get_database(const std::string& db_name, shared_ptr<Database> &db);
@@ -923,14 +922,13 @@ public:
     string get_Db_path();
     string get_Db_suffix();
     string get_query_result_path();
-    string get_default_port();
     int get_thread_pool_num();
     int get_max_output_size();
     string get_root_username();
     string get_system_username();
     int get_connection_num();
     void increase_connection_num();
-    string get_configure_value(const string& key, string default_value);
+    string get_configure_value(const string& key, string default_value = "");
     int get_configure_value(const string& key, int default_value);
     size_t get_configure_value(const string& key, size_t default_value);
     string get_upload_path();
