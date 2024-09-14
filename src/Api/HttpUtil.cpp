@@ -448,6 +448,9 @@ httpentities::ClusterResponse HttpUtil::appendEntries(const std::string& url, ht
 	headers.insert(std::pair<std::string, std::string>("password", password));
 	std::map<std::string, std::string> params;
 	params.insert(std::pair<std::string, std::string>("db_name", request.db_name));
+	params.insert(std::pair<std::string, std::string>("term", std::to_string(request.term)));
+	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
+	params.insert(std::pair<std::string, std::string>("operation", request.operation));
 	std::string body_str;
 	int status = PostFile(url, headers, 3600, request.filepath, params, body_str);
 	if (status == CURLE_OK)

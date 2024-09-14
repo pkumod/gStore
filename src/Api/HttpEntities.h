@@ -2,7 +2,6 @@
 #include <string>
 #include <cstdio>
 #include "../Api/NlohmanJson.hpp"
-#include "../Cluster/ClusterDefined.h"
 using namespace nlohmann;
 namespace httpentities {
 
@@ -42,18 +41,18 @@ namespace httpentities {
     };
 
     struct ClusterRequest {
-        int term;
-        long long index;
+        uint32_t term;
+        uint64_t index;
         std::string db_name;
         ClusterRequest() {}
 
-        ClusterRequest(int32_t term) : term(term) {}
-        ClusterRequest(int32_t term, std::string db_name, int64_t index) : term(term), db_name(db_name), index(index) {}
+        ClusterRequest(uint32_t term) : term(term) {}
+        ClusterRequest(uint32_t term, std::string db_name, uint64_t index) : term(term), db_name(db_name), index(index) {}
         void setDbName(std::string db_name)
         {
             this->db_name = db_name;
         }
-        void setIndex(int64_t index)
+        void setIndex(uint64_t index)
         {
             this->index = index;
         }
@@ -164,18 +163,21 @@ namespace httpentities {
 
 
     struct ReplyRequest: public ClusterRequest {
-        ReplyRequest(int32_t term, std::string db_name, int64_t index): ClusterRequest(term, db_name, index) {}
+        std::string expection;
+        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection): ClusterRequest(term, db_name, index) {
+            this->expection = expection;
+        }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"expection", this->expection}};
             json_str = json.dump();
         }
     };
 
     struct AppenEntriesRequest: public ClusterRequest {
         std::string filepath;
-        cluster::ClusterOperation operation;
-        AppenEntriesRequest(int32_t term, std::string db_name, int64_t index, cluster::ClusterOperation operation, std::string filepath): ClusterRequest(term, db_name, index) {
+        std::string operation;
+        AppenEntriesRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string filepath): ClusterRequest(term, db_name, index) {
             this->filepath = filepath;
             this->operation = operation;
         }
