@@ -63,80 +63,18 @@ namespace cluster
         std::string getPort()const{ return port; }
         std::string getUsername()const{ return username; }
         std::string getPassword()const{ return password; }
-        std::string getUrlString()const
+        std::string getHeartBeatUrl()const
         {
             std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster";
+            url += "http://" + ip + ":" + port + "/grpc/cluster/heartbeat";
+            return url;
+        }
+        std::string getAppendEntriesUrl()const
+        {
+            std::string url;
+            url += "http://" + ip + ":" + port + "/grpc/cluster/appendEntries";
             return url;
         }
         bool empty()const{ return ip.empty(); }
-    };
-
-    struct ClusterHeartBeat
-    {
-        ClusterLogStatus status;
-        uint32 term;
-        uint32 index;
-        std::string db_name;
-
-        ClusterHeartBeat()
-        {
-            status  = ClusterLogStatus_HeartBeat;
-            term  = 0;
-            index = 0;
-            db_name = "";
-        }
-
-        ClusterHeartBeat(ClusterLogStatus status_, uint32 term_, uint32 index_)
-        {
-            status  = status_;
-            term  = term_;
-            index = index_;
-            db_name = "";
-        }
-
-        void setStatus(ClusterLogStatus value){ status = value; }
-        void setTerm(uint32 value){ term = value; }
-        void setIndex(uint32 value){ index = value; }
-        void setDbName(const std::string& value){ db_name = value; }
-        std::string toPostString(std::string username, std::string password)const
-        {
-            std::string res;
-            res += "{\"operation\":\"ClusterHeartBeat\",";
-            res += "\"username\":\"" + username + "\",";
-            res += "\"password\":\"" + password + "\",";
-            res += "\"type\":\"" + std::to_string(status) + "\",";
-            res += "\"term\":\"" + std::to_string(term) + "\",";
-            res += "\"index\":\"" + std::to_string(index) + "\",";
-            res += "\"db_name\":\"" + db_name + "\"}";
-
-            return res;
-        }
-    };
-
-    struct ClusterSync
-    {
-        ClusterOperation operation;
-        ClusterLogStatus status;
-        uint32 term;
-        uint64 index;
-        std::string db_name;
-        std::string file_path;
-
-        ClusterSync()
-        {
-            operation = ClusterOperation_None;
-            status    = ClusterLogStatus_HeartBeat;
-            term      = 0;
-            index     = 0;
-            db_name   = "";
-            file_path = "";
-        }
-        void setOperation(ClusterOperation value){ operation = value; }
-        void setStatus(ClusterLogStatus value){ status = value; }
-        void setTerm(uint32 value){ term = value; }
-        void setIndex(uint64 value){ index = value; }
-        void setDbName(const std::string& value){ db_name = value; }
-        void setFilePath(const std::string& value){ file_path = value; }
     };
 }

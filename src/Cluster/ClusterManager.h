@@ -39,9 +39,9 @@ namespace cluster
         // 启动心跳超时检测
         void startHeartBeat();
         // 启动更新通知, 返回应答数量
-        int startNotify(std::string db_name, uint32 term, uint32 index);
+        int startNotify(std::string db_name, uint32 index);
         // 启动同步通知, 返回应答数量
-        int startSync(std::string db_name, uint32 term, uint32 index, ClusterOperation operation, const std::string& file_path);
+        int startSync(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_path);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点

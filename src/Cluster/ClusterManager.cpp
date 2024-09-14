@@ -70,7 +70,7 @@ namespace cluster
         leader->startHeardBeat();
     }
 
-    int ClusterManager::startNotify(std::string db_name, uint32 term, uint32 index)
+    int ClusterManager::startNotify(std::string db_name, uint32 index)
     {
         if (!isEnable() || !role_)
             return -1;
@@ -81,10 +81,10 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return -1;
         }
-        return leader->startNotify(db_name, term, index);
+        return leader->startNotify(db_name, index);
     }
 
-    int ClusterManager::startSync(std::string db_name, uint32 term, uint32 index, ClusterOperation operation, const std::string& file_path)
+    int ClusterManager::startSync(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_path)
     {
         if (!isEnable() || !role_)
             return -1;
@@ -94,7 +94,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return -1;
         }
-        return leader->startSync(db_name, term, index, operation, file_path);
+        return leader->startSync(db_name, index, operation, file_path);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)

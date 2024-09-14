@@ -44,14 +44,13 @@ namespace cluster
 
     void ClusterEntityLeader::postHeartBeat()
     {
-        ClusterHeartBeat postdata;
-        postdata.setStatus(ClusterLogStatus_HeartBeat);
-
-        auto helper = [this, postdata](ClusterNode node)
+        uint32 term = getTerm();
+        httpentities::HeartBeatRequest request(term, 0, 0);
+        auto helper = [this, request](ClusterNode node)
         {
-            string res;
-            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.getUsername(), node.getPassword()), res);
-            if (error != CURLE_OK)
+            httpentities::HeartBeatRequest request_ = request;
+		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            if (responce.getStatusCode() != CURLE_OK)
             {
                 faileL_[node.getIp()] += 1;
                 return;
@@ -73,19 +72,15 @@ namespace cluster
         }
     }
 
-    void ClusterEntityLeader::postNotify(std::string db_name, uint32 term, uint64 index)
+    void ClusterEntityLeader::postNotify(std::string db_name, uint64 index)
     {
-        ClusterHeartBeat postdata;
-        postdata.setStatus(ClusterLogStatus_pending);
-        postdata.setTerm(term);
-        postdata.setIndex(index);
-        postdata.setDbName(db_name);
-
-        auto helper = [this, db_name, index, postdata](ClusterNode node)
+        uint32 term = getTerm();
+        httpentities::HeartBeatRequest request(term, db_name, index);
+        auto helper = [this, db_name, index, request](ClusterNode node)
         {
-            string res;
-            int error = HttpUtil::Post(node.getUrlString(), postdata.toPostString(node.getUsername(), node.getPassword()), res);
-            if (error != CURLE_OK)
+            httpentities::HeartBeatRequest request_ = request;
+		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            if (responce.getStatusCode() != CURLE_OK)
             {
                 faileL_[node.getIp()] += 1;
                 return;
@@ -107,9 +102,10 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startNotify(std::string db_name, uint32 term, uint64 index)
+    uint32 ClusterEntityLeader::startNotify(std::string db_name, uint64 index)
     {
-        postNotify(db_name, term, index);
+        uint32 term = getTerm();
+        postNotify(db_name, index);
         uint64 end_time = Util::get_cur_time() + relpy_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;
@@ -133,22 +129,40 @@ namespace cluster
         return pass_num;
     }
 
-    void ClusterEntityLeader::postSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, std::string file_path)
+    void ClusterEntityLeader::postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_path)
     {
-        // file_path以二进制打开文件读取数据
-        ClusterSync postdata;
-        postdata.setOperation(operation);
-        postdata.setStatus(ClusterLogStatus_sync);
-        postdata.setTerm(term);
-        postdata.setIndex(index);
-        postdata.setDbName(db_name);
-        postdata.setFilePath(file_path);
+        uint32 term = getTerm();
+        httpentities::AppenEntriesRequest request(term, db_name, index, operation, file_path);
+        auto helper = [this, db_name, index, request](ClusterNode node)
+        {
+            httpentities::AppenEntriesRequest request_ = request;
+		    httpentities::ClusterResponse responce = HttpUtil::appendEntries(node.getAppendEntriesUrl(), request_, node.getUsername(), node.getPassword());
+            if (responce.getStatusCode() != CURLE_OK)
+            {
+                faileL_[node.getIp()] += 1;
+                return;
+            }
+            faileL_[node.getIp()] = 0;
+        };
 
+        for (const auto& node : followNodeL_)
+        {
+            std::string ip = node.second.getIp();
+            auto it = faileL_.find(ip);
+            if (it == faileL_.end())
+                continue;
+            if (it->second > headBeat_max_fail_num_)
+                continue;
+            
+            thread postsync(helper, node.second);
+            postsync.detach();
+        }
     }
 
-    uint32 ClusterEntityLeader::startSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, const std::string& file_path)
+    uint32 ClusterEntityLeader::startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_path)
     {
-        postSync(db_name, term, index, operation, file_path);
+        uint32 term = getTerm();
+        postSync(db_name, index, operation, file_path);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;

@@ -1,6 +1,7 @@
 #pragma once
 #include "ClusterDefined.h"
 #include "ClusterEntity.h"
+#include "../Api/HttpEntities.h"
 
 namespace cluster
 {
@@ -16,11 +17,11 @@ namespace cluster
         public:
         ClusterNode FindFollower(const std::string& ip)const;
         void postHeartBeat();
-        void postNotify(std::string db_name, uint32 term, uint64 index);
-        void postSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, std::string file_path);
+        void postNotify(std::string db_name, uint64 index);
+        void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_path);
         void startHeardBeat();
-        uint32 startNotify(std::string db_name, uint32 term, uint64 index);
-        uint32 startSync(std::string db_name, uint32 term, uint64 index, ClusterOperation operation, const std::string& file_path);
+        uint32 startNotify(std::string db_name, uint64 index);
+        uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_path);
 
         // virtual function in here
         public:

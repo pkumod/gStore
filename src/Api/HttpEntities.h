@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdio>
 #include "../Api/NlohmanJson.hpp"
+#include "../Cluster/ClusterDefined.h"
 using namespace nlohmann;
 namespace httpentities {
 
@@ -173,14 +174,25 @@ namespace httpentities {
 
     struct AppenEntriesRequest: public ClusterRequest {
         std::string filepath;
-        AppenEntriesRequest(int32_t term, std::string db_name, int64_t index, std::string filepath): ClusterRequest(term, db_name, index) {
+        cluster::ClusterOperation operation;
+        AppenEntriesRequest(int32_t term, std::string db_name, int64_t index, cluster::ClusterOperation operation, std::string filepath): ClusterRequest(term, db_name, index) {
             this->filepath = filepath;
+            this->operation = operation;
         }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"operaton", this->operation}};
+            json_str = json.dump();
+        }
+        std::string getFilePath() {return this->filepath;}
+    };
+
+    struct HeartBeatRequest: public ClusterRequest {
+        using ClusterRequest::ClusterRequest;
         void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
             json_str = json.dump();
         }
-        std::string getFilePath() {return this->filepath;}
     };
 }
