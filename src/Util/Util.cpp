@@ -1064,7 +1064,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
     while ((dir_entry = readdir(dirp)) != NULL)
     {
         char subdir[256];
-        sprintf(subdir, "%s/%s", _dir_path, dir_entry->d_name);
+        snprintf(subdir, sizeof(subdir), "%s/%s", _dir_path, dir_entry->d_name);
         lstat(subdir, &statbuf);
 
         if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
