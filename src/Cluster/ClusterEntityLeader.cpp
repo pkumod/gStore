@@ -50,6 +50,7 @@ namespace cluster
         {
             httpentities::HeartBeatRequest request_ = request;
 		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
                 faileL_[node.getIp()] += 1;
@@ -80,6 +81,7 @@ namespace cluster
         {
             httpentities::HeartBeatRequest request_ = request;
 		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
                 faileL_[node.getIp()] += 1;
@@ -137,6 +139,7 @@ namespace cluster
         {
             httpentities::AppenEntriesRequest request_ = request;
 		    httpentities::ClusterResponse responce = HttpUtil::appendEntries(node.getAppendEntriesUrl(), request_, node.getUsername(), node.getPassword());
+            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
                 faileL_[node.getIp()] += 1;
@@ -208,5 +211,34 @@ namespace cluster
             nodeL.push_back(m.second);
         }
         return nodeL;
+    }
+
+    bool ClusterEntityLeader::tryRecover(const std::vector<std::string>& dbs)
+    {
+        auto helper = [this]()
+        {
+            // 处理恢复逻辑
+        };
+        std::map<std::string, uint32> fail_ip_L;
+        for (const auto& m : faileL_)
+        {
+            if (m.second > headBeat_max_fail_num_)
+                continue;
+            fail_ip_L.insert(std::make_pair(m.first, m.second));
+        }
+        for (const auto& m : dbs)
+        {
+            if (findDb(m))
+                continue;
+            ClusterDbPtr db = addClusterDb(m);
+            if (!db)
+                continue;
+
+            // 处理恢复逻辑
+            // thread postTryRecover(helper);
+            // postTryRecover.detach();
+        }
+
+             
     }
 }

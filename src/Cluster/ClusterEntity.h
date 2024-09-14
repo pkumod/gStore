@@ -15,13 +15,14 @@ namespace cluster
     {
         public:
         std::mutex term_mutex_;
+        std::mutex fail_ip_mutex_;
         std::map<std::string, ClusterDbPtr> databaseL_; // db_name
         ClusterEntity(){};
         virtual ~ClusterEntity(){}
         bool readFromTermFile(ClusterTermInfo &logInfo);
         bool writeToTermFile(ClusterTermInfo &logInfo);
         ClusterDbPtr findDb(const std::string& db_name);
-        void addClusterDb(const std::string& db_name);
+        ClusterDbPtr addClusterDb(const std::string& db_name);
 
         // log
         void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);

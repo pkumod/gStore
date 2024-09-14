@@ -30,8 +30,8 @@ namespace cluster
         ClusterRoleType getCluterRole(){ return role_->getCluterRoleType(); }
         // 是否是主节点
         bool isLeader();
-        // 窘机恢复
-        void tryRecover();
+        // 窘机恢复, 尝试检查所有库
+        bool tryRecover(const std::vector<std::string>& dbs);
         // 初始化数据量集群数据
         void initClusterDir(const std::vector<std::string>& dbList);
 

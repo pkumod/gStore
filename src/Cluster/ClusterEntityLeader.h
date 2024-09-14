@@ -22,6 +22,7 @@ namespace cluster
         void startHeardBeat();
         uint32 startNotify(std::string db_name, uint64 index);
         uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_path);
+        bool tryRecover(const std::vector<std::string>& dbs);
 
         // virtual function in here
         public:

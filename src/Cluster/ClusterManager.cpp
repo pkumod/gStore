@@ -44,6 +44,8 @@ namespace cluster
 
     void ClusterManager::initClusterDir(const std::vector<std::string>& dbList)
     {
+        if (!isEnable() || !role_)
+            return;
         for (const auto m: dbList)
         {
             std::string db_path = Util::getConfigureValue("db_home");
@@ -52,9 +54,25 @@ namespace cluster
 
     bool ClusterManager::isLeader()
     {
+        if (!isEnable() || !role_)
+            return false;
         if (getCluterRole() == cluster::ClusterRoleType_Leader)
             return true;
         return false;
+    }
+
+    bool ClusterManager::tryRecover(const std::vector<std::string>& dbs)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("not is leader");
+            return false;
+        }
+
+        leader->tryRecover(dbs);
     }
 
     void ClusterManager::startHeartBeat()
