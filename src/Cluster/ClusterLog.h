@@ -6,22 +6,6 @@
 
 namespace cluster
 {
-    struct TermInfo
-    {
-        uint32 term;
-        uint64 index;
-        public:
-        TermInfo()
-        {
-            term  = 0;
-            index = 0;
-        }
-        void setTerm(uint32 value){ term = value; }
-        void setIndex(uint64 value){ index = value; }
-        uint32 getTerm()const{ return term; }
-        uint64 getIndex()const{ return index; }
-    };
-
     struct LogInfo
     {
         uint64 index;
@@ -73,22 +57,27 @@ namespace cluster
     struct TermDbLog
     {
         std::string db_name;
-        uint64 index;
+        uint64 index; //当前已完成
+        uint64 nextIndex; //正在执行或则待完成
         public:
         TermDbLog()
         {
             db_name = "";
             index   = 0;
+            nextIndex = 0;
         }
 
-        TermDbLog(const std::string& db_name_, uint64 index_)
+        TermDbLog(const std::string& db_name_, uint64 index_, uint64 nextIndex_)
         {
             db_name = db_name_;
             index   = index_;
+            nextIndex = nextIndex_;
         }
         void setDbName(const std::string& value){ db_name = value; }
         void setIndex(uint64 value){ index = value; }
+        void setNextIndex(uint64 value){ nextIndex = value; }
         uint64 getIndex()const{ return index; }
+        uint64 getNextIndex()const{ return nextIndex; }
     };
 
     class ClusterTermInfo
@@ -104,8 +93,10 @@ namespace cluster
         void setLogs(const nlohmann::json& s);
         void setTerm(uint32 value){ term_ = value; }
         void setDbIndex(const std::string& db, uint64 index);
+        void setDbNextIndex(const std::string& db, uint64 NextIndex);
         uint32 getTerm()const{ return term_; }
         uint64 getDbIndex(const std::string& db_name);
+        uint64 getDbNextIndex(const std::string& db_name);
 
         static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);

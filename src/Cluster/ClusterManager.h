@@ -7,6 +7,7 @@
 #include "ClusterEntityFollower.h"
 #include "ClusterLog.h"
 #include "../Util/Util.h"
+#include "ClusterTask.h"
 
 namespace cluster
 {
@@ -15,6 +16,7 @@ namespace cluster
         private:
         bool on_;
         ClusterEntityPtr role_;
+        ConcurrenceQueue<ClusterEvent> g_queue;
 
         public:
         ClusterManager();
@@ -52,6 +54,8 @@ namespace cluster
         ClusterNode getLearrNode();
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
+        // 添加任务
+        void addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status);
 
         //日志模块
         //新增日志

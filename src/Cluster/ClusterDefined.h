@@ -83,4 +83,27 @@ namespace cluster
         }
         bool empty()const{ return ip.empty(); }
     };
+
+    struct ClusterEvent
+    {
+        virtual void runEvent()const {}
+    };
+
+    struct ClusterHeartBeatEvent : public ClusterEvent
+    {
+        uint32_t term;
+        uint64_t index;
+        std::string db_name;
+        void runEvent()const override {}
+    };
+
+    struct ClusterSyncEvent : public ClusterEvent
+    {
+        uint32_t term;
+        uint64_t index;
+        std::string db_name;
+        std::string file_name;
+        ClusterOperation operation;
+        void runEvent()const override {}
+    };
 }

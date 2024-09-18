@@ -281,11 +281,23 @@ namespace cluster
         auto it = db_logs_.find(db_name);
         if (it == db_logs_.end())
         {
-            TermDbLog log(db_name, index);
+            TermDbLog log(db_name, index, 0);
             db_logs_.insert(std::make_pair(db_name, log));
             return;
         }
         it->second.setIndex(index);
+    }
+
+    void ClusterTermInfo::setDbNextIndex(const std::string& db_name, uint64 next_index)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+        {
+            TermDbLog log(db_name, 0, next_index);
+            db_logs_.insert(std::make_pair(db_name, log));
+            return;
+        }
+        it->second.setNextIndex(next_index);
     }
 
     uint64 ClusterTermInfo::getDbIndex(const std::string& db_name)
@@ -295,6 +307,15 @@ namespace cluster
             return 0;
 
         return it->second.getIndex();
+    }
+
+    uint64 ClusterTermInfo::getDbNextIndex(const std::string& db_name)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+            return 0;
+
+        return it->second.getNextIndex();
     }
 
     // ClusterTripleArray

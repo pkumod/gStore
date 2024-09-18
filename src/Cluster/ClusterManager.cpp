@@ -272,4 +272,9 @@ namespace cluster
         
         role_->getNtFileData(triples, db_name, file_name);
     }
+
+    void ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status)
+    {
+
+    }
 }
