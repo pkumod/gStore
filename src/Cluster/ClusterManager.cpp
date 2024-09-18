@@ -389,7 +389,9 @@ namespace cluster
         }
         else if (status == ClusterLogStatus_cancel)
         {
-
+            ClusterCancelEvent task(db_name, index, operation, file_name);
+            task.setWer(leader);
+            task_queueL.push(task);
         }
         else
         {
