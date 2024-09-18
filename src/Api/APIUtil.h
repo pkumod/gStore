@@ -857,6 +857,7 @@ public:
     void get_already_builds(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
     bool check_already_build(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name);
+    bool trywrlock_database(const std::string& db_name, const uint64_t& timeout_ms);
     bool rdlock_database(const std::string& db_name);
     bool unlock_database(const std::string& db_name);
     std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);

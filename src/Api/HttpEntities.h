@@ -198,6 +198,20 @@ namespace httpentities {
         }
     };
 
+    struct ClusterCheckRequest: public ClusterRequest
+    {
+        uint16_t result;
+        ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint16_t result):  ClusterRequest(term, db_name, index) {
+            this->result = result;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"result", this->result}};
+            json_str = json.dump();
+        }
+    };
+    
+
     struct CancelRequest: public ClusterRequest {
         std::string filename;
         std::string operation;

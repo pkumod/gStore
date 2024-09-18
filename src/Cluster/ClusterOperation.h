@@ -20,7 +20,8 @@ namespace cluster
         OP(LEADER_HEARTBEAT,                   heartbeat) \
         OP(LEADER_APPEND,                  appendEntries) \
         OP(FOLLOWER_REPLY,                         reply) \
-        OP(EXPECTION_CHECK,                        check) \
+        OP(FOLLOWER_CHECK,                         check) \
+        OP(EXPECTION_COMPARE,                    compare) \
         OP(EXPECTION_PREPARE,                    prepare) \
         OP(EXPECTION_COMMIT,                      commit) 
 
