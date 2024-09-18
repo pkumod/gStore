@@ -308,58 +308,7 @@ namespace cluster
         return role_->getNtFilePath(db_name, file_name);
     }
 
-    // task
-    struct ClusterHeartBeatEvent : public ClusterEvent
-    {
-        ClusterEntityLeaderWeaker wer_;
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
-        }
-        void runEvent()const override
-        {
-            ClusterEntityLeaderPtr per = wer_.lock();
-            if (!per)
-            {
-                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
-                return;
-            }
-            per->startHeardBeat();
-        }
-    };
-
-    struct ClusterNotifyEvent : public ClusterEvent
-    {
-        std::string db_name_;
-        uint64 index_;
-        ClusterEntityLeaderWeaker wer_;
-        ClusterNotifyEvent()
-        {
-            db_name_ = "";
-            index_ = 0;
-        }
-        ClusterNotifyEvent(std::string db_name, uint64 index)
-        {
-            index_ = index;
-            db_name_ = db_name;
-        }
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
-        }
-        void runEvent()const override
-        {
-            ClusterEntityLeaderPtr per = wer_.lock();
-            if (!per)
-            {
-                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
-                return;
-            }
-            per->startNotify(db_name_, index_);
-        }
-    };
-
-    bool ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status)
+    bool ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status, const timeoutCall& cb)
     {
         if (!isEnable() || !role_)
             return false;
@@ -377,14 +326,26 @@ namespace cluster
         }
         else if (status == ClusterLogStatus_pending)
         {
+            if (cb == nullptr)
+            {
+                SLOG_TRACE("cluster pending not nullptr");
+                return false;
+            }
             ClusterNotifyEvent task(db_name, index);
             task.setWer(leader);
+            task.cb_ = cb;
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_sync)
         {
+            if (cb == nullptr)
+            {
+                SLOG_TRACE("cluster sync not nullptr");
+                return false;
+            }
             ClusterSyncEvent task(db_name, index, operation, file_name);
             task.setWer(leader);
+            task.cb_ = cb;
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_cancel)

@@ -59,6 +59,7 @@ namespace cluster
         std::string db_name;
         uint64 index; //当前已完成
         uint64 nextIndex; //正在执行或则待完成
+        std::string fail_num;
         public:
         TermDbLog()
         {

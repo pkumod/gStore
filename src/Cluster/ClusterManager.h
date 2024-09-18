@@ -9,6 +9,8 @@
 #include "../Util/Util.h"
 #include "ClusterTask.h"
 
+typedef std::function<void()> timeoutCall;
+
 namespace cluster
 {
     class ClusterManager
@@ -55,7 +57,7 @@ namespace cluster
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        bool addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status);
+        bool addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status, const timeoutCall& cb = nullptr);
         // 启动跑任务
         void runTask();
 
@@ -97,6 +99,64 @@ namespace cluster
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
     };
 
+    // task
+    struct ClusterHeartBeatEvent : public ClusterEvent
+    {
+        ClusterEntityLeaderWeaker wer_;
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            per->startHeardBeat();
+        }
+    };
+
+    struct ClusterNotifyEvent : public ClusterEvent
+    {
+        std::string db_name_;
+        uint64 index_;
+        ClusterEntityLeaderWeaker wer_;
+        timeoutCall cb_;
+        ClusterNotifyEvent()
+        {
+            db_name_ = "";
+            index_ = 0;
+        }
+        ClusterNotifyEvent(std::string db_name, uint64 index)
+        {
+            index_ = index;
+            db_name_ = db_name;
+        }
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            uint32 num = per->startNotify(db_name_, index_);
+            uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
+            if (num < need_num)
+            {
+                SLOG_TRACE("cluster reply time out");
+                cb_();
+            }
+        }
+    };
+
     struct ClusterSyncEvent : public ClusterEvent
     {
         std::string db_name_;
@@ -104,6 +164,7 @@ namespace cluster
         ClusterOperation operation_;
         std::string file_name_;
         ClusterEntityLeaderWeaker wer_;
+        timeoutCall cb_;
         ClusterSyncEvent()
         {
             db_name_ = "";
@@ -130,7 +191,13 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            per->startSync(db_name_, index_, operation_, file_name_);
+            uint32 num = per->startSync(db_name_, index_, operation_, file_name_);
+            uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
+            if (num < need_num)
+            {
+                SLOG_TRACE("cluster sync time out");
+                cb_();
+            }
         }
     };
 
