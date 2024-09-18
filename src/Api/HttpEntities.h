@@ -175,10 +175,10 @@ namespace httpentities {
     };
 
     struct AppenEntriesRequest: public ClusterRequest {
-        std::string filepath;
+        std::string filename;
         std::string operation;
-        AppenEntriesRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string filepath): ClusterRequest(term, db_name, index) {
-            this->filepath = filepath;
+        AppenEntriesRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string filename): ClusterRequest(term, db_name, index) {
+            this->filename = filename;
             this->operation = operation;
         }
         void to_json(std::string& json_str) override
@@ -186,7 +186,7 @@ namespace httpentities {
             nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"operaton", this->operation}};
             json_str = json.dump();
         }
-        std::string getFilePath() {return this->filepath;}
+        std::string getFilePath() {return this->filename;}
     };
 
     struct HeartBeatRequest: public ClusterRequest {
@@ -194,6 +194,20 @@ namespace httpentities {
         void to_json(std::string& json_str) override
         {
             nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
+            json_str = json.dump();
+        }
+    };
+
+    struct CancelRequest: public ClusterRequest {
+        std::string filename;
+        std::string operation;
+        CancelRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string filename): ClusterRequest(term, db_name, index) {
+            this->filename = filename;
+            this->operation = operation;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"operaton", this->operation}, {"filename", this->filename}};
             json_str = json.dump();
         }
     };

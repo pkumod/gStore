@@ -25,9 +25,11 @@ namespace cluster
         // nt file
         bool readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name);
         bool writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append = false);
+        std::string readFromNtFilePath(const std::string &file_name);
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& file_name);
+        std::string getNtFilePath(const std::string& file_name);
 
         // update.log
         bool readFromUpdateFile(ClusterDbNameLogInfo &logInfo);

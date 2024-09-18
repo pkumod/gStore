@@ -18,10 +18,12 @@ namespace cluster
         ClusterNode FindFollower(const std::string& ip)const;
         void postHeartBeat();
         void postNotify(std::string db_name, uint64 index);
-        void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_path);
+        void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
+        void postCancel(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
         void startHeardBeat();
         uint32 startNotify(std::string db_name, uint64 index);
-        uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_path);
+        uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);
+        uint32 startCancel(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);
         bool tryRecover(const std::vector<std::string>& dbs);
 
         // virtual function in here

@@ -232,4 +232,57 @@ namespace cluster
     {
         readFromNtFile(triples, file_name);
     }
+
+    std::string ClusterDb::readFromNtFilePath(const std::string &file_name)
+    {
+        std::lock_guard<std::mutex> lock(cached_nt_mutex_);
+        std::string file_path = getDbDirPath() + file_name;
+        ifstream r_fp;
+        r_fp.open(file_path, ios::in);
+        if (!r_fp.is_open())
+        {
+            SLOG_ERROR("nt.log open fail, db_name:" << db_name_ << " , file name:" << file_name );
+            return std::string();
+        }
+
+        std::string::size_type pos = file_name.find_last_of(".");
+        if (pos == std::string::npos)
+        {
+            SLOG_ERROR("nt.log format is error:" << db_name_ << " , file name:" << file_name );
+            return std::string();
+        }
+        std::string nt_path = getDbDirPath() + file_name.substr(0, pos-1) + ".nt";
+        ofstream w_fp;
+        w_fp.open(nt_path,ios::out);
+        if (!w_fp.is_open())
+        {
+            SLOG_ERROR("nt.log open fail, db_name:" << db_name_ << " , file name:" << file_name );
+            r_fp.close();
+            return std::string();
+        }
+
+        std::string line;
+        while (getline(r_fp, line))
+        {
+            if (line.empty())
+                continue;
+            std::vector<std::string> info;
+		    Util::split(line, " ", info);
+            TripleInfo triple;
+            if (triple.convert(info))
+            {
+
+                w_fp << triple.subject << " " << triple.predicate << " " << triple.object << " ." << std::endl;
+            }
+            line.clear();
+        }
+
+        w_fp.close();
+        return nt_path;
+    }
+
+    std::string ClusterDb::getNtFilePath(const std::string& file_name)
+    {
+        return readFromNtFilePath(file_name);
+    }
 }

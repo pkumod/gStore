@@ -1,7 +1,6 @@
 #pragma once
 #include "ClusterDefined.h"
 #include "ClusterLog.h"
-#include "../Util/Util.h"
 #include "../Api/TimerProvider.h"
 #include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"
@@ -39,6 +38,7 @@ namespace cluster
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
+        std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
 
         // virtual function in here
         public:

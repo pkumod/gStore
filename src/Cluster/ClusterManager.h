@@ -16,7 +16,7 @@ namespace cluster
         private:
         bool on_;
         ClusterEntityPtr role_;
-        ConcurrenceQueue<ClusterEvent> g_queue;
+        ConcurrenceQueue<ClusterEvent> task_queueL;
 
         public:
         ClusterManager();
@@ -55,7 +55,9 @@ namespace cluster
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        void addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status);
+        bool addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status);
+        // 启动跑任务
+        void runTask();
 
         //日志模块
         //新增日志
@@ -70,6 +72,8 @@ namespace cluster
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         // 获取同步数量
         uint32 getLogSyncNum(std::string db_name, uint64 index);
+        //是否达到处理要求, 过半(k+1/2)
+        bool enabelAttain(std::string db_name, uint64 index, ClusterLogStatus status);
         // 更换主节点
         void updateTerm(uint32 term);
         // 更换主节点索引
@@ -89,5 +93,81 @@ namespace cluster
         std::string saveFromFollowerFile(const std::pair<std::string, std::string>& file_info, const std::string& db_name);
         // 获取操作文件nt数据
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
+        // 获取操作文件nt数据
+        std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
+    };
+
+    struct ClusterSyncEvent : public ClusterEvent
+    {
+        std::string db_name_;
+        uint64 index_;
+        ClusterOperation operation_;
+        std::string file_name_;
+        ClusterEntityLeaderWeaker wer_;
+        ClusterSyncEvent()
+        {
+            db_name_ = "";
+            index_ = 0;
+            operation_ = ClusterOperation_None;
+            file_name_ = "";
+        }
+        ClusterSyncEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+        {
+            db_name_ = db_name;
+            index_ = index;
+            operation_ = operation;
+            file_name_ = file_name;
+        }
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            per->startSync(db_name_, index_, operation_, file_name_);
+        }
+    };
+
+    struct ClusterCancelEvent : public ClusterEvent
+    {
+        std::string db_name_;
+        uint64 index_;
+        ClusterOperation operation_;
+        std::string file_name_;
+        ClusterEntityLeaderWeaker wer_;
+        ClusterCancelEvent()
+        {
+            db_name_ = "";
+            index_ = 0;
+            operation_ = ClusterOperation_None;
+            file_name_ = "";
+        }
+        ClusterCancelEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+        {
+            db_name_ = db_name;
+            index_ = index;
+            operation_ = operation;
+            file_name_ = file_name;
+        }
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            per->startCancel(db_name_, index_, operation_, file_name_);
+        }
     };
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "ClusterTypedef.h"
+#include "../Util/Util.h"
 
 namespace cluster
 {
@@ -25,6 +26,7 @@ namespace cluster
         ClusterLogStatus_handling  = 1,
         ClusterLogStatus_sync      = 2,
         ClusterLogStatus_commit    = 3,
+        ClusterLogStatus_cancel    = 4,
     };
 
     enum ClusterTranctionType
@@ -81,29 +83,17 @@ namespace cluster
             url += "http://" + ip + ":" + port + "/grpc/cluster/appendEntries";
             return url;
         }
+        std::string getCancelUrl()const
+        {
+            std::string url;
+            url += "http://" + ip + ":" + port + "/grpc/cluster/cancel";
+            return url;
+        }
         bool empty()const{ return ip.empty(); }
     };
 
     struct ClusterEvent
     {
         virtual void runEvent()const {}
-    };
-
-    struct ClusterHeartBeatEvent : public ClusterEvent
-    {
-        uint32_t term;
-        uint64_t index;
-        std::string db_name;
-        void runEvent()const override {}
-    };
-
-    struct ClusterSyncEvent : public ClusterEvent
-    {
-        uint32_t term;
-        uint64_t index;
-        std::string db_name;
-        std::string file_name;
-        ClusterOperation operation;
-        void runEvent()const override {}
     };
 }

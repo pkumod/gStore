@@ -16,6 +16,7 @@ namespace cluster
     class TripleInfo;
     typedef std::shared_ptr<ClusterDbNameLogInfo> ClusterLogPtr;
     typedef std::shared_ptr<ClusterEntity> ClusterEntityPtr;
+    typedef std::weak_ptr<ClusterEntity> ClusterEntityWeakPtr;
     typedef std::shared_ptr<ClusterEntityLeader> ClusterEntityLeaderPtr;
     typedef std::weak_ptr<ClusterEntityLeader> ClusterEntityLeaderWeaker;
     typedef std::shared_ptr<ClusterEntityFollower> ClusterEntityFollowerPtr;

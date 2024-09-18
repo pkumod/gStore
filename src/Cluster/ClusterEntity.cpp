@@ -211,4 +211,12 @@ namespace cluster
             return;
         db->getNtFileData(triples, file_name);
     }
+
+    std::string ClusterEntity::getNtFilePath(const std::string& db_name, const std::string& file_name)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return std::string();
+        return db->getNtFilePath(file_name);
+    }
 }

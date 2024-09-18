@@ -38,6 +38,8 @@ namespace cluster
                 Util::create_dir(ClusterDb::getClusterDir());
             }
             role_->init();
+            std::thread run_task = std::thread(&ClusterManager::runTask, this);
+            run_task.detach();
 
             SLOG_CORE("cluster success on");
         }
@@ -63,7 +65,7 @@ namespace cluster
             return false;
         }
 
-        leader->tryRecover(dbs);
+        return leader->tryRecover(dbs);
     }
 
     void ClusterManager::startHeartBeat()
@@ -204,6 +206,29 @@ namespace cluster
         return role_->getLogSyncNum(db_name, index);
     }
 
+    bool ClusterManager::enabelAttain(std::string db_name, uint64 index, ClusterLogStatus status)
+    {
+        if (!isEnable() || !role_)
+            return false;
+
+        uint32 num = 0;
+        if (status == ClusterLogStatus_pending)
+        {
+            num = role_->getLogReplyNum(db_name, index);
+        }
+        else if (status == ClusterLogStatus_sync)
+        {
+            num = role_->getLogSyncNum(db_name, index);
+        }
+        uint32 total = getFollowNodeL().size();
+        if (total == 0)
+        {
+            SLOG_TRACE("follow node is 0");
+            return false;
+        }
+        return num >= ((total + 1)/2) ? true : false;
+    }
+
     void ClusterManager::updateTerm(uint32 term)
     {
         if (!isEnable() || !role_)
@@ -273,8 +298,114 @@ namespace cluster
         role_->getNtFileData(triples, db_name, file_name);
     }
 
-    void ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status)
+    std::string ClusterManager::getNtFilePath(const std::string& db_name, const std::string& file_name)
     {
+        if (!isEnable() || !role_)
+            return std::string();
+        if (file_name.empty())
+            return std::string();
+        
+        return role_->getNtFilePath(db_name, file_name);
+    }
 
+    // task
+    struct ClusterHeartBeatEvent : public ClusterEvent
+    {
+        ClusterEntityLeaderWeaker wer_;
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            per->startHeardBeat();
+        }
+    };
+
+    struct ClusterNotifyEvent : public ClusterEvent
+    {
+        std::string db_name_;
+        uint64 index_;
+        ClusterEntityLeaderWeaker wer_;
+        ClusterNotifyEvent()
+        {
+            db_name_ = "";
+            index_ = 0;
+        }
+        ClusterNotifyEvent(std::string db_name, uint64 index)
+        {
+            index_ = index;
+            db_name_ = db_name;
+        }
+        void setWer(ClusterEntityLeaderWeaker wer)
+        {
+            wer_ = wer;
+        }
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
+                return;
+            }
+            per->startNotify(db_name_, index_);
+        }
+    };
+
+    bool ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return false;
+        }
+        if (status == ClusterLogStatus_HeartBeat)
+        {
+            ClusterHeartBeatEvent task;
+            task.setWer(leader);
+            task_queueL.push(task);
+        }
+        else if (status == ClusterLogStatus_pending)
+        {
+            ClusterNotifyEvent task(db_name, index);
+            task.setWer(leader);
+            task_queueL.push(task);
+        }
+        else if (status == ClusterLogStatus_sync)
+        {
+            ClusterSyncEvent task(db_name, index, operation, file_name);
+            task.setWer(leader);
+            task_queueL.push(task);
+        }
+        else if (status == ClusterLogStatus_cancel)
+        {
+
+        }
+        else
+        {
+            return false;
+        }
+        return true;
+    }
+
+    void ClusterManager::runTask()
+    {
+        if (!isEnable() || !role_)
+            return;
+        SLOG_TRACE("cluster task is run");
+        while(1)
+        {
+            task_queueL.pop()->runEvent();
+        }
     }
 }
