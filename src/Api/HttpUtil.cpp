@@ -477,3 +477,20 @@ httpentities::ClusterResponse HttpUtil::heartBeat(const std::string& url, httpen
 	else
 		return httpentities::ClusterResponse(status, "Unknown status");
 }
+
+httpentities::ClusterResponse HttpUtil::clusterCheck(const std::string& url, httpentities::ClusterCheckRequest& request, const std::string& username, const std::string& password)
+{
+	std::string json_str;
+	request.to_json(json_str);
+	std::string body_str;
+	std::map<std::string, std::string> headers;
+	headers.insert(std::pair<std::string, std::string>("username", username));
+	headers.insert(std::pair<std::string, std::string>("password", password));
+	int status = Post(url, headers, 60, json_str, body_str);
+	if (status == CURLE_OK)
+		return httpentities::ClusterResponse(body_str);
+	else if (status == CURLE_OPERATION_TIMEDOUT)
+		return httpentities::ClusterResponse(status, "Operation timeout");
+	else
+		return httpentities::ClusterResponse(status, "Unknown status");
+}

@@ -63,6 +63,12 @@ namespace cluster
         std::string getPort()const{ return port; }
         std::string getUsername()const{ return username; }
         std::string getPassword()const{ return password; }
+        std::string getCheckUrl()const
+        {
+            std::string url;
+            url += "http://" + ip + ":" + port + "/grpc/cluster/check";
+            return url;
+        }
         std::string getReplyUrl()const
         {
             std::string url;

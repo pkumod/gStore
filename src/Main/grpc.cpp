@@ -96,6 +96,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response);
 void cluster_append_task(const GRPCReq *request, GRPCResp *response);
 void cluster_reply_task(const GRPCReq *request, GRPCResp *response);
+void cluster_check_task(const GRPCReq *request, GRPCResp *response);
 
 // common function
 std::string to_json_string(const Json& json);
@@ -291,6 +292,8 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	apiUtil = make_shared<APIUtil>();
 	pfnUtil = make_shared<PFNUtil>();
+	// init cluster
+	clusterManagerPtr = make_shared<cluster::ClusterManager>();
 	_server_port = apiUtil->get_configure_value("port");
 	string command;
 	if (argc == 1)
@@ -335,11 +338,6 @@ int main(int argc, char *argv[])
 		if (startServer())
 		{
 			sleep(1);
-			// init cluster
-			clusterManagerPtr = make_shared<cluster::ClusterManager>();
-			if (clusterManagerPtr->isEnable()) {
-				clusterManagerPtr->init();
-			}
 			// load db
 			if(argc == 4 || argc == 6)
 			{
@@ -461,10 +459,11 @@ bool startServer()
 	}
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
-	pid_t fpid = fork();
-	// child
-	if (fpid == 0)
-	{
+	pid_t fpid;
+	// fpid = fork();
+	// // child
+	// if (fpid == 0)
+	// {
 		int status;
 		string daemon;
 		while (true)
@@ -482,6 +481,10 @@ bool startServer()
 				if (rt == -1)
 				{
 					return false;
+				}
+				SLOG_DEBUG("cluster status: " << clusterManagerPtr->isEnable());
+				if (clusterManagerPtr->isEnable()) {
+					clusterManagerPtr->init();
 				}
 				GRPCServer grpcServer;
 				// register rest service
@@ -553,19 +556,19 @@ bool startServer()
 				return false;
 			}
 		}
-	}
-	// parent
-	else if (fpid > 0)
-	{
-		SLOG_INFO("grpc server port " + port_str);
-		return true;
-	}
-	// fork failure
-	else 
-	{
-		SLOG_ERROR("Failed to start server: fork failure.");
-		return false;
-	}
+	// }
+	// // parent
+	// else if (fpid > 0)
+	// {
+	// 	SLOG_INFO("grpc server port " + port_str);
+	// 	return true;
+	// }
+	// // fork failure
+	// else 
+	// {
+	// 	SLOG_ERROR("Failed to start server: fork failure.");
+	// 	return false;
+	// }
 }
 
 bool stopServer()
@@ -642,6 +645,13 @@ void register_service(GRPCServer &svr)
 		"/grpc/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_REPLY);
+		},
+		ReqMethod::POST);
+
+	svr.ROUTE(
+		"/grpc/cluster/check", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_CHECK);
 		},
 		ReqMethod::POST);
 
@@ -1023,6 +1033,10 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation)
 {
+	if (!clusterManagerPtr) {
+		response->Error(StatusOperationFailed, "The cluster is nullptr");
+		return;
+	}
 	if (!clusterManagerPtr->isEnable()) {
 		response->Error(StatusOperationFailed, "The cluster config is turned off");
 		return;
@@ -1081,6 +1095,9 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	case cluster::FOLLOWER_REPLY:
 		// from follower reply
 		cluster_reply_task(request, response);
+		break;
+	case cluster::FOLLOWER_CHECK:
+		cluster_check_task(request, response);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation:" + op_str);
@@ -5266,27 +5283,35 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	std::string expection = jsonParam(json_data, "expection", "");
 	const cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	uint32_t leader_term = jsonParam(json_data, "term", 0u);
-	uint32_t local_term = 0u;
+	uint32_t local_term = clusterManagerPtr->getTerm(); // get local term
 	string db_name = jsonParam(json_data, "db_name", "");
 	uint64_t leader_index = jsonParam(json_data, "index", 0ul);
-	Json resp_data;
-	resp_data.SetObject();
-	Json::AllocatorType &allocator = resp_data.GetAllocator();
+	uint64_t local_index = 0ul;
 	switch (expectionEnum)
 	{
-		case cluster::EXPECTION_CHECK:
+		case cluster::EXPECTION_COMPARE:
 			// compare term and index with leader
-			local_term = clusterManagerPtr->getTerm(); // TODO get local term
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "ok", allocator);
-			resp_data.AddMember("term", local_term, allocator);
-			if (!db_name.empty()) 
-			{
-				int64_t local_index = -1ll; // TODO get local index
-				resp_data.AddMember("db_name", StringRef(db_name.c_str()), allocator);
-				resp_data.AddMember("index", local_index, allocator);
-			}
-			response->Json(resp_data);
+			std::thread([db_name, leader_term, leader_index, local_term, local_index]() {
+				if (!db_name.empty()) 
+				{
+					// send ready response
+					cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
+					std::string check_url = leader_node.getCheckUrl();
+					std::string username = leader_node.getUsername();
+					std::string password = MD5(leader_node.getPassword()).toStr();
+					uint16_t result = 0; // default check failed
+					// TODO get local index
+					// local_index = clusterManagerPtr->getIndex(db_name);
+					if (leader_term == local_term && leader_index == local_index)
+					{
+						// check ok
+						result = 1;
+					}
+					httpentities::ClusterCheckRequest check_request(local_term, db_name, local_index, result);
+					HttpUtil::clusterCheck(check_url, check_request, username, password);
+				}
+			}).detach();
+			response->Json("ok");
 			break;
 		case cluster::EXPECTION_PREPARE:
 			// prepare for log append
@@ -5338,6 +5363,16 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			break;
 		case cluster::EXPECTION_COMMIT:
 			// update local log status to committed
+			if (!db_name.empty())
+			{
+				// TODO get current can be committed index， and compare with leader_index
+				// local_index = clusterManagerPtr->getHandingIndex(db_name);
+				if (leader_index == local_index)
+				{
+					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_commit);
+				}
+			}
+			response->Success("ok");
 			break;
 		default:
 			response->Success("ok");
@@ -5387,23 +5422,52 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t leader_term = std::stol(form.at("term").second);
 	uint64_t leader_index = std::stoul(form.at("index").second);
 	// TODO check leader term and index with local
-
-	const std::string zip_file_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix + "/" + fileinfo.first;
+	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix; 
+	const std::string zip_file_path = cluster_db_path + "/" + fileinfo.first;
 	const std::string operation = form.at("operation").second;
 	const std::string content = std::move(fileinfo.second);
-	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, operation](WFFileIOTask *pwrite_task){
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, cluster_db_path, operation](WFFileIOTask *pwrite_task){
 		// save success
 		long ret = pwrite_task->get_retval();
 		if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
 			return;
 		}
-		if(!apiUtil->trywrlock_database(db_name)) {
+		// unzip file
+		std::string unz_dir_path = cluster_db_path + "/tmp_" + Util::getTimeString2();
+		Util::create_dir(unz_dir_path);
+		CompressUtil::UnCompressZip unzip(zip_file_path, unz_dir_path);
+		if (unzip.unCompress() != CompressUtil::UnZipOK) 
+		{
+			SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
+			// remove zip file
+			// Util::remove_path(zip_file_path);
+			// remove unzip dir
+			Util::remove_path(unz_dir_path);
+			return;
+		}
+		std::vector<std::string> log_files;
+		unzip.getFileList(log_files, "");
+		if (log_files.empty())
+		{
+			SLOG_WARN("zip file is empty: " + zip_file_path);
+			// remove zip file
+			// Util::remove_path(zip_file_path);
+			// remove unzip dir
+			Util::remove_path(unz_dir_path);
+			return;
+		}
+		if(!apiUtil->trywrlock_database(db_name, 60*1000)) {
+			// remove zip file
+			SLOG_WARN("unable to get write lock of " + db_name + ".");
+			// remove zip file
+			// Util::remove_path(zip_file_path);
+			Util::remove_path(unz_dir_path);
 			return;
 		}
 		shared_ptr<Database> current_database;
 		apiUtil->get_database(db_name, current_database);
-		// TODO unzip file
-		std::string nt_file_path = zip_file_path;
+
+		std::string nt_file_path = log_files[0];
 		ClusterOperation log_operation;
 		if (operation == "1") {
 			// batch insert
@@ -5419,6 +5483,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);
+		// TODO update or add ?
 		clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_handling, log_operation);
 
 		// send appendEntrites ok response
@@ -5444,5 +5509,24 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	std::string expection = jsonParam(json_data, "expection");
 	// TODO from follower reply, go into leader process 
 	// clusterManagerPtr->reply(term, index, db_name, expection);
+	response->Success("ok");
+}
+
+void cluster_check_task(const GRPCReq *request, GRPCResp *response)
+{
+	Json json_data;
+	parseRequest(request, json_data);
+	uint32_t term = jsonParam(json_data, "term", 0u);
+	uint64_t index = jsonParam(json_data, "index", 0ul);
+	std::string db_name = jsonParam(json_data, "db_name");
+	uint16_t result = jsonParam(json_data, "result", 0);
+	// follower index is not equal to leader index
+	if (result == 0)
+	{
+		// TODO add a new task that starting with follower index
+		std::string file_name;
+		clusterManagerPtr->addTask(db_name, index, cluster::ClusterOperation::ClusterOperation_None, file_name, cluster::ClusterLogStatus::ClusterLogStatus_sync);
+	}
+	
 	response->Success("ok");
 }

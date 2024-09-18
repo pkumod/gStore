@@ -24,7 +24,7 @@ namespace cluster
             {
                 role_ = std::make_shared<ClusterEntityLeader>();
             }
-            else if (cluster_role == "follow")
+            else if (cluster_role == "follower")
             {
                 role_ = std::make_shared<ClusterEntityFollower>();
             }
@@ -63,7 +63,7 @@ namespace cluster
             return false;
         }
 
-        leader->tryRecover(dbs);
+        return leader->tryRecover(dbs);
     }
 
     void ClusterManager::startHeartBeat()
