@@ -93,6 +93,12 @@ namespace cluster
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
+        
+        if (status == ClusterLogStatus_commit)
+        {
+            updateDbIndex(db_name, index);
+            updateDbNextIndex(db_name, 0);
+        }
         db->updateLogStatus(index, status);
     }
 

@@ -4158,10 +4158,6 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		id_tuples[i].subid = _sub_id;
 		id_tuples[i].preid = _pre_id;
 		id_tuples[i].objid = _obj_id;
-		if (cluster_log)
-		{
-			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << std::endl;
-		}
 	}
 
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);
@@ -4187,6 +4183,17 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		if (ret == false)
 		{
 			return -1;
+		}
+	}
+	else if (cluster_log)
+	{
+		for (auto tuple : id_tuples)
+		{
+			bool is_obj_entity = Util::is_entity_ele(tuple.objid);
+			if (is_obj_entity)
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getEntityByID(tuple.objid) << std::endl;
+			else
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getLiteralByID(tuple.objid) << std::endl;
 		}
 	}
 	// po inserts

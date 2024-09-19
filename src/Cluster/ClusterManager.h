@@ -18,7 +18,7 @@ namespace cluster
         private:
         bool on_;
         ClusterEntityPtr role_;
-        ConcurrenceQueue<ClusterEvent> task_queueL;
+        ConcurrenceQueue<ClusterEventPtr> task_queueL;
 
         public:
         ClusterManager();
@@ -55,10 +55,12 @@ namespace cluster
         std::string getLeaderUrl();
         // 获取主节点
         ClusterNode getLearrNode();
+        // 添加初始化数据库
+        void addClusterDb(const std::string& db_name);
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        bool addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status, const timeoutCall& cb = nullptr);
+        bool addTask(std::string db_name, uint32 index = 0, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "", ClusterLogStatus status = ClusterLogStatus_HeartBeat, const timeoutCall& cb = nullptr);
         // 启动跑任务
         void runTask();
 
@@ -82,7 +84,7 @@ namespace cluster
         // 更新已完成节点索引
         void updateDbIndex(std::string db_name, uint64 index);
         // 更新需要处理的节点索引
-        void updateDbNextIndex(std::string db_name, uint64 index);
+        void updateDbNextIndex(std::string db_name, uint64 next_index);
         // 获取任期
         uint32 getTerm();
         // 获取数据库成功提交的最新日志索引
@@ -109,17 +111,14 @@ namespace cluster
     {
         std::string db_name_;
         ClusterEntityLeaderWeaker wer_;
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
-        }
         ClusterHeartBeatEvent()
         {
             db_name_ = "";
         }
-        ClusterHeartBeatEvent(std::string db_name)
+        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per)
         {
             db_name_ = db_name;
+            wer_ = per;
         }
         void runEvent()const override
         {
@@ -144,14 +143,12 @@ namespace cluster
             db_name_ = "";
             index_ = 0;
         }
-        ClusterNotifyEvent(std::string db_name, uint64 index)
+        ClusterNotifyEvent(std::string db_name, uint64 index, ClusterEntityLeaderPtr per, const timeoutCall &cb)
         {
             index_ = index;
             db_name_ = db_name;
-        }
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
+            wer_ = per;
+            cb_ = cb;
         }
         void runEvent()const override
         {
@@ -163,7 +160,7 @@ namespace cluster
             }
             uint32 num = per->startNotify(db_name_, index_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
-            if (num < need_num)
+            if (cb_ && num < need_num)
             {
                 SLOG_TRACE("cluster reply time out");
                 cb_();
@@ -186,16 +183,14 @@ namespace cluster
             operation_ = ClusterOperation_None;
             file_name_ = "";
         }
-        ClusterSyncEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+        ClusterSyncEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
         {
             db_name_ = db_name;
             index_ = index;
             operation_ = operation;
             file_name_ = file_name;
-        }
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
+            wer_ = per;
+            cb_ = cb;
         }
         void runEvent()const override
         {
@@ -207,7 +202,8 @@ namespace cluster
             }
             uint32 num = per->startSync(db_name_, index_, operation_, file_name_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
-            if (num < need_num)
+            SLOG_TRACE("ClusterHeartBeatEvent ClusterSyncEvent");
+            if (cb_ && num < need_num)
             {
                 SLOG_TRACE("cluster sync time out");
                 cb_();
@@ -229,16 +225,13 @@ namespace cluster
             operation_ = ClusterOperation_None;
             file_name_ = "";
         }
-        ClusterCancelEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+        ClusterCancelEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per)
         {
             db_name_ = db_name;
             index_ = index;
             operation_ = operation;
             file_name_ = file_name;
-        }
-        void setWer(ClusterEntityLeaderWeaker wer)
-        {
-            wer_ = wer;
+            wer_ = per;
         }
         void runEvent()const override
         {

@@ -14,6 +14,7 @@ namespace cluster
     class ClusterEntityLeader;
     class ClusterEntityFollower;
     class TripleInfo;
+    struct ClusterEvent;
     typedef std::shared_ptr<ClusterDbNameLogInfo> ClusterLogPtr;
     typedef std::shared_ptr<ClusterEntity> ClusterEntityPtr;
     typedef std::weak_ptr<ClusterEntity> ClusterEntityWeakPtr;
@@ -22,4 +23,5 @@ namespace cluster
     typedef std::shared_ptr<ClusterEntityFollower> ClusterEntityFollowerPtr;
     typedef std::weak_ptr<ClusterEntityFollower> ClusterEntityFollowerWeaker;
     typedef std::shared_ptr<ClusterDb> ClusterDbPtr;
+    typedef std::shared_ptr<ClusterEvent> ClusterEventPtr;
 }

@@ -23,8 +23,8 @@ namespace cluster
         }
 
         heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str());
-        relpy_timeout_ = std::atoi(Util::getConfigureValue("relpy_timeout_").c_str());
-        sync_timeout_ = std::atoi(Util::getConfigureValue("sync_timeout_").c_str());
+        relpy_timeout_ = std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
+        sync_timeout_ = std::atoi(Util::getConfigureValue("cluster_sync_timeout").c_str())*1000;
     }
 
     ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip)const
@@ -130,15 +130,15 @@ namespace cluster
         uint32 term = getTerm();
         postNotify(db_name, index);
         uint64 end_time = Util::get_cur_time() + relpy_timeout_;
-        TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;
+        TimerProvider oneTimer;
         int need_num = (followNodeL_.size() + 1) / 2;
         while (1)
         {
             if (once_run > (end_time - Util::get_cur_time()))
                 once_run = end_time - Util::get_cur_time();
-            oneTimer.AsyncWait(once_run, [this, &pass_num, db_name, index]
+            oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
             {
                 pass_num = this->getLogReplyNum(db_name, index);
             });
@@ -148,7 +148,7 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-
+        oneTimer.Expire();
         return pass_num;
     }
 
@@ -197,7 +197,7 @@ namespace cluster
         {
             if (once_run > (end_time - Util::get_cur_time()))
                 once_run = end_time - Util::get_cur_time();
-            oneTimer.AsyncWait(once_run, [this, &pass_num, db_name, index]
+            oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
             {
                 pass_num = this->getLogSyncNum(db_name, index);
             });
@@ -207,7 +207,7 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-
+        oneTimer.Expire();
         return pass_num;
     }
 
@@ -256,7 +256,7 @@ namespace cluster
         {
             if (once_run > (end_time - Util::get_cur_time()))
                 once_run = end_time - Util::get_cur_time();
-            oneTimer.AsyncWait(once_run, [this, &pass_num, db_name, index]
+            oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
             {
                 pass_num = this->getLogSyncNum(db_name, index);
             });
@@ -266,7 +266,8 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-
+        
+        oneTimer.Expire();
         return pass_num;
     }
 

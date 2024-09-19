@@ -102,6 +102,13 @@ namespace cluster
         return leader->startNotify(db_name, index);
     }
 
+    void ClusterManager::addClusterDb(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->addClusterDb(db_name);
+    }
+
     int ClusterManager::startSync(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_path)
     {
         if (!isEnable() || !role_)
@@ -251,11 +258,11 @@ namespace cluster
         role_->updateDbIndex(db_name, index);
     }
 
-    void ClusterManager::updateDbNextIndex(std::string db_name, uint64 index)
+    void ClusterManager::updateDbNextIndex(std::string db_name, uint64 next_index)
     {
         if (!isEnable() || !role_)
             return;
-        role_->updateDbNextIndex(db_name, index);
+        role_->updateDbNextIndex(db_name, next_index);
     }
 
     uint32 ClusterManager::getTerm()
@@ -341,38 +348,30 @@ namespace cluster
         }
         if (status == ClusterLogStatus_HeartBeat)
         {
-            ClusterHeartBeatEvent task;
-            task.setWer(leader);
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_pending)
         {
             if (cb == nullptr)
             {
-                SLOG_TRACE("cluster pending not nullptr");
-                return false;
+                SLOG_TRACE("Please sure cluster pending is nullptr");
             }
-            ClusterNotifyEvent task(db_name, index);
-            task.setWer(leader);
-            task.cb_ = cb;
+            ClusterEventPtr task = std::make_shared<ClusterNotifyEvent>(db_name, index, leader, cb);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_sync)
         {
             if (cb == nullptr)
             {
-                SLOG_TRACE("cluster sync not nullptr");
-                return false;
+                SLOG_TRACE("Please sure cluster cluster sync is nullptr");
             }
-            ClusterSyncEvent task(db_name, index, operation, file_name);
-            task.setWer(leader);
-            task.cb_ = cb;
+            ClusterEventPtr task = std::make_shared<ClusterSyncEvent>(db_name, index, operation, file_name, leader, cb);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_cancel)
         {
-            ClusterCancelEvent task(db_name, index, operation, file_name);
-            task.setWer(leader);
+            ClusterEventPtr task = std::make_shared<ClusterCancelEvent>(db_name, index, operation, file_name, leader);
             task_queueL.push(task);
         }
         else
