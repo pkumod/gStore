@@ -691,7 +691,8 @@ class GenerateUidManager
 	{
 		worker_id_ = 1;
 	}
-	std::string NextID()
+	
+	uint64_t NextUID()
 	{
 		std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
 		uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
@@ -712,7 +713,12 @@ class GenerateUidManager
 		last_timestamp_ = timestamp;
 		sequence_ = sequence;
 		uint64_t id = ((timestamp - kEpoch) << kTimestampShift) | (worker_id_ << kWorkerIdShift) | sequence;
-		return std::to_string(id);
+		return id;
+	}
+
+	std::string NextID()
+	{
+		return std::to_string(NextUID());
 	}
 
 	static std::string getConvertTimeById(const std::string& id)
