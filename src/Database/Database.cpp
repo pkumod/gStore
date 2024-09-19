@@ -1880,7 +1880,7 @@ void Database::export_db(FILE *fp)
 	}
 }
 
-int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
+int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn, ofstream* cluster_log)
 {
 	if (_result_set.ansNum > 0) 
 		_result_set.release();
@@ -2051,14 +2051,14 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				if (txn)
 					success_num = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn);
+					success_num = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 			{
 				if (txn)
 					success_num = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn);
+					success_num = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 		}
 		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
@@ -2077,7 +2077,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				if (txn)
 					success_num = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn);
+					success_num = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
@@ -2089,7 +2089,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				if (txn)
 					success_num = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn);
+					success_num = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 		}
 
@@ -4059,7 +4059,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 // WARNING: TRANSACTIONAL batch insert is not completed yet!
 unsigned
-Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
+Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, ofstream* cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;
@@ -4135,6 +4135,10 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		id_tuples[i].subid = _sub_id;
 		id_tuples[i].preid = _pre_id;
 		id_tuples[i].objid = _obj_id;
+		if (cluster_log)
+		{
+			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << std::endl;
+		}
 	}
 
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);
@@ -4202,7 +4206,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 
 // WARNING: TRANSACTIONAL batch remove is not completed yet!
 unsigned
-Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
+Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, ofstream* cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;
@@ -4250,6 +4254,10 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		sub_ids.insert(_sub_id);
 		pre_ids.insert(_pre_id);
 		obj_ids.insert(_obj_id);
+		if (cluster_log)
+		{
+			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << std::endl;
+		}
 	}
 
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);

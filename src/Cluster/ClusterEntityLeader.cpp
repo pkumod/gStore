@@ -35,18 +35,38 @@ namespace cluster
         return it->second;
     }
 
-    void ClusterEntityLeader::startHeardBeat()
+    void ClusterEntityLeader::startHeardBeat(std::string db_name)
     {
-        head_beat_timer_.StartTimer(heartbeat_, [this]()
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return;
+        TimerProvider timer;
+        head_beat_timerL_.insert(make_pair(db_name, timer));
+        head_beat_timerL_[db_name].StartTimer(heartbeat_, [this, db_name]()
         {
-            this->postHeartBeat();
+            this->postHeartBeat(db_name);
         });
     }
 
-    void ClusterEntityLeader::postHeartBeat()
+    void ClusterEntityLeader::stopHeardBeatTimer(std::string db_name)
+    {
+        auto it = head_beat_timerL_.find(db_name);
+        if (it == head_beat_timerL_.end())
+            return;
+        it->second.Expire();
+        head_beat_timerL_.erase(db_name);
+    }
+
+    void ClusterEntityLeader::postHeartBeat(std::string db_name)
     {
         uint32 term = getTerm();
-        httpentities::HeartBeatRequest request(term, 0, 0);
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+        {
+            stopHeardBeatTimer(db_name);
+            return;
+        }
+        httpentities::HeartBeatRequest request(term, db_name, getDbIndex(db_name));
         auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;

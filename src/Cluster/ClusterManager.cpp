@@ -68,7 +68,7 @@ namespace cluster
         return leader->tryRecover(dbs);
     }
 
-    void ClusterManager::startHeartBeat()
+    void ClusterManager::startHeartBeat(const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return;
@@ -78,7 +78,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return;
         }
-        leader->startHeardBeat();
+        leader->startHeardBeat(db_name);
     }
 
     int ClusterManager::startNotify(std::string db_name, uint32 index)

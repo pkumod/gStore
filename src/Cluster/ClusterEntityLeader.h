@@ -13,14 +13,15 @@ namespace cluster
         int sync_timeout_;
         static uint32 headBeat_max_fail_num_;
         std::map<std::string, uint32> faileL_; //ip:失败次数，大于多少次（代表此从节点应答失败，不在发送心跳包）
-        TimerProvider head_beat_timer_;
+        std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
         public:
         ClusterNode FindFollower(const std::string& ip)const;
-        void postHeartBeat();
+        void postHeartBeat(std::string db_name);
         void postNotify(std::string db_name, uint64 index);
         void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
         void postCancel(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
-        void startHeardBeat();
+        void startHeardBeat(std::string db_name);
+        void stopHeardBeatTimer(std::string db_name);
         uint32 startNotify(std::string db_name, uint64 index);
         uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);
         uint32 startCancel(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);

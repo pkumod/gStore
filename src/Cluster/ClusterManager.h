@@ -39,7 +39,7 @@ namespace cluster
 
         //主从互通模块
         // 启动心跳超时检测
-        void startHeartBeat();
+        void startHeartBeat(const std::string& db_name);
         // 启动更新通知, 返回应答数量
         int startNotify(std::string db_name, uint32 index);
         // 启动同步通知, 返回应答数量
@@ -102,10 +102,19 @@ namespace cluster
     // task
     struct ClusterHeartBeatEvent : public ClusterEvent
     {
+        std::string db_name_;
         ClusterEntityLeaderWeaker wer_;
         void setWer(ClusterEntityLeaderWeaker wer)
         {
             wer_ = wer;
+        }
+        ClusterHeartBeatEvent()
+        {
+            db_name_ = "";
+        }
+        ClusterHeartBeatEvent(std::string db_name)
+        {
+            db_name_ = db_name;
         }
         void runEvent()const override
         {
@@ -115,7 +124,7 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            per->startHeardBeat();
+            per->startHeardBeat(db_name_);
         }
     };
 
