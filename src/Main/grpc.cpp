@@ -108,13 +108,6 @@ int jsonParam(const Json &json, const std::string &key, const int &default_val);
 bool hasJsonParam(const Json &json, const std::string &key);
 void parseRequest(const GRPCReq *request, Json &json_data);
 
-struct proxy_series_context
-{
-	std::string url;
-	const GRPCReq *proxy_req;
-	GRPCResp *proxy_resp;
-	bool is_keep_alive;
-};
 
 std::string to_json_string(const Json& json)
 {
@@ -1297,8 +1290,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
  */
 void check_task(const GRPCReq *request, GRPCResp *response)
 {
-	// std::string success = "the grpc server is running...";
-	std::string success = to_string(getpid());
+	std::string success = "the grpc server is running...";
 	response->Success(success);
 }
 
@@ -2594,23 +2586,33 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			if(clusterManagerPtr->isEnable() && current_database->isUpdate(sparql, updateType))
 			{
 				// redirect to leader
-				WFHttpTask *http_task;
-				struct proxy_series_context *content = new proxy_series_context;
-				content->url = request->get_request_uri();
-				content->proxy_req = request;
-				content->proxy_resp = response;
-				series->set_context(content);
-				series->set_callback([](const SeriesWork *series) {
-					delete (proxy_series_context *)series->get_context();
-				});
-				content->is_keep_alive = request->is_keep_alive();
+				WFHttpTask *leader_task;
+
 				string leader_url =  clusterManagerPtr->getLeaderUrl();
 				const string redirect_url = leader_url + request->get_request_uri() ;
-				http_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, update_query_callbak);
+				SLOG_CORE("cluster follower redirect to: " + redirect_url);
+				leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
+					const void *body;
+					size_t len;
+					task->get_resp()->get_parsed_body(&body, &len);
+					char* null_terminated_string = new char[len + 1];
+					std::memcpy(null_terminated_string, body, len);
+					null_terminated_string[len] = '\0'; 
+					SLOG_DEBUG("leader response body: " << null_terminated_string);
+					response->String(null_terminated_string);
+					task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
+						delete []null_terminated_string;
+					});
+				});
+				// copy client request to the leader_task request
 				const void *body;
 				size_t len;
-				*http_task->get_req() = protocol::HttpRequest();
+				request->get_parsed_body(&body, &len);
 
+				auto *leader_req = leader_task->get_req();
+				leader_req->set_method(request->get_method());
+				leader_req->append_output_body_nocopy(body, len);
+				*series << leader_task;
 				return;
 			}
 			bool lock_rt = apiUtil->rdlock_database(db_name);
