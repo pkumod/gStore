@@ -162,6 +162,22 @@ namespace cluster
         }
     }
 
+    void ClusterEntity::updateDbNextIndex(std::string db_name, uint64 next_index)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_name << " ,next_index:" << next_index);
+            return;
+        }
+        log.setDbNextIndex(db_name, next_index);
+        if (!writeToTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_name << " ,next_index:" << next_index);
+            return;
+        }
+    }
+
     uint32 ClusterEntity::getTerm()
     {
         if (term_ != 0)
@@ -185,6 +201,17 @@ namespace cluster
             return 0;
         }
         return log.getDbIndex(db_name);
+    }
+
+    uint64 ClusterEntity::getDbNextIndex(const std::string& db_name)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!");
+            return 0;
+        }
+        return log.getDbNextIndex(db_name);
     }
 
     // nt file

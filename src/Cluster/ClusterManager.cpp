@@ -244,6 +244,13 @@ namespace cluster
         role_->updateDbIndex(db_name, index);
     }
 
+    void ClusterManager::updateDbNextIndex(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->updateDbNextIndex(db_name, index);
+    }
+
     uint32 ClusterManager::getTerm()
     {
         if (!isEnable() || !role_)
@@ -251,11 +258,18 @@ namespace cluster
         return role_->getTerm();
     }
 
-    void ClusterManager::getDbIndex(std::string db_name, uint64 index)
+    uint64 ClusterManager::getDbIndex(std::string db_name)
     {
         if (!isEnable() || !role_)
-            return;
-        role_->getDbIndex(db_name);
+            return 0;
+        return role_->getDbIndex(db_name);
+    }
+
+    uint64 ClusterManager::getDbNextIndex(std::string db_name)
+    {
+        if (!isEnable() || !role_)
+            return 0;
+        return role_->getDbNextIndex(db_name);
     }
 
     void ClusterManager::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)

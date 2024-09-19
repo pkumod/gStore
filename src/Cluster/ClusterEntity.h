@@ -33,8 +33,10 @@ namespace cluster
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         void updateTerm(uint32 term);
         void updateDbIndex(std::string db_name, uint64 index);
+        void updateDbNextIndex(std::string db_name, uint64 next_index);
         uint32 getTerm();
         uint64 getDbIndex(const std::string& db_name);
+        uint64 getDbNextIndex(const std::string& db_name);
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);

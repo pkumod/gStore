@@ -78,12 +78,16 @@ namespace cluster
         bool enabelAttain(std::string db_name, uint64 index, ClusterLogStatus status);
         // 更换主节点
         void updateTerm(uint32 term);
-        // 更换主节点索引
+        // 更新已完成节点索引
         void updateDbIndex(std::string db_name, uint64 index);
+        // 更新需要处理的节点索引
+        void updateDbNextIndex(std::string db_name, uint64 index);
         // 获取任期
         uint32 getTerm();
         // 获取数据库成功提交的最新日志索引
-        void getDbIndex(std::string db_name, uint64 index);
+        uint64 getDbIndex(std::string db_name);
+        // 获取数据库正在处理的日志索引
+        uint64 getDbNextIndex(std::string db_name);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储

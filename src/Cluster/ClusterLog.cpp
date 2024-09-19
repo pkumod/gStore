@@ -249,12 +249,15 @@ namespace cluster
             s.at("db_name").get_to(t.db_name);
         if (s.contains("index"))
             s.at("index").get_to(t.index);
+        if (s.contains("nextIndex"))
+            s.at("nextIndex").get_to(t.nextIndex);
     }
 
     void to_json(nlohmann::json& s, const TermDbLog& t)
     {
         s["db_name"]  = t.db_name;
         s["index"] = t.index;
+        s["nextIndex"] = t.nextIndex;
     }
 
     // ClusterTermInfo

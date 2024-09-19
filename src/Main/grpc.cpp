@@ -5252,14 +5252,13 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					std::string username = leader_node.getUsername();
 					std::string password = MD5(leader_node.getPassword()).toStr();
 					uint16_t result = 0; // default check failed
-					// TODO get local index
-					// local_index = clusterManagerPtr->getIndex(db_name);
-					if (leader_term == local_term && leader_index == local_index)
+					uint64_t finish_index = clusterManagerPtr->getDbIndex(db_name);
+					if (leader_term == local_term && leader_index == finish_index)
 					{
 						// check ok
 						result = 1;
 					}
-					httpentities::ClusterCheckRequest check_request(local_term, db_name, local_index, result);
+					httpentities::ClusterCheckRequest check_request(local_term, db_name, finish_index, result);
 					HttpUtil::clusterCheck(check_url, check_request, username, password);
 				}
 			}).detach();
@@ -5318,7 +5317,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			if (!db_name.empty())
 			{
 				// TODO get current can be committed index， and compare with leader_index
-				// local_index = clusterManagerPtr->getHandingIndex(db_name);
+				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
 					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_commit);
