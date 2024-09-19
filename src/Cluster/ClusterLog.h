@@ -10,27 +10,34 @@ namespace cluster
     {
         uint64 index;
         int status;
-        uint32 nodeNum;
         ClusterOperation operation;
-        std::string file_path;
+        std::string fileName;
+        std::set<std::string> replyIps;
+        std::set<std::string> appenEntriesIps;
         public:
         LogInfo()
         {
             index   = 0;
             status  = 0;
-            nodeNum = 0;
             operation = ClusterOperation_None;
-            file_path = "";
+            fileName = "";
+            replyIps = std::set<std::string>();
+            appenEntriesIps = std::set<std::string>();
         }
         void setIndex(uint64 value){ index = value; }
         void setStatus(int value){ status = value; }
-        void setNodeNum(uint32 value){ nodeNum = value; }
         void setOperation(ClusterOperation value){ operation = value; }
-        void setFilePath(const std::string& value){ file_path = value; }
+        void setFileName(const std::string& value){ fileName = value; }
         uint64 getIndex()const{ return index; }
         int    getStatus()const{ return status; }
-        uint32 getNodeNum()const{ return nodeNum; }
-        void addNodeNum(){ nodeNum += 1; }
+        void setReplyIps(const nlohmann::json& s);
+        void setAppenEntriesIps(const nlohmann::json& s);
+        void covertReplyIpsJson(nlohmann::json& s)const;
+        void covertAppenEntriesIpsJson(nlohmann::json& s)const;
+        void addReplyIps(const std::string& value){ replyIps.insert(value); }
+        void addAppenEntriesIps(const std::string& value){ appenEntriesIps.insert(value); }
+        uint32 getReplyNum()const{ return replyIps.size(); }
+        uint32 getAppenEntriesNum()const{ return appenEntriesIps.size(); }
     };
 
     class ClusterDbNameLogInfo
@@ -43,8 +50,8 @@ namespace cluster
         void covertJson(nlohmann::json& s)const;
         bool addLog(uint64 index, int status, ClusterOperation operation);
         void updateLogStatus(uint64 index, int status);
-        void addLogReplyNum(uint64 index);
-        void addLogSyncNum(uint64 index);
+        void addLogReplyNum(uint64 index, const std::string& ip);
+        void addLogSyncNum(uint64 index, const std::string& ip);
         uint32 getLogReplyNum(uint64 index)const;
         uint32 getLogSyncNum(uint64 index)const;
         void updateTerm(uint32 term);

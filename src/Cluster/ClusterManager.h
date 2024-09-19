@@ -67,9 +67,9 @@ namespace cluster
         // 更新日志状态
         void updateLogStatus(std::string db_name, uint64 index, int status);
         // 增加响应节点数量
-        void addLogReplyNum(std::string db_name, uint64 index);
+        void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip);
         // 增加同步节点数量
-        void addLogSyncNum(std::string db_name, uint64 index);
+        void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip);
         // 获取通知响应数量
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         // 获取同步数量

@@ -96,20 +96,20 @@ namespace cluster
         db->updateLogStatus(index, status);
     }
 
-    void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index)
+    void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->addLogReplyNum(index);
+        db->addLogReplyNum(index, ip);
     }
 
-    void ClusterEntity::addLogSyncNum(std::string db_name, uint64 index)
+    void ClusterEntity::addLogSyncNum(std::string db_name, uint64 index, const std::string& ip)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->addLogSyncNum(index);
+        db->addLogSyncNum(index, ip);
     }
 
     uint32 ClusterEntity::getLogReplyNum(std::string db_name, uint64 index)

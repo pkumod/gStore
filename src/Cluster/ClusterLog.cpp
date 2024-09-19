@@ -9,21 +9,69 @@ namespace cluster
             s.at("index").get_to(t.index);
         if (s.contains("status"))
             s.at("status").get_to(t.status);
-        if (s.contains("nodeNum"))
-            s.at("nodeNum").get_to(t.nodeNum);
         if (s.contains("operation"))
             s.at("operation").get_to(t.operation);
-        if (s.contains("file_path"))
-            s.at("file_path").get_to(t.file_path);
+        if (s.contains("fileName"))
+            s.at("fileName").get_to(t.fileName);
+        if (s.contains("replyIps"))
+            t.setReplyIps(s["replyIps"]);
+        if (s.contains("appenEntriesIps"))
+            t.setAppenEntriesIps(s["appenEntriesIps"]);
     }
 
     void to_json(nlohmann::json& s, const LogInfo& t)
     {
         s["index"]   = t.index;
         s["status"]  = t.status;
-        s["nodeNum"] = t.nodeNum;
         s["operation"] = t.operation;
-        s["file_path"] = t.file_path;
+        s["fileName"] = t.fileName;
+        t.covertReplyIpsJson(s);
+        t.covertAppenEntriesIpsJson(s);
+    }
+
+
+    void LogInfo::setReplyIps(const nlohmann::json& s)
+    {
+        int size = s.size();
+        for (int i = 0; i < size; i++)
+        {
+            if (!s[i].contains("ip"))
+                continue;
+            std::string ip = s[i].at("ip");
+            replyIps.insert(ip);
+        }
+    }
+
+    void LogInfo::setAppenEntriesIps(const nlohmann::json& s)
+    {
+        int size = s.size();
+        for (int i = 0; i < size; i++)
+        {
+            if (!s[i].contains("ip"))
+                continue;
+            std::string ip = s[i].at("ip");
+            appenEntriesIps.insert(ip);
+        }
+    }
+
+    void LogInfo::covertReplyIpsJson(nlohmann::json& s)const
+    {
+        int i = 0;
+        for (const auto& m : replyIps)
+        {
+            s["replyIps"][i]["ip"] = m;
+            i++;
+        }
+    }
+
+    void LogInfo::covertAppenEntriesIpsJson(nlohmann::json& s)const
+    {
+        int i = 0;
+        for (const auto& m : appenEntriesIps)
+        {
+            s["appenEntriesIps"][i]["ip"] = m;
+            i++;
+        }
     }
 
     // ClusterDbNameLogInfo
@@ -112,7 +160,6 @@ namespace cluster
         LogInfo log;
         log.setIndex(index);
         log.setStatus(status);
-        log.setNodeNum(0);
         log.setOperation(operation);
         posL_[logs_.size()] = index;
         logs_[index] = log;
@@ -128,10 +175,9 @@ namespace cluster
             return;
         }
         it->second.setStatus(status);
-        it->second.setNodeNum(0);
     }
 
-    void ClusterDbNameLogInfo::addLogReplyNum(uint64 index)
+    void ClusterDbNameLogInfo::addLogReplyNum(uint64 index, const std::string& ip)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -144,10 +190,10 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return;
         }
-        it->second.addNodeNum();
+        it->second.addReplyIps(ip);
     }
 
-    void ClusterDbNameLogInfo::addLogSyncNum(uint64 index)
+    void ClusterDbNameLogInfo::addLogSyncNum(uint64 index, const std::string& ip)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -160,7 +206,7 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return;
         }
-        it->second.addNodeNum();
+        it->second.addAppenEntriesIps(ip);
     }
 
     uint32 ClusterDbNameLogInfo::getLogReplyNum(uint64 index)const
@@ -176,7 +222,7 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return 0;
         }
-        return it->second.getNodeNum();
+        return it->second.getReplyNum();
     }
 
     uint32 ClusterDbNameLogInfo::getLogSyncNum(uint64 index)const
@@ -192,7 +238,7 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return 0;
         }
-        return it->second.getNodeNum();
+        return it->second.getAppenEntriesNum();
     }
 
     // ClusterTermInfo

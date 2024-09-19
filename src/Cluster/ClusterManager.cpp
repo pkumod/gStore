@@ -178,18 +178,18 @@ namespace cluster
         role_->updateLogStatus(db_name, index, status);
     }
 
-    void ClusterManager::addLogReplyNum(std::string db_name, uint64 index)
+    void ClusterManager::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip)
     {
         if (!isEnable() || !role_)
             return;
-        role_->addLogReplyNum(db_name, index);
+        role_->addLogReplyNum(db_name, index, ip);
     }
 
-    void ClusterManager::addLogSyncNum(std::string db_name, uint64 index)
+    void ClusterManager::addLogSyncNum(std::string db_name, uint64 index, const std::string& ip)
     {
         if (!isEnable() || !role_)
             return;
-        role_->addLogSyncNum(db_name, index);
+        role_->addLogSyncNum(db_name, index, ip);
     }
 
     uint32 ClusterManager::getLogReplyNum(std::string db_name, uint64 index)
