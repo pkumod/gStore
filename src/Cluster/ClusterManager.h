@@ -60,7 +60,7 @@ namespace cluster
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        bool addTask(std::string db_name, ClusterLogStatus status = ClusterLogStatus_HeartBeat, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "", const timeoutCall& cb = nullptr);
+        bool addTask(std::string db_name, ClusterLogStatus status = ClusterLogStatus_HeartBeat, const timeoutCall& cb = nullptr, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "");
         // 启动跑任务
         void runTask();
 

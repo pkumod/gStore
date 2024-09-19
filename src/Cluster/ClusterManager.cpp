@@ -336,7 +336,7 @@ namespace cluster
         return role_->getNtFilePath(db_name, file_name);
     }
 
-    bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, ClusterOperation operation, const std::string& file_name, const timeoutCall& cb)
+    bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, const timeoutCall& cb, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)
             return false;
