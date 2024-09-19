@@ -66,7 +66,8 @@ namespace cluster
             stopHeardBeatTimer(db_name);
             return;
         }
-        httpentities::HeartBeatRequest request(term, db_name, getDbIndex(db_name));
+        uint64 index = getDbIndex(db_name);
+        httpentities::HeartBeatRequest request(term, db_name, index);
         auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
@@ -125,9 +126,13 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startNotify(std::string db_name, uint64 index)
+    uint32 ClusterEntityLeader::startNotify(std::string db_name)
     {
         uint32 term = getTerm();
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return 0;
+        uint64 index = getDbNextIndex(db_name);
         postNotify(db_name, index);
         uint64 end_time = Util::get_cur_time() + relpy_timeout_;
         int once_run = 1000;
@@ -184,9 +189,13 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name)
+    uint32 ClusterEntityLeader::startSync(std::string db_name, ClusterOperation operation, const std::string& file_name)
     {
         uint32 term = getTerm();
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return 0;
+        uint64 index = getDbNextIndex(db_name);
         postSync(db_name, index, operation, file_name);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
@@ -243,9 +252,13 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startCancel(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name)
+    uint32 ClusterEntityLeader::startCancel(std::string db_name, ClusterOperation operation, const std::string& file_name)
     {
         uint32 term = getTerm();
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return 0;
+        uint64 index = getDbNextIndex(db_name);
         postSync(db_name, index, operation, file_name);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;

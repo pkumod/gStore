@@ -42,9 +42,9 @@ namespace cluster
         // 启动心跳超时检测
         void startHeartBeat(const std::string& db_name);
         // 启动更新通知, 返回应答数量
-        int startNotify(std::string db_name, uint32 index);
+        int startNotify(std::string db_name);
         // 启动同步通知, 返回应答数量
-        int startSync(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_path);
+        int startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -60,7 +60,7 @@ namespace cluster
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        bool addTask(std::string db_name, uint32 index = 0, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "", ClusterLogStatus status = ClusterLogStatus_HeartBeat, const timeoutCall& cb = nullptr);
+        bool addTask(std::string db_name, ClusterLogStatus status = ClusterLogStatus_HeartBeat, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "", const timeoutCall& cb = nullptr);
         // 启动跑任务
         void runTask();
 
@@ -135,17 +135,14 @@ namespace cluster
     struct ClusterNotifyEvent : public ClusterEvent
     {
         std::string db_name_;
-        uint64 index_;
         ClusterEntityLeaderWeaker wer_;
         timeoutCall cb_;
         ClusterNotifyEvent()
         {
             db_name_ = "";
-            index_ = 0;
         }
-        ClusterNotifyEvent(std::string db_name, uint64 index, ClusterEntityLeaderPtr per, const timeoutCall &cb)
+        ClusterNotifyEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
         {
-            index_ = index;
             db_name_ = db_name;
             wer_ = per;
             cb_ = cb;
@@ -158,7 +155,7 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            uint32 num = per->startNotify(db_name_, index_);
+            uint32 num = per->startNotify(db_name_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
             if (cb_)
             {
@@ -174,7 +171,6 @@ namespace cluster
     struct ClusterSyncEvent : public ClusterEvent
     {
         std::string db_name_;
-        uint64 index_;
         ClusterOperation operation_;
         std::string file_name_;
         ClusterEntityLeaderWeaker wer_;
@@ -182,14 +178,12 @@ namespace cluster
         ClusterSyncEvent()
         {
             db_name_ = "";
-            index_ = 0;
             operation_ = ClusterOperation_None;
             file_name_ = "";
         }
-        ClusterSyncEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
+        ClusterSyncEvent(std::string db_name, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
         {
             db_name_ = db_name;
-            index_ = index;
             operation_ = operation;
             file_name_ = file_name;
             wer_ = per;
@@ -203,9 +197,8 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            uint32 num = per->startSync(db_name_, index_, operation_, file_name_);
+            uint32 num = per->startSync(db_name_, operation_, file_name_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
-            SLOG_TRACE("ClusterHeartBeatEvent ClusterSyncEvent");
             if (cb_)
             {
                 SLOG_TRACE("cluster sync callback");
@@ -220,21 +213,18 @@ namespace cluster
     struct ClusterCancelEvent : public ClusterEvent
     {
         std::string db_name_;
-        uint64 index_;
         ClusterOperation operation_;
         std::string file_name_;
         ClusterEntityLeaderWeaker wer_;
         ClusterCancelEvent()
         {
             db_name_ = "";
-            index_ = 0;
             operation_ = ClusterOperation_None;
             file_name_ = "";
         }
-        ClusterCancelEvent(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per)
+        ClusterCancelEvent(std::string db_name, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per)
         {
             db_name_ = db_name;
-            index_ = index;
             operation_ = operation;
             file_name_ = file_name;
             wer_ = per;
@@ -247,7 +237,7 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            per->startCancel(db_name_, index_, operation_, file_name_);
+            per->startCancel(db_name_, operation_, file_name_);
         }
     };
 }

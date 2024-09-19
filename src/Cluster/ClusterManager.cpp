@@ -88,7 +88,7 @@ namespace cluster
         leader->startHeardBeat(db_name);
     }
 
-    int ClusterManager::startNotify(std::string db_name, uint32 index)
+    int ClusterManager::startNotify(std::string db_name)
     {
         if (!isEnable() || !role_)
             return -1;
@@ -99,7 +99,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return -1;
         }
-        return leader->startNotify(db_name, index);
+        return leader->startNotify(db_name);
     }
 
     void ClusterManager::addClusterDb(const std::string& db_name)
@@ -109,7 +109,7 @@ namespace cluster
         role_->addClusterDb(db_name);
     }
 
-    int ClusterManager::startSync(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_path)
+    int ClusterManager::startSync(std::string db_name, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)
             return -1;
@@ -119,7 +119,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return -1;
         }
-        return leader->startSync(db_name, index, operation, file_path);
+        return leader->startSync(db_name, operation, file_name);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)
@@ -336,7 +336,7 @@ namespace cluster
         return role_->getNtFilePath(db_name, file_name);
     }
 
-    bool ClusterManager::addTask(std::string db_name, uint32 index, ClusterOperation operation, const std::string& file_name, ClusterLogStatus status, const timeoutCall& cb)
+    bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, ClusterOperation operation, const std::string& file_name, const timeoutCall& cb)
     {
         if (!isEnable() || !role_)
             return false;
@@ -357,7 +357,7 @@ namespace cluster
             {
                 SLOG_TRACE("Please sure cluster pending is nullptr");
             }
-            ClusterEventPtr task = std::make_shared<ClusterNotifyEvent>(db_name, index, leader, cb);
+            ClusterEventPtr task = std::make_shared<ClusterNotifyEvent>(db_name, leader, cb);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_sync)
@@ -366,12 +366,12 @@ namespace cluster
             {
                 SLOG_TRACE("Please sure cluster cluster sync is nullptr");
             }
-            ClusterEventPtr task = std::make_shared<ClusterSyncEvent>(db_name, index, operation, file_name, leader, cb);
+            ClusterEventPtr task = std::make_shared<ClusterSyncEvent>(db_name, operation, file_name, leader, cb);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_cancel)
         {
-            ClusterEventPtr task = std::make_shared<ClusterCancelEvent>(db_name, index, operation, file_name, leader);
+            ClusterEventPtr task = std::make_shared<ClusterCancelEvent>(db_name, operation, file_name, leader);
             task_queueL.push(task);
         }
         else

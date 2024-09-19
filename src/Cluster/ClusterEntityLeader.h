@@ -22,9 +22,9 @@ namespace cluster
         void postCancel(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
         void startHeardBeat(std::string db_name);
         void stopHeardBeatTimer(std::string db_name);
-        uint32 startNotify(std::string db_name, uint64 index);
-        uint32 startSync(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);
-        uint32 startCancel(std::string db_name, uint64 index, ClusterOperation operation, const std::string& file_name);
+        uint32 startNotify(std::string db_name);
+        uint32 startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
+        uint32 startCancel(std::string db_name, ClusterOperation operation, const std::string& file_name);
         bool tryRecover(const std::vector<std::string>& dbs);
 
         // virtual function in here
