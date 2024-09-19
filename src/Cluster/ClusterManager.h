@@ -9,7 +9,7 @@
 #include "../Util/Util.h"
 #include "ClusterTask.h"
 
-typedef std::function<void()> timeoutCall;
+typedef std::function<void(bool)> timeoutCall;
 
 namespace cluster
 {
@@ -160,10 +160,13 @@ namespace cluster
             }
             uint32 num = per->startNotify(db_name_, index_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
-            if (cb_ && num < need_num)
+            if (cb_)
             {
-                SLOG_TRACE("cluster reply time out");
-                cb_();
+                SLOG_TRACE("cluster reply callback");
+                if (num < need_num)
+                    cb_(false);
+                else
+                    cb_(true);
             }
         }
     };
@@ -203,10 +206,13 @@ namespace cluster
             uint32 num = per->startSync(db_name_, index_, operation_, file_name_);
             uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
             SLOG_TRACE("ClusterHeartBeatEvent ClusterSyncEvent");
-            if (cb_ && num < need_num)
+            if (cb_)
             {
-                SLOG_TRACE("cluster sync time out");
-                cb_();
+                SLOG_TRACE("cluster sync callback");
+                if (num < need_num)
+                    cb_(false);
+                else
+                    cb_(true);
             }
         }
     };
