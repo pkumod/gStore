@@ -140,7 +140,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
     Util::system_path = Util::getConfigureValue("system_path");
     // server
-    Util::setGlobalConfig(ini_parser, "server", "daemon", "off");
+    Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
     Util::setGlobalConfig(ini_parser, "server", "port");
     Util::setGlobalConfig(ini_parser, "server", "tcp_port");
     Util::setGlobalConfig(ini_parser, "server", "thread_num");

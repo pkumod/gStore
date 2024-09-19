@@ -4,7 +4,7 @@ bool HttpUtil::m_bDebug = false;
 
 HttpUtil::HttpUtil()
 {
-
+	std::cout << "HttpUtil init" << std::endl;
 }
 HttpUtil::~HttpUtil()
 {
@@ -80,6 +80,7 @@ static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 
 int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
+	SLOG_CORE("url: " + strUrl);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -106,6 +107,7 @@ int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 
 int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
+	SLOG_CORE("url: " + strUrl);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -140,6 +142,7 @@ int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 int HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
 {
+	SLOG_CORE("url: " + strUrl);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();

@@ -12,7 +12,7 @@
 #include "../Cluster/ClusterOperation.h"
 
 #define HTTP_TYPE "http"
-#define BASE_URL "http://127.0.0.1:" + _server_port + "/grpc"
+#define BASE_URL "http://127.0.0.1:" + _server_port
 #define API_URL BASE_URL + "/api"
 #define OFF_URL BASE_URL + "/shutdown"
 
@@ -36,6 +36,8 @@ std::string _db_home;
 std::string _db_suffix;
 
 std::string _server_port;
+
+std::string _server_deamon;
 
 bool startServer();
 bool stopServer();
@@ -292,12 +294,12 @@ void sig_handler(int signo)
 
 int main(int argc, char *argv[])
 {
+	Util util;
+	_server_port = util.getConfigureValue("port");
+	_server_deamon = util.getConfigureValue("deamon");
+	_db_home = util.getConfigureValue("db_home");
+	_db_suffix = util.getConfigureValue("db_suffix");
 	srand(time(NULL));
-	apiUtil = make_shared<APIUtil>();
-	pfnUtil = make_shared<PFNUtil>();
-	// init cluster
-	clusterManagerPtr = make_shared<cluster::ClusterManager>();
-	_server_port = apiUtil->get_configure_value("port");
 	string command;
 	if (argc == 1)
 	{
@@ -335,9 +337,6 @@ int main(int argc, char *argv[])
 			cout << "the server already running." << endl;
 			return -1;
 		}
-		_db_home = apiUtil->get_Db_path();
-		_db_suffix = apiUtil->get_Db_suffix();
-		size_t _len_suffix = _db_suffix.length();
 		if (startServer())
 		{
 			sleep(1);
@@ -371,8 +370,8 @@ int main(int argc, char *argv[])
 	else if (command == "-t" || command == "--stop")
 	{
 		// stop server
-		stopServer();
-		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
+		if(!stopServer() || _server_deamon == "on");
+			execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		return 0;
 	}
 	else if (command  == "-k" || command == "--kill")
@@ -387,8 +386,8 @@ int main(int argc, char *argv[])
 	else if (command == "-S" || command == "--status")
 	{
 		// show server status
-		string port = apiUtil->get_configure_value("port");
 		httpentities::CheckRequest check_request;
+		cout << "API_URL " << API_URL << endl;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		cout << "gStore API Server(gserver)" << endl;
 		if (check_response.success())
@@ -412,9 +411,8 @@ int main(int argc, char *argv[])
 }
 
 bool startServer() 
-{
-	string port_str = apiUtil->get_configure_value("port");
-	uint8 port = atoi(port_str.c_str());
+{	
+	uint8 port = atoi(_server_port.c_str());
 	// check port
 	int max_try = 20;
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -435,7 +433,7 @@ bool startServer()
 		cout<<endl;
 		if (bind_return == -1)
 		{			
-			SLOG_INFO("Server port "+ port_str + " is already in use.");
+			SLOG_INFO("Server port " + _server_port + " is already in use.");
 			return false;
 		}
 	} 
@@ -460,17 +458,18 @@ bool startServer()
 	if (fpid == 0)
 	{
 		int status;
-		string daemon;
 		while (true)
 		{
-			daemon = apiUtil->get_configure_value("daemon");
-			if (daemon == "on")
+			if (_server_deamon == "on")
 				fpid = fork();
 			else
 				fpid = 0;
 			// child, main process
 			if (fpid == 0)
 			{
+				apiUtil = make_shared<APIUtil>();
+				pfnUtil = make_shared<PFNUtil>();
+				clusterManagerPtr = make_shared<ClusterManager>();
 				// init config
 				int rt = apiUtil->initialize();			
 				if (rt == -1)
@@ -565,7 +564,7 @@ bool startServer()
 	// parent
 	else if (fpid > 0)
 	{
-		SLOG_INFO("grpc server port " + port_str);
+		SLOG_INFO("grpc server port " + _server_port);
 		return true;
 	}
 	// fork failure
@@ -585,8 +584,6 @@ bool stopServer()
 		return false;
 	}
 	string system_user = apiUtil->get_configure_value("system_username");
-	string port = apiUtil->get_configure_value("port");
-
 	string pid;
 	string system_password;
 	ifstream in;
@@ -594,12 +591,13 @@ bool stopServer()
 	getline(in, pid, '\n');
 	getline(in, system_password, '\n');
 	in.close();
-	SLOG_CORE("system user: " + system_user + ", password: " + system_password);
+	SLOG_CORE("port: " + _server_port + ", system user: " + system_user + ", password: " + system_password);
 	httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
 	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
 	if (shutdown_response.success())
 	{
 		SLOG_CORE("the Server [" + pid + "] is stopped successfully.");
+		Util::remove_file(pid_path);
 		return true;
 	}
 	else
@@ -613,28 +611,28 @@ void register_service(GRPCServer &svr)
 {
 	std::vector<std::string> methods = {"GET", "POST"};
 	svr.ROUTE(
-		"/grpc/shutdown", [](const GRPCReq *request, GRPCResp *response)
+		"/shutdown", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			shutdown(request, response);
 		},
 		methods);
 
 	svr.ROUTE(
-		"/grpc/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
+		"/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			cluster_api(request, response, cluster::cluster_operation::LEADER_HEARTBEAT);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
+		"/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			cluster_api(request, response, cluster::cluster_operation::LEADER_APPEND);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
+		"/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
 			response->add_header_pair("Access-Control-Allow-Methods", "POST");
@@ -643,35 +641,35 @@ void register_service(GRPCServer &svr)
 		ReqMethod::OPTIONS);
 
 	svr.ROUTE(
-		"/grpc/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
+		"/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_REPLY);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/cluster/check", [](const GRPCReq *request, GRPCResp *response)
+		"/cluster/check", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_CHECK);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/api", [](const GRPCReq *request, GRPCResp *response)
+		"/api", [](const GRPCReq *request, GRPCResp *response)
 		{ 
 			api(request, response);
 		},
 		methods);
 
 	svr.ROUTE(
-		"/grpc/file/upload", [](const GRPCReq *request, GRPCResp *response)
+		"/file/upload", [](const GRPCReq *request, GRPCResp *response)
 		{
 			upload_file(request, response);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/file/upload", [](const GRPCReq *request, GRPCResp *response)
+		"/file/upload", [](const GRPCReq *request, GRPCResp *response)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
 			response->add_header_pair("Access-Control-Allow-Methods", "POST");
@@ -680,14 +678,14 @@ void register_service(GRPCServer &svr)
 		ReqMethod::OPTIONS);
 
 	svr.ROUTE(
-		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
+		"/file/download", [](const GRPCReq *request, GRPCResp *response)
 		{
 			download_file(request, response);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/grpc/file/download", [](const GRPCReq *request, GRPCResp *response)
+		"/file/download", [](const GRPCReq *request, GRPCResp *response)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
 			response->add_header_pair("Access-Control-Allow-Methods", "POST");

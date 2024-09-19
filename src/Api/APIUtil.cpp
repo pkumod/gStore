@@ -40,19 +40,15 @@ APIUtil::~APIUtil()
             continue;
         //abort all transaction
         db_checkpoint(database_name);
-        shared_ptr<Database> current_database = iter->second;
-        pthread_rwlock_rdlock(&already_build_map_lock);
-        std::map<std::string, shared_ptr<DatabaseInfo>>::iterator it_already_build = already_build.find(database_name);
-        pthread_rwlock_unlock(&already_build_map_lock);
         // warning: this is going to be blocked, if the time of the system changes
-        // default timeout 60 seconds, 60000ms        
-        if (!trywrlock_database(database_name, 60*1000))
+        // default timeout 60 seconds        
+        if (!trywrlock_database(database_name, 60))
         {
             SLOG_WARN(database_name + " unable to save due to loss of lock");
             continue;
         }
-        current_database->save();
-        pthread_rwlock_unlock(&(it_already_build->second->db_lock));
+        iter->second->save();
+        unlock_database(database_name);
     }
     if (databases.find(SYSTEM_DB_NAME) != databases.end())
     {
@@ -96,8 +92,6 @@ APIUtil::~APIUtil()
     ipWhiteList = nullptr;
 
     ipBlackList = nullptr;
-
-    Util::remove_path(PID_PATH);
 }
 
 int APIUtil::initialize()
@@ -306,11 +300,13 @@ int APIUtil::initialize()
         // create system password file
         fstream ofp;
         system_password = util.int2string(util.getRandNum());
-        ofp.open(PID_PATH, ios::out);
+        std::string pid_path = PID_PATH;
+        ofp.open(pid_path.c_str(), ios::out);
         ofp << getpid();
         ofp << '\n';
         ofp << system_password;
         ofp << '\n';
+        ofp.flush();
         ofp.close();
         // #if defined(DEBUG)
         SLOG_CORE("initialization end");

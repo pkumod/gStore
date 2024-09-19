@@ -42,6 +42,7 @@ namespace cluster
         std::string port;
         std::string username;
         std::string password;
+        std::string base_url;
         public:
         ClusterNode()
         {
@@ -49,6 +50,7 @@ namespace cluster
             port     = "";
             username = "";
             password = "";
+            base_url = "";
         }
         ClusterNode(std::string ip_, std::string port_, std::string username_, std::string password_)
         {
@@ -56,6 +58,7 @@ namespace cluster
             port     = port_;
             username = username_;
             password = password_;
+            base_url = "http://" + ip_ + ":" + port_;
         }
         void setIp(std::string value){ ip = value; }
         void setPort(std::string value){ port = value; }
@@ -67,33 +70,23 @@ namespace cluster
         std::string getPassword()const{ return password; }
         std::string getCheckUrl()const
         {
-            std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster/check";
-            return url;
+            return base_url + "/cluster/check";
         }
         std::string getReplyUrl()const
         {
-            std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster/reply";
-            return url;
+            return base_url + "/cluster/reply";
         }
         std::string getHeartBeatUrl()const
         {
-            std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster/heartbeat";
-            return url;
+            return base_url + "/cluster/heartbeat";
         }
         std::string getAppendEntriesUrl()const
         {
-            std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster/appendEntries";
-            return url;
+            return base_url + "/cluster/appendEntries";
         }
         std::string getCancelUrl()const
         {
-            std::string url;
-            url += "http://" + ip + ":" + port + "/grpc/cluster/cancel";
-            return url;
+            return base_url + "/cluster/cancel";
         }
         bool empty()const{ return ip.empty(); }
     };

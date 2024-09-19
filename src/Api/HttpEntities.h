@@ -35,7 +35,7 @@ namespace httpentities {
         virtual void to_json(std::string& json_str) = 0;
         virtual void to_inner_json(std::string& json_str)
         {
-            nlohmann::json json = nlohmann::json{{"operation", this->op},{"username", this->username},{"password", ""},{"inner", "true"}};
+            nlohmann::json json = nlohmann::json{{"operation", this->op},{"username", "root"},{"password", ""},{"inner", "true"}};
             json_str = json.dump();
         }
     };
@@ -152,6 +152,16 @@ namespace httpentities {
                 {"password", this->password},
                 {"db_name", this->db_name},
                 {"csr", this->csr}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"inner", "true"}};
             json_str = json.dump();
         }
     };
