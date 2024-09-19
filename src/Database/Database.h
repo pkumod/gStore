@@ -51,7 +51,7 @@ public:
 	// then assign a new subid, and insert a new SigEntry
 	// 2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
 	// 3. if subject exist, update SigEntry, and update spo, ops... etc. if needed
-
+	bool isUpdate(const string& _query, QueryTree::UpdateType& updateType);
 	void InitEmptyDB();
 	void BuildEmptyKVstore();
 	bool BuildEmptyDB();
