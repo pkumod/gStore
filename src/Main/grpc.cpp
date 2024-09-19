@@ -2572,6 +2572,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		string thread_id = Util::getThreadID();
 		shared_ptr<Database> current_database;
 		bool is_update = false;
+		QueryTree::UpdateType update_type;
 		bool update_flag_bool = true;
 		if (apiUtil->check_privilege(username, "update", db_name) == 0)
 		{
@@ -2595,7 +2596,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				return;
 			}
 			// check update operation
-			QueryTree::UpdateType update_type;
 			is_update = current_database->isUpdate(sparql, update_type);
 			if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
 			{
@@ -2657,9 +2657,40 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		if (clusterManagerPtr->isEnable() && is_update) 
 		{
 			// TODO send [prepare] heartbeat and wait response
-
-			std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix;
-			std::string logpath = cluster_db_path + "/" + apiUtil->generateUid() + ".log";
+			bool prepare_result = true;
+			int8_t prepare_status = 1;
+			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_None;
+			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
+				cluster_operation = ClusterOperation::ClusterOperation_Insert;
+			else
+				cluster_operation = ClusterOperation::ClusterOperation_Delete;
+			uint64 log_index = apiUtil->generateUID();
+			clusterManagerPtr->addClusterDb(db_name);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
+			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
+			{
+				SLOG_DEBUG("prepare task result: " << success);
+				prepare_result = success;
+				prepare_status++;
+			});
+			// slepp 200 ms
+			useconds_t microseconds = 200*1000;
+			while (prepare_status)
+			{
+				usleep(microseconds);
+				if(prepare_status > 1)
+					break;
+			}
+			if (!prepare_result)
+			{
+				error = "Less than half of the cluster nodes are confirmed.";
+				SLOG_ERROR(error);
+				response->Error(StatusOperationFailed, error);
+				return;
+			}
+			
+			std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
+			std::string logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
 			clusterlog = make_shared<ofstream>();
 			clusterlog->open(logpath.c_str());
 		}
@@ -5436,7 +5467,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t leader_term = std::stol(form.at("term").second);
 	uint64_t leader_index = std::stoul(form.at("index").second);
 	// TODO check leader term and index with local
-	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix;
+	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
 	const std::string time_stamp_str = Util::getTimeString2();
 	const std::string zip_file_path = cluster_db_path + "/" + time_stamp_str + "_" + fileinfo.first;
 	const std::string unz_dir_path = cluster_db_path + "/tmp_" + time_stamp_str;
@@ -5550,7 +5581,7 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	{
 		// TODO add a new task that starting with follower index
 		std::string file_name;
-		clusterManagerPtr->addTask(db_name, index, cluster::ClusterOperation::ClusterOperation_None, file_name, cluster::ClusterLogStatus::ClusterLogStatus_sync);
+		clusterManagerPtr->addTask(db_name, cluster::ClusterLogStatus::ClusterLogStatus_HeartBeat);
 	}
 	
 	response->Success("ok");
