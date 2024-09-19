@@ -18,6 +18,7 @@
 using namespace std;
 using namespace rapidjson;
 
+#define PID_PATH "./conf/gstore.pid"
 #define ROOT_USERNAME "root"
 #define SYSTEM_DB_NAME "system"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
@@ -824,7 +825,6 @@ private:
     string system_username = "system";
     string system_password;
     string system_password_path;
-    string system_port_path;
     int connection_num = 0;
     int blackList = 0;
     int whiteList = 0;
@@ -857,7 +857,7 @@ public:
     void get_already_builds(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
     bool check_already_build(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name);
-    bool trywrlock_database(const std::string& db_name, const uint64_t& timeout_ms);
+    bool trywrlock_database(const std::string& db_name, const time_t& timeout_s);
     bool rdlock_database(const std::string& db_name);
     bool unlock_database(const std::string& db_name);
     std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);

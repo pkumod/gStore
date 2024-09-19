@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include "HttpEntities.h"
+#include "../Util/Slog.h"
 
 class HttpUtil
 {

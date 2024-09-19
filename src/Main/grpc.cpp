@@ -282,6 +282,9 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 void sig_handler(int signo)
 {
 	SLOG_INFO("grpc server stopped.");
+	apiUtil.reset();
+	pfnUtil.reset();
+	clusterManagerPtr.reset();
 	wait_group.done();
 	std::cout.flush();
 	_exit(signo);
@@ -378,15 +381,7 @@ int main(int argc, char *argv[])
 		cout << "The service will be forcibly stopped!" << endl;
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		// remove pid file
-		std::string system_path = apiUtil->get_Db_path() + "system" + apiUtil->get_Db_suffix();
-		std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
-		std::string file_path;
-		for (size_t i=0; i<pid_files.size(); i++)
-		{
-			file_path = system_path + "/" + pid_files[i];
-			SLOG_DEBUG("pid path: " + file_path);
-			Util::remove_path(file_path);
-		}
+		Util::remove_path(PID_PATH);
 		return 0;
 	}
 	else if (command == "-S" || command == "--status")
@@ -460,10 +455,10 @@ bool startServer()
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
 	pid_t fpid;
-	// fpid = fork();
-	// // child
-	// if (fpid == 0)
-	// {
+	fpid = fork();
+	// child
+	if (fpid == 0)
+	{
 		int status;
 		string daemon;
 		while (true)
@@ -477,14 +472,16 @@ bool startServer()
 			if (fpid == 0)
 			{
 				// init config
-				int rt = apiUtil->initialize();
+				int rt = apiUtil->initialize();			
 				if (rt == -1)
 				{
 					return false;
 				}
-				SLOG_DEBUG("cluster status: " << clusterManagerPtr->isEnable());
 				if (clusterManagerPtr->isEnable()) {
+					SLOG_INFO("cluster status on");
 					clusterManagerPtr->init();
+				} else {
+					SLOG_INFO("cluster status off");
 				}
 				GRPCServer grpcServer;
 				// register rest service
@@ -518,7 +515,10 @@ bool startServer()
 				signal(SIGINT, sig_handler);
 				wait_group.wait();
 				grpcServer.stop();
-				SLOG_DEBUG("grpc server stoped.");
+				apiUtil.reset();
+				pfnUtil.reset();
+				clusterManagerPtr.reset();
+				SLOG_INFO("grpc server stoped.");
 				std::cout.flush();
 				exit(0);
 				return true;
@@ -534,17 +534,22 @@ bool startServer()
 				}
 				else
 				{
-					string system_port_path = _db_home + "/system" + _db_suffix + "/port.txt";
-					if (Util::file_exist(system_port_path))
-					{
-						Util::remove_path(system_port_path);
-					}
 					SLOG_WARN("Stopped abnormally, restarting server...");
 					latch.lockExclusive();
 					if (apiUtil)
 					{
 						apiUtil.reset();
 						apiUtil = make_shared<APIUtil>();
+					}
+					if (pfnUtil) 
+					{
+						pfnUtil.reset();
+						pfnUtil = make_shared<PFNUtil>();
+					}
+					if (clusterManagerPtr)
+					{
+						clusterManagerPtr.reset();
+						clusterManagerPtr = make_shared<ClusterManager>();
 					}
 					latch.unlock();
 				}
@@ -556,56 +561,52 @@ bool startServer()
 				return false;
 			}
 		}
-	// }
-	// // parent
-	// else if (fpid > 0)
-	// {
-	// 	SLOG_INFO("grpc server port " + port_str);
-	// 	return true;
-	// }
-	// // fork failure
-	// else 
-	// {
-	// 	SLOG_ERROR("Failed to start server: fork failure.");
-	// 	return false;
-	// }
+	}
+	// parent
+	else if (fpid > 0)
+	{
+		SLOG_INFO("grpc server port " + port_str);
+		return true;
+	}
+	// fork failure
+	else 
+	{
+		SLOG_ERROR("Failed to start server: fork failure.");
+		return false;
+	}
 }
 
 bool stopServer()
 {
-	string system_path = apiUtil->get_Db_path() + "system" + apiUtil->get_Db_suffix();
-	std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
-	if (pid_files.empty())
+	string pid_path = PID_PATH;
+	SLOG_CORE("pid path: " + pid_path);
+	if (!Util::file_exist(pid_path))
 	{
 		return false;
 	}
-	fstream ofp;
 	string system_user = apiUtil->get_configure_value("system_username");
 	string port = apiUtil->get_configure_value("port");
-	bool stop_flag = true;
-	for (size_t i = 0; i < pid_files.size(); i++)
+
+	string pid;
+	string system_password;
+	ifstream in;
+	in.open(pid_path.c_str(), ios::in);
+	getline(in, pid, '\n');
+	getline(in, system_password, '\n');
+	in.close();
+	SLOG_CORE("system user: " + system_user + ", password: " + system_password);
+	httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
+	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
+	if (shutdown_response.success())
 	{
-		string pid_path = system_path + "/" + pid_files[i];
-		string system_password;
-		ofp.open(pid_path, ios::in);
-		ofp >> system_password;
-		ofp.close();
-		httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
-		httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
-		if (shutdown_response.success())
-		{
-			// cout << "the Server [" + pid_files[i] + "] is stopped successfully!" << endl;
-			stop_flag = stop_flag && true;
-		}
-		else
-		{
-			// cout << "the server stop fail." << endl;
-			stop_flag = false;
-		}
-		// remove pid file
-		Util::remove_file(pid_path);
+		SLOG_CORE("the Server [" + pid + "] is stopped successfully.");
+		return true;
 	}
-	return stop_flag;
+	else
+	{
+		SLOG_CORE("the Server [" + pid + "] stop fail!");
+		return false;
+	}
 }
 
 void register_service(GRPCServer &svr)
@@ -707,50 +708,6 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return;
 	}
-	Json json_data;
-	json_data.SetObject();
-	Json::AllocatorType &allocator = json_data.GetAllocator();
-	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
-	if (request->contentType() == APPLICATION_JSON) //for application/json
-	{
-		Json &json = request->json();
-		json_data.CopyFrom(json, allocator);
-	}
-	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
-	{
-		std::map<std::string, std::string> &form_data = request->formData();
-		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::string v;
-		while (iter != form_data.end())
-		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
-			{
-				StringUtil::url_decode(v);
-			}
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-			iter++;
-		}
-	}
-	else // for get
-	{
-		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty() == false)
-		{
-			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::string v;
-			while (iter != params.end())
-			{
-				v = iter->second;
-				if (UrlEncode::is_url_encode(v))
-				{
-					StringUtil::url_decode(v);
-				}
-				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-				iter++;
-			}
-		}
-	}
 	SLOG_INFO("receive [shutdown] request from " << ip_addr);
 	std::string ss;
 	ss += "\n==================== grpc-api ====================";
@@ -759,14 +716,10 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	ss += "\n  method: " +  string(request->get_method());
 	ss += "\n  httpVersion: " +  string(request->get_http_version());
 	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	if (!request->body().empty())
-	{
-		ss += "\n  request_body: " + request->body();
-	}
 	SLOG_DEBUG(ss);
 	std::string error;
-	std::string username = jsonParam(json_data, "username");
-	std::string password = jsonParam(json_data, "password");
+	std::string username = request->header("username");
+	std::string password = request->header("password");
 	error = apiUtil->check_param_value("username", username);
 	if (error.empty() == false)
 	{
@@ -798,6 +751,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		// free apiUtil
 		apiUtil.reset();
 		pfnUtil.reset();
+		clusterManagerPtr.reset();
 		std::cout.flush();
 		_exit(0);
 	});
@@ -5422,25 +5376,27 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t leader_term = std::stol(form.at("term").second);
 	uint64_t leader_index = std::stoul(form.at("index").second);
 	// TODO check leader term and index with local
-	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix; 
-	const std::string zip_file_path = cluster_db_path + "/" + fileinfo.first;
+	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix;
+	const std::string time_stamp_str = Util::getTimeString2();
+	const std::string zip_file_path = cluster_db_path + "/" + time_stamp_str + "_" + fileinfo.first;
+	const std::string unz_dir_path = cluster_db_path + "/tmp_" + time_stamp_str;
 	const std::string operation = form.at("operation").second;
 	const std::string content = std::move(fileinfo.second);
-	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, cluster_db_path, operation](WFFileIOTask *pwrite_task){
+	Util::create_dirs(unz_dir_path);
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, unz_dir_path, operation](WFFileIOTask *pwrite_task){
+		SLOG_DEBUG("saveing log file callback.");
 		// save success
 		long ret = pwrite_task->get_retval();
 		if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
 			return;
 		}
 		// unzip file
-		std::string unz_dir_path = cluster_db_path + "/tmp_" + Util::getTimeString2();
-		Util::create_dir(unz_dir_path);
 		CompressUtil::UnCompressZip unzip(zip_file_path, unz_dir_path);
 		if (unzip.unCompress() != CompressUtil::UnZipOK) 
 		{
 			SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
 			// remove zip file
-			// Util::remove_path(zip_file_path);
+			Util::remove_path(zip_file_path);
 			// remove unzip dir
 			Util::remove_path(unz_dir_path);
 			return;
@@ -5451,22 +5407,29 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		{
 			SLOG_WARN("zip file is empty: " + zip_file_path);
 			// remove zip file
-			// Util::remove_path(zip_file_path);
+			Util::remove_path(zip_file_path);
 			// remove unzip dir
 			Util::remove_path(unz_dir_path);
 			return;
 		}
-		if(!apiUtil->trywrlock_database(db_name, 60*1000)) {
-			// remove zip file
+		if(!apiUtil->trywrlock_database(db_name, 60)) {
 			SLOG_WARN("unable to get write lock of " + db_name + ".");
 			// remove zip file
-			// Util::remove_path(zip_file_path);
+			Util::remove_path(zip_file_path);
+			// remove zip file
 			Util::remove_path(unz_dir_path);
 			return;
 		}
-		shared_ptr<Database> current_database;
+		shared_ptr<Database> current_database = nullptr;
 		apiUtil->get_database(db_name, current_database);
-
+		if(current_database == nullptr) {
+			SLOG_CORE("db[" + db_name + "] is not loaded, now begin loading.");
+			// load db
+			current_database = make_shared<Database>(db_name);
+			current_database->load();
+			apiUtil->add_database(db_name, current_database);
+			apiUtil->insert_txn_managers(current_database, db_name);
+		}
 		std::string nt_file_path = log_files[0];
 		ClusterOperation log_operation;
 		if (operation == "1") {
@@ -5483,8 +5446,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);
-		// TODO update or add ?
-		clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_handling, log_operation);
+		clusterManagerPtr->updateLogStatus(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_sync);
 
 		// send appendEntrites ok response
 		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
@@ -5495,7 +5457,10 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
 		HttpUtil::reply(reply_url, reply_request, username, password);
 	});
-	pwrite_task->start();
+	std::thread([pwrite_task](){
+		SLOG_DEBUG("saveing log file start...");
+		pwrite_task->start();
+	}).detach();
 	response->Success("ok");
 }
 

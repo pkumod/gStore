@@ -178,6 +178,7 @@ int HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::st
 
 int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
+	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -210,6 +211,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::s
 
 int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
+	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -247,6 +249,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const 
 
 int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
 {
+	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -363,10 +366,11 @@ const size_t HttpUtil::OnReadFile(void* ptr, size_t size, size_t nmemb, void* st
 
 httpentities::ShutdownResponse HttpUtil::shutdown(const std::string& url, httpentities::ShutdownRequest& request)
 {
-	std::string json_str;
-	request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
+	std::map<std::string, std::string> headers;
+	headers.insert(std::pair<std::string, std::string>("username", request.username));
+	headers.insert(std::pair<std::string, std::string>("password", request.password));
+	int status = Post(url, headers, 60, "", body_str);
 	if (status == CURLE_OK)
 		return httpentities::ShutdownResponse(body_str);
 	else if (status == CURLE_OPERATION_TIMEDOUT)

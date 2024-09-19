@@ -29,7 +29,7 @@ APIUtil::APIUtil()
 APIUtil::~APIUtil()
 {
     // #if defined(DEBUG)
-    SLOG_CORE("call APIUtil delete");
+    SLOG_CORE("call ~APIUtil()");
     // #endif
     pthread_rwlock_rdlock(&databases_map_lock);
     std::map<std::string, shared_ptr<Database>>::iterator iter;
@@ -97,16 +97,7 @@ APIUtil::~APIUtil()
 
     ipBlackList = nullptr;
 
-    std::string system_path = get_Db_path() + "system" + get_Db_suffix();
-    std::vector<std::string> pid_files = Util::GetFiles(system_path.c_str(), ".pid");
-    
-    std::string file_path;
-    for (size_t i=0; i<pid_files.size(); i++)
-    {
-        file_path = system_path + "/" + pid_files[i];
-        SLOG_DEBUG("pid path: " + file_path);
-        Util::remove_path(file_path);
-    }
+    Util::remove_path(PID_PATH);
 }
 
 int APIUtil::initialize()
@@ -314,11 +305,12 @@ int APIUtil::initialize()
         init_transactionlog();
         // create system password file
         fstream ofp;
-        string pid = to_string(getpid());
         system_password = util.int2string(util.getRandNum());
-        system_password_path = get_Db_path() + "/" + "system" + get_Db_suffix() + "/" + pid + ".pid";
-        ofp.open(system_password_path, ios::out);
+        ofp.open(PID_PATH, ios::out);
+        ofp << getpid();
+        ofp << '\n';
         ofp << system_password;
+        ofp << '\n';
         ofp.close();
         // #if defined(DEBUG)
         SLOG_CORE("initialization end");
@@ -880,7 +872,7 @@ string APIUtil::begin_process(string db_name, int level , string username)
     string result = "";
     shared_ptr<Txn_manager> txn_m;
     get_Txn_ptr(db_name, txn_m);
-    if (txn_m == NULL) 
+    if (txn_m == nullptr) 
     {
         return result;
     }
@@ -984,7 +976,7 @@ bool APIUtil::check_already_load(const std::string &db_name)
 {
     shared_ptr<Database> db;
     bool rt = APIUtil::get_database(db_name, db);
-    if (rt && db != NULL)
+    if (rt && db != nullptr)
     {
         return true;
     }
@@ -1065,23 +1057,32 @@ bool APIUtil::check_already_build(const std::string &db_name)
 
 bool APIUtil::trywrlock_database(const std::string &db_name)
 {
-    return trywrlock_database(db_name, 30*1000);
+    return trywrlock_database(db_name, 30);
 }
 
-bool APIUtil::trywrlock_database(const std::string& db_name, const uint64_t& timeout_ms)
+bool APIUtil::trywrlock_database(const std::string& db_name, const time_t& timeout_s)
 {
-    struct timeval now;
-    struct timespec str_timeout = {0};
-    gettimeofday(&now, NULL);
-    str_timeout.tv_sec = now.tv_sec;
-    str_timeout.tv_nsec = (now.tv_usec + 1000UL*timeout_ms)*1000UL;
     bool result = false;
     pthread_rwlock_rdlock(&already_build_map_lock);
     std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter = already_build.find(db_name);
     pthread_rwlock_unlock(&already_build_map_lock);
-    if (iter != already_build.end() && pthread_rwlock_timedwrlock(&(iter->second->db_lock), &str_timeout) == 0)
+    if (iter == already_build.end())
     {
-       result = true;
+        SLOG_CORE("can not fin db[" + db_name + "] from already_build map.");
+        return result;
+    }
+    struct timeval now;
+    struct timespec str_timeout = {0};
+    gettimeofday(&now, NULL);
+    str_timeout.tv_sec = now.tv_sec + timeout_s;
+    str_timeout.tv_nsec = now.tv_usec * 1000;
+    if (pthread_rwlock_timedwrlock(&(iter->second->db_lock), &str_timeout) == 0)
+    {
+        result = true;
+    }
+    else
+    {
+        SLOG_CORE("gets db[" + db_name + "] write lock timeout.");
     }
     return result;
 }
@@ -2383,7 +2384,6 @@ string APIUtil::get_system_username()
 {
     return system_username;
 }
-
 int APIUtil::get_connection_num()
 {
     return connection_num;
