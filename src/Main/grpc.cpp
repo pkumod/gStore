@@ -45,7 +45,7 @@ void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation);
-void api(const GRPCReq *request, GRPCResp *response);
+void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void upload_file(const GRPCReq *request, GRPCResp *response);
 void download_file(const GRPCReq *request, GRPCResp *response);
 // for server
@@ -64,7 +64,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
 void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -107,6 +107,14 @@ std::string jsonParam(const Json &json, const std::string &key, const std::strin
 int jsonParam(const Json &json, const std::string &key, const int &default_val);
 bool hasJsonParam(const Json &json, const std::string &key);
 void parseRequest(const GRPCReq *request, Json &json_data);
+
+struct proxy_series_context
+{
+	std::string url;
+	const GRPCReq *proxy_req;
+	GRPCResp *proxy_resp;
+	bool is_keep_alive;
+};
 
 std::string to_json_string(const Json& json)
 {
@@ -479,6 +487,7 @@ bool startServer()
 				if (clusterManagerPtr->isEnable()) {
 					SLOG_INFO("cluster status on");
 					clusterManagerPtr->init();
+					clusterManagerPtr->startHeartBeat();
 				} else {
 					SLOG_INFO("cluster status off");
 				}
@@ -655,9 +664,9 @@ void register_service(GRPCServer &svr)
 		ReqMethod::POST);
 
 	svr.ROUTE(
-		"/api", [](const GRPCReq *request, GRPCResp *response)
+		"/api", [](const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		{ 
-			api(request, response);
+			api(request, response, series);
 		},
 		methods);
 
@@ -1059,7 +1068,7 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 }
 
 
-void api(const GRPCReq *request, GRPCResp *response)
+void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
 	// check ip address
 	auto *rpc_task = task_of(response);
@@ -1199,7 +1208,7 @@ void api(const GRPCReq *request, GRPCResp *response)
 		restore_task(request, response, json_data);
 		break;
 	case OP_QUERY:
-		query_task(request, response, json_data);
+		query_task(request, response, series, json_data);
 		break;
 	case OP_EXPORT:
 		export_task(request, response, json_data);
@@ -2526,7 +2535,7 @@ try
  * @param json_data 
  * {db_name: "the operation database name", format: "json/html/file", sparql: "the sparql"}
  */
-void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
 	try
 	{
@@ -2578,6 +2587,30 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			{
 				error = "Database not load yet.";
 				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				return;
+			}
+			// check update operation
+			QueryTree::UpdateType updateType;
+			if(clusterManagerPtr->isEnable() && current_database->isUpdate(sparql, updateType))
+			{
+				// redirect to leader
+				WFHttpTask *http_task;
+				struct proxy_series_context *content = new proxy_series_context;
+				content->url = request->get_request_uri();
+				content->proxy_req = request;
+				content->proxy_resp = response;
+				series->set_context(content);
+				series->set_callback([](const SeriesWork *series) {
+					delete (proxy_series_context *)series->get_context();
+				});
+				content->is_keep_alive = request->is_keep_alive();
+				string leader_url =  clusterManagerPtr->getLeaderUrl();
+				const string redirect_url = leader_url + request->get_request_uri() ;
+				http_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, update_query_callbak);
+				const void *body;
+				size_t len;
+				*http_task->get_req() = protocol::HttpRequest();
+
 				return;
 			}
 			bool lock_rt = apiUtil->rdlock_database(db_name);

@@ -2143,6 +2143,29 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	return success_num;
 }
 
+bool Database::isUpdate(const string& _query, QueryTree::UpdateType& updateType)
+{
+	this->stringindex->SetTrie(this->kvstore->getTrie());
+	GeneralEvaluation general_evaluation(this->kvstore, this->stringindex, this->query_cache, this->csr,
+										 this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
+										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, nullptr, 
+										 this->getfreelist_entity(), this->getentity_num());
+	bool parse_ret = false;
+	try {
+		parse_ret = general_evaluation.parseQuery(_query);
+		if (!parse_ret)
+			throw std::runtime_error("SPARQL syntax error!");
+		updateType = general_evaluation.getQueryTree().getUpdateType();
+	} catch (const std::exception &e) {
+		SLOG_ERROR("parse query exception: " << e.what());
+		throw std::runtime_error(e.what());
+	}
+	if (updateType == QueryTree::Not_Update) {
+		return false;
+	} else {
+		return true;
+	}
+}
 // NOTICE+QUERY:to save memory for large cases, we can consider building one tree at a time(then release)
 // Or read the rdf file on separate segments
 // WARN:the ID type is int, and entity/literal are just separated by a limit
