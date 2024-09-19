@@ -937,5 +937,6 @@ public:
     bool check_upload_allow_extensions(const string& suffix);
     bool check_upload_allow_compress_packages(const string& suffix);
     std::string generateUid(){ return uid_mgr_.NextID(); }
+    uint64_t generateUID(){ return uid_mgr_.NextUID(); }
     std::string getConvertTimeById(const std::string& uid)const{ return uid_mgr_.getConvertTimeById(uid); }
 };
