@@ -370,13 +370,25 @@ int main(int argc, char *argv[])
 	}
 	else if (command == "-t" || command == "--stop")
 	{
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
+		if(!check_response.success()) {
+			cout << "server is inactive (dead)." << endl;
+			return 0;
+		}
 		// stop server
-		if(!stopServer() || _server_deamon == "on");
+		if(!stopServer() || _server_deamon == "on")
 			execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		return 0;
 	}
 	else if (command  == "-k" || command == "--kill")
 	{
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
+		if(!check_response.success()) {
+			cout << "server is inactive (dead)." << endl;
+			return 0;
+		}
 		// kill server
 		cout << "The service will be forcibly stopped!" << endl;
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
@@ -480,7 +492,6 @@ bool startServer()
 				if (clusterManagerPtr->isEnable()) {
 					SLOG_INFO("cluster status on");
 					clusterManagerPtr->init();
-					clusterManagerPtr->startHeartBeat();
 				} else {
 					SLOG_INFO("cluster status off");
 				}
@@ -580,7 +591,7 @@ bool startServer()
 bool stopServer()
 {
 	string pid_path = PID_PATH;
-	SLOG_CORE("pid path: " + pid_path);
+	SLOG_DEBUG("pid path: " + pid_path);
 	if (!Util::file_exist(pid_path))
 	{
 		return false;
@@ -593,18 +604,18 @@ bool stopServer()
 	getline(in, pid, '\n');
 	getline(in, system_password, '\n');
 	in.close();
-	SLOG_CORE("port: " + _server_port + ", system user: " + system_user + ", password: " + system_password);
+	SLOG_DEBUG("port: " + _server_port + ", system user: " + system_user + ", password: " + system_password);
 	httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
 	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
 	if (shutdown_response.success())
 	{
-		SLOG_CORE("the Server [" + pid + "] is stopped successfully.");
+		SLOG_DEBUG("the Server [" + pid + "] is stopped successfully.");
 		Util::remove_file(pid_path);
 		return true;
 	}
 	else
 	{
-		SLOG_CORE("the Server [" + pid + "] stop fail!");
+		SLOG_DEBUG("the Server [" + pid + "] stop fail!");
 		return false;
 	}
 }
@@ -1290,7 +1301,8 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
  */
 void check_task(const GRPCReq *request, GRPCResp *response)
 {
-	std::string success = "the grpc server is running...";
+	// std::string success = "the grpc server is running...";
+	std::string success = to_string(getpid());
 	response->Success(success);
 }
 
@@ -2559,6 +2571,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 		string thread_id = Util::getThreadID();
 		shared_ptr<Database> current_database;
+		bool is_update = false;
 		bool update_flag_bool = true;
 		if (apiUtil->check_privilege(username, "update", db_name) == 0)
 		{
@@ -2582,15 +2595,16 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				return;
 			}
 			// check update operation
-			QueryTree::UpdateType updateType;
-			if(clusterManagerPtr->isEnable() && current_database->isUpdate(sparql, updateType))
+			QueryTree::UpdateType update_type;
+			is_update = current_database->isUpdate(sparql, update_type);
+			if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
 			{
 				// redirect to leader
 				WFHttpTask *leader_task;
 
 				string leader_url =  clusterManagerPtr->getLeaderUrl();
 				const string redirect_url = leader_url + request->get_request_uri() ;
-				SLOG_CORE("cluster follower redirect to: " + redirect_url);
+				SLOG_DEBUG("cluster follower redirect to: " + redirect_url);
 				leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
 					const void *body;
 					size_t len;
@@ -2635,10 +2649,20 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 
 		FILE *output = NULL;
-
 		ResultSet rs;
 		int ret_val;
 		int query_time = Util::get_cur_time();
+		shared_ptr<ofstream> clusterlog = nullptr;
+		// update waiting follower reply
+		if (clusterManagerPtr->isEnable() && is_update) 
+		{
+			// TODO send [prepare] heartbeat and wait response
+
+			std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name + _db_suffix;
+			std::string logpath = cluster_db_path + "/" + apiUtil->generateUid() + ".log";
+			clusterlog = make_shared<ofstream>();
+			clusterlog->open(logpath.c_str());
+		}
 
 		// set query_start_time
 		std::string query_start_time;
@@ -2651,8 +2675,13 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		{
 			SLOG_DEBUG("begin query...\n" + sparql);
 			rs.setUsername(username);
-			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog.get());
 			query_time = Util::get_cur_time() - query_time;
+			if (clusterlog != nullptr) 
+			{
+				clusterlog->close();
+				clusterlog.reset();
+			}
 		}
 		catch (const std::exception &e)
 		{
@@ -2662,16 +2691,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			return;
 		}
 
-		bool ret = false, update = false;
+		bool ret = false;
 		if (ret_val < -1) // non-update query
 		{
 			ret = (ret_val == -100);
 		}
-		else // update query, -1 for error, non-negative for num of triples updated
-		{
-			update = true;
-		}
-
 		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
 		string localname = apiUtil->get_query_result_path() + filename;
 		if (ret)
@@ -2696,8 +2720,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			}
 			// add callback task for query log start
 			struct DBQueryLogInfo* query_log_info = new DBQueryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time, db_name);
-			auto * query_log_task = task_of(response);
-			query_log_task->add_callback([query_log_info](GRPCTask *) {
+			task_of(response)->add_callback([query_log_info](GRPCTask *) {
 				apiUtil->write_query_log(query_log_info);
 				delete query_log_info;
 			});
@@ -2840,8 +2863,13 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				response->Error(StatusOperationFailed, error);
 			}
 		}
-		else if (update)
+		else if (is_update)
 		{
+			if (clusterManagerPtr->isEnable() && ret_val > 0)
+			{
+				// add log copy task
+				
+			}
 			SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
 			Json resp_data;
 			resp_data.SetObject();
@@ -5455,7 +5483,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		shared_ptr<Database> current_database = nullptr;
 		apiUtil->get_database(db_name, current_database);
 		if(current_database == nullptr) {
-			SLOG_CORE("db[" + db_name + "] is not loaded, now begin loading.");
+			SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
 			// load db
 			current_database = make_shared<Database>(db_name);
 			current_database->load();

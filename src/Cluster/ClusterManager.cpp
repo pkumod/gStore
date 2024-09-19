@@ -54,6 +54,13 @@ namespace cluster
         return false;
     }
 
+    bool ClusterManager::isFollower()
+    {
+        if (!isEnable() || !role_)
+            return false;
+        return getCluterRole() == cluster::ClusterRoleType_Follow;
+    }
+
     bool ClusterManager::tryRecover(const std::vector<std::string>& dbs)
     {
         if (!isEnable() || !role_)

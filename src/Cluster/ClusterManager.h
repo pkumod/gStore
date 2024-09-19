@@ -34,6 +34,7 @@ namespace cluster
         ClusterRoleType getCluterRole(){ return role_->getCluterRoleType(); }
         // 是否是主节点
         bool isLeader();
+        bool isFollower();
         // 窘机恢复, 尝试检查所有库
         bool tryRecover(const std::vector<std::string>& dbs);
 
