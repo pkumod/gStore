@@ -2606,17 +2606,25 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				const string redirect_url = leader_url + request->get_request_uri() ;
 				SLOG_DEBUG("cluster follower redirect to: " + redirect_url);
 				leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
-					const void *body;
-					size_t len;
-					task->get_resp()->get_parsed_body(&body, &len);
-					char* null_terminated_string = new char[len + 1];
-					std::memcpy(null_terminated_string, body, len);
-					null_terminated_string[len] = '\0'; 
-					SLOG_DEBUG("leader response body: " << null_terminated_string);
-					response->String(null_terminated_string);
-					task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
-						delete []null_terminated_string;
-					});
+					int state = task->get_state();
+					if (state == WFT_STATE_SUCCESS)
+					{
+						const void *body;
+						size_t len;
+						task->get_resp()->get_parsed_body(&body, &len);
+						char* null_terminated_string = new char[len + 1];
+						std::memcpy(null_terminated_string, body, len);
+						null_terminated_string[len] = '\0'; 
+						SLOG_DEBUG("leader response body: " << null_terminated_string);
+						response->String(null_terminated_string);
+						task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
+							delete []null_terminated_string;
+						});
+					}
+					else
+					{
+						response->Error(StatusProxyError);
+					}
 				});
 				// copy client request to the leader_task request
 				const void *body;
@@ -2625,6 +2633,15 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 
 				auto *leader_req = leader_task->get_req();
 				leader_req->set_method(request->get_method());
+				// copy client request header
+				// protocol::HttpHeaderCursor req_cursor(request);
+				// std::string header_name;
+				// std::string header_value;
+				// while (req_cursor.next(header_name, header_value))
+				// {
+				// 	SLOG_DEBUG(header_name + ": " + header_value);
+				// 	leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
+				// }
 				leader_req->append_output_body_nocopy(body, len);
 				*series << leader_task;
 				return;
@@ -2653,13 +2670,15 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		int ret_val;
 		int query_time = Util::get_cur_time();
 		shared_ptr<ofstream> clusterlog = nullptr;
+		std::string cluster_db_path;
+		std::string logpath;
+		ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_None;
 		// update waiting follower reply
 		if (clusterManagerPtr->isEnable() && is_update) 
 		{
 			// TODO send [prepare] heartbeat and wait response
 			bool prepare_result = true;
 			int8_t prepare_status = 1;
-			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_None;
 			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
 				cluster_operation = ClusterOperation::ClusterOperation_Insert;
 			else
@@ -2689,8 +2708,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				return;
 			}
 			
-			std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
-			std::string logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
+			cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
+			logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
 			clusterlog = make_shared<ofstream>();
 			clusterlog->open(logpath.c_str());
 		}
@@ -2898,8 +2917,15 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		{
 			if (clusterManagerPtr->isEnable() && ret_val > 0)
 			{
-				// add log copy task
-				
+				// add log appendEntities task
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&response](bool succcess) {
+					SLOG_DEBUG("append log entities task callback: " << succcess);
+					if (succcess)
+					{
+						/* code */
+					}
+					
+				}, cluster_operation, logpath);
 			}
 			SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
 			Json resp_data;
@@ -5563,8 +5589,16 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	uint64_t index = jsonParam(json_data, "index", 0ul);
 	std::string db_name = jsonParam(json_data, "db_name");
 	std::string expection = jsonParam(json_data, "expection");
-	// TODO from follower reply, go into leader process 
-	// clusterManagerPtr->reply(term, index, db_name, expection);
+	cluster::cluster_operation expection_enum = cluster::ClusterOperationHandle::to_enum(expection);
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	// from follower reply, go into leader process 
+	if (expection_enum == cluster::cluster_operation::EXPECTION_PREPARE)
+	{
+		clusterManagerPtr->addLogReplyNum(db_name, index, ip_addr);
+	} else if (expection_enum == cluster::cluster_operation::LEADER_APPEND) {
+		clusterManagerPtr->addLogSyncNum(db_name, index, ip_addr);
+	}
 	response->Success("ok");
 }
 

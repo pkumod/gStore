@@ -32,7 +32,7 @@ public:
 	 * @brief: HTTP POST file request
 	 * @param strUrl: the Url of the request, for example: http://api.gstore.cn
 	 * @param headers: HTTP head
-	 * @param timeOut: operation timeout
+	 * @param timeOut: operation timeout (second)
 	 * @param filePath: upload file
 	 * @param params: form data params
 	 * @param strResponse: content returned
