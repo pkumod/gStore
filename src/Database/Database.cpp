@@ -1880,7 +1880,7 @@ void Database::export_db(FILE *fp)
 	}
 }
 
-int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn, ofstream* cluster_log)
+int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	if (_result_set.ansNum > 0) 
 		_result_set.release();
@@ -3964,7 +3964,7 @@ Database::remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num,
 }
 
 unsigned
-Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
+Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
@@ -4010,7 +4010,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 			break;
 		}
 		long tv_begin = Util::get_cur_time();
-		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
+		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
 		long tv_end = Util::get_cur_time();
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
@@ -4027,7 +4027,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 }
 
 unsigned
-Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn)
+Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	bool flag = _is_restore || this->load();
 	if (!flag)
@@ -4060,7 +4060,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		}
 
 		long tv_begin = Util::get_cur_time();
-		success_num += this->batch_remove(triple_array, parse_triple_num, _is_restore, txn);
+		success_num += this->batch_remove(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
 		long tv_end = Util::get_cur_time();
 		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 	}
@@ -4082,7 +4082,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 // WARNING: TRANSACTIONAL batch insert is not completed yet!
 unsigned
-Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, ofstream* cluster_log)
+Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;
@@ -4236,7 +4236,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 
 // WARNING: TRANSACTIONAL batch remove is not completed yet!
 unsigned
-Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, ofstream* cluster_log)
+Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;

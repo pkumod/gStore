@@ -46,7 +46,7 @@ public:
 	void clear();
 	void releaseIDBlock();
 	void export_db(FILE *fp);
-	int query(const string _query, ResultSet &_result_set, FILE *_fp = stdout, bool update_flag = true, bool export_flag = false, shared_ptr<Transaction> txn = nullptr, ofstream* cluster_log = nullptr);
+	int query(const string _query, ResultSet &_result_set, FILE *_fp = stdout, bool update_flag = true, bool export_flag = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 	// 1. if subject of _triple doesn't exist,
 	// then assign a new subid, and insert a new SigEntry
 	// 2. assign new tuple_id to tuple, if predicate or object doesn't exist before too;
@@ -61,8 +61,8 @@ public:
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 	bool remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
-	unsigned batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
-	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
+	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
 	bool backup();
 	bool restore();
@@ -332,8 +332,8 @@ private:
 	// bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
 	unsigned remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
-	unsigned batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, ofstream* cluster_log = nullptr);
-	unsigned batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, ofstream* cluster_log = nullptr);
+	unsigned batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
+	unsigned batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
