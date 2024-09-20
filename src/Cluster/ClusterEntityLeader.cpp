@@ -67,7 +67,7 @@ namespace cluster
             return;
         }
         uint64 index = getDbIndex(db_name);
-        std::string expection = std::to_string(EXPECTION_COMPARE);
+        std::string expection = "compare";
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, request](ClusterNode node)
         {
@@ -99,7 +99,7 @@ namespace cluster
     void ClusterEntityLeader::postNotify(std::string db_name, uint64 index)
     {
         uint32 term = getTerm();
-        std::string expection = std::to_string(EXPECTION_PREPARE);
+        std::string expection = "prepare";
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
@@ -289,7 +289,7 @@ namespace cluster
     void ClusterEntityLeader::startCommit(std::string db_name)
     {
         uint32 term = getTerm();
-        std::string expection = std::to_string(EXPECTION_COMMIT);
+        std::string expection = "commit";
         uint64 index = getDbIndex(db_name);
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)

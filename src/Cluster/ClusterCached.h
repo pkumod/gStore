@@ -1,5 +1,5 @@
 #pragma once
-#include "ClusterDefined.h"
+#include "ClusterTypedef.h"
 #include "../Util/Util.h"
 #include "ClusterLog.h"
 
