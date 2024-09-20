@@ -48,6 +48,7 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void upload_file(const GRPCReq *request, GRPCResp *response);
 void download_file(const GRPCReq *request, GRPCResp *response);
+void redirect_handle(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
 void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip);
@@ -71,8 +72,8 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
+void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
 void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for user
 void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -400,7 +401,6 @@ int main(int argc, char *argv[])
 	{
 		// show server status
 		httpentities::CheckRequest check_request;
-		cout << "API_URL " << API_URL << endl;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		cout << "gStore API Server(gserver)" << endl;
 		if (check_response.success())
@@ -996,6 +996,54 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	}
 }
 
+void redirect_handle(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
+{
+	// redirect to leader
+	WFHttpTask *leader_task;
+	string leader_url =  clusterManagerPtr->getLeaderUrl();
+	const string redirect_url = leader_url + request->get_request_uri() ;
+	SLOG_DEBUG("cluster follower redirect to: " + redirect_url);
+	leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
+		int state = task->get_state();
+		if (state == WFT_STATE_SUCCESS)
+		{
+			const void *body;
+			size_t len;
+			task->get_resp()->get_parsed_body(&body, &len);
+			char* null_terminated_string = new char[len + 1];
+			std::memcpy(null_terminated_string, body, len);
+			null_terminated_string[len] = '\0'; 
+			SLOG_DEBUG("leader response body: " << null_terminated_string);
+			response->String(null_terminated_string);
+			task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
+				delete []null_terminated_string;
+			});
+		}
+		else
+		{
+			response->Error(StatusProxyError);
+		}
+	});
+	// copy client request to the leader_task request
+	const void *body;
+	size_t len;
+	request->get_parsed_body(&body, &len);
+
+	auto *leader_req = leader_task->get_req();
+	leader_req->set_method(request->get_method());
+	// copy client request header
+	// protocol::HttpHeaderCursor req_cursor(request);
+	// std::string header_name;
+	// std::string header_value;
+	// while (req_cursor.next(header_name, header_value))
+	// {
+	// 	SLOG_DEBUG(header_name + ": " + header_value);
+	// 	leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
+	// }
+	leader_req->append_output_body_nocopy(body, len);
+	*series << leader_task;
+}
+
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation)
 {
 	if (!clusterManagerPtr) {
@@ -1233,10 +1281,10 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		checkpoint_task(request, response, json_data);
 		break;
 	case OP_BATCH_INSERT:
-		batch_insert_task(request, response, json_data);
+		batch_insert_task(request, response, series, json_data);
 		break;
 	case OP_BATCH_REMOVE:
-		batch_remove_task(request, response, json_data);
+		batch_remove_task(request, response, series, json_data);
 		break;
 	case OP_RENAME:
 		rename_task(request, response, json_data);
@@ -2552,9 +2600,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string sparql = jsonParam(json_data, "sparql");
 		std::string format = jsonParam(json_data, "format", "json");
 		std::string username = jsonParam(json_data, "username");
+		std::string sparql = jsonParam(json_data, "sparql");
 		// check db_name paramter
 		std::string error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)
@@ -2599,53 +2647,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			is_update = current_database->isUpdate(sparql, update_type);
 			if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
 			{
-				// redirect to leader
-				WFHttpTask *leader_task;
-
-				string leader_url =  clusterManagerPtr->getLeaderUrl();
-				const string redirect_url = leader_url + request->get_request_uri() ;
-				SLOG_DEBUG("cluster follower redirect to: " + redirect_url);
-				leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
-					int state = task->get_state();
-					if (state == WFT_STATE_SUCCESS)
-					{
-						const void *body;
-						size_t len;
-						task->get_resp()->get_parsed_body(&body, &len);
-						char* null_terminated_string = new char[len + 1];
-						std::memcpy(null_terminated_string, body, len);
-						null_terminated_string[len] = '\0'; 
-						SLOG_DEBUG("leader response body: " << null_terminated_string);
-						response->String(null_terminated_string);
-						task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
-							delete []null_terminated_string;
-						});
-					}
-					else
-					{
-						response->Error(StatusProxyError);
-					}
-				});
-				// copy client request to the leader_task request
-				const void *body;
-				size_t len;
-				request->get_parsed_body(&body, &len);
-
-				auto *leader_req = leader_task->get_req();
-				leader_req->set_method(request->get_method());
-				// copy client request header
-				// protocol::HttpHeaderCursor req_cursor(request);
-				// std::string header_name;
-				// std::string header_value;
-				// while (req_cursor.next(header_name, header_value))
-				// {
-				// 	SLOG_DEBUG(header_name + ": " + header_value);
-				// 	leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
-				// }
-				leader_req->append_output_body_nocopy(body, len);
-				*series << leader_task;
+				redirect_handle(request, response, series);
 				return;
 			}
+			// check database read lock
 			bool lock_rt = apiUtil->rdlock_database(db_name);
 			if (lock_rt)
 			{
@@ -2672,18 +2677,19 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		shared_ptr<ofstream> clusterlog = nullptr;
 		std::string cluster_db_path;
 		std::string logpath;
+		uint64 log_index;
 		ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_None;
 		// update waiting follower reply
 		if (clusterManagerPtr->isEnable() && is_update) 
 		{
-			// TODO send [prepare] heartbeat and wait response
+			// send [prepare] heartbeat and wait response
 			bool prepare_result = true;
 			int8_t prepare_status = 1;
 			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
 				cluster_operation = ClusterOperation::ClusterOperation_Insert;
 			else
 				cluster_operation = ClusterOperation::ClusterOperation_Delete;
-			uint64 log_index = apiUtil->generateUID();
+			log_index = apiUtil->generateUID();
 			clusterManagerPtr->addClusterDb(db_name);
 			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
 			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
@@ -2707,7 +2713,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
-			
 			cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
 			logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
 			clusterlog = make_shared<ofstream>();
@@ -2725,9 +2730,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		{
 			SLOG_DEBUG("begin query...\n" + sparql);
 			rs.setUsername(username);
-			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog.get());
+			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
 			query_time = Util::get_cur_time() - query_time;
-			if (clusterlog != nullptr) 
+			if (clusterlog) 
 			{
 				clusterlog->close();
 				clusterlog.reset();
@@ -2738,6 +2743,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			error = "Query fail: " + string(e.what());
 			apiUtil->unlock_database(db_name);
 			response->Error(StatusOperationFailed, error);
+			if (clusterlog)
+				clusterlog->close();
 			return;
 		}
 
@@ -2915,18 +2922,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 		else if (is_update)
 		{
-			if (clusterManagerPtr->isEnable() && ret_val > 0)
-			{
-				// add log appendEntities task
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&response](bool succcess) {
-					SLOG_DEBUG("append log entities task callback: " << succcess);
-					if (succcess)
-					{
-						/* code */
-					}
-					
-				}, cluster_operation, logpath);
-			}
 			SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
 			Json resp_data;
 			resp_data.SetObject();
@@ -2935,8 +2930,67 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
 			resp_data.AddMember("AnsNum", ret_val, allocator);
 			resp_data.AddMember("QueryTime", query_time, allocator);
-			SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-			response->Json(resp_data);
+			if (clusterManagerPtr->isEnable())
+			{
+				// add log appendEntities task
+				if (ret_val > 0)
+				{
+					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
+					string log_file_name = to_string(log_index) + ".log";
+					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&db_name, &log_file_name, &cluster_operation, &resp_data, &response](bool succcess) {
+						SLOG_DEBUG("append log entities task callback: " << succcess);
+						if (succcess)
+						{
+							SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+							clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+							response->Json(resp_data);
+						}
+						else
+						{
+							// restore data
+							bool lock_status;
+							// try get wrlock timeout 600 senconds
+							lock_status = apiUtil->trywrlock_database(db_name, 600);
+							SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
+							if (lock_status)
+							{
+								string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
+								shared_ptr<Database> restore_database;
+								apiUtil->get_database(db_name, restore_database);
+								if (cluster_operation == ClusterOperation::ClusterOperation_Delete)
+								{
+									uint32_t num = restore_database->batch_insert(nt_file_path);
+									SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
+								} 
+								else 
+								{
+									uint32_t num = restore_database->batch_remove(nt_file_path);
+									SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
+								}
+								apiUtil->unlock_database(db_name);
+								Util::remove_path(nt_file_path);
+							}
+							else
+							{
+								SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_operation)+"]");
+							}
+							std::string error = "Less than half of the cluster nodes reply.";
+							SLOG_ERROR(error);
+							clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+							response->Error(StatusOperationFailed, error);
+						}
+					}, cluster_operation, log_file_name);
+				}
+				else
+				{
+					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
+					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+				}
+			}
+			else
+			{
+				response->Json(resp_data);
+			}
 		}
 		else
 		{
@@ -3500,10 +3554,15 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
  * @param json_data 
  * {db_name: "the operation database name", file: "the insert data file"}
  */
-void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
 	try
 	{
+		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+		{
+			redirect_handle(request, response, series);
+			return;
+		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)
@@ -3550,152 +3609,253 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		std::vector<std::string> zip_files;
-		std::string unz_dir_path;
-		std::string file_suffix = GRPCUtil::fileSuffix(file);
-		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-		if (is_zip)
+		shared_ptr<ofstream> clusterlog = nullptr;
+		std::string cluster_db_path;
+		std::string logpath;
+		uint64 log_index;
+		if (clusterManagerPtr->isEnable()) 
 		{
-			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
-				{
-					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
-						return false;
-					return true;
-				});
-			if( code != CompressUtil::UnZipOK )
+			// send [prepare] heartbeat and wait response
+			bool prepare_result = true;
+			int8_t prepare_status = 1;
+			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Insert;
+			log_index = apiUtil->generateUID();
+			clusterManagerPtr->addClusterDb(db_name);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
+			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
 			{
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+				SLOG_DEBUG("prepare task result: " << success);
+				prepare_result = success;
+				prepare_status++;
+			});
+			// slepp 200 ms
+			useconds_t microseconds = 200*1000;
+			while (prepare_status)
+			{
+				usleep(microseconds);
+				if(prepare_status > 1)
+					break;
+			}
+			if (!prepare_result)
+			{
+				error = "Less than half of the cluster nodes are confirmed.";
+				SLOG_ERROR(error);
+				response->Error(StatusOperationFailed, error);
 				return;
 			}
-			std::string file_name = GRPCUtil::fileName(file);
-			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			mkdir(unz_dir_path.c_str(), 0775);
-			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
-			code = upfile.unCompress();
-			if (code != CompressUtil::UnZipOK)
-			{
-				Util::remove_path(unz_dir_path);
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
-				return;
-			}
-			upfile.getFileList(zip_files, "");
+			cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
+			logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
+			clusterlog = make_shared<ofstream>();
+			clusterlog->open(logpath.c_str());
 		}
-		if (apiUtil->trywrlock_database(db_name) == false)
+		
+		std::vector<std::string> nt_files;
+		std::string unz_dir_path;
+		if (is_file)
 		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
-			if (!unz_dir_path.empty())
+			std::string file_suffix = GRPCUtil::fileSuffix(file);
+			bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+			if (is_zip)
 			{
-				Util::remove_path(unz_dir_path);
+				auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+					{
+						if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
+							return false;
+						return true;
+					});
+				if( code != CompressUtil::UnZipOK )
+				{
+					string error = "uncompress is failed error.";
+					response->Error(code, error);
+					if (clusterlog)
+						clusterlog->close();
+					return;
+				}
+				std::string file_name = GRPCUtil::fileName(file);
+				size_t pos = file_name.size() - file_suffix.size() - 1;
+				unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+				Util::create_dirs(unz_dir_path);
+				CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+				code = upfile.unCompress();
+				if (code != CompressUtil::UnZipOK)
+				{
+					Util::remove_path(unz_dir_path);
+					string error = "uncompress is failed error.";
+					response->Error(code, error);
+					if (clusterlog)
+						clusterlog->close();
+					return;
+				}
+				upfile.getFileList(nt_files, "");
+			}
+			else
+			{
+				nt_files.push_back(file);
 			}
 		}
 		else
 		{
-			std::string opt_id = apiUtil->generateUid();
-			string remote_ip = task_of(response)->peer_addr();
+			// is dirctory
+			Util::string_suffix(dir, '/');
+			Util::dir_files(dir, "", nt_files);
+		}
+		std::string opt_id = apiUtil->generateUid();
+		std::string async = jsonParam(json_data, "async");
+		std::string callback = jsonParam(json_data, "callback");
+		auto insert_helper = [db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response) {
+			bool wrlock_status = apiUtil->trywrlock_database(db_name, 300);
+			// access log
 			string msg = "Operation Success.";
 			string operation = "batchInsert";
-			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-			string _dir = dir;
-			std::string async = jsonParam(json_data, "async");
-			std::string callback = jsonParam(json_data, "callback");
-			auto insert_helper = [db_name,is_file,is_zip,file,zip_files,_dir,unz_dir_path,opt_id,async,callback]
-				(GRPCResp *response)
-				{
-					string success = "Batch insert data successfully.";
-					shared_ptr<Database> current_database;
-					apiUtil->get_database(db_name, current_database);
-					unsigned success_num = 0;
-					unsigned total_num = 0;
-					unsigned parse_error_num = 0;
-					string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
-					if (is_file)
+			string remote_ip = task_of(response)->peer_addr();
+			if (!wrlock_status)
+			{
+				msg = "The operation can not been excuted due to loss of lock.";
+				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
+				response->Error(StatusLossOfLock, msg);
+				return;
+			}
+			apiUtil->write_access_log(operation, remote_ip, StatusOK, msg, opt_id);
+			shared_ptr<Database> current_database;
+			apiUtil->get_database(db_name, current_database);
+			unsigned success_num = 0;
+			unsigned total_num = 0;
+			unsigned parse_error_num = 0;
+			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+			total_num = Util::count_lines(error_log);
+			for (std::string rdf_file : nt_files)
+			{
+				SLOG_DEBUG("begin insert data from " + rdf_file);
+				success_num += current_database->batch_insert(rdf_file, false, nullptr, clusterlog);
+			}
+			// exclude Info line
+			parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+			// save data and unlock
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+			// close cluster log
+			if (clusterlog) 
+			{
+				clusterlog->close();
+				clusterlog.reset();
+			}
+			// update access log
+			msg = "Batch insert data successfully.";
+			apiUtil->update_access_log(StatusOK, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
+			// respnse data
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resp_data.AddMember("success_num", success_num, allocator);
+			resp_data.AddMember("failed_num", parse_error_num, allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			
+			// cluster sync task begin
+			if (success_num > 0)
+			{
+				SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+				string log_file_name = to_string(log_index) + ".log";
+				string tmp_dir_path = unz_dir_path;
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&db_name, &nt_files, &tmp_dir_path, &log_file_name, &callback, &resp_data, &response](bool succcess) {
+					SLOG_DEBUG("append log entities task callback: " << succcess);
+					if (succcess)
 					{
-						if (!is_zip)
+						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						if (response)
 						{
-							total_num = Util::count_lines(error_log);
-							success_num = current_database->batch_insert(file, false, nullptr);
-							// exclude Info line
-							parse_error_num = Util::count_lines(error_log) - total_num - 1;
+							response->Json(resp_data);
 						}
-						else
+						if (!callback.empty())
 						{
-							total_num = Util::count_lines(error_log);
-							for (std::string rdf_zip : zip_files)
-							{
-								SLOG_DEBUG("begin insert data from " + rdf_zip);
-								success_num += current_database->batch_insert(rdf_zip, false, nullptr);
-							}
-							// exclude Info line
-							parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_data.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
 						}
 					}
 					else
 					{
-						vector<string> files;
-						string dir = _dir;
-						Util::string_suffix(dir, '/');
-						Util::dir_files(dir, "", files);
-						total_num = Util::count_lines(error_log);
-						for (string rdf_file : files)
+						// restore data
+						bool lock_status;
+						// try get wrlock timeout 600 senconds
+						lock_status = apiUtil->trywrlock_database(db_name, 600);
+						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
+						if (lock_status)
 						{
-							SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-							success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
+							shared_ptr<Database> restore_database;
+							apiUtil->get_database(db_name, restore_database);
+
+							uint64_t num = 0;
+							for (std::string rdf_file : nt_files)
+							{
+								num += restore_database->batch_remove(rdf_file);
+							}
+							SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
+							apiUtil->unlock_database(db_name);
 						}
-						// exclude Info line
-						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
+						else
+						{
+							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[1]");
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+						std::string error = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(error);
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						response->Error(StatusOperationFailed, error);
 					}
-					current_database->save();
-					apiUtil->unlock_database(db_name);
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					apiUtil->update_access_log(0, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
-					if (async != "true")
-					{
-						Json resp_data;
-						resp_data.SetObject();
-						Json::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("success_num", success_num, allocator);
-						resp_data.AddMember("failed_num", parse_error_num, allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						response->Json(resp_data);
-					}
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
-						postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				};
-			if (async == "true")
-			{
-				Json resp_data;
-				resp_data.SetObject();
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-				response->Json(resp_data);
-				thread t(insert_helper, nullptr);
-				t.detach();
+				}, ClusterOperation_Insert, log_file_name);
 			}
 			else
 			{
-				insert_helper(response);
+				SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+				// remove unzip files
+				if (!unz_dir_path.empty())
+				{
+					Util::remove_path(unz_dir_path);
+				}
+				if (response != nullptr)
+				{
+					response->Json(resp_data);
+				}
+				if (!callback.empty())
+				{
+					string res;
+					rapidjson::StringBuffer resBuffer;
+					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+					resp_data.Accept(resWriter);
+					HttpUtil::Post(callback, resBuffer.GetString(), res);
+					// TODO retry?
+				}
 			}
-			
+			// cluster sync task end
+		};
+		if (async == "true")
+		{
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "Operation success", allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			response->Json(resp_data);
+			thread t(insert_helper, nullptr);
+			t.detach();
+		}
+		else
+		{
+			insert_helper(response);
 		}
 	}
 	catch (const std::exception &e)
@@ -3713,10 +3873,16 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
  * @param json_data 
  * {db_name: "the operation database name", file: "the insert data file"}
  */
-void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
 	try
 	{
+		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+		{
+			// TODO upload file to leader node
+			redirect_handle(request, response, series);
+			return;
+		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)
@@ -3749,7 +3915,46 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		std::vector<std::string> zip_files;
+		shared_ptr<ofstream> clusterlog = nullptr;
+		std::string cluster_db_path;
+		std::string logpath;
+		uint64 log_index;
+		if (clusterManagerPtr->isEnable()) 
+		{
+			// send [prepare] heartbeat and wait response
+			bool prepare_result = true;
+			int8_t prepare_status = 1;
+			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Delete;
+			log_index = apiUtil->generateUID();
+			clusterManagerPtr->addClusterDb(db_name);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
+			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
+			{
+				SLOG_DEBUG("prepare task result: " << success);
+				prepare_result = success;
+				prepare_status++;
+			});
+			// slepp 200 ms
+			useconds_t microseconds = 200*1000;
+			while (prepare_status)
+			{
+				usleep(microseconds);
+				if(prepare_status > 1)
+					break;
+			}
+			if (!prepare_result)
+			{
+				error = "Less than half of the cluster nodes are confirmed.";
+				SLOG_ERROR(error);
+				response->Error(StatusOperationFailed, error);
+				return;
+			}
+			cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
+			logpath = cluster_db_path + "/" + to_string(log_index) + ".log";
+			clusterlog = make_shared<ofstream>();
+			clusterlog->open(logpath.c_str());
+		}
+		std::vector<std::string> nt_files;
 		std::string unz_dir_path;
 		std::string file_suffix = GRPCUtil::fileSuffix(file);
 		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
@@ -3765,12 +3970,14 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			{
 				string error = "uncompress is failed error.";
 				response->Error(code, error);
+				if (clusterlog)
+					clusterlog->close();
 				return;
 			}
 			std::string file_name = GRPCUtil::fileName(file);
 			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			mkdir(unz_dir_path.c_str(), 0775);
+			unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+			Util::create_dirs(unz_dir_path);
 			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
 			code = upfile.unCompress();
 			if (code != CompressUtil::UnZipOK)
@@ -3778,81 +3985,174 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 				Util::remove_path(unz_dir_path);
 				string error = "uncompress is failed error.";
 				response->Error(code, error);
+				if (clusterlog)
+					clusterlog->close();
 				return;
 			}
-			upfile.getFileList(zip_files, "");
-		}
-		if (apiUtil->trywrlock_database(db_name) == false)
-		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			upfile.getFileList(nt_files, "");
 		}
 		else
 		{
-			std::string opt_id = apiUtil->generateUid();
-			string remote_ip = task_of(response)->peer_addr();
+			nt_files.push_back(file);
+		}
+		std::string opt_id = apiUtil->generateUid();
+		std::string async = jsonParam(json_data, "async");
+		std::string callback = jsonParam(json_data, "callback");
+		auto remove_helper = [db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response){
+			bool wrlock_status = apiUtil->trywrlock_database(db_name, 300);
+			// access log
 			string msg = "Operation Success.";
 			string operation = "batchRemove";
-			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-			std::string async = jsonParam(json_data, "async");
-			std::string callback = jsonParam(json_data, "callback");
-			auto remove_helper = [db_name,operation,file,opt_id,is_zip,zip_files,async,callback]
-				(GRPCResp *response)
-				{
-					shared_ptr<Database> current_database;
-					apiUtil->get_database(db_name, current_database);
-					string success = "Batch remove data successfully.";
-					unsigned success_num = 0;
-					if (is_zip)
+			string remote_ip = task_of(response)->peer_addr();
+			if (!wrlock_status)
+			{
+				msg = "The operation can not been excuted due to loss of lock.";
+				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
+				response->Error(StatusLossOfLock, msg);
+				return;
+			}
+			apiUtil->write_access_log(operation, remote_ip, StatusOK, msg, opt_id);
+			shared_ptr<Database> current_database;
+			apiUtil->get_database(db_name, current_database);
+			unsigned success_num = 0;
+			unsigned total_num = 0;
+			unsigned parse_error_num = 0;
+			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+			total_num = Util::count_lines(error_log);
+			for (std::string rdf_file : nt_files)
+			{
+				SLOG_DEBUG("begin remove data from " + rdf_file);
+				success_num += current_database->batch_remove(rdf_file, false, nullptr, clusterlog);
+			}
+			// exclude Info line
+			parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+			// save data and unlock
+			current_database->save();
+			apiUtil->unlock_database(db_name);
+			// close cluster log
+			if (clusterlog) 
+			{
+				clusterlog->close();
+				clusterlog.reset();
+			}
+			// update access log
+			msg = "Batch remove data successfully.";
+			apiUtil->update_access_log(0, msg, opt_id, 1, success_num, parse_error_num);
+
+			// respnse data
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+			resp_data.AddMember("success_num", success_num, allocator);
+			resp_data.AddMember("failed_num", parse_error_num, allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			
+			// cluster sync task begin
+			if (success_num > 0)
+			{
+				SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+				string log_file_name = to_string(log_index) + ".log";
+				string tmp_dir_path = unz_dir_path;
+				
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&db_name, &nt_files, &tmp_dir_path, &log_file_name, &callback, &resp_data, &response](bool succcess) {
+					SLOG_DEBUG("append log entities task callback: " << succcess);
+					if (succcess)
 					{
-						for (string rdf_file : zip_files)
+						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						if (response)
 						{
-							success_num += current_database->batch_remove(rdf_file, false, nullptr);
+							response->Json(resp_data);
+						}
+						if (!callback.empty())
+						{
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_data.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
 						}
 					}
 					else
-						current_database->batch_remove(file, false, nullptr);
-					current_database->save();
-					apiUtil->unlock_database(db_name);
-					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
-					if (async != "true")
 					{
-						Json resp_data;
-						resp_data.SetObject();
-						Json::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						response->Json(resp_data);
+						// restore data
+						bool lock_status;
+						// try get wrlock timeout 600 senconds
+						lock_status = apiUtil->trywrlock_database(db_name, 600);
+						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
+						if (lock_status)
+						{
+							shared_ptr<Database> restore_database;
+							apiUtil->get_database(db_name, restore_database);
+							uint64_t num = 0;
+							for (std::string rdf_file : nt_files)
+							{
+								num += restore_database->batch_insert(rdf_file);
+							}
+							SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
+							apiUtil->unlock_database(db_name);
+						}
+						else
+						{
+							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+						std::string error = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(error);
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						response->Error(StatusOperationFailed, error);
 					}
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				};
-			if (async == "true")
-			{
-				Json resp_data;
-				resp_data.SetObject();
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-				response->Json(resp_data);
-				thread t(remove_helper, nullptr);
-				t.detach();
+				}, ClusterOperation_Delete, log_file_name);
 			}
 			else
 			{
-				remove_helper(response);
+				SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+				// remove unzip files
+				if (!unz_dir_path.empty())
+				{
+					Util::remove_path(unz_dir_path);
+				}
+				if (response != nullptr)
+				{
+					response->Json(resp_data);
+				}
+				if (!callback.empty())
+				{
+					string res;
+					rapidjson::StringBuffer resBuffer;
+					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+					resp_data.Accept(resWriter);
+					HttpUtil::Post(callback, resBuffer.GetString(), res);
+					// TODO retry?
+				}
 			}
+			// cluster sync task end
+		};
+		if (async == "true")
+		{
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "Operation Success.", allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			response->Json(resp_data);
+			thread t(remove_helper, nullptr);
+			t.detach();
+		}
+		else
+		{
+			remove_helper(response);
 		}
 	}
 	catch (const std::exception &e)
@@ -5421,6 +5721,8 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					apiUtil->insert_txn_managers(current_database, db_name);
 					current_database.reset();
 				}
+				// add log
+				clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_pending, ClusterOperation_None);
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 				std::string reply_url = leader_node.getReplyUrl();
@@ -5435,11 +5737,24 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			// update local log status to committed
 			if (!db_name.empty())
 			{
-				// TODO get current can be committed index， and compare with leader_index
+				// get current can be committed index， and compare with leader_index
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
 					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_commit);
+				}
+			}
+			response->Success("ok");
+			break;
+		case cluster::EXPECTION_CANCEL:
+			// update local log status to cancel
+			if (!db_name.empty())
+			{
+				// get current index， and compare with leader_index
+				local_index = clusterManagerPtr->getDbNextIndex(db_name);
+				if (leader_index == local_index)
+				{
+					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_cancel);
 				}
 			}
 			response->Success("ok");
