@@ -66,9 +66,9 @@ namespace cluster
 
         //日志模块
         //新增日志
-        void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
+        void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
         // 更新日志状态
-        void updateLogStatus(std::string db_name, uint64 index, int status);
+        void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
         // 增加响应节点数量
         void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip);
         // 增加同步节点数量
@@ -91,6 +91,12 @@ namespace cluster
         uint64 getDbIndex(std::string db_name);
         // 获取数据库正在处理的日志索引
         uint64 getDbNextIndex(std::string db_name);
+        // 获取nt文件路径
+        std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
+        // 获取日志状态
+        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
+        // 获取日志操作
+        ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
@@ -128,11 +134,11 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            if (expection_ == cluster_operation::EXPECTION_COMPARE)
+            if (expection_ == EXPECTION_COMPARE)
             {
                 per->startHeardBeat(db_name_);
             }
-            else if (expection_ == cluster_operation::EXPECTION_PREPARE)
+            else if (expection_ == EXPECTION_PREPARE)
             {
                 uint32 num = per->startNotify(db_name_);
                 uint32 need_num = per->getNeedNum();
@@ -145,9 +151,13 @@ namespace cluster
                         cb_(true);
                 }
             }
-            else if (expection_ == cluster_operation::EXPECTION_COMMIT)
+            else if (expection_ == EXPECTION_COMMIT)
             {
                 per->startCommit(db_name_);
+            }
+            else if (expection_ == EXPECTION_CANCEL)
+            {
+                per->startCancel(db_name_);
             }
         }
     };
@@ -191,37 +201,6 @@ namespace cluster
                 else
                     cb_(true);
             }
-        }
-    };
-
-    struct ClusterCancelEvent : public ClusterEvent
-    {
-        std::string db_name_;
-        ClusterOperation operation_;
-        std::string file_name_;
-        ClusterEntityLeaderWeaker wer_;
-        ClusterCancelEvent()
-        {
-            db_name_ = "";
-            operation_ = ClusterOperation_None;
-            file_name_ = "";
-        }
-        ClusterCancelEvent(std::string db_name, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per)
-        {
-            db_name_ = db_name;
-            operation_ = operation;
-            file_name_ = file_name;
-            wer_ = per;
-        }
-        void runEvent()const override
-        {
-            ClusterEntityLeaderPtr per = wer_.lock();
-            if (!per)
-            {
-                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
-                return;
-            }
-            per->startCancel(db_name_, operation_, file_name_);
         }
     };
 }

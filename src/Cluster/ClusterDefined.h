@@ -20,6 +20,7 @@ namespace cluster
 
     enum ClusterLogStatus
     {
+        ClusterLogStatus_None      = -3,
         ClusterLogStatus_HeartBeat = -2,
         ClusterLogStatus_Fail      = -1,
         ClusterLogStatus_pending   = 0,
@@ -45,7 +46,8 @@ namespace cluster
         EXPECTION_COMPARE           = 5,
         EXPECTION_PREPARE           = 6,
         EXPECTION_COMMIT            = 7,
-        CLUSTER_OPERATION_TYPE_UNDEFINE = 8,
+        EXPECTION_CANCEL            = 8,
+        CLUSTER_OPERATION_TYPE_UNDEFINE = 9,
     };
 
     struct ClusterNode

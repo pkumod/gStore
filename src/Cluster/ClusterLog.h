@@ -10,7 +10,7 @@ namespace cluster
     {
         uint64 index;
         uint64 nextIndex;
-        int status;
+        ClusterLogStatus status;
         ClusterOperation operation;
         std::string fileName;
         std::set<std::string> replyIps;
@@ -20,7 +20,7 @@ namespace cluster
         {
             index     = 0;
             nextIndex = 0;
-            status    = 0;
+            status    = ClusterLogStatus_None;
             operation = ClusterOperation_None;
             fileName = "";
             replyIps = std::set<std::string>();
@@ -28,11 +28,11 @@ namespace cluster
         }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
-        void setStatus(int value){ status = value; }
+        void setStatus(ClusterLogStatus value){ status = value; }
         void setOperation(ClusterOperation value){ operation = value; }
         void setFileName(const std::string& value){ fileName = value; }
         uint64 getIndex()const{ return index; }
-        int    getStatus()const{ return status; }
+        ClusterLogStatus getStatus()const{ return status; }
         void setReplyIps(const nlohmann::json& s);
         void setAppenEntriesIps(const nlohmann::json& s);
         void covertReplyIpsJson(nlohmann::json& s)const;
@@ -41,6 +41,8 @@ namespace cluster
         void addAppenEntriesIps(const std::string& value){ appenEntriesIps.insert(value); }
         uint32 getReplyNum()const{ return replyIps.size(); }
         uint32 getAppenEntriesNum()const{ return appenEntriesIps.size(); }
+        ClusterOperation getOperation()const{ return operation; }
+        std::string getFileName()const{ return fileName; }
     };
 
     class ClusterDbNameLogInfo
@@ -51,12 +53,15 @@ namespace cluster
         public:
         void setLogs(const nlohmann::json& s);
         void covertJson(nlohmann::json& s)const;
-        bool addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index);
-        void updateLogStatus(uint64 index, int status);
+        bool addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index);
+        void updateLogStatus(uint64 index, ClusterLogStatus status);
         void addLogReplyNum(uint64 index, const std::string& ip);
         void addLogSyncNum(uint64 index, const std::string& ip);
         uint32 getLogReplyNum(uint64 index)const;
         uint32 getLogSyncNum(uint64 index)const;
+        ClusterOperation getOperation(uint64 index)const;
+        ClusterLogStatus getStatus(uint64 index)const;
+        std::string getFileName(uint64 index)const;
         void updateTerm(uint32 term);
         void updateTermIndex(std::string db_name, uint64 index);
 

@@ -152,7 +152,7 @@ namespace cluster
         }
     }
 
-    bool ClusterDbNameLogInfo::addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index)
+    bool ClusterDbNameLogInfo::addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -180,7 +180,7 @@ namespace cluster
         return true;
     }
 
-    void ClusterDbNameLogInfo::updateLogStatus(uint64 index, int status)
+    void ClusterDbNameLogInfo::updateLogStatus(uint64 index, ClusterLogStatus status)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -253,6 +253,39 @@ namespace cluster
             return 0;
         }
         return it->second.getAppenEntriesNum();
+    }
+
+    ClusterOperation ClusterDbNameLogInfo::getOperation(uint64 index)const
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" << index);
+            return ClusterOperation_None;
+        }
+        return it->second.getOperation();
+    }
+
+    ClusterLogStatus ClusterDbNameLogInfo::getStatus(uint64 index)const
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" << index);
+            return ClusterLogStatus_None;
+        }
+        return it->second.getStatus();
+    }
+
+    std::string ClusterDbNameLogInfo::getFileName(uint64 index)const
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" << index);
+            return std::string();
+        }
+        return it->second.getFileName();
     }
 
     // ClusterTermInfo

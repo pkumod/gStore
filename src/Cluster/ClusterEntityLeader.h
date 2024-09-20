@@ -19,13 +19,12 @@ namespace cluster
         void postHeartBeat(std::string db_name);
         void postNotify(std::string db_name, uint64 index);
         void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
-        void postCancel(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
         void startHeardBeat(std::string db_name);
         void stopHeardBeatTimer(std::string db_name);
         uint32 startNotify(std::string db_name);
         uint32 startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
-        uint32 startCancel(std::string db_name, ClusterOperation operation, const std::string& file_name);
         void startCommit(std::string db_name);
+        void startCancel(std::string db_name);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size() + 1) / 2; }
 

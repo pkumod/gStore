@@ -1,7 +1,6 @@
 #pragma once
 #include "ClusterDefined.h"
 #include "ClusterLog.h"
-// #include "ClusterOperation.h"
 #include "../Api/TimerProvider.h"
 #include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"
@@ -26,8 +25,8 @@ namespace cluster
         ClusterDbPtr addClusterDb(const std::string& db_name);
 
         // log
-        void addLog(std::string db_name, uint64 index, int status, ClusterOperation operation);
-        void updateLogStatus(std::string db_name, uint64 index, int status);
+        void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
+        void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
         void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip);
         void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip);
         uint32 getLogReplyNum(std::string db_name, uint64 index);
@@ -42,7 +41,9 @@ namespace cluster
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
-
+        std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
+        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
+        ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
         // virtual function in here
         public:
         virtual void init() = 0;

@@ -20,6 +20,7 @@ namespace cluster
         {EXPECTION_COMPARE,               "compare"},
         {EXPECTION_PREPARE,               "prepare"},
         {EXPECTION_COMMIT,                "commit"},
+        {EXPECTION_CANCEL,                "cancel"},
         {CLUSTER_OPERATION_TYPE_UNDEFINE, "UNDEFINE"}
     };
 

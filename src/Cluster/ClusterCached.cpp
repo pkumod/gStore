@@ -121,7 +121,7 @@ namespace cluster
         return true;
     }
 
-    void ClusterDb::addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index)
+    void ClusterDb::addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index)
     {
         ClusterDbNameLogInfo log;
         std::string file_path = getUpdatePath();
@@ -148,7 +148,7 @@ namespace cluster
         }
     }
 
-    void ClusterDb::updateLogStatus(uint64 index, int status)
+    void ClusterDb::updateLogStatus(uint64 index, ClusterLogStatus status)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
@@ -212,12 +212,46 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("get Log sync num fail!" << db_name_ << index);
             return 0;
         }
         return log.getLogSyncNum(index);
     }
 
+    ClusterOperation ClusterDb::getOperation(uint64 index)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("get operation fail!" << db_name_ << index);
+            return ClusterOperation_None;
+        }
+        return log.getOperation(index);
+    }
+
+    ClusterLogStatus ClusterDb::getStatus(uint64 index)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            return ClusterLogStatus_None;
+        }
+        return log.getStatus(index);
+    }
+
+    std::string ClusterDb::getFileName(uint64 index)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            return std::string();
+        }
+        return log.getFileName(index);
+    }
+
+    // nt or log
     void ClusterDb::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string file_name)
     {
         writeToNtFile(triples, file_name);

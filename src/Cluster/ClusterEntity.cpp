@@ -80,15 +80,22 @@ namespace cluster
         return it->second;
     }
 
-    void ClusterEntity::addLog(std::string db_name, uint64 index, int status, ClusterOperation operation)
+    void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
+        uint64 last_index = getDbIndex(db_name);
+        if (last_index != 0)
+        {
+            SLOG_TRACE("please sure last index is finish:" << last_index);
+            // updateDbIndex(db_name, last_index);
+        }
+        updateDbNextIndex(db_name, index);
         db->addLog(index, status, operation, getDbIndex(db_name));
     }
 
-    void ClusterEntity::updateLogStatus(std::string db_name, uint64 index, int status)
+    void ClusterEntity::updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
@@ -256,5 +263,32 @@ namespace cluster
         if (!db)
             return std::string();
         return db->getNtFilePath(file_name);
+    }
+
+    std::string ClusterEntity::getNTFilePathByIndex(const std::string& db_name, uint64 index)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return std::string();
+        std::string file_name = db->getFileName(index);
+        if (file_name.empty())
+            return std::string();
+        return db->getNtFilePath(file_name);
+    }
+
+    ClusterLogStatus ClusterEntity::getDbLogStatus(const std::string& db_name, uint64 index)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return ClusterLogStatus_None;
+        return db->getStatus(index);
+    }
+
+    ClusterOperation ClusterEntity::getDbLogOperation(const std::string& db_name, uint64 index)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return ClusterOperation_None;
+        return db->getOperation(index);
     }
 }
