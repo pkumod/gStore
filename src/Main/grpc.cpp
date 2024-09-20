@@ -3379,23 +3379,29 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr)
+		if (apiUtil->check_already_load(db_name) == false)
 		{
 			error = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			return;
+		}
+		if (apiUtil->trywrlock_database(db_name) == false)
+		{
+			error = "The operation can not been excuted due to loss of lock.";
+			response->Error(StatusLossOfLock, error);
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
 		apiUtil->get_Txn_ptr(db_name, txn_m);
 		if (txn_m == nullptr)
 		{
+			apiUtil->unlock_database(db_name);
 			error = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, error);
 			return;
 		}
 		int ret = txn_m->Rollback(TID);
+		apiUtil->unlock_database(db_name);
 		if (ret == 1)
 		{
 			error = "Transaction not in running state! rollback failed. TID: " + TID_s;
@@ -3576,9 +3582,6 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			}
 			upfile.getFileList(zip_files, "");
 		}
-
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
 			error = "The operation can not been excuted due to loss of lock.";
@@ -3693,8 +3696,6 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			}
 			
 		}
-			
-			
 	}
 	catch (const std::exception &e)
 	{
@@ -3780,8 +3781,6 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			}
 			upfile.getFileList(zip_files, "");
 		}
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
 		if (apiUtil->trywrlock_database(db_name) == false)
 		{
 			error = "The operation can not been excuted due to loss of lock.";
