@@ -7,6 +7,8 @@ namespace cluster
     {
         if (s.contains("index"))
             s.at("index").get_to(t.index);
+        if (s.contains("nextIndex"))
+            s.at("nextIndex").get_to(t.nextIndex);
         if (s.contains("status"))
             s.at("status").get_to(t.status);
         if (s.contains("operation"))
@@ -21,10 +23,11 @@ namespace cluster
 
     void to_json(nlohmann::json& s, const LogInfo& t)
     {
-        s["index"]   = t.index;
-        s["status"]  = t.status;
+        s["index"]     = t.index;
+        s["nextIndex"] = t.nextIndex;
+        s["status"]    = t.status;
         s["operation"] = t.operation;
-        s["fileName"] = t.fileName;
+        s["fileName"]  = t.fileName;
         t.covertReplyIpsJson(s);
         t.covertAppenEntriesIpsJson(s);
     }
@@ -149,7 +152,7 @@ namespace cluster
         }
     }
 
-    bool ClusterDbNameLogInfo::addLog(uint64 index, int status, ClusterOperation operation)
+    bool ClusterDbNameLogInfo::addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -163,6 +166,17 @@ namespace cluster
         log.setOperation(operation);
         posL_[logs_.size()] = index;
         logs_[index] = log;
+
+        // set old next index is current index
+        if (last_index != 0)
+        {
+             auto last_it = logs_.find(last_index);
+            if (last_it != logs_.end())
+            {
+                last_it->second.setNextIndex(index);
+            }
+        }
+
         return true;
     }
 

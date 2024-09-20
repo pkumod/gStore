@@ -9,6 +9,7 @@ namespace cluster
     struct LogInfo
     {
         uint64 index;
+        uint64 nextIndex;
         int status;
         ClusterOperation operation;
         std::string fileName;
@@ -17,14 +18,16 @@ namespace cluster
         public:
         LogInfo()
         {
-            index   = 0;
-            status  = 0;
+            index     = 0;
+            nextIndex = 0;
+            status    = 0;
             operation = ClusterOperation_None;
             fileName = "";
             replyIps = std::set<std::string>();
             appenEntriesIps = std::set<std::string>();
         }
         void setIndex(uint64 value){ index = value; }
+        void setNextIndex(uint64 value){ nextIndex = value; }
         void setStatus(int value){ status = value; }
         void setOperation(ClusterOperation value){ operation = value; }
         void setFileName(const std::string& value){ fileName = value; }
@@ -48,7 +51,7 @@ namespace cluster
         public:
         void setLogs(const nlohmann::json& s);
         void covertJson(nlohmann::json& s)const;
-        bool addLog(uint64 index, int status, ClusterOperation operation);
+        bool addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index);
         void updateLogStatus(uint64 index, int status);
         void addLogReplyNum(uint64 index, const std::string& ip);
         void addLogSyncNum(uint64 index, const std::string& ip);

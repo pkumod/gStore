@@ -135,6 +135,7 @@ namespace cluster
         if (!db)
             return 0;
         uint64 index = getDbNextIndex(db_name);
+        updateLogStatus(db_name, index, ClusterLogStatus_pending);
         postNotify(db_name, index);
         uint64 end_time = Util::get_cur_time() + relpy_timeout_;
         int once_run = 1000;
@@ -198,6 +199,7 @@ namespace cluster
         if (!db)
             return 0;
         uint64 index = getDbNextIndex(db_name);
+        updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postSync(db_name, index, operation, file_name);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
@@ -261,6 +263,7 @@ namespace cluster
         if (!db)
             return 0;
         uint64 index = getDbNextIndex(db_name);
+        updateLogStatus(db_name, index, ClusterLogStatus_cancel);
         postSync(db_name, index, operation, file_name);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
@@ -291,6 +294,7 @@ namespace cluster
         uint32 term = getTerm();
         std::string expection = "commit";
         uint64 index = getDbIndex(db_name);
+        updateLogStatus(db_name, index, ClusterLogStatus_commit);
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {

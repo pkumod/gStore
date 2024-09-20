@@ -34,7 +34,7 @@ namespace cluster
         // update.log
         bool readFromUpdateFile(ClusterDbNameLogInfo &logInfo);
         bool writeToUpdateFile(ClusterDbNameLogInfo &logInfo);
-        void addLog(uint64 index, int status, ClusterOperation operation);
+        void addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index);
         void updateLogStatus(uint64 index, int status);
         void addLogReplyNum(uint64 index, const std::string& ip);
         void addLogSyncNum(uint64 index, const std::string& ip);

@@ -85,7 +85,7 @@ namespace cluster
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->addLog(index, status, operation);
+        db->addLog(index, status, operation, getDbIndex(db_name));
     }
 
     void ClusterEntity::updateLogStatus(std::string db_name, uint64 index, int status)
@@ -97,6 +97,11 @@ namespace cluster
         if (status == ClusterLogStatus_commit)
         {
             updateDbIndex(db_name, index);
+            updateDbNextIndex(db_name, 0);
+        }
+        else if (status == ClusterLogStatus_cancel)
+        {
+            // this operation is failed
             updateDbNextIndex(db_name, 0);
         }
         db->updateLogStatus(index, status);

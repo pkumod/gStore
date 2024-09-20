@@ -121,13 +121,13 @@ namespace cluster
         return true;
     }
 
-    void ClusterDb::addLog(uint64 index, int status, ClusterOperation operation)
+    void ClusterDb::addLog(uint64 index, int status, ClusterOperation operation, uint64 last_index)
     {
         ClusterDbNameLogInfo log;
         std::string file_path = getUpdatePath();
         if (!Util::file_exist(file_path))
         {
-            log.addLog(index, status, operation);
+            log.addLog(index, status, operation, 0);
             SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", status:" << index << " ,operation:" << operation);
             if (!writeToUpdateFile(log))
             {
@@ -140,7 +140,7 @@ namespace cluster
             SLOG_ERROR("add log fail!" << db_name_ << index << status);
             return;
         }
-        log.addLog(index, status, operation);
+        log.addLog(index, status, operation, last_index);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("add log fail!" << db_name_ << index << status);
