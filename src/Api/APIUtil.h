@@ -848,6 +848,7 @@ public:
     bool get_database(const std::string& db_name, shared_ptr<Database> &db);
     bool get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbInfo);
     bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
+    bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const time_t& timeout_s);
     bool rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool check_already_load(const std::string& db_name);
@@ -856,9 +857,10 @@ public:
     // std::string get_already_build(const std::string& db_name);
     void get_already_builds(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
     bool check_already_build(const std::string& db_name);
-    bool trywrlock_database(const std::string& db_name);
     bool trywrlock_database(const std::string& db_name, const time_t& timeout_s);
+    bool trywrlock_database(const std::string& db_name);
     bool rdlock_database(const std::string& db_name);
+    bool rdlock_database(const std::string& db_name, const time_t& timeout_s);
     bool unlock_database(const std::string& db_name);
     std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);
     std::string check_server_indentity(const std::string& password);

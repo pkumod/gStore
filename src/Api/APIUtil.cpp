@@ -552,7 +552,7 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
     if (rwlock_code != 0) 
     {
         SLOG_ERROR("already_build_map read lock error: " + to_string(rwlock_code));
-        dbInfo = NULL;
+        dbInfo = nullptr;
         return false;
     }
     std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter = already_build.find(db_name);
@@ -565,28 +565,44 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
         // #if defined(DEBUG)
         SLOG_ERROR("can't find [" + db_name + "] database info from already_build_map");
         // #endif
-        dbInfo = NULL;
+        dbInfo = nullptr;
     }
     return unlock_already_build_map();
 }
 
 bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
 {
+    return trywrlock_databaseinfo(dbinfo, 30);
+}
+
+bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const time_t& timeout_s)
+{
+    bool result = false;
     if (dbinfo == NULL || dbinfo == nullptr)
-        return false;
-    int rwlock_code = pthread_rwlock_trywrlock(&(dbinfo->db_lock));
-    if (rwlock_code != 0)
+        return result;
+    if (pthread_rwlock_trywrlock(&(dbinfo->db_lock)) == 0)
     {
-        SLOG_ERROR("try write lock database[" + dbinfo->getName() + "] error: " + to_string(rwlock_code));
-        return false;
+        SLOG_CORE("try gets databaseinfo[" + dbinfo->getName() + "] write lock ok.");
+        result = true;
     }
     else
     {
-        // #if defined(DEBUG)
-        SLOG_CORE("try write lock database[" + dbinfo->getName() + "] ok");
-        // #endif
-        return true;
+        struct timeval now;
+        struct timespec str_timeout = {0};
+        gettimeofday(&now, NULL);
+        str_timeout.tv_sec = now.tv_sec + timeout_s;
+        str_timeout.tv_nsec = now.tv_usec * 1000;
+        if (pthread_rwlock_timedwrlock(&(dbinfo->db_lock), &str_timeout) == 0)
+        {
+            SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock ok.");
+            result = true;
+        }
+        else
+        {
+            SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock timeout.");
+        }
     }
+    return result;
 }
 
 bool APIUtil::rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
@@ -934,14 +950,11 @@ bool APIUtil::get_database(const std::string &db_name, shared_ptr<Database> &db)
     bool rwlock_code = pthread_rwlock_rdlock(&databases_map_lock);
     if (rwlock_code != 0) 
     {
-        // #if defined(DEBUG)
         SLOG_CORE("database_map read lock error: " + to_string(rwlock_code));
-        // #endif
+        db = nullptr;
         return false;
     }
-    // #if defined(DEBUG)
     SLOG_CORE("database_map read lock ok");
-    // #endif
     std::map<std::string, shared_ptr<Database>>::iterator iter = databases.find(db_name);
     if (iter != databases.end())
     {
@@ -951,21 +964,8 @@ bool APIUtil::get_database(const std::string &db_name, shared_ptr<Database> &db)
     {
         db = nullptr;
     }
-    rwlock_code = pthread_rwlock_unlock(&databases_map_lock);
-    if (rwlock_code == 0)
-    {
-        // #if defined(DEBUG)
-        SLOG_CORE("database_map unlock ok");
-        // #endif
-        return true;
-    } 
-    else
-    {
-        // #if defined(DEBUG)
-        SLOG_CORE("database_map unlock error:" + to_string(rwlock_code));
-        // #endif
-        return false;
-    }
+    pthread_rwlock_unlock(&databases_map_lock);
+    return true;
 }
 
 bool APIUtil::check_already_load(const std::string &db_name)
@@ -1051,47 +1051,83 @@ bool APIUtil::check_already_build(const std::string &db_name)
     }
 }
 
+bool APIUtil::trywrlock_database(const std::string& db_name, const time_t& timeout_s)
+{
+    bool result = false;
+    shared_ptr<DatabaseInfo> dbinfo;
+    get_databaseinfo(db_name, dbinfo);
+    if (dbinfo == nullptr)
+    {
+        SLOG_CORE("can not find db[" + db_name + "] from already_build map.");
+        return result;
+    }
+    if (pthread_rwlock_trywrlock(&(dbinfo->db_lock)) == 0)
+    {
+        SLOG_CORE("try get db[" + dbinfo->getName() + "] write lock ok.");
+       result = true;
+    } 
+    else
+    {
+        struct timeval now;
+        struct timespec str_timeout = {0};
+        gettimeofday(&now, NULL);
+        str_timeout.tv_sec = now.tv_sec + timeout_s;
+        str_timeout.tv_nsec = now.tv_usec * 1000;
+        if (pthread_rwlock_timedwrlock(&(dbinfo->db_lock), &str_timeout) == 0)
+        {
+            SLOG_CORE("gets db[" + dbinfo->getName() + "] write lock ok.");
+            result = true;
+        }
+        else
+        {
+            SLOG_CORE("gets db[" + dbinfo->getName() + "] write lock timeout.");
+        }
+    }
+    return result;
+}
+
 bool APIUtil::trywrlock_database(const std::string &db_name)
 {
     return trywrlock_database(db_name, 30);
 }
 
-bool APIUtil::trywrlock_database(const std::string& db_name, const time_t& timeout_s)
+
+bool APIUtil::rdlock_database(const std::string &db_name)
+{
+    return rdlock_database(db_name, 10);
+}
+
+bool APIUtil::rdlock_database(const std::string &db_name, const time_t& timeout_s)
 {
     bool result = false;
-    pthread_rwlock_rdlock(&already_build_map_lock);
-    std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter = already_build.find(db_name);
-    pthread_rwlock_unlock(&already_build_map_lock);
-    if (iter == already_build.end())
+    shared_ptr<DatabaseInfo> dbinfo;
+    get_databaseinfo(db_name, dbinfo);
+    if (dbinfo == nullptr)
     {
-        SLOG_CORE("can not fin db[" + db_name + "] from already_build map.");
+        SLOG_CORE("can not find db[" + db_name + "] from already_build map.");
         return result;
     }
-    struct timeval now;
-    struct timespec str_timeout = {0};
-    gettimeofday(&now, NULL);
-    str_timeout.tv_sec = now.tv_sec + timeout_s;
-    str_timeout.tv_nsec = now.tv_usec * 1000;
-    if (pthread_rwlock_timedwrlock(&(iter->second->db_lock), &str_timeout) == 0)
+    if (pthread_rwlock_tryrdlock(&(dbinfo->db_lock)) == 0)
     {
+        SLOG_CORE("try gets db[" +db_name + "] write lock ok.");
         result = true;
     }
     else
     {
-        SLOG_CORE("gets db[" + db_name + "] write lock timeout.");
-    }
-    return result;
-}
-
-bool APIUtil::rdlock_database(const std::string &db_name)
-{
-    bool result = false;
-    pthread_rwlock_rdlock(&already_build_map_lock);
-    std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter = already_build.find(db_name);
-    pthread_rwlock_unlock(&already_build_map_lock);
-    if (pthread_rwlock_rdlock(&(iter->second->db_lock)) == 0)
-    {
-        result = true;
+        struct timeval now;
+        struct timespec str_timeout = {0};
+        gettimeofday(&now, NULL);
+        str_timeout.tv_sec = now.tv_sec + timeout_s;
+        str_timeout.tv_nsec = now.tv_usec * 1000;
+        if (pthread_rwlock_timedrdlock(&(dbinfo->db_lock), &str_timeout) == 0)
+        {
+            SLOG_CORE("gets db[" + db_name + "] read lock ok.");
+            result = true;
+        }
+        else
+        {
+            SLOG_CORE("gets db[" + db_name + "] read lock timeout.");
+        }
     }
     return result;
 }
