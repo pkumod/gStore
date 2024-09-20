@@ -398,6 +398,7 @@ public:
 	static bool remove_file(const std::string file_path);
 	static bool remove_path(const std::string path);
 	static std::string fileSuffix(const std::string &filepath);
+	static std::string get_parent_path(const std::string& file_path);
 
 	static std::string getTimeName();
 	static std::string getTimeString();
@@ -419,6 +420,7 @@ public:
 	static long read_backup_time();
 
     static std::string replace_all(std::string _content,const std::string oldtext,const std::string newtext);
+	static std::string replace_all_ignore_case(const std::string& input, const std::string& oldtext, const std::string& newtext);
     static std::string clear_angle_brackets(std::string _str);
 
 	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);

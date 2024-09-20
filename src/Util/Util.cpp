@@ -1201,6 +1201,21 @@ std::string Util::fileSuffix(const std::string &filepath)
     return file.substr(pos2 + 1, -1);
 }
 
+ std::string Util::get_parent_path(const std::string& file_path)
+ {
+    std::string directory;
+    std::stringstream ss(file_path);
+    std::getline(ss, directory, '/');
+    std::string token;
+    while (std::getline(ss, token, '/')) {
+        if (token.empty()) 
+            continue;
+        directory += "/";
+        directory += token;
+    }
+    return directory;
+ }
+
 long
 Util::get_cur_time()
 {
@@ -2552,6 +2567,29 @@ Util::replace_all(std::string _content,const std::string oldtext,const std::stri
             else   break;
         }
     return  _content;
+}
+
+std::string
+Util::replace_all_ignore_case(const std::string& input, const std::string& oldtext, const std::string& newtext)
+{
+    std::string _result = input;
+    std::string _lower_input = input; 
+    std::string _lower_oldtext = oldtext;
+    std::string _newtext = newtext;
+    std::string::size_type pos = 0;
+    std::transform(_lower_input.begin(), _lower_input.end(), _lower_input.begin(), ::tolower);
+    std::transform(_lower_oldtext.begin(), _lower_oldtext.end(), _lower_oldtext.begin(), ::tolower);
+    pos = _lower_input.find(_lower_oldtext, pos);
+    while(pos != std::string::npos)
+    {
+        // replace origin str
+        _result.replace(pos, _lower_oldtext.length(), _newtext);
+        // replace lower case str
+        _lower_input.replace(pos, _lower_oldtext.length(), _newtext);
+        pos += _newtext.length();
+        pos = _lower_input.find(_lower_oldtext, pos);
+    }
+    return _result;
 }
 
 std::string
