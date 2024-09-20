@@ -348,7 +348,7 @@ namespace cluster
         }
         if (status == ClusterLogStatus_HeartBeat)
         {
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader);
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, cluster_operation::EXPECTION_COMPARE);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_pending)
@@ -357,7 +357,7 @@ namespace cluster
             {
                 SLOG_TRACE("Please sure cluster pending is nullptr");
             }
-            ClusterEventPtr task = std::make_shared<ClusterNotifyEvent>(db_name, leader, cb);
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, cb, cluster_operation::EXPECTION_PREPARE);
             task_queueL.push(task);
         }
         else if (status == ClusterLogStatus_sync)
@@ -372,6 +372,11 @@ namespace cluster
         else if (status == ClusterLogStatus_cancel)
         {
             ClusterEventPtr task = std::make_shared<ClusterCancelEvent>(db_name, operation, file_name, leader);
+            task_queueL.push(task);
+        }
+        else if (status == ClusterLogStatus_commit)
+        {
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, cluster_operation::EXPECTION_COMMIT);
             task_queueL.push(task);
         }
         else

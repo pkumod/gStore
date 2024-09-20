@@ -1,6 +1,7 @@
 #pragma once
 #include "ClusterDefined.h"
 #include "ClusterLog.h"
+// #include "ClusterOperation.h"
 #include "../Api/TimerProvider.h"
 #include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"

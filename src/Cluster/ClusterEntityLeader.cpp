@@ -67,7 +67,8 @@ namespace cluster
             return;
         }
         uint64 index = getDbIndex(db_name);
-        httpentities::HeartBeatRequest request(term, db_name, index);
+        std::string expection = std::to_string(EXPECTION_COMPARE);
+        httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
@@ -98,7 +99,8 @@ namespace cluster
     void ClusterEntityLeader::postNotify(std::string db_name, uint64 index)
     {
         uint32 term = getTerm();
-        httpentities::HeartBeatRequest request(term, db_name, index);
+        std::string expection = std::to_string(EXPECTION_PREPARE);
+        httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
@@ -282,6 +284,39 @@ namespace cluster
         
         oneTimer.Expire();
         return pass_num;
+    }
+
+    void ClusterEntityLeader::startCommit(std::string db_name)
+    {
+        uint32 term = getTerm();
+        std::string expection = std::to_string(EXPECTION_COMMIT);
+        uint64 index = getDbIndex(db_name);
+        httpentities::HeartBeatRequest request(term, db_name, index, expection);
+        auto helper = [this, db_name, index, request](ClusterNode node)
+        {
+            httpentities::HeartBeatRequest request_ = request;
+		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
+            if (responce.getStatusCode() != CURLE_OK)
+            {
+                faileL_[node.getIp()] += 1;
+                return;
+            }
+            faileL_[node.getIp()] = 0;
+        };
+
+        for (const auto& node : followNodeL_)
+        {
+            std::string ip = node.second.getIp();
+            auto it = faileL_.find(ip);
+            if (it == faileL_.end())
+                continue;
+            if (it->second > headBeat_max_fail_num_)
+                continue;
+            
+            thread postHearBeat(helper, node.second);
+            postHearBeat.detach();
+        }
     }
 
     std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()const

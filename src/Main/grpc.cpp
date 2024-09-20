@@ -9,7 +9,6 @@
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
 #include "../Cluster/ClusterManager.h"
-#include "../Cluster/ClusterOperation.h"
 
 #define HTTP_TYPE "http"
 #define BASE_URL "http://127.0.0.1:" + _server_port

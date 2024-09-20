@@ -110,42 +110,15 @@ namespace cluster
     struct ClusterHeartBeatEvent : public ClusterEvent
     {
         std::string db_name_;
-        ClusterEntityLeaderWeaker wer_;
-        ClusterHeartBeatEvent()
-        {
-            db_name_ = "";
-        }
-        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per)
-        {
-            db_name_ = db_name;
-            wer_ = per;
-        }
-        void runEvent()const override
-        {
-            ClusterEntityLeaderPtr per = wer_.lock();
-            if (!per)
-            {
-                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
-                return;
-            }
-            per->startHeardBeat(db_name_);
-        }
-    };
-
-    struct ClusterNotifyEvent : public ClusterEvent
-    {
-        std::string db_name_;
+        cluster_operation expection_;
         ClusterEntityLeaderWeaker wer_;
         timeoutCall cb_;
-        ClusterNotifyEvent()
-        {
-            db_name_ = "";
-        }
-        ClusterNotifyEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
+        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, cluster_operation expection)
         {
             db_name_ = db_name;
             wer_ = per;
             cb_ = cb;
+            expection_ = expection;
         }
         void runEvent()const override
         {
@@ -155,15 +128,26 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            uint32 num = per->startNotify(db_name_);
-            uint32 need_num = per->getNeedNum();
-            if (cb_)
+            if (expection_ == cluster_operation::EXPECTION_COMPARE)
             {
-                SLOG_TRACE("cluster reply callback");
-                if (num == 0 || num < need_num)
-                    cb_(false);
-                else
-                    cb_(true);
+                per->startHeardBeat(db_name_);
+            }
+            else if (expection_ == cluster_operation::EXPECTION_PREPARE)
+            {
+                uint32 num = per->startNotify(db_name_);
+                uint32 need_num = per->getNeedNum();
+                if (cb_)
+                {
+                    SLOG_TRACE("cluster reply callback");
+                    if (num == 0 || num < need_num)
+                        cb_(false);
+                    else
+                        cb_(true);
+                }
+            }
+            else if (expection_ == cluster_operation::EXPECTION_COMMIT)
+            {
+                per->startCommit(db_name_);
             }
         }
     };

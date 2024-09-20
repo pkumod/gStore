@@ -200,10 +200,13 @@ namespace httpentities {
     };
 
     struct HeartBeatRequest: public ClusterRequest {
-        using ClusterRequest::ClusterRequest;
+        std::string expection;
+        HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection): ClusterRequest(term, db_name, index) {
+            this->expection = expection;
+        }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}};
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"expection", this->expection}};
             json_str = json.dump();
         }
     };
