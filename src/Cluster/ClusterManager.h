@@ -160,7 +160,7 @@ namespace cluster
             if (cb_)
             {
                 SLOG_TRACE("cluster reply callback");
-                if (num < need_num)
+                if (num == 0 || num < need_num)
                     cb_(false);
                 else
                     cb_(true);
@@ -202,7 +202,7 @@ namespace cluster
             if (cb_)
             {
                 SLOG_TRACE("cluster sync callback");
-                if (num < need_num)
+                if (num == 0 || num < need_num)
                     cb_(false);
                 else
                     cb_(true);
