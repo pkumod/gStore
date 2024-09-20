@@ -15,23 +15,23 @@
 
 namespace cluster
 {
-    // OP(name,string)
-    #define CLUSTER_OPERATION_TYPES_MAP(OP)                       \
-        OP(LEADER_HEARTBEAT,                   heartbeat) \
-        OP(LEADER_APPEND,                  appendEntries) \
-        OP(FOLLOWER_REPLY,                         reply) \
-        OP(FOLLOWER_CHECK,                         check) \
-        OP(EXPECTION_COMPARE,                    compare) \
-        OP(EXPECTION_PREPARE,                    prepare) \
-        OP(EXPECTION_COMMIT,                      commit) 
+    // CLUSTEROP(name,string)
+    #define CLUSTER_OPERATION_TYPES_MAP(CLUSTEROP)                       \
+        CLUSTEROP(LEADER_HEARTBEAT,                   heartbeat) \
+        CLUSTEROP(LEADER_APPEND,                  appendEntries) \
+        CLUSTEROP(FOLLOWER_REPLY,                         reply) \
+        CLUSTEROP(FOLLOWER_CHECK,                         check) \
+        CLUSTEROP(EXPECTION_COMPARE,                    compare) \
+        CLUSTEROP(EXPECTION_PREPARE,                    prepare) \
+        CLUSTEROP(EXPECTION_COMMIT,                      commit) 
 
     enum cluster_operation
     {
-    #define OP(name, string) name,
+    #define CLUSTEROP(name, string) name,
         CLUSTER_OPERATION_TYPE_NONE,
-        CLUSTER_OPERATION_TYPES_MAP(OP)
+        CLUSTER_OPERATION_TYPES_MAP(CLUSTEROP)
         CLUSTER_OPERATION_TYPE_UNDEFINE
-    #undef OP
+    #undef CLUSTEROP
     };
 
     class ClusterOperationHandle
@@ -45,9 +45,9 @@ namespace cluster
     {
         switch (type)
         {
-    #define OP(name, string) case name: return #string;
-            OPERATION_TYPES_MAP(OP)
-    #undef OP
+    #define CLUSTEROP(name, string) case name: return #string;
+            OPERATION_TYPES_MAP(CLUSTEROP)
+    #undef CLUSTEROP
             default:
                 return "";
         }
@@ -59,12 +59,12 @@ namespace cluster
         {
             return CLUSTER_OPERATION_TYPE_NONE;
         }
-    #define OP(name, string) \
+    #define CLUSTEROP(name, string) \
         if (type_str == #string) { \
             return name; \
         }
-        CLUSTER_OPERATION_TYPES_MAP(OP)
-    #undef OP
+        CLUSTER_OPERATION_TYPES_MAP(CLUSTEROP)
+    #undef CLUSTEROP
         return CLUSTER_OPERATION_TYPE_UNDEFINE;
     }
 }
