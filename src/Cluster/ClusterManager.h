@@ -97,6 +97,8 @@ namespace cluster
         ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
         // 获取日志操作
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        // 获取数据库路径
+        std::string getDbDirPath(std::string db_name);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储

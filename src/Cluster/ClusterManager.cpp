@@ -307,6 +307,13 @@ namespace cluster
         return role_->getDbLogOperation(db_name, index);
     }
 
+    std::string ClusterManager::getDbDirPath(std::string db_name)
+    {
+        if (!isEnable() || !role_)
+            return "";
+        return role_->getDbDirPath(db_name);
+    }
+
     void ClusterManager::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
         if (!isEnable() || !role_)
