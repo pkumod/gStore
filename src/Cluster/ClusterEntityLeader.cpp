@@ -138,7 +138,7 @@ namespace cluster
         int once_run = 1000;
         uint32 pass_num = 0;
         TimerProvider oneTimer;
-        int need_num = (followNodeL_.size() + 1) / 2;
+        int need_num = getNeedNum();
         while (1)
         {
             if (once_run > (end_time - Util::get_cur_time()))
@@ -201,7 +201,7 @@ namespace cluster
         TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;
-        int need_num = (followNodeL_.size() + 1) / 2;
+        int need_num = getNeedNum();
         while (1)
         {
             if (once_run > (end_time - Util::get_cur_time()))
@@ -264,7 +264,7 @@ namespace cluster
         TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;
-        int need_num = (followNodeL_.size() + 1) / 2;
+        int need_num = getNeedNum();
         while (1)
         {
             if (once_run > (end_time - Util::get_cur_time()))

@@ -156,7 +156,7 @@ namespace cluster
                 return;
             }
             uint32 num = per->startNotify(db_name_);
-            uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
+            uint32 need_num = per->getNeedNum();
             if (cb_)
             {
                 SLOG_TRACE("cluster reply callback");
@@ -198,7 +198,7 @@ namespace cluster
                 return;
             }
             uint32 num = per->startSync(db_name_, operation_, file_name_);
-            uint32 need_num = (per->getFollowNodeL().size() + 1)/2;
+            uint32 need_num = per->getNeedNum();
             if (cb_)
             {
                 SLOG_TRACE("cluster sync callback");
