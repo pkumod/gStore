@@ -135,6 +135,11 @@ namespace cluster
         if (!db)
             return 0;
         uint64 index = getDbNextIndex(db_name);
+        if (index == 0)
+        {
+            SLOG_TRACE("start notify fail, please check term.json, index:" << index);
+            return 0;
+        }
         updateLogStatus(db_name, index, ClusterLogStatus_pending);
         postNotify(db_name, index);
         uint64 end_time = Util::get_cur_time() + relpy_timeout_;
@@ -156,7 +161,6 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-        oneTimer.Expire();
         return pass_num;
     }
 
@@ -199,6 +203,11 @@ namespace cluster
         if (!db)
             return 0;
         uint64 index = getDbNextIndex(db_name);
+        if (index == 0)
+        {
+            SLOG_TRACE("start sync fail, please check term.json, index:" << index);
+            return 0;
+        }
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postSync(db_name, index, operation, file_name);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
@@ -220,7 +229,6 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-        oneTimer.Expire();
         return pass_num;
     }
 
@@ -229,6 +237,11 @@ namespace cluster
         uint32 term = getTerm();
         std::string expection = "commit";
         uint64 index = getDbNextIndex(db_name);
+        if (index == 0)
+        {
+            SLOG_TRACE("start commit fail, please check term.json, index:" << index);
+            return;
+        }
         updateLogStatus(db_name, index, ClusterLogStatus_commit);
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
@@ -263,6 +276,11 @@ namespace cluster
         uint32 term = getTerm();
         std::string expection = "cancel";
         uint64 index = getDbNextIndex(db_name);
+        if (index == 0)
+        {
+            SLOG_TRACE("start cancel fail, please check term.json, index:" << index);
+            return;
+        }
         updateLogStatus(db_name, index, ClusterLogStatus_cancel);
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
