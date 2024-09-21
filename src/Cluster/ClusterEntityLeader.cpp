@@ -209,7 +209,9 @@ namespace cluster
             return 0;
         }
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
-        postSync(db_name, index, operation, file_name);
+        std::string current_path = getDbDirPath(db_name) + file_name;
+        std::string file_path = Util::getExactPath(current_path.c_str());
+        postSync(db_name, index, operation, file_path);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;

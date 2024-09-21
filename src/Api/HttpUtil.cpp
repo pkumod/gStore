@@ -325,6 +325,19 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
 		curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, pair.first.c_str(), CURLFORM_COPYCONTENTS, pair.second.c_str(), CURLFORM_END);
     }
 
+	struct curl_slist* headerlist = nullptr;
+	std::string header_str;
+	for (const auto& pair : headers)
+	{
+		if (pair.first.empty())
+		{
+			continue;
+		}
+		header_str = pair.first + ":" + pair.second;
+		headerlist = curl_slist_append(headerlist, header_str.c_str());
+	}
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
+	
 	// 设置表单数据
 	curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
 
@@ -349,6 +362,7 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
 	// 清理
 	curl_formfree(formpost);
 	curl_easy_cleanup(curl);
+	curl_slist_free_all(headerlist);
     return res;
 }
 
@@ -444,7 +458,7 @@ httpentities::ClusterResponse HttpUtil::appendEntries(const std::string& url, ht
 	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
 	params.insert(std::pair<std::string, std::string>("operation", request.operation));
 	std::string body_str;
-	int status = PostFile(url, headers, 3600, request.filename, params, body_str);
+	int status = PostFile(url, headers, 3600, request.file_path, params, body_str);
 	if (status == CURLE_OK)
 		return httpentities::ClusterResponse(body_str);
 	else if (status == CURLE_OPERATION_TIMEDOUT)
