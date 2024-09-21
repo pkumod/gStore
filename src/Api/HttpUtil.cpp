@@ -291,6 +291,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::s
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeOut);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
+	SLOG_CORE("url: " + strUrl + ", responseBody: " + strResponse);
 	return res;
 }
 
@@ -358,7 +359,7 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
 	{
 		SLOG_CORE("post file response: " << strResponse);
 	}
-
+	SLOG_CORE("url: " + strUrl + ", responseBody: " + strResponse);
 	// 清理
 	curl_formfree(formpost);
 	curl_easy_cleanup(curl);
