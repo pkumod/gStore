@@ -65,17 +65,15 @@ static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
 	return 0;
 }
 
-static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
+size_t HttpUtil::write_callback(void *contents, size_t size, size_t nmemb, std::string *s)
 {
-	std::string* str = dynamic_cast<std::string*>((std::string*)lpVoid);
-	if (NULL == str || NULL == buffer)
-	{
-		return -1;
-	}
-
-	char* pData = (char*)buffer;
-	str->append(pData, size * nmemb);
-	return nmemb;
+	 size_t newLength = size * nmemb;
+    try {
+        s->append((char*)contents, newLength);
+    } catch(std::bad_alloc &e) {
+        return 0;
+    }
+    return newLength;
 }
 
 int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
@@ -95,7 +93,7 @@ int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 	}
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -169,7 +167,7 @@ int HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::st
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
 	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -202,7 +200,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::s
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -286,7 +284,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::s
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	//curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -311,61 +309,47 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
         curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
     }
-    struct curl_slist* headerlist = nullptr;
-	std::string boundary = "---------------------------735323031399963166993862150";
-    std::string content_type = "Content-Type:multipart/form-data; boundary=" + boundary;
-	headerlist = curl_slist_append(headerlist, content_type.c_str());
-    for (const auto& pair : headers)
-    {
-        if (pair.first.empty() || pair.first == "Content-Type")
-        {
-            continue;
-        }
-        std::string pair_str = pair.first + ":" + pair.second;
-        headerlist = curl_slist_append(headerlist, pair_str.c_str());
-    }
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
+	// 设置目标URL
     curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
-    curl_easy_setopt(curl, CURLOPT_POST, 1);
-
-    // 设置文件上传的回调函数
-    curl_easy_setopt(curl, CURLOPT_READFUNCTION, OnReadFile);
-    curl_easy_setopt(curl, CURLOPT_READDATA, (void*)filePath.c_str());
-
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
-    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeOut);
-
-    // 设置POST参数
-    std::string postFields;
+    // 设置POST请求
+	curl_easy_setopt(curl, CURLOPT_POST, 1);
+	
+	// 设置上传文件
+	struct curl_httppost* formpost = NULL;
+	struct curl_httppost* lastptr = NULL;
+	curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, "file", CURLFORM_FILE, filePath.c_str(), CURLFORM_END);
+	
+	// 设置其他参数
     for (const auto& pair : params)
     {
-        postFields += boundary + "\r\n";
-        postFields += "Content-Disposition: form-data; name=\"" + pair.first + "\"\r\n\r\n";
-        postFields += pair.second + "\r\n";
+		curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, pair.first.c_str(), CURLFORM_COPYCONTENTS, pair.second.c_str(), CURLFORM_END);
     }
-    postFields += boundary + "--\r\n";
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postFields.size());
 
+	// 设置表单数据
+	curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
+
+	// 设置回调函数接收响应数据
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	
+	// 执行请求
     res = curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-    return res;
-}
+    
+	// 检测错误
+	if (res != CURLE_OK)
+	{
+		SLOG_CORE("post file failed: " << curl_easy_strerror(res));
+	}
+	else
+	{
+		SLOG_CORE("post file response: " << strResponse);
+	}
 
-// 文件读取回调函数
-const size_t HttpUtil::OnReadFile(void* ptr, size_t size, size_t nmemb, void* stream)
-{
-    std::string* filePath = (std::string*)stream;
-    FILE* file = fopen(filePath->c_str(), "rb");
-    if (file)
-    {
-        size_t readSize = fread(ptr, size, nmemb, file);
-        fclose(file);
-        return readSize;
-    }
-    return 0;
+	// 清理
+	curl_formfree(formpost);
+	curl_easy_cleanup(curl);
+    return res;
 }
 
 httpentities::ShutdownResponse HttpUtil::shutdown(const std::string& url, httpentities::ShutdownRequest& request)
