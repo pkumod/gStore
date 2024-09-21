@@ -293,10 +293,15 @@ void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const
 	{
 		usleep(microseconds);
 		curr_wait_time += microseconds;
-		SLOG_DEBUG(msg + waiting);
-		waiting.append(".");
-		if(sync_status > 1 || curr_wait_time > _max_wait_time);
+		if (curr_wait_time % 1000000 == 0)
+		{
+			SLOG_DEBUG(msg + waiting);
+			waiting.append(".");
+		}
+		if(sync_status > 1 || curr_wait_time > _max_wait_time)
+		{
 			break;
+		}
 	}
 	return;
 }
@@ -2723,9 +2728,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
 			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
 			{
-				SLOG_DEBUG("prepare task result: " << success);
 				prepare_result = success;
 				prepare_status++;
+				SLOG_DEBUG("prepare task result: " << prepare_result);
 			});
 			// slepp 200 ms
 			useconds_t microseconds = 200*1000;
