@@ -5837,7 +5837,31 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
-					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_cancel);
+					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
+					if (!nt_file_path.empty())
+					{
+						cluster::ClusterOperation cluster_operation = clusterManagerPtr->getDbLogOperation(db_name, leader_index);
+						shared_ptr<Database> restore_database;
+						apiUtil->get_database(db_name, restore_database);
+						apiUtil->trywrlock_database(db_name);
+						if (cluster_operation == ClusterOperation::ClusterOperation_Delete)
+						{
+							uint32_t num = restore_database->batch_insert(nt_file_path);
+							SLOG_TRACE("follower restore " + db_name + " data: batch insert num " << num);
+						} 
+						else 
+						{
+							uint32_t num = restore_database->batch_remove(nt_file_path);
+							SLOG_TRACE("follower restore " + db_name + " data: batch_remove num " << num);
+						}
+						Util::remove_path(nt_file_path);
+						clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_cancel);
+						apiUtil->unlock_database(db_name);
+					}
+					else
+					{
+						SLOG_TRACE("not found nt file path:" << db_name << " ,index:" << leader_index);
+					}
 				}
 			}
 			response->Success("ok");
@@ -5962,7 +5986,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		clusterManagerPtr->updateTerm(leader_term);
 		clusterManagerPtr->updateLogStatus(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_sync);
 		clusterManagerPtr->setLogOperation(db_name, leader_index, log_operation);
-		clusterManagerPtr->setLogFileName(db_name, leader_index, GRPCUtil::fileName(nt_file_path));
+		clusterManagerPtr->setLogFileName(db_name, leader_index, GRPCUtil::fileName(log_file_name));
 
 		// send appendEntrites ok response
 		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();

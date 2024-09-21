@@ -48,7 +48,6 @@ namespace cluster
     class ClusterDbNameLogInfo
     {
         std::map<uint64, LogInfo> logs_; //index, logInfo
-        std::map<int, uint64> posL_; // pos, index;
 
         public:
         void setLogs(const nlohmann::json& s);

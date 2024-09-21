@@ -303,6 +303,18 @@ namespace cluster
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
         std::string file_path = getDbDirPath() + file_name;
+        std::string::size_type pos = file_name.find_last_of(".");
+        if (pos == std::string::npos)
+        {
+            SLOG_ERROR("nt.log format is error:" << db_name_ << " , file name:" << file_name );
+            return std::string();
+        }
+        std::string nt_path = getDbDirPath() + file_name.substr(0, pos) + ".nt";
+        if (Util::file_exist(nt_path))
+        {
+            return nt_path;
+        }
+
         ifstream r_fp;
         r_fp.open(file_path, ios::in);
         if (!r_fp.is_open())
@@ -311,13 +323,6 @@ namespace cluster
             return std::string();
         }
 
-        std::string::size_type pos = file_name.find_last_of(".");
-        if (pos == std::string::npos)
-        {
-            SLOG_ERROR("nt.log format is error:" << db_name_ << " , file name:" << file_name );
-            return std::string();
-        }
-        std::string nt_path = getDbDirPath() + file_name.substr(0, pos) + ".nt";
         ofstream w_fp;
         w_fp.open(nt_path,ios::out);
         if (!w_fp.is_open())
@@ -343,6 +348,7 @@ namespace cluster
             line.clear();
         }
 
+        r_fp.close();
         w_fp.close();
         return nt_path;
     }

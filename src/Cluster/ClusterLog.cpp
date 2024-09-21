@@ -126,29 +126,16 @@ namespace cluster
                 continue;
             uint64 index = s[i].at("index");
             logs_[index] = s[i];
-            posL_[i] = index;
         }
     }
 
     void ClusterDbNameLogInfo::covertJson(nlohmann::json& s)const
     {
-        int size = logs_.size();
-        for (int i = 0; i < size; i++)
+        int i = 0;
+        for (const auto& m : logs_)
         {
-            auto it = posL_.find(i);
-            if (it == posL_.end())
-            {
-                SLOG_ERROR("please checkout logs format is error pos:" + i);
-                continue;
-            }
-            uint64 index = it->second;
-            auto log = logs_.find(it->second);
-            if (log == logs_.end())
-            {
-                SLOG_ERROR("please checkout logs format is error, index:" + index);
-                continue;
-            }
-            s["logs"][i] = log->second;
+            s["logs"][i] = m.second;
+            i++;
         }
     }
 
@@ -164,7 +151,6 @@ namespace cluster
         log.setIndex(index);
         log.setStatus(status);
         log.setOperation(operation);
-        posL_[logs_.size()] = index;
         logs_[index] = log;
 
         // set old next index is current index
