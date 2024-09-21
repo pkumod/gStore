@@ -5818,10 +5818,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t leader_term = std::stol(form.at("term").second);
 	uint64_t leader_index = std::stoul(form.at("index").second);
 	// TODO check leader term and index with local
-	const std::string cluster_db_path = apiUtil->get_configure_value("cluster_data_path") + db_name;
-	const std::string time_stamp_str = Util::getTimeString2();
-	const std::string zip_file_path = cluster_db_path + "/" + time_stamp_str + "_" + fileinfo.first;
-	const std::string unz_dir_path = cluster_db_path + "/tmp_" + time_stamp_str;
+	const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
+	const std::string zip_file_path = cluster_db_path + "/" + fileinfo.first;
+	const std::string unz_dir_path = cluster_db_path;
 	const std::string operation = form.at("operation").second;
 	const std::string content = std::move(fileinfo.second);
 	Util::create_dirs(unz_dir_path);
