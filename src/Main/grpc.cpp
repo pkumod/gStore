@@ -5731,9 +5731,13 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					apiUtil->insert_txn_managers(current_database, db_name);
 					current_database.reset();
 				}
+				// init cluster db path
+				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
+				Util::create_dirs(cluster_db_path);
 				// add log
 				clusterManagerPtr->addClusterDb(db_name);
 				clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_pending, ClusterOperation_None);
+				
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 				std::string reply_url = leader_node.getReplyUrl();
