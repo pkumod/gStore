@@ -16,6 +16,7 @@ namespace cluster
         leaderNode_.setPort(node[1]);
         leaderNode_.setUsername(node[2]);
         leaderNode_.setPassword(node[3]);
+        leaderNode_.setBaseUrl();
     }
 
     std::string ClusterEntityFollower::getLeaderUrl()const

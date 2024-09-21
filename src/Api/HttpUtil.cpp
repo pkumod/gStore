@@ -298,6 +298,7 @@ int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::s
 
 int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
 {
+	SLOG_CORE("url: " + strUrl + ", filePath: " + filePath);
     strResponse.clear();
     CURLcode res;
     CURL* curl = curl_easy_init();

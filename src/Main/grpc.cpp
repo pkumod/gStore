@@ -5732,6 +5732,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					current_database.reset();
 				}
 				// add log
+				clusterManagerPtr->addClusterDb(db_name);
 				clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_pending, ClusterOperation_None);
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();

@@ -79,6 +79,7 @@ namespace cluster
         void setPort(std::string value){ port = value; }
         void setUsername(std::string value){ username = value; }
         void setPassword(std::string value){ password = value; }
+        void setBaseUrl(){ base_url = "http://" + ip + ":" + port; }
         std::string getIp()const{ return ip; }
         std::string getPort()const{ return port; }
         std::string getUsername()const{ return username; }
