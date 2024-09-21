@@ -228,7 +228,7 @@ namespace cluster
         std::string file_path = Util::getExactPath(zip_path.c_str());
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postSync(db_name, index, operation, file_path);
-        uint32 end_time = Util::get_cur_time() + sync_timeout_;
+        uint64 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;

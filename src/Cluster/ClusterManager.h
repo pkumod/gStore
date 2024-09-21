@@ -150,7 +150,7 @@ namespace cluster
                 uint32 need_num = per->getNeedNum();
                 if (cb_)
                 {
-                    SLOG_TRACE("cluster reply callback");
+                    SLOG_TRACE("cluster reply callback:" << num << " , need num:" << need_num);
                     if (num == 0 || num < need_num)
                         cb_(false);
                     else
@@ -201,7 +201,7 @@ namespace cluster
             uint32 need_num = per->getNeedNum();
             if (cb_)
             {
-                SLOG_TRACE("cluster sync callback");
+                SLOG_TRACE("cluster sync callback:" << num << " , need num:" << need_num);
                 if (num == 0 || num < need_num)
                     cb_(false);
                 else
