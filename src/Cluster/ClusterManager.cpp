@@ -192,6 +192,20 @@ namespace cluster
         role_->updateLogStatus(db_name, index, status);
     }
 
+    void ClusterManager::setLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->setLogOperation(db_name, index, operation);
+    }
+
+    void ClusterManager::setLogFileName(std::string db_name, uint64 index, std::string file_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->setLogFileName(db_name, index, file_name);
+    }
+
     void ClusterManager::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip)
     {
         if (!isEnable() || !role_)

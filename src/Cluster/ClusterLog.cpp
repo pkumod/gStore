@@ -191,6 +191,28 @@ namespace cluster
         it->second.setStatus(status);
     }
 
+    void ClusterDbNameLogInfo::setLogOperation(uint64 index, ClusterOperation operation)
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" + index);
+            return;
+        }
+        it->second.setOperation(operation);
+    }
+
+    void ClusterDbNameLogInfo::setLogFileName(uint64 index, std::string file_name)
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" + index);
+            return;
+        }
+        it->second.setFileName(file_name);
+    }
+
     void ClusterDbNameLogInfo::addLogReplyNum(uint64 index, const std::string& ip)
     {
         auto it = logs_.find(index);

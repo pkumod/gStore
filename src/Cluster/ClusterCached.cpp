@@ -164,6 +164,38 @@ namespace cluster
         }
     }
 
+    void ClusterDb::setLogOperation(uint64 index, ClusterOperation operation)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log operation fail!" << db_name_ << index << operation);
+            return;
+        }
+        log.setLogOperation(index, operation);
+        if (!writeToUpdateFile(log))
+        {
+            SLOG_ERROR("update log operation fail!" << db_name_ << index << operation);
+            return;
+        }
+    }
+
+    void ClusterDb::setLogFileName(uint64 index, std::string file_name)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log file_name fail!" << db_name_ << index << file_name);
+            return;
+        }
+        log.setLogFileName(index, file_name);
+        if (!writeToUpdateFile(log))
+        {
+            SLOG_ERROR("update log file_name fail!" << db_name_ << index << file_name);
+            return;
+        }
+    }
+
     void ClusterDb::addLogReplyNum(uint64 index, const std::string& ip)
     {
         ClusterDbNameLogInfo log;

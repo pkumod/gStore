@@ -27,6 +27,8 @@ namespace cluster
         // log
         void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
         void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
+        void setLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void setLogFileName(std::string db_name, uint64 index, std::string file_name);
         void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip);
         void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip);
         uint32 getLogReplyNum(std::string db_name, uint64 index);

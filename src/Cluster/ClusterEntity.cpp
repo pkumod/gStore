@@ -114,6 +114,22 @@ namespace cluster
         db->updateLogStatus(index, status);
     }
 
+    void ClusterEntity::setLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return;
+        db->setLogOperation(index, operation);
+    }
+
+    void ClusterEntity::setLogFileName(std::string db_name, uint64 index, std::string file_name)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return;
+        db->setLogFileName(index, file_name);
+    }
+
     void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip)
     {
         ClusterDbPtr db = findDb(db_name);
