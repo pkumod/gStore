@@ -150,8 +150,16 @@ namespace cluster
         int need_num = getNeedNum();
         while (1)
         {
-            if (once_run > (end_time - Util::get_cur_time()))
-                once_run = end_time - Util::get_cur_time();
+            uint64 current_time = Util::get_cur_time();
+            if (end_time > current_time )
+            {
+                if (once_run > (end_time - current_time))
+                    once_run = end_time - current_time;
+            }
+            else
+            {
+                break;
+            }
             oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
             {
                 pass_num = this->getLogReplyNum(db_name, index);
@@ -209,8 +217,6 @@ namespace cluster
             SLOG_TRACE("start sync fail, please check term.json, index:" << index);
             return 0;
         }
-        updateLogStatus(db_name, index, ClusterLogStatus_sync);
-        
         std::string current_path = getDbDirPath(db_name) + file_name;
         std::string zip_path = current_path + ".zip";
         if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
@@ -220,6 +226,7 @@ namespace cluster
         }
 
         std::string file_path = Util::getExactPath(zip_path.c_str());
+        updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postSync(db_name, index, operation, file_path);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;
         TimerProvider oneTimer;
@@ -228,8 +235,16 @@ namespace cluster
         int need_num = getNeedNum();
         while (1)
         {
-            if (once_run > (end_time - Util::get_cur_time()))
-                once_run = end_time - Util::get_cur_time();
+            uint64 current_time = Util::get_cur_time();
+            if (end_time > current_time )
+            {
+                if (once_run > (end_time - current_time))
+                    once_run = end_time - current_time;
+            }
+            else
+            {
+                break;
+            }
             oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
             {
                 pass_num = this->getLogSyncNum(db_name, index);
