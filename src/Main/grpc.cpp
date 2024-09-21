@@ -5679,7 +5679,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 					std::string check_url = leader_node.getCheckUrl();
 					std::string username = leader_node.getUsername();
-					std::string password = MD5(leader_node.getPassword()).toStr();
+					std::string password = leader_node.getPassword();
 					uint16_t result = 0; // default check failed
 					uint64_t finish_index = clusterManagerPtr->getDbIndex(db_name);
 					if (leader_term == local_term && leader_index == finish_index)
@@ -5738,7 +5738,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 				std::string reply_url = leader_node.getReplyUrl();
 				std::string username = leader_node.getUsername();
-				std::string password = MD5(leader_node.getPassword()).toStr();
+				std::string password = leader_node.getPassword();
 				httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
 				HttpUtil::reply(reply_url, reply_request, username, password);
 			}).detach();
@@ -5894,7 +5894,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 		std::string reply_url = leader_node.getReplyUrl();
 		std::string username = leader_node.getUsername();
-		std::string password = MD5(leader_node.getPassword()).toStr();
+		std::string password = leader_node.getPassword();
 		std::string expection = ClusterOperationHandle::to_str(cluster::cluster_operation::LEADER_APPEND);
 		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
 		HttpUtil::reply(reply_url, reply_request, username, password);
