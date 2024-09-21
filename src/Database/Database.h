@@ -16,6 +16,7 @@
 #include "../Query/GeneralEvaluation.h"
 #include "../Server/Socket.h"
 #include "CSR.h"
+#include "../Cluster/ClusterDefined.h"
 
 class Database
 {

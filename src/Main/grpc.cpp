@@ -5943,7 +5943,8 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			apiUtil->add_database(db_name, current_database);
 			apiUtil->insert_txn_managers(current_database, db_name);
 		}
-		std::string nt_file_path = log_files[0];
+		std::string log_file_name = GRPCUtil::fileName(log_files[0]);
+		std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
 		ClusterOperation log_operation;
 		if (operation == "1") {
 			// batch insert
@@ -5960,8 +5961,8 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);
 		clusterManagerPtr->updateLogStatus(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_sync);
-		// clusterManagerPtr->setLogOperation(db_name, leader_index, log_operation);
-		// clusterManagerPtr->setLogFileName(db_name, leader_index, file_name);
+		clusterManagerPtr->setLogOperation(db_name, leader_index, log_operation);
+		clusterManagerPtr->setLogFileName(db_name, leader_index, GRPCUtil::fileName(nt_file_path));
 
 		// send appendEntrites ok response
 		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();

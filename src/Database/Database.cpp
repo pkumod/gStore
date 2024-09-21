@@ -4187,13 +4187,14 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	}
 	else if (cluster_log)
 	{
+		cluster::ClusterTranctionType operation = cluster::ClusterTranctionType::ClusterTranctionType_Insert;
 		for (auto tuple : id_tuples)
 		{
 			bool is_obj_entity = Util::is_entity_ele(tuple.objid);
 			if (is_obj_entity)
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getEntityByID(tuple.objid) << std::endl;
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getEntityByID(tuple.objid) << " " << operation << std::endl;
 			else
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getLiteralByID(tuple.objid) << std::endl;
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getLiteralByID(tuple.objid) << " " << operation << std::endl;
 		}
 	}
 	// po inserts
@@ -4253,6 +4254,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		write_update_log(_triples, _triple_num, 0, txn);
 	}
 
+	cluster::ClusterTranctionType operation = cluster::ClusterTranctionType::ClusterTranctionType_Delete;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
 	{
@@ -4286,7 +4288,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		obj_ids.insert(_obj_id);
 		if (cluster_log)
 		{
-			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << std::endl;
+			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << " " << operation << std::endl;
 		}
 	}
 

@@ -317,7 +317,7 @@ namespace cluster
             SLOG_ERROR("nt.log format is error:" << db_name_ << " , file name:" << file_name );
             return std::string();
         }
-        std::string nt_path = getDbDirPath() + file_name.substr(0, pos-1) + ".nt";
+        std::string nt_path = getDbDirPath() + file_name.substr(0, pos) + ".nt";
         ofstream w_fp;
         w_fp.open(nt_path,ios::out);
         if (!w_fp.is_open())
