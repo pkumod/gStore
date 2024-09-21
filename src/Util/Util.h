@@ -398,6 +398,7 @@ public:
 	static bool remove_file(const std::string file_path);
 	static bool remove_path(const std::string path);
 	static std::string fileSuffix(const std::string &filepath);
+	static std::string fileName(const std::string &filepath);
 	static std::string get_parent_path(const std::string& file_path);
 
 	static std::string getTimeName();

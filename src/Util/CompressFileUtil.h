@@ -38,7 +38,7 @@ namespace CompressUtil
         public:
         static int isLargeFile(const char* filename);
         static bool isFileDir(const std::string &filename);
-        static bool compressExportZip(const std::string& dst_path, const std::string& zip_path);
+        static bool compressExportZip(const std::string& dst_path, const std::string& zip_path, bool contain_base = true);
         static ZipCode foreachZip(const std::string& zip_path, const foreach_cb& cb);
     };
 

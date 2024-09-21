@@ -210,17 +210,15 @@ namespace cluster
             return 0;
         }
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
+        
         std::string current_path = getDbDirPath(db_name) + file_name;
-        std::string sys_cmd = "cp " + current_path + ' ' + file_name;
-        system(sys_cmd.c_str());
         std::string zip_path = current_path + ".zip";
-        if (!CompressUtil::FileHelper::compressExportZip(file_name, zip_path))
+        if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
         {
-            Util::remove_path(file_name);
             SLOG_ERROR("compress fail");
             return 0;
         }
-        Util::remove_path(file_name);
+
         std::string file_path = Util::getExactPath(zip_path.c_str());
         postSync(db_name, index, operation, file_path);
         uint32 end_time = Util::get_cur_time() + sync_timeout_;

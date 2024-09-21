@@ -91,7 +91,7 @@ namespace CompressUtil
         return large_4g;
     }
 
-    bool FileHelper::compressExportZip(const std::string& dst_path, const std::string& zip_path)
+    bool FileHelper::compressExportZip(const std::string& dst_path, const std::string& zip_path, bool contain_base)
     {
         SLOG_CORE("compressFile->start:"<<zip_path);
         zipFile zfile = zipOpen64(zip_path.c_str(), APPEND_STATUS_CREATE);
@@ -100,7 +100,12 @@ namespace CompressUtil
             return false;
         }
         int zip64 = isLargeFile(dst_path.c_str());
-        if (zipOpenNewFileInZip64(zfile, dst_path.c_str(), nullptr, nullptr, 0 , nullptr , 0, nullptr, Z_DEFLATED, Z_DEFLATED, zip64) != ZIP_OK)
+        std::string new_file_name = dst_path;
+        if (!contain_base)
+        {
+            new_file_name = Util::fileName(dst_path);
+        }
+        if (zipOpenNewFileInZip64(zfile, new_file_name.c_str(), nullptr, nullptr, 0 , nullptr , 0, nullptr, Z_DEFLATED, Z_DEFLATED, zip64) != ZIP_OK)
         {
             zipClose(zfile, nullptr);
             return false;
