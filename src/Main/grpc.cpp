@@ -46,7 +46,7 @@ void register_service(GRPCServer &grpcServer);
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
-void upload_file(const GRPCReq *request, GRPCResp *response);
+void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void download_file(const GRPCReq *request, GRPCResp *response);
 void redirect_handle(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 // for server
@@ -675,9 +675,9 @@ void register_service(GRPCServer &svr)
 		methods);
 
 	svr.ROUTE(
-		"/file/upload", [](const GRPCReq *request, GRPCResp *response)
+		"/file/upload", [](const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		{
-			upload_file(request, response);
+			upload_file(request, response, series);
 		},
 		ReqMethod::POST);
 
@@ -771,7 +771,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	response->Success(msg);
 }
 
-void upload_file(const GRPCReq *request, GRPCResp *response)
+void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
 	// check ip address
 	auto *rpc_task = task_of(response);
@@ -853,7 +853,12 @@ void upload_file(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusOperationFailed, error);
 		return;
 	}
-	
+	// redirect to cluster
+	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+	{
+		redirect_handle(request, response, series);
+		return;
+	}
 	// remove path info, only return base filename
 	std::string file_name = GRPCUtil::fileName(fileinfo.first);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
@@ -1014,6 +1019,7 @@ void redirect_handle(const GRPCReq *request, GRPCResp *response, SeriesWork *ser
 			std::memcpy(null_terminated_string, body, len);
 			null_terminated_string[len] = '\0'; 
 			SLOG_DEBUG("leader response body: " << null_terminated_string);
+			response->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
 			response->String(null_terminated_string);
 			task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
 				delete []null_terminated_string;
@@ -1032,14 +1038,18 @@ void redirect_handle(const GRPCReq *request, GRPCResp *response, SeriesWork *ser
 	auto *leader_req = leader_task->get_req();
 	leader_req->set_method(request->get_method());
 	// copy client request header
-	// protocol::HttpHeaderCursor req_cursor(request);
-	// std::string header_name;
-	// std::string header_value;
-	// while (req_cursor.next(header_name, header_value))
-	// {
-	// 	SLOG_DEBUG(header_name + ": " + header_value);
-	// 	leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
-	// }
+	protocol::HttpHeaderCursor req_cursor(request);
+	std::vector<std::string> headerNames = {"Content-Type", "Accept-Encoding", "Accept", "Content-Length", "Connection", "Cache-Control"};
+	std::string header_name;
+	std::string header_value;
+	while (req_cursor.next(header_name, header_value))
+	{
+		SLOG_DEBUG(header_name + ": " + header_value);
+		if (std::find(headerNames.begin(), headerNames.end(), header_name) != headerNames.end())
+		{
+			leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
+		}
+	}
 	leader_req->append_output_body_nocopy(body, len);
 	*series << leader_task;
 }
