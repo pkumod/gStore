@@ -2830,6 +2830,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			ofstream outfile;
 			string ans = "";
 			Json resp_data;
+			resp_data.SetObject();
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			if (format == "json")
 			{
@@ -2872,8 +2873,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			}
 			else if (format == "n-triple")
 			{
-				Json resp_data;
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
 				// headers
 				rapidjson::Value headers_data(rapidjson::kArrayType);
 				for(int i = 0; i < rs.true_select_var_num; i++)
@@ -2882,7 +2881,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				}
 				// results
 				rapidjson::Value results_data(rapidjson::kArrayType);
-				for(long long i = rs.output_offset; i < rs.ansNum; i++)
+				for(int i = rs.output_offset; i < rs.ansNum; i++)
 				{
 					if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
 					{
@@ -2893,15 +2892,17 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						rapidjson::Value result_data(rapidjson::kArrayType);
 						for(int j = 0; j < rs.true_select_var_num; j++)
 						{
-							std::string item = Util::node2string(rs.answer[i][j].c_str());
-							result_data.PushBack(StringRef(item.c_str()), allocator);
+							std::string ans_str = rs.answer[i][j];
+							SLOG_DEBUG("rs.answer["+to_string(i)+"]["+to_string(j)+"]=" + ans_str);
+							result_data.PushBack(StringRef(ans_str.c_str()), allocator);
 						}
-						results_data.PushBack(result_data.Move(), allocator);
+						results_data.PushBack(result_data, allocator);
 					}
 				}
+				rs.release();
 				resp_data.AddMember("StatusCode", 0, allocator);
 				resp_data.AddMember("StatusMsg", "success", allocator);
-				resp_data.AddMember("headers", headers_data, allocator);
+				resp_data.AddMember("head", headers_data, allocator);
 				resp_data.AddMember("results", results_data, allocator);
 				resp_data.AddMember("AnsNum", rs_ansNum, allocator);
 				resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
