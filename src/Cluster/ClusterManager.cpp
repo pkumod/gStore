@@ -378,6 +378,19 @@ namespace cluster
         return role_->getNtFilePath(db_name, file_name);
     }
 
+    uint32 ClusterManager::getAppendTimeout(const std::string& db_name, const std::string& file_name)
+    {
+        if (!isEnable() || !role_)
+            return 60000000;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return 60000000;
+        }
+        return leader->getAppendTimeout(db_name, file_name)*1000;
+    }
+
     bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, const timeoutCall& cb, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)

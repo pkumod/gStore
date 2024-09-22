@@ -1084,6 +1084,20 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
     return total_size;
 }
 
+unsigned long long Util::getFileSize(const std::string& file_path)
+{
+    if (file_path.empty())
+		return 0;
+
+    struct stat st;
+    memset(&st, 0, sizeof st);
+    int ret = stat(file_path.c_str(), &st);
+    unsigned long long size = 0;
+    if (ret != -1)
+        size = st.st_size;
+    return size;
+}
+
 bool Util::remove_dir(const std::string dir_path)
 {
     DIR* dirp = opendir(dir_path.c_str());    

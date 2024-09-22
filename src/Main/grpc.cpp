@@ -51,7 +51,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void download_file(const GRPCReq *request, GRPCResp *response);
 void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
-void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg);
+void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
 void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip);
@@ -285,7 +285,8 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 		}
 	}
 }
-void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg)
+
+void waiting_Handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout)
 {
 	std::string waiting = ".";
 	useconds_t curr_wait_time = 0;
@@ -298,13 +299,14 @@ void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const
 			SLOG_DEBUG(msg + waiting);
 			waiting.append(".");
 		}
-		if(sync_status > 1 || curr_wait_time > _max_wait_time)
+		if(sync_status > 1 || curr_wait_time > max_wait_timeout)
 		{
 			break;
 		}
 	}
 	return;
 }
+
 void sig_handler(int signo)
 {
 	SLOG_INFO("grpc server stopped.");
@@ -2734,7 +2736,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			});
 			// slepp 200 ms
 			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting prepare task callback");
+			waiting_handler(microseconds, prepare_status, "waiting prepare task callback", _max_wait_time);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
@@ -2977,7 +2979,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					}, cluster_operation, log_file_name);
 					// slepp 200 ms
 					useconds_t microseconds = 200*1000;
-					waiting_handler(microseconds, append_status, "waiting query append task callback");
+					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
+					waiting_handler(microseconds, append_status, "waiting query append task callback", append_max_time_out);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
@@ -3668,7 +3671,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			});
 			// slepp 200 ms
 			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting batch insert prepare task callback");
+			waiting_handler(microseconds, prepare_status, "waiting batch insert prepare task callback", _max_wait_time);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
@@ -3801,7 +3804,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					
 				}, ClusterOperation_Insert, log_file_name);
 				useconds_t microseconds = 200 * 1000;
-				waiting_handler(microseconds, append_status, "waiting batch insert append task callback");
+				useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
+				waiting_handler(microseconds, append_status, "waiting batch insert append task callback", append_max_time_out);
 				if (append_result)
 				{
 					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
@@ -3993,7 +3997,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			});
 			// slepp 200 ms
 			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting batch remove prepare task callback");
+			waiting_handler(microseconds, prepare_status, "waiting batch remove prepare task callback", _max_wait_time);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
@@ -4116,7 +4120,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					append_status++;
 				}, ClusterOperation_Delete, log_file_name);
 				useconds_t microseconds = 200 * 1000;
-				waiting_handler(microseconds, append_status, "waiting batch remove append task callback");
+				useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
+				waiting_handler(microseconds, append_status, "waiting batch remove append task callback", append_max_time_out);
 				if (append_result)
 				{
 					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));

@@ -25,7 +25,6 @@ namespace cluster
 
         heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str());
         relpy_timeout_ = std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
-        sync_timeout_ = std::atoi(Util::getConfigureValue("cluster_sync_timeout").c_str())*1000;
     }
 
     ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip)const
@@ -228,7 +227,7 @@ namespace cluster
         std::string file_path = Util::getExactPath(zip_path.c_str());
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postSync(db_name, index, operation, file_path);
-        uint64 end_time = Util::get_cur_time() + sync_timeout_;
+        uint64 end_time = Util::get_cur_time() + getAppendTimeout(db_name, file_name);
         TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;
@@ -397,6 +396,30 @@ namespace cluster
             nodeL.push_back(m.second);
         }
         return nodeL;
+    }
+
+    uint32 ClusterEntityLeader::getAppendTimeout(const std::string& db_name, const std::string& file_name)
+    {
+        // min time is 1 minute
+        // triple_num 1000000 is 1 second
+        // file size 100m is 1 second
+        std::string file_path = getDbDirPath(db_name) + file_name;
+        if (!Util::file_exist(file_path))
+        {
+            SLOG_ERROR("file not exits:" << db_name << " ,file name:" << file_name);
+            return 60000;
+        }
+        size_t triple_num = Util::count_lines(file_path);
+        long long unsigned size_byte = Util::getFileSize(file_path);
+        uint32 tripe_time = triple_num/1000000;
+        uint32 disk_m = size_byte>>20;
+        uint32 time_out = (triple_num/1000000 + disk_m/100) * 1000 * 1.5;
+
+        SLOG_TRACE("file num size:" << triple_num << "  ,size:" << size_byte << "  ,time_out:" << time_out);
+
+        if (time_out < 60000)
+            return 60000;
+        return time_out*1.5;
     }
 
     bool ClusterEntityLeader::tryRecover(const std::vector<std::string>& dbs)

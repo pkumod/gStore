@@ -116,6 +116,8 @@ namespace cluster
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
         // 获取操作文件nt数据
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
+        // 微妙
+        uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
     };
 
     // task

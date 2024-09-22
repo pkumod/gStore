@@ -9,8 +9,7 @@ namespace cluster
     {
         std::map<std::string, ClusterNode> followNodeL_; //ip:ClusterNode
         int heartbeat_;
-        int relpy_timeout_;
-        int sync_timeout_;
+        uint64 relpy_timeout_;
         static uint32 headBeat_max_fail_num_;
         std::map<std::string, uint32> faileL_; //ip:失败次数，大于多少次（代表此从节点应答失败，不在发送心跳包）
         std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
@@ -28,6 +27,7 @@ namespace cluster
         void startFail(std::string db_name);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size() + 1) / 2; }
+        uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
 
         // virtual function in here
         public:
