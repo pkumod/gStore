@@ -61,6 +61,7 @@ namespace cluster
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
         bool fromFollower(const std::string& ip, const std::string& port);
+        bool fromFollowerIp(const std::string& ip);
         // 获取从节点url列表, http://127.0.0.1:9000
         std::vector<std::string> getFollowrUrlArray();
         // 获取主节点url

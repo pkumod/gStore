@@ -37,6 +37,16 @@ namespace cluster
         return it->second;
     }
 
+    bool ClusterEntityLeader::IsFollowerIp(const std::string& ip)const
+    {
+        for (const auto& m : followNodeL_)
+        {
+            if (m.second.getIp() == ip)
+                return true;
+        }
+        return false;
+    }
+
     void ClusterEntityLeader::startHeardBeat(std::string db_name)
     {
         ClusterDbPtr db = findDb(db_name);

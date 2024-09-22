@@ -149,6 +149,17 @@ namespace cluster
         return false;
     }
 
+    bool ClusterManager::fromFollowerIp(const std::string& ip)
+    {
+        if (!isEnable() || !role_ || ip.empty())
+            return false;
+        
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+            return false;
+        return leader->IsFollowerIp(ip);
+    }
+
     std::vector<std::string> ClusterManager::getFollowrUrlArray()
     {
         if (!isEnable() || !role_)

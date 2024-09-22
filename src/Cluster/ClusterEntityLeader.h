@@ -15,6 +15,7 @@ namespace cluster
         std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
         public:
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
+        bool IsFollowerIp(const std::string& ip)const;
         void postHeartBeat(std::string db_name);
         void postNotify(std::string db_name, uint64 index);
         void postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
