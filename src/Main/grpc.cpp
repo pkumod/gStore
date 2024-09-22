@@ -1093,10 +1093,11 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
+	std::string ip_port = std::to_string(rpc_task->peer_port());
 	// check cluster ip
 	bool ipCheckResult;
 	if (clusterManagerPtr->isLeader())
-		ipCheckResult = clusterManagerPtr->fromFollower(ip_addr);
+		ipCheckResult = clusterManagerPtr->fromFollower(ip_addr, ip_port);
 	else
 		ipCheckResult = clusterManagerPtr->fromLeader(ip_addr);
 	if (ipCheckResult == false)
