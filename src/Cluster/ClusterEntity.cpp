@@ -74,8 +74,12 @@ namespace cluster
         auto it = databaseL_.find(db_name);
         if (it == databaseL_.end())
         {
-            SLOG_ERROR("db is not exist, db name:" << db_name);
-            return nullptr;
+            if (!Util::file_exist(Util::getConfigureValue("db_home") + db_name + ".db"))
+            {
+                SLOG_ERROR("db is not exist, please check db name:" << db_name);
+            }
+            SLOG_TRACE("db is not exist, init db name:" << db_name);
+            return addClusterDb(db_name);
         }
         return it->second;
     }

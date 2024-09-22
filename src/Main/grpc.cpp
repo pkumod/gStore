@@ -2726,7 +2726,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			else
 				cluster_operation = ClusterOperation::ClusterOperation_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addClusterDb(db_name);
 			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
 			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
 			{
@@ -3638,7 +3637,6 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			uint16_t prepare_status = 1;
 			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Insert;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addClusterDb(db_name);
 			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
 			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
 			{
@@ -3964,7 +3962,6 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			uint16_t prepare_status = 1;
 			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addClusterDb(db_name);
 			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
 			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
 			{
@@ -5781,7 +5778,6 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 				Util::create_dirs(cluster_db_path);
 				// add log
-				clusterManagerPtr->addClusterDb(db_name);
 				clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_pending, ClusterOperation_None);
 				
 				// send ready response
