@@ -286,7 +286,7 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 	}
 }
 
-void waiting_Handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout)
+void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout)
 {
 	std::string waiting = ".";
 	useconds_t curr_wait_time = 0;
