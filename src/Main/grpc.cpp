@@ -5908,11 +5908,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	// TODO check leader term and index with local
 	const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 	const std::string zip_file_path = cluster_db_path + fileinfo.first;
-	const std::string unz_dir_path = cluster_db_path;
 	const std::string operation = form.at("operation").second;
 	const std::string content = std::move(fileinfo.second);
-	Util::create_dirs(unz_dir_path);
-	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, unz_dir_path, operation](WFFileIOTask *pwrite_task){
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, cluster_db_path, operation](WFFileIOTask *pwrite_task){
 		SLOG_DEBUG("saveing log file callback.");
 		// save success
 		long ret = pwrite_task->get_retval();
@@ -5920,14 +5918,12 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			return;
 		}
 		// unzip file
-		CompressUtil::UnCompressZip unzip(zip_file_path, unz_dir_path);
+		CompressUtil::UnCompressZip unzip(zip_file_path, cluster_db_path);
 		if (unzip.unCompress() != CompressUtil::UnZipOK) 
 		{
 			SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
 			// remove zip file
 			Util::remove_path(zip_file_path);
-			// remove unzip dir
-			Util::remove_path(unz_dir_path);
 			return;
 		}
 		std::vector<std::string> log_files;
@@ -5937,16 +5933,12 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			SLOG_WARN("zip file is empty: " + zip_file_path);
 			// remove zip file
 			Util::remove_path(zip_file_path);
-			// remove unzip dir
-			Util::remove_path(unz_dir_path);
 			return;
 		}
 		if(!apiUtil->trywrlock_database(db_name, 600)) {
 			SLOG_WARN("unable to get write lock of " + db_name + ".");
 			// remove zip file
 			Util::remove_path(zip_file_path);
-			// remove zip file
-			Util::remove_path(unz_dir_path);
 			return;
 		}
 		shared_ptr<Database> current_database = nullptr;
@@ -5972,6 +5964,8 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			log_operation = ClusterOperation::ClusterOperation_Delete;
 		}
 		current_database->save();
+		Util::remove_path(zip_file_path);
+		Util::remove_path(nt_file_path);
 		apiUtil->unlock_database(db_name);
 
 		// update local log trem and index
