@@ -456,12 +456,18 @@ namespace httpentities {
         QueryResponse(std::string body) : BaseResponse(body) {
             if (json.is_object())
             {
-                json.at("AnsNum").get_to(this->ansNum);
-                json.at("OutputLimit").get_to(this->outputLimit);
-                json.at("QueryTime").get_to(this->queryTime);
-                json.at("ThreadId").get_to(this->threadId);
-                json.at("head").get_to(this->head);
-                json.at("results").get_to(this->results);
+                if (json.contains("AnsNum"))
+                    json.at("AnsNum").get_to(this->ansNum);
+                if (json.contains("OutputLimit"))
+                    json.at("OutputLimit").get_to(this->outputLimit);
+                if (json.contains("QueryTime"))
+                    json.at("QueryTime").get_to(this->queryTime);
+                if (json.contains("ThreadId"))
+                    json.at("ThreadId").get_to(this->threadId);
+                if (json.contains("head"))
+                    json.at("head").get_to(this->head);
+                if (json.contains("results"))
+                    json.at("results").get_to(this->results);
             }
         }
     };

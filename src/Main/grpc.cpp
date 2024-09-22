@@ -2845,6 +2845,8 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				resp_data.Parse(success.c_str());
 				if (!resp_data.HasParseError())
 				{
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", "success", allocator);
 					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
 					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
 					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
@@ -2859,7 +2861,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) 
 							+ ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
 					error = "Query fail: the result parse error.";
-					response->Error(StatusOperationFailed, error);
 					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
 					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
 				}
