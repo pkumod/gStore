@@ -119,18 +119,18 @@ namespace cluster
 
     struct TripleInfo
     {
-        ClusterOperation operation;
         std::string subject;
         std::string predicate;
         std::string object;
+        ClusterOperation operation;
         uint64 batch_index;
         public:
         TripleInfo()
         {
-            operation = ClusterOperation_None;
             subject = "";
             predicate = "";
             object = "";
+            operation = ClusterOperation_None;
             batch_index = 0;
         }
         std::string toString()const
@@ -140,17 +140,17 @@ namespace cluster
             std::string triple = "";
             if (batch_index == 0)
             {
-                triple = std::to_string(operation)
-                + " " + subject
+                triple = subject
                 + " " + predicate
-                + " " + object;
+                + " " + object
+                + " " + std::to_string(operation);
             }
             else
             {
-                triple = std::to_string(operation)
-                + " " + subject
+                triple = subject
                 + " " + predicate
                 + " " + object
+                + " " + std::to_string(operation)
                 + " " + std::to_string(batch_index);
             }
             return triple;
@@ -161,18 +161,18 @@ namespace cluster
                 return false;
             if (triple.size() == 4)
             {
-                operation = (ClusterOperation)atoi(triple[0].c_str());
-                subject = triple[1];
+                subject = triple[0];
                 predicate = triple[1];
                 object = triple[2];
+                operation = (ClusterOperation)atoi(triple[3].c_str());
             }
             else
             {
-                operation = (ClusterOperation)atoi(triple[0].c_str());
-                subject = triple[1];
+                subject = triple[0];
                 predicate = triple[1];
                 object = triple[2];
-                batch_index = strtoul(triple[3].c_str(), nullptr, 0);
+                operation = (ClusterOperation)atoi(triple[3].c_str());
+                batch_index = strtoul(triple[4].c_str(), nullptr, 0);
             }
             return true;
         }
