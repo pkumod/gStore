@@ -5815,7 +5815,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
-					apiUtil->trywrlock_database(db_name, 600);
+					apiUtil->wrlock_database(db_name);
 					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
 					if (!nt_file_path.empty())
 					{

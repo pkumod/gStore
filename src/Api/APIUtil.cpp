@@ -1086,6 +1086,29 @@ bool APIUtil::trywrlock_database(const std::string& db_name, const time_t& timeo
     return result;
 }
 
+bool APIUtil::wrlock_database(const std::string& db_name)
+{
+    bool result = false;
+    shared_ptr<DatabaseInfo> dbinfo;
+    get_databaseinfo(db_name, dbinfo);
+    if (dbinfo == nullptr)
+    {
+        SLOG_CORE("can not find db[" + db_name + "] from already_build map.");
+        return result;
+    }
+    int code = pthread_rwlock_wrlock(&(dbinfo->db_lock));
+    if (code == 0)
+    {
+        SLOG_CORE("get db[" + dbinfo->getName() + "] write lock ok.");
+        result = true;
+    }
+    else
+    {
+        SLOG_CORE("try get db[" + dbinfo->getName() + "] write lock fail.");
+    }
+    return result;
+}
+
 bool APIUtil::trywrlock_database(const std::string &db_name)
 {
     return trywrlock_database(db_name, 30);
