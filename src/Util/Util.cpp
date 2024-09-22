@@ -172,7 +172,6 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_node"); 
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_heartbeat", "3"); 
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_relpy_timeout", "5"); 
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_sync_timeout", "300"); 
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_data_path", "./cluster/"); 
 
     // create db_home
