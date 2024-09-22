@@ -5792,7 +5792,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				std::string reply_url = leader_node.getReplyUrl();
 				std::string username = leader_node.getUsername();
 				std::string password = leader_node.getPassword();
-				httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
+				httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection, _server_port);
 				HttpUtil::reply(reply_url, reply_request, username, password);
 			}).detach();
 			response->Success("ok");
@@ -5983,7 +5983,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		std::string username = leader_node.getUsername();
 		std::string password = leader_node.getPassword();
 		std::string expection = ClusterOperationHandle::to_str(cluster::cluster_operation::LEADER_APPEND);
-		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection);
+		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection, _server_port);
 		HttpUtil::reply(reply_url, reply_request, username, password);
 	});
 	std::thread([pwrite_task](){
@@ -6001,15 +6001,16 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	uint64_t index = jsonParam(json_data, "index", 0ul);
 	std::string db_name = jsonParam(json_data, "db_name");
 	std::string expection = jsonParam(json_data, "expection");
+	std::string port = jsonParam(json_data, "port");
 	cluster::cluster_operation expection_enum = cluster::ClusterOperationHandle::to_enum(expection);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	// from follower reply, go into leader process 
 	if (expection_enum == cluster::cluster_operation::EXPECTION_PREPARE)
 	{
-		clusterManagerPtr->addLogReplyNum(db_name, index, ip_addr);
+		clusterManagerPtr->addLogReplyNum(db_name, index, ip_addr, port);
 	} else if (expection_enum == cluster::cluster_operation::LEADER_APPEND) {
-		clusterManagerPtr->addLogSyncNum(db_name, index, ip_addr);
+		clusterManagerPtr->addLogSyncNum(db_name, index, ip_addr, port);
 	}
 	response->Success("ok");
 }

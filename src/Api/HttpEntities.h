@@ -474,12 +474,20 @@ namespace httpentities {
 
     struct ReplyRequest: public ClusterRequest {
         std::string expection;
-        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection): ClusterRequest(term, db_name, index) {
+        // reply follower port
+        std::string port;
+        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection, std::string port): ClusterRequest(term, db_name, index) {
             this->expection = expection;
+            this->port = port;
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"expection", this->expection}};
+            nlohmann::json json = nlohmann::json{
+                {"term", this->term},
+                {"index", this->index},
+                {"db_name", this->db_name},
+                {"expection", this->expection},
+                {"port", this->port}};
             json_str = json.dump();
         }
     };
