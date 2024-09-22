@@ -1,3 +1,15 @@
+/*
+ * @Author: hexuejiang
+ * @Date: 2024-9-12 14:52:50
+ * @LastEditTime: 2024-09-22 14:50:20
+ * @LastEditors: hexuejiang 1632802996@qq.com
+ * @Description: cluster
+ * @FilePath: ClusterManger.h, Cluster management interface, where all methods are defined
+ * @FilePath: ClusterEntityLeader.h   -- all leader node interfaces are defined here
+ * @FilePath: ClusterEntityFollower.h -- all Follower node interfaces are defined here
+ * @FilePath: ClusterLog.h      -- all log info are defined here
+ * @FilePath: ClusterCached.h   -- all Save log interfaces are defined here
+ */
 #pragma once
 #include "ClusterTypedef.h"
 #include "ClusterDefined.h"
