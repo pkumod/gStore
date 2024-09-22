@@ -196,7 +196,7 @@ namespace cluster
         }
     }
 
-    void ClusterDb::addLogReplyNum(uint64 index, const std::string& ip)
+    void ClusterDb::addLogReplyNum(uint64 index, const std::string& ip_port)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
@@ -204,7 +204,7 @@ namespace cluster
             SLOG_ERROR("update log status fail!" << db_name_ << index);
             return;
         }
-        log.addLogReplyNum(index, ip);
+        log.addLogReplyNum(index, ip_port);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("update log status fail!" << db_name_ << index);
@@ -212,7 +212,7 @@ namespace cluster
         }
     }
 
-    void ClusterDb::addLogSyncNum(uint64 index, const std::string& ip)
+    void ClusterDb::addLogSyncNum(uint64 index, const std::string& ip_port)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
@@ -220,7 +220,7 @@ namespace cluster
             SLOG_ERROR("update log status fail!" << db_name_ << index);
             return;
         }
-        log.addLogSyncNum(index, ip);
+        log.addLogSyncNum(index, ip_port);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("update log status fail!" << db_name_ << index);

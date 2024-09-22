@@ -13,8 +13,8 @@ namespace cluster
         ClusterLogStatus status;
         ClusterOperation operation;
         std::string fileName;
-        std::set<std::string> replyIps;
-        std::set<std::string> appenEntriesIps;
+        std::set<std::string> replyIpPort;
+        std::set<std::string> appenEntriesIpPort;
         public:
         LogInfo()
         {
@@ -23,8 +23,8 @@ namespace cluster
             status    = ClusterLogStatus_None;
             operation = ClusterOperation_None;
             fileName = "";
-            replyIps = std::set<std::string>();
-            appenEntriesIps = std::set<std::string>();
+            replyIpPort = std::set<std::string>();
+            appenEntriesIpPort = std::set<std::string>();
         }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
@@ -33,14 +33,14 @@ namespace cluster
         void setFileName(const std::string& value){ fileName = value; }
         uint64 getIndex()const{ return index; }
         ClusterLogStatus getStatus()const{ return status; }
-        void setReplyIps(const nlohmann::json& s);
-        void setAppenEntriesIps(const nlohmann::json& s);
+        void setReplyIpPort(const nlohmann::json& s);
+        void setAppenEntriesIpPort(const nlohmann::json& s);
         void covertReplyIpsJson(nlohmann::json& s)const;
         void covertAppenEntriesIpsJson(nlohmann::json& s)const;
-        void addReplyIps(const std::string& value){ replyIps.insert(value); }
-        void addAppenEntriesIps(const std::string& value){ appenEntriesIps.insert(value); }
-        uint32 getReplyNum()const{ return replyIps.size(); }
-        uint32 getAppenEntriesNum()const{ return appenEntriesIps.size(); }
+        void addReplyIpProt(const std::string& value){ replyIpPort.insert(value); }
+        void addAppenEntriesIpProt(const std::string& value){ appenEntriesIpPort.insert(value); }
+        uint32 getReplyNum()const{ return replyIpPort.size(); }
+        uint32 getAppenEntriesNum()const{ return appenEntriesIpPort.size(); }
         ClusterOperation getOperation()const{ return operation; }
         std::string getFileName()const{ return fileName; }
     };
@@ -56,8 +56,8 @@ namespace cluster
         void updateLogStatus(uint64 index, ClusterLogStatus status);
         void setLogOperation(uint64 index, ClusterOperation operation);
         void setLogFileName(uint64 index, std::string file_name);
-        void addLogReplyNum(uint64 index, const std::string& ip);
-        void addLogSyncNum(uint64 index, const std::string& ip);
+        void addLogReplyNum(uint64 index, const std::string& ip_port);
+        void addLogSyncNum(uint64 index, const std::string& ip_port);
         uint32 getLogReplyNum(uint64 index)const;
         uint32 getLogSyncNum(uint64 index)const;
         ClusterOperation getOperation(uint64 index)const;

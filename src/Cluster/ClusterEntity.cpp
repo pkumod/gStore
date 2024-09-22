@@ -134,20 +134,20 @@ namespace cluster
         db->setLogFileName(index, file_name);
     }
 
-    void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip)
+    void ClusterEntity::addLogReplyNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->addLogReplyNum(index, ip);
+        db->addLogReplyNum(index, getIpPort(ip, port));
     }
 
-    void ClusterEntity::addLogSyncNum(std::string db_name, uint64 index, const std::string& ip)
+    void ClusterEntity::addLogSyncNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->addLogSyncNum(index, ip);
+        db->addLogSyncNum(index, getIpPort(ip, port));
     }
 
     uint32 ClusterEntity::getLogReplyNum(std::string db_name, uint64 index)
@@ -164,6 +164,11 @@ namespace cluster
         if (!db)
             return 0;
         return db->getLogSyncNum(index);
+    }
+
+    std::string ClusterEntity::getIpPort(const std::string& ip, const std::string& port)
+    {
+        return ip + ":" + port;
     }
 
     // term.log

@@ -29,8 +29,8 @@ namespace cluster
         void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
         void setLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
         void setLogFileName(std::string db_name, uint64 index, std::string file_name);
-        void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip);
-        void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip);
+        void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);
+        void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         void updateTerm(uint32 term);
@@ -47,6 +47,7 @@ namespace cluster
         std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
         ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        static std::string getIpPort(const std::string& ip, const std::string& port);
         // virtual function in here
         public:
         virtual void init() = 0;

@@ -15,10 +15,10 @@ namespace cluster
             s.at("operation").get_to(t.operation);
         if (s.contains("fileName"))
             s.at("fileName").get_to(t.fileName);
-        if (s.contains("replyIps"))
-            t.setReplyIps(s["replyIps"]);
-        if (s.contains("appenEntriesIps"))
-            t.setAppenEntriesIps(s["appenEntriesIps"]);
+        if (s.contains("replyIpPort"))
+            t.setReplyIpPort(s["replyIpPort"]);
+        if (s.contains("appenEntriesIpPort"))
+            t.setAppenEntriesIpPort(s["appenEntriesIpPort"]);
     }
 
     void to_json(nlohmann::json& s, const LogInfo& t)
@@ -33,36 +33,36 @@ namespace cluster
     }
 
 
-    void LogInfo::setReplyIps(const nlohmann::json& s)
+    void LogInfo::setReplyIpPort(const nlohmann::json& s)
     {
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
-            if (!s[i].contains("ip"))
+            if (!s[i].contains("ip_port"))
                 continue;
-            std::string ip = s[i].at("ip");
-            replyIps.insert(ip);
+            std::string ip_port = s[i].at("ip_port");
+            replyIpPort.insert(ip_port);
         }
     }
 
-    void LogInfo::setAppenEntriesIps(const nlohmann::json& s)
+    void LogInfo::setAppenEntriesIpPort(const nlohmann::json& s)
     {
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
-            if (!s[i].contains("ip"))
+            if (!s[i].contains("ip_port"))
                 continue;
-            std::string ip = s[i].at("ip");
-            appenEntriesIps.insert(ip);
+            std::string ip_port = s[i].at("ip_port");
+            appenEntriesIpPort.insert(ip_port);
         }
     }
 
     void LogInfo::covertReplyIpsJson(nlohmann::json& s)const
     {
         int i = 0;
-        for (const auto& m : replyIps)
+        for (const auto& m : replyIpPort)
         {
-            s["replyIps"][i]["ip"] = m;
+            s["replyIpPort"][i]["ip_port"] = m;
             i++;
         }
     }
@@ -70,9 +70,9 @@ namespace cluster
     void LogInfo::covertAppenEntriesIpsJson(nlohmann::json& s)const
     {
         int i = 0;
-        for (const auto& m : appenEntriesIps)
+        for (const auto& m : appenEntriesIpPort)
         {
-            s["appenEntriesIps"][i]["ip"] = m;
+            s["appenEntriesIpPort"][i]["ip_port"] = m;
             i++;
         }
     }
@@ -199,7 +199,7 @@ namespace cluster
         it->second.setFileName(file_name);
     }
 
-    void ClusterDbNameLogInfo::addLogReplyNum(uint64 index, const std::string& ip)
+    void ClusterDbNameLogInfo::addLogReplyNum(uint64 index, const std::string& ip_port)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -212,10 +212,10 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return;
         }
-        it->second.addReplyIps(ip);
+        it->second.addReplyIpProt(ip_port);
     }
 
-    void ClusterDbNameLogInfo::addLogSyncNum(uint64 index, const std::string& ip)
+    void ClusterDbNameLogInfo::addLogSyncNum(uint64 index, const std::string& ip_port)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -228,7 +228,7 @@ namespace cluster
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
             return;
         }
-        it->second.addAppenEntriesIps(ip);
+        it->second.addAppenEntriesIpProt(ip_port);
     }
 
     uint32 ClusterDbNameLogInfo::getLogReplyNum(uint64 index)const

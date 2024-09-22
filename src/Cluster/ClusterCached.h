@@ -38,8 +38,8 @@ namespace cluster
         void updateLogStatus(uint64 index, ClusterLogStatus status);
         void setLogOperation(uint64 index, ClusterOperation operation);
         void setLogFileName(uint64 index, std::string file_name);
-        void addLogReplyNum(uint64 index, const std::string& ip);
-        void addLogSyncNum(uint64 index, const std::string& ip);
+        void addLogReplyNum(uint64 index, const std::string& ip_port);
+        void addLogSyncNum(uint64 index, const std::string& ip_port);
         uint32 getLogReplyNum(uint64 index);
         uint32 getLogSyncNum(uint64 index);
         ClusterOperation getOperation(uint64 index);
