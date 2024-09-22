@@ -3,7 +3,7 @@
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
-SERVER="$API_SERVICE"
+# SERVER="$API_SERVICE"
 PASSWD="$ROOT_PASSWD"
 
 # Check init
@@ -20,12 +20,12 @@ if [ ! -e /gstore/init.lock ]; then
     echo "${BLUE}[INIT] Root password ${PASSWD}${NC}"
 fi
 
-echo "${BLUE}[INFO] API SERVER ${SERVER}${NC}"
-
-if [ -n $SERVER ] && [ $SERVER = grpc ]; then
-    /gstore/bin/grpc
-else
-    /gstore/bin/ghttp
-fi
+/gstore/bin/gserver
+# echo "${BLUE}[INFO] API SERVER ${SERVER}${NC}"
+# if [ -n $SERVER ] && [ $SERVER = grpc ]; then
+#     /gstore/bin/grpc
+# else
+#     /gstore/bin/ghttp
+# fi
 
 exec "$@"
