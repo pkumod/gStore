@@ -135,7 +135,7 @@ namespace cluster
         return false;
     }
 
-    bool ClusterManager::fromFollower(const std::string& ip)
+    bool ClusterManager::fromFollower(const std::string& ip, const std::string& port)
     {
         if (!isEnable() || !role_ || ip.empty())
             return false;
@@ -143,7 +143,7 @@ namespace cluster
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
             return false;
-        ClusterNode node = leader->FindFollower(ip);
+        ClusterNode node = leader->FindFollower(ip, port);
         if (!node.empty() && node.getIp() == ip)
             return true;
         return false;

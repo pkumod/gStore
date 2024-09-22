@@ -85,6 +85,7 @@ namespace cluster
         std::string getPort()const{ return port; }
         std::string getUsername()const{ return username; }
         std::string getPassword()const{ return password; }
+        std::string getBaseUrl()const{ return base_url; }
         std::string getCheckUrl()const
         {
             return base_url + "/cluster/check";

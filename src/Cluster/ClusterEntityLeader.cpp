@@ -19,17 +19,19 @@ namespace cluster
             if (node.size() < 4)
                 continue;
             ClusterNode follow(node[0], node[1], node[2], node[3]);
-            followNodeL_[node[0]] = follow;
-            faileL_[node[0]] = 0;
+            std::string url = follow.getBaseUrl();
+            followNodeL_[url] = follow;
+            faileL_[url] = 0;
         }
 
         heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str());
         relpy_timeout_ = std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
     }
 
-    ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip)const
+    ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip, const std::string& port)const
     {
-        auto it = followNodeL_.find(ip);
+        ClusterNode node(ip, port, "", "");
+        auto it = followNodeL_.find(node.getBaseUrl());
         if (it == followNodeL_.end())
             return ClusterNode();
         return it->second;
@@ -76,16 +78,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -108,16 +110,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -184,16 +186,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -276,16 +278,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -315,16 +317,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -354,16 +356,16 @@ namespace cluster
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
             {
-                faileL_[node.getIp()] += 1;
+                faileL_[node.getBaseUrl()] += 1;
                 return;
             }
-            faileL_[node.getIp()] = 0;
+            faileL_[node.getBaseUrl()] = 0;
         };
 
         for (const auto& node : followNodeL_)
         {
-            std::string ip = node.second.getIp();
-            auto it = faileL_.find(ip);
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
             if (it == faileL_.end())
                 continue;
             if (it->second > headBeat_max_fail_num_)
@@ -380,8 +382,7 @@ namespace cluster
         std::string url;
         for (const auto&m : followNodeL_)
         {
-            url = "http://" + m.second.getIp() + ":" + m.second.getPort();
-            urlL.push_back(url);
+            urlL.push_back(m.second.getBaseUrl());
             url.clear();
         }
         return urlL;
