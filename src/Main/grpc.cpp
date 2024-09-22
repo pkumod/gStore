@@ -5837,13 +5837,13 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
+					apiUtil->trywrlock_database(db_name, 600);
 					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
 					if (!nt_file_path.empty())
 					{
 						cluster::ClusterOperation cluster_operation = clusterManagerPtr->getDbLogOperation(db_name, leader_index);
 						shared_ptr<Database> restore_database;
 						apiUtil->get_database(db_name, restore_database);
-						apiUtil->trywrlock_database(db_name);
 						if (cluster_operation == ClusterOperation::ClusterOperation_Delete)
 						{
 							uint32_t num = restore_database->batch_insert(nt_file_path);
@@ -5856,12 +5856,12 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 						}
 						Util::remove_path(nt_file_path);
 						clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_cancel);
-						apiUtil->unlock_database(db_name);
 					}
 					else
 					{
 						SLOG_TRACE("not found nt file path:" << db_name << " ,index:" << leader_index);
 					}
+					apiUtil->unlock_database(db_name);
 				}
 			}
 			response->Success("ok");
@@ -5949,7 +5949,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			Util::remove_path(unz_dir_path);
 			return;
 		}
-		if(!apiUtil->trywrlock_database(db_name, 60)) {
+		if(!apiUtil->trywrlock_database(db_name, 600)) {
 			SLOG_WARN("unable to get write lock of " + db_name + ".");
 			// remove zip file
 			Util::remove_path(zip_file_path);
