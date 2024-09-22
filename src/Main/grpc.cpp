@@ -2892,11 +2892,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						rapidjson::Value result_data(rapidjson::kArrayType);
 						for(int j = 0; j < rs.true_select_var_num; j++)
 						{
-							std::string ans_str = rs.answer[i][j];
-							SLOG_DEBUG("rs.answer["+to_string(i)+"]["+to_string(j)+"]=" + ans_str);
-							result_data.PushBack(StringRef(ans_str.c_str()), allocator);
+							SLOG_DEBUG("rs.answer["+to_string(i)+"]["+to_string(j)+"]=" + rs.answer[i][j]);
+							result_data.PushBack(StringRef(rs.answer[i][j].c_str()), allocator);
 						}
-						results_data.PushBack(result_data, allocator);
+						results_data.PushBack(result_data.Move(), allocator);
 					}
 				}
 				rs.release();
