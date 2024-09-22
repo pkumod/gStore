@@ -20,14 +20,14 @@ namespace cluster
 
     enum ClusterLogStatus
     {
-        ClusterLogStatus_None      = -3,
-        ClusterLogStatus_HeartBeat = -2,
-        ClusterLogStatus_Fail      = -1,
-        ClusterLogStatus_pending   = 0,
-        ClusterLogStatus_handling  = 1,
-        ClusterLogStatus_sync      = 2,
-        ClusterLogStatus_commit    = 3,
-        ClusterLogStatus_cancel    = 4,
+        ClusterLogStatus_None      = 0,
+        ClusterLogStatus_HeartBeat = 1,
+        ClusterLogStatus_pending   = 2,
+        ClusterLogStatus_handling  = 3,
+        ClusterLogStatus_sync      = 4,
+        ClusterLogStatus_commit    = 5,
+        ClusterLogStatus_cancel    = 6,
+        ClusterLogStatus_fail      = 7,
     };
 
     enum ClusterTranctionType
@@ -47,7 +47,8 @@ namespace cluster
         EXPECTION_PREPARE           = 6,
         EXPECTION_COMMIT            = 7,
         EXPECTION_CANCEL            = 8,
-        CLUSTER_OPERATION_TYPE_UNDEFINE = 9,
+        EXPECTION_FAIL              = 9,
+        CLUSTER_OPERATION_TYPE_UNDEFINE = 10,
     };
 
     struct ClusterNode

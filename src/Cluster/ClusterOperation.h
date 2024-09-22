@@ -21,6 +21,7 @@ namespace cluster
         {EXPECTION_PREPARE,               "prepare"},
         {EXPECTION_COMMIT,                "commit"},
         {EXPECTION_CANCEL,                "cancel"},
+        {EXPECTION_FAIL,                  "fail"},
         {CLUSTER_OPERATION_TYPE_UNDEFINE, "UNDEFINE"}
     };
 

@@ -106,7 +106,7 @@ namespace cluster
             updateDbIndex(db_name, index);
             updateDbNextIndex(db_name, 0);
         }
-        else if (status == ClusterLogStatus_cancel)
+        else if (status == ClusterLogStatus_cancel || status == ClusterLogStatus_fail)
         {
             // this operation is failed
             updateDbNextIndex(db_name, 0);

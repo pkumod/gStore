@@ -421,6 +421,11 @@ namespace cluster
             ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_CANCEL);
             task_queueL.push(task);
         }
+        else if (status == ClusterLogStatus_fail)
+        {
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_FAIL);
+            task_queueL.push(task);
+        }
         else
         {
             return false;

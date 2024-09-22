@@ -165,6 +165,10 @@ namespace cluster
             {
                 per->startCancel(db_name_);
             }
+            else if (expection_ == EXPECTION_FAIL)
+            {
+                per->startFail(db_name_);
+            }
         }
     };
 

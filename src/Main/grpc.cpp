@@ -2738,6 +2738,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -3671,6 +3672,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -3996,13 +3998,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
 				SLOG_ERROR(error);
-				response->Error(StatusOperationFailed, error);
-				return;
-			}
-			if (!prepare_result)
-			{
-				error = "Less than half of the cluster nodes are confirmed.";
-				SLOG_ERROR(error);
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
@@ -5862,6 +5858,18 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 						SLOG_TRACE("not found nt file path:" << db_name << " ,index:" << leader_index);
 					}
 					apiUtil->unlock_database(db_name);
+				}
+			}
+			response->Success("ok");
+			break;
+		case cluster::EXPECTION_FAIL:
+			if (!db_name.empty())
+			{
+				// get current index， and compare with leader_index
+				local_index = clusterManagerPtr->getDbNextIndex(db_name);
+				if (leader_index == local_index)
+				{
+					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_fail);
 				}
 			}
 			response->Success("ok");

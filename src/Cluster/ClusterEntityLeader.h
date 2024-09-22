@@ -25,6 +25,7 @@ namespace cluster
         uint32 startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
         void startCommit(std::string db_name);
         void startCancel(std::string db_name);
+        void startFail(std::string db_name);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size() + 1) / 2; }
 
