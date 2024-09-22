@@ -1026,16 +1026,11 @@ int raw_sparql_handler(string sparql)
 	httpentities::QueryResponse query_response = HttpUtil::query(API_URL, true, query_request);
 	if (!query_response.success())
 	{
-		std::cout << "query failed: " << query_response.StatusMsg << std::endl;
+		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
 		return -1;
 	}
-	std::vector<std::string> headers = query_response.headers;
-	std::vector<std::vector<std::string>> rows;
-	for (auto &row : query_response.results)
-	{
-		rows.push_back({row.subject, row.predicate, row.object});
-	}
-	Util::printConsole(headers, rows);
+	Util::printConsole(query_response.head, query_response.results);
+	std::cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
 	return 0;
 }
 
@@ -1238,9 +1233,7 @@ int quit_handler(const vector<string> &args)
 
 	if (!_current_database.empty())
 	{
-		// unload
-		httpentities::UnloadRequest unload_request(_current_database);
-		HttpUtil::unload(API_URL, true, unload_request);	
+		_current_database = "";
 	}
 	gconsole_done = true;
 	return 0;
