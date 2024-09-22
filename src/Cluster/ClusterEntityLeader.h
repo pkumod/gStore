@@ -27,7 +27,7 @@ namespace cluster
         void startCancel(std::string db_name);
         void startFail(std::string db_name);
         bool tryRecover(const std::vector<std::string>& dbs);
-        uint32 getNeedNum(){ return (followNodeL_.size() + 1) / 2; }
+        uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
 
         // virtual function in here

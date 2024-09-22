@@ -1130,7 +1130,7 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	std::string username = request->header("username");
 	std::string password = request->header("password");
 	// check username and password
-	std::string checkidentityresult = apiUtil->check_indentity(username, password, "1");
+	std::string checkidentityresult = apiUtil->check_indentity(username, password, "0");
 	if (checkidentityresult.empty() == false)
 	{
 		response->Error(StatusAuthenticationFailed, checkidentityresult);
