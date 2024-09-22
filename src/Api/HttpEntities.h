@@ -68,9 +68,16 @@ namespace httpentities {
         BaseResponse(const std::string& body) : body(body) {
             if (nlohmann::json::accept(body))
             {
-                json = nlohmann::json::parse(body.c_str());
-                json.at("StatusCode").get_to(this->StatusCode);
-                json.at("StatusMsg").get_to(this->StatusMsg);
+                try
+                {
+                    json = nlohmann::json::parse(body.c_str());
+                    json.at("StatusCode").get_to(this->StatusCode);
+                    json.at("StatusMsg").get_to(this->StatusMsg);
+                }
+                catch(const nlohmann::json::exception& e)
+                {
+                    std::cerr << e.what() << std::endl;
+                }
             }
         }
         int getStatusCode() { return StatusCode; }
@@ -166,11 +173,318 @@ namespace httpentities {
         }
     };
 
+    struct LoginRequest : public BaseRequest {
+        LoginRequest() : BaseRequest("login") {}
+        LoginRequest(std::string username, std::string password) : BaseRequest("login",username,password) {}
+        void to_json(std::string& json_str) override
+        {
+             nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password}};
+            json_str = json.dump();
+        }
+    };
+
+    struct ShowRequest : public BaseRequest {
+        ShowRequest() : BaseRequest("show") {};
+        ShowRequest(std::string username, std::string password) : BaseRequest("show",username,password) {}
+        void to_json(std::string& json_str) override
+        {
+             nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password}};
+            json_str = json.dump();
+        }
+    };
+
+    struct UnloadRequest : public BaseRequest {
+        std::string db_name;
+        UnloadRequest(std::string db_name) : BaseRequest("unload") {
+            this->db_name = db_name;
+        }
+        UnloadRequest(std::string username, std::string password, std::string db_name) : BaseRequest("unload", username, password) {
+            this->db_name = db_name;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct BuildRequest : public BaseRequest {
+        std::string db_name;
+        std::string db_path;
+        BuildRequest(std::string db_name, std::string db_path) : BaseRequest("build") {
+            this->db_name = db_name;
+            this->db_path = db_path;
+        }
+        BuildRequest(std::string username, std::string password, std::string db_name, std::string db_path) : BaseRequest("build", username, password) {
+            this->db_name = db_name;
+            this->db_path = db_path;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name},
+                {"db_path", this->db_path}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"db_path", this->db_path},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct DropRequest : public BaseRequest {
+        std::string db_name;
+        std::string is_backup;
+        DropRequest(std::string db_name, std::string is_backup) : BaseRequest("drop") {
+            this->db_name = db_name;
+            this->is_backup = is_backup;
+        }
+        DropRequest(std::string username, std::string password, std::string db_name, std::string is_backup) : BaseRequest("drop", username, password) {
+            this->db_name = db_name;
+            this->is_backup = is_backup;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name},
+                {"is_backup", this->is_backup}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"is_backup", this->is_backup},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct MonitorRequest : public BaseRequest {
+        std::string db_name;
+        MonitorRequest(std::string db_name) : BaseRequest("monitor") {
+            this->db_name = db_name;
+        }
+        MonitorRequest(std::string username, std::string password, std::string db_name) : BaseRequest("monitor", username, password) {
+            this->db_name = db_name;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct QueryRequest : public BaseRequest {
+        std::string db_name;
+        std::string sparql;
+        std::string format;
+        QueryRequest(std::string db_name,  std::string sparql, std::string format = "json") : BaseRequest("query") {
+            this->db_name = db_name;
+            this->sparql = sparql;
+            this->format = format;
+        }
+        QueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format = "json") : BaseRequest("query", username, password) {
+            this->db_name = db_name;
+            this->sparql = sparql;
+            this->format = format;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name},
+                {"sparql", this->sparql},
+                {"format", this->format}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"sparql", this->sparql},
+                {"format", this->format},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+
     struct LoadResponse : public BaseResponse {
         LoadResponse(int code, std::string msg) : BaseResponse(code, msg) {}
         LoadResponse(std::string body) : BaseResponse(body) {}
     };
 
+    struct BuildResponse : public BaseResponse {
+        uint64_t failed_num;
+        BuildResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        BuildResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object())
+            {
+                json.at("failed_num").get_to(this->failed_num);
+            }
+            else
+            {
+                failed_num = 0;
+            }
+        }
+    };
+    
+    struct ShowResponseBody {
+        std::string database;
+        std::string creator;
+        std::string builtTime;
+        std::string status;
+        ShowResponseBody(std::string _database, std::string _creator, std::string _builtTime, std::string _status) {
+            this->database = _database;
+            this->creator = _creator;
+            this->builtTime = _builtTime;
+            this->status = _status;
+        }
+    };
+
+    struct ShowResponse : public BaseResponse {
+        std::vector<struct ShowResponseBody> responseBody;
+        ShowResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        ShowResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object() && json.contains("ResponseBody"))
+            {
+                for (auto& j0 : json["ResponseBody"])
+                {
+                    std::string database = j0["database"];
+                    std::string creator = j0["creator"];
+                    std::string built_time = j0["built_time"];
+                    std::string status = j0["status"];
+                    responseBody.push_back(ShowResponseBody(database, creator, built_time, status));
+                }
+            }
+        }
+    };
+
+    struct MonitorResponse : public BaseResponse {
+        std::string database;
+        std::string creator;
+        std::string builtTime;
+        std::string tripleNum;
+        uint64_t entityNum;
+        uint64_t literalNum;
+        uint64_t subjectNum;
+        uint64_t predicateNum;
+        uint32_t connectionNum;
+        uint64_t diskUsed;
+        MonitorResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        MonitorResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object())
+            {
+                json.at("database").get_to(this->database);
+                json.at("creator").get_to(this->creator);
+                json.at("builtTime").get_to(this->builtTime);
+                json.at("tripleNum").get_to(this->tripleNum);
+                json.at("entityNum").get_to(this->entityNum);
+                json.at("literalNum").get_to(this->literalNum);
+                json.at("subjectNum").get_to(this->subjectNum);
+                json.at("predicateNum").get_to(this->predicateNum);
+                json.at("connectionNum").get_to(this->connectionNum);
+                json.at("diskUsed").get_to(this->diskUsed);
+            }
+        }
+    };
+
+    struct QueryTriple {
+        std::string subject;
+        std::string predicate;
+        std::string object;
+        QueryTriple(std::string subject, std::string predicate, std::string object) {
+            this->subject = subject;
+            this->predicate = predicate;
+            this->object = object;
+        }
+    };
+
+    struct QueryResponse : public BaseResponse {
+        std::vector<std::string> headers;
+        std::vector<struct QueryTriple> results;
+        uint64_t AnsNum;
+        uint64_t OutputLimit;
+        uint64_t QueryTime;
+        std::string ThreadId;
+        QueryResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        QueryResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object())
+            {
+                
+                json.at("AnsNum").get_to(this->AnsNum);
+                json.at("OutputLimit").get_to(this->OutputLimit);
+                json.at("QueryTime").get_to(this->QueryTime);
+                json.at("ThreadId").get_to(this->ThreadId);
+                if (json.contains("results"))
+                {
+                    for (auto& j0 : json["results"])
+                    {
+                        std::string subject = j0["subject"];
+                        std::string predicate = j0["predicate"];
+                        std::string object = j0["object"];
+                        results.push_back(QueryTriple(subject, predicate, object));
+                    }
+                }
+            }
+        }
+    };
 
     struct ReplyRequest: public ClusterRequest {
         std::string expection;

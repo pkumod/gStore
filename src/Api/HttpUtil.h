@@ -59,6 +59,20 @@ public:
 
 	static httpentities::LoadResponse load(const std::string& url, const bool& inner, httpentities::LoadRequest& request);
 
+	static httpentities::BaseResponse login(const std::string& url, httpentities::LoginRequest& request);
+
+	static httpentities::BaseResponse unload(const std::string& url, const bool& inner, httpentities::UnloadRequest& request);
+
+	static httpentities::BuildResponse build(const std::string& url, const bool& inner, httpentities::BuildRequest& request);
+
+	static httpentities::BaseResponse drop(const std::string& url, const bool& inner, httpentities::DropRequest& request);
+
+	static httpentities::ShowResponse show(const std::string& url, const bool& inner, httpentities::ShowRequest& request);
+
+	static httpentities::MonitorResponse monitor(const std::string& url, const bool& inner, httpentities::MonitorRequest& request);
+
+	static httpentities::QueryResponse query(const std::string& url, const bool& inner, httpentities::QueryRequest& request);
+
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);
 
 	static httpentities::ClusterResponse appendEntries(const std::string& url, httpentities::AppenEntriesRequest& request, const std::string& username, const std::string& password);
