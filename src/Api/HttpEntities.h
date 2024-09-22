@@ -445,43 +445,23 @@ namespace httpentities {
         }
     };
 
-    struct QueryTriple {
-        std::string subject;
-        std::string predicate;
-        std::string object;
-        QueryTriple(std::string subject, std::string predicate, std::string object) {
-            this->subject = subject;
-            this->predicate = predicate;
-            this->object = object;
-        }
-    };
-
     struct QueryResponse : public BaseResponse {
-        std::vector<std::string> headers;
-        std::vector<struct QueryTriple> results;
-        uint64_t AnsNum;
-        uint64_t OutputLimit;
-        uint64_t QueryTime;
-        std::string ThreadId;
+        std::vector<std::string> head;
+        std::vector<std::vector<std::string>> results;
+        uint64_t ansNum;
+        uint64_t outputLimit;
+        std::string queryTime;
+        std::string threadId;
         QueryResponse(int code, std::string msg) : BaseResponse(code, msg) {}
         QueryResponse(std::string body) : BaseResponse(body) {
             if (json.is_object())
             {
-                
-                json.at("AnsNum").get_to(this->AnsNum);
-                json.at("OutputLimit").get_to(this->OutputLimit);
-                json.at("QueryTime").get_to(this->QueryTime);
-                json.at("ThreadId").get_to(this->ThreadId);
-                if (json.contains("results"))
-                {
-                    for (auto& j0 : json["results"])
-                    {
-                        std::string subject = j0["subject"];
-                        std::string predicate = j0["predicate"];
-                        std::string object = j0["object"];
-                        results.push_back(QueryTriple(subject, predicate, object));
-                    }
-                }
+                json.at("AnsNum").get_to(this->ansNum);
+                json.at("OutputLimit").get_to(this->outputLimit);
+                json.at("QueryTime").get_to(this->queryTime);
+                json.at("ThreadId").get_to(this->threadId);
+                json.at("head").get_to(this->head);
+                json.at("results").get_to(this->results);
             }
         }
     };
