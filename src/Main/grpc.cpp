@@ -2830,17 +2830,20 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 
 			ofstream outfile;
 			string ans = "";
-			string success = rs.to_JSON();
-			rs.release();
-			// TODO: if result is stored in Stream instead of memory?  (if out of memory to use to_str)
-			// BETTER: divide and transfer, in multiple times, getNext()
+			Json resp_data;
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
 			if (format == "json")
 			{
-				Json resp_data;
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				/* code */
+				string success = rs.to_JSON();
+				rs.release();
 				resp_data.Parse(success.c_str());
-				if (resp_data.HasParseError())
+				if (!resp_data.HasParseError())
+				{
+					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
+					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
+					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
+				} 
+				else
 				{
 					string filename2 = "error_" + filename;
 					string localname2 = apiUtil->get_query_result_path() + filename2;
@@ -2851,107 +2854,80 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 							+ ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
 					error = "Query fail: the result parse error.";
 					response->Error(StatusOperationFailed, error);
-				}
-				else
-				{
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", "success", allocator);
-					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-
-					response->set_header_pair("Cache-Control", "no-cache");
-					response->set_header_pair("Pragma", "no-cache");
-					response->set_header_pair("Expires", "0");
-					if (request->hasHeader("Accept-Encoding")) {
-						std::string accept_encoding = request->header("Accept-Encoding");
-						if (accept_encoding.find("gzip") != std::string::npos)
-						{
-							response->headers["Content-Encoding"] = "gzip";
-						}
-					}
-					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-					response->Json(resp_data);
+					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
 				}
 			}
 			else if (format == "file")
 			{
 				outfile.open(localname);
-				outfile << success;
+				outfile << rs.to_JSON();
 				outfile.close();
-
-				Json resp_data;
-				resp_data.SetObject();
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
+				rs.release();
 				resp_data.AddMember("StatusCode", 0, allocator);
 				resp_data.AddMember("StatusMsg", "success", allocator);
 				resp_data.AddMember("AnsNum", rs_ansNum, allocator);
 				resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-				resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
 				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 				resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
-
-				response->set_header_pair("Cache-Control", "no-cache");
-				response->set_header_pair("Pragma", "no-cache");
-				response->set_header_pair("Expires", "0");
-
-				SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-				response->Json(resp_data);
 			}
-			else if (format == "json+file" || format == "file+json")
+			else if (format == "n-triple")
 			{
-				outfile.open(localname);
-				outfile << success;
-				outfile.close();
-
 				Json resp_data;
 				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				/* code */
-				resp_data.Parse(success.c_str());
-				if (resp_data.HasParseError())
+				// headers
+				rapidjson::Value headers_data(rapidjson::kArrayType);
+				for(int i = 0; i < rs.true_select_var_num; i++)
 				{
-					string filename2 = "error_" + filename;
-					string localname2 = apiUtil->get_query_result_path() + filename2;
-					outfile.open(localname2);
-					outfile << success;
-					outfile.close();
-					SLOG_ERROR("result parse error:\n" + localname2);
-					error = "Query fail: the result parse error.";
-					response->Error(StatusOperationFailed, error);
+					headers_data.PushBack(StringRef(rs.var_name[i].c_str()), allocator);
 				}
-				else
+				// results
+				rapidjson::Value results_data(rapidjson::kArrayType);
+				for(long long i = rs.output_offset; i < rs.ansNum; i++)
 				{
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", "success", allocator);
-					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-					resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
-
-					response->set_header_pair("Cache-Control", "no-cache");
-					response->set_header_pair("Pragma", "no-cache");
-					response->set_header_pair("Expires", "0");
-
-					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-					response->Json(resp_data);
+					if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
+					{
+						break;
+					}	
+					if (i >= rs.output_offset)
+					{
+						rapidjson::Value result_data(rapidjson::kArrayType);
+						for(int j = 0; j < rs.true_select_var_num; j++)
+						{
+							std::string item = Util::node2string(rs.answer[i][j].c_str());
+							result_data.PushBack(StringRef(item.c_str()), allocator);
+						}
+						results_data.PushBack(result_data.Move(), allocator);
+					}
 				}
-			}
-			else if (format == "sparql-results+json")
-			{
-				response->set_header_pair("Content-Type", "application/sparql-results+json");
-				response->set_header_pair("Cache-Control", "no-cache");
-				response->set_header_pair("Pragma", "no-cache");
-				response->set_header_pair("Expires", "0");
-
-				response->String(success);
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", "success", allocator);
+				resp_data.AddMember("headers", headers_data, allocator);
+				resp_data.AddMember("results", results_data, allocator);
+				resp_data.AddMember("AnsNum", rs_ansNum, allocator);
+				resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
+				resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
+				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 			}
 			else
 			{
 				error = "Unkown result format.";
-				response->Error(StatusOperationFailed, error);
+				resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
 			}
+			// common data 
+			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
+			response->set_header_pair("Cache-Control", "no-cache");
+			response->set_header_pair("Pragma", "no-cache");
+			response->set_header_pair("Expires", "0");
+			if (request->hasHeader("Accept-Encoding")) {
+				std::string accept_encoding = request->header("Accept-Encoding");
+				if (accept_encoding.find("gzip") != std::string::npos)
+				{
+					response->headers["Content-Encoding"] = "gzip";
+				}
+			}
+			response->Json(resp_data);
 		}
 		else if (is_update)
 		{
@@ -2963,6 +2939,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
 			resp_data.AddMember("AnsNum", ret_val, allocator);
 			resp_data.AddMember("QueryTime", query_time, allocator);
+			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
 			if (clusterManagerPtr->isEnable())
 			{
 				// add log appendEntities task
