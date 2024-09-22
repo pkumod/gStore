@@ -5847,12 +5847,14 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 		case cluster::EXPECTION_FAIL:
 			if (!db_name.empty())
 			{
+				apiUtil->wrlock_database(db_name);
 				// get current index， and compare with leader_index
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
 					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_fail);
 				}
+				apiUtil->unlock_database(db_name);
 			}
 			response->Success("ok");
 			break;
