@@ -7,7 +7,7 @@ NC='\033[0m'
 PASSWD="$ROOT_PASSWD"
 
 # Check init
-if [ ! -e /gstore/init.lock ]; then
+if [ ! -e /gstore/conf/init.lock ]; then
     if [ -n "$PASSWD" ] && [ "$PASSWD" != "123456" ]; then
          # Replace the line in the file
         sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${PASSWD}/" conf/conf.ini
@@ -15,7 +15,7 @@ if [ ! -e /gstore/init.lock ]; then
         PASSWD="123456"
     fi
     /gstore/bin/ginit
-    touch /gstore/init.lock
+    touch /gstore/conf/init.lock
     echo "${BLUE}[INIT] Initialization complete${NC}"
     echo "${BLUE}[INIT] Root password ${PASSWD}${NC}"
 fi
