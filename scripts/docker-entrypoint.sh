@@ -8,7 +8,7 @@ PASSWD="$ROOT_PASSWD"
 
 # Check init
 if [ ! -e /gstore/init.lock ]; then
-    if [ -n $PASSWD ] && [ $PASSWD != "123456" ]; then
+    if [[ -n $PASSWD ]] && [[ $PASSWD != "123456" ]]; then
          # Replace the line in the file
         sed -i -e "s/^#\\?\\s*root_password=.*/root_password=${PASSWD}/" conf/conf.ini
     else
