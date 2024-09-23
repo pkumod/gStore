@@ -312,13 +312,20 @@ void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const
 
 void sig_handler(int signo)
 {
-	SLOG_INFO("grpc server stopped.");
+	SLOG_INFO("Server stopped.");
 	apiUtil.reset();
 	pfnUtil.reset();
 	clusterManagerPtr.reset();
 	wait_group.done();
 	std::cout.flush();
+	Util::remove_path(PID_PATH);
 	_exit(signo);
+}
+
+void sigterm_handler(int signo)
+{
+	SLOG_INFO("Server stopped.");
+	stopServer();
 }
 
 int main(int argc, char *argv[])
@@ -329,12 +336,8 @@ int main(int argc, char *argv[])
 	_db_home = util.getConfigureValue("db_home");
 	_db_suffix = util.getConfigureValue("db_suffix");
 	srand(time(NULL));
-	string command;
-	if (argc == 1)
-	{
-		command = "-s";
-	}
-	else
+	string command = "-s";
+	if (argc>1)
 	{
 		command = argv[1];
 	}
@@ -469,7 +472,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		cout << "Invalid arguments! Input \"bin/grpc -h\" for help." << endl;
+		cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
 		return -1;
 	}
 }
@@ -516,14 +519,15 @@ bool startServer()
 	}
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
-	pid_t fpid;
-	fpid = fork();
+	// pid_t fpid;
+	// fpid = fork();
 	// child
-	if (fpid == 0)
-	{
-		int status;
+	// if (fpid == 0)
+	// {
+		// int status;
 		while (true)
 		{
+			pid_t fpid;
 			if (_server_deamon == "on")
 				fpid = fork();
 			else
@@ -559,14 +563,14 @@ bool startServer()
 					start_status = grpcServer.start(port);
 					if(start_status != 0)
 					{
-						SLOG_INFO("grpc server try starting " + to_string(start_status));
+						SLOG_INFO("Server try starting " + to_string(start_status));
 						sleep(1000);
 					}
 					max_try--;
 				} while (start_status == -1 && max_try > 0);
 				if(start_status != 0)
 				{
-					SLOG_ERROR("grpc server start failed.");
+					SLOG_ERROR("Server start failed.");
 					latch.lockExclusive();
 					if (apiUtil)
 					{
@@ -576,14 +580,17 @@ bool startServer()
 					latch.unlock();
 					return false;
 				}
+				SLOG_INFO("Server port " + _server_port);
 				// handle the Ctrl+C signal
 				signal(SIGINT, sig_handler);
+				// handle SIGTERM signal
+				signal(SIGTERM, sigterm_handler);
 				wait_group.wait();
 				grpcServer.stop();
 				apiUtil.reset();
 				pfnUtil.reset();
 				clusterManagerPtr.reset();
-				SLOG_INFO("grpc server stoped.");
+				SLOG_INFO("Server stoped.");
 				std::cout.flush();
 				exit(0);
 				return true;
@@ -591,10 +598,10 @@ bool startServer()
 			// parent, deamon process
 			else if (fpid > 0)
 			{
+				int status;
 				waitpid(fpid, &status, 0);
 				if (WIFEXITED(status))
 				{
-					exit(0);
 					return true;
 				}
 				else
@@ -626,19 +633,20 @@ bool startServer()
 				return false;
 			}
 		}
-	}
-	// parent
-	else if (fpid > 0)
-	{
-		SLOG_INFO("grpc server port " + _server_port);
-		return true;
-	}
-	// fork failure
-	else 
-	{
-		SLOG_ERROR("Failed to start server: fork failure.");
 		return false;
-	}
+	// }
+	// // parent
+	// else if (fpid > 0)
+	// {
+	// 	SLOG_INFO("Server port " + _server_port);
+	// 	return true;
+	// }
+	// // fork failure
+	// else 
+	// {
+	// 	SLOG_ERROR("Failed to start server: fork failure.");
+	// 	return false;
+	// }
 }
 
 bool stopServer()
@@ -774,7 +782,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	}
 	SLOG_INFO("receive [shutdown] request from " << ip_addr);
 	std::string ss;
-	ss += "\n==================== grpc-api ====================";
+	ss += "\n==================== http-api ====================";
 	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
 	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
 	ss += "\n  method: " +  string(request->get_method());
@@ -844,7 +852,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	}
 	SLOG_INFO("receive [uploadfile] request from " << ip_addr);
 	std::string ss;
-	ss += "\n==================== grpc-api ====================";
+	ss += "\n==================== http-api ====================";
 	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
 	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
 	ss += "\n  method: " +  string(request->get_method());
@@ -986,7 +994,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	}
 	SLOG_INFO("receive [downloadfile] request from " << ip_addr);
 	std::string ss;
-	ss += "\n==================== grpc-api ====================";
+	ss += "\n==================== http-api ====================";
 	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
 	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
 	ss += "\n  method: " +  string(request->get_method());
@@ -1417,20 +1425,20 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 }
 
 /**
- * check the grpc server activity
+ * check the server activity
  * 
  * @param request 
  * @param response 
  */
 void check_task(const GRPCReq *request, GRPCResp *response)
 {
-	// std::string success = "the grpc server is running...";
+	// std::string success = "the server is running...";
 	std::string success = to_string(getpid());
 	response->Success(success);
 }
 
 /**
- * login grpc server
+ * login server
  * 
  * @param request 
  * @param response 
@@ -1467,7 +1475,7 @@ void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip)
 }
 
 /**
- * login grpc server
+ * login server
  * 
  * @param request 
  * @param response

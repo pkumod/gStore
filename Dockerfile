@@ -81,7 +81,7 @@ COPY --from=builder /usr/src/gstore/README.md /gstore/README.md
 COPY --from=builder /usr/src/gstore/README_ZH.md /gstore/README_ZH.md
 COPY --from=builder /usr/src/gstore/LICENSE /gstore/LICENSE
 # Entry Point Script
-COPY scripts/docker-entrypoint.sh /
+# COPY scripts/docker-entrypoint.sh /
 
 WORKDIR /gstore/
 VOLUME [ "/gstore/" ]
@@ -98,4 +98,4 @@ EXPOSE 9000
 #    # you can test server api with this command :
 #    # curl -X POST -H 'Content-Type: application/json' -d '{"username":"root","password":"123@abc","operation": "login"}' http://127.0.0.1:9999/grpc/api
 #    docker run -itd -p 9999:9000 -e API_SERVICE=grpc -e ROOT_PASSWD=123@abc gstore:latest
-ENTRYPOINT [ "sh", "/docker-entrypoint.sh" ]
+ENTRYPOINT ["/gstore/bin/gserver"]

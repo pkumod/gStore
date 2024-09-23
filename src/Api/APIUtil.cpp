@@ -106,6 +106,10 @@ int APIUtil::initialize()
         {
             SLOG_INFO("System has not been initialized. Now initialize it");
             std::string _sys_db_path = get_Db_path() + "/system" + get_Db_suffix();
+            if (util.dir_exist(_sys_db_path))
+            {
+                util.remove_path(_sys_db_path);
+            }
             system_database  = make_shared<Database>(SYSTEM_DB_NAME);
             std::string _rdf = Util::system_path;
             bool _sys_build_rt = system_database->build(_rdf);

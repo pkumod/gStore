@@ -60,7 +60,7 @@ set( BIN_LIST
         # gdrop
         # gexport
         # ghttp
-        ginit
+        # ginit
         # gmonitor          
         # gquery      
         # grestore     
@@ -79,7 +79,7 @@ set( MAIN_LIST
         # gdrop.cpp   
         # gexport.cpp                  
         # ghttp.cpp 
-        ginit.cpp 
+        # ginit.cpp 
         # gmonitor.cpp 
         # gquery.cpp  
         # grestore.cpp 
