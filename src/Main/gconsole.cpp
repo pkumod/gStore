@@ -1034,8 +1034,15 @@ int raw_sparql_handler(string sparql)
 		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
 		return -1;
 	}
-	Util::printConsole(query_response.head, query_response.results);
-	std::cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
+	else if (!query_response.head.empty())
+	{
+		Util::printConsole(query_response.head, query_response.results);
+		std::cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
+	} 
+	else
+	{
+		std::cout << "Update ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
+	}
 	return 0;
 }
 

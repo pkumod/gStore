@@ -2901,6 +2901,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
 		string localname = apiUtil->get_query_result_path() + filename;
+		string query_time_s = Util::int2string(query_time);
 		if (ret)
 		{
 			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
@@ -2939,7 +2940,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					rs_outputlimit = apiUtil->get_max_output_size();
 				}
 			}
-			string query_time_s = Util::int2string(query_time);
 
 			ofstream outfile;
 			string ans = "";
@@ -3069,7 +3069,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
 			resp_data.AddMember("AnsNum", ret_val, allocator);
-			resp_data.AddMember("QueryTime", query_time, allocator);
+			resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
 			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
 			if (clusterManagerPtr->isEnable())
 			{
