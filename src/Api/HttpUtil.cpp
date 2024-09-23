@@ -396,6 +396,23 @@ httpentities::CheckResponse HttpUtil::check(const std::string& url, httpentities
 		return httpentities::CheckResponse(status, "Unknown status");
 }
 
+httpentities::BaseResponse HttpUtil::refreshConf(const std::string& url, const bool& inner, httpentities::RefreshconfRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+		return httpentities::BaseResponse(body_str);
+	else if (status == CURLE_OPERATION_TIMEDOUT)
+		return httpentities::BaseResponse(status, "Operation timeout");
+	else
+		return httpentities::BaseResponse(status, "Unknown status");
+}
+
 httpentities::TestConnectionResponse HttpUtil::testConnection(const std::string& url, const bool& inner, httpentities::TestConnectionRequest& request)
 {
 	std::string json_str;
@@ -411,6 +428,24 @@ httpentities::TestConnectionResponse HttpUtil::testConnection(const std::string&
 		return httpentities::TestConnectionResponse(status, "Operation timeout");
 	else
 		return httpentities::TestConnectionResponse(status, "Unknown status");
+}
+
+httpentities::InitResponse HttpUtil::init(const std::string& url, const bool& inner, httpentities::InitRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	
+	std::string body_str;
+	int status = Post(url, json_str, body_str);
+	if (status == CURLE_OK)
+		return httpentities::InitResponse(body_str);
+	else if (status == CURLE_OPERATION_TIMEDOUT)
+		return httpentities::InitResponse(status, "Operation timeout");
+	else
+		return httpentities::InitResponse(status, "Unknown status");
 }
 
 httpentities::LoadResponse HttpUtil::load(const std::string& url, const bool& inner, httpentities::LoadRequest& request)

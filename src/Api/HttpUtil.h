@@ -55,7 +55,11 @@ public:
 
 	static httpentities::CheckResponse check(const std::string& url, httpentities::CheckRequest& request);
 
+	static httpentities::BaseResponse refreshConf(const std::string& url, const bool& inner, httpentities::RefreshconfRequest& request);
+
 	static httpentities::TestConnectionResponse testConnection(const std::string& url, const bool& inner, httpentities::TestConnectionRequest& request);
+
+	static httpentities::InitResponse init(const std::string& url, const bool& inner, httpentities::InitRequest& request);
 
 	static httpentities::LoadResponse load(const std::string& url, const bool& inner, httpentities::LoadRequest& request);
 

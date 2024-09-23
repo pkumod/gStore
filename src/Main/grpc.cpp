@@ -58,7 +58,10 @@ void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip);
 void test_connect_task(const GRPCReq *request, GRPCResp *response);
 void core_version_task(const GRPCReq *request, GRPCResp *response);
 void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 // for db
+// for db
+void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -348,6 +351,7 @@ int main(int argc, char *argv[])
 		cout << "\t-db,--database[option],\t\tthe database name.Default value is empty."<< endl;
 		cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
 		cout << "\t-t,--stop\t\tSafe shutdow gServer." << endl;
+		cout << "\t-r,--restart\t\tRestart gServer." << endl;
 		cout << "\t-k,--kill\t\tForce shutdow gServer." << endl;
 		cout << "\t-S,--status\t\tShow gServer status." << endl;
 		cout << endl;
@@ -405,6 +409,29 @@ int main(int argc, char *argv[])
 		if(!stopServer() || _server_deamon == "on")
 			execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		return 0;
+	}
+	else if (command == "-r" || command == "--restart")
+	{
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
+		if(check_response.success()) {
+			cout << "server is active (running)." << endl;
+			cout << "stop server..." << endl;
+			if(!stopServer() || _server_deamon == "on")
+			{
+				execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
+			}
+		}
+		// start server
+		cout << "start server..." << endl;
+		if (startServer())
+		{
+			return 0;
+		}
+		else
+		{
+			return -1;
+		}
 	}
 	else if (command  == "-k" || command == "--kill")
 	{
@@ -1274,6 +1301,12 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	case OP_IP_MANAGE:
 		ip_manage_task(request, response, json_data);
 		break;
+	case OP_REFRESH_CONF:
+		refresh_conf_task(request, response, json_data);
+		break;
+	case OP_INIT:
+		init_task(request, response, json_data);
+		break;
 	case OP_SHOW:
 		show_task(request, response, json_data);
 		break;
@@ -1589,6 +1622,82 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 }
 
 /**
+ * refresh the configuration file
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data
+ */
+void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	apiUtil->refresh_conf();
+	response->Success("refreshing configuration success");
+}
+
+/**
+ * init an exist database
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+ * {username: "the user who is the owner of database or has rights to access the database"}
+ * {database: "the name of database"}
+ */
+void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	std::string db_names = jsonParam(json_data, "db_names");
+	if (db_names.empty())
+	{
+		response->Error(StatusParamIsIllegal, "db_names can't be empty");
+		return;
+	}
+	std::string username = json_data["username"].GetString();
+	std::string built_time = Util::get_date_time();
+	std::vector<std::string> db_name_vector;
+	Util::split(db_names, ",", db_name_vector);
+	nlohmann::json response_data = nlohmann::json{
+		{"StatusCode", 0},
+		{"StatusMsg", "init database successfully!"},
+		{"data", {}}
+	};
+	for(auto db_name : db_name_vector)
+	{
+		nlohmann::json db_info;
+		db_info["db_name"] = db_name;
+		if (apiUtil->check_already_build(db_name))
+		{
+			db_info["status"] = "1";
+			db_info["msg"] = "exist";
+			response_data["data"].push_back(db_info);
+			continue;
+		} 
+		std::string db_path = _db_home + db_name + _db_suffix;
+		if(!Util::dir_exist(db_path))
+		{
+			db_info["status"] = "1";
+			db_info["msg"] = db_name + _db_suffix + " not exist.";
+			response_data["data"].push_back(db_info);
+			continue;
+		}
+		if(apiUtil->add_already_build(db_name,username, built_time))
+		{
+			db_info["status"] = "0";
+			db_info["msg"] = "success";
+		}
+		else
+		{
+			db_info["status"] = "1";
+			db_info["msg"] = "fail";
+		}
+		response_data["data"].push_back(db_info);
+	}
+	Json resp_data;
+	resp_data.SetObject();
+	resp_data.Parse(response_data.dump().c_str());
+	response->Json(resp_data);
+}
+
+/**
  * show the all database list (except system database)
  * 
  * @param request 
@@ -1857,7 +1966,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		unsigned diskUsed = 0;
 		if (disk != "0") 
 		{
-			string db_path = _db_home + "/" + db_name + _db_suffix;
+			string db_path = _db_home + db_name + _db_suffix;
 			string real_path = Util::getExactPath(db_path.c_str());
 			if (!real_path.empty()) {
 				long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
@@ -1977,7 +2086,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback]
 				(GRPCResp *response)
 				{
-					string _db_path = _db_home + "/" + db_name + _db_suffix;
+					string _db_path = _db_home + db_name + _db_suffix;
 					string database = db_name;
 					SLOG_DEBUG("Import dataset to build database...");
 					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + db_path);
@@ -2076,7 +2185,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					else
 					{
 						result = "Import RDF file to database failed.";
-						rmdir(_db_path.c_str());
 						Util::remove_path(_db_path);
 						if (!unz_dir_path.empty())
 						{
@@ -2174,7 +2282,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				return;
 			}
 			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-			string db_path = _db_home + "/" + db_name + _db_suffix;
+			string db_path = _db_home + db_name + _db_suffix;
 			if (is_backup == "false")
 			{
 				Util::remove_path(db_path);
@@ -2182,7 +2290,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			else
 			{
-				std::string cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
+				std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
 				SLOG_DEBUG(cmd);
 				system(cmd.c_str());
 			}
@@ -2881,13 +2989,14 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			else if (format == "n-triple")
 			{
 				// headers
-				rapidjson::Value headers_data(rapidjson::kArrayType);
+				nlohmann::json json_data;
+				json_data["head"] = {};
 				for(int i = 0; i < rs.true_select_var_num; i++)
 				{
-					headers_data.PushBack(StringRef(rs.var_name[i].c_str()), allocator);
+					json_data["head"].emplace_back(rs.var_name[i]);
 				}
 				// results
-				rapidjson::Value results_data(rapidjson::kArrayType);
+				json_data["results"] = {};
 				for(int i = rs.output_offset; i < rs.ansNum; i++)
 				{
 					if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
@@ -2896,24 +3005,40 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					}	
 					if (i >= rs.output_offset)
 					{
-						rapidjson::Value result_data(rapidjson::kArrayType);
+						std::vector<std::string> result_data;
 						for(int j = 0; j < rs.true_select_var_num; j++)
 						{
 							SLOG_DEBUG("rs.answer["+to_string(i)+"]["+to_string(j)+"]=" + rs.answer[i][j]);
-							result_data.PushBack(StringRef(rs.answer[i][j].c_str()), allocator);
+							result_data.emplace_back(rs.answer[i][j]);
 						}
-						results_data.PushBack(result_data.Move(), allocator);
+						json_data["results"].emplace_back(result_data);
 					}
 				}
 				rs.release();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", "success", allocator);
-				resp_data.AddMember("head", headers_data, allocator);
-				resp_data.AddMember("results", results_data, allocator);
-				resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-				resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-				resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
+				string json_data_str = json_data.dump();
+				resp_data.Parse(json_data_str.c_str());
+				if (!resp_data.HasParseError())
+				{
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", "success", allocator);
+					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
+					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
+					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
+					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
+				} 
+				else
+				{
+					
+					string filename2 = "error_" + filename;
+					string localname2 = apiUtil->get_query_result_path() + filename2;
+					outfile.open(localname2);
+					outfile << json_data_str;
+					outfile.close();
+					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) + ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
+					error = "Query fail: the result parse error.";
+					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+				}
 			}
 			else
 			{

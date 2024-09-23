@@ -839,10 +839,12 @@ private:
 
     bool ip_check(const string& ip);
     bool ip_error_num_check(const string& ip);
+    void init_params();
 public:
     APIUtil();
     ~APIUtil();
     int initialize();
+    void refresh_conf();
     bool unlock_already_build_map();
     bool add_database(const std::string& db_name, shared_ptr<Database> &db);
     bool get_database(const std::string& db_name, shared_ptr<Database> &db);

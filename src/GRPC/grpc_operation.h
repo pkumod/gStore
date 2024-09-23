@@ -60,7 +60,9 @@ namespace grpc
     OP(OP_DOWNLOADFILE,                 downloadfile) \
     OP(OP_STAT,                                 stat) \
     OP(OP_CHECKOPERATIONSTATE,   checkOperationState) \
-    OP(OP_REASON_MANAGE,                reasonManage)
+    OP(OP_REASON_MANAGE,                reasonManage) \
+    OP(OP_INIT,                                 init) \
+    OP(OP_REFRESH_CONF,                  refreshconf) 
 }
 
 enum operation_type

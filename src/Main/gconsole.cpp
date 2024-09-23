@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 14
+#define TOTAL_COMMAND_NUM 16
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -103,6 +103,9 @@ int addusr_handler(const vector<string> &);
 int delusr_handler(const vector<string> &);
 int showusrs_handler(const vector<string> &);
 
+int refreshconf_handler(const vector<string> &);
+int init_handler(const vector<string> &);
+
 // int print_arg_handler(const vector<string> &);
 
 typedef struct
@@ -116,7 +119,9 @@ typedef struct
 COMMAND commands[] =
 	{
 		{"quit", quit_handler, "Quit this console.", "quit;", 0},
+		{"refreshconf", refreshconf_handler, "Refresh the configuration params.", "refreshconf;", 0},
 		// database op
+		{"init", init_handler, "Initializes the existing database to the system library.", "init <database_name>[,anothers];", 0},
 		{"sparql", sparql_handler, "Answer SPARQL query(s) in file.", "sparql <sparql_file_path>;", QUERY_PRIVILEGE_BIT}, // file query
 		{"create", create_handler, "Build a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
 		{"use", use_handler, "Set current database.", "use <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
@@ -1637,5 +1642,45 @@ int showusrs_handler(const vector<string> &args)
 
 	// TODO
 	Util::printConsole(headers, rows);
+	return 0;
+}
+
+int init_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 1)
+	string db_names = args[0];
+	if (db_names.find("system") != std::string::npos)
+	{
+		cout << "You can NOT init system database. " << endl;
+		return -1;
+	}
+	httpentities::InitRequest init_request(db_names);
+	httpentities::InitResponse init_response = HttpUtil::init(API_URL, true, init_request);
+	if (!init_response.success())
+	{
+		cout << "Init database " << db_names << " failed: " << init_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "Init database result: " << endl;
+	std::vector<std::string> headers = {"db_name", "status", "msg"};
+	std::vector<std::vector<std::string>> rows;
+	for (auto &db : init_response.data)
+	{
+		rows.push_back({db.db_name, db.status, db.msg});
+	}
+	Util::printConsole(headers, rows);
+	return 0;
+}
+
+int refreshconf_handler(const vector<string> &args)
+{
+	httpentities::RefreshconfRequest refresh_request;
+	httpentities::BaseResponse refresh_response = HttpUtil::refreshConf(API_URL, true, refresh_request);
+	if (!refresh_response.success())
+	{
+		cout << "Refresh config failed: " << refresh_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "Refresh config successfully." << endl;
 	return 0;
 }

@@ -186,6 +186,59 @@ namespace httpentities {
         }
     };
 
+    struct RefreshconfRequest : public BaseRequest {
+        RefreshconfRequest() : BaseRequest("refreshconf") {}
+        RefreshconfRequest(std::string username, std::string password) : BaseRequest("refreshconf",username,password) {}
+        void to_json(std::string& json_str) override
+        {
+             nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password}};
+            json_str = json.dump();
+        }
+
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct InitRequest : public BaseRequest {
+        std::string db_names;
+        InitRequest(std::string db_names) : BaseRequest("init") {
+            this->db_names = db_names;
+        };
+        InitRequest(std::string username, std::string password, std::string db_names) : BaseRequest("init", username, password) {
+            this->db_names = db_names;
+        }
+        void to_json(std::string& json_str) override
+        {
+             nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_names", this->db_names}};
+            json_str = json.dump();
+        }
+        
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_names", this->db_names},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
     struct ShowRequest : public BaseRequest {
         ShowRequest() : BaseRequest("show") {};
         ShowRequest(std::string username, std::string password) : BaseRequest("show",username,password) {}
@@ -431,16 +484,26 @@ namespace httpentities {
         MonitorResponse(std::string body) : BaseResponse(body) {
             if (json.is_object())
             {
-                json.at("database").get_to(this->database);
-                json.at("creator").get_to(this->creator);
-                json.at("builtTime").get_to(this->builtTime);
-                json.at("tripleNum").get_to(this->tripleNum);
-                json.at("entityNum").get_to(this->entityNum);
-                json.at("literalNum").get_to(this->literalNum);
-                json.at("subjectNum").get_to(this->subjectNum);
-                json.at("predicateNum").get_to(this->predicateNum);
-                json.at("connectionNum").get_to(this->connectionNum);
-                json.at("diskUsed").get_to(this->diskUsed);
+                if (json.contains("database"))
+                    json.at("database").get_to(this->database);
+                if (json.contains("creator"))
+                    json.at("creator").get_to(this->creator);
+                if (json.contains("builtTime"))
+                    json.at("builtTime").get_to(this->builtTime);
+                if (json.contains("tripleNum"))
+                    json.at("tripleNum").get_to(this->tripleNum);
+                if (json.contains("entityNum"))
+                    json.at("entityNum").get_to(this->entityNum);
+                if (json.contains("literalNum"))
+                    json.at("literalNum").get_to(this->literalNum);
+                if (json.contains("subjectNum"))
+                    json.at("subjectNum").get_to(this->subjectNum);
+                if (json.contains("predicateNum"))
+                    json.at("predicateNum").get_to(this->predicateNum);
+                if (json.contains("connectionNum"))
+                    json.at("connectionNum").get_to(this->connectionNum);
+                if (json.contains("diskUsed"))
+                    json.at("diskUsed").get_to(this->diskUsed);
             }
         }
     };
@@ -468,6 +531,34 @@ namespace httpentities {
                     json.at("head").get_to(this->head);
                 if (json.contains("results"))
                     json.at("results").get_to(this->results);
+            }
+        }
+    };
+
+    struct InitData {
+        std::string db_name;
+        std::string status;
+        std::string msg;
+        InitData(std::string _db_name, std::string _status, std::string _msg) {
+            this->db_name = _db_name;
+            this->status = _status;
+            this->msg = _msg;
+        }
+    };
+
+    struct InitResponse : public BaseResponse {
+        std::vector<struct InitData> data;
+        InitResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        InitResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object() && json.contains("data"))
+            {
+                for (auto& j0 : json["data"])
+                {
+                    std::string db_name = j0["db_name"];
+                    std::string status = j0["status"];
+                    std::string msg = j0["msg"];
+                    data.push_back(InitData(db_name, status, msg));
+                }
             }
         }
     };

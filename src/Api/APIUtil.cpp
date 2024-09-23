@@ -98,59 +98,8 @@ int APIUtil::initialize()
 {
     try
     {
-        // #if defined(DEBUG)
         SLOG_CORE("initialization start");
-        // #endif
-        thread_pool_num = get_configure_value("thread_num", thread_pool_num);
-        system_username = get_configure_value("system_username", system_username);
-        max_database_num = get_configure_value("max_database_num", max_database_num);
-        max_user_num = get_configure_value("max_user_num", max_user_num);
-        max_output_size = get_configure_value("max_output_size", max_output_size);
-        query_log_mode = get_configure_value("querylog_mode", query_log_mode);
-        query_log_path = get_configure_value("querylog_path", query_log_path);
-        access_log_mode = get_configure_value("accesslog_mode", access_log_mode);
-        access_log_path = get_configure_value("accesslog_path", access_log_path);
-        query_result_path = get_configure_value("queryresult_path", query_result_path);
-
-        //load ip-list
-        ipWhiteFile = get_configure_value("ip_allow_path", ipWhiteFile);
-        ipBlackFile = get_configure_value("ip_deny_path", ipBlackFile);
-        if (ipWhiteFile.empty())
-        {
-            whiteList = 0;
-        }
-        else
-        {
-            whiteList = 1;
-        }
-        if (ipBlackFile.empty())
-        {
-            blackList = 0;
-        }
-        else
-        {
-            blackList = 1;
-        }
-        if (whiteList) {
-            // #if defined(DEBUG)
-            SLOG_CORE("IP white List enabled.");
-            // #endif
-            ipWhiteList->Load(ipWhiteFile);
-        }
-        else if (blackList) {
-            // #if defined(DEBUG)
-            SLOG_CORE("IP black list enabled.");
-            // #endif
-            ipBlackList->Load(ipBlackFile);
-        }
-
-        // init upload conf
-        upload_path = get_configure_value("upload_path", upload_path);
-        upload_max_body_size = get_configure_value("upload_max_body_size", upload_max_body_size);
-        string configure_extensions = get_configure_value("upload_allow_extensions",  "nt|ttl|n3|rdf|txt");
-        Util::split(configure_extensions, "|", upload_allow_extensions);
-        string configure_compress_packages = get_configure_value("upload_allow_compress_packages",  "zip");
-        Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
+        init_params();
         
         // load system db
         if(!util.dir_exist(get_Db_path() + "/system" + get_Db_suffix()))
@@ -318,6 +267,68 @@ int APIUtil::initialize()
         SLOG_ERROR("initialization fail: " + string(e.what()));
         return -1;
     }
+}
+void APIUtil::init_params()
+{
+    // init params
+    thread_pool_num = get_configure_value("thread_num", thread_pool_num);
+    system_username = get_configure_value("system_username", system_username);
+    max_database_num = get_configure_value("max_database_num", max_database_num);
+    max_user_num = get_configure_value("max_user_num", max_user_num);
+    max_output_size = get_configure_value("max_output_size", max_output_size);
+    query_log_mode = get_configure_value("querylog_mode", query_log_mode);
+    query_log_path = get_configure_value("querylog_path", query_log_path);
+    access_log_mode = get_configure_value("accesslog_mode", access_log_mode);
+    access_log_path = get_configure_value("accesslog_path", access_log_path);
+    query_result_path = get_configure_value("queryresult_path", query_result_path);
+
+    //load ip-list
+    ipWhiteFile = get_configure_value("ip_allow_path", ipWhiteFile);
+    ipBlackFile = get_configure_value("ip_deny_path", ipBlackFile);
+    if (ipWhiteFile.empty())
+    {
+        whiteList = 0;
+    }
+    else
+    {
+        whiteList = 1;
+    }
+    if (ipBlackFile.empty())
+    {
+        blackList = 0;
+    }
+    else
+    {
+        blackList = 1;
+    }
+    if (whiteList) {
+        // #if defined(DEBUG)
+        SLOG_CORE("IP white List enabled.");
+        // #endif
+        ipWhiteList->Load(ipWhiteFile);
+    }
+    else if (blackList) {
+        // #if defined(DEBUG)
+        SLOG_CORE("IP black list enabled.");
+        // #endif
+        ipBlackList->Load(ipBlackFile);
+    }
+
+    // init upload conf
+    upload_path = get_configure_value("upload_path", upload_path);
+    upload_max_body_size = get_configure_value("upload_max_body_size", upload_max_body_size);
+    string configure_extensions = get_configure_value("upload_allow_extensions",  "nt|ttl|n3|rdf|txt");
+    Util::split(configure_extensions, "|", upload_allow_extensions);
+    string configure_compress_packages = get_configure_value("upload_allow_compress_packages",  "zip");
+    Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
+}
+
+void APIUtil::refresh_conf()
+{
+    // reload config file;
+    util.configure();
+    // init params
+    init_params();
 }
 
 bool APIUtil::unlock_already_build_map()
