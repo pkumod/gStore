@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 		}
 		else if (command == "-m" || command == "--make")
 		{
-			if (Util::dir_exist(_db_path) == false)
+			if (Util::file_exist(Util::initfile) == false)
 			{
 				int ret = init_system_db(_db_path, _db_name, _db_suffix, util);
 				return ret;

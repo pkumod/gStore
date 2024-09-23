@@ -17,11 +17,13 @@ using namespace rapidjson;
 //==================================================================================================================
 
 string Util::profile = "./conf/init.conf";
+string Util::initfile = "./conf/init.lock";
 
 map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;
 
 // #define BACKUP_PATH "./backups"
+
 #define BACKUP_LOG_PATH "./conf/backup.json"
 #define BACKUP_LOG_TMEP_PATH "./temp.json"
 #define DEFALUT_BACKUP_INTERVAL "600" //hour
