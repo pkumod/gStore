@@ -11,14 +11,25 @@
 =============================================================================*/
 
 #include "../Util/Util.h"
+#include "../Api/HttpUtil.h"
 #include "../Database/Database.h"
 #include <iostream>
 #include <fstream>
 // #include "../Util/Slog.h"
 using namespace std;
 
-int init_system_db(string _db_path, string _db_name, string _db_suffix)
+int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& util)
 {
+	std::string port = util.getConfigureValue("port");
+	std::string base_url = "http://127.0.0.1:" + port + "/api";
+	httpentities::CheckRequest check_request;
+	httpentities::CheckResponse check_response = HttpUtil::check(base_url, check_request);
+	if(check_response.success()) 
+	{
+		cout << "Server is active (running)." << endl;
+		cout << "Please stop server(use bin/gserver -t) and try again." << endl;
+		return -1;
+	}
 	string _rdf = Util::system_path;
 	long tv_begin = Util::get_cur_time();
 	SLOG_INFO("begin init the system database ....");
@@ -39,8 +50,8 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix)
 		_db = NULL;
 		Util::init_backuplog();
 		SLOG_CORE("init backuplog successfully!");
-		string version = Util::getConfigureValue("version");
-		string root_pwd = Util::getConfigureValue("root_password");
+		string version = util.getConfigureValue("version");
+		string root_pwd = util.getConfigureValue("root_password");
 		string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
 		SLOG_CORE("version: " << version << ", update_sparql:" << update_sparql);
 		ResultSet _rs;
@@ -75,7 +86,6 @@ int main(int argc, char *argv[])
 {
 
 	Util util;
-	// Log.init("slog.properties");
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	int _suffix_len = _db_suffix.length();
@@ -83,7 +93,7 @@ int main(int argc, char *argv[])
 	string _db_path = _db_home + "/" + _db_name + _db_suffix;
 	if (argc == 1)
 	{
-		int ret = init_system_db(_db_path, _db_name, _db_suffix);
+		int ret = init_system_db(_db_path, _db_name, _db_suffix, util);
 		return ret;
 	}
 	else if (argc == 2)
@@ -94,15 +104,12 @@ int main(int argc, char *argv[])
 			cout << endl;
 			cout << "gStore Initialize Data Tools(ginit)" << endl;
 			cout << endl;
-			cout << "Usage:\tbin/ginit  -db [dbname] " << endl;
+			cout << "Usage:\tbin/ginit" << endl;
 			cout << endl;
 			cout << "Options:" << endl;
 			cout << "\t-h,--help\t\tDisplay this message." << endl;
-			cout << "\t-db,--database,\t\t The database names.Use , to split database name. e.g. databaseA,databaseB" << endl;
-			cout << "If you want to rebuild the system database,please use bin/ginit \n"
-				 << endl;
-			cout << "If you want to add database info into system database,please use bin/ginit -db db1,db2,...\n"
-				 << endl;
+			cout << "\t-m,--make\t\tInitialize if the system database does not exist, otherwise skip." << endl;
+			cout << "If you want to rebuild the system database,please use bin/ginit" << endl;
 			cout << endl;
 			return 0;
 		}
@@ -110,7 +117,7 @@ int main(int argc, char *argv[])
 		{
 			if (Util::dir_exist(_db_path) == false)
 			{
-				int ret = init_system_db(_db_path, _db_name, _db_suffix);
+				int ret = init_system_db(_db_path, _db_name, _db_suffix, util);
 				return ret;
 			}
 			else
@@ -128,84 +135,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-
-		long tv_begin = Util::get_cur_time();
-		if (Util::dir_exist(_db_path) == false)
-		{
-			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
-			return -1;
-		}
-		string db_namestr = Util::getArgValue(argc, argv, "db", "database");
-		if (db_namestr.empty())
-		{
-			cout << "You need to input the database name that you want to init. Input \"bin/ginit -h\" for help." << endl;
-			return -1;
-		}
-		vector<string> db_names;
-		if (db_namestr.substr(db_namestr.length() - 1, 1) != ",")
-		{
-			db_namestr = db_namestr + ",";
-		}
-		Util::split(db_namestr, ",", db_names);
-		string sparql = "insert data {";
-		string time = Util::get_date_time();
-		for (auto db_name : db_names)
-		{
-			if (!db_name.empty())
-			{
-				string db_path = _db_home + "/" + db_name + _db_suffix;
-				if (Util::dir_exist(db_path) == false)
-				{
-					cout << "The database " + db_name + " is not exist, now create it." << endl;
-					int len = db_name.length();
-					if (len < _suffix_len || (len >= _suffix_len && db_name.substr(len - _suffix_len, _suffix_len) == _db_suffix))
-					{
-						cout << "your database can not end with " + _db_suffix + " or less than "<< _suffix_len <<" characters. Skip it." << endl;
-						continue;
-					}
-					if (db_name == "system")
-					{
-						cout<<"Your database's name can not be system. Skip it."<<endl;
-						continue;
-					}
-					Database db(db_name);
-					db.BuildEmptyDB();
-				}
-				sparql = sparql + "<" + db_name + "> <database_status> \"already_built\".";
-				sparql = sparql + "<" + db_name + "> <built_by> <root>.";
-				sparql = sparql + "<" + db_name + "> <built_time> \"" + time + "\".";
-				Util::add_backuplog(db_name);
-			}
-		}
-		sparql = sparql + "}";
-		FILE *ofp = stdout;
-		string msg;
-        cout<<"sparql:"<<sparql<<endl;
-		ResultSet _rs;
-		Database *_db = new Database(_db_name);
-		_db->load();
-		int ret = _db->query(sparql, _rs, ofp);
-		if (ret <= -100) // select query
-		{
-			if (ret == -100)
-				msg = _rs.to_str();
-			else // query error
-				msg = "query failed";
-		}
-		else // update query
-		{
-			if (ret >= 0)
-				msg = "update num : " + Util::int2string(ret);
-			else // update error
-				msg = "update failed.";
-		}
-		delete _db;
-		_db = NULL;
-		long tv_end = Util::get_cur_time();
-		cout<<"operation result:"<<msg<<endl;
-		// stringstream ss;
-		cout << _db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
-		// Log.Info(ss.str().c_str());
+		cout << "Invalid arguments! Input \"bin/ginit -h\" for help." << endl;
 		return 0;
 	}
 }
