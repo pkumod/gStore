@@ -45,6 +45,54 @@ namespace cluster
         }
     }
 
+    void ClusterManager::refresh()
+    {
+        bool latst_on = on_;
+        if (on_ && role_)
+        {
+            return;
+        }
+        
+        if (Util::getConfigureValue("cluster_on") == "on")
+            on_ = true;
+        else
+            on_ = false;
+
+        if (latst_on && !on_ && role_)
+        {
+            role_.reset();
+            role_ = nullptr;
+            return;
+        }
+
+        if (on_ && !role_)
+        {
+            string cluster_role = Util::getConfigureValue("cluster_role");
+            if (cluster_role == "leader")
+            {
+                role_ = std::make_shared<ClusterEntityLeader>();
+            }
+            else if (cluster_role == "follower")
+            {
+                role_ = std::make_shared<ClusterEntityFollower>();
+            }
+            else
+            {
+                SLOG_ERROR("cluster_role config is error");
+                return;
+            }
+            if (!Util::dir_exist(ClusterDb::getClusterDir()))
+            {
+                Util::create_dir(ClusterDb::getClusterDir());
+            }
+            role_->init();
+            std::thread run_task = std::thread(&ClusterManager::runTask, this);
+            run_task.detach();
+
+            SLOG_CORE("cluster success on");
+        }
+    }
+
     bool ClusterManager::isLeader()
     {
         if (!isEnable() || !role_)

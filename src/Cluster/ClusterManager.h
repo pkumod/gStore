@@ -42,6 +42,7 @@ namespace cluster
         public:
         // 是否启用集群
         bool isEnable(){ return on_; }
+        void refresh();
         // 集群身份
         ClusterRoleType getCluterRole(){ return role_->getCluterRoleType(); }
         // 是否是主节点

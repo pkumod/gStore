@@ -1751,6 +1751,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	apiUtil->refresh_conf();
+	clusterManagerPtr->refresh();
 	response->Success("refreshing configuration success");
 }
 
