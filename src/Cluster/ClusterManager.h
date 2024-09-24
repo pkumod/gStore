@@ -81,6 +81,8 @@ namespace cluster
         bool IsHeartBeatTask(ClusterLogStatus status);
         // 是否更新类任务(build, insert, remove)
         bool IsUpdateTask(ClusterLogStatus status);
+        // 删除集群信息
+        void dropDb(const std::string& db_name);
 
         //日志模块
         //新增日志

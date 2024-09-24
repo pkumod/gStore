@@ -154,6 +154,7 @@ namespace cluster
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);
         uint64 getFirstIndex(const std::string& db_name);
+        void eraseDb(const std::string& db_name);
 
         static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);

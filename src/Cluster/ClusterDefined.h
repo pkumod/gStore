@@ -16,6 +16,7 @@ namespace cluster
         ClusterOperation_None   = 0,
         ClusterOperation_Insert = 1,
         ClusterOperation_Delete = 2,
+        ClusterOperation_Build  = 3,
     };
 
     enum ClusterLogStatus

@@ -77,8 +77,9 @@ namespace cluster
             if (!Util::file_exist(Util::getConfigureValue("db_home") + db_name + ".db"))
             {
                 SLOG_ERROR("db is not exist, please check db name:" << db_name);
+                return nullptr;
             }
-            SLOG_TRACE("db is not exist, init db name:" << db_name);
+            SLOG_TRACE("cluster init db name:" << db_name);
             return addClusterDb(db_name);
         }
         return it->second;
@@ -342,5 +343,23 @@ namespace cluster
         if (!db)
             return;
         return db->getNextIndexL(index, indexl);
+    }
+
+    void ClusterEntity::dropDb(std::string db_name)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail! ,term:" << db_name);
+            return;
+        }
+        log.eraseDb(db_name);
+        Util::remove_dir(getDbDirPath(db_name));
+        databaseL_.erase(db_name);
+        if (!writeToTermFile(log))
+        {
+            SLOG_ERROR("term log status fail! ,term:" << db_name);
+            return;
+        }
     }
 }

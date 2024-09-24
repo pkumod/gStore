@@ -424,6 +424,16 @@ namespace cluster
         it->second.setNextIndex(next_index);
     }
 
+    void ClusterTermInfo::eraseDb(const std::string& db_name)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+        {
+            return;
+        }
+        db_logs_.erase(it);
+    }
+
     uint64 ClusterTermInfo::getDbIndex(const std::string& db_name)
     {
         auto it = db_logs_.find(db_name);

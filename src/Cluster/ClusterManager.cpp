@@ -492,6 +492,13 @@ namespace cluster
         return false;
     }
 
+    void ClusterManager::dropDb(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->dropDb(db_name);
+    }
+
     bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, const timeoutCall& cb, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)
@@ -513,7 +520,7 @@ namespace cluster
             {
                 SLOG_TRACE("Please sure cluster cluster update is nullptr");
             }
-            ClusterEventPtr task = std::make_shared<ClusterAppendEvent>(db_name, operation, file_name, leader, cb);
+            ClusterEventPtr task = std::make_shared<ClusterAppendEvent>(db_name, leader, cb, status, operation, file_name);
             task_queueL.push(task);
         }
         else

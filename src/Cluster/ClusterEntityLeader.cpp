@@ -171,7 +171,10 @@ namespace cluster
     void ClusterEntityLeader::postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status)
     {
         uint32 term = getTerm();
-        updateLogStatus(db_name, index, status);
+        if (status != ClusterLogStatus_drop)
+        {
+            updateLogStatus(db_name, index, status);
+        }
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
@@ -272,6 +275,10 @@ namespace cluster
         else if (status == ClusterLogStatus_fail)
         {
             postTask(db_name, index, "fail", status);
+        }
+        else if (status == ClusterLogStatus_drop)
+        {
+            postTask(db_name, index, "drop", status);
         }
         else if (status == ClusterLogStatus_drop)
         {

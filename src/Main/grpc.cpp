@@ -2412,6 +2412,11 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
+			if (clusterManagerPtr->isEnable()) 
+			{
+				clusterManagerPtr->dropDb(db_name);
+				clusterManagerPtr->addTask(db_name, ClusterLogStatus_drop);
+			}
 			response->Success(success);
 		}
 	}
@@ -6113,6 +6118,41 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_fail);
 				}
 				apiUtil->unlock_database(db_name);
+			}
+			response->Success("ok");
+			break;
+		case cluster::EXPECTION_DROP:
+			if (!db_name.empty())
+			{
+				if (!apiUtil->check_db_exist(db_name))
+					break;
+				shared_ptr<DatabaseInfo> db_info;
+				apiUtil->get_databaseinfo(db_name, db_info);
+				if (!apiUtil->trywrlock_databaseinfo(db_info))
+					break;
+				if (apiUtil->check_already_load(db_name))
+				{
+					if (!apiUtil->remove_txn_managers(db_name))
+					{
+						apiUtil->unlock_databaseinfo(db_info);
+						break;
+					}
+					apiUtil->delete_from_databases(db_name);
+				}
+				apiUtil->unlock_databaseinfo(db_info);
+				if (!apiUtil->delete_from_already_build(db_name))
+				{
+					break;
+				}
+				string db_path = _db_home + "/" + db_name + _db_suffix;
+				do
+				{
+					string cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
+					system(cmd.c_str());
+				}while (0);
+				Util::delete_backuplog(db_name);
+				string success = "Database " + db_name + " dropped.";
+				clusterManagerPtr->dropDb(db_name);
 			}
 			response->Success("ok");
 			break;

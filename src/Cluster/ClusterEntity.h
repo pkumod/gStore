@@ -36,6 +36,7 @@ namespace cluster
         ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
         void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
+        void dropDb(std::string db_name);
         // nt log
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
