@@ -1135,23 +1135,21 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	// std::string ip_port;
-	// if(request->hasHeader("Host")) {
-	// 	std::string host = request->header("Host");
-	// 	ip_port = host.substr(host.find(':') + 1);
-	// 	SLOG_DEBUG("Host: " + host + ", Port: " + ip_port);
-	// }
 	// check cluster ip
-	bool ipCheckResult;
-	if (clusterManagerPtr->isLeader())
-		ipCheckResult = clusterManagerPtr->fromFollowerIp(ip_addr);
-	else
-		ipCheckResult = clusterManagerPtr->fromLeader(ip_addr);
-	if (ipCheckResult == false)
+	string cluster_ip_check = apiUtil->get_configure_value("cluster_ip_check", "off");
+	if (cluster_ip_check == "on")
 	{
-		SLOG_DEBUG(ip_addr + " does not belong to the cluster whitelist");
-		response->Error(StatusIPBlocked, "The ip address does not belong to the cluster whitelist");
-		return;
+		bool ipCheckResult;
+		if (clusterManagerPtr->isLeader())
+			ipCheckResult = clusterManagerPtr->fromFollowerIp(ip_addr);
+		else
+			ipCheckResult = clusterManagerPtr->fromLeader(ip_addr);
+		if (ipCheckResult == false)
+		{
+			SLOG_DEBUG(ip_addr + " does not belong to the cluster whitelist");
+			response->Error(StatusIPBlocked, "The ip address does not belong to the cluster whitelist");
+			return;
+		}
 	}
 	std::string op_str = cluster::ClusterOperationHandle::to_str(operation);
 	grpc::content_type content_type = request->contentType();
@@ -1244,13 +1242,13 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		}
 		// headers
 		nlohmann::json json_data;
-		json_data["head"] = {};
+		json_data["head"] = nlohmann::json::array();
 		for(int i = 0; i < rs.true_select_var_num; i++)
 		{
 			json_data["head"].emplace_back(rs.var_name[i]);
 		}
 		// results
-		json_data["results"] = {};
+		json_data["results"] = nlohmann::json::array();
 		for(int i = rs.output_offset; i < rs.ansNum; i++)
 		{
 			if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
@@ -3108,13 +3106,13 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			{
 				// headers
 				nlohmann::json json_data;
-				json_data["head"] = {};
+				json_data["head"] = nlohmann::json::array();
 				for(int i = 0; i < rs.true_select_var_num; i++)
 				{
 					json_data["head"].emplace_back(rs.var_name[i]);
 				}
 				// results
-				json_data["results"] = {};
+				json_data["results"] = nlohmann::json::array();
 				for(int i = rs.output_offset; i < rs.ansNum; i++)
 				{
 					if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
