@@ -30,7 +30,6 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		cout << "Please stop server(use bin/gserver -t) and try again." << endl;
 		return -1;
 	}
-	string _rdf = Util::system_path;
 	long tv_begin = Util::get_cur_time();
 	SLOG_INFO("begin init the system database ....");
 	if (Util::dir_exist(_db_path))
@@ -38,7 +37,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		Util::remove_path(_db_path);
 	}
 	Database *_db = new Database(_db_name);
-	bool flag = _db->build(_rdf);
+	bool flag = _db->BuildEmptyDB();
 	if (flag)
 	{
 		ofstream f;
@@ -52,7 +51,10 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		SLOG_CORE("init backuplog successfully!");
 		string version = util.getConfigureValue("version");
 		string root_pwd = util.getConfigureValue("root_password");
-		string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
+		string update_sparql = "insert data {\
+			<system> <built_by> <root> . \
+			<CoreVersion> <value> \"" + version + "\". \
+			<root> <has_password> \"" + root_pwd + "\" .}";
 		SLOG_CORE("version: " << version << ", update_sparql:" << update_sparql);
 		ResultSet _rs;
 		FILE *ofp = nullptr;
@@ -89,7 +91,7 @@ int main(int argc, char *argv[])
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	int _suffix_len = _db_suffix.length();
-	string _db_name = "system";
+	string _db_name = Util::system_db;
 	string _db_path = _db_home + "/" + _db_name + _db_suffix;
 	if (argc == 1)
 	{

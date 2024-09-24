@@ -36,7 +36,7 @@ APIUtil::~APIUtil()
     for (iter = databases.begin(); iter != databases.end(); iter++)
     {
         string database_name = iter->first;
-        if (database_name == SYSTEM_DB_NAME)
+        if (database_name == Util::system_db)
             continue;
         //abort all transaction
         db_checkpoint(database_name);
@@ -50,7 +50,7 @@ APIUtil::~APIUtil()
         iter->second->save();
         unlock_database(database_name);
     }
-    if (databases.find(SYSTEM_DB_NAME) != databases.end())
+    if (databases.find(Util::system_db) != databases.end())
     {
         pthread_rwlock_wrlock(&system_db_lock);
         system_database->save();
@@ -110,9 +110,8 @@ int APIUtil::initialize()
             {
                 util.remove_path(_sys_db_path);
             }
-            system_database  = make_shared<Database>(SYSTEM_DB_NAME);
-            std::string _rdf = Util::system_path;
-            bool _sys_build_rt = system_database->build(_rdf);
+            system_database  = make_shared<Database>(Util::system_db);
+            bool _sys_build_rt = system_database->BuildEmptyDB();
             if (_sys_build_rt)
             {
                 ofstream f;
@@ -124,8 +123,11 @@ int APIUtil::initialize()
                 Util::init_backuplog();
                 string version = util.getConfigureValue("version");
                 string root_pwd = util.getConfigureValue("root_password");
-                string update_sparql = "insert data {<CoreVersion> <value> \"" + version + "\". <root> <has_password> \"" + root_pwd + "\" .}";
-                system_database = make_shared<Database>(SYSTEM_DB_NAME);
+                string update_sparql = "insert data {\
+                    <system> <built_by> <root> . \
+                    <CoreVersion> <value> \"" + version + "\". \
+                    <root> <has_password> \"" + root_pwd + "\" .}";
+                system_database = make_shared<Database>(Util::system_db);
                 system_database->load();
                 update_sys_db(update_sparql);
             }
@@ -137,14 +139,14 @@ int APIUtil::initialize()
         }
         else
         {
-            system_database = make_shared<Database>(SYSTEM_DB_NAME);
+            system_database = make_shared<Database>(Util::system_db);
             system_database->load();
         }
         
         // #if defined(DEBUG)
         SLOG_CORE("add system database");
         // #endif
-        APIUtil::add_database(SYSTEM_DB_NAME, system_database);
+        APIUtil::add_database(Util::system_db, system_database);
 
         // init already_build db
         ResultSet rs;
@@ -191,8 +193,8 @@ int APIUtil::initialize()
             SLOG_CORE(jsonBuffer.GetString());
             #endif
             // insert systemdb into already_build
-            // struct DatabaseInfo *system_db = new DatabaseInfo(SYSTEM_DB_NAME);
-            // already_build.insert(pair<std::string, struct DatabaseInfo *>(SYSTEM_DB_NAME, system_db));
+            // struct DatabaseInfo *system_db = new DatabaseInfo(Util::system_db);
+            // already_build.insert(pair<std::string, struct DatabaseInfo *>(Util::system_db, system_db));
             
             pthread_rwlock_unlock(&already_build_map_lock);
         }
@@ -768,7 +770,7 @@ bool APIUtil::db_checkpoint(string db_name)
 //     for(iter=databases.begin(); iter != databases.end(); iter++)
 // 	{
 // 		string database_name = iter->first;
-// 		if (database_name == SYSTEM_DB_NAME)
+// 		if (database_name == Util::system_db)
 // 			continue;
 // 		//abort all transaction
 // 		db_checkpoint(database_name);
@@ -1056,7 +1058,7 @@ void APIUtil::get_already_builds(const std::string& username, vector<shared_ptr<
     for (iter = already_build.begin(); iter != already_build.end(); iter++)
     {
         shared_ptr<DatabaseInfo> db_info = iter->second;
-        if (db_info->getName() == SYSTEM_DB_NAME)
+        if (db_info->getName() == Util::system_db)
         {
             continue;
         }
@@ -1255,7 +1257,7 @@ std::string APIUtil::check_param_value(const string& paramname, const string& va
 	if (paramname == "db_name")
 	{
 		string database = value;
-		if (database == SYSTEM_DB_NAME)
+		if (database == Util::system_db)
 		{
 			result = "you can not operate the system database";
 			return result;
@@ -1314,7 +1316,7 @@ bool APIUtil::add_privilege(const std::string& username, const vector<string>& t
 	}
     pthread_rwlock_rdlock(&users_map_lock);
     std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != SYSTEM_DB_NAME)
+	if(it != users.end() && db_name != Util::system_db)
 	{
         string update = "INSERT DATA { ";
         for (unsigned i = 0; i < types.size(); i++)
@@ -1466,63 +1468,38 @@ bool APIUtil::refresh_sys_db()
 {
     pthread_rwlock_wrlock(&system_db_lock);
 	system_database->save();
-    APIUtil::delete_from_databases(SYSTEM_DB_NAME);
-	system_database = make_shared<Database>(SYSTEM_DB_NAME);
+    APIUtil::delete_from_databases(Util::system_db);
+	system_database = make_shared<Database>(Util::system_db);
 	bool flag = system_database->load();
     // #if defined(DEBUG)
 	SLOG_CORE("system database refresh");
     // #endif
     if (flag) 
     {
-        APIUtil::add_database(SYSTEM_DB_NAME, system_database);
+        APIUtil::add_database(Util::system_db, system_database);
     }
     pthread_rwlock_unlock(&system_db_lock);
 	return flag;
 }
 
-std::string APIUtil::query_sys_db(const std::string& sparql)
+bool APIUtil::query_sys_db(const std::string& sparql, ResultSet& _rs)
 {
 	pthread_rwlock_rdlock(&system_db_lock);
-    ResultSet rs;
 	FILE* output = NULL;
-
-	int ret_val = system_database->query(sparql, rs, output);
-	bool ret = false, update = false;
-	if(ret_val < -1)   //non-update query
-	{
-		ret = (ret_val == -100);
-	}
-	else  //update query, -1 for error, non-negative for num of triples updated
-	{
-		update = true;
-	}
-
-	if(ret)
-	{
-        // #if defined(DEBUG)
-		SLOG_CORE("search system db returned successfully.");
-        // #endif
-		string success = rs.to_JSON();
-		pthread_rwlock_unlock(&system_db_lock);
-		return success;
-	}
-	else
-	{
-		string error = "";
-		// todo: return this error code
-		// int error_code;
-		if(!update)
-		{
-			SLOG_ERROR("search system db returned error.");
-			error = "search query returns false.";
-			// error_code = 403;
-		}
-		
-		pthread_rwlock_unlock(&system_db_lock);
-
-		return error;
-	}
-	
+    QueryTree::UpdateType update_type;
+    system_database->isUpdate(sparql, update_type);
+    if (update_type == QueryTree::Not_Update)
+    {
+    	int ret_val = system_database->query(sparql, _rs, output);
+        pthread_rwlock_unlock(&system_db_lock);
+        return (ret_val == -100);
+    }
+    else
+    {
+        SLOG_CORE("query is not a select query: " << sparql);
+        pthread_rwlock_unlock(&system_db_lock);
+        return false;
+    }
 }
 
 bool APIUtil::build_db_user_privilege(std::string db_name, std::string username)
@@ -1677,7 +1654,7 @@ bool APIUtil::del_privilege(const std::string& username, const vector<string>& t
 	}
     pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != SYSTEM_DB_NAME)
+	if(it != users.end() && db_name != Util::system_db)
 	{
         string update = "";
         bool del_result = false;
@@ -1780,7 +1757,7 @@ bool APIUtil::del_privilege(const std::string& username, const vector<string>& t
 
 bool APIUtil::check_privilege(const std::string& username, const std::string& type, const std::string& db_name)
 {
-	if(db_name == SYSTEM_DB_NAME)
+	if(db_name == Util::system_db)
 		return 0;
 
 	if(username == ROOT_USERNAME)
@@ -1875,7 +1852,7 @@ bool APIUtil::init_privilege(const std::string& username, const std::string& db_
 	}
     pthread_rwlock_rdlock(&users_map_lock);
     std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != SYSTEM_DB_NAME)
+	if(it != users.end() && db_name != Util::system_db)
 	{
         string update = "INSERT DATA {<" + username + "> <has_query_priv> <" + db_name 
             + ">.<" + username + "> <has_update_priv> <" + db_name 

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		//check the db_name is system
-		if (db_folder == "system")
+		if (db_folder == Util::system_db)
 		{
 			cout<<"The database name can not be system."<<endl;
 			return 0;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 				unzip.getFileList(zip_files, "");
 			}
 		}
-		Database system_db("system");
+		Database system_db(Util::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";

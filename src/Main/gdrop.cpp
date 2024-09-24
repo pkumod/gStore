@@ -66,14 +66,14 @@ int main(int argc, char * argv[])
 				cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gdrop -h\" for help." << endl;
 				return 0;
 			}
-			if (db_name == "system")
+			if (db_name == Util::system_db)
 			{
 				cout << "the database name can not be system." << endl;
 				return 0;
 			}
 			cout<<"Begin to drop database...."<<endl;
 			long tv_begin = Util::get_cur_time();
-			Database system_db("system");
+			Database system_db(Util::system_db);
 			system_db.load();
 			string db_path = _db_home + db_name + _db_suffix;
 			if (!Util::dir_exist(db_path))

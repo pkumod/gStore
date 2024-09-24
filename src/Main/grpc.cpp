@@ -48,6 +48,7 @@ void register_service(GRPCServer &grpcServer);
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
+void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation);
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void download_file(const GRPCReq *request, GRPCResp *response);
 void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
@@ -59,7 +60,6 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response);
 void core_version_task(const GRPCReq *request, GRPCResp *response);
 void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-// for db
 // for db
 void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -729,6 +729,13 @@ void register_service(GRPCServer &svr)
 		ReqMethod::POST);
 
 	svr.ROUTE(
+		"/sys/query", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			sys_api(request, response, OP_QUERY);
+		},
+		methods);
+		
+	svr.ROUTE(
 		"/api", [](const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		{ 
 			api(request, response, series);
@@ -1196,6 +1203,101 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	}
 }
 
+void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation)
+{
+	Json json_data;
+	parseRequest(request, json_data);
+	bool is_inner = jsonParam(json_data, "inner", "false") == "true";
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	string msg;
+	if (!is_inner || ip_addr != "127.0.0.1")
+	{
+		msg = "You are not allowed to access sys api";
+		response->Error(StatusIPBlocked, msg);
+		return;
+	}
+	if (operation == OP_QUERY)
+	{
+		string sparql;
+		ResultSet rs;
+		sparql = jsonParam(json_data, "sparql");
+		msg = apiUtil->check_param_value("sparql", sparql);
+		if (!msg.empty())
+		{
+			response->Error(StatusParamIsIllegal, msg);
+			return;
+		}
+		bool query_rt = false;
+		uint64_t query_time = Util::get_cur_time();
+		query_rt = apiUtil->query_sys_db(sparql, rs);
+		query_time = Util::get_cur_time() - query_time;
+		if (!query_rt)
+		{
+			response->Error(StatusOperationFailed, "Query failed");
+			return;
+		}
+		if (!query_rt)
+		{
+			response->Error(StatusOperationFailed, "Query failed");
+			return;
+		}
+		// headers
+		nlohmann::json json_data;
+		json_data["head"] = {};
+		for(int i = 0; i < rs.true_select_var_num; i++)
+		{
+			json_data["head"].emplace_back(rs.var_name[i]);
+		}
+		// results
+		json_data["results"] = {};
+		for(int i = rs.output_offset; i < rs.ansNum; i++)
+		{
+			if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
+			{
+				break;
+			}	
+			if (i >= rs.output_offset)
+			{
+				std::vector<std::string> result_data;
+				for(int j = 0; j < rs.true_select_var_num; j++)
+				{
+					result_data.emplace_back(rs.answer[i][j]);
+				}
+				json_data["results"].emplace_back(result_data);
+			}
+		}
+		rs.release();
+		string json_data_str = json_data.dump();
+		Json resp_data;
+		Json::AllocatorType& allocator = resp_data.GetAllocator();
+		resp_data.IsObject();
+		resp_data.Parse(json_data_str.c_str());
+		if (!resp_data.HasParseError())
+		{
+			uint32_t rs_ansNum = rs.ansNum;
+			std::string thread_id = Util::getThreadID();
+			rs.release();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "success", allocator);
+			resp_data.AddMember("AnsNum", rs_ansNum, allocator);
+			resp_data.AddMember("OutputLimit", -1, allocator);
+			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
+			resp_data.AddMember("QueryTime", StringRef(to_string(query_time).c_str()), allocator);
+		} 
+		else
+		{
+			string error = "Query fail: the result parse error.";
+			resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
+			resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+		}
+		response->Json(resp_data);
+	}
+	else
+	{
+		response->Error(StatusOperationUndefined);
+	}
+}
 
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
@@ -1274,11 +1376,17 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
 	std::string encryption = jsonParam(json_data, "encryption", "");
-	std::string db_name =jsonParam(json_data, "db_name");
-	// if inner request break
-	if(!hasJsonParam(json_data, "inner") || "127.0.0.1" != ip_addr) 
+	std::string db_name = jsonParam(json_data, "db_name");
+	bool is_inner = jsonParam(json_data, "inner", "false") == "true";
+	bool need_check_privilege = true;
+	// skip check privilege for inner request
+	if (is_inner && "127.0.0.1" == ip_addr)
 	{
-		// check username and password
+		need_check_privilege = false;
+	}
+	// check username and password
+	if(need_check_privilege) 
+	{
 		std::string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
 		if (checkidentityresult.empty() == false)
 		{
@@ -1288,7 +1396,11 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		}
 	}
 	// check privilege
-	if (apiUtil->check_privilege(username, operation, db_name) == 0)
+	if (username != ROOT_USERNAME)
+	{
+		need_check_privilege = true;
+	}
+	if (need_check_privilege && apiUtil->check_privilege(username, operation, db_name) == 0)
 	{
 		std::string msg = "You have no " + operation + " privilege, operation failed";
 		response->Error(StatusOperationConditionsAreNotSatisfied, msg);
@@ -1760,7 +1872,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		string error = apiUtil->check_param_value("db_name", db_name);
+		std::string error = apiUtil->check_param_value("db_name", db_name);
 		if (error.empty() == false)
 		{
 			response->Error(StatusParamIsIllegal, error);
@@ -2013,20 +2125,11 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// 	response->Error(StatusParamIsIllegal, result);
 		// 	return;
 		// }
-		if (!db_path.empty()) 
+		if (!db_path.empty() && Util::file_exist(db_path) == false)
 		{
-			if (db_path == Util::system_path)
-			{
-				result = "You have no rights to access system files.";
-				response->Error(StatusCheckPrivilegeFailed, result);
-				return;
-			}
-			if (Util::file_exist(db_path) == false)
-			{
-				result = "RDF file not exist.";
-				response->Error(StatusParamIsIllegal, result);
-				return;
-			}
+			result = "RDF file not exist.";
+			response->Error(StatusParamIsIllegal, result);
+			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		result = apiUtil->check_param_value("db_name", db_name);
@@ -2035,7 +2138,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusParamIsIllegal, result);
 			return;
 		}
-
+		//check the db_name is system
+		if (db_name == Util::system_db)
+		{
+			result = "The database name can not be system.";
+			response->Error(StatusParamIsIllegal, result);
+			return;
+		}
 		// check if database named [db_name] is already built
 		if (apiUtil->check_db_exist(db_name))
 		{

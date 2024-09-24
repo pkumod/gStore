@@ -73,15 +73,15 @@ int main(int argc, char *argv[])
 			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gquery -h\" for help." << endl;
 			return 0;
 		}
-		if (Util::dir_exist(_db_home + "system" + _db_suffix) == false)
+		if (Util::dir_exist(_db_home + Util::system_db + _db_suffix) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;
 		}
 
-		if (db_folder != "system")
+		if (db_folder != Util::system_db)
 		{
-			Database system_db("system");
+			Database system_db(Util::system_db);
 			system_db.load();
 			string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
 			ResultSet ask_rs;

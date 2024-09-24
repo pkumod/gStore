@@ -359,7 +359,7 @@ public:
 #endif
 	
 	static std::string backup_path;
-	static std::string system_path;
+	static std::string system_db;
 	static const long gserver_backup_interval = 120;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 

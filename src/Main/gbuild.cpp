@@ -18,7 +18,7 @@ using namespace std;
 bool save_db_info(const std::string& _db_name, const std::string& _db_path)
 {
 	cout<<"Save the database info to system database...."<<endl;
-	Database system_db("system");
+	Database system_db(Util::system_db);
 	system_db.load();
 	// add database information to system.db
 	string time = Util::get_date_time();
@@ -103,13 +103,13 @@ main(int argc, char * argv[])
 		}
 
 		//check if the db_name is system
-		if (db_name == "system")
+		if (db_name == Util::system_db)
 		{
 			cout<<"Your database's name can not be system."<<endl;
 			return -1;
 		}
 
-		if (Util::dir_exist(_db_home + "system" + _db_suffix) == false)
+		if (Util::dir_exist(_db_home + Util::system_db + _db_suffix) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;
@@ -120,11 +120,6 @@ main(int argc, char * argv[])
 		std::string unz_dir_path;
 		std::vector<std::string> zip_files;
 		//check if the db_path is the path of system.nt
-		if (_rdf == Util::system_path)
-		{
-			cout<<"You have no rights to access system files"<<endl;
-			return -1;
-		}
 		if (_rdf.empty())
 		{
 			std::cout<<"will build an empty database"<<std::endl;

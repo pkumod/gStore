@@ -20,7 +20,6 @@ using namespace rapidjson;
 
 #define PID_PATH "./conf/gstore.pid"
 #define ROOT_USERNAME "root"
-#define SYSTEM_DB_NAME "system"
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 
@@ -879,7 +878,7 @@ public:
     bool copy_privilege(const std::string& src_db_name, const std::string& dst_db_name);
     bool update_sys_db(string query);
     bool refresh_sys_db();
-    std::string query_sys_db(const std::string& sparql);
+    bool query_sys_db(const std::string& sparql, ResultSet& _rs);
     bool build_db_user_privilege(std::string db_name, std::string username);
     bool insert_txn_managers(shared_ptr<Database> &current_database, std::string database);
     bool remove_txn_managers(std::string db_name);

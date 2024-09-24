@@ -317,8 +317,8 @@ Server::init()
 		cerr << Util::getTimeString() << "Can not find system"+db_suffix+"." << endl;
 		return;
 	}
-	localDBs.insert(pair<std::string, int>("system", 1));
-	system_database = new Database("system");
+	localDBs.insert(pair<std::string, int>(Util::system_db, 1));
+	system_database = new Database(Util::system_db);
 	bool flag = system_database->load();
 	if (!flag)
 	{
@@ -327,7 +327,7 @@ Server::init()
 		system_database = NULL;
 		return;
 	}
-	databases.insert(pair<std::string, Database*>("system", system_database));
+	databases.insert(pair<std::string, Database*>(Util::system_db, system_database));
 
 	importSys();
 }
@@ -374,7 +374,7 @@ std::string Server::checkparamValue(std::string param, std::string value)
 	if (param == "db_name")
 	{
 		std::string database = value;
-		if (database == "system")
+		if (database == Util::system_db)
 		{
 			result = "You can not operate the system database.";
 			return result;
@@ -1071,7 +1071,7 @@ Server::show(Socket& _socket)
 	Value jsonArray(kArrayType);
 	for (iter = localDBs.begin(); iter != localDBs.end(); iter++)
 	{
-		if (iter->first == "system")
+		if (iter->first == Util::system_db)
 			continue;
 		Value obj(kObjectType);
 		Value db_name;

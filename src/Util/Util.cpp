@@ -78,7 +78,7 @@ string Util::gserver_port_swap = "bin/.gserver_port.swap";
 string Util::gserver_log = "logs/gserver.log";
 
 string Util::backup_path = "backups/";
-string Util::system_path = "data/system/system.nt";
+string Util::system_db = "system";
 
 //set hash table
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \
@@ -133,14 +133,12 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "product_name");
     Util::setGlobalConfig(ini_parser, "system", "db_home", "./dbhome/");
     Util::setGlobalConfig(ini_parser, "system", "db_suffix", ".db");
-    Util::setGlobalConfig(ini_parser, "system", "system_path", "data/system/system.nt");
     Util::setGlobalConfig(ini_parser, "system", "root_username", "root");
     Util::setGlobalConfig(ini_parser, "system", "root_password", "123456");
     Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
-    Util::system_path = Util::getConfigureValue("system_path");
     // server
     Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
     Util::setGlobalConfig(ini_parser, "server", "port");
@@ -2675,11 +2673,12 @@ Util::init_backuplog()
 {
     pthread_rwlock_wrlock(&backuplog_lock);
     FILE* fp = fopen(BACKUP_LOG_PATH, "w");
+
     Document document;
     document.SetObject();
     Document::AllocatorType &allocator = document.GetAllocator();
 
-    document.AddMember("db_name", "system", allocator);
+    document.AddMember("db_name", StringRef(Util::system_db.c_str()), allocator);
     document.AddMember("backup_timer", DEFALUT_BACKUP_INTERVAL, allocator);
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
@@ -2697,7 +2696,7 @@ Util::init_backuplog()
 int 
 Util::add_backuplog(string db_name)
 {
-    if(db_name == "system"){
+    if(db_name == Util::system_db){
         SLOG_ERROR("system can not be duplicated");
         return -1;
     }
@@ -2731,7 +2730,7 @@ Util::add_backuplog(string db_name)
 int 
 Util::delete_backuplog(string db_name)
 {
-    if(db_name == "system"){
+    if(db_name == Util::system_db){
         SLOG_ERROR("system can not be deleted!");
         return -1;
     }
@@ -2861,7 +2860,7 @@ bool
 Util::has_record_backuplog(string db_name)
 {
     pthread_rwlock_rdlock(&backuplog_lock);
-    if(db_name == "system") return true;
+    if(db_name == Util::system_db) return true;
     FILE* fp = fopen(BACKUP_LOG_PATH, "r");
     char readBuffer[0xffff];
     while(fgets(readBuffer, 1024, fp)) {

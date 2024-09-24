@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/ghttp -h\" for help." << endl;
 			return -1;
 		}
-		else if (db_name == "system")
+		else if (db_name == Util::system_db)
 		{
 			SLOG_ERROR("The database name can not be system.");
 			return -1;
@@ -823,25 +823,23 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		// 	sendResponseMsg(1003, result, operation, request, response);
 		// 	return;
 		// }
-		if (!db_path.empty()) 
+		if (!db_path.empty() && Util::file_exist(db_path) == false)
 		{
-			if (db_path == Util::system_path)
-			{
-				string error = "You have no rights to access system files.";
-				sendResponseMsg(1002, error, operation, request, response);
-				return;
-			}
-			if (Util::file_exist(db_path) == false)
-			{
-				string error = "RDF file not exist.";
-				sendResponseMsg(1003, error, operation, request, response);
-				return;
-			}
+			string error = "RDF file not exist.";
+			sendResponseMsg(1003, error, operation, request, response);
+			return;
 		}
 		string result = apiUtil->check_param_value("db_name", db_name);
 		if (result.empty() == false)
 		{
 			sendResponseMsg(1003, result, operation, request, response);
+			return;
+		}
+		//check the db_name is system
+		if (db_name == Util::system_db)
+		{
+			string error = "The database name can not be system.";
+			sendResponseMsg(1003, error, operation, request, response);
 			return;
 		}
 		// check if database named [db_name] is already built

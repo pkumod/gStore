@@ -134,7 +134,7 @@ main(int argc, char * argv[])
 			cout<<"your database name can not end with " + _db_suffix + "! Input \"bin/rollback -h\" for help."<<endl;
 			return -1;
 		}
-		if (db_name == "system")
+		if (db_name == Util::system_db)
 		{
 			cout << "Your database's name can not be system." << endl;
 			return -1;
@@ -247,7 +247,7 @@ main(int argc, char * argv[])
         document.Parse(res.c_str());
         if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
         {
-            Database system_db("system");
+            Database system_db(Util::system_db);
             system_db.load();
             string root_pwd = "";
             string query_sparql = "select ?x where { <" + _root_name + "> <has_password> ?x.}";

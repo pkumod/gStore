@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 			cout << "the database name can not end with " + _db_suffix + "! Input \"bin/gbackup -h\" for help." << endl;
 			return 0;
 		}
-		if (db_name == "system")
+		if (db_name == Util::system_db)
 		{
 			cout << "Your database's name can not be system." << endl;
 			return 0;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 		// query database_name build_path
 		// insert database_name backup_path
 		long tv_begin = Util::get_cur_time();
-		Database system_db("system");
+		Database system_db(Util::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";

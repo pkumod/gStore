@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
     int _suffix_len = _db_suffix.length();
     // string _db_name = "system";
 
-    string _rdf = Util::system_path;
     long tv_begin = Util::get_cur_time();
 
     string action = Util::getArgValue(argc, argv, "a", "action");

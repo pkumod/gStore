@@ -140,7 +140,7 @@ main(int argc, char * argv[])
 			}
 		}
 		//system.db
-		Database system_db("system");
+		Database system_db(Util::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";

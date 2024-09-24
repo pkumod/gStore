@@ -240,9 +240,10 @@ string product_name, product_name_lower, product_version;
 string root_username, root_password;
 std::string _server_port;
 std::string _current_database;
+// global
 int main(int argc, char **argv)
 {
-	Util util; // This is needed for database loading(Database_instance.load()) and other Util static member fetching situation
+	Util util;
 	//  read conf from conf.ini: version, root_name, root_pswd
 	_server_port = util.getConfigureValue("port");
 	_db_home = util.getConfigureValue("db_home");
@@ -440,6 +441,7 @@ public:
 // usrname and stdpswd must have been filled
 int enter_pswd(string prompt)
 {
+	HideStdinDisplay hide_ins;
 	stdpswd.clear();
 	cout << prompt;
 	cout.flush();
@@ -1026,9 +1028,17 @@ int flushpriv_handler(const vector<string> &args)
 int raw_sparql_handler(string sparql)
 {
 	CHECK_CURRENT_DB_LOADED
-	// TODO: pretty print final result
+	string query_url;
+	if (_current_database == Util::system_db)
+	{
+		query_url = BASE_URL + "/sys/query";
+	}
+	else
+	{
+		query_url = API_URL;
+	}
 	httpentities::QueryRequest query_request(_current_database, sparql, "n-triple");
-	httpentities::QueryResponse query_response = HttpUtil::query(API_URL, true, query_request);
+	httpentities::QueryResponse query_response = HttpUtil::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
 		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
@@ -1340,7 +1350,7 @@ int create_handler(const vector<string> &args)
 
 	string db_name = args[0];
 	string db_path = args[1];
-	if (db_name == "system")
+	if (db_name == Util::system_db)
 	{
 		cout << "Your db name can NOT be \"system\". Database create failed." << endl;
 		return -1;
@@ -1365,7 +1375,7 @@ int drop_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string db_name = args[0];
-	if (db_name == "system")
+	if (db_name == Util::system_db)
 	{
 		cout << "You can NOT drop system database. " << endl;
 		return -1;
@@ -1413,6 +1423,19 @@ int use_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string new_db_name = args[0];
+	if (new_db_name == Util::system_db)
+	{
+		if (usrname == root_username)
+		{
+			_current_database = new_db_name;
+			return 0;
+		}
+		else
+		{
+			cout << "You can NOT use system database. " << endl;
+			return -1;
+		}
+	}
 	httpentities::LoadRequest load_request(new_db_name, "0");
 	httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_request);
 	if (!load_response.success())
@@ -1656,7 +1679,7 @@ int init_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string db_names = args[0];
-	if (db_names.find("system") != std::string::npos)
+	if (db_names.find(Util::system_db) != std::string::npos)
 	{
 		cout << "You can NOT init system database. " << endl;
 		return -1;
@@ -1681,6 +1704,7 @@ int init_handler(const vector<string> &args)
 
 int refreshconf_handler(const vector<string> &args)
 {
+	Util::configure();
 	httpentities::RefreshconfRequest refresh_request;
 	httpentities::BaseResponse refresh_response = HttpUtil::refreshConf(API_URL, true, refresh_request);
 	if (!refresh_response.success())
