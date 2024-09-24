@@ -136,18 +136,18 @@ namespace cluster
         leader->startHeardBeat(db_name);
     }
 
-    int ClusterManager::startNotify(std::string db_name)
+    bool ClusterManager::startNotify(std::string db_name)
     {
         if (!isEnable() || !role_)
-            return -1;
+            return false;
         role_->addClusterDb(db_name);
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
         {
             SLOG_TRACE("please check conf.ini, not set leader");
-            return -1;
+            return false;
         }
-        return leader->startNotify(db_name);
+        return leader->runTask(db_name, ClusterLogStatus_pending);
     }
 
     void ClusterManager::addClusterDb(const std::string& db_name)
@@ -157,17 +157,17 @@ namespace cluster
         role_->addClusterDb(db_name);
     }
 
-    int ClusterManager::startSync(std::string db_name, ClusterOperation operation, const std::string& file_name)
+    bool ClusterManager::startSync(std::string db_name, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)
-            return -1;
+            return false;
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
         {
             SLOG_TRACE("please check conf.ini, not set leader");
-            return -1;
+            return false;
         }
-        return leader->startSync(db_name, operation, file_name);
+        return leader->runAppendTask(db_name, operation, file_name);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)
@@ -387,6 +387,24 @@ namespace cluster
         return role_->getDbDirPath(db_name);
     }
 
+    void ClusterManager::getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl)
+    {
+        if (!isEnable() || !role_)
+            return;
+        if (db_name.empty() || index == 0)
+            return;
+        return role_->getDbNextIndexL(db_name, index, indexl);
+    }
+
+    uint64 ClusterManager::getDbFirstIndex(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return 0;
+        if (db_name.empty())
+            return 0;
+        return role_->getFirstIndex(db_name);
+    }
+
     void ClusterManager::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
         if (!isEnable() || !role_)
@@ -450,6 +468,30 @@ namespace cluster
         return leader->getAppendTimeout(db_name, file_name)*1000;
     }
 
+    bool ClusterManager::IsHeartBeatTask(ClusterLogStatus status)
+    {
+        if (status == ClusterLogStatus_HeartBeat
+         || status == ClusterLogStatus_pending
+         || status == ClusterLogStatus_commit
+         || status == ClusterLogStatus_cancel
+         || status == ClusterLogStatus_fail
+         || status == ClusterLogStatus_drop)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool ClusterManager::IsUpdateTask(ClusterLogStatus status)
+    {
+        if (status == ClusterLogStatus_sync
+         || status == ClusterLogStatus_build)
+        {
+            return true;
+        }
+        return false;
+    }
+
     bool ClusterManager::addTask(std::string db_name, ClusterLogStatus status, const timeoutCall& cb, ClusterOperation operation, const std::string& file_name)
     {
         if (!isEnable() || !role_)
@@ -460,46 +502,23 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-        if (status == ClusterLogStatus_HeartBeat)
+        if (IsHeartBeatTask(status))
         {
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_COMPARE);
+            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, cb, status);
             task_queueL.push(task);
         }
-        else if (status == ClusterLogStatus_pending)
+        else if (IsUpdateTask(status))
         {
             if (cb == nullptr)
             {
-                SLOG_TRACE("Please sure cluster pending is nullptr");
+                SLOG_TRACE("Please sure cluster cluster update is nullptr");
             }
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, cb, EXPECTION_PREPARE);
-            task_queueL.push(task);
-        }
-        else if (status == ClusterLogStatus_sync)
-        {
-            if (cb == nullptr)
-            {
-                SLOG_TRACE("Please sure cluster cluster sync is nullptr");
-            }
-            ClusterEventPtr task = std::make_shared<ClusterSyncEvent>(db_name, operation, file_name, leader, cb);
-            task_queueL.push(task);
-        }
-        else if (status == ClusterLogStatus_commit)
-        {
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_COMMIT);
-            task_queueL.push(task);
-        }
-        else if (status == ClusterLogStatus_cancel)
-        {
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_CANCEL);
-            task_queueL.push(task);
-        }
-        else if (status == ClusterLogStatus_fail)
-        {
-            ClusterEventPtr task = std::make_shared<ClusterHeartBeatEvent>(db_name, leader, nullptr, EXPECTION_FAIL);
+            ClusterEventPtr task = std::make_shared<ClusterAppendEvent>(db_name, operation, file_name, leader, cb);
             task_queueL.push(task);
         }
         else
         {
+            SLOG_ERROR("not support task status:" << status);
             return false;
         }
         return true;

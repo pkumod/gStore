@@ -257,6 +257,17 @@ namespace cluster
         return log.getDbNextIndex(db_name);
     }
 
+    uint64 ClusterEntity::getFirstIndex(const std::string& db_name)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!");
+            return 0;
+        }
+        return log.getFirstIndex(db_name);
+    }
+
     // nt file
     void ClusterEntity::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
@@ -323,5 +334,13 @@ namespace cluster
         if (!db)
             return ClusterOperation_None;
         return db->getOperation(index);
+    }
+
+    void ClusterEntity::getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return;
+        return db->getNextIndexL(index, indexl);
     }
 }

@@ -108,83 +108,7 @@ namespace cluster
         }
     }
 
-    void ClusterEntityLeader::postNotify(std::string db_name, uint64 index)
-    {
-        uint32 term = getTerm();
-        std::string expection = "prepare";
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
-        auto helper = [this, db_name, index, request](ClusterNode node)
-        {
-            httpentities::HeartBeatRequest request_ = request;
-		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
-            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
-            if (responce.getStatusCode() != CURLE_OK)
-            {
-                faileL_[node.getBaseUrl()] += 1;
-                return;
-            }
-            faileL_[node.getBaseUrl()] = 0;
-        };
-
-        for (const auto& node : followNodeL_)
-        {
-            std::string url = node.second.getBaseUrl();
-            auto it = faileL_.find(url);
-            if (it == faileL_.end())
-                continue;
-            if (it->second > headBeat_max_fail_num_)
-                continue;
-            
-            thread postHearBeat(helper, node.second);
-            postHearBeat.detach();
-        }
-    }
-
-    uint32 ClusterEntityLeader::startNotify(std::string db_name)
-    {
-        uint32 term = getTerm();
-        ClusterDbPtr db = findDb(db_name);
-        if (!db)
-            return 0;
-        uint64 index = getDbNextIndex(db_name);
-        if (index == 0)
-        {
-            SLOG_TRACE("start notify fail, please check term.json, index:" << index);
-            return 0;
-        }
-        updateLogStatus(db_name, index, ClusterLogStatus_pending);
-        postNotify(db_name, index);
-        uint64 end_time = Util::get_cur_time() + relpy_timeout_;
-        int once_run = 1000;
-        uint32 pass_num = 0;
-        TimerProvider oneTimer;
-        int need_num = getNeedNum();
-        while (1)
-        {
-            uint64 current_time = Util::get_cur_time();
-            if (end_time > current_time )
-            {
-                if (once_run > (end_time - current_time))
-                    once_run = end_time - current_time;
-            }
-            else
-            {
-                break;
-            }
-            oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
-            {
-                pass_num = this->getLogReplyNum(db_name, index);
-            });
-
-            if (pass_num >= need_num)
-                break;
-            if (Util::get_cur_time() >= end_time)
-                break;
-        }
-        return pass_num;
-    }
-
-    void ClusterEntityLeader::postSync(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+    void ClusterEntityLeader::postAppendTask(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
     {
         uint32 term = getTerm();
         std::string operation_str = to_string(operation);
@@ -216,30 +140,68 @@ namespace cluster
         }
     }
 
-    uint32 ClusterEntityLeader::startSync(std::string db_name, ClusterOperation operation, const std::string& file_name)
+    bool ClusterEntityLeader::runAppendTask(std::string db_name, ClusterOperation operation, const std::string& file_name)
     {
         uint32 term = getTerm();
         ClusterDbPtr db = findDb(db_name);
         if (!db)
-            return 0;
+            return false;
         uint64 index = getDbNextIndex(db_name);
         if (index == 0)
         {
             SLOG_TRACE("start sync fail, please check term.json, index:" << index);
-            return 0;
+            return false;
         }
         std::string current_path = getDbDirPath(db_name) + file_name;
         std::string zip_path = current_path + ".zip";
         if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
         {
             SLOG_ERROR("compress fail");
-            return 0;
+            Util::remove_path(zip_path);
+            return false;
         }
 
         std::string file_path = Util::getExactPath(zip_path.c_str());
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
-        postSync(db_name, index, operation, file_path);
+        postAppendTask(db_name, index, operation, file_path);
         uint64 end_time = Util::get_cur_time() + getAppendTimeout(db_name, file_name);
+        return waitTimerPassNum(db_name, index, ClusterLogStatus_sync, end_time);
+    }
+
+    void ClusterEntityLeader::postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status)
+    {
+        uint32 term = getTerm();
+        updateLogStatus(db_name, index, status);
+        httpentities::HeartBeatRequest request(term, db_name, index, expection);
+        auto helper = [this, db_name, index, request](ClusterNode node)
+        {
+            httpentities::HeartBeatRequest request_ = request;
+		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
+            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
+            if (responce.getStatusCode() != CURLE_OK)
+            {
+                faileL_[node.getBaseUrl()] += 1;
+                return;
+            }
+            faileL_[node.getBaseUrl()] = 0;
+        };
+
+        for (const auto& node : followNodeL_)
+        {
+            std::string url = node.second.getBaseUrl();
+            auto it = faileL_.find(url);
+            if (it == faileL_.end())
+                continue;
+            if (it->second > headBeat_max_fail_num_)
+                continue;
+            
+            thread postHearBeat(helper, node.second);
+            postHearBeat.detach();
+        }
+    }
+
+    bool ClusterEntityLeader::waitTimerPassNum(std::string db_name, uint64 index, ClusterLogStatus status, uint64 end_time)
+    {
         TimerProvider oneTimer;
         int once_run = 1000;
         uint32 pass_num = 0;
@@ -256,134 +218,80 @@ namespace cluster
             {
                 break;
             }
-            oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
+            if (status == ClusterLogStatus_pending)
             {
-                pass_num = this->getLogSyncNum(db_name, index);
-            });
+                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
+                {
+                    pass_num = this->getLogReplyNum(db_name, index);
+                });
+            }
+            else if(status == ClusterLogStatus_sync)
+            {
+                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
+                {
+                    pass_num = this->getLogSyncNum(db_name, index);
+                });
+            }
+            else
+            {
+                break;
+            }
 
             if (pass_num >= need_num)
                 break;
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-        return pass_num;
+        SLOG_TRACE("db name:" << db_name << " ,status:" << status << "callback pass num:" << pass_num << "  ,need num:" << need_num);
+        if (pass_num != 0 && need_num != 0 && pass_num >= need_num)
+        {
+            return true;
+        }
+        return false;
     }
 
-    void ClusterEntityLeader::startCommit(std::string db_name)
+    bool ClusterEntityLeader::runTask(std::string db_name, ClusterLogStatus status)
     {
-        uint32 term = getTerm();
-        std::string expection = "commit";
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return false;
         uint64 index = getDbNextIndex(db_name);
         if (index == 0)
         {
-            SLOG_TRACE("start commit fail, please check term.json, index:" << index);
-            return;
+            SLOG_TRACE("start task status " << status << " fail, please check term.json, index:" << index);
+            return false;
         }
-        updateLogStatus(db_name, index, ClusterLogStatus_commit);
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
-        auto helper = [this, db_name, index, request](ClusterNode node)
+        if (status == ClusterLogStatus_commit)
         {
-            httpentities::HeartBeatRequest request_ = request;
-		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
-            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
-            if (responce.getStatusCode() != CURLE_OK)
-            {
-                faileL_[node.getBaseUrl()] += 1;
-                return;
-            }
-            faileL_[node.getBaseUrl()] = 0;
-        };
+            postTask(db_name, index, "commit", status);
+        }
+        else if (status == ClusterLogStatus_cancel)
+        {
+            postTask(db_name, index, "cancel", status);
+        }
+        else if (status == ClusterLogStatus_fail)
+        {
+            postTask(db_name, index, "fail", status);
+        }
+        else if (status == ClusterLogStatus_drop)
+        {
+            uint64 end_time = Util::get_cur_time() + relpy_timeout_;
+            postTask(db_name, index, "prepare", status);
+            return waitTimerPassNum(db_name, index, status, end_time);
+        }
+        else if (status == ClusterLogStatus_pending)
+        {
+            uint64 end_time = Util::get_cur_time() + relpy_timeout_;
+            postTask(db_name, index, "prepare", status);
+            return waitTimerPassNum(db_name, index, status, end_time);
+        }
+        else
+        {
+            SLOG_ERROR("not support task db name:" << db_name << " ,status" << status);
+            return false;
+        }
 
-        for (const auto& node : followNodeL_)
-        {
-            std::string url = node.second.getBaseUrl();
-            auto it = faileL_.find(url);
-            if (it == faileL_.end())
-                continue;
-            if (it->second > headBeat_max_fail_num_)
-                continue;
-            
-            thread postHearBeat(helper, node.second);
-            postHearBeat.detach();
-        }
-    }
-
-    void ClusterEntityLeader::startCancel(std::string db_name)
-    {
-        uint32 term = getTerm();
-        std::string expection = "cancel";
-        uint64 index = getDbNextIndex(db_name);
-        if (index == 0)
-        {
-            SLOG_TRACE("start cancel fail, please check term.json, index:" << index);
-            return;
-        }
-        updateLogStatus(db_name, index, ClusterLogStatus_cancel);
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
-        auto helper = [this, db_name, index, request](ClusterNode node)
-        {
-            httpentities::HeartBeatRequest request_ = request;
-		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
-            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
-            if (responce.getStatusCode() != CURLE_OK)
-            {
-                faileL_[node.getBaseUrl()] += 1;
-                return;
-            }
-            faileL_[node.getBaseUrl()] = 0;
-        };
-
-        for (const auto& node : followNodeL_)
-        {
-            std::string url = node.second.getBaseUrl();
-            auto it = faileL_.find(url);
-            if (it == faileL_.end())
-                continue;
-            if (it->second > headBeat_max_fail_num_)
-                continue;
-            
-            thread postHearBeat(helper, node.second);
-            postHearBeat.detach();
-        }
-    }
-
-    void ClusterEntityLeader::startFail(std::string db_name)
-    {
-        uint32 term = getTerm();
-        std::string expection = "fail";
-        uint64 index = getDbNextIndex(db_name);
-        if (index == 0)
-        {
-            SLOG_TRACE("start notify cancel fail, please check term.json, index:" << index);
-            return;
-        }
-        updateLogStatus(db_name, index, ClusterLogStatus_fail);
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
-        auto helper = [this, db_name, index, request](ClusterNode node)
-        {
-            httpentities::HeartBeatRequest request_ = request;
-		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
-            std::lock_guard<std::mutex> lock(fail_ip_mutex_);
-            if (responce.getStatusCode() != CURLE_OK)
-            {
-                faileL_[node.getBaseUrl()] += 1;
-                return;
-            }
-            faileL_[node.getBaseUrl()] = 0;
-        };
-
-        for (const auto& node : followNodeL_)
-        {
-            std::string url = node.second.getBaseUrl();
-            auto it = faileL_.find(url);
-            if (it == faileL_.end())
-                continue;
-            if (it->second > headBeat_max_fail_num_)
-                continue;
-            
-            thread postHearBeat(helper, node.second);
-            postHearBeat.detach();
-        }
+        return true;
     }
 
     std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()const

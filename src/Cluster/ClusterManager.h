@@ -55,9 +55,9 @@ namespace cluster
         // 启动心跳超时检测
         void startHeartBeat(const std::string& db_name);
         // 启动更新通知, 返回应答数量
-        int startNotify(std::string db_name);
+        bool startNotify(std::string db_name);
         // 启动同步通知, 返回应答数量
-        int startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
+        bool startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -77,6 +77,10 @@ namespace cluster
         bool addTask(std::string db_name, ClusterLogStatus status = ClusterLogStatus_HeartBeat, const timeoutCall& cb = nullptr, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "");
         // 启动跑任务
         void runTask();
+        // 是否心跳类任务
+        bool IsHeartBeatTask(ClusterLogStatus status);
+        // 是否更新类任务(build, insert, remove)
+        bool IsUpdateTask(ClusterLogStatus status);
 
         //日志模块
         //新增日志
@@ -117,6 +121,9 @@ namespace cluster
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
         // 获取数据库路径
         std::string getDbDirPath(std::string db_name);
+        // 获取索引后面的索引和索引文件
+        void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
+        uint64 getDbFirstIndex(const std::string& db_name);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
@@ -138,15 +145,15 @@ namespace cluster
     struct ClusterHeartBeatEvent : public ClusterEvent
     {
         std::string db_name_;
-        cluster_operation expection_;
+        ClusterLogStatus status_;
         ClusterEntityLeaderWeaker wer_;
         timeoutCall cb_;
-        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, cluster_operation expection)
+        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, ClusterLogStatus status)
         {
             db_name_ = db_name;
             wer_ = per;
             cb_ = cb;
-            expection_ = expection;
+            status_ = status;
         }
         void runEvent()const override
         {
@@ -156,52 +163,37 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            if (expection_ == EXPECTION_COMPARE)
+            if (status_ == ClusterLogStatus_HeartBeat)
             {
                 per->startHeardBeat(db_name_);
             }
-            else if (expection_ == EXPECTION_PREPARE)
+            else
             {
-                uint32 num = per->startNotify(db_name_);
-                uint32 need_num = per->getNeedNum();
+                bool success = per->runTask(db_name_, status_);
                 if (cb_)
                 {
-                    SLOG_TRACE("cluster reply callback:" << num << " , need num:" << need_num);
-                    if (num == 0 || num < need_num)
-                        cb_(false);
-                    else
-                        cb_(true);
+                    SLOG_TRACE("cluster reply callback status:" << status_ << " ,success:" << success);
+                    cb_(success);
                 }
-            }
-            else if (expection_ == EXPECTION_COMMIT)
-            {
-                per->startCommit(db_name_);
-            }
-            else if (expection_ == EXPECTION_CANCEL)
-            {
-                per->startCancel(db_name_);
-            }
-            else if (expection_ == EXPECTION_FAIL)
-            {
-                per->startFail(db_name_);
             }
         }
     };
 
-    struct ClusterSyncEvent : public ClusterEvent
+    struct ClusterAppendEvent : public ClusterEvent
     {
         std::string db_name_;
-        ClusterOperation operation_;
-        std::string file_name_;
+        ClusterLogStatus status_;
         ClusterEntityLeaderWeaker wer_;
         timeoutCall cb_;
-        ClusterSyncEvent()
+        ClusterOperation operation_;
+        std::string file_name_;
+        ClusterAppendEvent()
         {
             db_name_ = "";
             operation_ = ClusterOperation_None;
             file_name_ = "";
         }
-        ClusterSyncEvent(std::string db_name, ClusterOperation operation, std::string file_name, ClusterEntityLeaderPtr per, const timeoutCall &cb)
+        ClusterAppendEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, ClusterLogStatus status, ClusterOperation operation, std::string file_name)
         {
             db_name_ = db_name;
             operation_ = operation;
@@ -217,15 +209,11 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            uint32 num = per->startSync(db_name_, operation_, file_name_);
-            uint32 need_num = per->getNeedNum();
+            bool success = per->runAppendTask(db_name_, operation_, file_name_);
             if (cb_)
             {
-                SLOG_TRACE("cluster sync callback:" << num << " , need num:" << need_num);
-                if (num == 0 || num < need_num)
-                    cb_(false);
-                else
-                    cb_(true);
+                SLOG_TRACE("cluster sync callback db name:" << db_name_ << " ,operation:" << operation_ << " ,success:" << success);
+                cb_(success);
             }
         }
     };

@@ -45,5 +45,6 @@ namespace cluster
         ClusterOperation getOperation(uint64 index);
         ClusterLogStatus getStatus(uint64 index);
         std::string getFileName(uint64 index);
+        void getNextIndexL(uint64 index, std::vector<uint64StringPair>& indexl);
     };
 }

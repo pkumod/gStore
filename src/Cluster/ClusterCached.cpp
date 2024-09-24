@@ -283,6 +283,17 @@ namespace cluster
         return log.getFileName(index);
     }
 
+    void ClusterDb::getNextIndexL(uint64 index, std::vector<uint64StringPair>& indexl)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            return;
+        }
+        return log.getNextIndexL(index, indexl);
+    }
+
     // nt or log
     void ClusterDb::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string file_name)
     {

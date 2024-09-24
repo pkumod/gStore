@@ -1,3 +1,25 @@
+/*
+ * @Author: hexuejiang
+ * @Date: 2024-9-12 14:52:50
+ * @LastEditTime: 2024-09-22 14:50:20
+ * @LastEditors: hexuejiang 1632802996@qq.com
+ * @Description: cluster log
+
+/*
+    ClusterTermInfo: term.json
+    {
+    "db_logs": [
+        {
+        "db_name": "debug",
+        "index": 1,         //finish index
+        "nextIndex": 2      // executing or pending
+        "firstIndex": 1     // first finish index
+        }
+    ],
+    "term": 1
+    }
+*/
+#pragma once
 #pragma once
 #include "ClusterDefined.h"
 #include "../Util/Util.h"
@@ -6,6 +28,18 @@
 
 namespace cluster
 {
+    struct uint64StringPair
+    {
+        uint64 parm1;
+        std::string parm2;
+        // uint64StringPair()=delete;
+        uint64StringPair(uint64 parm1_, const std::string& parm2_)
+        {
+            parm1 = parm1_;
+            parm2 = parm2_;
+        }
+    };
+    // update.json
     struct LogInfo
     {
         uint64 index;
@@ -32,6 +66,7 @@ namespace cluster
         void setOperation(ClusterOperation value){ operation = value; }
         void setFileName(const std::string& value){ fileName = value; }
         uint64 getIndex()const{ return index; }
+        uint64 getNextIndex()const{ return nextIndex; }
         ClusterLogStatus getStatus()const{ return status; }
         void setReplyIpPort(const nlohmann::json& s);
         void setAppenEntriesIpPort(const nlohmann::json& s);
@@ -63,16 +98,19 @@ namespace cluster
         ClusterOperation getOperation(uint64 index)const;
         ClusterLogStatus getStatus(uint64 index)const;
         std::string getFileName(uint64 index)const;
+        void getNextIndexL(uint64 index, std::vector<uint64StringPair>& indexl)const;
 
         static bool from_json(const nlohmann::json& s, ClusterDbNameLogInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterDbNameLogInfo& t);
     };
 
+    // term.json
     struct TermDbLog
     {
         std::string db_name;
-        uint64 index; //当前已完成
-        uint64 nextIndex; //正在执行或则待完成
+        uint64 index;
+        uint64 nextIndex;
+        uint64 firstIndex;
         std::string fail_num;
         public:
         TermDbLog()
@@ -80,19 +118,22 @@ namespace cluster
             db_name = "";
             index   = 0;
             nextIndex = 0;
+            firstIndex = 0;
         }
 
-        TermDbLog(const std::string& db_name_, uint64 index_, uint64 nextIndex_)
+        TermDbLog(const std::string& db_name_, uint64 index_, uint64 nextIndex_, uint64 firstIndex_)
         {
             db_name = db_name_;
             index   = index_;
             nextIndex = nextIndex_;
+            firstIndex = firstIndex_;
         }
         void setDbName(const std::string& value){ db_name = value; }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
         uint64 getIndex()const{ return index; }
         uint64 getNextIndex()const{ return nextIndex; }
+        uint64 getFirstIndex()const{ return firstIndex; }
     };
 
     class ClusterTermInfo
@@ -112,11 +153,13 @@ namespace cluster
         uint32 getTerm()const{ return term_; }
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);
+        uint64 getFirstIndex(const std::string& db_name);
 
         static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);
     };
 
+    // triple nt info log
     struct TripleInfo
     {
         std::string subject;

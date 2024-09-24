@@ -24,7 +24,7 @@ namespace cluster
         ClusterDbPtr findDb(const std::string& db_name);
         ClusterDbPtr addClusterDb(const std::string& db_name);
 
-        // log
+        // update.log
         void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
         void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
         void setLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
@@ -33,20 +33,24 @@ namespace cluster
         void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         uint32 getLogSyncNum(std::string db_name, uint64 index);
-        void updateTerm(uint32 term);
-        void updateDbIndex(std::string db_name, uint64 index);
-        void updateDbNextIndex(std::string db_name, uint64 next_index);
-        uint32 getTerm();
-        uint64 getDbIndex(const std::string& db_name);
-        uint64 getDbNextIndex(const std::string& db_name);
+        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
+        ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
+        // nt log
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
         std::string getDbDirPath(const std::string& db_name);
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
         std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
-        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
-        ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        // term.json
+        void updateTerm(uint32 term);
+        void updateDbIndex(std::string db_name, uint64 index);
+        void updateDbNextIndex(std::string db_name, uint64 next_index);
+        uint32 getTerm();
+        uint64 getDbIndex(const std::string& db_name);
+        uint64 getDbNextIndex(const std::string& db_name);
+        uint64 getFirstIndex(const std::string& db_name);
         static std::string getIpPort(const std::string& ip, const std::string& port);
         // virtual function in here
         public:

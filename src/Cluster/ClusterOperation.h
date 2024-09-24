@@ -22,6 +22,9 @@ namespace cluster
         {EXPECTION_COMMIT,                "commit"},
         {EXPECTION_CANCEL,                "cancel"},
         {EXPECTION_FAIL,                  "fail"},
+        {EXPECTION_BUILD,                 "build"},
+        {EXPECTION_DROP,                  "drop"},
+        {EXPECTION_RECOVER,               "recover"},
         {CLUSTER_OPERATION_TYPE_UNDEFINE, "UNDEFINE"}
     };
 
