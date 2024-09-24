@@ -388,6 +388,7 @@ public:
 	static void dir_filepaths(const string _dir, std::vector<std::string> &file_list);
 	static bool dir_exist(const std::string _dir);
     static bool is_file(const string _file);
+	static bool is_dir(const string& _path);
     static bool file_exist(const std::string _file);
 	static bool create_dir(const std:: string _dir);
 	static bool create_dirs(const std:: string _dirs);

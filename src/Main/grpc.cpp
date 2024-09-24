@@ -4012,28 +4012,106 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			resp_data.AddMember("failed_num", parse_error_num, allocator);
 			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			
-			// cluster sync task begin
-			if (success_num > 0)
+			if (clusterManagerPtr->isEnable()) 
 			{
-				SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-				string log_file_name = to_string(log_index) + ".log";
-				string tmp_dir_path = unz_dir_path;
-				bool append_result = false;
-				uint16_t append_status = 1;
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
-					SLOG_DEBUG("append log entities task callback: " << success);
-					append_result = success;
-					append_status++;
-					
-				}, ClusterOperation_Insert, log_file_name);
-				useconds_t microseconds = 200 * 1000;
-				useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
-				waiting_handler(microseconds, append_status, "waiting batch insert append task callback", append_max_time_out);
-				if (append_result)
+				// cluster sync task begin
+				if (success_num > 0)
 				{
-					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+					string log_file_name = to_string(log_index) + ".log";
+					string tmp_dir_path = unz_dir_path;
+					bool append_result = false;
+					uint16_t append_status = 1;
+					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
+						SLOG_DEBUG("append log entities task callback: " << success);
+						append_result = success;
+						append_status++;
+						
+					}, ClusterOperation_Insert, log_file_name);
+					useconds_t microseconds = 200 * 1000;
+					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
+					waiting_handler(microseconds, append_status, "waiting batch insert append task callback", append_max_time_out);
+					if (append_result)
+					{
+						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						if (response)
+						{
+							response->Json(resp_data);
+						}
+						if (!callback.empty())
+						{
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_data.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+					}
+					else
+					{
+						// restore data
+						bool lock_status;
+						// try get wrlock timeout 600 senconds
+						lock_status = apiUtil->trywrlock_database(db_name, 600);
+						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
+						if (lock_status)
+						{
+							shared_ptr<Database> restore_database;
+							apiUtil->get_database(db_name, restore_database);
+
+							uint64_t num = 0;
+							for (std::string rdf_file : nt_files)
+							{
+								num += restore_database->batch_remove(rdf_file);
+							}
+							SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
+							apiUtil->unlock_database(db_name);
+						}
+						else
+						{
+							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[1]");
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+						std::string error = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(error);
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						if (response)
+						{
+							response->Error(StatusOperationFailed, error);
+						}
+						if (!callback.empty())
+						{
+							Json resp_error;
+							resp_error.SetObject();
+							Json::AllocatorType &allocator_err = resp_error.GetAllocator();
+							resp_error.AddMember("StatusCode", 1005, allocator_err);
+							resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_error.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+					}
+				}
+				else
+				{
+					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
 					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
-					if (response)
+					// remove unzip files
+					if (!unz_dir_path.empty())
+					{
+						Util::remove_path(unz_dir_path);
+					}
+					if (response != nullptr)
 					{
 						response->Json(resp_data);
 					}
@@ -4044,86 +4122,15 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 						resp_data.Accept(resWriter);
 						HttpUtil::Post(callback, resBuffer.GetString(), res);
-					}
-					if (!tmp_dir_path.empty())
-					{
-						Util::remove_path(tmp_dir_path);
+						// TODO retry?
 					}
 				}
-				else
-				{
-					// restore data
-					bool lock_status;
-					// try get wrlock timeout 600 senconds
-					lock_status = apiUtil->trywrlock_database(db_name, 600);
-					SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
-					if (lock_status)
-					{
-						shared_ptr<Database> restore_database;
-						apiUtil->get_database(db_name, restore_database);
-
-						uint64_t num = 0;
-						for (std::string rdf_file : nt_files)
-						{
-							num += restore_database->batch_remove(rdf_file);
-						}
-						SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
-						apiUtil->unlock_database(db_name);
-					}
-					else
-					{
-						SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[1]");
-					}
-					if (!tmp_dir_path.empty())
-					{
-						Util::remove_path(tmp_dir_path);
-					}
-					std::string error = "Less than half of the cluster nodes reply.";
-					SLOG_ERROR(error);
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
-					if (response)
-					{
-						response->Error(StatusOperationFailed, error);
-					}
-					if (!callback.empty())
-					{
-						Json resp_error;
-						resp_error.SetObject();
-						Json::AllocatorType &allocator_err = resp_error.GetAllocator();
-						resp_error.AddMember("StatusCode", 1005, allocator_err);
-						resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
-						string res;
-						rapidjson::StringBuffer resBuffer;
-						rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-						resp_error.Accept(resWriter);
-						HttpUtil::Post(callback, resBuffer.GetString(), res);
-					}
-				}
+				// cluster sync task end
 			}
 			else
 			{
-				SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
-				// remove unzip files
-				if (!unz_dir_path.empty())
-				{
-					Util::remove_path(unz_dir_path);
-				}
-				if (response != nullptr)
-				{
-					response->Json(resp_data);
-				}
-				if (!callback.empty())
-				{
-					string res;
-					rapidjson::StringBuffer resBuffer;
-					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-					resp_data.Accept(resWriter);
-					HttpUtil::Post(callback, resBuffer.GetString(), res);
-					// TODO retry?
-				}
+				response->Json(resp_data);
 			}
-			// cluster sync task end
 		};
 		if (async == "true")
 		{
@@ -4295,7 +4302,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			apiUtil->get_database(db_name, current_database);
 			unsigned success_num = 0;
 			unsigned total_num = 0;
-			unsigned parse_error_num = 0;
+			size_t parse_error_num = 0;
 			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
 			total_num = Util::count_lines(error_log);
 			for (std::string rdf_file : nt_files)
@@ -4328,27 +4335,104 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			resp_data.AddMember("failed_num", parse_error_num, allocator);
 			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			
-			// cluster sync task begin
-			if (success_num > 0)
+			if (clusterManagerPtr->isEnable()) 
 			{
-				SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-				string log_file_name = to_string(log_index) + ".log";
-				string tmp_dir_path = unz_dir_path;
-				bool append_result = false;
-				uint16_t append_status = 1;
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
-					SLOG_DEBUG("append log entities task callback: " << success);
-					append_result = success;
-					append_status++;
-				}, ClusterOperation_Delete, log_file_name);
-				useconds_t microseconds = 200 * 1000;
-				useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
-				waiting_handler(microseconds, append_status, "waiting batch remove append task callback", append_max_time_out);
-				if (append_result)
+				// cluster sync task begin
+				if (success_num > 0)
 				{
-					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+					string log_file_name = to_string(log_index) + ".log";
+					string tmp_dir_path = unz_dir_path;
+					bool append_result = false;
+					uint16_t append_status = 1;
+					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
+						SLOG_DEBUG("append log entities task callback: " << success);
+						append_result = success;
+						append_status++;
+					}, ClusterOperation_Delete, log_file_name);
+					useconds_t microseconds = 200 * 1000;
+					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
+					waiting_handler(microseconds, append_status, "waiting batch remove append task callback", append_max_time_out);
+					if (append_result)
+					{
+						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						if (response)
+						{
+							response->Json(resp_data);
+						}
+						if (!callback.empty())
+						{
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_data.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+					}
+					else
+					{
+						// restore data
+						bool lock_status;
+						// try get wrlock timeout 600 senconds
+						lock_status = apiUtil->trywrlock_database(db_name, 600);
+						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
+						if (lock_status)
+						{
+							shared_ptr<Database> restore_database;
+							apiUtil->get_database(db_name, restore_database);
+							uint64_t num = 0;
+							for (std::string rdf_file : nt_files)
+							{
+								num += restore_database->batch_insert(rdf_file);
+							}
+							SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
+							apiUtil->unlock_database(db_name);
+						}
+						else
+						{
+							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
+						}
+						if (!tmp_dir_path.empty())
+						{
+							Util::remove_path(tmp_dir_path);
+						}
+						std::string error = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(error);
+						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						if (response)
+						{
+							response->Error(StatusOperationFailed, error);
+						}
+						if (!callback.empty())
+						{
+							Json resp_error;
+							resp_error.SetObject();
+							Json::AllocatorType &allocator_err = resp_error.GetAllocator();
+							resp_error.AddMember("StatusCode", 1005, allocator_err);
+							resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
+							string res;
+							rapidjson::StringBuffer resBuffer;
+							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
+							resp_error.Accept(resWriter);
+							HttpUtil::Post(callback, resBuffer.GetString(), res);
+						}
+					}
+				}
+				else
+				{
+					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
 					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
-					if (response)
+					// remove unzip files
+					if (!unz_dir_path.empty())
+					{
+						Util::remove_path(unz_dir_path);
+					}
+					if (response != nullptr)
 					{
 						response->Json(resp_data);
 					}
@@ -4359,85 +4443,15 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 						resp_data.Accept(resWriter);
 						HttpUtil::Post(callback, resBuffer.GetString(), res);
-					}
-					if (!tmp_dir_path.empty())
-					{
-						Util::remove_path(tmp_dir_path);
+						// TODO retry?
 					}
 				}
-				else
-				{
-					// restore data
-					bool lock_status;
-					// try get wrlock timeout 600 senconds
-					lock_status = apiUtil->trywrlock_database(db_name, 600);
-					SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
-					if (lock_status)
-					{
-						shared_ptr<Database> restore_database;
-						apiUtil->get_database(db_name, restore_database);
-						uint64_t num = 0;
-						for (std::string rdf_file : nt_files)
-						{
-							num += restore_database->batch_insert(rdf_file);
-						}
-						SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
-						apiUtil->unlock_database(db_name);
-					}
-					else
-					{
-						SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
-					}
-					if (!tmp_dir_path.empty())
-					{
-						Util::remove_path(tmp_dir_path);
-					}
-					std::string error = "Less than half of the cluster nodes reply.";
-					SLOG_ERROR(error);
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
-					if (response)
-					{
-						response->Error(StatusOperationFailed, error);
-					}
-					if (!callback.empty())
-					{
-						Json resp_error;
-						resp_error.SetObject();
-						Json::AllocatorType &allocator_err = resp_error.GetAllocator();
-						resp_error.AddMember("StatusCode", 1005, allocator_err);
-						resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
-						string res;
-						rapidjson::StringBuffer resBuffer;
-						rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-						resp_error.Accept(resWriter);
-						HttpUtil::Post(callback, resBuffer.GetString(), res);
-					}
-				}
+				// cluster sync task end
 			}
 			else
 			{
-				SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
-				// remove unzip files
-				if (!unz_dir_path.empty())
-				{
-					Util::remove_path(unz_dir_path);
-				}
-				if (response != nullptr)
-				{
-					response->Json(resp_data);
-				}
-				if (!callback.empty())
-				{
-					string res;
-					rapidjson::StringBuffer resBuffer;
-					rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-					resp_data.Accept(resWriter);
-					HttpUtil::Post(callback, resBuffer.GetString(), res);
-					// TODO retry?
-				}
+				response->Json(resp_data);
 			}
-			// cluster sync task end
 		};
 		if (async == "true")
 		{

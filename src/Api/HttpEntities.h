@@ -417,6 +417,79 @@ namespace httpentities {
         }
     };
 
+    struct BatchInsertRequest : public BaseRequest {
+        std::string db_name;
+        std::string file;
+        std::string dir;
+        BatchInsertRequest(std::string db_name, std::string file, std::string dir) : BaseRequest("batchInsert") {
+            this->db_name = db_name;
+            this->file = file;
+            this->dir = dir;
+        }
+        BatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file, std::string dir) : BaseRequest("batchInsert", username, password) {
+            this->db_name = db_name;
+            this->file = file;
+            this->dir = dir;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name},
+                {"file", this->file},
+                {"dir", this->dir}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"file", this->file},
+                {"dir", this->dir},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
+    struct BatchRemoveRequest : public BaseRequest {
+        std::string db_name;
+        std::string file;
+        BatchRemoveRequest(std::string db_name,  std::string file) : BaseRequest("batchRemove") {
+            this->db_name = db_name;
+            this->file = file;
+        }
+        BatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file) : BaseRequest("batchRemove", username, password) {
+            this->db_name = db_name;
+            this->file = file;
+        }
+        void to_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", this->username},
+                {"password", this->password},
+                {"db_name", this->db_name},
+                {"file", this->file}};
+            json_str = json.dump();
+        }
+        void to_inner_json(std::string& json_str) override
+        {
+            nlohmann::json json = nlohmann::json{
+                {"operation", this->op},
+                {"username", "root"},
+                {"password", ""},
+                {"db_name", this->db_name},
+                {"file", this->file},
+                {"inner", "true"}};
+            json_str = json.dump();
+        }
+    };
+
 
     struct LoadResponse : public BaseResponse {
         LoadResponse(int code, std::string msg) : BaseResponse(code, msg) {}
@@ -427,7 +500,7 @@ namespace httpentities {
         uint64_t failed_num;
         BuildResponse(int code, std::string msg) : BaseResponse(code, msg) {}
         BuildResponse(std::string body) : BaseResponse(body) {
-            if (json.is_object())
+            if (json.is_object() && json.contains("failed_num"))
             {
                 json.at("failed_num").get_to(this->failed_num);
             }
@@ -559,6 +632,36 @@ namespace httpentities {
                     std::string msg = j0["msg"];
                     data.push_back(InitData(db_name, status, msg));
                 }
+            }
+        }
+    };
+
+    struct BatchInsertResponse : public BaseResponse {
+        uint32_t successNum;
+        uint32_t failedNum;
+        BatchInsertResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        BatchInsertResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object())
+            {
+                if (json.contains("success_num"))
+                    json.at("success_num").get_to(this->successNum);
+                if (json.contains("failed_num"))
+                    json.at("failed_num").get_to(this->failedNum);
+            }
+        }
+    };
+
+    struct BatchRemoveResponse : public BaseResponse {
+        uint32_t successNum;
+        uint32_t failedNum;
+        BatchRemoveResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        BatchRemoveResponse(std::string body) : BaseResponse(body) {
+            if (json.is_object())
+            {
+                if (json.contains("success_num"))
+                    json.at("success_num").get_to(this->successNum);
+                if (json.contains("failed_num"))
+                    json.at("failed_num").get_to(this->failedNum);
             }
         }
     };

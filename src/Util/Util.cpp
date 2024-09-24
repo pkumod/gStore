@@ -943,6 +943,12 @@ bool Util::is_file(const string _file)
     return stat(_file.c_str(), &st) >= 0 && S_ISREG(st.st_mode);
 }
 
+bool Util::is_dir(const string& _path)
+{
+	struct stat st;
+    return stat(_path.c_str(), &st) >= 0 && S_ISDIR(st.st_mode);
+}
+
 bool
 Util::create_dir(const string _dir)
 {

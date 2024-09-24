@@ -3994,7 +3994,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	RDFParser _parser(_fin);
 	//parse error log
 	string error_log = this->store_path + "/parse_error.log";
-	SLOG_CORE("Error log file:" << error_log);
+	SLOG_CORE("parse log file:" << error_log);
 	//write build info to log
 	FILE *fp = fopen(error_log.c_str(), "a");
 	string log_msg = "Info " + Util::get_date_time() + " batch insert parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
@@ -4049,7 +4049,14 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	// NOTICE+WARN:we can not load all triples into memory all at once!!!
 	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
 	RDFParser _parser(_fin);
-
+	//parse error log
+	string error_log = this->store_path + "/parse_error.log";
+	SLOG_CORE("parse log file:" << error_log);
+	//write build info to log
+	FILE *fp = fopen(error_log.c_str(), "a");
+	string log_msg = "Info " + Util::get_date_time() + " batch remove parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
+	fputs(log_msg.c_str(), fp);
+	fclose(fp);
 	while (true)
 	{
 		int parse_triple_num = 0;

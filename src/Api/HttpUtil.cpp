@@ -76,7 +76,16 @@ size_t HttpUtil::write_callback(void *contents, size_t size, size_t nmemb, std::
     return newLength;
 }
 
-int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
+template<typename TResponse>
+TResponse HttpUtil::response_parser(CURLcode& code, const std::string& body)
+{
+	if (code == CURLE_OK)
+		return TResponse(body);
+	else
+		return TResponse(code, curl_easy_strerror(code));
+}
+
+CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
 	SLOG_CORE("url: " + strUrl);
 	strResponse.clear();
@@ -100,10 +109,11 @@ int HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
+CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
 	SLOG_CORE("url: " + strUrl);
 	CURLcode res;
@@ -126,7 +136,7 @@ int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 	if (!fw)
 	{
 		std::cout << "open file failed" << std::endl;
-		return -1;
+		return CURLE_FILE_COULDNT_READ_FILE;
 	}
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fw);
 
@@ -135,10 +145,11 @@ int HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 	curl_easy_cleanup(curl);
 	fclose(fw);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
+CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
 {
 	SLOG_CORE("url: " + strUrl);
 	strResponse.clear();
@@ -174,10 +185,11 @@ int HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::st
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
+CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	strResponse.clear();
@@ -207,10 +219,11 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::s
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
+CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
 	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	CURLcode res;
@@ -238,17 +251,18 @@ int HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const 
 	if (!fw)
 	{
 		std::cout << "open file failed" << std::endl;
-		return -1;
+		return CURLE_FILE_COULDNT_READ_FILE;
 	}
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fw);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	fclose(fw);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
+CURLcode HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
 {
 	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
 	strResponse.clear();
@@ -291,11 +305,11 @@ int HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::s
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeOut);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	SLOG_CORE("url: " + strUrl + ", responseBody: " + strResponse);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
-int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
+CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
 {
 	SLOG_CORE("url: " + strUrl + ", filePath: " + filePath);
     strResponse.clear();
@@ -364,6 +378,7 @@ int HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, st
 	curl_formfree(formpost);
 	curl_easy_cleanup(curl);
 	curl_slist_free_all(headerlist);
+	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
     return res;
 }
 
@@ -373,13 +388,8 @@ httpentities::ShutdownResponse HttpUtil::shutdown(const std::string& url, httpen
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", request.username));
 	headers.insert(std::pair<std::string, std::string>("password", request.password));
-	int status = Post(url, headers, 60, "", body_str);
-	if (status == CURLE_OK)
-		return httpentities::ShutdownResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ShutdownResponse(status, "Operation timeout");
-	else
-		return httpentities::ShutdownResponse(status, "Unknown status");
+	CURLcode status = Post(url, headers, 60, "", body_str);
+	return response_parser<httpentities::ShutdownResponse>(status, body_str);
 }
 
 httpentities::CheckResponse HttpUtil::check(const std::string& url, httpentities::CheckRequest& request)
@@ -387,13 +397,8 @@ httpentities::CheckResponse HttpUtil::check(const std::string& url, httpentities
 	std::string param_str = request.to_params();
 	std::string body_str;
 	std::string strUrl = url + "?" + param_str;
-	int status = Get(strUrl, body_str);
-	if (status == CURLE_OK)
-		return httpentities::CheckResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::CheckResponse(status, "Operation timeout");
-	else
-		return httpentities::CheckResponse(status, "Unknown status");
+	CURLcode status = Get(strUrl, body_str);
+	return response_parser<httpentities::CheckResponse>(status, body_str);
 }
 
 httpentities::BaseResponse HttpUtil::refreshConf(const std::string& url, const bool& inner, httpentities::RefreshconfRequest& request)
@@ -404,13 +409,8 @@ httpentities::BaseResponse HttpUtil::refreshConf(const std::string& url, const b
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::BaseResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::BaseResponse(status, "Operation timeout");
-	else
-		return httpentities::BaseResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BaseResponse>(status, body_str);
 }
 
 httpentities::TestConnectionResponse HttpUtil::testConnection(const std::string& url, const bool& inner, httpentities::TestConnectionRequest& request)
@@ -421,13 +421,8 @@ httpentities::TestConnectionResponse HttpUtil::testConnection(const std::string&
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::TestConnectionResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::TestConnectionResponse(status, "Operation timeout");
-	else
-		return httpentities::TestConnectionResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::TestConnectionResponse>(status, body_str);
 }
 
 httpentities::InitResponse HttpUtil::init(const std::string& url, const bool& inner, httpentities::InitRequest& request)
@@ -439,13 +434,8 @@ httpentities::InitResponse HttpUtil::init(const std::string& url, const bool& in
 		request.to_json(json_str);
 	
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::InitResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::InitResponse(status, "Operation timeout");
-	else
-		return httpentities::InitResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::InitResponse>(status, body_str);
 }
 
 httpentities::LoadResponse HttpUtil::load(const std::string& url, const bool& inner, httpentities::LoadRequest& request)
@@ -457,13 +447,8 @@ httpentities::LoadResponse HttpUtil::load(const std::string& url, const bool& in
 		request.to_json(json_str);
 	
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::LoadResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::LoadResponse(status, "Operation timeout");
-	else
-		return httpentities::LoadResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::LoadResponse>(status, body_str);
 }
 
 httpentities::BaseResponse HttpUtil::login(const std::string& url, httpentities::LoginRequest& request)
@@ -471,13 +456,8 @@ httpentities::BaseResponse HttpUtil::login(const std::string& url, httpentities:
 	std::string json_str;
 	request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::BaseResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::BaseResponse(status, "Operation timeout");
-	else
-		return httpentities::BaseResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BaseResponse>(status, body_str);
 }
 
 httpentities::BaseResponse HttpUtil::unload(const std::string& url, const bool& inner, httpentities::UnloadRequest& request)
@@ -488,13 +468,8 @@ httpentities::BaseResponse HttpUtil::unload(const std::string& url, const bool& 
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::BaseResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::BaseResponse(status, "Operation timeout");
-	else
-		return httpentities::BaseResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BaseResponse>(status, body_str);
 }
 
 httpentities::BuildResponse HttpUtil::build(const std::string& url, const bool& inner, httpentities::BuildRequest& request)
@@ -505,13 +480,8 @@ httpentities::BuildResponse HttpUtil::build(const std::string& url, const bool& 
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::BuildResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::BuildResponse(status, "Operation timeout");
-	else
-		return httpentities::BuildResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BuildResponse>(status, body_str);
 }
 
 httpentities::BaseResponse HttpUtil::drop(const std::string& url, const bool& inner, httpentities::DropRequest& request)
@@ -522,13 +492,8 @@ httpentities::BaseResponse HttpUtil::drop(const std::string& url, const bool& in
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::BaseResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::BaseResponse(status, "Operation timeout");
-	else
-		return httpentities::BaseResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BaseResponse>(status, body_str);
 }
 
 httpentities::ShowResponse HttpUtil::show(const std::string& url, const bool& inner, httpentities::ShowRequest& request)
@@ -539,13 +504,8 @@ httpentities::ShowResponse HttpUtil::show(const std::string& url, const bool& in
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ShowResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT) 
-		return httpentities::ShowResponse(status, "Operation timeout");
-	else
-		return httpentities::ShowResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::ShowResponse>(status, body_str);
 }
 
 httpentities::MonitorResponse HttpUtil::monitor(const std::string& url, const bool& inner, httpentities::MonitorRequest& request)
@@ -556,13 +516,8 @@ httpentities::MonitorResponse HttpUtil::monitor(const std::string& url, const bo
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::MonitorResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT) 
-		return httpentities::MonitorResponse(status, "Operation timeout");
-	else
-		return httpentities::MonitorResponse(status, "Unknown status");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::MonitorResponse>(status, body_str);
 }
 
 httpentities::QueryResponse HttpUtil::query(const std::string& url, const bool& inner, httpentities::QueryRequest& request)
@@ -573,13 +528,33 @@ httpentities::QueryResponse HttpUtil::query(const std::string& url, const bool& 
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	int status = Post(url, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::QueryResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT) 
-		return httpentities::QueryResponse(status, "Operation timeout");
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::QueryResponse>(status, body_str);
+}
+
+
+httpentities::BatchInsertResponse HttpUtil::batchInsert(const std::string& url, const bool& inner, httpentities::BatchInsertRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
 	else
-		return httpentities::QueryResponse(status, "Unknown status");
+		request.to_json(json_str);
+	std::string body_str;
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BatchInsertResponse>(status, body_str);
+}
+
+httpentities::BatchRemoveResponse HttpUtil::batchRemove(const std::string& url, const bool& inner, httpentities::BatchRemoveRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	CURLcode status = Post(url, json_str, body_str);
+	return response_parser<httpentities::BatchRemoveResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password)
@@ -590,13 +565,8 @@ httpentities::ClusterResponse HttpUtil::reply(const std::string& url, httpentiti
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", username));
 	headers.insert(std::pair<std::string, std::string>("password", password));
-	int status = Post(url, headers, 60, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ClusterResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ClusterResponse(status, "Operation timeout");
-	else
-		return httpentities::ClusterResponse(status, "Unknown status");
+	CURLcode status = Post(url, headers, 60, json_str, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::appendEntries(const std::string& url, httpentities::AppenEntriesRequest& request, const std::string& username, const std::string& password)
@@ -610,13 +580,8 @@ httpentities::ClusterResponse HttpUtil::appendEntries(const std::string& url, ht
 	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
 	params.insert(std::pair<std::string, std::string>("operation", request.operation));
 	std::string body_str;
-	int status = PostFile(url, headers, 3600, request.file_path, params, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ClusterResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ClusterResponse(status, "Operation timeout");
-	else
-		return httpentities::ClusterResponse(status, "Unknown status");
+	CURLcode status = PostFile(url, headers, 3600, request.file_path, params, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::heartBeat(const std::string& url, httpentities::HeartBeatRequest& request, const std::string& username, const std::string& password)
@@ -627,13 +592,8 @@ httpentities::ClusterResponse HttpUtil::heartBeat(const std::string& url, httpen
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", username));
 	headers.insert(std::pair<std::string, std::string>("password", password));
-	int status = Post(url, headers, 60, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ClusterResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ClusterResponse(status, "Operation timeout");
-	else
-		return httpentities::ClusterResponse(status, "Unknown status");
+	CURLcode status = Post(url, headers, 60, json_str, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password)
@@ -644,13 +604,8 @@ httpentities::ClusterResponse HttpUtil::cancel(const std::string& url, httpentit
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", username));
 	headers.insert(std::pair<std::string, std::string>("password", password));
-	int status = Post(url, headers, 60, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ClusterResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ClusterResponse(status, "Operation timeout");
-	else
-		return httpentities::ClusterResponse(status, "Unknown status");
+	CURLcode status = Post(url, headers, 60, json_str, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::clusterCheck(const std::string& url, httpentities::ClusterCheckRequest& request, const std::string& username, const std::string& password)
@@ -661,11 +616,6 @@ httpentities::ClusterResponse HttpUtil::clusterCheck(const std::string& url, htt
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", username));
 	headers.insert(std::pair<std::string, std::string>("password", password));
-	int status = Post(url, headers, 60, json_str, body_str);
-	if (status == CURLE_OK)
-		return httpentities::ClusterResponse(body_str);
-	else if (status == CURLE_OPERATION_TIMEDOUT)
-		return httpentities::ClusterResponse(status, "Operation timeout");
-	else
-		return httpentities::ClusterResponse(status, "Unknown status");
+	CURLcode status = Post(url, headers, 60, json_str, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }

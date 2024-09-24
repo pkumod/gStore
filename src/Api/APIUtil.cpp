@@ -1108,7 +1108,7 @@ bool APIUtil::trywrlock_database(const std::string& db_name, const time_t& timeo
     if (pthread_rwlock_trywrlock(&(dbinfo->db_lock)) == 0)
     {
         SLOG_CORE("try get db[" + dbinfo->getName() + "] write lock ok.");
-       result = true;
+        result = true;
     } 
     else
     {

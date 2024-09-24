@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 16
+#define TOTAL_COMMAND_NUM 18
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -91,6 +91,8 @@ int export_handler(const vector<string> &);
 int sparql_handler(const vector<string> &);
 int raw_sparql_handler(string query);
 int unload_handler(const std::vector<std::string>&);
+int batchinsert_handler(const std::vector<std::string>&);
+int batchremove_handler(const std::vector<std::string>&);
 
 int flushpriv_handler(const vector<string> &);
 int pusr_handler(const vector<string> &);
@@ -133,6 +135,8 @@ COMMAND commands[] =
 		// {"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
 		// {"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
         {"unload", unload_handler, "Unload the current database.","unload;", UNLOAD_PRIVILEGE_BIT},
+        {"batchinsert", batchinsert_handler, "Batch inserts data into the current database.","batchinsert <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
+        {"batchremove", batchremove_handler, "Batch deletes the current database data.","batchremove <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
 
 		// id and usr manage
 		// {"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
@@ -193,6 +197,12 @@ COMMAND commands[] =
 	if (_current_database.empty())                                                                                     \
 	{                                                                                                              \
 		cout << "Current database not selected. Please select it first, through \"USE <database_name>\"." << endl; \
+		return -1;                                                                                                 \
+	}
+#define CHECK_CURRENT_DB_NOT_SYSDB                                                                                      \
+	if (_current_database == Util::system_db)                                                                                 \
+	{                                                                                                              \
+		cout << "You can NOT do this for system database." << endl;                          \
 		return -1;                                                                                                 \
 	}
 
@@ -819,6 +829,11 @@ bool login(const string& usrname, const string& password)
 {
 	httpentities::LoginRequest login_request(usrname, password);
 	httpentities::BaseResponse login_response = HttpUtil::login(API_URL, login_request);
+	if(login_response.StatusCode == CURLE_COULDNT_CONNECT)
+	{
+		cout << "Could not connect to server. Please check server status" << endl;
+		exit(0);
+	}
 	return login_response.success();
 }
 
@@ -1352,7 +1367,7 @@ int create_handler(const vector<string> &args)
 	string db_path = args[1];
 	if (db_name == Util::system_db)
 	{
-		cout << "Your db name can NOT be \"system\". Database create failed." << endl;
+		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
 	httpentities::BuildRequest build_request(db_name, db_path);	
@@ -1395,6 +1410,7 @@ int export_handler(const vector<string> &args)
 {
 	// TODO
 	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
 	cout << "Database " << _current_database << " exported successfully." << endl;
 	return 0;
 }
@@ -1403,6 +1419,7 @@ int backup_handler(const vector<string> &args)
 {
 	CHECK_ARGC(2, 0, 1)
 	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
 	// TODO
 	std::string backup_path;
 	cout << "Backup path: " << backup_path << endl;
@@ -1414,6 +1431,7 @@ int restore_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 2)
 	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
 	// TODO
 	cout << "Database " << _current_database << " restored successfully." << endl;
 	return 0;
@@ -1450,6 +1468,7 @@ int use_handler(const vector<string> &args)
 
 int unload_handler(const std::vector<std::string> &args)
 {
+	CHECK_CURRENT_DB_NOT_SYSDB
 	if (_current_database.empty())
 	{
 		cout << "Use no database!";
@@ -1713,5 +1732,66 @@ int refreshconf_handler(const vector<string> &args)
 		return -1;
 	}
 	cout << "Refresh config successfully." << endl;
+	return 0;
+}
+
+int batchinsert_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	string file_path = args[0];
+	string dir_path;
+	if (Util::is_dir(file_path)) 
+	{
+		dir_path = file_path;
+		file_path = "";
+	}
+	if (!file_path.empty() && !Util::file_exist(file_path))
+	{
+		cout << "File " << file_path << " does not exist." << endl;
+		return -1;
+	}
+	if (!dir_path.empty() && !Util::dir_exist(dir_path))
+	{
+		cout << "Dir " << dir_path << " does not exist." << endl;
+		return -1;
+	}
+	httpentities::BatchInsertRequest insert_request(_current_database, file_path, dir_path);
+	long duration_time = Util::get_cur_time();
+	httpentities::BatchInsertResponse insert_response = HttpUtil::batchInsert(API_URL, true, insert_request);
+	duration_time = Util::get_cur_time() - duration_time;
+	if (!insert_response.success())
+	{
+		cout << "Insert data into " << _current_database << " failed: " << insert_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "After inserted triples num " << insert_response.successNum << ",failed num " << insert_response.failedNum <<",used " << duration_time << " ms" << endl;
+	return 0;
+}
+
+int batchremove_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	string file_path = args[0];
+	if (!Util::file_exist(file_path))
+	{
+		cout << "File " << file_path << " does not exist." << endl;
+		return -1;
+	}
+	httpentities::BatchRemoveRequest remove_request(_current_database, file_path);
+	long duration_time = Util::get_cur_time();
+	httpentities::BatchRemoveResponse remove_response = HttpUtil::batchRemove(API_URL, true, remove_request);
+	duration_time = Util::get_cur_time() - duration_time;
+	if (!remove_response.success())
+	{
+		cout << "Delete the " << _current_database << " data failed: " << remove_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "After removed triples num " << remove_response.successNum << ",failed num " << remove_response.failedNum <<",used " << duration_time << " ms" << endl;
 	return 0;
 }

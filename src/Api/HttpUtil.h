@@ -14,6 +14,9 @@ public:
 private:
 	static bool m_bDebug;
 	static size_t write_callback(void *contents, size_t size, size_t nmemb, std::string *s);
+
+	template<typename TResponse>
+	static TResponse response_parser(CURLcode& code, const std::string& body);
 public:
 	/**
 	* @brief: HTTP POST request
@@ -22,11 +25,11 @@ public:
 	* @param strResponse: content returned
 	* @return: returned value
 	*/
-	static int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
+	static CURLcode Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
 
-	static int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
+	static CURLcode Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
 
-	static int Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse);
+	static CURLcode Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse);
 
 	/**
 	 * @brief: HTTP POST file request
@@ -37,7 +40,7 @@ public:
 	 * @param params: form data params
 	 * @param strResponse: content returned
 	 */
-	static int PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse);
+	static CURLcode PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse);
 
 	/**
 	* @brief: HTTP GET request
@@ -45,11 +48,11 @@ public:
 	* @param strResponse: content returned
 	* @return: returned value
 	*/
-	static int Get(const std::string& strUrl, const std::string& filename);
+	static CURLcode Get(const std::string& strUrl, const std::string& filename);
 
-	static int Get(const std::string& strUrl, std::string& strResponse);
+	static CURLcode Get(const std::string& strUrl, std::string& strResponse);
 
-	static int Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse);
+	static CURLcode Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse);
 
 	static httpentities::ShutdownResponse shutdown(const std::string& url, httpentities::ShutdownRequest& request);
 
@@ -76,6 +79,10 @@ public:
 	static httpentities::MonitorResponse monitor(const std::string& url, const bool& inner, httpentities::MonitorRequest& request);
 
 	static httpentities::QueryResponse query(const std::string& url, const bool& inner, httpentities::QueryRequest& request);
+
+	static httpentities::BatchInsertResponse batchInsert(const std::string& url, const bool& inner, httpentities::BatchInsertRequest& request);
+
+	static httpentities::BatchRemoveResponse batchRemove(const std::string& url, const bool& inner, httpentities::BatchRemoveRequest& request);
 
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);
 
