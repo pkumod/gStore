@@ -2412,7 +2412,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
-			if (clusterManagerPtr->isEnable()) 
+			if (clusterManagerPtr->isEnable() && clusterManagerPtr->isLeader())
 			{
 				clusterManagerPtr->dropDb(db_name);
 				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_drop));

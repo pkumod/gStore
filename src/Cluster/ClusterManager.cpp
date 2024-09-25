@@ -517,11 +517,20 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-        uint64 index = getDbNextIndex(info.db_name);
-        if (index == 0)
+        uint64 index = 0;
+        if (info.status == ClusterLogStatus_drop)
         {
-            SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << index);
-            return false;
+            // index = 0, empty db
+            index = getDbIndex(info.db_name);
+        }
+        else
+        {
+            index = getDbNextIndex(info.db_name);
+            if (index == 0)
+            {
+                SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << index);
+                return false;
+            }
         }
 
         if (info.status == ClusterLogStatus_sync)

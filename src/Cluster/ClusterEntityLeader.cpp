@@ -207,6 +207,8 @@ namespace cluster
         int once_run = 200;
         uint32 pass_num = 0;
         int need_num = getNeedNum();
+        std::string waiting = ".";
+        SLOG_DEBUG("waiting query task callback need num:" << need_num);
         while (1)
         {
             uint64 current_time = Util::get_cur_time();
@@ -221,16 +223,20 @@ namespace cluster
             }
             if (status == ClusterLogStatus_pending)
             {
-                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
+                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index, &waiting]
                 {
                     pass_num = this->getLogReplyNum(db_name, index);
+                    SLOG_DEBUG("waiting prepare task callback pass num:" << pass_num << waiting);
+			        waiting.append(".");
                 });
             }
             else if(status == ClusterLogStatus_sync)
             {
-                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index]
+                oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index, &waiting]
                 {
                     pass_num = this->getLogSyncNum(db_name, index);
+                    SLOG_DEBUG("waiting query append task callback pass num" << pass_num << waiting);
+                    waiting.append(".");
                 });
             }
             else
