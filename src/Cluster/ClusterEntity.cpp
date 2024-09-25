@@ -85,7 +85,7 @@ namespace cluster
         return it->second;
     }
 
-    void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation)
+    void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
@@ -100,31 +100,31 @@ namespace cluster
         db->addLog(index, status, operation, getDbIndex(db_name));
     }
 
-    void ClusterEntity::updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status)
+    void ClusterEntity::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
         
-        if (status == ClusterLogStatus_commit)
+        if (operation == ClusterOperation_Commit)
         {
             updateDbIndex(db_name, index);
             updateDbNextIndex(db_name, 0);
         }
-        else if (status == ClusterLogStatus_cancel || status == ClusterLogStatus_fail)
+        else if (operation == ClusterOperation_Cancel || operation == ClusterOperation_Fail)
         {
             // this operation is failed
             updateDbNextIndex(db_name, 0);
         }
-        db->updateLogStatus(index, status);
+        db->updateLogOperation(index, operation);
     }
 
-    void ClusterEntity::setLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
+    void ClusterEntity::setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType update_type)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        db->setLogOperation(index, operation);
+        db->setLogUpdateType(index, update_type);
     }
 
     void ClusterEntity::setLogFileName(std::string db_name, uint64 index, std::string file_name)
@@ -313,20 +313,20 @@ namespace cluster
         return db->getNtFilePath(file_name);
     }
 
-    ClusterLogStatus ClusterEntity::getDbLogStatus(const std::string& db_name, uint64 index)
-    {
-        ClusterDbPtr db = findDb(db_name);
-        if (!db)
-            return ClusterLogStatus_None;
-        return db->getStatus(index);
-    }
-
     ClusterOperation ClusterEntity::getDbLogOperation(const std::string& db_name, uint64 index)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return ClusterOperation_None;
         return db->getOperation(index);
+    }
+
+    ClusterUpdateType ClusterEntity::getDbLogUpdateType(const std::string& db_name, uint64 index)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return ClusterUpdateType_None;
+        return db->getUpdateType(index);
     }
 
     void ClusterEntity::getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl)

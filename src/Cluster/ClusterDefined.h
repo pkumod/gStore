@@ -11,81 +11,89 @@ namespace cluster
         ClusterRoleType_Follow = 2,
     };
 
+    enum ClusterUpdateType
+    {
+        ClusterUpdateType_None   = 0,
+        ClusterUpdateType_Insert = 1,
+        ClusterUpdateType_Delete = 2,
+        ClusterUpdateType_Build  = 3,
+    };
+
     enum ClusterOperation
     {
-        ClusterOperation_None   = 0,
-        ClusterOperation_Insert = 1,
-        ClusterOperation_Delete = 2,
-        ClusterOperation_Build  = 3,
+        ClusterOperation_None      = 0,
+        ClusterOperation_HeartBeat = 1,
+        ClusterOperation_Compare   = 2,
+        ClusterOperation_Prepare   = 3,
+        ClusterOperation_Handle    = 4,
+        ClusterOperation_Append    = 5,
+        ClusterOperation_Commit    = 6,
+        ClusterOperation_Cancel    = 7,
+        ClusterOperation_Fail      = 8,
+        ClusterOperation_Build     = 9,
+        ClusterOperation_Drop      = 10,
+        ClusterOperation_Recover   = 11,
+        // .......
+        ClusterOperation_Check     = 50,
+        ClusterOperation_Replly    = 51,
+        ClusterOperation_Undefine  = 52,
     };
 
-    enum ClusterLogStatus
+    const std::map<ClusterOperation, std::string> ClusterOperation_str =
     {
-        ClusterLogStatus_fail      = -1,
-        ClusterLogStatus_None      = 0,
-        ClusterLogStatus_HeartBeat = 1,
-        ClusterLogStatus_pending   = 2,
-        ClusterLogStatus_handling  = 3,
-        ClusterLogStatus_sync      = 4,
-        ClusterLogStatus_commit    = 5,
-        ClusterLogStatus_cancel    = 6,
-        ClusterLogStatus_build     = 8,
-        ClusterLogStatus_drop      = 9,
-        ClusterLogStatus_recover   = 10,
+        {ClusterOperation_None,         "none"},
+        {ClusterOperation_HeartBeat,    "heartbeat"},
+        {ClusterOperation_Compare,      "compare"},
+        {ClusterOperation_Prepare,      "prepare"},
+        {ClusterOperation_Handle,       "handle"},
+        {ClusterOperation_Append,       "append"},
+        {ClusterOperation_Commit,       "commit"},
+        {ClusterOperation_Cancel,       "cancel"},
+        {ClusterOperation_Fail,         "fail"},
+        {ClusterOperation_Build,        "build"},
+        {ClusterOperation_Drop,         "drop"},
+        {ClusterOperation_Recover,      "recover"},
+        // ...
+        {ClusterOperation_Check,        "check"},
+        {ClusterOperation_Replly,       "reply"},
+        {ClusterOperation_Undefine,     "undiefine"},
     };
 
-    enum ClusterTranctionType
+    class ClusterOperationHandle
     {
-        ClusterTranctionType_Insert = 1,
-        ClusterTranctionType_Delete = 2,
-    };
-
-    enum cluster_operation
-    {
-        CLUSTER_OPERATION_TYPE_NONE = 0,
-        LEADER_HEARTBEAT            = 1,
-        LEADER_APPEND               = 2,
-        FOLLOWER_REPLY              = 3,
-        FOLLOWER_CHECK              = 4,
-        EXPECTION_COMPARE           = 5,
-        EXPECTION_PREPARE           = 6,
-        EXPECTION_COMMIT            = 7,
-        EXPECTION_CANCEL            = 8,
-        EXPECTION_FAIL              = 9,
-        EXPECTION_BUILD             = 10,
-        EXPECTION_DROP              = 11,
-        EXPECTION_RECOVER           = 12,
-        CLUSTER_OPERATION_TYPE_UNDEFINE = 13,
+    public:
+        static std::string to_str(const ClusterOperation &type);
+        static ClusterOperation to_enum(const std::string &type_str);
     };
 
     struct ClusterTaskInfo
     {
         std::string db_name;
-        ClusterLogStatus status;
         ClusterOperation operation;
+        ClusterUpdateType update_type;
         std::string file_name;
         uint64 index;
         ClusterTaskInfo()
         {
             db_name   = "";
-            status    = ClusterLogStatus_None;
-            operation = ClusterOperation_None;
+            operation    = ClusterOperation_None;
+            update_type = ClusterUpdateType_None;
             file_name = "";
             index     = 0;
         }
-        ClusterTaskInfo(const std::string& db_name_, ClusterLogStatus status_)
+        ClusterTaskInfo(const std::string& db_name_, ClusterOperation operation_)
         {
             db_name   = db_name_;
-            status    = status_;
-            operation = ClusterOperation_None;
+            operation    = operation_;
+            update_type = ClusterUpdateType_None;
             file_name = "";
             index    = 0;
         }
-        ClusterTaskInfo(const std::string& db_name_, ClusterLogStatus status_, ClusterOperation operation_, const std::string& file_name_)
+        ClusterTaskInfo(const std::string& db_name_, ClusterOperation operation_, ClusterUpdateType update_type_, const std::string& file_name_)
         {
             db_name   = db_name_;
-            status    = status_;
-            operation = operation_;
+            operation    = operation_;
+            update_type = update_type_;
             file_name = file_name_;
             index    = 0;
         }

@@ -9,25 +9,38 @@ namespace cluster
             s.at("index").get_to(t.index);
         if (s.contains("nextIndex"))
             s.at("nextIndex").get_to(t.nextIndex);
-        if (s.contains("status"))
-            s.at("status").get_to(t.status);
         if (s.contains("operation"))
-            s.at("operation").get_to(t.operation);
+        {
+            t.operation = ClusterOperationHandle::to_enum(s.at("operation"));
+        }
+        if (s.contains("updateType"))
+            s.at("updateType").get_to(t.updateType);
         if (s.contains("fileName"))
             s.at("fileName").get_to(t.fileName);
+        if (s.contains("updateType"))
+            s.at("updateType").get_to(t.updateType);
+        if (s.contains("createTime"))
+            s.at("createTime").get_to(t.createTime);
+        if (s.contains("commitTime"))
+            s.at("commitTime").get_to(t.commitTime);
         if (s.contains("replyIpPort"))
             t.setReplyIpPort(s["replyIpPort"]);
-        if (s.contains("appenEntriesIpPort"))
-            t.setAppenEntriesIpPort(s["appenEntriesIpPort"]);
+        if (s.contains("appendIpPort"))
+            t.setAppenEntriesIpPort(s["appendIpPort"]);
     }
 
     void to_json(nlohmann::json& s, const LogInfo& t)
     {
-        s["index"]     = t.index;
-        s["nextIndex"] = t.nextIndex;
-        s["status"]    = t.status;
-        s["operation"] = t.operation;
-        s["fileName"]  = t.fileName;
+        s["index"]      = t.index;
+        s["nextIndex"]  = t.nextIndex;
+        s["operation"]  = ClusterOperationHandle::to_str(t.operation);
+        s["updateType"] = t.updateType;
+        if (!t.fileName.empty())
+            s["fileName"]   = t.fileName;
+        if (!t.createTime.empty())
+            s["createTime"] = t.createTime;
+        if (!t.commitTime.empty())
+            s["commitTime"] = t.commitTime;
         t.covertReplyIpsJson(s);
         t.covertAppenEntriesIpsJson(s);
     }
@@ -53,7 +66,7 @@ namespace cluster
             if (!s[i].contains("ip_port"))
                 continue;
             std::string ip_port = s[i].at("ip_port");
-            appenEntriesIpPort.insert(ip_port);
+            appendIpPort.insert(ip_port);
         }
     }
 
@@ -70,9 +83,9 @@ namespace cluster
     void LogInfo::covertAppenEntriesIpsJson(nlohmann::json& s)const
     {
         int i = 0;
-        for (const auto& m : appenEntriesIpPort)
+        for (const auto& m : appendIpPort)
         {
-            s["appenEntriesIpPort"][i]["ip_port"] = m;
+            s["appendIpPort"][i]["ip_port"] = m;
             i++;
         }
     }
@@ -139,7 +152,7 @@ namespace cluster
         }
     }
 
-    bool ClusterDbNameLogInfo::addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index)
+    bool ClusterDbNameLogInfo::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -149,15 +162,16 @@ namespace cluster
         }
         LogInfo log;
         log.setIndex(index);
-        log.setStatus(status);
         log.setOperation(operation);
+        log.setUpdateType(update_type);
+        log.setCreateTime(Util::get_date_time());
         logs_[index] = log;
 
         // set old next index is current index
         if (last_index != 0)
         {
             auto last_it = logs_.find(last_index);
-            if (last_it != logs_.end() && last_it->second.getStatus() == ClusterLogStatus_commit)
+            if (last_it != logs_.end() && last_it->second.getOperation() == ClusterOperation_Commit)
             {
                 last_it->second.setNextIndex(index);
             }
@@ -166,7 +180,7 @@ namespace cluster
         return true;
     }
 
-    void ClusterDbNameLogInfo::updateLogStatus(uint64 index, ClusterLogStatus status)
+    void ClusterDbNameLogInfo::updateLogOperation(uint64 index, ClusterOperation operation)
     {
         auto it = logs_.find(index);
         if (it == logs_.end())
@@ -174,18 +188,22 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" + index);
             return;
         }
-        it->second.setStatus(status);
-    }
-
-    void ClusterDbNameLogInfo::setLogOperation(uint64 index, ClusterOperation operation)
-    {
-        auto it = logs_.find(index);
-        if (it == logs_.end())
+        if (operation == ClusterOperation_Commit)
         {
-            SLOG_ERROR("index is not exist, index:" + index);
-            return;
+            it->second.setCommitTime(Util::get_date_time());
         }
         it->second.setOperation(operation);
+    }
+
+    void ClusterDbNameLogInfo::setLogUpdateType(uint64 index, ClusterUpdateType update_type)
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" + index);
+            return;
+        }
+        it->second.setUpdateType(update_type);
     }
 
     void ClusterDbNameLogInfo::setLogFileName(uint64 index, std::string file_name)
@@ -207,9 +225,9 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" << index);
             return;
         }
-        if (it->second.getStatus() != ClusterLogStatus_pending)
+        if (it->second.getOperation() != ClusterOperation_Prepare)
         {
-            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
+            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
             return;
         }
         it->second.addReplyIpProt(ip_port);
@@ -223,9 +241,9 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" << index);
             return;
         }
-        if (it->second.getStatus() != ClusterLogStatus_sync)
+        if (it->second.getOperation() != ClusterOperation_Append)
         {
-            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
+            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
             return;
         }
         it->second.addAppenEntriesIpProt(ip_port);
@@ -239,9 +257,9 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" << index);
             return 0;
         }
-        if (it->second.getStatus() != ClusterLogStatus_pending)
+        if (it->second.getOperation() != ClusterOperation_Prepare)
         {
-            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
+            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
             return 0;
         }
         return it->second.getReplyNum();
@@ -255,12 +273,23 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" << index);
             return 0;
         }
-        if (it->second.getStatus() != ClusterLogStatus_sync)
+        if (it->second.getOperation() != ClusterOperation_Append)
         {
-            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getStatus());
+            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
             return 0;
         }
         return it->second.getAppenEntriesNum();
+    }
+
+    ClusterUpdateType ClusterDbNameLogInfo::getUpdateType(uint64 index)const
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" << index);
+            return ClusterUpdateType_None;
+        }
+        return it->second.getUpdateType();
     }
 
     ClusterOperation ClusterDbNameLogInfo::getOperation(uint64 index)const
@@ -272,17 +301,6 @@ namespace cluster
             return ClusterOperation_None;
         }
         return it->second.getOperation();
-    }
-
-    ClusterLogStatus ClusterDbNameLogInfo::getStatus(uint64 index)const
-    {
-        auto it = logs_.find(index);
-        if (it == logs_.end())
-        {
-            SLOG_ERROR("index is not exist, index:" << index);
-            return ClusterLogStatus_None;
-        }
-        return it->second.getStatus();
     }
 
     std::string ClusterDbNameLogInfo::getFileName(uint64 index)const
@@ -306,7 +324,7 @@ namespace cluster
                 return;
             uint64 next_index = it->second.getNextIndex();
             std::string file_name = it->second.getFileName();
-            if (next_index == 0 || file_name.empty() || it->second.getStatus() != ClusterLogStatus_commit)
+            if (next_index == 0 || file_name.empty() || it->second.getOperation() != ClusterOperation_Commit)
                 return;
             indexl.push_back(uint64StringPair(next_index, file_name));
             local_index = next_index;

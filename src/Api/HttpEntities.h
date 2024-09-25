@@ -668,11 +668,11 @@ namespace httpentities {
     };
 
     struct ReplyRequest: public ClusterRequest {
-        std::string expection;
+        std::string operation;
         // reply follower port
         std::string port;
-        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection, std::string port): ClusterRequest(term, db_name, index) {
-            this->expection = expection;
+        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string port): ClusterRequest(term, db_name, index) {
+            this->operation = operation;
             this->port = port;
         }
         void to_json(std::string& json_str) override
@@ -681,7 +681,7 @@ namespace httpentities {
                 {"term", this->term},
                 {"index", this->index},
                 {"db_name", this->db_name},
-                {"expection", this->expection},
+                {"operation", this->operation},
                 {"port", this->port}};
             json_str = json.dump();
         }
@@ -703,13 +703,13 @@ namespace httpentities {
     };
 
     struct HeartBeatRequest: public ClusterRequest {
-        std::string expection;
-        HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, std::string expection): ClusterRequest(term, db_name, index) {
-            this->expection = expection;
+        std::string operation;
+        HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation): ClusterRequest(term, db_name, index) {
+            this->operation = operation;
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"expection", this->expection}};
+            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"operation", this->operation}};
             json_str = json.dump();
         }
     };

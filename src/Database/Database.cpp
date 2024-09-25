@@ -4194,7 +4194,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	}
 	else if (cluster_log)
 	{
-		cluster::ClusterTranctionType operation = cluster::ClusterTranctionType::ClusterTranctionType_Insert;
+		cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
 		for (auto tuple : id_tuples)
 		{
 			bool is_obj_entity = Util::is_entity_ele(tuple.objid);
@@ -4261,7 +4261,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		write_update_log(_triples, _triple_num, 0, txn);
 	}
 
-	cluster::ClusterTranctionType operation = cluster::ClusterTranctionType::ClusterTranctionType_Delete;
+	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Delete;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
 	{

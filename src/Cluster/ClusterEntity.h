@@ -25,16 +25,16 @@ namespace cluster
         ClusterDbPtr addClusterDb(const std::string& db_name);
 
         // update.log
-        void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
-        void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
-        void setLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
+        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType update_type);
         void setLogFileName(std::string db_name, uint64 index, std::string file_name);
         void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);
         void addLogSyncNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         uint32 getLogSyncNum(std::string db_name, uint64 index);
-        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        ClusterUpdateType getDbLogUpdateType(const std::string& db_name, uint64 index);
         void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
         void dropDb(std::string db_name);
         // nt log

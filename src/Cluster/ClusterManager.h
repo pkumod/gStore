@@ -57,7 +57,7 @@ namespace cluster
         // 启动更新通知, 返回应答数量
         bool startNotify(std::string db_name);
         // 启动同步通知, 返回应答数量
-        bool startSync(std::string db_name, ClusterOperation operation, const std::string& file_name);
+        bool startSync(std::string db_name, ClusterUpdateType operation, const std::string& file_name);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -78,19 +78,19 @@ namespace cluster
         // 启动跑任务
         void runTask();
         // 是否心跳类任务
-        bool IsSupportTask(ClusterLogStatus status);
+        bool IsSupportTask(ClusterOperation status);
         // 是否支持同步
-        bool IsSupportSync(ClusterLogStatus status);
+        bool IsSupportSync(ClusterOperation status);
         // 删除集群信息
         void dropDb(const std::string& db_name);
 
         //日志模块
         //新增日志
-        void addLog(std::string db_name, uint64 index, ClusterLogStatus status, ClusterOperation operation);
-        // 更新日志状态
-        void updateLogStatus(std::string db_name, uint64 index, ClusterLogStatus status);
+        void addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation);
         // 更新日志操作
-        void setLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation status);
+        // 更新日志操作类型
+        void setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType operation);
         // 更新日志操作文件
         void setLogFileName(std::string db_name, uint64 index, std::string file_name);
         // 增加响应节点数量
@@ -102,7 +102,7 @@ namespace cluster
         // 获取同步数量
         uint32 getLogSyncNum(std::string db_name, uint64 index);
         //是否达到处理要求, 过半(k+1/2)
-        bool enabelAttain(std::string db_name, uint64 index, ClusterLogStatus status);
+        bool enabelAttain(std::string db_name, uint64 index, ClusterOperation status);
         // 更换主节点
         void updateTerm(uint32 term);
         // 更新已完成节点索引
@@ -117,10 +117,10 @@ namespace cluster
         uint64 getDbNextIndex(std::string db_name);
         // 获取nt文件路径
         std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
-        // 获取日志状态
-        ClusterLogStatus getDbLogStatus(const std::string& db_name, uint64 index);
-        // 获取日志操作
+        // 获取日志操作状态
         ClusterOperation getDbLogOperation(const std::string& db_name, uint64 index);
+        // 获取日志更新类型
+        ClusterUpdateType getDbLogUpdateType(const std::string& db_name, uint64 index);
         // 获取数据库路径
         std::string getDbDirPath(std::string db_name);
         // 获取索引后面的索引和索引文件
@@ -162,7 +162,7 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            if (info_.status == ClusterLogStatus_HeartBeat)
+            if (info_.operation == ClusterOperation_HeartBeat)
             {
                 per->startHeardBeat(info_.db_name);
             }

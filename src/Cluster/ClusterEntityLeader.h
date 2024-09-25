@@ -17,13 +17,13 @@ namespace cluster
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
         bool IsFollowerIp(const std::string& ip)const;
         void postHeartBeat(std::string db_name);
-        void postAppendTask(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name);
+        void postAppendTask(std::string db_name, uint64 index, ClusterUpdateType update_type, std::string file_name);
         void startHeardBeat(std::string db_name);
         void stopHeardBeatTimer(std::string db_name);
-        void postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status);
+        void postTask(std::string db_name, uint64 index, ClusterOperation operation);
         bool runTask(const ClusterTaskInfo& info);
-        bool runAppendTask(std::string db_name, ClusterOperation operation, const std::string& file_name);
-        bool waitTimerPassNum(std::string db_name, uint64 index, ClusterLogStatus status, uint64 end_time);
+        bool runAppendTask(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
+        bool waitTimerPassNum(std::string db_name, uint64 index, ClusterOperation operation, uint64 end_time);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);

@@ -9,7 +9,7 @@
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
 #include "../Cluster/ClusterManager.h"
-#include "../Cluster/ClusterOperation.h"
+#include "../Cluster/ClusterDefined.h"
 
 #define HTTP_TYPE "http"
 #define BASE_URL "http://127.0.0.1:" + _server_port
@@ -48,7 +48,7 @@ void releaseGlobalPtr(bool renew = false);
 void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
-void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation);
+void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation);
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
@@ -323,10 +323,10 @@ void sig_handler(int sig)
 
 int main(int argc, char *argv[])
 {
+	Util util;
 	on_exit([](int status, void *arg) {
 		releaseGlobalPtr();
 	}, NULL);
-	Util util;
 	_server_port = util.getConfigureValue("port");
 	_server_deamon = util.getConfigureValue("deamon");
 	_db_home = util.getConfigureValue("db_home");
@@ -823,14 +823,14 @@ void register_service(GRPCServer &svr)
 	svr.ROUTE(
 		"/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
 		{ 
-			cluster_api(request, response, cluster::cluster_operation::LEADER_HEARTBEAT);
+			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_HeartBeat);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
 		"/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
 		{ 
-			cluster_api(request, response, cluster::cluster_operation::LEADER_APPEND);
+			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Append);
 		},
 		ReqMethod::POST);
 
@@ -846,14 +846,14 @@ void register_service(GRPCServer &svr)
 	svr.ROUTE(
 		"/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
 		{ 
-			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_REPLY);
+			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Replly);
 		},
 		ReqMethod::POST);
 
 	svr.ROUTE(
 		"/cluster/check", [](const GRPCReq *request, GRPCResp *response)
 		{ 
-			cluster_api(request, response, cluster::cluster_operation::FOLLOWER_CHECK);
+			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Check);
 		},
 		ReqMethod::POST);
 
@@ -1240,7 +1240,7 @@ void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *se
 	*series << leader_task;
 }
 
-void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::cluster_operation& operation)
+void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation)
 {
 	if (!clusterManagerPtr) {
 		response->Error(StatusOperationFailed, "The cluster is nullptr");
@@ -1297,19 +1297,19 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::clus
 	// operation
 	switch (operation)
 	{
-	case cluster::LEADER_HEARTBEAT:
+	case cluster::ClusterOperation_HeartBeat:
 		// from leader heartbeat
 		cluster_heartbeat_task(request, response);
 		break;
-	case cluster::LEADER_APPEND:
+	case cluster::ClusterOperation_Append:
 		// from leader append entries
 		cluster_append_task(request, response);
 		break;
-	case cluster::FOLLOWER_REPLY:
+	case cluster::ClusterOperation_Replly:
 		// from follower reply
 		cluster_reply_task(request, response);
 		break;
-	case cluster::FOLLOWER_CHECK:
+	case cluster::ClusterOperation_Check:
 		cluster_check_task(request, response);
 		break;
 	default:
@@ -2535,8 +2535,8 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, J
 			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
-			SLOG_TRACE("post follower drop db");
-			clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_drop));
+			SLOG_DEBUG("post follower drop db");
+			clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
 			clusterManagerPtr->dropDb(db_name);
 			response->Success(success);
 		}
@@ -3070,22 +3070,22 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		std::string cluster_db_path;
 		std::string logpath;
 		uint64 log_index;
-		ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_None;
+		ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_None;
 		// update waiting follower reply
 		if (clusterManagerPtr->isEnable() && is_update) 
 		{
 			// send [prepare] heartbeat and wait response
 			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
-				cluster_operation = ClusterOperation::ClusterOperation_Insert;
+				cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
 			else
-				cluster_operation = ClusterOperation::ClusterOperation_Delete;
+				cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -3310,11 +3310,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				{
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
 					string log_file_name = to_string(log_index) + ".log";
-					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, cluster_operation, log_file_name), true);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, cluster_update_type, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 						response->Json(resp_data);
 					}
 					else
@@ -3329,7 +3329,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 							string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
 							shared_ptr<Database> restore_database;
 							apiUtil->get_database(db_name, restore_database);
-							if (cluster_operation == ClusterOperation::ClusterOperation_Delete)
+							if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
 							{
 								uint32_t num = restore_database->batch_insert(nt_file_path);
 								SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
@@ -3344,18 +3344,18 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						}
 						else
 						{
-							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_operation)+"]");
+							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_update_type)+"]");
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
 						response->Error(StatusOperationFailed, error);
 					}
 				}
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 					response->Json(resp_data);
 				}
 			}
@@ -3987,14 +3987,14 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		if (clusterManagerPtr->isEnable()) 
 		{
 			// send [prepare] heartbeat and wait response
-			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Insert;
+			ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -4116,11 +4116,11 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
 					string log_file_name = to_string(log_index) + ".log";
 					string tmp_dir_path = unz_dir_path;
-					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, ClusterOperation_Insert, log_file_name), true);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 						if (response)
 						{
 							response->Json(resp_data);
@@ -4168,7 +4168,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
 						if (response)
 						{
 							response->Error(StatusOperationFailed, error);
@@ -4191,7 +4191,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 					// remove unzip files
 					if (!unz_dir_path.empty())
 					{
@@ -4299,15 +4299,15 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		if (clusterManagerPtr->isEnable()) 
 		{
 			// send [prepare] heartbeat and wait response
-			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Delete;
+			ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
 				SLOG_ERROR(error);
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
@@ -4419,11 +4419,11 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
 					string log_file_name = to_string(log_index) + ".log";
 					string tmp_dir_path = unz_dir_path;
-					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, ClusterOperation_Delete, log_file_name), true);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Delete, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 						if (response)
 						{
 							response->Json(resp_data);
@@ -4470,7 +4470,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
 						if (response)
 						{
 							response->Error(StatusOperationFailed, error);
@@ -4493,7 +4493,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
 					// remove unzip files
 					if (!unz_dir_path.empty())
 					{
@@ -6033,8 +6033,8 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 {
 	Json json_data;
 	parseRequest(request, json_data);
-	std::string expection = jsonParam(json_data, "expection", "");
-	const cluster::cluster_operation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
+	std::string expection = jsonParam(json_data, "operation", "");
+	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	uint32_t leader_term = jsonParam(json_data, "term", 0u);
 	uint32_t local_term = clusterManagerPtr->getTerm(); // get local term
 	string db_name = jsonParam(json_data, "db_name", "");
@@ -6042,7 +6042,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	uint64_t local_index = 0ul;
 	switch (expectionEnum)
 	{
-		case cluster::EXPECTION_COMPARE:
+		case cluster::ClusterOperation_Compare:
 			// compare term and index with leader
 			std::thread([db_name, leader_term, leader_index, local_term, local_index]() {
 				if (!db_name.empty()) 
@@ -6065,7 +6065,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			}).detach();
 			response->Json("ok");
 			break;
-		case cluster::EXPECTION_PREPARE:
+		case cluster::ClusterOperation_Prepare:
 			// prepare for log append
 			// check local db is available
 			std::thread([db_name, leader_term, leader_index, expection]() {
@@ -6107,7 +6107,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 				Util::create_dirs(cluster_db_path);
 				// add log
-				clusterManagerPtr->addLog(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_pending, ClusterOperation_None);
+				clusterManagerPtr->addLog(db_name, leader_index, ClusterOperation::ClusterOperation_Prepare, ClusterUpdateType_None);
 				
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
@@ -6119,7 +6119,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			}).detach();
 			response->Success("ok");
 			break;
-		case cluster::EXPECTION_COMMIT:
+		case cluster::ClusterOperation_Commit:
 			// update local log status to committed
 			if (!db_name.empty())
 			{
@@ -6127,12 +6127,12 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
-					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_commit);
+					clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Commit);
 				}
 			}
 			response->Success("ok");
 			break;
-		case cluster::EXPECTION_CANCEL:
+		case cluster::ClusterOperation_Cancel:
 			// update local log status to cancel
 			if (!db_name.empty())
 			{
@@ -6144,32 +6144,32 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
 					if (!nt_file_path.empty())
 					{
-						cluster::ClusterOperation cluster_operation = clusterManagerPtr->getDbLogOperation(db_name, leader_index);
+						cluster::ClusterUpdateType cluster_update_type = clusterManagerPtr->getDbLogUpdateType(db_name, leader_index);
 						shared_ptr<Database> restore_database;
 						apiUtil->get_database(db_name, restore_database);
-						if (cluster_operation == ClusterOperation::ClusterOperation_Delete)
+						if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
 						{
 							uint32_t num = restore_database->batch_insert(nt_file_path);
-							SLOG_TRACE("follower restore " + db_name + " data: batch insert num " << num);
+							SLOG_DEBUG("follower restore " + db_name + " data: batch insert num " << num);
 						} 
 						else 
 						{
 							uint32_t num = restore_database->batch_remove(nt_file_path);
-							SLOG_TRACE("follower restore " + db_name + " data: batch_remove num " << num);
+							SLOG_DEBUG("follower restore " + db_name + " data: batch_remove num " << num);
 						}
 						Util::remove_path(nt_file_path);
-						clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_cancel);
+						clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Cancel);
 					}
 					else
 					{
-						SLOG_TRACE("not found nt file path:" << db_name << " ,index:" << leader_index);
+						SLOG_DEBUG("not found nt file path:" << db_name << " ,index:" << leader_index);
 					}
 					apiUtil->unlock_database(db_name);
 				}
 			}
 			response->Success("ok");
 			break;
-		case cluster::EXPECTION_FAIL:
+		case cluster::ClusterOperation_Fail:
 			if (!db_name.empty())
 			{
 				apiUtil->wrlock_database(db_name);
@@ -6177,13 +6177,13 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
-					clusterManagerPtr->updateLogStatus(db_name, leader_index, cluster::ClusterLogStatus::ClusterLogStatus_fail);
+					clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Fail);
 				}
 				apiUtil->unlock_database(db_name);
 			}
 			response->Success("ok");
 			break;
-		case cluster::EXPECTION_DROP:
+		case cluster::ClusterOperation_Drop:
 			if (!db_name.empty())
 			{
 				if (!apiUtil->check_db_exist(db_name))
@@ -6313,15 +6313,15 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		}
 		std::string log_file_name = GRPCUtil::fileName(log_files[0]);
 		std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
-		ClusterOperation log_operation;
+		ClusterUpdateType log_operation;
 		if (operation == "1") {
 			// batch insert
 			current_database->batch_insert(nt_file_path);
-			log_operation = ClusterOperation::ClusterOperation_Insert;
+			log_operation = ClusterUpdateType::ClusterUpdateType_Insert;
 		} else if (operation == "2") {
 			// batch remove
 			current_database->batch_remove(nt_file_path);
-			log_operation = ClusterOperation::ClusterOperation_Delete;
+			log_operation = ClusterUpdateType::ClusterUpdateType_Delete;
 		}
 		current_database->save();
 		Util::remove_path(zip_file_path);
@@ -6330,8 +6330,8 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);
-		clusterManagerPtr->updateLogStatus(db_name, leader_index, ClusterLogStatus::ClusterLogStatus_sync);
-		clusterManagerPtr->setLogOperation(db_name, leader_index, log_operation);
+		clusterManagerPtr->updateLogOperation(db_name, leader_index, ClusterOperation::ClusterOperation_Append);
+		clusterManagerPtr->setLogUpdateType(db_name, leader_index, log_operation);
 		clusterManagerPtr->setLogFileName(db_name, leader_index, GRPCUtil::fileName(log_file_name));
 
 		// send appendEntrites ok response
@@ -6339,7 +6339,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		std::string reply_url = leader_node.getReplyUrl();
 		std::string username = leader_node.getUsername();
 		std::string password = leader_node.getPassword();
-		std::string expection = ClusterOperationHandle::to_str(cluster::cluster_operation::LEADER_APPEND);
+		std::string expection = ClusterOperationHandle::to_str(cluster::ClusterOperation::ClusterOperation_Append);
 		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection, _server_port);
 		HttpUtil::reply(reply_url, reply_request, username, password);
 	});
@@ -6357,16 +6357,16 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t term = jsonParam(json_data, "term", 0u);
 	uint64_t index = jsonParam(json_data, "index", 0ul);
 	std::string db_name = jsonParam(json_data, "db_name");
-	std::string expection = jsonParam(json_data, "expection");
+	std::string expection = jsonParam(json_data, "operation");
 	std::string port = jsonParam(json_data, "port");
-	cluster::cluster_operation expection_enum = cluster::ClusterOperationHandle::to_enum(expection);
+	cluster::ClusterOperation expection_enum = cluster::ClusterOperationHandle::to_enum(expection);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	// from follower reply, go into leader process 
-	if (expection_enum == cluster::cluster_operation::EXPECTION_PREPARE)
+	if (expection_enum == cluster::ClusterOperation::ClusterOperation_Prepare)
 	{
 		clusterManagerPtr->addLogReplyNum(db_name, index, ip_addr, port);
-	} else if (expection_enum == cluster::cluster_operation::LEADER_APPEND) {
+	} else if (expection_enum == cluster::ClusterOperation::ClusterOperation_Append) {
 		clusterManagerPtr->addLogSyncNum(db_name, index, ip_addr, port);
 	}
 	response->Success("ok");
@@ -6385,7 +6385,7 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	{
 		// TODO add a new task that starting with follower index
 		std::string file_name;
-		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_HeartBeat));
+		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_HeartBeat));
 	}
 	
 	response->Success("ok");

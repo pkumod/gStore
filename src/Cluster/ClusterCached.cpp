@@ -136,50 +136,34 @@ namespace cluster
         return true;
     }
 
-    void ClusterDb::addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index)
+    void ClusterDb::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index)
     {
         ClusterDbNameLogInfo log;
         std::string file_path = getUpdatePath(db_name_);
         if (!Util::file_exist(file_path))
         {
-            log.addLog(index, status, operation, 0);
-            SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", status:" << index << " ,operation:" << operation);
+            log.addLog(index, operation, update_type, 0);
+            SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", operation:" << index << " ,operation:" << operation);
             if (!writeToUpdateFile(log))
             {
-                SLOG_ERROR("add log fail!" << db_name_ << index << status);
+                SLOG_ERROR("add log fail!" << db_name_ << index << operation);
             }
             return;
         }
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("add log fail!" << db_name_ << index << status);
+            SLOG_ERROR("add log fail!" << db_name_ << index << operation);
             return;
         }
-        log.addLog(index, status, operation, last_index);
+        log.addLog(index, operation, update_type, last_index);
         if (!writeToUpdateFile(log))
         {
-            SLOG_ERROR("add log fail!" << db_name_ << index << status);
+            SLOG_ERROR("add log fail!" << db_name_ << index << operation);
             return;
         }
     }
 
-    void ClusterDb::updateLogStatus(uint64 index, ClusterLogStatus status)
-    {
-        ClusterDbNameLogInfo log;
-        if (!readFromUpdateFile(log))
-        {
-            SLOG_ERROR("update log status fail!" << db_name_ << index << status);
-            return;
-        }
-        log.updateLogStatus(index, status);
-        if (!writeToUpdateFile(log))
-        {
-            SLOG_ERROR("update log status fail!" << db_name_ << index << status);
-            return;
-        }
-    }
-
-    void ClusterDb::setLogOperation(uint64 index, ClusterOperation operation)
+    void ClusterDb::updateLogOperation(uint64 index, ClusterOperation operation)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
@@ -187,10 +171,26 @@ namespace cluster
             SLOG_ERROR("update log operation fail!" << db_name_ << index << operation);
             return;
         }
-        log.setLogOperation(index, operation);
+        log.updateLogOperation(index, operation);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("update log operation fail!" << db_name_ << index << operation);
+            return;
+        }
+    }
+
+    void ClusterDb::setLogUpdateType(uint64 index, ClusterUpdateType update_type)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("update log operation fail!" << db_name_ << index << update_type);
+            return;
+        }
+        log.setLogUpdateType(index, update_type);
+        if (!writeToUpdateFile(log))
+        {
+            SLOG_ERROR("update log operation fail!" << db_name_ << index << update_type);
             return;
         }
     }
@@ -216,13 +216,13 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return;
         }
         log.addLogReplyNum(index, ip_port);
         if (!writeToUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return;
         }
     }
@@ -232,13 +232,13 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return;
         }
         log.addLogSyncNum(index, ip_port);
         if (!writeToUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return;
         }
     }
@@ -248,7 +248,7 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return 0;
         }
         return log.getLogReplyNum(index);
@@ -265,26 +265,26 @@ namespace cluster
         return log.getLogSyncNum(index);
     }
 
-    ClusterOperation ClusterDb::getOperation(uint64 index)
+    ClusterUpdateType ClusterDb::getUpdateType(uint64 index)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
             SLOG_ERROR("get operation fail!" << db_name_ << index);
-            return ClusterOperation_None;
+            return ClusterUpdateType_None;
         }
-        return log.getOperation(index);
+        return log.getUpdateType(index);
     }
 
-    ClusterLogStatus ClusterDb::getStatus(uint64 index)
+    ClusterOperation ClusterDb::getOperation(uint64 index)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
-            return ClusterLogStatus_None;
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
+            return ClusterOperation_None;
         }
-        return log.getStatus(index);
+        return log.getOperation(index);
     }
 
     std::string ClusterDb::getFileName(uint64 index)
@@ -292,7 +292,7 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return std::string();
         }
         return log.getFileName(index);
@@ -303,7 +303,7 @@ namespace cluster
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
         {
-            SLOG_ERROR("update log status fail!" << db_name_ << index);
+            SLOG_ERROR("update log operation fail!" << db_name_ << index);
             return;
         }
         return log.getNextIndexL(index, indexl);

@@ -107,10 +107,10 @@ namespace cluster
         }
     }
 
-    void ClusterEntityLeader::postAppendTask(std::string db_name, uint64 index, ClusterOperation operation, std::string file_name)
+    void ClusterEntityLeader::postAppendTask(std::string db_name, uint64 index, ClusterUpdateType update_type, std::string file_name)
     {
         uint32 term = getTerm();
-        std::string operation_str = to_string(operation);
+        std::string operation_str = to_string(update_type);
         httpentities::AppenEntriesRequest request(term, db_name, index, operation_str, file_name);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
@@ -139,7 +139,7 @@ namespace cluster
         }
     }
 
-    bool ClusterEntityLeader::runAppendTask(std::string db_name, ClusterOperation operation, const std::string& file_name)
+    bool ClusterEntityLeader::runAppendTask(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
     {
         uint32 term = getTerm();
         ClusterDbPtr db = findDb(db_name);
@@ -161,18 +161,19 @@ namespace cluster
         }
 
         std::string file_path = Util::getExactPath(zip_path.c_str());
-        updateLogStatus(db_name, index, ClusterLogStatus_sync);
-        postAppendTask(db_name, index, operation, file_path);
+        updateLogOperation(db_name, index, ClusterOperation_Append);
+        postAppendTask(db_name, index, update_type, file_path);
         return true;
     }
 
-    void ClusterEntityLeader::postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status)
+    void ClusterEntityLeader::postTask(std::string db_name, uint64 index, ClusterOperation operation)
     {
         uint32 term = getTerm();
-        if (status != ClusterLogStatus_drop)
+        if (operation != ClusterOperation_Drop)
         {
-            updateLogStatus(db_name, index, status);
+            updateLogOperation(db_name, index, operation);
         }
+        std::string expection = ClusterOperationHandle::to_str(operation);
         httpentities::HeartBeatRequest request(term, db_name, index, expection);
         auto helper = [this, db_name, index, request](ClusterNode node)
         {
@@ -201,7 +202,7 @@ namespace cluster
         }
     }
 
-    bool ClusterEntityLeader::waitTimerPassNum(std::string db_name, uint64 index, ClusterLogStatus status, uint64 end_time)
+    bool ClusterEntityLeader::waitTimerPassNum(std::string db_name, uint64 index, ClusterOperation operation, uint64 end_time)
     {
         TimerProvider oneTimer;
         int once_run = 200;
@@ -221,7 +222,7 @@ namespace cluster
             {
                 break;
             }
-            if (status == ClusterLogStatus_pending)
+            if (operation == ClusterOperation_Prepare)
             {
                 oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index, &waiting]
                 {
@@ -230,7 +231,7 @@ namespace cluster
 			        waiting.append(".");
                 });
             }
-            else if(status == ClusterLogStatus_sync)
+            else if(operation == ClusterOperation_Append)
             {
                 oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index, &waiting]
                 {
@@ -249,7 +250,7 @@ namespace cluster
             if (Util::get_cur_time() >= end_time)
                 break;
         }
-        SLOG_TRACE("db name:" << db_name << " ,status:" << status << "callback pass num:" << pass_num << "  ,need num:" << need_num);
+        SLOG_TRACE("db name:" << db_name << " ,operation:" << operation << "callback pass num:" << pass_num << "  ,need num:" << need_num);
         if (pass_num != 0 && need_num != 0 && pass_num >= need_num)
         {
             return true;
@@ -259,49 +260,34 @@ namespace cluster
 
     bool ClusterEntityLeader::runTask(const ClusterTaskInfo& info)
     {
-        if (info.status != ClusterLogStatus_drop)
+        ClusterOperation operation = info.operation;
+        if (operation != ClusterOperation_Drop)
         {
             ClusterDbPtr db = findDb(info.db_name);
             if (!db)
                 return false;
             if (info.index == 0)
             {
-                SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << info.index);
+                SLOG_TRACE("start task status " << operation << " fail, please check term.json, index:" << info.index);
                 return false;
             }    
         }
-        
-        if (info.status == ClusterLogStatus_commit)
+
+        if (operation == ClusterOperation_Commit
+         || operation == ClusterOperation_Cancel
+         || operation == ClusterOperation_Fail
+         || operation == ClusterOperation_Drop
+         || operation == ClusterOperation_Prepare)
         {
-            postTask(info.db_name, info.index, "commit", info.status);
+            postTask(info.db_name, info.index, operation);
         }
-        else if (info.status == ClusterLogStatus_cancel)
+        else if (operation == ClusterOperation_Append)
         {
-            postTask(info.db_name, info.index, "cancel", info.status);
-        }
-        else if (info.status == ClusterLogStatus_fail)
-        {
-            postTask(info.db_name, info.index, "fail", info.status);
-        }
-        else if (info.status == ClusterLogStatus_drop)
-        {
-            postTask(info.db_name, info.index, "drop", info.status);
-        }
-        else if (info.status == ClusterLogStatus_drop)
-        {
-            postTask(info.db_name, info.index, "drop", info.status);
-        }
-        else if (info.status == ClusterLogStatus_pending)
-        {
-            postTask(info.db_name, info.index, "prepare", info.status);
-        }
-        else if (info.status == ClusterLogStatus_sync)
-        {
-            runAppendTask(info.db_name, info.operation, info.file_name);
+            runAppendTask(info.db_name, info.update_type, info.file_name);
         }
         else
         {
-            SLOG_ERROR("not support task db name:" << info.db_name << " ,status" << info.status);
+            SLOG_ERROR("not support task db name:" << info.db_name << " ,operation" << operation);
             return false;
         }
 
