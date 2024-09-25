@@ -2,19 +2,34 @@
 
 namespace cluster
 {
+    std::string ClusterDb::getClusterDir()
+    {
+        return Util::getConfigureValue("cluster_data_path");
+    }
+
+    std::string ClusterDb::getDbDirPath(const std::string& db_name)
+    {
+        return getClusterDir() + db_name + "/";
+    }
+
+    std::string ClusterDb::getUpdatePath(const std::string& db_name)
+    {
+        return getDbDirPath(db_name) + "update.json";
+    }
+
     void ClusterDb::init()
     {
-        if (!Util::dir_exist(getDbDirPath()))
+        if (!Util::dir_exist(getDbDirPath(db_name_)))
         {
             SLOG_TRACE("init db dir, db name:" << db_name_);
-            Util::create_dir(getDbDirPath());
+            Util::create_dir(getDbDirPath(db_name_));
         }
     }
 
     bool ClusterDb::readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name)
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
-        std::string file_path = getDbDirPath() + file_name;
+        std::string file_path = getDbDirPath(db_name_) + file_name;
         ifstream fp;
         fp.open(file_path, ios::in);
         if (!fp.is_open())
@@ -42,7 +57,7 @@ namespace cluster
     bool ClusterDb::writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append)
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
-        std::string file_path = getDbDirPath() + file_name;
+        std::string file_path = getDbDirPath(db_name_) + file_name;
         ofstream fp;
         if (append)
         {
@@ -77,7 +92,7 @@ namespace cluster
     // update.log
     bool ClusterDb::readFromUpdateFile(ClusterDbNameLogInfo &logInfo)
     {
-        std::string file_path = getUpdatePath();
+        std::string file_path = getUpdatePath(db_name_);
         std::lock_guard<std::mutex> lock(update_log_mutex_);
         ifstream fp;
         fp.open(file_path,ios::in);
@@ -108,7 +123,7 @@ namespace cluster
             return false;
         }
         
-        std::string file_path = getUpdatePath();
+        std::string file_path = getUpdatePath(db_name_);
         ofstream fp;
         fp.open(file_path,ios::out);
         if (!fp.is_open())
@@ -124,7 +139,7 @@ namespace cluster
     void ClusterDb::addLog(uint64 index, ClusterLogStatus status, ClusterOperation operation, uint64 last_index)
     {
         ClusterDbNameLogInfo log;
-        std::string file_path = getUpdatePath();
+        std::string file_path = getUpdatePath(db_name_);
         if (!Util::file_exist(file_path))
         {
             log.addLog(index, status, operation, 0);
@@ -313,14 +328,14 @@ namespace cluster
     std::string ClusterDb::readFromNtFilePath(const std::string &file_name)
     {
         std::lock_guard<std::mutex> lock(cached_nt_mutex_);
-        std::string file_path = getDbDirPath() + file_name;
+        std::string file_path = getDbDirPath(db_name_) + file_name;
         std::string::size_type pos = file_name.find_last_of(".");
         if (pos == std::string::npos)
         {
             SLOG_ERROR("nt.log format is error:" << db_name_ << " , file name:" << file_name );
             return std::string();
         }
-        std::string nt_path = getDbDirPath() + file_name.substr(0, pos) + ".nt";
+        std::string nt_path = getDbDirPath(db_name_) + file_name.substr(0, pos) + ".nt";
         if (Util::file_exist(nt_path))
         {
             return nt_path;

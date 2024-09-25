@@ -151,7 +151,7 @@ namespace cluster
             SLOG_TRACE("start sync fail, please check term.json, index:" << index);
             return false;
         }
-        std::string current_path = getDbDirPath(db_name) + file_name;
+        std::string current_path = ClusterDb::getDbDirPath(db_name) + file_name;
         std::string zip_path = current_path + ".zip";
         if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
         {
@@ -235,7 +235,7 @@ namespace cluster
                 oneTimer.SyncWait(once_run, [this, &pass_num, db_name, index, &waiting]
                 {
                     pass_num = this->getLogSyncNum(db_name, index);
-                    SLOG_DEBUG("waiting query append task callback pass num" << pass_num << waiting);
+                    SLOG_DEBUG("waiting query append task callback pass num:" << pass_num << waiting);
                     waiting.append(".");
                 });
             }
@@ -259,14 +259,18 @@ namespace cluster
 
     bool ClusterEntityLeader::runTask(const ClusterTaskInfo& info)
     {
-        ClusterDbPtr db = findDb(info.db_name);
-        if (!db)
-            return false;
-        if (info.index == 0)
+        if (info.status != ClusterLogStatus_drop)
         {
-            SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << info.index);
-            return false;
+            ClusterDbPtr db = findDb(info.db_name);
+            if (!db)
+                return false;
+            if (info.index == 0)
+            {
+                SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << info.index);
+                return false;
+            }    
         }
+        
         if (info.status == ClusterLogStatus_commit)
         {
             postTask(info.db_name, info.index, "commit", info.status);
@@ -342,7 +346,7 @@ namespace cluster
         // min time is 1 minute
         // triple_num 1000000 is 1 second
         // file size 100m is 1 second
-        std::string file_path = getDbDirPath(db_name) + file_name;
+        std::string file_path = ClusterDb::getDbDirPath(db_name) + file_name;
         if (!Util::file_exist(file_path))
         {
             SLOG_ERROR("file not exits:" << db_name << " ,file name:" << file_name);

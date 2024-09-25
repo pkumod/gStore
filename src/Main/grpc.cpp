@@ -69,7 +69,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -1559,7 +1559,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		build_task(request, response, json_data);
 		break;
 	case OP_DROP:
-		drop_task(request, response, json_data);
+		drop_task(request, response, series, json_data);
 		break;
 	case OP_BACKUP:
 		backup_task(request, response, json_data);
@@ -2461,10 +2461,15 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database that would drop", "is_backup": "'true' for logic delete, 'false' for physically delete"}
  */
-void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
 	try
 	{
+		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+		{
+			redirect_handler(request, response, series);
+			return;
+		}
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string is_backup = jsonParam(json_data, "is_backup", "true");
 		std::string error = apiUtil->check_param_value("db_name", db_name);
@@ -2530,11 +2535,9 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			}
 			Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
-			if (clusterManagerPtr->isEnable() && clusterManagerPtr->isLeader())
-			{
-				clusterManagerPtr->dropDb(db_name);
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_drop));
-			}
+			SLOG_TRACE("post follower drop db");
+			clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_drop));
+			clusterManagerPtr->dropDb(db_name);
 			response->Success(success);
 		}
 	}
@@ -6210,7 +6213,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					system(cmd.c_str());
 				}while (0);
 				Util::delete_backuplog(db_name);
-				string success = "Database " + db_name + " dropped.";
+				string success = "cluster Database " + db_name + " dropped.";
 				clusterManagerPtr->dropDb(db_name);
 			}
 			response->Success("ok");

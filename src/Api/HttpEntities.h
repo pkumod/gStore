@@ -42,6 +42,7 @@ namespace httpentities {
 
     struct ClusterRequest {
         uint32_t term;
+        uint64_t firstIndex;
         uint64_t index;
         std::string db_name;
         ClusterRequest() {}

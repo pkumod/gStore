@@ -382,9 +382,7 @@ namespace cluster
 
     std::string ClusterManager::getDbDirPath(std::string db_name)
     {
-        if (!isEnable() || !role_)
-            return "";
-        return role_->getDbDirPath(db_name);
+        return ClusterDb::getDbDirPath(db_name);
     }
 
     void ClusterManager::getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl)
@@ -488,6 +486,7 @@ namespace cluster
     {
         if (status == ClusterLogStatus_sync
          || status == ClusterLogStatus_pending
+         || status == ClusterLogStatus_drop
          || status == ClusterLogStatus_build)
         {
             return true;

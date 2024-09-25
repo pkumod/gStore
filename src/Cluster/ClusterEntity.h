@@ -41,7 +41,6 @@ namespace cluster
         void addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name);
         void appendCachedNtData(const std::vector<TripleInfo>& triples, const std::string& db_name,  const std::string file_name);
         void getNtFileData(std::vector<TripleInfo>& triples, const std::string& db_name, const std::string& file_name);
-        std::string getDbDirPath(const std::string& db_name);
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
         std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
         // term.json

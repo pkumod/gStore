@@ -19,9 +19,9 @@ namespace cluster
         void init();
         void setDbname(const std::string& db_name){ db_name_ = db_name; }
         // 获取集群存放目录
-        static std::string getClusterDir(){ return Util::getConfigureValue("cluster_data_path"); }
-        std::string getDbDirPath(){ return getClusterDir() + db_name_ + "/"; }
-        std::string getUpdatePath(){ return getDbDirPath() + "update.json"; }
+        static std::string getClusterDir();
+        static std::string getDbDirPath(const std::string& db_name);
+        static std::string getUpdatePath(const std::string& db_name);
         // nt file
         bool readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name);
         bool writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append = false);

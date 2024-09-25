@@ -294,14 +294,6 @@ namespace cluster
         db->getNtFileData(triples, file_name);
     }
 
-    std::string ClusterEntity::getDbDirPath(const std::string& db_name)
-    {
-        ClusterDbPtr db = findDb(db_name);
-        if (!db)
-            return "";
-        return db->getDbDirPath();
-    }
-
     std::string ClusterEntity::getNtFilePath(const std::string& db_name, const std::string& file_name)
     {
         ClusterDbPtr db = findDb(db_name);
@@ -354,7 +346,7 @@ namespace cluster
             return;
         }
         log.eraseDb(db_name);
-        Util::remove_dir(getDbDirPath(db_name));
+        Util::remove_dir(ClusterDb::getDbDirPath(db_name));
         databaseL_.erase(db_name);
         if (!writeToTermFile(log))
         {
