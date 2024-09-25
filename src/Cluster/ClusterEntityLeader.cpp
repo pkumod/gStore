@@ -204,7 +204,7 @@ namespace cluster
     bool ClusterEntityLeader::waitTimerPassNum(std::string db_name, uint64 index, ClusterLogStatus status, uint64 end_time)
     {
         TimerProvider oneTimer;
-        int once_run = 1000;
+        int once_run = 200;
         uint32 pass_num = 0;
         int need_num = getNeedNum();
         while (1)

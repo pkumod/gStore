@@ -78,9 +78,9 @@ namespace cluster
         // 启动跑任务
         void runTask();
         // 是否心跳类任务
-        bool IsHeartBeatTask(ClusterLogStatus status);
-        // 是否更新类任务(build, insert, remove)
-        bool IsUpdateTask(ClusterLogStatus status);
+        bool IsSupportTask(ClusterLogStatus status);
+        // 是否支持同步
+        bool IsSupportSync(ClusterLogStatus status);
         // 删除集群信息
         void dropDb(const std::string& db_name);
 

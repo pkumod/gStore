@@ -468,23 +468,26 @@ namespace cluster
         return leader->getAppendTimeout(db_name, file_name)*1000;
     }
 
-    bool ClusterManager::IsHeartBeatTask(ClusterLogStatus status)
+    bool ClusterManager::IsSupportTask(ClusterLogStatus status)
     {
         if (status == ClusterLogStatus_HeartBeat
-         || status == ClusterLogStatus_pending
          || status == ClusterLogStatus_commit
          || status == ClusterLogStatus_cancel
          || status == ClusterLogStatus_fail
-         || status == ClusterLogStatus_drop)
+         || status == ClusterLogStatus_drop
+         || status == ClusterLogStatus_sync
+         || status == ClusterLogStatus_pending
+         || status == ClusterLogStatus_build)
         {
             return true;
         }
         return false;
     }
 
-    bool ClusterManager::IsUpdateTask(ClusterLogStatus status)
+    bool ClusterManager::IsSupportSync(ClusterLogStatus status)
     {
         if (status == ClusterLogStatus_sync
+         || status == ClusterLogStatus_pending
          || status == ClusterLogStatus_build)
         {
             return true;
@@ -501,8 +504,13 @@ namespace cluster
 
     bool ClusterManager::addTask(ClusterTaskInfo info, bool sync)
     {
-        if (!isEnable() || !role_ || info.db_name.empty())
+        if (!isEnable() || !role_)
             return false;
+        if (info.db_name.empty())
+        {
+            SLOG_TRACE("please task db name is empty");
+            return false;
+        }
         ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
         if (!leader)
         {
@@ -516,33 +524,33 @@ namespace cluster
             return false;
         }
 
+        if (info.status == ClusterLogStatus_sync)
+        {
+            if (info.operation == ClusterOperation_None || info.file_name.empty())
+            {
+                SLOG_TRACE("please sync task parm status:" << info.operation << " ,file name:" << info.file_name);
+                return false;
+            }
+        }
+
         info.setIndex(index);
 
-        if (IsHeartBeatTask(info.status))
+        if (!sync && IsSupportTask(info.status))
         {
             ClusterEventPtr task = std::make_shared<ClusterTaskEvent>(info, leader);
             task_queueL.push(task);
         }
-        else if (IsUpdateTask(info.status) && !sync)
+        else if (sync && IsSupportSync(info.status))
         {
             ClusterEventPtr task = std::make_shared<ClusterTaskEvent>(info, leader);
             task_queueL.push(task);
+            uint64 end_time = leader->getTimeOutEndTime(info.db_name, info.file_name);
+            end_time = leader->getTimeOutEndTime();
+            return leader->waitTimerPassNum(info.db_name, index, info.status, end_time);
         }
-        else if (IsUpdateTask(info.status) && sync)
+        else
         {
-            ClusterEventPtr task = std::make_shared<ClusterTaskEvent>(info, leader);
-            task_queueL.push(task);
-            uint64 end_time = 0;
-            if (info.status == ClusterLogStatus_pending)
-            {
-                end_time = leader->getTimeOutEndTime();
-                return leader->waitTimerPassNum(info.db_name, index, info.status, end_time);
-            }
-            else if (info.status == ClusterLogStatus_sync)
-            {
-                end_time = leader->getTimeOutEndTime(info.db_name, info.file_name);
-                return leader->waitTimerPassNum(info.db_name, index, info.status, end_time);
-            }
+            SLOG_TRACE("not support task status " << info.status << " ,db name:" << info.db_name << " fail, please check update.json, index:" << index);
         }
         
         return false;
