@@ -41,8 +41,10 @@ std::string _server_deamon;
 
 useconds_t _max_wait_time = 3 * 1000 * 1000;
 
-bool startServer();
+bool startServer(bool background = false);
 bool stopServer();
+void initialServer(uint16_t port, bool background = false);
+void releaseGlobalPtr(bool renew = false);
 void register_service(GRPCServer &grpcServer);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
@@ -310,26 +312,20 @@ void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const
 	return;
 }
 
-void sig_handler(int signo)
+void sig_handler(int sig)
 {
-	SLOG_INFO("Server stopped.");
-	apiUtil.reset();
-	pfnUtil.reset();
-	clusterManagerPtr.reset();
-	wait_group.done();
+	SLOG_INFO("Capture system signal：" + to_string(sig));
+	stopServer();
 	std::cout.flush();
-	Util::remove_path(PID_PATH);
-	_exit(signo);
+	_exit(EXIT_SUCCESS);
 }
 
-void sigterm_handler(int signo)
-{
-	SLOG_INFO("Server stopped.");
-	stopServer();
-}
 
 int main(int argc, char *argv[])
 {
+	on_exit([](int status, void *arg) {
+		releaseGlobalPtr();
+	}, NULL);
 	Util util;
 	_server_port = util.getConfigureValue("port");
 	_server_deamon = util.getConfigureValue("deamon");
@@ -356,6 +352,7 @@ int main(int argc, char *argv[])
 		cout << "\t-t,--stop\t\tSafe shutdow gServer." << endl;
 		cout << "\t-r,--restart\t\tRestart gServer." << endl;
 		cout << "\t-k,--kill\t\tForce shutdow gServer." << endl;
+		cout << "\t-b,--background\t\tStart gServer in the background." << endl;
 		cout << "\t-S,--status\t\tShow gServer status." << endl;
 		cout << endl;
 		return 0;
@@ -368,9 +365,9 @@ int main(int argc, char *argv[])
 		if (check_response.success())
 		{
 			cout << "the server already running." << endl;
-			return -1;
+			return 1;
 		}
-		if (startServer())
+		if (startServer(false))
 		{
 			sleep(1);
 			// load db
@@ -397,7 +394,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			return -1;
+			return 1;
 		}
 	}
 	else if (command == "-t" || command == "--stop")
@@ -415,6 +412,7 @@ int main(int argc, char *argv[])
 	}
 	else if (command == "-r" || command == "--restart")
 	{
+		bool background = false;
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(check_response.success()) {
@@ -427,13 +425,13 @@ int main(int argc, char *argv[])
 		}
 		// start server
 		cout << "start server..." << endl;
-		if (startServer())
+		if (startServer(background))
 		{
 			return 0;
 		}
 		else
 		{
-			return -1;
+			return 1;
 		}
 	}
 	else if (command  == "-k" || command == "--kill")
@@ -470,42 +468,80 @@ int main(int argc, char *argv[])
 		cout << "\tDocs: https://www.gstore.cn" << endl;
 		return 0;
 	}
+	else if (command == "-b" || command == "--background")
+	{
+		// check server thread
+		httpentities::CheckRequest check_request;
+		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
+		if (check_response.success())
+		{
+			cout << "the server already running." << endl;
+			return -1;
+		}
+		if (startServer(true))
+		{
+			// load db
+			if(argc == 4 || argc == 6)
+			{
+				string db_name = Util::getArgValue(argc, argv, "db", "database");
+				string csr = Util::getArgValue(argc, argv, "c", "csr", "0");
+				httpentities::LoadRequest load_requst(db_name, csr);
+				httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_requst);
+				if (load_response.success())
+				{
+					SLOG_INFO("load " + db_name + " success.");
+				}
+				else
+				{
+					SLOG_INFO("load failed: unknow error.");
+				}
+			}
+			else
+			{
+				SLOG_INFO("No database is loaded!");
+			}
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
+	}
 	else
 	{
 		cout << "Invalid arguments! Input \"bin/gserver -h\" for help." << endl;
-		return -1;
+		return 1;
 	}
 }
 
-bool startServer() 
-{	
-	uint8 port = atoi(_server_port.c_str());
-	// check port
+bool checkServerPort(uint16_t port)
+{
 	int max_try = 20;
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	int bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
+	int bind_return = -1; 
+	
 	if (bind_return == -1)
 	{
-		cout<<"waiting"<<std::flush;
+		std::cout << "waiting" << std::flush;
 		while (bind_return == -1 && max_try > 0) {
 			cout<<"."<<std::flush;
 			sleep(3);
 			bind_return = bind(sock, (struct sockaddr*) &addr,sizeof(addr));
 			max_try --;
 		}
-		cout<<endl;
+		std::cout << std::endl;
 		if (bind_return == -1)
 		{			
 			SLOG_INFO("Server port " + _server_port + " is already in use.");
 			return false;
 		}
 	} 
-	max_try = 20;
 	// relase bind
+	max_try = 20;
 	int close_status = close(sock);
 	while (close_status != 0 && max_try > 0) {
 		close_status = close(sock);
@@ -519,15 +555,86 @@ bool startServer()
 	}
 	sock = -1;
 	std::memset(&addr, 0, sizeof(addr));
-	// pid_t fpid;
-	// fpid = fork();
-	// child
-	// if (fpid == 0)
-	// {
-		// int status;
-		while (true)
+	return true;
+}
+
+bool startServer(bool background) 
+{	uint64_t _port_ul =  stoul(_server_port);
+	if (_port_ul > 65535)
+	{
+		SLOG_ERROR("Invalid port number: " + _server_port);
+		return false;
+	}
+	uint16_t port =  static_cast<uint16_t>(_port_ul);
+	// check port
+	if (!checkServerPort(port))
+	{
+		return false;
+	}
+	pid_t fpid;
+	int status;
+	if (background)
+	{
+		// run in background
+		fpid = fork();
+		// child
+		if (fpid == 0)
 		{
-			pid_t fpid;
+			while (true)
+			{
+				if (_server_deamon == "on")
+					fpid = fork();
+				else
+					fpid = 0;
+				// child, main process
+				if (fpid == 0)
+				{
+					// initialize server
+					initialServer(port, background);
+					return true;
+				}
+				// parent, deamon process
+				else if (fpid > 0)
+				{
+					int status;
+					waitpid(fpid, &status, 0);
+					if (WIFEXITED(status))
+					{
+						return true;
+					}
+					else
+					{
+						SLOG_WARN("Stopped abnormally, restarting server...");
+						sleep(1);
+						releaseGlobalPtr(true);
+					}
+				}
+				// fork failure
+				else
+				{
+					SLOG_ERROR("Failed to start server: deamon fork failure.");
+					return false;
+				}
+			}
+		}
+		// parent
+		else if (fpid > 0)
+		{
+			SLOG_INFO("Server started at port " + _server_port);
+			return true;
+		}
+		// fork failure
+		else 
+		{
+			SLOG_ERROR("Failed to start server: fork failure.");
+			return false;
+		}
+	}
+	else
+	{
+		//run in foreground
+		while(true)
+		{
 			if (_server_deamon == "on")
 				fpid = fork();
 			else
@@ -535,64 +642,8 @@ bool startServer()
 			// child, main process
 			if (fpid == 0)
 			{
-				apiUtil = make_shared<APIUtil>();
-				pfnUtil = make_shared<PFNUtil>();
-				clusterManagerPtr = make_shared<ClusterManager>();
-				// init config
-				int rt = apiUtil->initialize();			
-				if (rt == -1)
-				{
-					return false;
-				}
-				if (clusterManagerPtr->isEnable()) {
-					SLOG_INFO("cluster status on");
-					int timeout = apiUtil->get_configure_value("cluster_relpy_timeout", 3) + 1;
-					_max_wait_time = timeout * 1000 * 1000;
-					clusterManagerPtr->init();
-				} else {
-					SLOG_INFO("cluster status off");
-				}
-				GRPCServer grpcServer;
-				// register rest service
-				register_service(grpcServer);
-				int max_try = 30;
-				int start_status = -1;
-				do
-				{
-					// try starting until success of more than max_try
-					start_status = grpcServer.start(port);
-					if(start_status != 0)
-					{
-						SLOG_INFO("Server try starting " + to_string(start_status));
-						sleep(1000);
-					}
-					max_try--;
-				} while (start_status == -1 && max_try > 0);
-				if(start_status != 0)
-				{
-					SLOG_ERROR("Server start failed.");
-					latch.lockExclusive();
-					if (apiUtil)
-					{
-						apiUtil.reset();
-						apiUtil = make_shared<APIUtil>();
-					}
-					latch.unlock();
-					return false;
-				}
-				SLOG_INFO("Server port " + _server_port);
-				// handle the Ctrl+C signal
-				signal(SIGINT, sig_handler);
-				// handle SIGTERM signal
-				signal(SIGTERM, sigterm_handler);
-				wait_group.wait();
-				grpcServer.stop();
-				apiUtil.reset();
-				pfnUtil.reset();
-				clusterManagerPtr.reset();
-				SLOG_INFO("Server stoped.");
-				std::cout.flush();
-				exit(0);
+				// initialize server
+				initialServer(port, background);
 				return true;
 			}
 			// parent, deamon process
@@ -607,46 +658,124 @@ bool startServer()
 				else
 				{
 					SLOG_WARN("Stopped abnormally, restarting server...");
-					latch.lockExclusive();
-					if (apiUtil)
-					{
-						apiUtil.reset();
-						apiUtil = make_shared<APIUtil>();
-					}
-					if (pfnUtil) 
-					{
-						pfnUtil.reset();
-						pfnUtil = make_shared<PFNUtil>();
-					}
-					if (clusterManagerPtr)
-					{
-						clusterManagerPtr.reset();
-						clusterManagerPtr = make_shared<ClusterManager>();
-					}
-					latch.unlock();
+					sleep(1);
+					releaseGlobalPtr(true);
 				}
 			}
 			// fork failure
 			else
 			{
-				SLOG_ERROR("Failed to start server: deamon fork failure.");
+				SLOG_ERROR("Failed to start server: fork failure.");
 				return false;
 			}
 		}
-		return false;
-	// }
-	// // parent
-	// else if (fpid > 0)
-	// {
-	// 	SLOG_INFO("Server port " + _server_port);
-	// 	return true;
-	// }
-	// // fork failure
-	// else 
-	// {
-	// 	SLOG_ERROR("Failed to start server: fork failure.");
-	// 	return false;
-	// }
+	}
+}
+
+void initialServer(uint16_t port, bool background)
+{
+	apiUtil = make_shared<APIUtil>();
+	pfnUtil = make_shared<PFNUtil>();
+	clusterManagerPtr = make_shared<ClusterManager>();
+	// init config
+	int rt = apiUtil->initialize();			
+	if (rt == -1)
+	{
+		exit(EXIT_FAILURE);
+	}
+	// save start type to pid file
+	fstream ofp;
+	std::string pid_path = PID_PATH;
+	ofp.open(pid_path.c_str(), ios::app);
+	ofp << background;
+	ofp << '\n';
+	ofp.flush();
+	ofp.close();
+	sleep(1);
+	if (clusterManagerPtr->isEnable()) {
+		SLOG_INFO("cluster status on");
+		clusterManagerPtr->init();
+		std::vector<std::string> headers = {"name", "value"};
+		std::vector<std::vector<std::string>> rows;
+		std::string role = clusterManagerPtr->getCluterRole() == ClusterRoleType_Leader ? "leader" : "follower";
+		rows.push_back({"role", role});
+		rows.push_back({"heartbeat", apiUtil->get_configure_value("cluster_heartbeat") + " s"});
+		rows.push_back({"relpy_timeout", apiUtil->get_configure_value("cluster_relpy_timeout") + " s"});
+		rows.push_back({"data_path", apiUtil->get_configure_value("cluster_data_path")});
+		if (clusterManagerPtr->isLeader()) {
+			uint16_t node_idx = 1;
+			for (auto& follower : clusterManagerPtr->getFollowrUrlArray()) {		    
+				rows.push_back({"node" + to_string(node_idx), follower});
+				node_idx++ ;
+			}
+		} else {
+			rows.push_back({"node", clusterManagerPtr->getLeaderUrl()});
+		}
+		Util::printConsole(headers, rows);
+	} else {
+		SLOG_INFO("cluster status off");
+	}
+	GRPCServer grpcServer;
+	// register rest service
+	register_service(grpcServer);
+	int max_try = 30;
+	int start_status = -1;
+	do
+	{
+		// try starting until success of more than max_try
+		start_status = grpcServer.start(port);
+		if(start_status != 0)
+		{
+			SLOG_INFO("Server try starting " + to_string(start_status));
+			sleep(1);
+		}
+		max_try--;
+	} while (start_status == -1 && max_try > 0);
+	if(start_status != 0)
+	{
+		SLOG_ERROR("Server start failed.");
+		exit(EXIT_FAILURE);
+	}
+	if (!background)
+		SLOG_INFO("Server started at port " + _server_port);
+	// handle the Ctrl+C signal
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+	wait_group.wait();
+	grpcServer.stop();
+	apiUtil.reset();
+	pfnUtil.reset();
+	clusterManagerPtr.reset();
+	SLOG_INFO("Server stoped.");
+	std::cout.flush();
+	exit(EXIT_SUCCESS);
+}
+
+void releaseGlobalPtr(bool renew)
+{
+	SLOG_DEBUG("release global pointer");
+	latch.lockExclusive();
+	if (apiUtil) {
+		apiUtil.reset();
+		if(renew) {
+			apiUtil = make_shared<APIUtil>();
+		}
+	}
+	if (pfnUtil) 
+	{
+		pfnUtil.reset();
+		if(renew) {
+			pfnUtil = make_shared<PFNUtil>();
+		}
+	}
+	if (clusterManagerPtr)
+	{
+		clusterManagerPtr.reset();
+		if(renew) {
+			clusterManagerPtr = make_shared<ClusterManager>();
+		}
+	}
+	latch.unlock();
 }
 
 bool stopServer()
@@ -670,13 +799,13 @@ bool stopServer()
 	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
 	if (shutdown_response.success())
 	{
-		SLOG_DEBUG("the Server [" + pid + "] is stopped successfully.");
+		SLOG_INFO("the Server [" + pid + "] stop successfully.");
 		Util::remove_file(pid_path);
 		return true;
 	}
 	else
 	{
-		SLOG_DEBUG("the Server [" + pid + "] stop fail!");
+		SLOG_INFO("the Server [" + pid + "] stop failed: " + shutdown_response.StatusMsg);
 		return false;
 	}
 }
@@ -788,14 +917,6 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	SLOG_INFO("receive [shutdown] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== http-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	SLOG_DEBUG(ss);
 	std::string error;
 	std::string username = request->header("username");
 	std::string password = request->header("password");
@@ -826,13 +947,10 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	}
 	// bool flag = apiUtil->db_checkpoint_all();
 	rpc_task->add_callback([](GRPCTask *grpcTask){
-		SLOG_DEBUG("Server stopped successfully.");
 		// free apiUtil
-		apiUtil.reset();
-		pfnUtil.reset();
-		clusterManagerPtr.reset();
+		releaseGlobalPtr(false);
 		std::cout.flush();
-		_exit(0);
+		_exit(EXIT_SUCCESS);
 	});
 	std::string msg = "Server stopped successfully.";
 	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);

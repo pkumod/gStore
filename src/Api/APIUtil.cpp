@@ -102,10 +102,10 @@ int APIUtil::initialize()
         init_params();
         
         // load system db
-        if(!util.file_exist(Util::initfile))
+        std::string _sys_db_path = get_Db_path() + "/system" + get_Db_suffix();
+        if(!util.file_exist(Util::initfile) || !util.dir_exist(_sys_db_path))
         {
             SLOG_INFO("System has not been initialized. Now initialize it");
-            std::string _sys_db_path = get_Db_path() + "/system" + get_Db_suffix();
             if (util.dir_exist(_sys_db_path))
             {
                 util.remove_path(_sys_db_path);
