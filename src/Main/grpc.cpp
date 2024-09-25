@@ -2415,7 +2415,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			if (clusterManagerPtr->isEnable()) 
 			{
 				clusterManagerPtr->dropDb(db_name);
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus_drop);
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_drop));
 			}
 			response->Success(success);
 		}
@@ -2954,27 +2954,17 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		if (clusterManagerPtr->isEnable() && is_update) 
 		{
 			// send [prepare] heartbeat and wait response
-			bool prepare_result = false;
-			uint16_t prepare_status = 1;
 			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
 				cluster_operation = ClusterOperation::ClusterOperation_Insert;
 			else
 				cluster_operation = ClusterOperation::ClusterOperation_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
-			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
-			{
-				prepare_result = success;
-				prepare_status++;
-				SLOG_DEBUG("prepare task result: " << prepare_result);
-			});
-			// slepp 200 ms
-			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting prepare task callback", _max_wait_time);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -3199,21 +3189,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				{
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
 					string log_file_name = to_string(log_index) + ".log";
-					bool append_result = false;
-					uint16_t append_status = 1;
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_result, &append_status](bool success) {
-						SLOG_DEBUG("query append log entities task callback: " << success);
-						append_result = success;
-						append_status++;
-					}, cluster_operation, log_file_name);
-					// slepp 200 ms
-					useconds_t microseconds = 200*1000;
-					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
-					waiting_handler(microseconds, append_status, "waiting query append task callback", append_max_time_out);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, cluster_operation, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 						response->Json(resp_data);
 					}
 					else
@@ -3247,14 +3227,14 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
 						response->Error(StatusOperationFailed, error);
 					}
 				}
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 					response->Json(resp_data);
 				}
 			}
@@ -3886,24 +3866,14 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		if (clusterManagerPtr->isEnable()) 
 		{
 			// send [prepare] heartbeat and wait response
-			bool prepare_result = false;
-			uint16_t prepare_status = 1;
 			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Insert;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
-			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
-			{
-				SLOG_DEBUG("append task result: " << success);
-				prepare_result = success;
-				prepare_status++;
-			});
-			// slepp 200 ms
-			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting batch insert prepare task callback", _max_wait_time);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
 				SLOG_ERROR(error);
 				response->Error(StatusOperationFailed, error);
 				return;
@@ -4025,21 +3995,11 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
 					string log_file_name = to_string(log_index) + ".log";
 					string tmp_dir_path = unz_dir_path;
-					bool append_result = false;
-					uint16_t append_status = 1;
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
-						SLOG_DEBUG("append log entities task callback: " << success);
-						append_result = success;
-						append_status++;
-						
-					}, ClusterOperation_Insert, log_file_name);
-					useconds_t microseconds = 200 * 1000;
-					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
-					waiting_handler(microseconds, append_status, "waiting batch insert append task callback", append_max_time_out);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, ClusterOperation_Insert, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 						if (response)
 						{
 							response->Json(resp_data);
@@ -4087,7 +4047,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
 						if (response)
 						{
 							response->Error(StatusOperationFailed, error);
@@ -4110,7 +4070,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 					// remove unzip files
 					if (!unz_dir_path.empty())
 					{
@@ -4218,25 +4178,15 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		if (clusterManagerPtr->isEnable()) 
 		{
 			// send [prepare] heartbeat and wait response
-			bool prepare_result = false;
-			uint16_t prepare_status = 1;
 			ClusterOperation cluster_operation = ClusterOperation::ClusterOperation_Delete;
 			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus::ClusterLogStatus_pending, cluster_operation);
-			clusterManagerPtr->addTask(db_name, ClusterLogStatus_pending, [&prepare_status, &prepare_result](bool success)
-			{
-				SLOG_DEBUG("prepare task result: " << success);
-				prepare_result = success;
-				prepare_status++;
-			});
-			// slepp 200 ms
-			useconds_t microseconds = 200*1000;
-			waiting_handler(microseconds, prepare_status, "waiting batch remove prepare task callback", _max_wait_time);
+			clusterManagerPtr->addLog(db_name, log_index, ClusterLogStatus_pending, cluster_operation);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_pending), true);
 			if (!prepare_result)
 			{
 				error = "Less than half of the cluster nodes are confirmed.";
 				SLOG_ERROR(error);
-				clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_fail);
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_fail));
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
@@ -4348,20 +4298,11 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
 					string log_file_name = to_string(log_index) + ".log";
 					string tmp_dir_path = unz_dir_path;
-					bool append_result = false;
-					uint16_t append_status = 1;
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_sync, [&append_status, &append_result](bool success) {
-						SLOG_DEBUG("append log entities task callback: " << success);
-						append_result = success;
-						append_status++;
-					}, ClusterOperation_Delete, log_file_name);
-					useconds_t microseconds = 200 * 1000;
-					useconds_t append_max_time_out = clusterManagerPtr->getAppendTimeout(db_name, log_file_name);
-					waiting_handler(microseconds, append_status, "waiting batch remove append task callback", append_max_time_out);
+					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_sync, ClusterOperation_Delete, log_file_name), true);
 					if (append_result)
 					{
 						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 						if (response)
 						{
 							response->Json(resp_data);
@@ -4408,7 +4349,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						}
 						std::string error = "Less than half of the cluster nodes reply.";
 						SLOG_ERROR(error);
-						clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_cancel);
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_cancel));
 						if (response)
 						{
 							response->Error(StatusOperationFailed, error);
@@ -4431,7 +4372,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				else
 				{
 					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(db_name, ClusterLogStatus::ClusterLogStatus_commit);
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_commit));
 					// remove unzip files
 					if (!unz_dir_path.empty())
 					{
@@ -6323,7 +6264,7 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	{
 		// TODO add a new task that starting with follower index
 		std::string file_name;
-		clusterManagerPtr->addTask(db_name, cluster::ClusterLogStatus::ClusterLogStatus_HeartBeat);
+		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterLogStatus_HeartBeat));
 	}
 	
 	response->Success("ok");

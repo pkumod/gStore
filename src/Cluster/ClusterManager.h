@@ -74,7 +74,7 @@ namespace cluster
         // 获取从节点列表
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
-        bool addTask(std::string db_name, ClusterLogStatus status = ClusterLogStatus_HeartBeat, const timeoutCall& cb = nullptr, ClusterOperation operation = ClusterOperation_None, const std::string& file_name = "");
+        bool addTask(ClusterTaskInfo info, bool sync = false);
         // 启动跑任务
         void runTask();
         // 是否心跳类任务
@@ -144,19 +144,16 @@ namespace cluster
     };
 
     // task
-    struct ClusterHeartBeatEvent : public ClusterEvent
+    struct ClusterTaskEvent : public ClusterEvent
     {
-        std::string db_name_;
-        ClusterLogStatus status_;
+        ClusterTaskInfo info_;
         ClusterEntityLeaderWeaker wer_;
-        timeoutCall cb_;
-        ClusterHeartBeatEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, ClusterLogStatus status)
+        ClusterTaskEvent(const ClusterTaskInfo& info, ClusterEntityLeaderPtr per)
         {
-            db_name_ = db_name;
+            info_ = info;
             wer_ = per;
-            cb_ = cb;
-            status_ = status;
         }
+
         void runEvent()const override
         {
             ClusterEntityLeaderPtr per = wer_.lock();
@@ -165,57 +162,13 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            if (status_ == ClusterLogStatus_HeartBeat)
+            if (info_.status == ClusterLogStatus_HeartBeat)
             {
-                per->startHeardBeat(db_name_);
+                per->startHeardBeat(info_.db_name);
             }
             else
             {
-                bool success = per->runTask(db_name_, status_);
-                if (cb_)
-                {
-                    SLOG_TRACE("cluster reply callback status:" << status_ << " ,success:" << success);
-                    cb_(success);
-                }
-            }
-        }
-    };
-
-    struct ClusterAppendEvent : public ClusterEvent
-    {
-        std::string db_name_;
-        ClusterLogStatus status_;
-        ClusterEntityLeaderWeaker wer_;
-        timeoutCall cb_;
-        ClusterOperation operation_;
-        std::string file_name_;
-        ClusterAppendEvent()
-        {
-            db_name_ = "";
-            operation_ = ClusterOperation_None;
-            file_name_ = "";
-        }
-        ClusterAppendEvent(std::string db_name, ClusterEntityLeaderPtr per, const timeoutCall &cb, ClusterLogStatus status, ClusterOperation operation, std::string file_name)
-        {
-            db_name_ = db_name;
-            operation_ = operation;
-            file_name_ = file_name;
-            wer_ = per;
-            cb_ = cb;
-        }
-        void runEvent()const override
-        {
-            ClusterEntityLeaderPtr per = wer_.lock();
-            if (!per)
-            {
-                SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
-                return;
-            }
-            bool success = per->runAppendTask(db_name_, operation_, file_name_);
-            if (cb_)
-            {
-                SLOG_TRACE("cluster sync callback db name:" << db_name_ << " ,operation:" << operation_ << " ,success:" << success);
-                cb_(success);
+                per->runTask(info_);
             }
         }
     };

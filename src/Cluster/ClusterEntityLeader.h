@@ -21,12 +21,13 @@ namespace cluster
         void startHeardBeat(std::string db_name);
         void stopHeardBeatTimer(std::string db_name);
         void postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status);
-        bool runTask(std::string db_name, ClusterLogStatus status);
+        bool runTask(const ClusterTaskInfo& info);
         bool runAppendTask(std::string db_name, ClusterOperation operation, const std::string& file_name);
         bool waitTimerPassNum(std::string db_name, uint64 index, ClusterLogStatus status, uint64 end_time);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
+        uint64 getTimeOutEndTime(const std::string& db_name = "", const std::string& file_name = "");
 
         // virtual function in here
         public:

@@ -58,6 +58,41 @@ namespace cluster
         CLUSTER_OPERATION_TYPE_UNDEFINE = 13,
     };
 
+    struct ClusterTaskInfo
+    {
+        std::string db_name;
+        ClusterLogStatus status;
+        ClusterOperation operation;
+        std::string file_name;
+        uint64 index;
+        ClusterTaskInfo()
+        {
+            db_name   = "";
+            status    = ClusterLogStatus_None;
+            operation = ClusterOperation_None;
+            file_name = "";
+            index     = 0;
+        }
+        ClusterTaskInfo(const std::string& db_name_, ClusterLogStatus status_)
+        {
+            db_name   = db_name_;
+            status    = status_;
+            operation = ClusterOperation_None;
+            file_name = "";
+            index    = 0;
+        }
+        ClusterTaskInfo(const std::string& db_name_, ClusterLogStatus status_, ClusterOperation operation_, const std::string& file_name_)
+        {
+            db_name   = db_name_;
+            status    = status_;
+            operation = operation_;
+            file_name = file_name_;
+            index    = 0;
+        }
+
+        void setIndex(uint64 value){ index = value; }
+    };
+
     struct ClusterNode
     {
         private:

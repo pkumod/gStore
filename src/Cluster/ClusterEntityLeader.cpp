@@ -25,7 +25,6 @@ namespace cluster
         }
 
         heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str());
-        relpy_timeout_ = std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
     }
 
     ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip, const std::string& port)const
@@ -164,8 +163,7 @@ namespace cluster
         std::string file_path = Util::getExactPath(zip_path.c_str());
         updateLogStatus(db_name, index, ClusterLogStatus_sync);
         postAppendTask(db_name, index, operation, file_path);
-        uint64 end_time = Util::get_cur_time() + getAppendTimeout(db_name, file_name);
-        return waitTimerPassNum(db_name, index, ClusterLogStatus_sync, end_time);
+        return true;
     }
 
     void ClusterEntityLeader::postTask(std::string db_name, uint64 index, std::string expection, ClusterLogStatus status)
@@ -253,52 +251,61 @@ namespace cluster
         return false;
     }
 
-    bool ClusterEntityLeader::runTask(std::string db_name, ClusterLogStatus status)
+    bool ClusterEntityLeader::runTask(const ClusterTaskInfo& info)
     {
-        ClusterDbPtr db = findDb(db_name);
+        ClusterDbPtr db = findDb(info.db_name);
         if (!db)
             return false;
-        uint64 index = getDbNextIndex(db_name);
-        if (index == 0)
+        if (info.index == 0)
         {
-            SLOG_TRACE("start task status " << status << " fail, please check term.json, index:" << index);
+            SLOG_TRACE("start task status " << info.status << " fail, please check term.json, index:" << info.index);
             return false;
         }
-        if (status == ClusterLogStatus_commit)
+        if (info.status == ClusterLogStatus_commit)
         {
-            postTask(db_name, index, "commit", status);
+            postTask(info.db_name, info.index, "commit", info.status);
         }
-        else if (status == ClusterLogStatus_cancel)
+        else if (info.status == ClusterLogStatus_cancel)
         {
-            postTask(db_name, index, "cancel", status);
+            postTask(info.db_name, info.index, "cancel", info.status);
         }
-        else if (status == ClusterLogStatus_fail)
+        else if (info.status == ClusterLogStatus_fail)
         {
-            postTask(db_name, index, "fail", status);
+            postTask(info.db_name, info.index, "fail", info.status);
         }
-        else if (status == ClusterLogStatus_drop)
+        else if (info.status == ClusterLogStatus_drop)
         {
-            postTask(db_name, index, "drop", status);
+            postTask(info.db_name, info.index, "drop", info.status);
         }
-        else if (status == ClusterLogStatus_drop)
+        else if (info.status == ClusterLogStatus_drop)
         {
-            uint64 end_time = Util::get_cur_time() + relpy_timeout_;
-            postTask(db_name, index, "prepare", status);
-            return waitTimerPassNum(db_name, index, status, end_time);
+            postTask(info.db_name, info.index, "drop", info.status);
         }
-        else if (status == ClusterLogStatus_pending)
+        else if (info.status == ClusterLogStatus_pending)
         {
-            uint64 end_time = Util::get_cur_time() + relpy_timeout_;
-            postTask(db_name, index, "prepare", status);
-            return waitTimerPassNum(db_name, index, status, end_time);
+            postTask(info.db_name, info.index, "prepare", info.status);
+        }
+        else if (info.status == ClusterLogStatus_sync)
+        {
+            runAppendTask(info.db_name, info.operation, info.file_name);
         }
         else
         {
-            SLOG_ERROR("not support task db name:" << db_name << " ,status" << status);
+            SLOG_ERROR("not support task db name:" << info.db_name << " ,status" << info.status);
             return false;
         }
 
         return true;
+    }
+
+    uint64 ClusterEntityLeader::getTimeOutEndTime(const std::string& db_name, const std::string& file_name)
+    {
+        if (!db_name.empty() && !file_name.empty())
+        {
+            return Util::get_cur_time() + getAppendTimeout(db_name, file_name);
+        }
+        
+        return Util::get_cur_time() + std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
     }
 
     std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()const
