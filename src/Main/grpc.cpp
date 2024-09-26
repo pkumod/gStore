@@ -2376,6 +2376,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					bool flag = current_database->BuildEmptyDB();
 					int success_num = 0;
 					current_database.reset();
+					int nt_file_num = 0;
 					if (flag)
 					{
 						// if zip file then excuse batchInsert
@@ -2399,12 +2400,16 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 								current_database.reset();
 								return;
 							}
-							if (!db_path.empty())
+							if (!db_path.empty() && !is_zip)
+							{
 								current_database->batch_insert(db_path, false, nullptr, clusterlog);
+								nt_file_num = 1;
+							}
 							for (std::string rdf_zip : zip_files)
 							{
 								current_database->batch_insert(rdf_zip, false, nullptr, clusterlog);
 							}
+							nt_file_num += zip_files.size();
 							current_database->save();
 							success_num = current_database->getTripleNum();
 							current_database.reset();
@@ -2425,9 +2430,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						size_t parse_error_num = Util::count_lines(error_log);
 						// exclude Info line
 						if (parse_error_num > 0)
-							parse_error_num = parse_error_num - 1;
-						if (zip_files.size() > 0)
-							parse_error_num = parse_error_num - zip_files.size();
+							parse_error_num = parse_error_num - nt_file_num;
 						if (parse_error_num > 0)
 						{
 							SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
