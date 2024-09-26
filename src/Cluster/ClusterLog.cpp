@@ -428,6 +428,7 @@ namespace cluster
             return;
         }
         it->second.setIndex(index);
+        it->second.setFirstIndex(index);
     }
 
     void ClusterTermInfo::setDbNextIndex(const std::string& db_name, uint64 next_index)

@@ -4,23 +4,6 @@
 #include "../Api/NlohmanJson.hpp"
 using namespace nlohmann;
 namespace httpentities {
-
-    // void to_json(nlohmann::json& s, const ClusterRequest& t) {
-    //     s = nlohmann::json{{"term", t.term},{"index", t.index},{"db_name", t.db_name}};
-    // };
-
-    // void to_json(nlohmann::json& s, const ShutdownRequest& t) {
-    //     s = nlohmann::json{{"operation", t.op},{"username", t.username},{"password", t.password}};
-    // };
-
-    // void to_json(nlohmann::json& s, const TestConnectionRequest& t) {
-    //     s = nlohmann::json{{"operation", t.op},{"username", t.username},{"password", t.password}};
-    // };
-
-    // void to_json(nlohmann::json& s, const LoadRequest& t) {
-    //     s = nlohmann::json{{"operation", t.op},{"username", t.username},{"password", t.password},{"db_name", t.db_name},{"csr", t.csr}};
-    // };
-
     struct BaseRequest {
         std::string op;
         std::string username;
@@ -42,7 +25,6 @@ namespace httpentities {
 
     struct ClusterRequest {
         uint32_t term;
-        uint64_t firstIndex;
         uint64_t index;
         std::string db_name;
         ClusterRequest() {}
@@ -58,6 +40,12 @@ namespace httpentities {
             this->index = index;
         }
         virtual void to_json(std::string& json_str) = 0;
+        void toJson(nlohmann::json json)
+        {
+            json["term"]    = term;
+            json["index"]   = index;
+            json["db_name"] = db_name;
+        }
     };
 
     struct BaseResponse {
@@ -677,12 +665,10 @@ namespace httpentities {
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{
-                {"term", this->term},
-                {"index", this->index},
-                {"db_name", this->db_name},
-                {"operation", this->operation},
-                {"port", this->port}};
+            nlohmann::json json;
+            toJson(json);
+            json["operation"] = operation;
+            json["port"] = port;
             json_str = json.dump();
         }
     };
@@ -696,7 +682,9 @@ namespace httpentities {
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"operaton", this->operation}};
+            nlohmann::json json;
+            toJson(json);
+            json["operation"] = operation;
             json_str = json.dump();
         }
         std::string getFilePath() {return this->file_path;}
@@ -709,7 +697,9 @@ namespace httpentities {
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name},{"operation", this->operation}};
+            nlohmann::json json;
+            toJson(json);
+            json["operation"] = operation;
             json_str = json.dump();
         }
     };
@@ -722,7 +712,9 @@ namespace httpentities {
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"result", this->result}};
+            nlohmann::json json;
+            toJson(json);
+            json["result"] = result;
             json_str = json.dump();
         }
     };
@@ -737,7 +729,10 @@ namespace httpentities {
         }
         void to_json(std::string& json_str) override
         {
-            nlohmann::json json = nlohmann::json{{"term", this->term},{"index", this->index},{"db_name", this->db_name}, {"operaton", this->operation}, {"filename", this->filename}};
+            nlohmann::json json;
+            toJson(json);
+            json["filename"] = filename;
+            json["operaton"] = operation;
             json_str = json.dump();
         }
     };

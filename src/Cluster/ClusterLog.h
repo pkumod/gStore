@@ -137,6 +137,12 @@ namespace cluster
         void setDbName(const std::string& value){ db_name = value; }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
+        void setFirstIndex(uint64 value)
+        {
+            if (firstIndex != 0)
+                return;
+            firstIndex = value;
+        }
         uint64 getIndex()const{ return index; }
         uint64 getNextIndex()const{ return nextIndex; }
         uint64 getFirstIndex()const{ return firstIndex; }

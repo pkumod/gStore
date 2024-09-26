@@ -68,7 +68,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
 void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
 void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -1571,7 +1571,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		monitor_task(request, response, json_data);
 		break;
 	case OP_BUILD:
-		build_task(request, response, json_data);
+		build_task(request, response, series, json_data);
 		break;
 	case OP_DROP:
 		drop_task(request, response, series, json_data);
@@ -2245,10 +2245,15 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database that would build", db_path: "the data file path"}
  */
-void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
 	try
 	{
+		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+		{
+			redirect_handler(request, response, series);
+			return;
+		}
 		std::string db_path = jsonParam(json_data, "db_path");
 		std::string result = "";
 		// result = apiUtil->check_param_value("db_path", db_path);
@@ -2291,6 +2296,32 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationConditionsAreNotSatisfied, result);
 			return;
 		}
+
+		shared_ptr<ofstream> clusterlog = nullptr;
+		std::string cluster_db_path;
+		std::string logpath;
+		uint64 log_index;
+		if (clusterManagerPtr->isEnable()) 
+		{
+			// send [prepare] heartbeat and wait response
+			ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
+			log_index = apiUtil->generateUID();
+			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
+			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
+			if (!prepare_result)
+			{
+				std::string error = "Less than half of the cluster nodes are confirmed.";
+				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+				SLOG_ERROR(error);
+				response->Error(StatusOperationFailed, error);
+				return;
+			}
+			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
+			logpath = cluster_db_path + to_string(log_index) + ".log";
+			clusterlog = make_shared<ofstream>();
+			clusterlog->open(logpath.c_str());
+		}
+
 		std::vector<std::string> zip_files;
 		std::string unz_dir_path;
 		std::string file_suffix = GRPCUtil::fileSuffix(db_path);
