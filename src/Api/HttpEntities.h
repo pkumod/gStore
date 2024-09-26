@@ -40,7 +40,7 @@ namespace httpentities {
             this->index = index;
         }
         virtual void to_json(std::string& json_str) = 0;
-        void toJson(nlohmann::json json)
+        void toJson(nlohmann::json& json)
         {
             json["term"]    = term;
             json["index"]   = index;
