@@ -416,6 +416,21 @@ int main(int argc, char *argv[])
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(check_response.success()) {
+			// read pid file
+			ifstream ifp(PID_PATH);
+			std::string line;
+			if (ifp.is_open()) {
+				int current_line = 0;
+				while (current_line < 3 && std::getline(ifp, line))
+				{
+					current_line++;
+				}
+				ifp.close();
+				if (current_line == 3 && line == "1")
+				{
+					background = true;
+				}
+			}
 			cout << "server is active (running)." << endl;
 			cout << "stop server..." << endl;
 			if(!stopServer() || _server_deamon == "on")
