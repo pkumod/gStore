@@ -2363,7 +2363,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		string username = jsonParam(json_data, "username");
 		string async = jsonParam(json_data, "async");
 		string callback = jsonParam(json_data, "callback");
-		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback]
+		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback,log_index,clusterlog]
 				(GRPCResp *response)
 				{
 					string _db_path = _db_home + db_name + _db_suffix;
@@ -2373,23 +2373,21 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					string result;
 					shared_ptr<Database> current_database = make_shared<Database>(database);
 					// TODO progress notification
-					bool flag = true;
-					if (!db_path.empty())
-						flag = current_database->build(db_path);
-					else
-						flag = current_database->BuildEmptyDB();
-					int success_num = current_database->getTripleNum();
+					bool flag = current_database->BuildEmptyDB();
+					int success_num = 0;
 					current_database.reset();
 					if (flag)
 					{
 						// if zip file then excuse batchInsert
-						if (is_zip && zip_files.size() > 0)
+						if (!db_path.empty() || zip_files.size() > 0)
 						{
 							current_database = make_shared<Database>(db_name);
 							bool rt  = current_database->load(false);
 							if (!rt)
 							{
 								result = "Import RDF file to database failed: load error.";
+								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
+								clusterManagerPtr->dropDb(db_name);
 								Util::remove_path(_db_path);
 								if (!unz_dir_path.empty())
 								{
@@ -2401,9 +2399,11 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 								current_database.reset();
 								return;
 							}
+							if (!db_path.empty())
+								current_database->batch_insert(db_path, false, nullptr, clusterlog);
 							for (std::string rdf_zip : zip_files)
 							{
-								current_database->batch_insert(rdf_zip, false, nullptr);
+								current_database->batch_insert(rdf_zip, false, nullptr, clusterlog);
 							}
 							current_database->save();
 							success_num = current_database->getTripleNum();
@@ -2440,38 +2440,98 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						}
 						Util::add_backuplog(db_name);
 						apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
-						if (async != "true")
+						// response data
+						rapidjson::Document resp_data;
+						resp_data.SetObject();
+						rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+						resp_data.AddMember("StatusCode", 0, allocator);
+						resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
+						resp_data.AddMember("failed_num", parse_error_num, allocator);
+						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+						if (clusterManagerPtr->isEnable()) 
 						{
-							rapidjson::Document resp_data;
-							resp_data.SetObject();
-							rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-							resp_data.AddMember("StatusCode", 0, allocator);
-							resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
-							resp_data.AddMember("failed_num", parse_error_num, allocator);
-							resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-							response->Json(resp_data);
+							// cluster sync task begin
+							if (success_num > 0)
+							{
+								SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+								string log_file_name = to_string(log_index) + ".log";
+								string tmp_dir_path = unz_dir_path;
+								bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
+								if (append_result)
+								{
+									SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+									clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+									if (response)
+									{
+										response->Json(resp_data);
+									}
+									if (!callback.empty())
+									{
+										string postdata;
+										string res;
+										postdata += "{\"StatusCode\":\"0\",";
+										postdata += "\"StatusMsg\":\"" + result + "\",";
+										postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+										postdata += "\"opt_id\":\"" + opt_id + "\"}";
+										HttpUtil::Post(callback, postdata, res);
+									}
+									if (!tmp_dir_path.empty())
+									{
+										Util::remove_path(tmp_dir_path);
+									}
+								}
+								else
+								{
+									// follower recover by heartbeat compare
+									SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
+								}
+							}
+							else
+							{
+								SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
+								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+								// remove unzip files
+								if (!unz_dir_path.empty())
+								{
+									Util::remove_path(unz_dir_path);
+								}
+								if (response != nullptr)
+								{
+									response->Json(resp_data);
+								}
+							}
+							// cluster sync task end
 						}
-						if (!callback.empty())
+						else
 						{
-							string postdata;
-							string res;
-							postdata += "{\"StatusCode\":\"0\",";
-							postdata += "\"StatusMsg\":\"" + result + "\",";
-							postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-							postdata += "\"opt_id\":\"" + opt_id + "\"}";
-							HttpUtil::Post(callback, postdata, res);
+							if (response)
+							{
+								response->Json(resp_data);
+							}
+							if (!callback.empty())
+							{
+								string postdata;
+								string res;
+								postdata += "{\"StatusCode\":\"0\",";
+								postdata += "\"StatusMsg\":\"" + result + "\",";
+								postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+								postdata += "\"opt_id\":\"" + opt_id + "\"}";
+								HttpUtil::Post(callback, postdata, res);
+							}
 						}
 					}
 					else
 					{
 						result = "Import RDF file to database failed.";
+						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
+						clusterManagerPtr->dropDb(db_name);
 						Util::remove_path(_db_path);
 						if (!unz_dir_path.empty())
 						{
 							Util::remove_path(unz_dir_path);
 						}
 						apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
-						if (async != "true")
+						if (response)
 							response->Json(result);
 					}
 				};
@@ -6116,6 +6176,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			// check local db is available
 			std::thread([db_name, leader_term, leader_index, expection]() {
 				shared_ptr<Database> current_database = nullptr;
+				ClusterUpdateType update_type = ClusterUpdateType_None;
 				if (!apiUtil->check_db_exist(db_name))
 				{
 					current_database = make_shared<Database>(db_name);
@@ -6137,6 +6198,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 						apiUtil->add_database(db_name, current_database);
 						apiUtil->insert_txn_managers(current_database, db_name);
 						current_database.reset();
+						update_type = ClusterUpdateType_Build;
 					}
 				} 
 				apiUtil->get_database(db_name, current_database);
@@ -6153,7 +6215,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 				Util::create_dirs(cluster_db_path);
 				// add log
-				clusterManagerPtr->addLog(db_name, leader_index, ClusterOperation::ClusterOperation_Prepare, ClusterUpdateType_None);
+				clusterManagerPtr->addLog(db_name, leader_index, ClusterOperation::ClusterOperation_Prepare, update_type);
 				
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();

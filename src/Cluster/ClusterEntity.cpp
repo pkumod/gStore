@@ -71,6 +71,11 @@ namespace cluster
 
     ClusterDbPtr ClusterEntity::findDb(const std::string& db_name)
     {
+        if (db_name.empty())
+        {
+            SLOG_ERROR("db is empty, please check db name:" << db_name);
+            return nullptr;
+        }
         auto it = databaseL_.find(db_name);
         if (it == databaseL_.end())
         {
@@ -87,6 +92,18 @@ namespace cluster
 
     void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation)
     {
+        if (operation = ClusterUpdateType_Build)
+        {
+            auto it = databaseL_.find(db_name);
+            if (it != databaseL_.end())
+            {
+                dropDb(db_name);
+            }
+            else
+            {
+                addClusterDb(db_name);
+            }
+        }
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
