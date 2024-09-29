@@ -4539,24 +4539,25 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 	}
 }
 
-bool Database::backup()
+bool Database::backup(std::string &_backup_path)
 {
-	if (!Util::dir_exist(Util::backup_path))
+	if (!Util::dir_exist(_backup_path))
 	{
-		Util::create_dir(Util::backup_path);
+		Util::create_dirs(_backup_path);
 	}
-	string backup_path = Util::backup_path + this->name + Util::global_config["db_suffix"];
+	Util::string_suffix(_backup_path, '/');
+	_backup_path = _backup_path + this->name + Util::global_config["db_suffix"];
 
-	SLOG_CORE("Beginning backup, path is: "<< backup_path);
+	SLOG_CORE("Beginning backup, path is: "<< _backup_path);
 
 	string sys_cmd;
-	if (Util::dir_exist(backup_path))
+	if (Util::dir_exist(_backup_path))
 	{
-		Util::remove_path(backup_path);
+		Util::remove_path(_backup_path);
 	}
-	sys_cmd = "cp -r " + this->store_path + ' ' + backup_path;
+	sys_cmd = "cp -r " + this->store_path + ' ' + _backup_path;
 	system(sys_cmd.c_str());
-	Util::remove_path(backup_path + '/' + this->update_log);
+	Util::remove_path(_backup_path + '/' + this->update_log);
 
 	// this->vstree->saveTree();
 	this->kvstore->flush();

@@ -65,7 +65,7 @@ public:
 	unsigned batch_insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
-	bool backup();
+	bool backup(std::string &_backup_path);
 	bool restore();
 
 	// name of this DB

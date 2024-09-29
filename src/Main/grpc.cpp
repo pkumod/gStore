@@ -111,12 +111,14 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response);
 
 // common function
 std::string to_json_string(const Json& json);
-std::string jsonParam(const Json &json, const std::string &key);
-std::string jsonParam(const Json &json, const std::string &key, const std::string &default_val);
-int jsonParam(const Json &json, const std::string &key, const int &default_val);
+std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val = "");
+int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val);
+uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val);
+int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val);
+uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val);
+bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val);
 bool hasJsonParam(const Json &json, const std::string &key);
 void parseRequest(const GRPCReq *request, Json &json_data);
-
 
 std::string to_json_string(const Json& json)
 {
@@ -126,118 +128,117 @@ std::string to_json_string(const Json& json)
 	return resBuffer.GetString();
 }
 
-std::string jsonParam(const Json &json, const std::string &key)
+std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val)
 {
-	if (json.HasMember(key.c_str()) && json[key.c_str()].IsString())
+	if (json.HasMember(key.c_str()))
 	{
-		return json[key.c_str()].GetString();
+		auto& value = json[key.c_str()];
+		if (value.IsString()) {	    
+			return value.GetString();
+		} else if (value.IsInt()) {
+			return std::to_string(value.GetInt());
+		} else if (value.IsUint()) {
+			return std::to_string(value.GetUint());
+		} else if (value.IsInt64()) {
+			return std::to_string(value.GetInt64());
+		} else if (value.IsUint64()) {
+			return std::to_string(value.GetUint64());
+		} else if (value.IsDouble()) {
+			return std::to_string(value.GetDouble());
+		} else if(value.IsFloat()){
+			return std::to_string(value.GetFloat());
+		}else if (value.IsTrue()) {
+			return "true";
+		} else if (value.IsFalse()) {
+			return "false";
+		}
 	}
-	else
-	{
-		return "";
-	}
-}
-
-std::string jsonParam(const Json &json, const std::string &key, const std::string &default_val)
-{
-	string value;
-	if (json.HasMember(key.c_str()) && json[key.c_str()].IsString())
-	{
-		value = json[key.c_str()].GetString();
-	}
-	if (value.empty())
-	{
-		return default_val;
-	}
-	else
-	{
-		return value;
-	}
+	return default_val;
 }
 
 int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
-		if (json[key.c_str()].IsInt())
-		{
-			return json[key.c_str()].GetInt();
-		}
-		else if (json[key.c_str()].IsString())
-		{
-			return std::stoi(json[key.c_str()].GetString());
-		} else {
-			return default_val;
+		auto& value = json[key.c_str()];
+		if (value.IsInt()) {
+			return value.GetInt();
+		} else if (value.IsString()) {
+			return std::stoi(value.GetString());
 		}
 	}
-	else
-	{
-		return default_val;
-	}
+	return default_val;
 }
 
 uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
-		if (json[key.c_str()].IsUint())
-		{
-			return json[key.c_str()].GetUint();
-		}
-		else if (json[key.c_str()].IsString())
-		{
-			return std::stol(json[key.c_str()].GetString());
-		} else {
-			return default_val;
+		auto& value = json[key.c_str()];
+		if (value.IsUint()) {
+			return value.GetUint();
+		} else if (value.IsString()) {
+			uint32_t max = std::numeric_limits<uint32_t>::max();
+			int64_t val = std::stoll(value.GetString());
+			if (val > max) {
+				return default_val;
+			}
+			return val;
 		}
 	}
-	else
-	{
-		return default_val;
-	}
+	return default_val;
 }
-
 
 int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
-		if (json[key.c_str()].IsInt64())
-		{
-			return json[key.c_str()].GetInt64();
-		}
-		else if (json[key.c_str()].IsString())
-		{
-			return std::stoll(json[key.c_str()].GetString());
-		} else {
-			return default_val;
+		auto& value = json[key.c_str()];
+		if (value.IsInt64()) {
+			return value.GetInt64();
+		} else if (value.IsString()) {
+			int64_t max = std::numeric_limits<int64_t>::max();
+			uint64_t val = std::stoll(value.GetString());
+			if (val > max) {
+				return default_val;
+			}
+			return val;
 		}
 	}
-	else
-	{
-		return default_val;
-	}
+	return default_val;
 }
 
 uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val)
 {
 	if (json.HasMember(key.c_str()))
 	{
-		if (json[key.c_str()].IsInt64())
-		{
-			return json[key.c_str()].GetInt64();
-		}
-		else if (json[key.c_str()].IsString())
-		{
-			return std::stoul(json[key.c_str()].GetString());
-		} else {
-			return default_val;
+		auto& value = json[key.c_str()];
+		if (value.IsInt64()) {
+			return value.GetInt64();
+		} else if (value.IsString()) {
+			return std::stoul(value.GetString());
 		}
 	}
-	else
-	{
-		return default_val;
+	return default_val;
+}
+
+bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val)
+{
+	if (json.HasMember(key.c_str())) {
+		auto& value = json[key.c_str()];
+		if (value.IsBool()) {
+			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetBool()));
+			return value.GetBool();
+		} else if (value.IsString()) {
+			std::string v = value.GetString();
+			SLOG_DEBUG("json[" + key + "]=" + v);
+			return v == "true" || v == "1";
+		} else if (value.IsInt()) {
+			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetInt()));
+			return value.GetInt() == 1;
+		}
 	}
+	return default_val;
 }
 
 bool hasJsonParam(const Json &json, const std::string &key)
@@ -924,40 +925,37 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
-	if (ipCheckResult.empty() == false)
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return;
 	}
 	SLOG_INFO("receive [shutdown] request from " << ip_addr);
-	std::string error;
+	std::string msg;
 	std::string username = request->header("username");
 	std::string password = request->header("password");
-	error = apiUtil->check_param_value("username", username);
-	if (error.empty() == false)
+	if (apiUtil->check_param_value("username", username, msg) == false)
 	{
-		response->Error(StatusParamIsIllegal, error);
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
-	error = apiUtil->check_param_value("password", password);
-	if (error.empty() == false)
+	if (apiUtil->check_param_value("password", password, msg) == false)
 	{
-		response->Error(StatusParamIsIllegal, error);
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
 	if (username != apiUtil->get_system_username())
 	{
-		error = "You have no rights to stop the server.";
-        response->Error(StatusAuthenticationFailed, error);
+		msg =  "You have no rights to stop the server.";
+        response->Error(StatusAuthenticationFailed, msg);
 		return;
 	}
-	error = apiUtil->check_server_indentity(password);
-	if (error.empty() == false)
+	if (apiUtil->check_server_indentity(password, msg) == false)
 	{
 		apiUtil->update_access_ip_error_num(ip_addr);
-		response->Error(StatusAuthenticationFailed, error);
+		response->Error(StatusAuthenticationFailed, msg);
 		return;
 	}
 	// bool flag = apiUtil->db_checkpoint_all();
@@ -967,7 +965,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		std::cout.flush();
 		_exit(EXIT_SUCCESS);
 	});
-	std::string msg = "Server stopped successfully.";
+	msg = "Server stopped successfully.";
 	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
 	response->Success(msg);
 }
@@ -977,8 +975,8 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
-	if (ipCheckResult.empty() == false)
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -1015,13 +1013,13 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	}
 	std::string username = form.at("username").second;
 	std::string password = form.at("password").second;
-	error = apiUtil->check_param_value("username", username);
+	apiUtil->check_param_value("username", username, error);
 	if (error.empty() == false)
 	{
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
-	error = apiUtil->check_param_value("password", password);
+	apiUtil->check_param_value("password", password, error);
 	if (error.empty() == false)
 	{
 		response->Error(StatusParamIsIllegal, error);
@@ -1073,8 +1071,8 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 0);
-	if (ipCheckResult.empty() == false)
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -1150,19 +1148,19 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
 	std::string filepath = jsonParam(json_data, "filepath");
-	error = apiUtil->check_param_value("username", username);
+	apiUtil->check_param_value("username", username, error);
 	if (error.empty() == false)
 	{
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
-	error = apiUtil->check_param_value("password", password);
+	apiUtil->check_param_value("password", password, error);
 	if (error.empty() == false)
 	{
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
-	error = apiUtil->check_param_value("filepath", filepath);
+	apiUtil->check_param_value("filepath", filepath, error);
 	if (error.empty() == false)
 	{
 		response->Error(StatusParamIsIllegal, error);
@@ -1303,8 +1301,8 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::Clus
 	std::string username = request->header("username");
 	std::string password = request->header("password");
 	// check username and password
-	std::string checkidentityresult = apiUtil->check_indentity(username, password, "0");
-	if (checkidentityresult.empty() == false)
+	std::string checkidentityresult;
+	if (apiUtil->check_indentity(username, password, "0", checkidentityresult) == false)
 	{
 		response->Error(StatusAuthenticationFailed, checkidentityresult);
 		return;
@@ -1338,12 +1336,13 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 {
 	Json json_data;
 	parseRequest(request, json_data);
-	bool is_inner = jsonParam(json_data, "inner", "false") == "true";
+	bool is_inner = jsonBoolParam(json_data, "inner", false);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	string msg;
 	if (!is_inner || ip_addr != "127.0.0.1")
 	{
+		SLOG_DEBUG("inner: " + std::to_string(is_inner) + ", ip: " + ip_addr);
 		msg = "You are not allowed to access sys api";
 		response->Error(StatusIPBlocked, msg);
 		return;
@@ -1353,8 +1352,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		string sparql;
 		ResultSet rs;
 		sparql = jsonParam(json_data, "sparql");
-		msg = apiUtil->check_param_value("sparql", sparql);
-		if (!msg.empty())
+		if (!apiUtil->check_param_value("sparql", sparql, msg))
 		{
 			response->Error(StatusParamIsIllegal, msg);
 			return;
@@ -1418,9 +1416,9 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		} 
 		else
 		{
-			string error = "Query fail: the result parse error.";
+			msg = "Query fail: the result parse error.";
 			resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 		}
 		response->Json(resp_data);
 	}
@@ -1435,8 +1433,8 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult = apiUtil->check_access_ip(ip_addr, 1);
-	if (ipCheckResult.empty() == false)
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 1, ipCheckResult) == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -1447,12 +1445,11 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	Json::AllocatorType &allocator = json_data.GetAllocator();
 	// add remote_ip param
 	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
-	std::string operation = jsonParam(json_data, "operation", "");
+	std::string operation = jsonParam(json_data, "operation");
 	operation_type op_type = OperationType::to_enum(operation);
 	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
 	{
-		ipCheckResult = apiUtil->check_access_ip(ip_addr, 2);
-		if (ipCheckResult.empty() == false)
+		if (apiUtil->check_access_ip(ip_addr, 2, ipCheckResult) == false)
 		{
 			SLOG_DEBUG(ipCheckResult);
 			response->Error(StatusIPBlocked, ipCheckResult);
@@ -1506,9 +1503,9 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	}
 	std::string username = jsonParam(json_data, "username");
 	std::string password = jsonParam(json_data, "password");
-	std::string encryption = jsonParam(json_data, "encryption", "");
+	std::string encryption = jsonParam(json_data, "encryption");
 	std::string db_name = jsonParam(json_data, "db_name");
-	bool is_inner = jsonParam(json_data, "inner", "false") == "true";
+	bool is_inner = jsonBoolParam(json_data, "inner", false);
 	bool need_check_privilege = true;
 	// skip check privilege for inner request
 	if (is_inner && "127.0.0.1" == ip_addr)
@@ -1518,8 +1515,8 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	// check username and password
 	if(need_check_privilege) 
 	{
-		std::string checkidentityresult = apiUtil->check_indentity(username, password, encryption);
-		if (checkidentityresult.empty() == false)
+		std::string checkidentityresult;
+		if (apiUtil->check_indentity(username, password, encryption, checkidentityresult) == false)
 		{
 			apiUtil->update_access_ip_error_num(ip_addr);
 			response->Error(StatusAuthenticationFailed, checkidentityresult);
@@ -1800,7 +1797,8 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				response->Error(StatusOperationFailed, error);
 				return;
 			}
-			vector<string> ip_list = apiUtil->ip_list(IPtype);
+			vector<string> ip_list;
+			apiUtil->ip_list(IPtype, ip_list);
 			size_t count = ip_list.size();
 			Json resp_data;
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
@@ -1826,7 +1824,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			std::string ip_type = json_data["ip_type"].GetString();
 			if (ips.empty())
 			{
-				std::string error = "the ips can't be empty";
+				error = "the ips can't be empty";
 				response->Error(StatusParamIsIllegal, error);
 				return;
 			}
@@ -1916,7 +1914,7 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		nlohmann::json db_info;
 		db_info["db_name"] = db_name;
-		if (apiUtil->check_already_build(db_name))
+		if (apiUtil->check_db_built(db_name))
 		{
 			db_info["status"] = "1";
 			db_info["msg"] = "exist";
@@ -1931,7 +1929,7 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response_data["data"].push_back(db_info);
 			continue;
 		}
-		if(apiUtil->add_already_build(db_name,username, built_time))
+		if(apiUtil->init_databaseinfo(db_name, username, built_time, DatabaseStatus::AREADY_BUILT))
 		{
 			db_info["status"] = "0";
 			db_info["msg"] = "success";
@@ -1964,7 +1962,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string username = json_data["username"].GetString();
 
 		vector<shared_ptr<DatabaseInfo>> array;
-		apiUtil->get_already_builds(username, array);
+		apiUtil->get_databaseinfos(username, array);
 
 		Json resp_data;
 		resp_data.SetObject();
@@ -2004,72 +2002,66 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (!apiUtil->check_already_build(db_name))
+		if (!apiUtil->check_db_built(db_name))
 		{
-			error = "The database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "The database [" + db_name + "] not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr)
+		shared_ptr<DatabaseInfo> current_database;
+		apiUtil->get_databaseinfo(db_name, current_database);
+		if (current_database->getStatus() != DatabaseStatus::LOADED)
 		{
-			if (!apiUtil->trywrlock_database(db_name))
+			if (!apiUtil->trywrlock_databaseinfo(current_database))
 			{
-				error = "Unable to load due to loss of lock.";
-				response->Error(StatusOperationFailed, error);
+				msg = "Unable to load due to loss of lock.";
+				response->Error(StatusLossOfLock, msg);
 				return;
 			}
-			shared_ptr<Database> current_database = make_shared<Database>(db_name);
+			current_database->setStatus(DatabaseStatus::LOADING);
 			SLOG_DEBUG("begin loading...");
-			bool load_csr = false;
-			if (jsonParam(json_data, "csr", "0") == "1")
-			{
-				load_csr = true;
-			}
-			// TODO progress notification
-			bool rt  = current_database->load(load_csr);
+			bool load_csr = jsonBoolParam(json_data, "csr", false);
+			// progress notification
+			bool rt  = current_database->getDatabase()->load(load_csr);
 			SLOG_DEBUG("end loading.");
 			if (rt)
 			{
-				apiUtil->add_database(db_name, current_database);
-				// todo insert txn
-				if (apiUtil->insert_txn_managers(current_database, db_name) == false)
-				{
-					SLOG_WARN("when load insert_txn_managers fail.");
-				}
+				current_database->setStatus(DatabaseStatus::LOADED);
+				// insert txn manager
+				apiUtil->insert_txn_manager(db_name, current_database);
 				std::string csr_str = "0";
-				if (current_database->csr != NULL)
+				if (current_database->getDatabase()->csr != NULL)
 				{
 					csr_str = "1";
 				}
+				apiUtil->unlock_databaseinfo(current_database);
 				Json resp_data;
 				resp_data.SetObject();
 				Json::AllocatorType &allocator = resp_data.GetAllocator();
 				resp_data.AddMember("StatusCode", 0, allocator);
 				resp_data.AddMember("StatusMsg", "Database loaded successfully.", allocator);
 				resp_data.AddMember("csr", StringRef(csr_str.c_str()), allocator);
-				apiUtil->unlock_database(db_name);
 				response->Json(resp_data);
 			}
 			else
 			{
-				error = "load failed: unknow error.";
-				apiUtil->unlock_database(db_name);
-				response->Error(StatusOperationFailed, error);
+				current_database->setStatus(DatabaseStatus::AREADY_BUILT);
+				msg = "load failed: unknow error.";
+				apiUtil->unlock_databaseinfo(current_database);
+				response->Error(StatusOperationFailed, msg);
 			}
 		}
 		else
 		{
 			std::string csr_str = "0";
-			if (current_database->csr != NULL)
+			if (current_database->getDatabase()->csr != NULL)
 			{
 				csr_str = "1";
 			}
@@ -2101,36 +2093,37 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusOperationFailed, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "the database [" + db_name + "] not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "the database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "the database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		shared_ptr<DatabaseInfo> db_info;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
-			error = "the operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			msg = "Unable to unload due to loss of lock.";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
 		else
 		{
-			apiUtil->db_checkpoint(db_name);
-			apiUtil->delete_from_databases(db_name);
+			apiUtil->remove_txn_manager(db_name, true);
+			db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+			db_info->getDatabase()->unload();
 			apiUtil->unlock_databaseinfo(db_info);
 
 			response->Success("Database unloaded.");
@@ -2158,37 +2151,32 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string disk = jsonParam(json_data, "disk");
 		// check the param value is legal or not.
-		string error = apiUtil->check_param_value("db_name", db_name);
-
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusOperationFailed, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "the database [" + db_name + "] not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		shared_ptr<DatabaseInfo> database_info;
 		apiUtil->get_databaseinfo(db_name, database_info);
 		if (apiUtil->rdlock_databaseinfo(database_info) == false)
 		{
-			string error = "Unable to monitor due to loss of lock";
-			response->Error(StatusLossOfLock, error);
+			msg = "Unable to monitor due to loss of lock";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
+		shared_ptr<Database> current_database = database_info->getDatabase();
+		current_database->loadDBInfoFile();
+		current_database->loadStatisticsInfoFile();
+		apiUtil->unlock_databaseinfo(database_info);
 		std::string creator = database_info->getCreator();
 		std::string time = database_info->getTime();
-		apiUtil->unlock_databaseinfo(database_info);
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr) {
-			current_database = make_shared<Database>(db_name);
-			current_database->loadDBInfoFile();
-			current_database->loadStatisticsInfoFile();
-		}
 		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
 		Json resp_data;
 		resp_data.SetObject();
@@ -2255,45 +2243,39 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			return;
 		}
 		std::string db_path = jsonParam(json_data, "db_path");
-		std::string result = "";
-		// result = apiUtil->check_param_value("db_path", db_path);
-		// if (result.empty() == false)
-		// {
-		// 	response->Error(StatusParamIsIllegal, result);
-		// 	return;
-		// }
+		std::string msg;
 		if (!db_path.empty() && Util::file_exist(db_path) == false)
 		{
-			result = "RDF file not exist.";
-			response->Error(StatusParamIsIllegal, result);
+			msg = "RDF file not exist.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		result = apiUtil->check_param_value("db_name", db_name);
-		if (result.empty() == false)
+		std::string username = jsonParam(json_data, "username");
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, result);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		//check the db_name is system
 		if (db_name == Util::system_db)
 		{
-			result = "The database name can not be system.";
-			response->Error(StatusParamIsIllegal, result);
+			msg = "The database name can not be system.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		// check if database named [db_name] is already built
-		if (apiUtil->check_db_exist(db_name))
+		if (apiUtil->check_db_built(db_name))
 		{
-			result = "database already built.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, result);
+			msg = "database already built.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		// check databse number
 		if (apiUtil->check_db_count() == false)
 		{
-			result = "The total number of databases more than max_databse_num.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, result);
+			msg = "The total number of databases more than max_databse_num.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 
@@ -2310,10 +2292,10 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
-				std::string error = "Less than half of the cluster nodes are confirmed.";
+				msg =  "Less than half of the cluster nodes are confirmed.";
 				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				SLOG_ERROR(error);
-				response->Error(StatusOperationFailed, error);
+				SLOG_ERROR(msg);
+				response->Error(StatusOperationFailed, msg);
 				return;
 			}
 			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
@@ -2321,7 +2303,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			clusterlog = make_shared<ofstream>();
 			clusterlog->open(logpath.c_str());
 		}
-
+		apiUtil->init_databaseinfo(db_name, username, Util::get_date_time(), DatabaseStatus::BUILDING);
 		std::vector<std::string> zip_files;
 		std::string unz_dir_path;
 		std::string file_suffix = GRPCUtil::fileSuffix(db_path);
@@ -2336,8 +2318,9 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				});
 			if (code != CompressUtil::UnZipOK)
 			{
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+				apiUtil->erase_databaseinfo(db_name);
+				msg = "uncompress is failed error.";
+				response->Error(code, msg);
 				return;
 			}
 			std::string file_name = GRPCUtil::fileName(db_path);
@@ -2349,19 +2332,19 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			if (code != CompressUtil::UnZipOK)
 			{
 				Util::remove_path(unz_dir_path);
-				result = "uncompress is failed error.";
-				response->Error(code, result);
+				apiUtil->erase_databaseinfo(db_name);
+				msg = "uncompress is failed error.";
+				response->Error(code, msg);
 				return;
 			}
 			upfile.getFileList(zip_files, "");
 		}
 		std::string opt_id = apiUtil->generateUid();
 		string remote_ip = task_of(response)->peer_addr();
-		string msg = "Operation Success.";
 		string operation = "build";
+		msg = "Operation Success.";
 		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-		string username = jsonParam(json_data, "username");
-		string async = jsonParam(json_data, "async");
+		bool async = jsonBoolParam(json_data, "async", false);
 		string callback = jsonParam(json_data, "callback");
 		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback,log_index,clusterlog]
 				(GRPCResp *response)
@@ -2369,13 +2352,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					string _db_path = _db_home + db_name + _db_suffix;
 					string database = db_name;
 					SLOG_DEBUG("Import dataset to build database...");
-					SLOG_DEBUG("DB_store: " + database + "\tRDF_data: " + db_path);
+					SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
 					string result;
 					shared_ptr<Database> current_database = make_shared<Database>(database);
-					// TODO progress notification
+					// build empty database
 					bool flag = current_database->BuildEmptyDB();
-					int success_num = 0;
 					current_database.reset();
+					int success_num = 0;
 					int nt_file_num = 0;
 					if (flag)
 					{
@@ -2395,7 +2378,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 									Util::remove_path(unz_dir_path);
 								}
 								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
-								if (async != "true")
+								if (!async)
 									response->Error(StatusOperationFailed, result);
 								current_database.reset();
 								return;
@@ -2415,114 +2398,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 							current_database.reset();
 						}
 					}
-					// init database info and privilege
-					if (apiUtil->build_db_user_privilege(db_name, username) 
-						&& apiUtil->init_privilege(username, db_name))
-					{
-						ofstream f;
-						f.open(_db_path + "/success.txt");
-						f.close();
-						// add backup.log
-						Util::add_backuplog(db_name);
-						// build response result
-						result = "Import RDF file to database done.";
-						string error_log = _db_path + "/parse_error.log";
-						size_t parse_error_num = Util::count_lines(error_log);
-						// exclude Info line
-						if (parse_error_num > 0)
-							parse_error_num = parse_error_num - nt_file_num;
-						if (parse_error_num > 0)
-						{
-							SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
-							SLOG_ERROR("See log file for details " + error_log);
-						}
-						// remove unzip dir
-						if (!unz_dir_path.empty())
-						{
-							Util::remove_path(unz_dir_path);
-						}
-						Util::add_backuplog(db_name);
-						apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
-						// response data
-						rapidjson::Document resp_data;
-						resp_data.SetObject();
-						rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
-						resp_data.AddMember("failed_num", parse_error_num, allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						if (clusterManagerPtr->isEnable()) 
-						{
-							// cluster sync task begin
-							if (success_num > 0)
-							{
-								SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-								string log_file_name = to_string(log_index) + ".log";
-								string tmp_dir_path = unz_dir_path;
-								bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
-								if (append_result)
-								{
-									SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-									clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-									if (response)
-									{
-										response->Json(resp_data);
-									}
-									if (!callback.empty())
-									{
-										string postdata;
-										string res;
-										postdata += "{\"StatusCode\":\"0\",";
-										postdata += "\"StatusMsg\":\"" + result + "\",";
-										postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-										postdata += "\"opt_id\":\"" + opt_id + "\"}";
-										HttpUtil::Post(callback, postdata, res);
-									}
-									if (!tmp_dir_path.empty())
-									{
-										Util::remove_path(tmp_dir_path);
-									}
-								}
-								else
-								{
-									// follower recover by heartbeat compare
-									SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
-								}
-							}
-							else
-							{
-								SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-								// remove unzip files
-								if (!unz_dir_path.empty())
-								{
-									Util::remove_path(unz_dir_path);
-								}
-								if (response != nullptr)
-								{
-									response->Json(resp_data);
-								}
-							}
-							// cluster sync task end
-						}
-						else
-						{
-							if (response)
-							{
-								response->Json(resp_data);
-							}
-							if (!callback.empty())
-							{
-								string postdata;
-								string res;
-								postdata += "{\"StatusCode\":\"0\",";
-								postdata += "\"StatusMsg\":\"" + result + "\",";
-								postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-								postdata += "\"opt_id\":\"" + opt_id + "\"}";
-								HttpUtil::Post(callback, postdata, res);
-							}
-						}
-					}
 					else
 					{
 						result = "Import RDF file to database failed.";
@@ -2536,9 +2411,121 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
 						if (response)
 							response->Json(result);
+						return;
+					}	
+					// init databaseinfo
+					shared_ptr<DatabaseInfo> db_info;
+					apiUtil->get_databaseinfo(db_name, db_info);
+					db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+					db_info->initDatabase();
+					// init user privilege
+					apiUtil->init_privilege(username, db_name);
+					ofstream f;
+					f.open(_db_path + "/success.txt");
+					f.close();
+					// add backup.log
+					Util::add_backuplog(db_name);
+					// build response result
+					result = "Import RDF file to database done.";
+					string error_log = _db_path + "/parse_error.log";
+					size_t parse_error_num = Util::count_lines(error_log);
+					// exclude Info line
+					if (parse_error_num > 0)
+						parse_error_num = parse_error_num - nt_file_num;
+					if (parse_error_num > 0)
+					{
+						SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
+						SLOG_ERROR("See log file for details " + error_log);
 					}
+					// remove unzip dir
+					if (!unz_dir_path.empty())
+					{
+						Util::remove_path(unz_dir_path);
+					}
+					Util::add_backuplog(db_name);
+					apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
+					// response data
+					rapidjson::Document resp_data;
+					resp_data.SetObject();
+					rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
+					resp_data.AddMember("failed_num", parse_error_num, allocator);
+					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+					if (clusterManagerPtr->isEnable()) 
+					{
+						// cluster sync task begin
+						if (success_num > 0)
+						{
+							SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
+							string log_file_name = to_string(log_index) + ".log";
+							string tmp_dir_path = unz_dir_path;
+							bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
+							if (append_result)
+							{
+								SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+								if (response)
+								{
+									response->Json(resp_data);
+								}
+								if (!callback.empty())
+								{
+									string postdata;
+									string res;
+									postdata += "{\"StatusCode\":\"0\",";
+									postdata += "\"StatusMsg\":\"" + result + "\",";
+									postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+									postdata += "\"opt_id\":\"" + opt_id + "\"}";
+									HttpUtil::Post(callback, postdata, res);
+								}
+								if (!tmp_dir_path.empty())
+								{
+									Util::remove_path(tmp_dir_path);
+								}
+							}
+							else
+							{
+								// follower recover by heartbeat compare
+								SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
+							}
+						}
+						else
+						{
+							SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
+							clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+							// remove unzip files
+							if (!unz_dir_path.empty())
+							{
+								Util::remove_path(unz_dir_path);
+							}
+							if (response != nullptr)
+							{
+								response->Json(resp_data);
+							}
+						}
+						// cluster sync task end
+					}
+					else
+					{
+						if (response)
+						{
+							response->Json(resp_data);
+						}
+						if (!callback.empty())
+						{
+							string postdata;
+							string res;
+							postdata += "{\"StatusCode\":\"0\",";
+							postdata += "\"StatusMsg\":\"" + result + "\",";
+							postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+							postdata += "\"opt_id\":\"" + opt_id + "\"}";
+							HttpUtil::Post(callback, postdata, res);
+						}
+					}
+					
 				};
-		if (async == "true")
+		if (async)
 		{
 			rapidjson::Document resp_data;
 			resp_data.SetObject();
@@ -2580,75 +2567,46 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, J
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string is_backup = jsonParam(json_data, "is_backup", "true");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-
-		if (error.empty() == false)
+		bool is_backup = jsonBoolParam(json_data, "is_backup", true);
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "the database [" + db_name + "] not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		if (apiUtil->check_db_loaded(db_name))
 		{
-			error = "the operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			apiUtil->remove_txn_manager(db_name, false);
+			SLOG_DEBUG("remove " + db_name + " from the txn managers.");
+		}
+		if (apiUtil->remove_databaseinfo(db_name, msg) == false)
+		{
+			response->Error(StatusOperationFailed, msg);
+			return;
+		}
+		SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
+		string db_path = _db_home + db_name + _db_suffix;
+		if (is_backup == false)
+		{
+			Util::remove_path(db_path);
+			SLOG_DEBUG("remove_path"+db_path);
 		}
 		else
 		{
-			if (apiUtil->check_already_load(db_name))
-			{
-				bool rt = apiUtil->remove_txn_managers(db_name);
-				if (!rt)
-				{
-					apiUtil->unlock_databaseinfo(db_info);
-					SLOG_DEBUG("remove " + db_name + " from the txn managers fail.");
-					error = "the operation can not been excuted due to can not release txn manager.";
-					response->Error(StatusOperationFailed, error);
-					return;
-				}
-				SLOG_DEBUG("remove " + db_name + " from the txn managers.");
-				//@ the database has loaded, unload it firstly
-				apiUtil->delete_from_databases(db_name);
-				SLOG_DEBUG("remove " + db_name + " from loaded database list");
-			}
-			apiUtil->unlock_databaseinfo(db_info);
-			//@ delete the database info from the system database
-			bool rt = apiUtil->delete_from_already_build(db_name);
-			if (!rt)
-			{
-				SLOG_DEBUG("remove " + db_name + " from the already build database list fail.");
-				error = "the operation can not been excuted due to loss of lock.";
-				response->Error(StatusLossOfLock, error);
-				return;
-			}
-			SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-			string db_path = _db_home + db_name + _db_suffix;
-			if (is_backup == "false")
-			{
-				Util::remove_path(db_path);
-				SLOG_DEBUG("remove_path"+db_path);
-			}
-			else
-			{
-				std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
-				SLOG_DEBUG(cmd);
-				system(cmd.c_str());
-			}
-			Util::delete_backuplog(db_name);
-			string success = "Database " + db_name + " dropped.";
-			SLOG_DEBUG("post follower drop db");
-			clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-			clusterManagerPtr->dropDb(db_name);
-			response->Success(success);
+			std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
+			SLOG_DEBUG(cmd);
+			system(cmd.c_str());
 		}
+		string success = "Database " + db_name + " dropped.";
+		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
+		clusterManagerPtr->dropDb(db_name);
+		response->Success(success);
 	}
 	catch (const std::exception &e)
 	{
@@ -2671,174 +2629,87 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string backup_path = jsonParam(json_data, "backup_path");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		std::string compress_zip = jsonParam(json_data, "backup_zip");
-		bool backup_zip = false;
-		if (compress_zip == "true")
-			backup_zip = true;
-
-		if (error.empty() == false)
+		bool compress = jsonBoolParam(json_data, "backup_zip", false);
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "the database [" + db_name + "] not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		shared_ptr<Database> current_db;
-		apiUtil->get_database(db_name, current_db);
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		// check backup path
+		if (backup_path.empty())
 		{
-			error = "the operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			backup_path = Util::backup_path;
+			SLOG_DEBUG("backup_path is empty, set to default path: " + backup_path);
+		}
+		if (backup_path == "." || backup_path == "./" || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
+		{
+			msg = "Backup path can not be root or \"" + _db_home + "\" .";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		// begin backup database
-		string path = backup_path;
-		string default_backup_path = Util::backup_path;
-		if (path.empty())
-		{
-			path = default_backup_path;
-			SLOG_DEBUG("backup_path is empty, set to default path: " + path);
-		}
-		if (path == "." || Util::getExactPath(path.c_str()) == Util::getExactPath(_db_home.c_str()))
-		{
-			error = "Failed to backup the database. Backup path can not be root or \"" + _db_home + "\" .";
-			apiUtil->unlock_databaseinfo(db_info);
-			response->Error(StatusParamIsIllegal, error);
-			return;
-		}
-
-		std::string opt_id = apiUtil->generateUid();
-		string remote_ip = task_of(response)->peer_addr();
-		string msg = "Operation Success.";
-		string operation = "backup";
-		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-		std::string async = jsonParam(json_data, "async");
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		string remote_ip = sub_task->peer_addr();
+		bool async = jsonBoolParam(json_data, "async", false);
 		std::string callback = jsonParam(json_data, "callback");
-		string temp_path = path;
-		auto backup_helper = [db_name,operation,opt_id,&current_db,&db_info,temp_path,default_backup_path,backup_zip,async,callback]
-			(GRPCResp *response)
-			{
-				string path = temp_path;
-				std::string error = "";
-				bool flag = false;
-				if (current_db)
-				{
-					flag = current_db->backup();
-				}
-				else
-				{
-					Database _db(db_name);
-					flag = _db.backup();
-				}
-				if(flag == false)
-				{
-					error = "Failed to backup the database.";
-					apiUtil->unlock_databaseinfo(db_info);
-					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
-					if (async != "true")
-						response->Error(StatusOperationFailed, error);
-					return;
-				}
-				else
-				{
-					string timestamp = Util::get_timestamp();
-					string new_folder =  db_name + _db_suffix + "_" + timestamp;
-					string sys_cmd, _path, backup_store_path;
-					Util::string_suffix(path, '/');
-					_path = path + new_folder;
-					backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
-					if (backup_zip)
-					{
-						_path = _path + ".zip";
-						CompressUtil::CompressZip compress_dir;
-						if (!compress_dir.compressDirExportZip(backup_store_path, _path))
-						{
-							error = "Failed to backup compress the database.";
-							apiUtil->unlock_databaseinfo(db_info);
-							apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
-							if (async != "true")
-								response->Error(StatusOperationFailed, error);
-							return;
-						}
-						Util::remove_path(backup_store_path);
-					}
-					else
-					{
-						sys_cmd = "mv " + backup_store_path + " " + _path;
-						system(sys_cmd.c_str());
-					}
-					vector<string> files;
-					Util::dir_files(path, "", files);
-					int max_backups = atoi(Util::getConfigureValue("max_backups").c_str());
-					std::string db_file_suffix = db_name + _db_suffix;
-					int db_file_suffix_size = db_file_suffix.size();
-					std::string db_file_min;
-					unsigned int backup_num = 0;
-					for (auto& file_name : files)
-					{
-						if (file_name.substr(0, db_file_suffix_size) == db_file_suffix)
-						{
-							if (db_file_min.empty() || file_name < db_file_min)
-								db_file_min = file_name;
-							backup_num++;
-						}
-					}
-					if (backup_num > max_backups)
-					{
-						Util::remove_path(path + db_file_min);
-					}
-
-					SLOG_DEBUG("database backup done: " + db_name);
-					string success = "Database backup successfully.";
-					// current_db = NULL;
-					apiUtil->unlock_databaseinfo(db_info);
-					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0, _path);
-
-					if (async != "true")
-					{
-						Document resp_data;
-						resp_data.SetObject();
-						Document::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("backupfilepath", StringRef(_path.c_str()), allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						response->Json(resp_data);
-					}
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"backupfilepath\":\"" + _path + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				}
-			};
-		if (async == "true")
+		std::string operation = "backup";
+		std::string opt_id = apiUtil->generateUid();
+		Json resp_data;
+		resp_data.SetObject();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+		if (async)
 		{
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			sub_task->add_callback([&opt_id, db_name, &backup_path, compress, &callback](GRPCTask *task){
+				std::string msg;
+				bool backup_rt = apiUtil->backup_databaseinfo(db_name, compress, backup_path, msg);
+				nlohmann::json j = {
+					{"opt_id", opt_id}
+				};
+				if (backup_rt)
+				{
+					j["StatusCode"] = 0;
+					j["StatusMsg"] = "Backup success";
+					j["backupfilepath"] = backup_path;
+					apiUtil->update_access_log(StatusOK, msg, opt_id, 0, 0, 0, backup_path);
+				}
+				else
+				{
+					j["StatusCode"] = StatusOperationFailed;
+					j["StatusMsg"] = msg;
+					apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+				}
+				if (!callback.empty())
+				{
+					HttpUtil::Post(callback, j.dump(), msg);
+				}
+			});
+			msg = "Operation success";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			response->Json(resp_data);
-			thread t(backup_helper, nullptr);
-			t.detach();
 		}
 		else
 		{
-			backup_helper(response);
+			bool backup_rt = apiUtil->backup_databaseinfo(db_name, compress, backup_path, msg);
+			if (backup_rt) {
+				msg = "Database backup successfully.";
+				apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				resp_data.AddMember("backupfilepath", StringRef(backup_path.c_str()), allocator);
+				response->Json(resp_data);
+			} else {
+				apiUtil->write_access_log(operation, remote_ip, StatusOperationFailed, msg, opt_id);
+				response->Error(StatusOperationFailed, msg);
+			}
 		}
 	}
 	catch (const std::exception &e)
@@ -2860,11 +2731,10 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::vector<std::string> file_list;
@@ -2901,176 +2771,97 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
  */
 void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-try
+	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string backup_path = jsonParam(json_data, "backup_path");
 		std::string username = jsonParam(json_data, "username");
-
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		bool is_zip = false;
-		std::string path = backup_path;
-		if (GRPCUtil::fileSuffix(backup_path) == "zip")
+		if (apiUtil->check_param_value("backup_path", backup_path, msg) == false)
 		{
-			is_zip = true;
-			if (Util::file_exist(path) == false)
-			{
-				error = "Backup path not exist, restore failed.";
-				response->Error(StatusParamIsIllegal, error);
-				return;
-			}
-			path = path.substr(0, path.length() - 4);
-		}
-		else
-		{
-			if (path[path.length() - 1] == '/')
-			{
-				path = path.substr(0, path.length() - 1);
-			}
-			SLOG_DEBUG("backup path:" + path);
-			if (Util::dir_exist(path) == false)
-			{
-				error = "Backup path not exist, restore failed.";
-				response->Error(StatusParamIsIllegal, error);
-				return;
-			}
-		}
-		// check load status: need unload if already load
-		if (apiUtil->check_already_load(db_name))
-		{
-			string error = "Database alreay load, need unload it first.";
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		string database = db_name;
-		SLOG_DEBUG("restore database:" + database);
-		if (apiUtil->check_already_build(db_name) == false)
-		{
-			error = "Database not built yet, rebuild now.";
-			string time = Util::get_backup_time(path, db_name);
-			if (time.size() == 0)
-			{
-				error = "Backup path does not match database name, restore failed";
-				response->Error(StatusParamIsIllegal, error);
+		if (Util::is_file(backup_path)) {
+			if (GRPCUtil::fileSuffix(backup_path) != "zip") {
+				response->Error(StatusParamIsIllegal, "Backup file is not zip file.");
+				return;
+			} else if (Util::file_exist(backup_path) == false) {
+				response->Error(StatusParamIsIllegal, "Backup file not exist.");
 				return;
 			}
-			if (apiUtil->init_privilege(username, db_name) == 0)
-			{
-				error = "init privilege failed.";
-				response->Error(StatusAddPrivilegeFaied, error);
+		} else if (Util::is_dir(backup_path)) {
+			if (Util::dir_exist(backup_path) == false) {
+				response->Error(StatusParamIsIllegal, "Backup path not exist.");
 				return;
 			}
-			if (apiUtil->build_db_user_privilege(db_name, username))
-			{
-				Util::add_backuplog(db_name);
-			}
-			else
-			{
-				error = "Database not built yet. Rebuild failed.";
-				response->Error(StatusOperationFailed, error);
-				return;
-			}
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-		{
-			error = "Unable to restore due to loss of lock";
-			response->Error(StatusLossOfLock, error);
+		} else {
+			response->Error(StatusParamIsIllegal, "Backup path not exist.");
 			return;
 		}
-
+		
 		std::string opt_id = apiUtil->generateUid();
-		string remote_ip = task_of(response)->peer_addr();
-		string msg = "Operation Success.";
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		string remote_ip = sub_task->peer_addr();
 		string operation = "restore";
-		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-		std::string async = jsonParam(json_data, "async");
+		bool async = jsonBoolParam(json_data, "async", false);
 		std::string callback = jsonParam(json_data, "callback");
-		auto remove_helper = [db_name,operation,opt_id,is_zip,backup_path,&db_info,path,async,callback]
-			(GRPCResp *response)
-			{
-				// TODO why need lock the database_map?
-				// apiUtil->trywrlock_database_map();
-				int ret = 0;
-				if (is_zip)
-				{
-					if (Util::dir_exist(path))
-						Util::remove_path(path);
-					mkdir(path.c_str(), 0775);
-					CompressUtil::UnCompressZip unzip(backup_path, path);
-					if (unzip.unCompress() != CompressUtil::UnZipOK)
-					{
-						Util::remove_path(path);
-						string error = "backup compress fail";
-						apiUtil->update_access_log(1003, error, opt_id, -1, 0, 0);
-						if (async != "true")
-							response->Error(StatusParamIsIllegal, error);
-						return;
-					}
-					ret = apiUtil->db_copy(path, _db_home);
-					Util::remove_path(path);
-				}
-				else
-				{
-					apiUtil->db_copy(path, _db_home);
-				}
-				// apiUtil->unlock_database_map();
-				// copy failed
-				if (ret == 1)
-				{
-					string error = "Failed to restore the database. Backup path error";
-					apiUtil->unlock_databaseinfo(db_info);
-					apiUtil->update_access_log(1005, error, opt_id, -1, 0, 0);
-					if (async != "true")
-						response->Error(StatusOperationFailed, error);
-				}
-				else
-				{
-					// remove old folder
-					string db_path = _db_home + "/" + db_name + _db_suffix;
-					Util::remove_path(db_path);
-					// mv backup folder to database folder
-					string folder_name = Util::get_folder_name(path, db_name);
-					string sys_cmd = "mv " + _db_home + "/" + folder_name + " " + db_path;
-					std::system(sys_cmd.c_str());
-					apiUtil->unlock_databaseinfo(db_info);
-					
-					std::string success = "Database " + db_name + " restore successfully.";
-					apiUtil->update_access_log(0, success, opt_id, 1, 0, 0);
-					if (async != "true")
-						response->Success(success);
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				}
-			};
-		if (async == "true")
+		
+		Json resp_data;
+		resp_data.SetObject();
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+		if (async)
 		{
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			sub_task->add_callback([&opt_id, db_name, &username, &backup_path, &callback](GRPCTask *task){
+				std::string msg;
+				bool restore_rt = apiUtil->restore_databaseinfo(username, db_name, backup_path, msg);
+				nlohmann::json j = {
+					{"opt_id", opt_id}
+				};
+				if (restore_rt)
+				{
+					msg = "Restore success";
+					j["StatusCode"] = 0;
+					j["StatusMsg"] = msg;
+					j["backupfilepath"] = backup_path;
+					apiUtil->update_access_log(StatusOK, msg, opt_id, 0, 0, 0, backup_path);
+				}
+				else
+				{
+					j["StatusCode"] = StatusOperationFailed;
+					j["StatusMsg"] = msg;
+					apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+				}
+				if (!callback.empty())
+				{
+					HttpUtil::Post(callback, j.dump(), msg);
+				}
+			});
+			msg = "Operation success";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
 			resp_data.AddMember("StatusCode", 0, allocator);
 			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			response->Json(resp_data);
-			thread t(remove_helper, nullptr);
-			t.detach();
 		}
 		else
 		{
-			remove_helper(response);
+			bool backup_rt = apiUtil->restore_databaseinfo(username, db_name, backup_path, msg);
+			if (backup_rt) {
+				msg = "Database restore successfully.";
+				apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+				resp_data.AddMember("StatusCode", 0, allocator);
+				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+				response->Json(resp_data);
+			} else {
+				apiUtil->write_access_log(operation, remote_ip, StatusOperationFailed, msg, opt_id);
+				response->Error(StatusOperationFailed, msg);
+			}
 		}
 	}
 	catch (const std::exception &e)
@@ -3105,72 +2896,53 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		std::string username = jsonParam(json_data, "username");
 		std::string sparql = jsonParam(json_data, "sparql");
 		// check db_name paramter
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		// check sparql paramter
-		error = apiUtil->check_param_value("sparql", sparql);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("sparql", sparql, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
+			return;
+		}
+		// check database exist
+		if (apiUtil->check_db_built(db_name) == false)
+		{
+			msg = "Database not build yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
+			return;
+		}
+		// check database load status
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if (db_info->getStatus() != DatabaseStatus::LOADED)
+		{
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
+			return;
+		}
+		// check database read lock
+		if (apiUtil->rdlock_databaseinfo(db_info) == false)
+		{
+			msg = "get current database read lock fail.";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
 		string thread_id = Util::getThreadID();
-		shared_ptr<Database> current_database;
 		bool is_update = false;
 		QueryTree::UpdateType update_type;
-		bool update_flag_bool = true;
-		if (apiUtil->check_privilege(username, "update", db_name) == 0)
+		bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
+		// check update operation
+		is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
+		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
 		{
-			update_flag_bool = false;
-		}
-		try
-		{
-			// check database exist
-			if (apiUtil->check_db_exist(db_name) == false)
-			{
-				error = "Database not build yet.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, error);
-				return;
-			}
-			// check database load status
-			apiUtil->get_database(db_name, current_database);
-			if (current_database == nullptr)
-			{
-				error = "Database not load yet.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, error);
-				return;
-			}
-			// check update operation
-			is_update = current_database->isUpdate(sparql, update_type);
-			if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
-			{
-				redirect_handler(request, response, series);
-				return;
-			}
-			// check database read lock
-			bool lock_rt = apiUtil->rdlock_database(db_name);
-			if (lock_rt)
-			{
-				SLOG_DEBUG("get current database read lock success: " + db_name);
-			}
-			else
-			{
-				error = "get current database read lock fail.";
-				response->Error(StatusLossOfLock, error);
-				return;
-			}
-		}
-		catch (const std::exception &e)
-		{
-			error = "Query fail: " + string(e.what());
-			response->Error(StatusOperationFailed, error);
+			apiUtil->unlock_databaseinfo(db_info);
+			redirect_handler(request, response, series);
 			return;
 		}
-
 		FILE *output = NULL;
 		ResultSet rs;
 		int ret_val;
@@ -3193,10 +2965,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
-				error = "Less than half of the cluster nodes are confirmed.";
+				apiUtil->unlock_databaseinfo(db_info);
+				msg = "Less than half of the cluster nodes are confirmed.";
 				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				SLOG_ERROR(error);
-				response->Error(StatusOperationFailed, error);
+				SLOG_ERROR(msg);
+				response->Error(StatusOperationFailed, msg);
 				return;
 			}
 			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
@@ -3216,34 +2989,27 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		{
 			SLOG_DEBUG("begin query...\n" + sparql);
 			rs.setUsername(username);
-			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
+			ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
 			query_time = Util::get_cur_time() - query_time;
 			if (clusterlog) 
 			{
 				clusterlog->close();
 				clusterlog.reset();
 			}
-		}
-		catch (const std::exception &e)
-		{
-			error = "Query fail: " + string(e.what());
-			apiUtil->unlock_database(db_name);
-			response->Error(StatusOperationFailed, error);
+			// unlock rdlock
+			apiUtil->unlock_databaseinfo(db_info);
+		} catch (const std::exception &e) {
+			apiUtil->unlock_databaseinfo(db_info);
+			msg = "Query fail: " + string(e.what());
+			response->Error(StatusOperationFailed, msg);
 			if (clusterlog)
 				clusterlog->close();
 			return;
 		}
-		// unlock rdlock
-		apiUtil->unlock_database(db_name);
-		bool ret = false;
-		if (ret_val < -1) // non-update query
-		{
-			ret = (ret_val == -100);
-		}
 		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
 		string localname = apiUtil->get_query_result_path() + filename;
 		string query_time_s = Util::int2string(query_time);
-		if (ret)
+		if (!is_update && (ret_val == -100))
 		{
 			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
 
@@ -3254,9 +3020,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
 			long rs_outputlimit = (long)rs.output_limit;
 			if (rs_outputlimit != -1)
+			{
 				rs_ansNum = min(rs_ansNum, rs_outputlimit);
-			// if (remote_ip != TEST_IP)
-			// {
+			}	
+
 			int status_code = 0;
 			string file_name = "";
 			if (format.find("file") != string::npos)
@@ -3264,13 +3031,12 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				file_name = string(filename.c_str());
 			}
 			// add callback task for query log start
-			struct DBQueryLogInfo* query_log_info = new DBQueryLogInfo(query_start_time, remote_ip, sparql, rs_ansNum, format, file_name, status_code, query_time, db_name);
-			task_of(response)->add_callback([query_log_info](GRPCTask *) {
-				apiUtil->write_query_log(query_log_info);
-				delete query_log_info;
+			struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, remote_ip, sparql, 
+				rs_ansNum, format, file_name, status_code, query_time, db_name);
+			task_of(response)->add_callback([query_log_ptr](GRPCTask *) {
+				apiUtil->write_query_log(query_log_ptr);
+				delete query_log_ptr;
 			});
-			// end
-			// }
 
 			// to void someone downloading all the data file by sparql query on purpose and to protect the data
 			// if the ansNum too large, for example, larger than 100000, we limit the return ans.
@@ -3309,9 +3075,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					outfile.close();
 					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) 
 							+ ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
-					error = "Query fail: the result parse error.";
+					msg = "Query fail: the result parse error.";
 					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 				}
 			}
 			else if (format == "file")
@@ -3349,7 +3115,6 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 						std::vector<std::string> result_data;
 						for(int j = 0; j < rs.true_select_var_num; j++)
 						{
-							SLOG_DEBUG("rs.answer["+to_string(i)+"]["+to_string(j)+"]=" + rs.answer[i][j]);
 							result_data.emplace_back(rs.answer[i][j]);
 						}
 						json_data["results"].emplace_back(result_data);
@@ -3376,16 +3141,16 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					outfile << json_data_str;
 					outfile.close();
 					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) + ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
-					error = "Query fail: the result parse error.";
+					msg = "Query fail: the result parse error.";
 					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 				}
 			}
 			else
 			{
-				error = "Unkown result format.";
+				msg = "Unkown result format.";
 				resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(error.c_str()), allocator);
+				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
 			}
 			// common data 
 			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
@@ -3429,36 +3194,32 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					else
 					{
 						// restore data
-						bool lock_status;
+						SLOG_DEBUG("log appendEntities task failed, restore leader data.");
 						// try get wrlock timeout 600 senconds
-						lock_status = apiUtil->trywrlock_database(db_name, 600);
-						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
-						if (lock_status)
+						if (apiUtil->trywrlock_databaseinfo(db_info, 600))
 						{
 							string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
-							shared_ptr<Database> restore_database;
-							apiUtil->get_database(db_name, restore_database);
 							if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
 							{
-								uint32_t num = restore_database->batch_insert(nt_file_path);
+								uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
 								SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
 							} 
 							else 
 							{
-								uint32_t num = restore_database->batch_remove(nt_file_path);
+								uint32_t num = db_info->getDatabase()->batch_remove(nt_file_path);
 								SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
 							}
-							apiUtil->unlock_database(db_name);
+							apiUtil->unlock_databaseinfo(db_info);
 							Util::remove_path(nt_file_path);
 						}
 						else
 						{
 							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_update_type)+"]");
 						}
-						std::string error = "Less than half of the cluster nodes reply.";
-						SLOG_ERROR(error);
+						msg = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(msg);
 						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
-						response->Error(StatusOperationFailed, error);
+						response->Error(StatusOperationFailed, msg);
 					}
 				}
 				else
@@ -3475,9 +3236,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 		else
 		{
-			error = "search query returns false.";
-			SLOG_DEBUG(error);
-			response->Error(StatusOperationFailed, error);
+			msg = "search query returns false.";
+			SLOG_DEBUG(msg);
+			response->Error(StatusOperationFailed, msg);
 		}
 		SLOG_DEBUG("query complete!");
 	}
@@ -3501,32 +3262,37 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string db_path = jsonParam(json_data, "db_path");
-		error = apiUtil->check_param_value("db_path", db_path);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("db_path", db_path, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not build yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not build yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		// check if database named [db_name] is already load
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr)
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if (db_info->getStatus() == DatabaseStatus::LOADED)
 		{
-			string error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
+			return;
+		}
+		if (apiUtil->rdlock_databaseinfo(db_info) == false)
+		{
+			msg = "get current database read lock fail.";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
 		Util::string_suffix(db_path, '/');
@@ -3534,50 +3300,38 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		{
 			Util::create_dirs(db_path);
 		}
-		std::string compress = jsonParam(json_data, "compress", "0");
-		std::string zip_path;
-		if (compress=="0")
-			db_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
-		else
-		{
-			zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
-			db_path = db_name + "_" + Util::get_timestamp() + ".nt";
-		}
-		apiUtil->rdlock_database(db_name); // lock database
-		SLOG_DEBUG("export_path: " + db_path);
-		FILE *ofp = fopen(db_path.c_str(), "w");
-		current_database->export_db(ofp);
+		std::string export_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+		bool compress = jsonBoolParam(json_data, "compress", false);
+		SLOG_DEBUG("export_path: " + export_path);
+		FILE *ofp = fopen(export_path.c_str(), "w");
+		db_info->getDatabase()->export_db(ofp);
 		fflush(ofp);
 		fclose(ofp);
 		ofp = NULL;
-		current_database = NULL;
-		apiUtil->unlock_database(db_name); // unlock
-		std::string success = "Export the database successfully.";
-
+		// unlock
+		apiUtil->unlock_databaseinfo(db_info);
+		if (compress)
+		{
+			std::string zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
+			if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path))
+			{
+				Util::remove_path(export_path);
+				Util::remove_path(zip_path);
+				msg = "export compress fail.";
+				response->Error(StatusCompressError, msg);
+				return;
+			}
+			Util::remove_path(export_path);
+			export_path = zip_path;
+		}
+		msg = "Export the database successfully.";
 		Json resp_data;
 		resp_data.SetObject();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-
-		if (compress=="0")
-		{
-			resp_data.AddMember("filepath", StringRef(db_path.c_str()), allocator);
-			response->Json(resp_data);
-		}
-		else
-		{
-			if (!CompressUtil::FileHelper::compressExportZip(db_path, zip_path))
-			{
-				error = "export compress fail.";
-				response->Error(StatusCompressError, error);
-				Util::remove_path(zip_path);
-				return;
-			}
-			resp_data.AddMember("filepath", StringRef(zip_path.c_str()), allocator);
-			response->Json(resp_data);
-			Util::remove_path(db_path);
-		}
+		resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+		resp_data.AddMember("filepath", StringRef(export_path.c_str()), allocator);
+		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
 	{
@@ -3599,53 +3353,51 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string isolevel = jsonParam(json_data, "isolevel");
-		error = apiUtil->check_param_value("isolevel", isolevel);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("isolevel", isolevel, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		int level = Util::string2int(isolevel);
+		int level = stoi(isolevel);
 		if (level <= 0 || level > 3)
 		{
-			error = "The isolation level's value only can been 1/2/3";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "The isolation level's value only can been 1/2/3";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		std::string username = jsonParam(json_data, "username");
-		string TID_s = apiUtil->begin_process(db_name, level, username);
-		if (TID_s.empty())
+		txn_id_t tid;
+		if (apiUtil->begin_process(db_name, level, username, tid))
 		{
-			error = "Transaction begin failed.";
-			response->Error(StatusTranscationManageFailed, error);
+			msg = "Transaction begin failed.";
+			response->Error(StatusTranscationManageFailed, msg);
 			return;
 		}
-		StringBuffer s;
 		Json resp_data;
 		resp_data.SetObject();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Transaction begin success", allocator);
-		resp_data.AddMember("TID", StringRef(TID_s.c_str()), allocator);
+		resp_data.AddMember("TID", StringRef(to_string(tid).c_str()), allocator);
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -3668,79 +3420,83 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		std::string TID_s = jsonParam(json_data, "tid");
-		error = apiUtil->check_param_value("tid", TID_s);
-		if (error.empty() == false)
+		std::string tid_s = jsonParam(json_data, "tid");
+		if (apiUtil->check_param_value("tid", tid_s, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-
-		txn_id_t TID;
-		TID = apiUtil->check_txn_id(TID_s);
-		if (TID == (unsigned long long)0)
+		txn_id_t tid;
+		if (apiUtil->check_txn_id(tid_s, tid))
 		{
-			error = "TID "+TID_s+" is not a pure number.";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "TID " + tid_s + " is not a pure number.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string sparql = jsonParam(json_data, "sparql");
-		error = apiUtil->check_param_value("sparql", sparql);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("sparql", sparql, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == nullptr)
+		if (apiUtil->get_txn_manager(db_name, txn_m))
 		{
-			error = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, error);
+			msg = "Get database transaction manager error.";
+			response->Error(StatusTranscationManageFailed, msg);
 			return;
 		}
 		SLOG_DEBUG("tquery sparql: " + sparql);
 		std::string res;
-		int ret = txn_m->Query(TID, sparql, res);
+		int ret = txn_m->Query(tid, sparql, res);
 		if (ret == -1)
 		{
-			error = "Transaction query failed due to wrong TID";
-			response->Error(StatusOperationFailed, error);
+			msg = "Transaction query failed due to wrong TID";
+			response->Error(StatusOperationFailed, msg);
 		}
 		else if (ret == -10)
 		{
-			error = "Transaction query failed due to wrong database status";
-			apiUtil->rollback_process(txn_m, TID);
-			response->Error(StatusOperationFailed, error);
+			msg = "Database has been flushed or removed";
+			response->Error(StatusOperationFailed, msg);
 		}
 		else if (ret == -99)
 		{
-			error = "Transaction query failed. This transaction is not in running status!";
-			apiUtil->rollback_process(txn_m, TID);
-			response->Error(StatusOperationFailed, error);
+			msg = "Transaction is not in running status!";
+			response->Error(StatusOperationFailed, msg);
 		}
-		else if (ret == -100)
+		else if (ret == -20)
 		{
-			Json resp_data;
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			apiUtil->aborted_process(txn_m, tid, msg);
+			msg = "Transaction Abort due to Query failed!";
+			response->Error(StatusOperationFailed, msg);
+		}
+		else if (ret == -101)
+		{
+			msg = "Transaction query failed. Unknown query error";
+			response->Error(StatusOperationFailed, msg);
+		}
+		Json resp_data;
+		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		if (ret == -100)
+		{
 			resp_data.Parse(res.c_str());
 			if (resp_data.HasParseError())
 			{
@@ -3752,21 +3508,12 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			resp_data.AddMember("StatusMsg", "success", allocator);
 			response->Json(resp_data);
 		}
-		else if (ret == -20)
-		{
-			error = "Transaction query failed. This transaction is set abort due to conflict!";
-			apiUtil->aborted_process(txn_m, TID);
-			response->Error(StatusOperationFailed, error);
-		}
-		else if (ret == -101)
-		{
-			error = "Transaction query failed. Unknown query error";
-			response->Error(StatusOperationFailed, error);
-		}
 		else
 		{
-			string success = "Transaction query success, update num: " + Util::int2string(ret);
-			response->Success(success);
+			resp_data.AddMember("AnsNum", ret, allocator);
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "Transaction query success", allocator);
+			response->Json(resp_data);
 		}
 	}
 	catch (const std::exception &e)
@@ -3789,89 +3536,67 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		std::string TID_s = jsonParam(json_data, "tid");
-		error = apiUtil->check_param_value("TID", TID_s);
-		if (error.empty() == false)
+		std::string tid_s = jsonParam(json_data, "tid");
+		if (apiUtil->check_param_value("TID", tid_s, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		auto TID = apiUtil->check_txn_id(TID_s);
-		if (TID == (unsigned long long)0)
+		txn_id_t tid;
+		if (apiUtil->check_txn_id(tid_s, tid))
 		{
-			error = "TID " + TID_s + " is not a pure number.";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "TID " + tid_s + " is not a pure number.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
+			return;
+		}
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		{
+			msg = "Unable to commit due to loss of lock.";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == nullptr)
+		if (apiUtil->get_txn_manager(db_name, txn_m))
 		{
-			error = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, error);
+			apiUtil->unlock_databaseinfo(db_info);
+			msg = "Get database transaction manager error.";
+			response->Error(StatusTranscationManageFailed, msg);
 			return;
 		}
-		int ret = txn_m->Commit(TID);
-		if (ret == -1)
+		if (apiUtil->commit_process(txn_m, tid, msg) ==  false)
 		{
-			error = "Transaction not found, commit failed. TID: " + TID_s;
-			response->Error(StatusOperationFailed, error);
-		}
-		else if (ret == 1)
-		{
-			error = "Transaction not in running state! commit failed. TID: " + TID_s;
-			apiUtil->rollback_process(txn_m, TID);
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusOperationFailed, msg);
 		}
 		else
 		{
-			apiUtil->commit_process(txn_m, TID);
-			// TODO auto checkpoint are sometimes blocked
-			// auto latest_tid = txn_m->find_latest_txn();
-			// SLOG_DEBUG("latest TID: "+ to_string(latest_tid));
-			// if (latest_tid == 0)
-			// {
-			// 	SLOG_DEBUG("This is latest TID, auto checkpoint and save.");
-			// 	txn_m->Checkpoint();
-			// 	SLOG_DEBUG("Transaction checkpoint done.");
-			// 	if (apiUtil->trywrlock_database(db_name))
-			// 	{
-			// 		current_database->save();
-			// 		apiUtil->unlock_database(db_name);
-			// 	}
-			// 	else
-			// 	{
-			// 		SLOG_ERROR("The save operation can not been excuted due to loss of lock.");
-			// 	}
-			// }
-			string success = "Transaction commit success. TID: " + TID_s;
-			response->Success(success);
+			response->Success("Transaction commit success.");
 		}
+		apiUtil->unlock_databaseinfo(db_info);
 	}
 	catch (const std::exception &e)
 	{
-		string error = "Transaction commit fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		string msg = "Transaction commit fail: " + string(e.what());
+		response->Error(StatusOperationFailed, msg);
 	}
 }
 
@@ -3888,71 +3613,62 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		std::string TID_s = jsonParam(json_data, "tid");
-		error = apiUtil->check_param_value("TID", TID_s);
-		if (error.empty() == false)
+		std::string tid_s = jsonParam(json_data, "tid");
+		if (apiUtil->check_param_value("TID", tid_s, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		auto TID = apiUtil->check_txn_id(TID_s);
-		if (TID == (unsigned long long)0)
+		txn_id_t tid;
+		if (apiUtil->check_txn_id(tid_s, tid))
 		{
-			error = "TID " + TID_s + " is not a pure number.";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "TID " + tid_s + " is not a pure number.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->trywrlock_database(db_name) == false)
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			msg = "Unable to rollback due to loss of lock.";
+			response->Error(StatusLossOfLock, msg);
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		apiUtil->get_Txn_ptr(db_name, txn_m);
-		if (txn_m == nullptr)
+		if (apiUtil->get_txn_manager(db_name, txn_m))
 		{
-			apiUtil->unlock_database(db_name);
-			error = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, error);
+			apiUtil->unlock_databaseinfo(db_info);
+			msg = "Get database transaction manager error.";
+			response->Error(StatusTranscationManageFailed, msg);
 			return;
 		}
-		int ret = txn_m->Rollback(TID);
-		apiUtil->unlock_database(db_name);
-		if (ret == 1)
+		if (apiUtil->rollback_process(txn_m, tid, msg) ==  false)
 		{
-			error = "Transaction not in running state! rollback failed. TID: " + TID_s;
-			response->Error(StatusOperationFailed, error);
-		}
-		else if (ret == -1)
-		{
-			error = "Transaction not found, rollback failed. TID: " + TID_s;
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusOperationFailed, msg);
 		}
 		else
 		{
-			apiUtil->rollback_process(txn_m, TID);
-			string success = "Transaction rollback success. TID: " + TID_s;
-			response->Success(success);
+			response->Success("Transaction rollback success.");
 		}
+		apiUtil->unlock_databaseinfo(db_info);
 	}
 	catch (const std::exception &e)
 	{
@@ -3973,57 +3689,51 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (current_database == nullptr)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->trywrlock_database(db_name) == false)
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			msg = "Unable to checkpoint due to loss of lock.";
+			response->Error(StatusLossOfLock, msg);
+			return;
 		}
-		else
+		shared_ptr<Txn_manager> txn_m;
+		if(apiUtil->get_txn_manager(db_name, txn_m) == false)
 		{
-			shared_ptr<Txn_manager> txn_m;
-			apiUtil->get_Txn_ptr(db_name, txn_m);
-			if (txn_m == nullptr)
-			{
-				error = "Get database transaction manager error.";
-				apiUtil->unlock_database(db_name);
-				response->Error(StatusTranscationManageFailed, error);
-			}
-			else
-			{
-				txn_m->Checkpoint();
-				current_database->save();
-				apiUtil->unlock_database(db_name);
-				string success = "Database saved successfully.";
-				response->Success(success);
-			}
+			msg = "Get database transaction manager error.";
+			apiUtil->unlock_databaseinfo(db_info);
+			response->Error(StatusTranscationManageFailed, msg);
+			return;
 		}
+		txn_m->Checkpoint();
+		db_info->getDatabase()->save();
+		apiUtil->unlock_databaseinfo(db_info);
+		string success = "Database saved successfully.";
+		response->Success(success);
 	}
 	catch (const std::exception &e)
 	{
 		string error = "Checkpoint fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
-
 }
 
 /**
@@ -4044,49 +3754,47 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		bool is_file = true;
 		std::string file = jsonParam(json_data, "file");
 		std::string dir = jsonParam(json_data, "dir");
-		error = apiUtil->check_param_value("file", file);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("file", file, msg) == false)
 		{
 			is_file = false;
-			error = apiUtil->check_param_value("dir", dir);
-			if (error.empty() == false)
+			if (apiUtil->check_param_value("dir", dir, msg) == false)
 			{
-				error = "file and dir cannot be empty at the same time!";
-				response->Error(StatusParamIsIllegal, error);
+				msg = "file and dir cannot be empty at the same time!";
+				response->Error(StatusParamIsIllegal, msg);
 				return;
 			}
 		}
 		if (is_file && Util::file_exist(file) == false)
 		{
-			error = "The data file is not exist";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "The data file is not exist";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		if (!is_file && Util::file_exist(dir) == false)
 		{
-			error = "The data directory is not exist";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "The data directory is not exist";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		shared_ptr<ofstream> clusterlog = nullptr;
@@ -4102,10 +3810,10 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
-				error = "Less than half of the cluster nodes are confirmed.";
+				msg = "Less than half of the cluster nodes are confirmed.";
 				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				SLOG_ERROR(error);
-				response->Error(StatusOperationFailed, error);
+				SLOG_ERROR(msg);
+				response->Error(StatusOperationFailed, msg);
 				return;
 			}
 			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
@@ -4130,8 +3838,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					});
 				if( code != CompressUtil::UnZipOK )
 				{
-					string error = "uncompress is failed error.";
-					response->Error(code, error);
+					msg = "uncompress is failed error.";
+					response->Error(code, msg);
 					if (clusterlog)
 						clusterlog->close();
 					return;
@@ -4145,8 +3853,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				if (code != CompressUtil::UnZipOK)
 				{
 					Util::remove_path(unz_dir_path);
-					string error = "uncompress is failed error.";
-					response->Error(code, error);
+					msg = "uncompress is failed error.";
+					response->Error(code, msg);
 					if (clusterlog)
 						clusterlog->close();
 					return;
@@ -4165,39 +3873,38 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			Util::dir_files(dir, "", nt_files);
 		}
 		std::string opt_id = apiUtil->generateUid();
-		std::string async = jsonParam(json_data, "async");
+		bool async = jsonBoolParam(json_data, "async", false);
 		std::string callback = jsonParam(json_data, "callback");
-		auto insert_helper = [db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response) {
-			bool wrlock_status = apiUtil->trywrlock_database(db_name, 300);
+		auto insert_helper = [&db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response) {
+			shared_ptr<DatabaseInfo> db_info;
+			apiUtil->get_databaseinfo(db_name, db_info);
 			// access log
 			string msg = "Operation Success.";
 			string operation = "batchInsert";
 			string remote_ip = task_of(response)->peer_addr();
-			if (!wrlock_status)
+			if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
 			{
-				msg = "The operation can not been excuted due to loss of lock.";
+				msg = "Unable to batch insert due to loss of lock.";
 				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
 				response->Error(StatusLossOfLock, msg);
 				return;
 			}
 			apiUtil->write_access_log(operation, remote_ip, StatusOK, msg, opt_id);
-			shared_ptr<Database> current_database;
-			apiUtil->get_database(db_name, current_database);
 			unsigned success_num = 0;
 			unsigned total_num = 0;
 			unsigned parse_error_num = 0;
-			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+			string error_log = _db_home +  "/" + db_info->getName() + _db_suffix + "/parse_error.log";
 			total_num = Util::count_lines(error_log);
 			for (std::string rdf_file : nt_files)
 			{
 				SLOG_DEBUG("begin insert data from " + rdf_file);
-				success_num += current_database->batch_insert(rdf_file, false, nullptr, clusterlog);
+				success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr, clusterlog);
 			}
 			// exclude Info line
 			parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
 			// save data and unlock
-			current_database->save();
-			apiUtil->unlock_database(db_name);
+			db_info->getDatabase()->save();
+			apiUtil->unlock_databaseinfo(db_info);
 			// close cluster log
 			if (clusterlog) 
 			{
@@ -4252,20 +3959,16 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						// restore data
 						bool lock_status;
 						// try get wrlock timeout 600 senconds
-						lock_status = apiUtil->trywrlock_database(db_name, 600);
-						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
-						if (lock_status)
+						if (apiUtil->trywrlock_databaseinfo(db_info, 600))
 						{
-							shared_ptr<Database> restore_database;
-							apiUtil->get_database(db_name, restore_database);
 
 							uint64_t num = 0;
 							for (std::string rdf_file : nt_files)
 							{
-								num += restore_database->batch_remove(rdf_file);
+								num += db_info->getDatabase()->batch_remove(rdf_file);
 							}
 							SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
-							apiUtil->unlock_database(db_name);
+							apiUtil->unlock_databaseinfo(db_info);
 						}
 						else
 						{
@@ -4275,12 +3978,12 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						{
 							Util::remove_path(tmp_dir_path);
 						}
-						std::string error = "Less than half of the cluster nodes reply.";
-						SLOG_ERROR(error);
+						msg = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(msg);
 						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
 						if (response)
 						{
-							response->Error(StatusOperationFailed, error);
+							response->Error(StatusOperationFailed, msg);
 						}
 						if (!callback.empty())
 						{
@@ -4288,12 +3991,11 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 							resp_error.SetObject();
 							Json::AllocatorType &allocator_err = resp_error.GetAllocator();
 							resp_error.AddMember("StatusCode", 1005, allocator_err);
-							resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
-							string res;
+							resp_error.AddMember("StatusMsg", StringRef(msg.c_str()), allocator_err);
 							rapidjson::StringBuffer resBuffer;
 							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
 							resp_error.Accept(resWriter);
-							HttpUtil::Post(callback, resBuffer.GetString(), res);
+							HttpUtil::Post(callback, resBuffer.GetString(), msg);
 						}
 					}
 				}
@@ -4327,8 +4029,12 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				response->Json(resp_data);
 			}
 		};
-		if (async == "true")
+		if (async)
 		{
+			// grpc::GRPCServerTask* sub_task = task_of(response);
+			// sub_task->add_callback([&](GRPCTask *task) {
+			    
+			// });
 			Json resp_data;
 			resp_data.SetObject();
 			Json::AllocatorType &allocator = resp_data.GetAllocator();
@@ -4370,35 +4076,34 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			return;
 		}
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string file = jsonParam(json_data, "file");
-		error = apiUtil->check_param_value("file", file);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("file", file, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		if (Util::file_exist(file) == false)
 		{
-			error = "The data file is not exist";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "The data file is not exist";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
+		if (apiUtil->check_db_built(db_name) == false)
 		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not built yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
-		if (apiUtil->check_already_load(db_name) == false)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
-			error = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg = "Database not load yet.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		shared_ptr<ofstream> clusterlog = nullptr;
@@ -4414,10 +4119,10 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
 			if (!prepare_result)
 			{
-				error = "Less than half of the cluster nodes are confirmed.";
-				SLOG_ERROR(error);
+				msg = "Less than half of the cluster nodes are confirmed.";
+				SLOG_ERROR(msg);
 				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				response->Error(StatusOperationFailed, error);
+				response->Error(StatusOperationFailed, msg);
 				return;
 			}
 			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
@@ -4439,8 +4144,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				});
 			if( code != CompressUtil::UnZipOK )
 			{
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+				msg = "uncompress is failed error.";
+				response->Error(code, msg);
 				if (clusterlog)
 					clusterlog->close();
 				return;
@@ -4454,8 +4159,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			if (code != CompressUtil::UnZipOK)
 			{
 				Util::remove_path(unz_dir_path);
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+				msg = "uncompress is failed error.";
+				response->Error(code, msg);
 				if (clusterlog)
 					clusterlog->close();
 				return;
@@ -4467,24 +4172,23 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			nt_files.push_back(file);
 		}
 		std::string opt_id = apiUtil->generateUid();
-		std::string async = jsonParam(json_data, "async");
+		bool async = jsonBoolParam(json_data, "async", false);
 		std::string callback = jsonParam(json_data, "callback");
 		auto remove_helper = [db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response){
-			bool wrlock_status = apiUtil->trywrlock_database(db_name, 300);
+			shared_ptr<DatabaseInfo> db_info;
+			apiUtil->get_databaseinfo(db_name, db_info);
 			// access log
 			string msg = "Operation Success.";
 			string operation = "batchRemove";
 			string remote_ip = task_of(response)->peer_addr();
-			if (!wrlock_status)
+			if (apiUtil->trywrlock_databaseinfo(db_info, 300))
 			{
-				msg = "The operation can not been excuted due to loss of lock.";
+				msg = "Unable to batch remove due to loss of lock.";
 				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
 				response->Error(StatusLossOfLock, msg);
 				return;
 			}
 			apiUtil->write_access_log(operation, remote_ip, StatusOK, msg, opt_id);
-			shared_ptr<Database> current_database;
-			apiUtil->get_database(db_name, current_database);
 			unsigned success_num = 0;
 			unsigned total_num = 0;
 			size_t parse_error_num = 0;
@@ -4493,13 +4197,13 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			for (std::string rdf_file : nt_files)
 			{
 				SLOG_DEBUG("begin remove data from " + rdf_file);
-				success_num += current_database->batch_remove(rdf_file, false, nullptr, clusterlog);
+				success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr, clusterlog);
 			}
 			// exclude Info line
 			parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
 			// save data and unlock
-			current_database->save();
-			apiUtil->unlock_database(db_name);
+			db_info->getDatabase()->save();
+			apiUtil->unlock_databaseinfo(db_info);
 			// close cluster log
 			if (clusterlog) 
 			{
@@ -4553,21 +4257,16 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 					else
 					{
 						// restore data
-						bool lock_status;
 						// try get wrlock timeout 600 senconds
-						lock_status = apiUtil->trywrlock_database(db_name, 600);
-						SLOG_DEBUG("try get " + db_name + " wrlock: " << lock_status);
-						if (lock_status)
+						if (apiUtil->trywrlock_databaseinfo(db_info, 600))
 						{
-							shared_ptr<Database> restore_database;
-							apiUtil->get_database(db_name, restore_database);
 							uint64_t num = 0;
 							for (std::string rdf_file : nt_files)
 							{
-								num += restore_database->batch_insert(rdf_file);
+								num += db_info->getDatabase()->batch_insert(rdf_file);
 							}
 							SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
-							apiUtil->unlock_database(db_name);
+							apiUtil->unlock_databaseinfo(db_info);
 						}
 						else
 						{
@@ -4577,12 +4276,12 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 						{
 							Util::remove_path(tmp_dir_path);
 						}
-						std::string error = "Less than half of the cluster nodes reply.";
-						SLOG_ERROR(error);
+						msg = "Less than half of the cluster nodes reply.";
+						SLOG_ERROR(msg);
 						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
 						if (response)
 						{
-							response->Error(StatusOperationFailed, error);
+							response->Error(StatusOperationFailed, msg);
 						}
 						if (!callback.empty())
 						{
@@ -4590,7 +4289,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 							resp_error.SetObject();
 							Json::AllocatorType &allocator_err = resp_error.GetAllocator();
 							resp_error.AddMember("StatusCode", 1005, allocator_err);
-							resp_error.AddMember("StatusMsg", StringRef(error.c_str()), allocator_err);
+							resp_error.AddMember("StatusMsg", StringRef(msg.c_str()), allocator_err);
 							string res;
 							rapidjson::StringBuffer resBuffer;
 							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
@@ -4629,7 +4328,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				response->Json(resp_data);
 			}
 		};
-		if (async == "true")
+		if (async)
 		{
 			Json resp_data;
 			resp_data.SetObject();
@@ -4658,80 +4357,28 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string db_name = jsonParam(json_data, "db_name");
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string new_name = jsonParam(json_data, "new_name");
-		error = apiUtil->check_param_value("new_name", new_name);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("new_name", new_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if (apiUtil->check_db_exist(db_name) == false)
-		{
-			error = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
+		if (apiUtil->rename_databaseinfo(db_name, new_name, msg)) {
+			msg = "Database rename successfully.";
+			response->Success(msg);
+		} else {
+			response->Error(StatusOperationFailed, msg);
 		}
-		if (apiUtil->check_already_load(db_name) == true)
-		{
-			error = "Database is loaded, need unload first.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
-		// check new_name available
-		if (apiUtil->check_db_exist(new_name) == true)
-		{
-			error = "Database name " + new_name + " already exists.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			return;
-		}
-
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-		{
-			error = "Unable to rename due to loss of lock";
-			response->Error(StatusLossOfLock, error);
-			return;
-		}
-		string new_db_path = _db_home + "/" + new_name + _db_suffix;
-		// check new_db_path.
-		if (Util::dir_exist(new_db_path))
-		{
-			error = "Database local path " + new_db_path + " already exists.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
-			apiUtil->unlock_databaseinfo(db_info);
-			return;
-		}
-		
-		// mv old folder to new folder
-		string db_path = _db_home + "/" + db_name + _db_suffix;
-		string sys_cmd = "mv " + db_path + " " + new_db_path;
-		std::system(sys_cmd.c_str());
-		apiUtil->unlock_databaseinfo(db_info);
-		// insert new_name
-		apiUtil->add_already_build(new_name, db_info->getCreator(), db_info->getTime());
-		// copy privileges
-		apiUtil->copy_privilege(db_name, new_name);		
-		// add backuplog
-		Util::add_backuplog(new_name);
-
-		// remove old_name
-		apiUtil->delete_from_already_build(db_name);
-		// remove backuplog
-		Util::delete_backuplog(db_name);
-
-		std::string success = "Database rename successfully.";
-		response->Success(success);
 	}
 	catch (const std::exception &e)
 	{
-		std::string error = "rename fail: " + string(e.what());
+		std::string error = "Rename fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -4751,20 +4398,19 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 	try
 	{
 		std::string op_username = jsonParam(json_data, "op_username");
-		std::string error = apiUtil->check_param_value("op_username", op_username);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("op_username", op_username, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string op_password = jsonParam(json_data, "op_password");
 		std::string type = jsonParam(json_data, "type");
 		if (type != "2")
 		{
-			error = apiUtil->check_param_value("op_password", op_password);
-			if (error.empty() == false)
+			if (apiUtil->check_param_value("op_password", op_password, msg) == false)
 			{
-				response->Error(StatusParamIsIllegal, error);
+				response->Error(StatusParamIsIllegal, msg);
 				return;
 			}
 		}
@@ -4774,8 +4420,8 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			// check user number
 			if (apiUtil->check_user_count() == false)
 			{
-				string error = "The total number of users more than max_user_num.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				msg = "The total number of users more than max_user_num.";
+				response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 				return;
 			}
 			if (apiUtil->user_add(op_username, op_password))
@@ -4784,16 +4430,16 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			}
 			else
 			{
-				error = "Username already existed, add user failed.";
-				response->Error(StatusOperationFailed, error);
+				msg = "Username already existed, add user failed.";
+				response->Error(StatusOperationFailed, msg);
 			}
 		}
 		else if (type == "2") // delete user
 		{
 			if (op_username == apiUtil->get_root_username())
 			{
-				error = "You cannot delete root, delete user failed.";
-				response->Error(StatusOperationFailed, error);
+				msg = "You cannot delete root, delete user failed.";
+				response->Error(StatusOperationFailed, msg);
 			}
 			else if (apiUtil->user_delete(op_username))
 			{
@@ -4801,8 +4447,8 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			}
 			else
 			{
-				error = "Username not exist, delete user failed.";
-				response->Error(StatusOperationFailed, error);
+				msg = "Username not exist, delete user failed.";
+				response->Error(StatusOperationFailed, msg);
 			}
 		}
 		else if (type == "3") // alert password
@@ -4813,14 +4459,14 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 			}
 			else
 			{
-				error = "Username not exist, change password failed.";
-				response->Error(StatusOperationFailed, error);
+				msg = "Username not exist, change password failed.";
+				response->Error(StatusOperationFailed, msg);
 			}
 		}
 		else
 		{
-			error = "The operation is not support.";
-			response->Error(StatusParamIsIllegal, error);
+			msg = "The operation is not support.";
+			response->Error(StatusParamIsIllegal, msg);
 		}
 	}
 	catch (const std::exception &e)
@@ -4834,32 +4480,18 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 {
 	try
 	{
-		string type="";
-		if(json_data.HasMember("type"))
-		{
-          if(json_data["type"].IsInt())
-		  {
-			type=json_data["type"].GetInt()+"";
-		  }
-		  else if(json_data["type"].IsString())
-		  {
-			type=json_data["type"].GetString();
-		  }
-		  
-
-		}
-		
 		std::string db_name = jsonParam(json_data, "db_name");
+		std::string type= jsonParam(json_data, "type");
 		std::string operation="AddReason";
-		std::string error = apiUtil->check_param_value("db_name", db_name);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		if(type.empty())
+		if(apiUtil->check_param_value("type", type, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, "The type parameter is illegal");
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		if (type == "1") // add Reason Rule
@@ -4868,9 +4500,8 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			// check user number
 			if(json_data.HasMember("ruleinfo")==false)
 			{
-				error="the data has not the rule information";
-			 	
-			 	response->Error(StatusParamIsIllegal, error);
+				msg = "the data has not the rule information";
+			 	response->Error(StatusParamIsIllegal, msg);
 				return;
 			}
 			Value reasonInfo=json_data["ruleinfo"].GetObject();
@@ -4885,10 +4516,9 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			}
 			else
 			{
-				error="Add Reason Rule Fail. "+resultInfo.error_message;
-				response->Error(StatusOperationFailed,error);
+				msg="Add Reason Rule Fail. " + resultInfo.error_message;
+				response->Error(StatusOperationFailed, msg);
 			}
-			
 		}
 		else if (type == "2") // listReason
 		{
@@ -4911,8 +4541,8 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			if (list.HasParseError()) 
 			{
 
-				error="pasrse rulefiles error:" + arrayStr;
-				response->Error(StatusOperationFailed,error);
+				msg = "pasrse rulefiles error:" + arrayStr;
+				response->Error(StatusOperationFailed, msg);
 			} 
 			else 
 			{
@@ -4938,15 +4568,14 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			if(resultInfo.issuccess==0)
 			{
 				response->Error(StatusOperationFailed,resultInfo.error_message);
-				
 			}
-			else{
-			doc.AddMember("StatusCode",0,allocator);
-			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
-			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
-			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
-		
-			 response->Json(doc);
+			else
+			{
+				doc.AddMember("StatusCode",0,allocator);
+				doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
+				doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
+				doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
+				response->Json(doc);
 			}
 		}
 		else if(type=="4") //execute Reason
@@ -4955,40 +4584,29 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			string rulename=json_data["rulename"].GetString();
 			string username=json_data["username"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::executeReasonRule(rulename,db_name,_db_home,_db_suffix);
-			Document doc;
-			doc.SetObject();
-			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
 				response->Error(StatusOperationFailed,resultInfo.error_message);
-				
+				return;
 			}
-			else{
-			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
-	        if(apiUtil->check_db_exist(db_name)==false)
+	        if (apiUtil->check_db_built(db_name) == false)
 			{
-				error="the database is not exist!";
-				response->Error(StatusOperationFailed,error);
+				msg = "the database is not exist!";
+				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
-            shared_ptr<Database> current_database;
-			
-			// check database load status
-			apiUtil->get_database(db_name, current_database);
-			if (current_database == nullptr)
+			if (apiUtil->check_db_loaded(db_name) == false)
 			{
-				throw runtime_error("Database not load yet.");
+				msg = "Database not load yet!";
+				response->Error(StatusOperationFailed, msg);
+			    return;
 			}
-			bool lock_rt = apiUtil->rdlock_database(db_name);
-			if (lock_rt)
+            shared_ptr<DatabaseInfo> db_info;
+			apiUtil->get_databaseinfo(db_name, db_info);
+			if (apiUtil->trywrlock_databaseinfo(db_info) == false)
 			{
-				SLOG_DEBUG("get current database read lock success: " + db_name);
-			}
-			else
-			{
-				//throw runtime_error("get current database read lock fail.");
-				error="get current database read lock fail.";
-				response->Error(StatusOperationFailed,error);
+				msg = "get current database write lock fail.";
+				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
 			ResultSet rs;
@@ -5000,83 +4618,73 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			{
 				// SLOG_DEBUG("begin query...");
 				rs.setUsername(username);
-				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				db_info->getDatabase()->save();
+				apiUtil->unlock_databaseinfo(db_info);
 			}
 			catch (string exception_msg)
 			{
 				string content = exception_msg;
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
 			catch (const std::runtime_error &e2)
 			{
 				string content = e2.what();
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
 			catch (...)
 			{
 				string content = "unknow error";
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
-            // cout<<"rs.number:"<<rs.ansNum<<",rs.answer:"<<rs.answer<<endl;
 			
-			// cout << "ans:" << rs_ansNum << endl;
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			doc.AddMember("insert_sparql",StringRef(resultInfo.insert_sparql.c_str()),allocator);
 			doc.AddMember("AnsNum", ret_val, allocator);
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
-			current_database->save();
-			apiUtil->unlock_database(db_name);
             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已执行",_db_home,_db_suffix);
 		    response->Json(doc);
-			}
-			
 		}
 		else if(type=="5")
 		{
 			operation = "disableReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::disableReasonRule(rulename,db_name,_db_home,_db_suffix);
-			Document doc;
-			doc.SetObject();
-			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
 				response->Error(StatusOperationFailed,resultInfo.error_message);
-			    
-			}
-			else
-			{
-			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
-			string username=json_data["username"].GetString();
-			if(apiUtil->check_db_exist(db_name)==false)
-			{
-				error="the database is not exist!";
-				response->Error(StatusOperationFailed,error);
 			    return;
 			}
-            shared_ptr<Database> current_database;
+			string username = json_data["username"].GetString();
+			if(apiUtil->check_db_built(db_name)==false)
+			{
+				msg = "the database is not exist!";
+				response->Error(StatusOperationFailed, msg);
+			    return;
+			}
+			if (apiUtil->check_db_loaded(db_name) == false)
+			{
+				msg = "Database not load yet!";
+				response->Error(StatusOperationFailed, msg);
+			    return;
+			}
+            shared_ptr<DatabaseInfo> db_info;
 			bool update_flag_bool=true;
 			// check database load status
-			apiUtil->get_database(db_name, current_database);
-			if (current_database == nullptr)
+			apiUtil->get_databaseinfo(db_name, db_info);
+			if (apiUtil->trywrlock_databaseinfo(db_info) ==  false)
 			{
-				throw runtime_error("Database not load yet.");
-			}
-			bool lock_rt = apiUtil->rdlock_database(db_name);
-			if (lock_rt)
-			{
-				SLOG_DEBUG("get current database read lock success: " + db_name);
-			}
-			else
-			{
-				//throw runtime_error("get current database read lock fail.");
-				error="get current database read lock fail.";
-				response->Error(StatusOperationFailed,error);
+				msg = "get current database write lock fail.";
+				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
 			ResultSet rs;
@@ -5087,59 +4695,50 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			{
 				// SLOG_DEBUG("begin query...");
 				rs.setUsername(username);
-				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				db_info->getDatabase()->save();
+				apiUtil->unlock_databaseinfo(db_info);
 			}
 			catch (string exception_msg)
 			{
 				string content = exception_msg;
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
 			catch (const std::runtime_error &e2)
 			{
 				string content = e2.what();
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
 			catch (...)
 			{
 				string content = "unknow error";
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				return;
 			}
-			
-            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-            //cout << "ans:" << ret_val << endl;
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			doc.AddMember("delete_sparql",StringRef(resultInfo.delete_sparql.c_str()),allocator);
 			doc.AddMember("AnsNum",ret_val,allocator);
-			
-          
-		
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
-		      response->Json(doc);
-			}
-
+            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已失效",_db_home,_db_suffix);
+		    response->Json(doc);
 		}
 		else if(type=="6")
 		{
 		     operation = "showReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonOperationResult resultInfo= ReasonHelper::getReasonInfo(rulename,db_name,_db_home,_db_suffix);
-		
-			
 			if(resultInfo.issuccess==0)
 			{
 				response->Error(StatusOperationFailed,resultInfo.error_message);
-			    
-			}
-			
-			
+			}			
 			else
 			{
 				// 输出格式化的JSON
@@ -5152,7 +4751,6 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				doc.AddMember("StatusMsg","ok",allocator);
 				response->Json(doc);
 			}
-			
 		}
 		else if (type == "7")
 		{
@@ -5164,7 +4762,6 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				response->Error(StatusOperationFailed,resultInfo.error_message);
 				return;
 			}
-
 			else
 			{
 				// 输出格式化的JSON
@@ -5178,7 +4775,6 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 					response->Error(StatusOperationFailed,error_msg);
 					return;
 				}
-				
 				ReasonOperationResult resultInfo2 = ReasonHelper::removeReasonRule(rulename, db_name, _db_home, _db_suffix);
 				if (resultInfo2.issuccess == 1)
 				{
@@ -5187,13 +4783,10 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 					doc2.AddMember("StatusCode", 0, allocator);
 					doc2.AddMember("StatusMsg", StringRef(resultInfo2.error_message.c_str()), allocator);
 					response->Json(doc2);
-					return;
 				}
 				else
 				{
-
 					response->Error(StatusOperationFailed,resultInfo2.error_message);
-					return;
 				}
 			}
 		}
@@ -5202,60 +4795,48 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			operation = "checkReasonRule";
 			string rulename=json_data["rulename"].GetString();
 			ReasonSparql resultInfo= ReasonHelper::getCheckSparql(rulename,db_name,_db_home,_db_suffix);
-			Document doc;
-			doc.SetObject();
-			int effectNum=0;
-			string checkMsg="ok";
-			Document::AllocatorType &allocator = doc.GetAllocator();
 			if(resultInfo.issuccess==0)
 			{
 				response->Error(StatusOperationFailed,resultInfo.error_message);
-			    
+				return;
 			}
-			else
+			if(apiUtil->check_db_built(db_name)==false)
 			{
-			doc.AddMember("check_sparql",StringRef(resultInfo.check_sparql.c_str()),allocator);
-			string username=json_data["username"].GetString();
-			if(apiUtil->check_db_exist(db_name)==false)
-			{
-				error="the database is not exist!";
-				response->Error(StatusOperationFailed,error);
+				msg = "the database is not exist!";
+				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
-            shared_ptr<Database> current_database;
-			bool update_flag_bool=true;
-			// check database load status
-			apiUtil->get_database(db_name, current_database);
-			if (current_database == nullptr)
+			if(apiUtil->check_db_loaded(db_name)==false)
 			{
-				throw runtime_error("Database not load yet.");
+				msg = "Database not load yet.";
+				response->Error(StatusOperationFailed, msg);
+			    return;
 			}
-			bool lock_rt = apiUtil->rdlock_database(db_name);
-			if (lock_rt)
+			
+            shared_ptr<DatabaseInfo> db_info;
+			apiUtil->get_databaseinfo(db_name, db_info);
+			if (apiUtil->rdlock_databaseinfo(db_info))
 			{
-				SLOG_DEBUG("get current database read lock success: " + db_name);
-			}
-			else
-			{
-				//throw runtime_error("get current database read lock fail.");
-				error="get current database read lock fail.";
-				response->Error(StatusOperationFailed,error);
+				msg = "get current database read lock fail.";
+				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
 			ResultSet rs;
+			bool update_flag_bool = true;
 			int ret_val;
 			FILE *output = NULL;
+			string username = jsonParam(json_data, "username");
 			string sparql = resultInfo.check_sparql;
 			try
 			{
-				// SLOG_DEBUG("begin query...");
 				rs.setUsername(username);
-				ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr);
+				apiUtil->unlock_databaseinfo(db_info);
 			}
 			catch (string exception_msg)
 			{
 				string content = exception_msg;
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
@@ -5263,7 +4844,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			catch (const std::runtime_error &e2)
 			{
 				string content = e2.what();
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
@@ -5271,73 +4852,67 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			catch (...)
 			{
 				string content = "unknow error";
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 				response->Error(StatusOperationFailed,content);
 				ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,0,_db_home,_db_suffix,content);
 				return;
 			}
-			
-            // long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-           // cout << "ans:" << ret_val << endl;
-			//doc.AddMember("AnsNum",ret_val,allocator);
-			string json=rs.to_JSON();
-            //cout << "ans:" << ret_val << endl;
-			// doc.AddMember("result",StringRef(json.c_str()),allocator);
-          
+			int effectNum = 0;
+			string checkMsg = "ok";
+			string json= rs.to_JSON();
 		    Document doc2;
 			doc2.SetObject();
 			doc2.Parse(json.c_str());
 			if(doc2.HasParseError())
 			{
-				checkMsg="query result is not json format!";
-				effectNum=0;
-				doc.AddMember("effectNum",effectNum,allocator);
-				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
+				checkMsg = "query result is not json format!";
+				effectNum = 0;
 			}
-			if(doc2.HasMember("results"))
+			else
 			{
-				Value results=doc2["results"].GetObject();
-				if(results.HasMember("bindings"))
+				if(doc2.HasMember("results"))
 				{
-					Value bindings=results["bindings"].GetArray();
-					if(bindings.Size()>0)
+					Value results=doc2["results"].GetObject();
+					if(results.HasMember("bindings"))
 					{
-						Value resultobj=bindings[0]["result"].GetObject();
-						if(resultobj.HasMember("value"))
+						Value bindings=results["bindings"].GetArray();
+						if(bindings.Size()>0)
 						{
-							string result_value=resultobj["value"].GetString();
-							// int result_value_int=Util::string2int(result_value);
-							effectNum=Util::string2int(result_value);
-							doc.AddMember("effectNum",effectNum,allocator);
+							Value resultobj=bindings[0]["result"].GetObject();
+							if(resultobj.HasMember("value"))
+							{
+								string result_value=resultobj["value"].GetString();
+								// int result_value_int=Util::string2int(result_value);
+								effectNum=Util::string2int(result_value);
+							}
+							else
+							{
+								effectNum=0;
+							}
 						}
 						else
 						{
 							effectNum=0;
-						    doc.AddMember("effectNum",effectNum,allocator);
 						}
 					}
-					else
-					{
-						effectNum=0;
-						doc.AddMember("effectNum",effectNum,allocator);
-					}
 				}
-				doc.AddMember("checkMsg",StringRef(checkMsg.c_str()),allocator);
 			}
-			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,checkMsg);
-		
+			Document doc;
+			doc.SetObject();
+			Document::AllocatorType &allocator = doc.GetAllocator();
+			doc.AddMember("check_sparql", StringRef(resultInfo.check_sparql.c_str()), allocator);
+			doc.AddMember("effectNum", effectNum, allocator);
+			doc.AddMember("checkMsg", StringRef(checkMsg.c_str()), allocator);
 			doc.AddMember("StatusCode", 0, allocator);
 			doc.AddMember("StatusMsg", "ok", allocator);
-			current_database->save();
-			apiUtil->unlock_database(db_name);
-             ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已校验",_db_home,_db_suffix);
-		      response->Json(doc);
-			}
+			ReasonHelper::updateReasonRuleEffectNum(rulename,db_name,effectNum,_db_home,_db_suffix,checkMsg);
+            ReasonHelper::updateReasonRuleStatus(rulename, db_name, "已校验",_db_home,_db_suffix);
+		    response->Json(doc);
 		}
 		else
 		{
-			error = "The operation is not support.";
-			response->Error(StatusParamIsIllegal, error);
+			msg =  "The operation is not support.";
+			response->Error(StatusParamIsIllegal, msg);
 		}
 	}
 	catch (const std::exception &e)
@@ -5404,35 +4979,34 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 	try
 	{
 		std::string type = jsonParam(json_data, "type");
-		std::string error = apiUtil->check_param_value("type", type);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("type", type, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}  
 		else if (type != "1" && type != "2" && type != "3")
 		{
-			error = "The type " + type + " is not support.";
-			response->Error(StatusParamIsIllegal, error);
+			msg =  "The type " + type + " is not support.";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string op_username = jsonParam(json_data, "op_username");
-		error = apiUtil->check_param_value("op_username", op_username);
-		if (error.empty() == false)
+		if (apiUtil->check_param_value("op_username", op_username, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		} 
 		else if (apiUtil->check_user_exist(op_username) == false)
 		{
-			error = "The username is not exists.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg =  "The username is not exists.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
 		else if (op_username == apiUtil->get_root_username())
 		{
-			error = "You can't change privileges for root user.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			msg =  "You can't change privileges for root user.";
+			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		} 
 		
@@ -5440,39 +5014,35 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 		std::string privileges = jsonParam(json_data, "privileges");
 		if (type != "3")
 		{
-			error = apiUtil->check_param_value("db_name", db_name);
-			if (error.empty() == false)
+			if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 			{
-				response->Error(StatusParamIsIllegal, error);
+				response->Error(StatusParamIsIllegal, msg);
 				return;
 			}
 			// check database exist
-			if (apiUtil->check_db_exist(db_name) == false)
+			if (apiUtil->check_db_built(db_name) == false)
 			{
-				error = "Database not build yet.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, error);
+				msg =  "Database not build yet.";
+				response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 				return;
 			}
-			error = apiUtil->check_param_value("privileges", privileges);
-			if (error.empty() == false)
+			if (apiUtil->check_param_value("privileges", privileges, msg) == false)
 			{
-				response->Error(StatusParamIsIllegal, error);
+				response->Error(StatusParamIsIllegal, msg);
 				return;
 			}
-		}
-		
-		if (type == "3")
+		} 
+		else if (type == "3")
 		{
 			// clear the user all privileges
-			int resultint = apiUtil->clear_user_privilege(op_username);
-			if (resultint == 1)
+			if (apiUtil->clear_privilege(op_username))
 			{
 				response->Success("Clear the all privileges for the user successfully!");
 			}
 			else
 			{
-				error = "Clear the all privileges for the user fail.";
-				response->Error(StatusOperationFailed, error);
+				msg =  "Clear the all privileges for the user fail.";
+				response->Error(StatusOperationFailed, msg);
 			}
 		}
 		else
@@ -5521,11 +5091,11 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				} 
 				else
 				{
-					SLOG_DEBUG("The privilege " + temp_privilege_int + " undefined.");
+					SLOG_WARN("The privilege " + temp_privilege_int + " undefined.");
 					continue;
 				} 
 			}
-			string result="";
+			string result = "";
 			if (privilegeTypes.size() > 0) 
 			{
 				string privilegeNames="";
@@ -5596,21 +5166,26 @@ void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 	try
 	{
 		std::string op_password = jsonParam(json_data, "op_password");
-		std::string error = apiUtil->check_param_value("op_password", op_password);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("op_password", op_password, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string username = jsonParam(json_data, "username");
+		if (apiUtil->check_user_exist(username) == false)
+		{
+			msg =  "Username does not exist.";
+			response->Error(StatusParamIsIllegal, msg);
+			return;
+		}
 		if (apiUtil->user_pwd_alert(username, op_password))
 		{
 			response->Success("Change password done.");
 		}
 		else
 		{
-			error = "Username not exist.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, error);
+			response->Success("Change password fail.");
 		}
 	}
 	catch (const std::exception &e)
@@ -5635,15 +5210,15 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		// std::string username = jsonParam(json_data, "username");
 		// if (username != apiUtil->get_root_username())
 		// {
-		// 	std::string error = "Root User Only!";
+		// 	std::string msg =  "Root User Only!";
 		// 	response->Error(StatusOperationConditionsAreNotSatisfied, error);
 		// 	return;
 		// }
 		int page_no = jsonParam(json_data, "pageNo", 1);
 		int page_size = jsonParam(json_data, "pageSize", 10);
-		struct TransactionLogs transactionLogs;
-		apiUtil->get_transactionlog(page_no, page_size, &transactionLogs);
-		vector<struct TransactionLogInfo> logList = transactionLogs.getTransactionLogInfoList();
+		shared_ptr<struct TransactionLogs> transactionLogsPtr = make_shared<struct TransactionLogs>();
+		apiUtil->get_transactionlog(page_no, page_size, transactionLogsPtr);
+		vector<struct TransactionLogInfo> logList = transactionLogsPtr->getTransactionLogInfoList();
 		size_t count = logList.size();
 		Json resp_data;
 		resp_data.SetObject();
@@ -5654,8 +5229,8 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			TransactionLogInfo log_info = logList[i];
 			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		int totalSize = transactionLogs.getTotalSize();
-		int totalPage = transactionLogs.getTotalPage();
+		int totalSize = transactionLogsPtr->getTotalSize();
+		int totalPage = transactionLogsPtr->getTotalPage();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get transaction log success.", allocator);
 		resp_data.AddMember("totalSize", totalSize, allocator);
@@ -5686,17 +5261,17 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		std::string date = jsonParam(json_data, "date");
-		std::string error = apiUtil->check_param_value("date", date);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("date", date, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		int page_no = jsonParam(json_data, "pageNo", 1);
 		int page_size = jsonParam(json_data, "pageSize", 10);
-		struct DBQueryLogs dbQueryLogs;
-		apiUtil->get_query_log(date, page_no, page_size, &dbQueryLogs);
-		vector<struct DBQueryLogInfo> logList = dbQueryLogs.getQueryLogInfoList();
+		shared_ptr<struct DBQueryLogs> dbQueryLogsPtr = make_shared<struct DBQueryLogs>();
+		apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr);
+		vector<struct DBQueryLogInfo> logList = dbQueryLogsPtr->getQueryLogInfoList();
 		size_t count = logList.size();
 		
 		Json resp_data;
@@ -5709,8 +5284,8 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
 
-		int totalSize = dbQueryLogs.getTotalSize();
-		int totalPage = dbQueryLogs.getTotalPage();
+		int totalSize = dbQueryLogsPtr->getTotalSize();
+		int totalPage = dbQueryLogsPtr->getTotalPage();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get query log success", allocator);
 		resp_data.AddMember("totalSize", totalSize, allocator);
@@ -5779,17 +5354,17 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	try
 	{
 		std::string date = jsonParam(json_data, "date");
-		std::string error = apiUtil->check_param_value("date", date);
-		if (error.empty() == false)
+		std::string msg;
+		if (apiUtil->check_param_value("date", date, msg) == false)
 		{
-			response->Error(StatusParamIsIllegal, error);
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		int page_no = jsonParam(json_data, "pageNo", 1);
 		int page_size = jsonParam(json_data, "pageSize", 10);
-		struct DBAccessLogs dbAccessLogs;
-		apiUtil->get_access_log(date, page_no, page_size, &dbAccessLogs);
-		vector<struct DBAccessLogInfo> logList = dbAccessLogs.getAccessLogInfoList();
+		shared_ptr<struct DBAccessLogs> dbAccessLogsPtr = make_shared<struct DBAccessLogs>();
+		apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr);
+		vector<struct DBAccessLogInfo> logList = dbAccessLogsPtr->getAccessLogInfoList();
 		size_t count = logList.size();
 		Json resp_data;
 		rapidjson::Value array_data(rapidjson::kArrayType);
@@ -5799,8 +5374,8 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 			DBAccessLogInfo log_info = logList[i];
 			array_data.PushBack(log_info.toJSON(allocator).Move(), allocator);
 		}
-		int totalSize = dbAccessLogs.getTotalSize();
-		int totalPage = dbAccessLogs.getTotalPage();
+		int totalSize = dbAccessLogsPtr->getTotalSize();
+		int totalPage = dbAccessLogsPtr->getTotalPage();
 		resp_data.SetObject();
 		resp_data.AddMember("StatusCode", 0, allocator);
 		resp_data.AddMember("StatusMsg", "Get access log success", allocator);
@@ -5928,16 +5503,16 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	std::string type = jsonParam(json_data, "type");
-	std::string error = apiUtil->check_param_value("type", type);
-	if (error.empty() == false)
+	std::string msg;
+	if (apiUtil->check_param_value("type", type, msg) == false)
 	{
-		response->Error(StatusParamIsIllegal, error);
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
 	if (hasJsonParam(json_data, "funInfo") == false)
 	{
-		error = "the value of funInfo can not be empty!";
-		response->Error(StatusParamIsIllegal, error);
+		msg =  "the value of funInfo can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
 	std::string username = jsonParam(json_data, "username");
@@ -5953,8 +5528,8 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function create fail: " + string(e.what());
-			response->Error(StatusOperationFailed, error);
+			msg = "Function create fail: " + string(e.what());
+			response->Error(StatusOperationFailed, msg);
 		}
 	}
 	else if (type == "2")
@@ -5966,8 +5541,8 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function update fail: " + string(e.what());
-			response->Error(StatusOperationFailed, error);
+			msg = "Function update fail: " + string(e.what());
+			response->Error(StatusOperationFailed, msg);
 		}
 	}
 	else if (type == "3")
@@ -5979,8 +5554,8 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function delete fail: " + string(e.what());
-			response->Error(StatusOperationFailed, error);
+			msg = "Function delete fail: " + string(e.what());
+			response->Error(StatusOperationFailed, msg);
 		}
 	}
 	else if (type == "4")
@@ -5999,14 +5574,14 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		catch(const std::exception& e)
 		{
-			std::string error = "Function build fail: " + string(e.what());
-			response->Error(StatusOperationFailed, error);
+			msg = "Function build fail: " + string(e.what());
+			response->Error(StatusOperationFailed, msg);
 		}
 	}
 	else
 	{
-		error = "The type is invalid, please look up the api document.";
-		response->Error(StatusParamIsIllegal, error);
+		msg = "The type is invalid, please look up the api document.";
+		response->Error(StatusParamIsIllegal, msg);
 	}
 }
 
@@ -6031,11 +5606,11 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 {
 	try
 	{
-		std::string error;
+		std::string msg;
 		if (hasJsonParam(json_data, "funInfo") == false)
 		{
-			error = "the value of funInfo can not be empty!";
-			response->Error(StatusParamIsIllegal, error);
+			msg =  "the value of funInfo can not be empty!";
+			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
 		std::string username = jsonParam(json_data, "username");
@@ -6093,22 +5668,21 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 
 void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	string error;
+	string msg;
 	string operation = "checkOperationState";
 	try
 	{
 		std::string opt_id = jsonParam(json_data, "opt_id");
-		if (opt_id.empty())
+		if (apiUtil->check_param_value("opt_id", opt_id, msg))
 		{
-			error = "opt_id is empty.";
-			response->Error(StatusOperationFailed, error);
+			response->Error(StatusOperationFailed, msg);
 			return;
 		}
 		struct DBAccessLogInfo log;
 		if (!apiUtil->getAccessLogByOptId(opt_id, log))
 		{
-			error = "opt_id not found.";
-			response->Error(StatusOperationFailed, error);
+			msg =  "opt_id not found.";
+			response->Error(StatusOperationFailed, msg);
 			return;
 		}
 		Json resp_data;
@@ -6133,7 +5707,7 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &
 	}
 	catch (const std::exception &e)
 	{
-		error = "checkbatchInsertUid fail:" + string(e.what());
+		string error = "checkbatchInsertUid fail:" + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -6142,11 +5716,11 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 {
 	Json json_data;
 	parseRequest(request, json_data);
-	std::string expection = jsonParam(json_data, "operation", "");
+	std::string expection = jsonParam(json_data, "operation");
 	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	uint32_t leader_term = jsonParam(json_data, "term", 0u);
 	uint32_t local_term = clusterManagerPtr->getTerm(); // get local term
-	string db_name = jsonParam(json_data, "db_name", "");
+	string db_name = jsonParam(json_data, "db_name");
 	uint64_t leader_index = jsonParam(json_data, "index", 0ul);
 	uint64_t local_index = 0ul;
 	switch (expectionEnum)
@@ -6178,41 +5752,39 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			// prepare for log append
 			// check local db is available
 			std::thread([db_name, leader_term, leader_index, expection]() {
-				shared_ptr<Database> current_database = nullptr;
+				shared_ptr<DatabaseInfo> db_info = nullptr;
 				ClusterUpdateType update_type = ClusterUpdateType_None;
-				if (!apiUtil->check_db_exist(db_name))
+				if (apiUtil->check_db_built(db_name) == false)
 				{
-					current_database = make_shared<Database>(db_name);
+					apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, Util::get_date_time(), DatabaseStatus::BUILDING);
+					shared_ptr<Database> current_database = make_shared<Database>(db_name);
 					// build empty db
-					if (current_database->BuildEmptyDB()) 
-					{
-						// init privilege
-						apiUtil->build_db_user_privilege(db_name, ROOT_USERNAME);
-						apiUtil->init_privilege(ROOT_USERNAME, db_name);
-						string _db_path = _db_home + "/" + db_name + _db_suffix;
-						ofstream f;
-						f.open(_db_path + "/success.txt");
-						f.close();
-						// add backup.log
-						Util::add_backuplog(db_name);
-						current_database.reset();
-						current_database = make_shared<Database>(db_name);
-						current_database->load();
-						apiUtil->add_database(db_name, current_database);
-						apiUtil->insert_txn_managers(current_database, db_name);
-						current_database.reset();
-						update_type = ClusterUpdateType_Build;
-					}
-				} 
-				apiUtil->get_database(db_name, current_database);
-				if (current_database == nullptr)
-				{
-					// load db
-					current_database = make_shared<Database>(db_name);
-					current_database->load();
-					apiUtil->add_database(db_name, current_database);
-					apiUtil->insert_txn_managers(current_database, db_name);
+					current_database->BuildEmptyDB();
 					current_database.reset();
+					// init dabaseinfo
+					apiUtil->get_databaseinfo(db_name, db_info);
+					db_info->initDatabase();
+					db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+					// init privilege
+					apiUtil->init_privilege(ROOT_USERNAME, db_name);
+					string _db_path = _db_home + "/" + db_name + _db_suffix;
+					ofstream f;
+					f.open(_db_path + "/success.txt");
+					f.close();
+					// add backup.log
+					Util::add_backuplog(db_name);
+					update_type = ClusterUpdateType_Build;
+				} 
+				else 
+				{
+					apiUtil->get_databaseinfo(db_name, db_info);
+				}
+				// check loaded
+				if (apiUtil->check_db_loaded(db_name) == false)
+				{
+					db_info->getDatabase()->load();
+					db_info->setStatus(DatabaseStatus::LOADED);
+					apiUtil->insert_txn_manager(db_name, db_info);
 				}
 				// init cluster db path
 				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
@@ -6251,23 +5823,24 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
-					apiUtil->wrlock_database(db_name);
+					shared_ptr<DatabaseInfo> db_info;
+					apiUtil->get_databaseinfo(db_name, db_info);
+					apiUtil->wrlock_databaseinfo(db_info);
 					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
 					if (!nt_file_path.empty())
 					{
 						cluster::ClusterUpdateType cluster_update_type = clusterManagerPtr->getDbLogUpdateType(db_name, leader_index);
-						shared_ptr<Database> restore_database;
-						apiUtil->get_database(db_name, restore_database);
 						if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
 						{
-							uint32_t num = restore_database->batch_insert(nt_file_path);
+							uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
 							SLOG_DEBUG("follower restore " + db_name + " data: batch insert num " << num);
 						} 
 						else 
 						{
-							uint32_t num = restore_database->batch_remove(nt_file_path);
+							uint32_t num = db_info->getDatabase()->batch_remove(nt_file_path);
 							SLOG_DEBUG("follower restore " + db_name + " data: batch_remove num " << num);
 						}
+						db_info->getDatabase()->save();
 						Util::remove_path(nt_file_path);
 						clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Cancel);
 					}
@@ -6275,7 +5848,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					{
 						SLOG_DEBUG("not found nt file path:" << db_name << " ,index:" << leader_index);
 					}
-					apiUtil->unlock_database(db_name);
+					apiUtil->unlock_databaseinfo(db_info);
 				}
 			}
 			response->Success("ok");
@@ -6283,47 +5856,42 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 		case cluster::ClusterOperation_Fail:
 			if (!db_name.empty())
 			{
-				apiUtil->wrlock_database(db_name);
+				shared_ptr<DatabaseInfo> db_info;
+				apiUtil->get_databaseinfo(db_name, db_info);
+				apiUtil->wrlock_databaseinfo(db_info);
 				// get current index， and compare with leader_index
 				local_index = clusterManagerPtr->getDbNextIndex(db_name);
 				if (leader_index == local_index)
 				{
 					clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Fail);
 				}
-				apiUtil->unlock_database(db_name);
+				apiUtil->unlock_databaseinfo(db_info);
 			}
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Drop:
 			if (!db_name.empty())
 			{
-				if (!apiUtil->check_db_exist(db_name))
+				if (!apiUtil->check_db_built(db_name))
+				{
 					break;
+				}	
+				if (apiUtil->check_db_loaded(db_name))
+				{
+					apiUtil->remove_txn_manager(db_name, false);
+					SLOG_DEBUG("remove " + db_name + " from the txn managers.");
+				}
 				shared_ptr<DatabaseInfo> db_info;
 				apiUtil->get_databaseinfo(db_name, db_info);
-				if (!apiUtil->trywrlock_databaseinfo(db_info))
-					break;
-				if (apiUtil->check_already_load(db_name))
+				std::string msg;
+				if (apiUtil->remove_databaseinfo(db_name, msg) == false)
 				{
-					if (!apiUtil->remove_txn_managers(db_name))
-					{
-						apiUtil->unlock_databaseinfo(db_info);
-						break;
-					}
-					apiUtil->delete_from_databases(db_name);
-				}
-				apiUtil->unlock_databaseinfo(db_info);
-				if (!apiUtil->delete_from_already_build(db_name))
-				{
+					SLOG_DEBUG("remove " + db_name + " from the already build database list fail: " + msg);
 					break;
 				}
-				string db_path = _db_home + "/" + db_name + _db_suffix;
-				do
-				{
-					string cmd = "mv " + db_path + " " + _db_home + "/" + db_name + ".bak";
-					system(cmd.c_str());
-				}while (0);
-				Util::delete_backuplog(db_name);
+				SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
+				string db_path = _db_home + db_name + _db_suffix;
+				Util::remove_path(db_path);				
 				string success = "cluster Database " + db_name + " dropped.";
 				clusterManagerPtr->dropDb(db_name);
 			}
@@ -6351,27 +5919,27 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	
-	std::string error;
+	std::string msg;
 	// filename : filecontent
 	std::pair<std::string, std::string>& fileinfo = form.at("file");
 	if(fileinfo.first.empty())
 	{
-		error = "append file can not be empty!";
-		response->Error(StatusParamIsIllegal, error);
+		msg =  "append file can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
 	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
 	if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
 	{
-		error = "The type of append file is not supported!";
-		response->Error(StatusOperationFailed, error);
+		msg =  "The type of append file is not supported!";
+		response->Error(StatusOperationFailed, msg);
 		return;
 	}
 	std::string db_name = form.at("db_name").second;
 	if (db_name.empty())
 	{
-		error = "db_name can not be empty!";
-		response->Error(StatusOperationFailed, error);
+		msg =  "db_name can not be empty!";
+		response->Error(StatusOperationFailed, msg);
 		return;
 	}
 	uint32_t leader_term = std::stol(form.at("term").second);
@@ -6406,38 +5974,42 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 			Util::remove_path(zip_file_path);
 			return;
 		}
-		if(!apiUtil->trywrlock_database(db_name, 600)) {
+		if (apiUtil->check_db_built(db_name) == false) 
+		{
+			SLOG_WARN("db[" + db_name + "] is not built.");
+			return;
+		}
+		shared_ptr<DatabaseInfo> db_info = nullptr;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if(apiUtil->check_db_loaded(db_name) == false) 
+		{
+			SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
+			// load db
+			db_info->getDatabase()->load();
+			apiUtil->insert_txn_manager(db_name, db_info);
+		}
+		if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
 			SLOG_WARN("unable to get write lock of " + db_name + ".");
 			// remove zip file
 			Util::remove_path(zip_file_path);
 			return;
-		}
-		shared_ptr<Database> current_database = nullptr;
-		apiUtil->get_database(db_name, current_database);
-		if(current_database == nullptr) {
-			SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
-			// load db
-			current_database = make_shared<Database>(db_name);
-			current_database->load();
-			apiUtil->add_database(db_name, current_database);
-			apiUtil->insert_txn_managers(current_database, db_name);
 		}
 		std::string log_file_name = GRPCUtil::fileName(log_files[0]);
 		std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
 		ClusterUpdateType log_operation;
 		if (operation == "1") {
 			// batch insert
-			current_database->batch_insert(nt_file_path);
+			db_info->getDatabase()->batch_insert(nt_file_path);
 			log_operation = ClusterUpdateType::ClusterUpdateType_Insert;
 		} else if (operation == "2") {
 			// batch remove
-			current_database->batch_remove(nt_file_path);
+			db_info->getDatabase()->batch_remove(nt_file_path);
 			log_operation = ClusterUpdateType::ClusterUpdateType_Delete;
 		}
-		current_database->save();
+		db_info->getDatabase()->save();
 		Util::remove_path(zip_file_path);
 		Util::remove_path(nt_file_path);
-		apiUtil->unlock_database(db_name);
+		apiUtil->unlock_databaseinfo(db_info);
 
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);

@@ -14,6 +14,7 @@
 #include "../Util/Util.h"
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
+#include "../Util/CompressFileUtil.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -23,35 +24,58 @@ using namespace rapidjson;
 #define TRANSACTION_LOG_PATH "./logs/transaction.json"
 #define TRANSACTION_LOG_TEMP_PATH "./logs/transaction_temp.json"
 
+enum DatabaseStatus 
+{
+    NORMAL = 0,
+    BUILDING = 1,
+    AREADY_BUILT = 2,
+    LOADING = 3,
+    LOADED = 4,
+    UNLOADED = 5
+};
+
+const std::map<DatabaseStatus, std::string> DatabseStatusMap
+{
+    {NORMAL,       "unknown"},
+    {BUILDING,     "building"},
+    {AREADY_BUILT, "already_built"},
+    {LOADING,      "loading"},
+    {LOADED,       "loaded"},
+    {UNLOADED,     "unloaded"}
+};
+
 struct DatabaseInfo
 {
 private:
     std::string db_name;    //! the name of database
     std::string creator;    //! the creator of database
     std::string build_time; //! the built time of database;
-    std::string status;
+    DatabaseStatus status;
+    shared_ptr<Database> db_ptr;
 
 public:
     pthread_rwlock_t db_lock;
 
     DatabaseInfo()
     {
+        db_ptr = nullptr;
         pthread_rwlock_init(&db_lock, NULL);
     }
-    DatabaseInfo(string _name, string _creator, string _time)
+    DatabaseInfo(string _name, string _creator, string _time, DatabaseStatus _status)
     {
         db_name = _name;
         creator = _creator;
         build_time = _time;
-        pthread_rwlock_init(&db_lock, NULL);
-    }
-    DatabaseInfo(string _name)
-    {
-        db_name = _name;
+        status = _status;
+        if (_status > DatabaseStatus::BUILDING)
+            db_ptr = make_shared<Database>(db_name);
+        else
+            db_ptr = nullptr;
         pthread_rwlock_init(&db_lock, NULL);
     }
     ~DatabaseInfo()
     {
+        db_ptr.reset();
         pthread_rwlock_destroy(&db_lock);
     }
     std::string getName()
@@ -74,13 +98,35 @@ public:
     {
         build_time = _time;
     }
-    std::string getStatus()
+    DatabaseStatus getStatus()
     {
         return status;
     }
-    void setStatus(string _status)
+    void setStatus(DatabaseStatus _status)
     {
         status = _status;
+    }
+    std::string getStatusStr()
+    {
+        auto it = DatabseStatusMap.find(status);
+        if (it != DatabseStatusMap.end())
+        {
+            return it->second;
+        }
+        else
+        {
+            return "";
+        }
+    }
+    shared_ptr<Database>& getDatabase()
+    {
+        return db_ptr;
+    }
+    void initDatabase()
+    {
+        if (db_ptr == nullptr) {
+            db_ptr = make_shared<Database>(db_name);
+        }
     }
     rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
@@ -89,7 +135,7 @@ public:
         doc.AddMember("database", rapidjson::Value().SetString(db_name.c_str(), allocator).Move(), allocator);
         doc.AddMember("creator", rapidjson::Value().SetString(creator.c_str(), allocator).Move(), allocator);
         doc.AddMember("built_time", rapidjson::Value().SetString(build_time.c_str(), allocator).Move(), allocator);
-        doc.AddMember("status", rapidjson::Value().SetString(status.c_str(), allocator).Move(), allocator);
+        doc.AddMember("status", rapidjson::Value().SetString(getStatusStr().c_str(), allocator).Move(), allocator);
         return doc;
     }
 };
@@ -150,10 +196,6 @@ public:
     {
         password = _password;
     }
-        /// <summary>
-    /// @brief get the database list which the user can query/
-    /// </summary>
-    /// <returns></returns>
     std::string getQuery(){
         std::string query_db;
         if(username == ROOT_USERNAME)
@@ -807,7 +849,7 @@ private:
     std::vector<std::string> upload_allow_extensions;
     std::vector<std::string> upload_allow_compress_packages;
 
-    std::map<std::string, shared_ptr<Database>> databases;
+    // std::map<std::string, shared_ptr<Database>> databases;
     std::map<std::string, shared_ptr<DBUserInfo>> users;
     std::map<std::string, shared_ptr<DatabaseInfo>> already_build;
     std::map<std::string, shared_ptr<IpInfo>> ips;
@@ -816,7 +858,7 @@ private:
 
     shared_ptr<Database> system_database;
     pthread_rwlock_t users_map_lock;
-    pthread_rwlock_t databases_map_lock;
+    // pthread_rwlock_t databases_map_lock;
     pthread_rwlock_t already_build_map_lock;
     pthread_rwlock_t txn_m_lock;
     pthread_rwlock_t ips_map_lock;
@@ -839,90 +881,102 @@ private:
     bool ip_check(const string& ip);
     bool ip_error_num_check(const string& ip);
     void init_params();
+    bool update_sys_db(const string& query);
+    bool refresh_sys_db();
+    bool mv_or_cp(const string& src, const string& dsc, bool is_mv);
+    /**
+     * @function: update_privilege
+     * @brief: update privilege of user
+     * @param: userinfo: user info
+     * @param: type: privilege type
+     * @param: db_name: database name
+     * @param: op: operation type 0=erase 1=add -1=clear all
+     * @return: true if success, false if fail
+     */
+    bool update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const string& type, const string& db_name, int16_t op);
+    bool get_file_lines(vector<string> &lines, string &logFile, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock);
 public:
     APIUtil();
     ~APIUtil();
     int initialize();
     void refresh_conf();
+    bool trywrlock_already_build_map();
     bool unlock_already_build_map();
-    bool add_database(const std::string& db_name, shared_ptr<Database> &db);
-    bool get_database(const std::string& db_name, shared_ptr<Database> &db);
+    bool init_databaseinfo(const std::string& db_name, const std::string creator, const std::string build_time, const DatabaseStatus status);
+    bool update_database_status(const std::string& db_name, const DatabaseStatus status);
+    bool remove_databaseinfo(const std::string& db_name, std::string msg);
+    bool backup_databaseinfo(const std::string& db_name, const bool& compress, std::string& backup_path, std::string& msg);
+    bool restore_databaseinfo(const std::string& username, const std::string& db_name, std::string& backup_path, std::string& msg);
+    bool rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg);
     bool get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbInfo);
+    void get_databaseinfos(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
+    bool erase_databaseinfo(const std::string& username);
+    bool wrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const time_t& timeout_s);
     bool rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
-    bool check_already_load(const std::string& db_name);
-    bool get_Txn_ptr(const std::string& db_name, shared_ptr<Txn_manager> &txn_manager);
-    bool add_already_build(const std::string& db_name, const std::string& creator, const std::string& build_time);
-    // std::string get_already_build(const std::string& db_name);
-    void get_already_builds(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
-    bool check_already_build(const std::string& db_name);
-    bool trywrlock_database(const std::string& db_name, const time_t& timeout_s);
-    bool wrlock_database(const std::string& db_name);
-    bool trywrlock_database(const std::string& db_name);
-    bool rdlock_database(const std::string& db_name);
-    bool rdlock_database(const std::string& db_name, const time_t& timeout_s);
-    bool unlock_database(const std::string& db_name);
-    std::string check_indentity(const std::string& username,const std::string& password,const std::string& encryption);
-    std::string check_server_indentity(const std::string& password);
-    std::string check_param_value(const string& paramname, const string& value);
+
+    bool get_txn_manager(const std::string& db_name, shared_ptr<Txn_manager> &txn_manager);
+    bool insert_txn_manager(const std::string& db_name, shared_ptr<DatabaseInfo> &dbinfo);
+    bool remove_txn_manager(const std::string& db_name, bool checkpoint);
+    bool check_txn_id(const string& tid_s, txn_id_t& tid);
+    bool get_txn_begin_time(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std::string& begin_time);
+    bool begin_process(const std::string& db_name, int level, std::string username, txn_id_t& tid);
+    bool commit_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std::string& msg);
+    bool rollback_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std::string& msg);
+    bool aborted_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std::string& msg);
+
+    bool check_db_loaded(const std::string& db_name);
+    bool check_db_built(const std::string& db_name);
+    bool check_db_count();
+
+    bool check_indentity(const std::string& username,const std::string& password,const std::string& encryption, std::string& msg);
+    bool check_server_indentity(const std::string& password, std::string& msg);
+    bool check_param_value(const string& paramname, const string& value, std::string& msg);
     bool check_user_exist(const std::string& username);
     bool check_user_count();
-    bool check_db_exist(const std::string& db_name);
-    bool check_db_count();
     bool add_privilege(const std::string& username, const vector<string>& types, const std::string& db_name);
     bool del_privilege(const std::string& username, const vector<string>& types, const std::string& db_name);
     bool check_privilege(const std::string& username, const std::string& type, const std::string& db_name);
     bool init_privilege(const std::string& username, const std::string& db_name);
     bool copy_privilege(const std::string& src_db_name, const std::string& dst_db_name);
-    bool update_sys_db(string query);
-    bool refresh_sys_db();
+    bool clear_privilege(const string& username);
+
     bool query_sys_db(const std::string& sparql, ResultSet& _rs);
-    bool build_db_user_privilege(std::string db_name, std::string username);
-    bool insert_txn_managers(shared_ptr<Database> &current_database, std::string database);
-    bool remove_txn_managers(std::string db_name);
-    bool db_checkpoint(string db_name);
-    // bool db_checkpoint_all();
-    bool delete_from_databases(string db_name);
-    bool delete_from_already_build(string db_name);
+
     //used by drop
-    int db_copy(string src_path, string dest_path);
-    txn_id_t check_txn_id(string TID);
-    string get_txn_begin_time(shared_ptr<Txn_manager> ptr, txn_id_t tid);
-    string begin_process(string db_name, int level , string username);
-    bool commit_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
-    bool rollback_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
-    bool aborted_process(shared_ptr<Txn_manager> txn_m, txn_id_t TID);
     bool user_add(const string& username, const string& password);
     bool user_delete(const string& username);
     bool user_pwd_alert(const string& username, const string& password);
     void get_user_info(vector<shared_ptr<struct DBUserInfo>> &_users);
-    int clear_user_privilege(string username);
-    string check_access_ip(const string& ip, int check_level);
+
+    string ip_enabled_type();
+    void ip_list(const string& type, std::vector<std::string>& ip_list);
+    bool ip_save(string ip_type, vector<string> ipVector);
+    bool check_access_ip(const string& ip, int check_level, std::string& msg);
     void update_access_ip_error_num(const string& ip);
     void reset_access_ip_error_num(const string& ip);
-    bool ip_save(string ip_type, vector<string> ipVector);
-    vector<string> ip_list(string type);
-    string ip_enabled_type();
-    bool get_file_lines(vector<string> &lines, string &logFile, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock);
+    
     // for access log
     void get_access_log_files(std::vector<std::string> &file_list);
-    void get_access_log(const string &date, int &page_no, int &page_size, struct DBAccessLogs *dbAccessLogs);
+    void get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr);
     void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string optId = "");
     void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath = "");
     bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
+
     // for query log
     void get_query_log_files(std::vector<std::string> &file_list);
-    void get_query_log(const string &date, int &page_no, int &page_size, struct DBQueryLogs *dbQueryLogs);
-    void write_query_log(struct DBQueryLogInfo *queryLogInfo);
+    void get_query_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBQueryLogs> logPtr);
+    void write_query_log(DBQueryLogInfo* log);
+
     // for transaction log
     void init_transactionlog();
 	int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "INF");
-	// int delete_transactionlog(std::string db_name, std::string TID);
 	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
-	void get_transactionlog(int &page_no, int &page_size, struct TransactionLogs *dbQueryLogs);
+	void get_transactionlog(int &page_no, int &page_size, shared_ptr<struct TransactionLogs> logPtr);
 	void abort_transactionlog(long end_time);
+
     // for data get
     string get_Db_path();
     string get_Db_suffix();
