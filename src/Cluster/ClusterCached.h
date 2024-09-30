@@ -42,6 +42,7 @@ namespace cluster
         void addLogSyncNum(uint64 index, const std::string& ip_port);
         uint32 getLogReplyNum(uint64 index);
         uint32 getLogSyncNum(uint64 index);
+        uint64 getLogNextIndex(uint64 index);
         ClusterUpdateType getUpdateType(uint64 index);
         ClusterOperation getOperation(uint64 index);
         std::string getFileName(uint64 index);

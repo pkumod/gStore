@@ -9,6 +9,7 @@
 #ifndef _DATABASE_DATABASE_H
 #define _DATABASE_DATABASE_H
 
+#include "../Cluster/ClusterLog.h"
 #include "../Query/SPARQLquery.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Parser/RDFParser.h"
@@ -16,7 +17,6 @@
 #include "../Query/GeneralEvaluation.h"
 #include "../Server/Socket.h"
 #include "CSR.h"
-#include "../Cluster/ClusterDefined.h"
 
 class Database
 {

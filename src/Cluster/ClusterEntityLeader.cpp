@@ -24,7 +24,8 @@ namespace cluster
             faileL_[url] = 0;
         }
 
-        heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str());
+        heartbeat_ = std::atoi(Util::getConfigureValue("cluster_heartbeat").c_str())*1000;
+        startCompare();
     }
 
     ClusterNode ClusterEntityLeader::FindFollower(const std::string& ip, const std::string& port)const
@@ -46,20 +47,48 @@ namespace cluster
         return false;
     }
 
-    void ClusterEntityLeader::startHeardBeat(std::string db_name)
+    void ClusterEntityLeader::startCompare(std::string db_name)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
+            return;
+        if (head_beat_timerL_.find(db_name) == head_beat_timerL_.end())
             return;
         TimerProvider timer;
         head_beat_timerL_.insert(make_pair(db_name, timer));
         head_beat_timerL_[db_name].StartTimer(heartbeat_, [this, db_name]()
         {
-            this->postHeartBeat(db_name);
+            this->postCompare(db_name);
         });
     }
 
-    void ClusterEntityLeader::stopHeardBeatTimer(std::string db_name)
+    void ClusterEntityLeader::startCompare()
+    {
+        ClusterTermInfo info;
+        if (!getTermInfoDbLogs(info))
+        {
+            SLOG_TRACE("heart beat fail compare");
+            return;
+        }
+        setInlineTerm(info.getTerm());
+        for (const auto& m : info.Logs())
+        {
+            TimerProvider timer;
+            std::string db_name = m.first;
+            uint64 index = m.second.getIndex();
+            uint64 nextIndex = m.second.getNextIndex();
+
+            SLOG_TRACE("heart beat start compare db name:" << db_name);
+            
+            head_beat_timerL_.insert(make_pair(db_name, timer));
+            head_beat_timerL_[db_name].StartTimer(heartbeat_, [this, db_name]()
+            {
+                this->postCompare(db_name);
+            });
+        }
+    }
+
+    void ClusterEntityLeader::stopCompareTimer(std::string db_name)
     {
         auto it = head_beat_timerL_.find(db_name);
         if (it == head_beat_timerL_.end())
@@ -68,18 +97,23 @@ namespace cluster
         head_beat_timerL_.erase(db_name);
     }
 
-    void ClusterEntityLeader::postHeartBeat(std::string db_name)
+    void ClusterEntityLeader::postCompare(std::string db_name)
     {
         uint32 term = getTerm();
         ClusterDbPtr db = findDb(db_name);
         if (!db)
         {
-            stopHeardBeatTimer(db_name);
+            stopCompareTimer(db_name);
             return;
         }
-        uint64 index = getDbIndex(db_name);
+        TermDbLog db_log = getTermInfoDbLog(db_name);
+        if (db_log.getDbName().empty())
+        {
+            stopCompareTimer(db_name);
+            return;
+        }
         std::string expection = "compare";
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
+        httpentities::HeartBeatRequest request(term, db_name, db_log.getIndex(), db_log.getNextIndex(), db_log.getUid(), expection);
         auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
@@ -107,12 +141,12 @@ namespace cluster
         }
     }
 
-    void ClusterEntityLeader::postAppendTask(std::string db_name, uint64 index, ClusterUpdateType update_type, std::string file_name)
+    void ClusterEntityLeader::postAppendTask(const ClusterTaskInfo& info, const std::string& file_path)
     {
         uint32 term = getTerm();
-        std::string operation_str = to_string(update_type);
-        httpentities::AppenEntriesRequest request(term, db_name, index, operation_str, file_name);
-        auto helper = [this, db_name, index, request](ClusterNode node)
+        std::string update_type = to_string(info.update_type);
+        httpentities::AppenEntriesRequest request(term, info.db_name, info.index, info.nextIndex, info.uid, update_type, file_path);
+        auto helper = [this, request](ClusterNode node)
         {
             httpentities::AppenEntriesRequest request_ = request;
 		    httpentities::ClusterResponse responce = HttpUtil::appendEntries(node.getAppendEntriesUrl(), request_, node.getUsername(), node.getPassword());
@@ -139,19 +173,18 @@ namespace cluster
         }
     }
 
-    bool ClusterEntityLeader::runAppendTask(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
+    bool ClusterEntityLeader::runAppendTask(const ClusterTaskInfo& info)
     {
         uint32 term = getTerm();
-        ClusterDbPtr db = findDb(db_name);
+        ClusterDbPtr db = findDb(info.db_name);
         if (!db)
             return false;
-        uint64 index = getDbNextIndex(db_name);
-        if (index == 0)
+        if (info.nextIndex == 0)
         {
-            SLOG_TRACE("start sync fail, please check term.json, index:" << index);
+            SLOG_TRACE("start sync fail, please check term.json, index:" << info.index);
             return false;
         }
-        std::string current_path = ClusterDb::getDbDirPath(db_name) + file_name;
+        std::string current_path = ClusterDb::getDbDirPath(info.db_name) + info.file_name;
         std::string zip_path = current_path + ".zip";
         if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
         {
@@ -161,21 +194,55 @@ namespace cluster
         }
 
         std::string file_path = Util::getExactPath(zip_path.c_str());
-        updateLogOperation(db_name, index, ClusterOperation_Append);
-        postAppendTask(db_name, index, update_type, file_path);
+        updateLogOperation(info.db_name, info.index, ClusterOperation_Append);
+        setLogUpdateType(info.db_name, info.index, info.update_type);
+        postAppendTask(info, file_path);
         return true;
     }
 
-    void ClusterEntityLeader::postTask(std::string db_name, uint64 index, ClusterOperation operation)
+    bool ClusterEntityLeader::runRestoreTask(const ClusterRecoverInfo& info)
     {
         uint32 term = getTerm();
-        if (operation != ClusterOperation_Drop)
+        ClusterDbPtr db = findDb(info.db_name);
+        if (!db)
+            return false;
+        TermDbLog db_info = getTermInfoDbLog(info.db_name);
+        if (db_info.empty() || db_info.getFirstIndex() == 0)
         {
-            updateLogOperation(db_name, index, operation);
+            SLOG_ERROR("recover file is empty:" << info.db_name);
+            return false;
         }
-        std::string expection = ClusterOperationHandle::to_str(operation);
-        httpentities::HeartBeatRequest request(term, db_name, index, expection);
-        auto helper = [this, db_name, index, request](ClusterNode node)
+        std::string file_name = db->getFileName(info.index);
+        std::string current_path = ClusterDb::getDbDirPath(info.db_name) + file_name;
+        std::string zip_path = current_path + ".zip";
+        if (!Util::file_exist(zip_path))
+        {
+            if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
+            {
+                SLOG_ERROR("compress fail");
+                Util::remove_path(zip_path);
+                return false;
+            }
+        }
+        std::string update_type = std::to_string(db->getUpdateType(info.index));
+        std::string file_path = Util::getExactPath(zip_path.c_str());
+        httpentities::RecoverRequest request(term, db_info.dbName, db_info.index, db_info.nextIndex, db_info.uid, update_type, file_path, info.index);
+        ClusterNode node = FindFollower(info.ip, info.port);
+        HttpUtil::recoverFollower(node.getHeartBeatUrl(), request, node.getUsername(), node.getPassword());
+        return true;
+    }
+
+    void ClusterEntityLeader::postTask(const ClusterTaskInfo& info)
+    {
+        uint32 term = getTerm();
+        if (info.operation != ClusterOperation_Drop)
+        {
+            updateLogOperation(info.db_name, info.index, info.operation);
+        }
+
+        std::string expection = ClusterOperationHandle::to_str(info.operation);
+        httpentities::HeartBeatRequest request(term, info.db_name, info.index, info.nextIndex, info.uid, expection);
+        auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
 		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
@@ -266,7 +333,7 @@ namespace cluster
             ClusterDbPtr db = findDb(info.db_name);
             if (!db)
                 return false;
-            if (info.index == 0)
+            if (info.nextIndex == 0)
             {
                 SLOG_TRACE("start task status " << operation << " fail, please check term.json, index:" << info.index);
                 return false;
@@ -279,11 +346,11 @@ namespace cluster
          || operation == ClusterOperation_Drop
          || operation == ClusterOperation_Prepare)
         {
-            postTask(info.db_name, info.index, operation);
+            postTask(info);
         }
         else if (operation == ClusterOperation_Append)
         {
-            runAppendTask(info.db_name, info.update_type, info.file_name);
+            runAppendTask(info);
         }
         else
         {

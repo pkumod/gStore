@@ -24,7 +24,6 @@
 #include "../Util/Util.h"
 #include "../Api/NlohmanJson.hpp"
 #include "ClusterCached.h"
-// #include "ClusterOperation.h"
 
 namespace cluster
 {
@@ -56,7 +55,7 @@ namespace cluster
         {
             index     = 0;
             nextIndex = 0;
-            operation    = ClusterOperation_None;
+            operation  = ClusterOperation_None;
             updateType = ClusterUpdateType_None;
             fileName = "";
             replyIpPort = std::set<std::string>();
@@ -101,6 +100,7 @@ namespace cluster
         void addLogSyncNum(uint64 index, const std::string& ip_port);
         uint32 getLogReplyNum(uint64 index)const;
         uint32 getLogSyncNum(uint64 index)const;
+        uint64 getLogNextIndex(uint64 index)const;
         ClusterUpdateType getUpdateType(uint64 index)const;
         ClusterOperation getOperation(uint64 index)const;
         std::string getFileName(uint64 index)const;
@@ -113,28 +113,30 @@ namespace cluster
     // term.json
     struct TermDbLog
     {
-        std::string db_name;
+        std::string dbName;
+        uint64 uid;
         uint64 index;
         uint64 nextIndex;
         uint64 firstIndex;
-        std::string fail_num;
         public:
         TermDbLog()
         {
-            db_name = "";
+            uid = 0;
+            dbName = "";
             index   = 0;
             nextIndex = 0;
             firstIndex = 0;
         }
 
-        TermDbLog(const std::string& db_name_, uint64 index_, uint64 nextIndex_, uint64 firstIndex_)
+        TermDbLog(const std::string& dbName_, uint64 uid_, uint64 index_, uint64 nextIndex_, uint64 firstIndex_)
         {
-            db_name = db_name_;
+            uid = uid_;
+            dbName = dbName_;
             index   = index_;
             nextIndex = nextIndex_;
             firstIndex = firstIndex_;
         }
-        void setDbName(const std::string& value){ db_name = value; }
+        void setDbName(const std::string& value){ dbName = value; }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
         void setFirstIndex(uint64 value)
@@ -146,6 +148,14 @@ namespace cluster
         uint64 getIndex()const{ return index; }
         uint64 getNextIndex()const{ return nextIndex; }
         uint64 getFirstIndex()const{ return firstIndex; }
+        std::string getDbName()const{ return dbName; }
+        uint64 getUid()const{ return uid; }
+        bool empty()const
+        {
+            if (uid == 0 || dbName.empty())
+                return true;
+            return false;
+        }
     };
 
     class ClusterTermInfo
@@ -161,12 +171,15 @@ namespace cluster
         void setLogs(const nlohmann::json& s);
         void setTerm(uint32 value){ term_ = value; }
         void setDbIndex(const std::string& db, uint64 index);
-        void setDbNextIndex(const std::string& db, uint64 NextIndex);
+        void setDbNextIndex(const std::string& db_name, uint64 NextIndex);
+        void initDbUid(const std::string& db, uint64 uid);
         uint32 getTerm()const{ return term_; }
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);
         uint64 getFirstIndex(const std::string& db_name);
         void eraseDb(const std::string& db_name);
+        std::map<std::string, TermDbLog> Logs(){ return db_logs_; }
+        TermDbLog getLog(const std::string& db_name);
 
         static bool from_json(const nlohmann::json& s, ClusterTermInfo& t);
         static bool to_json(nlohmann::json& s, const ClusterTermInfo& t);
@@ -180,6 +193,7 @@ namespace cluster
         std::string object;
         ClusterUpdateType operation;
         uint64 batch_index;
+        static std::string split_str;
         public:
         TripleInfo()
         {
@@ -189,6 +203,7 @@ namespace cluster
             operation = ClusterUpdateType_None;
             batch_index = 0;
         }
+        static std::string getSplitStr();
         std::string toString()const
         {
             if (operation == ClusterUpdateType_None)

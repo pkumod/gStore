@@ -4195,13 +4195,14 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	else if (cluster_log)
 	{
 		cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
+		std::string split_str = cluster::TripleInfo::getSplitStr();
 		for (auto tuple : id_tuples)
 		{
 			bool is_obj_entity = Util::is_entity_ele(tuple.objid);
 			if (is_obj_entity)
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getEntityByID(tuple.objid) << " " << operation << std::endl;
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getEntityByID(tuple.objid) << split_str << operation << std::endl;
 			else
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << " " << this->kvstore->getPredicateByID(tuple.preid) << " " << this->kvstore->getLiteralByID(tuple.objid) << " " << operation << std::endl;
+				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getLiteralByID(tuple.objid) << split_str << operation << std::endl;
 		}
 	}
 	// po inserts
@@ -4261,6 +4262,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		write_update_log(_triples, _triple_num, 0, txn);
 	}
 
+	std::string split_str = cluster::TripleInfo::getSplitStr();
 	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Delete;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
@@ -4295,7 +4297,7 @@ Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		obj_ids.insert(_obj_id);
 		if (cluster_log)
 		{
-			*cluster_log << _triple.subject << " " << _triple.predicate << " " << _triple.object << " " << operation << std::endl;
+			*cluster_log << _triple.subject << split_str << _triple.predicate << split_str << _triple.object << split_str << operation << std::endl;
 		}
 	}
 
@@ -4541,7 +4543,7 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 
 bool Database::backup(std::string &_backup_path)
 {
-	if (!Util::dir_exist(_backup_path))
+	if (!Util::dir_exist(Util::backup_path))
 	{
 		Util::create_dirs(_backup_path);
 	}

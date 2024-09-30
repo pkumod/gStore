@@ -2,6 +2,11 @@
 
 namespace cluster
 {
+    std::string TripleInfo::split_str = "|?<t>?|";
+    std::string TripleInfo::getSplitStr()
+    {
+        return split_str;
+    }
     // LogInfo
     void from_json(const nlohmann::json& s, LogInfo& t)
     {
@@ -14,11 +19,11 @@ namespace cluster
             t.operation = ClusterOperationHandle::to_enum(s.at("operation"));
         }
         if (s.contains("updateType"))
-            s.at("updateType").get_to(t.updateType);
+        {
+            t.updateType = ClusterUpdateTypeHandle::to_enum(s.at("updateType"));
+        }
         if (s.contains("fileName"))
             s.at("fileName").get_to(t.fileName);
-        if (s.contains("updateType"))
-            s.at("updateType").get_to(t.updateType);
         if (s.contains("createTime"))
             s.at("createTime").get_to(t.createTime);
         if (s.contains("commitTime"))
@@ -33,8 +38,10 @@ namespace cluster
     {
         s["index"]      = t.index;
         s["nextIndex"]  = t.nextIndex;
-        s["operation"]  = ClusterOperationHandle::to_str(t.operation);
-        s["updateType"] = t.updateType;
+        if (t.operation != ClusterOperation_None)
+            s["operation"]  = ClusterOperationHandle::to_str(t.operation);
+        if (t.updateType != ClusterUpdateType_None)
+            s["updateType"] = ClusterUpdateTypeHandle::to_str(t.updateType);
         if (!t.fileName.empty())
             s["fileName"]   = t.fileName;
         if (!t.createTime.empty())
@@ -281,6 +288,22 @@ namespace cluster
         return it->second.getAppenEntriesNum();
     }
 
+    uint64 ClusterDbNameLogInfo::getLogNextIndex(uint64 index)const
+    {
+        auto it = logs_.find(index);
+        if (it == logs_.end())
+        {
+            SLOG_ERROR("index is not exist, index:" << index);
+            return 0;
+        }
+        if (it->second.getOperation() != ClusterOperation_Commit)
+        {
+            SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
+            return 0;
+        }
+        return it->second.getNextIndex();
+    }
+
     ClusterUpdateType ClusterDbNameLogInfo::getUpdateType(uint64 index)const
     {
         auto it = logs_.find(index);
@@ -335,8 +358,10 @@ namespace cluster
     // TermDbLog
     void from_json(const nlohmann::json& s, TermDbLog& t)
     {
-        if (s.contains("db_name"))
-            s.at("db_name").get_to(t.db_name);
+        if (s.contains("uid"))
+            s.at("uid").get_to(t.uid);
+        if (s.contains("dbName"))
+            s.at("dbName").get_to(t.dbName);
         if (s.contains("index"))
             s.at("index").get_to(t.index);
         if (s.contains("nextIndex"))
@@ -347,10 +372,13 @@ namespace cluster
 
     void to_json(nlohmann::json& s, const TermDbLog& t)
     {
-        s["db_name"]  = t.db_name;
+        s["uid"] = t.uid;
+        if (!t.dbName.empty())
+            s["dbName"]  = t.dbName;
         s["index"] = t.index;
         s["nextIndex"] = t.nextIndex;
-        s["firstIndex"] = t.firstIndex;
+        if (t.firstIndex != 0)
+            s["firstIndex"] = t.firstIndex;
     }
 
     // ClusterTermInfo
@@ -373,9 +401,9 @@ namespace cluster
         int size = s.size();
         for (int i = 0; i < size; i++)
         {
-            if (!s[i].contains("db_name"))
+            if (!s[i].contains("dbName"))
                 continue;
-            std::string db_name = s[i].at("db_name");
+            std::string db_name = s[i].at("dbName");
             db_logs_[db_name] = s[i];
         }
     }
@@ -423,7 +451,7 @@ namespace cluster
         auto it = db_logs_.find(db_name);
         if (it == db_logs_.end())
         {
-            TermDbLog log(db_name, index, 0, index);
+            TermDbLog log(db_name, index, index, 0, index);
             db_logs_.insert(std::make_pair(db_name, log));
             return;
         }
@@ -436,11 +464,22 @@ namespace cluster
         auto it = db_logs_.find(db_name);
         if (it == db_logs_.end())
         {
-            TermDbLog log(db_name, 0, next_index, 0);
+            TermDbLog log(db_name, next_index, 0, next_index, 0);
             db_logs_.insert(std::make_pair(db_name, log));
             return;
         }
         it->second.setNextIndex(next_index);
+    }
+
+    void ClusterTermInfo::initDbUid(const std::string& db_name, uint64 uid)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it != db_logs_.end())
+        {
+            db_logs_.erase(it);
+        }
+        TermDbLog log(db_name, uid, 0, 0, 0);
+        db_logs_.insert(std::make_pair(db_name, log));
     }
 
     void ClusterTermInfo::eraseDb(const std::string& db_name)
@@ -478,6 +517,15 @@ namespace cluster
             return 0;
 
         return it->second.getFirstIndex();
+    }
+
+    TermDbLog ClusterTermInfo::getLog(const std::string& db_name)
+    {
+        auto it = db_logs_.find(db_name);
+        if (it == db_logs_.end())
+            return TermDbLog();
+        
+        return it->second;
     }
 
     // ClusterTripleArray

@@ -16,13 +16,15 @@ namespace cluster
         public:
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
         bool IsFollowerIp(const std::string& ip)const;
-        void postHeartBeat(std::string db_name);
-        void postAppendTask(std::string db_name, uint64 index, ClusterUpdateType update_type, std::string file_name);
-        void startHeardBeat(std::string db_name);
-        void stopHeardBeatTimer(std::string db_name);
-        void postTask(std::string db_name, uint64 index, ClusterOperation operation);
+        void postCompare(std::string db_name);
+        void postAppendTask(const ClusterTaskInfo& info, const std::string& file_path);
+        void startCompare(std::string db_name);
+        void startCompare();
+        void stopCompareTimer(std::string db_name);
+        void postTask(const ClusterTaskInfo& info);
         bool runTask(const ClusterTaskInfo& info);
-        bool runAppendTask(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
+        bool runAppendTask(const ClusterTaskInfo& info);
+        bool runRestoreTask(const ClusterRecoverInfo& info);
         bool waitTimerPassNum(std::string db_name, uint64 index, ClusterOperation operation, uint64 end_time);
         bool tryRecover(const std::vector<std::string>& dbs);
         uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }

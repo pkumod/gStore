@@ -26,11 +26,14 @@ namespace httpentities {
     struct ClusterRequest {
         uint32_t term;
         uint64_t index;
+        uint64_t nextIndex;
         std::string db_name;
+        uint64_t uid;
         ClusterRequest() {}
 
         ClusterRequest(uint32_t term) : term(term) {}
         ClusterRequest(uint32_t term, std::string db_name, uint64_t index) : term(term), db_name(db_name), index(index) {}
+        ClusterRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid) : term(term), db_name(db_name), index(index), nextIndex(nextIndex), uid(uid) {}
         void setDbName(std::string db_name)
         {
             this->db_name = db_name;
@@ -45,6 +48,8 @@ namespace httpentities {
             json["term"]    = term;
             json["index"]   = index;
             json["db_name"] = db_name;
+            json["nextIndex"] = nextIndex;
+            json["uid"] = uid;
         }
     };
 
@@ -659,7 +664,7 @@ namespace httpentities {
         std::string operation;
         // reply follower port
         std::string port;
-        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string port): ClusterRequest(term, db_name, index) {
+        ReplyRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string operation, std::string port): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->operation = operation;
             this->port = port;
         }
@@ -675,16 +680,16 @@ namespace httpentities {
 
     struct AppenEntriesRequest: public ClusterRequest {
         std::string file_path;
-        std::string operation;
-        AppenEntriesRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string file_path): ClusterRequest(term, db_name, index) {
+        std::string updateType;
+        AppenEntriesRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string updateType, std::string file_path): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->file_path = file_path;
-            this->operation = operation;
+            this->updateType = updateType;
         }
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
             toJson(json);
-            json["operation"] = operation;
+            json["updateType"] = updateType;
             json_str = json.dump();
         }
         std::string getFilePath() {return this->file_path;}
@@ -692,7 +697,7 @@ namespace httpentities {
 
     struct HeartBeatRequest: public ClusterRequest {
         std::string operation;
-        HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation): ClusterRequest(term, db_name, index) {
+        HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string operation): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->operation = operation;
         }
         void to_json(std::string& json_str) override
@@ -707,33 +712,37 @@ namespace httpentities {
     struct ClusterCheckRequest: public ClusterRequest
     {
         uint16_t result;
-        ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint16_t result):  ClusterRequest(term, db_name, index) {
+        std::string port;
+        ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, uint16_t result, std::string port):  ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->result = result;
+            this->port = port;
         }
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
             toJson(json);
             json["result"] = result;
+            json["port"]   = port;
             json_str = json.dump();
         }
     };
-    
 
-    struct CancelRequest: public ClusterRequest {
-        std::string filename;
-        std::string operation;
-        CancelRequest(uint32_t term, std::string db_name, uint64_t index, std::string operation, std::string filename): ClusterRequest(term, db_name, index) {
-            this->filename = filename;
-            this->operation = operation;
+    struct RecoverRequest: public ClusterRequest {
+        std::string file_path;
+        std::string updateType;
+        uint64_t recoverIndex;
+        RecoverRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string updateType, std::string filename, uint64_t recoverIndex): ClusterRequest(term, db_name, index, nextIndex, uid) {
+            this->updateType = updateType;
+            this->recoverIndex = recoverIndex;
         }
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
             toJson(json);
-            json["filename"] = filename;
-            json["operaton"] = operation;
+            json["updateType"] = updateType;
+            json["recoverIndex"] = recoverIndex;
             json_str = json.dump();
         }
+        std::string getFilePath() {return this->file_path;}
     };
 }

@@ -143,7 +143,7 @@ namespace cluster
         if (!Util::file_exist(file_path))
         {
             log.addLog(index, operation, update_type, 0);
-            SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", operation:" << index << " ,operation:" << operation);
+            SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", operation:" << operation << " ,update_type:" << update_type);
             if (!writeToUpdateFile(log))
             {
                 SLOG_ERROR("add log fail!" << db_name_ << index << operation);
@@ -265,6 +265,17 @@ namespace cluster
         return log.getLogSyncNum(index);
     }
 
+    uint64 ClusterDb::getLogNextIndex(uint64 index)
+    {
+        ClusterDbNameLogInfo log;
+        if (!readFromUpdateFile(log))
+        {
+            SLOG_ERROR("get next index fail!" << db_name_ << index);
+            return 0;
+        }
+        return log.getLogNextIndex(index);
+    }
+
     ClusterUpdateType ClusterDb::getUpdateType(uint64 index)
     {
         ClusterDbNameLogInfo log;
@@ -364,7 +375,7 @@ namespace cluster
             if (line.empty())
                 continue;
             std::vector<std::string> info;
-		    Util::split(line, " ", info);
+		    Util::split(line, TripleInfo::getSplitStr(), info);
             TripleInfo triple;
             if (triple.convert(info))
             {

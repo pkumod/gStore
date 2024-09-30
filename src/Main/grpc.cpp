@@ -108,6 +108,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response);
 void cluster_append_task(const GRPCReq *request, GRPCResp *response);
 void cluster_reply_task(const GRPCReq *request, GRPCResp *response);
 void cluster_check_task(const GRPCReq *request, GRPCResp *response);
+void cluster_recover_task(const GRPCReq *request, GRPCResp *response);
 
 // common function
 std::string to_json_string(const Json& json);
@@ -1324,6 +1325,9 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::Clus
 		break;
 	case cluster::ClusterOperation_Check:
 		cluster_check_task(request, response);
+		break;
+	case cluster::ClusterOperation_Recover:
+		cluster_recover_task(request, response);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation:" + op_str);
@@ -5722,12 +5726,14 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	uint32_t local_term = clusterManagerPtr->getTerm(); // get local term
 	string db_name = jsonParam(json_data, "db_name");
 	uint64_t leader_index = jsonParam(json_data, "index", 0ul);
+	uint64_t leader_nextIndex = jsonParam(json_data, "nextIndex", 0ul);
+	uint64_t leader_uid = jsonParam(json_data, "uid", 0ul);
 	uint64_t local_index = 0ul;
 	switch (expectionEnum)
 	{
 		case cluster::ClusterOperation_Compare:
 			// compare term and index with leader
-			std::thread([db_name, leader_term, leader_index, local_term, local_index]() {
+			std::thread([db_name, leader_term, leader_index, local_term, local_index, leader_uid]() {
 				if (!db_name.empty()) 
 				{
 					// send ready response
@@ -5736,14 +5742,64 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 					std::string username = leader_node.getUsername();
 					std::string password = leader_node.getPassword();
 					uint16_t result = 0; // default check failed
-					uint64_t finish_index = clusterManagerPtr->getDbIndex(db_name);
-					if (leader_term == local_term && leader_index == finish_index)
+					TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+					if (db_log.empty() || db_log.uid == leader_uid)
 					{
-						// check ok
-						result = 1;
+						if (apiUtil->check_db_built(db_name))
+						{
+							if (apiUtil->check_db_loaded(db_name))
+							{
+								apiUtil->remove_txn_manager(db_name, false);
+								SLOG_DEBUG("remove " + db_name + " from the txn managers.");
+							}
+							shared_ptr<DatabaseInfo> db_info;
+							apiUtil->get_databaseinfo(db_name, db_info);
+							std::string msg;
+							if (apiUtil->remove_databaseinfo(db_name, msg) == false)
+							{
+								SLOG_DEBUG("remove " + db_name + " from the already build database list fail: " + msg);
+							}
+							SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
+							string db_path = _db_home + db_name + _db_suffix;
+							Util::remove_path(db_path);				
+							string success = "cluster Database " + db_name + " dropped.";
+							clusterManagerPtr->dropDb(db_name);
+						}	
+
+						// build empty db
+						shared_ptr<DatabaseInfo> db_info = nullptr;
+						apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, Util::get_date_time(), DatabaseStatus::BUILDING);
+						shared_ptr<Database> current_database = make_shared<Database>(db_name);
+						// build empty db
+						current_database->BuildEmptyDB();
+						current_database.reset();
+						// init dabaseinfo
+						apiUtil->get_databaseinfo(db_name, db_info);
+						db_info->initDatabase();
+						db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+						// init privilege
+						apiUtil->init_privilege(ROOT_USERNAME, db_name);
+						string _db_path = _db_home + "/" + db_name + _db_suffix;
+						ofstream f;
+						f.open(_db_path + "/success.txt");
+						f.close();
+						// add backup.log
+						Util::add_backuplog(db_name);
+						// add log
+						clusterManagerPtr->buildDb(db_name, leader_uid);
+						httpentities::ClusterCheckRequest check_request(local_term, db_name, 0, 0, leader_uid, result, _server_port);
+						HttpUtil::clusterCheck(check_url, check_request, username, password);
 					}
-					httpentities::ClusterCheckRequest check_request(local_term, db_name, finish_index, result);
-					HttpUtil::clusterCheck(check_url, check_request, username, password);
+					else
+					{
+						if (leader_term == local_term && leader_index == db_log.index && leader_uid == db_log.uid)
+						{
+							// check ok
+							result == -1;
+						}
+						httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, _server_port);
+						HttpUtil::clusterCheck(check_url, check_request, username, password);
+					}
 				}
 			}).detach();
 			response->Json("ok");
@@ -5751,9 +5807,10 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 		case cluster::ClusterOperation_Prepare:
 			// prepare for log append
 			// check local db is available
-			std::thread([db_name, leader_term, leader_index, expection]() {
+			std::thread([db_name, leader_term, leader_index, leader_nextIndex, expection]() {
 				shared_ptr<DatabaseInfo> db_info = nullptr;
 				ClusterUpdateType update_type = ClusterUpdateType_None;
+				TermDbLog db_log;
 				if (apiUtil->check_db_built(db_name) == false)
 				{
 					apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, Util::get_date_time(), DatabaseStatus::BUILDING);
@@ -5778,6 +5835,12 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				else 
 				{
 					apiUtil->get_databaseinfo(db_name, db_info);
+					db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+					if (leader_index != db_log.getIndex())
+					{
+						SLOG_ERROR("check term.json, db name data is different" << db_name);
+						return;
+					}
 				}
 				// check loaded
 				if (apiUtil->check_db_loaded(db_name) == false)
@@ -5790,14 +5853,14 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 				Util::create_dirs(cluster_db_path);
 				// add log
-				clusterManagerPtr->addLog(db_name, leader_index, ClusterOperation::ClusterOperation_Prepare, update_type);
+				clusterManagerPtr->addLog(db_name, leader_nextIndex, ClusterOperation::ClusterOperation_Prepare, update_type);
 				
 				// send ready response
 				cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
 				std::string reply_url = leader_node.getReplyUrl();
 				std::string username = leader_node.getUsername();
 				std::string password = leader_node.getPassword();
-				httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection, _server_port);
+				httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), leader_nextIndex, db_log.getUid(), expection, _server_port);
 				HttpUtil::reply(reply_url, reply_request, username, password);
 			}).detach();
 			response->Success("ok");
@@ -5807,10 +5870,10 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			if (!db_name.empty())
 			{
 				// get current can be committed index， and compare with leader_index
-				local_index = clusterManagerPtr->getDbNextIndex(db_name);
-				if (leader_index == local_index)
+				TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+				if (leader_index == db_log.getIndex() && leader_nextIndex == db_log.getNextIndex())
 				{
-					clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Commit);
+					clusterManagerPtr->updateLogOperation(db_name, leader_nextIndex, cluster::ClusterOperation::ClusterOperation_Commit);
 				}
 			}
 			response->Success("ok");
@@ -5820,16 +5883,16 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 			if (!db_name.empty())
 			{
 				// get current index， and compare with leader_index
-				local_index = clusterManagerPtr->getDbNextIndex(db_name);
-				if (leader_index == local_index)
+				TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+				if (leader_index == db_log.getIndex() && leader_nextIndex == db_log.getNextIndex())
 				{
 					shared_ptr<DatabaseInfo> db_info;
 					apiUtil->get_databaseinfo(db_name, db_info);
 					apiUtil->wrlock_databaseinfo(db_info);
-					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_index);
+					std::string nt_file_path = clusterManagerPtr->getNTFilePathByIndex(db_name, leader_nextIndex);
 					if (!nt_file_path.empty())
 					{
-						cluster::ClusterUpdateType cluster_update_type = clusterManagerPtr->getDbLogUpdateType(db_name, leader_index);
+						cluster::ClusterUpdateType cluster_update_type = clusterManagerPtr->getDbLogUpdateType(db_name, leader_nextIndex);
 						if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
 						{
 							uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
@@ -5842,11 +5905,11 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 						}
 						db_info->getDatabase()->save();
 						Util::remove_path(nt_file_path);
-						clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Cancel);
+						clusterManagerPtr->updateLogOperation(db_name, leader_nextIndex, cluster::ClusterOperation::ClusterOperation_Cancel);
 					}
 					else
 					{
-						SLOG_DEBUG("not found nt file path:" << db_name << " ,index:" << leader_index);
+						SLOG_DEBUG("not found nt file path:" << db_name << " ,index:" << leader_nextIndex);
 					}
 					apiUtil->unlock_databaseinfo(db_info);
 				}
@@ -5860,10 +5923,10 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 				apiUtil->get_databaseinfo(db_name, db_info);
 				apiUtil->wrlock_databaseinfo(db_info);
 				// get current index， and compare with leader_index
-				local_index = clusterManagerPtr->getDbNextIndex(db_name);
-				if (leader_index == local_index)
+				TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+				if (leader_index == db_log.getIndex() && leader_nextIndex == db_log.getNextIndex())
 				{
-					clusterManagerPtr->updateLogOperation(db_name, leader_index, cluster::ClusterOperation::ClusterOperation_Fail);
+					clusterManagerPtr->updateLogOperation(db_name, leader_nextIndex, cluster::ClusterOperation::ClusterOperation_Fail);
 				}
 				apiUtil->unlock_databaseinfo(db_info);
 			}
@@ -5942,14 +6005,24 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusOperationFailed, msg);
 		return;
 	}
-	uint32_t leader_term = std::stol(form.at("term").second);
+	uint64_t leader_uid = std::stoul(form.at("uid").second);
+	TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
 	uint64_t leader_index = std::stoul(form.at("index").second);
+	uint64_t leader_nextIndex = std::stoul(form.at("nextIndex").second);
+	if (leader_uid != db_log.getUid() || leader_index != db_log.getIndex() || leader_nextIndex != db_log.getNextIndex())
+	{
+		msg =  "follower different leader db name:" + db_name + " ,db uid:" + std::to_string(leader_uid) + " ,follower db uid:" + std::to_string(db_log.getUid());
+		response->Error(StatusOperationFailed, msg);
+		return;
+	}
+
+	uint32_t leader_term = std::stol(form.at("term").second);
 	// TODO check leader term and index with local
 	const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
 	const std::string zip_file_path = cluster_db_path + fileinfo.first;
-	const std::string operation = form.at("operation").second;
+	const std::string update_type = form.at("updateType").second;
 	const std::string content = std::move(fileinfo.second);
-	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, cluster_db_path, operation](WFFileIOTask *pwrite_task){
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, db_name, zip_file_path, cluster_db_path, update_type, db_log](WFFileIOTask *pwrite_task){
 		SLOG_DEBUG("saveing log file callback.");
 		// save success
 		long ret = pwrite_task->get_retval();
@@ -5996,15 +6069,15 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		}
 		std::string log_file_name = GRPCUtil::fileName(log_files[0]);
 		std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
-		ClusterUpdateType log_operation;
-		if (operation == "1") {
+		ClusterUpdateType log_update_type;
+		if (update_type == "1") {
 			// batch insert
 			db_info->getDatabase()->batch_insert(nt_file_path);
-			log_operation = ClusterUpdateType::ClusterUpdateType_Insert;
-		} else if (operation == "2") {
+			log_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
+		} else if (update_type == "2") {
 			// batch remove
 			db_info->getDatabase()->batch_remove(nt_file_path);
-			log_operation = ClusterUpdateType::ClusterUpdateType_Delete;
+			log_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
 		}
 		db_info->getDatabase()->save();
 		Util::remove_path(zip_file_path);
@@ -6013,9 +6086,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 
 		// update local log trem and index
 		clusterManagerPtr->updateTerm(leader_term);
-		clusterManagerPtr->updateLogOperation(db_name, leader_index, ClusterOperation::ClusterOperation_Append);
-		clusterManagerPtr->setLogUpdateType(db_name, leader_index, log_operation);
-		clusterManagerPtr->setLogFileName(db_name, leader_index, GRPCUtil::fileName(log_file_name));
+		clusterManagerPtr->updateLogOperation(db_name, db_log.getIndex(), ClusterOperation::ClusterOperation_Append);
+		clusterManagerPtr->setLogUpdateType(db_name, db_log.getIndex(), log_update_type);
+		clusterManagerPtr->setLogFileName(db_name, db_log.getIndex(), GRPCUtil::fileName(log_file_name));
 
 		// send appendEntrites ok response
 		cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
@@ -6023,7 +6096,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 		std::string username = leader_node.getUsername();
 		std::string password = leader_node.getPassword();
 		std::string expection = ClusterOperationHandle::to_str(cluster::ClusterOperation::ClusterOperation_Append);
-		httpentities::ReplyRequest reply_request(leader_term, db_name, leader_index, expection, _server_port);
+		httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), db_log.getNextIndex(), db_log.getUid(), expection, _server_port);
 		HttpUtil::reply(reply_url, reply_request, username, password);
 	});
 	std::thread([pwrite_task](){
@@ -6038,7 +6111,7 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	Json json_data;
 	parseRequest(request, json_data);
 	uint32_t term = jsonParam(json_data, "term", 0u);
-	uint64_t index = jsonParam(json_data, "index", 0ul);
+	uint64_t nextIndex = jsonParam(json_data, "nextIndex", 0ul);
 	std::string db_name = jsonParam(json_data, "db_name");
 	std::string expection = jsonParam(json_data, "operation");
 	std::string port = jsonParam(json_data, "port");
@@ -6048,9 +6121,9 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	// from follower reply, go into leader process 
 	if (expection_enum == cluster::ClusterOperation::ClusterOperation_Prepare)
 	{
-		clusterManagerPtr->addLogReplyNum(db_name, index, ip_addr, port);
+		clusterManagerPtr->addLogReplyNum(db_name, nextIndex, ip_addr, port);
 	} else if (expection_enum == cluster::ClusterOperation::ClusterOperation_Append) {
-		clusterManagerPtr->addLogSyncNum(db_name, index, ip_addr, port);
+		clusterManagerPtr->addLogSyncNum(db_name, nextIndex, ip_addr, port);
 	}
 	response->Success("ok");
 }
@@ -6060,16 +6133,166 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	Json json_data;
 	parseRequest(request, json_data);
 	uint32_t term = jsonParam(json_data, "term", 0u);
-	uint64_t index = jsonParam(json_data, "index", 0ul);
+	uint64_t follower_index = jsonParam(json_data, "index", 0ul);
 	std::string db_name = jsonParam(json_data, "db_name");
 	uint16_t result = jsonParam(json_data, "result", 0);
+	std::string port = jsonParam(json_data, "port");
 	// follower index is not equal to leader index
 	if (result == 0)
 	{
 		// TODO add a new task that starting with follower index
-		std::string file_name;
-		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_HeartBeat));
+		TermDbLog db_info = clusterManagerPtr->getTermInfoDbLog(db_name);
+		if (db_info.index != follower_index)
+		{
+			uint64_t restore_index = 0;
+			if (db_info.empty() && db_info.getFirstIndex() != 0)
+			{
+				if (follower_index == 0)
+				{
+					restore_index = db_info.firstIndex;
+				}
+				else
+				{
+					restore_index = clusterManagerPtr->getDbNextIndexByIndex(db_name, follower_index);
+				}
+			}
+			if (restore_index != 0)
+			{
+				auto *rpc_task = task_of(response);
+				std::string ip_addr = rpc_task->peer_addr();
+				ClusterRecoverInfo task_info(db_name, restore_index, rpc_task->peer_addr(), port);
+				clusterManagerPtr->addTask(task_info);
+			}
+		}
 	}
 	
+	response->Success("ok");
+}
+
+void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
+{
+	Form &form = request->form();
+	if (form.empty())
+	{   
+		response->Error(StatusFileReadError, "Form data is empty");
+		return;
+	}
+	if (form.find("file") == form.end() || form.find("db_name") == form.end() 
+		|| form.find("term") == form.end() || form.find("index") == form.end() 
+		|| form.find("operation") == form.end())
+	{
+		response->Error(StatusFileReadError, "Form data is illegal");
+		return;
+	}
+	
+	std::string msg;
+	// filename : filecontent
+	std::pair<std::string, std::string>& fileinfo = form.at("file");
+	if(fileinfo.first.empty())
+	{
+		msg =  "append file can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
+		return;
+	}
+	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
+	{
+		msg =  "The type of append file is not supported!";
+		response->Error(StatusOperationFailed, msg);
+		return;
+	}
+	std::string db_name = form.at("db_name").second;
+	if (db_name.empty())
+	{
+		msg =  "db_name can not be empty!";
+		response->Error(StatusOperationFailed, msg);
+		return;
+	}
+	uint64_t leader_index = std::stoul(form.at("index").second);
+	uint64_t leader_nextIndex = std::stoul(form.at("nextIndex").second);
+	uint64_t leader_uid = std::stoul(form.at("uid").second);
+	TermDbLog db_info = clusterManagerPtr->getTermInfoDbLog(db_name);
+	if (leader_uid != db_info.getUid() || leader_index == db_info.getIndex())
+	{
+		response->Success("ok");
+		return;
+	}
+	uint32_t leader_term = std::stol(form.at("term").second);
+	std::string updateType = form.at("updateType").second;
+	uint64_t recoverIndex = std::stoul(form.at("recoverIndex").second);
+	// TODO check leader term and index with local
+	const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
+	const std::string zip_file_path = cluster_db_path + fileinfo.first;
+	const std::string content = std::move(fileinfo.second);
+	WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [leader_term, leader_index, db_name, zip_file_path, cluster_db_path, updateType, recoverIndex](WFFileIOTask *pwrite_task){
+		SLOG_DEBUG("saveing log file callback.");
+		// save success
+		long ret = pwrite_task->get_retval();
+		if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
+			return;
+		}
+		// unzip file
+		CompressUtil::UnCompressZip unzip(zip_file_path, cluster_db_path);
+		if (unzip.unCompress() != CompressUtil::UnZipOK) 
+		{
+			SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
+			// remove zip file
+			Util::remove_path(zip_file_path);
+			return;
+		}
+		std::vector<std::string> log_files;
+		unzip.getFileList(log_files, "");
+		if (log_files.empty())
+		{
+			SLOG_WARN("zip file is empty: " + zip_file_path);
+			// remove zip file
+			Util::remove_path(zip_file_path);
+			return;
+		}
+		if (apiUtil->check_db_built(db_name) == false) 
+		{
+			SLOG_WARN("db[" + db_name + "] is not built.");
+			return;
+		}
+		shared_ptr<DatabaseInfo> db_info = nullptr;
+		apiUtil->get_databaseinfo(db_name, db_info);
+		if(apiUtil->check_db_loaded(db_name) == false) 
+		{
+			SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
+			// load db
+			db_info->getDatabase()->load();
+			apiUtil->insert_txn_manager(db_name, db_info);
+		}
+		if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
+			SLOG_WARN("unable to get write lock of " + db_name + ".");
+			// remove zip file
+			Util::remove_path(zip_file_path);
+			return;
+		}
+		std::string log_file_name = GRPCUtil::fileName(log_files[0]);
+		std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
+		ClusterUpdateType log_updateType;
+		if (updateType == "1") {
+			// batch insert
+			db_info->getDatabase()->batch_insert(nt_file_path);
+			log_updateType = ClusterUpdateType::ClusterUpdateType_Insert;
+		} else if (updateType == "2") {
+			// batch remove
+			db_info->getDatabase()->batch_remove(nt_file_path);
+			log_updateType = ClusterUpdateType::ClusterUpdateType_Delete;
+		}
+		db_info->getDatabase()->save();
+		Util::remove_path(zip_file_path);
+		Util::remove_path(nt_file_path);
+		apiUtil->unlock_databaseinfo(db_info);
+
+		// update local log trem and index
+		clusterManagerPtr->updateTerm(leader_term);
+		clusterManagerPtr->addCommitLog(db_name, recoverIndex, log_updateType, GRPCUtil::fileName(log_file_name));
+	});
+	std::thread([pwrite_task](){
+		SLOG_DEBUG("saveing log file start...");
+		pwrite_task->start();
+	}).detach();
 	response->Success("ok");
 }

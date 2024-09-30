@@ -123,7 +123,7 @@ namespace cluster
         return leader->tryRecover(dbs);
     }
 
-    void ClusterManager::startHeartBeat(const std::string& db_name)
+    void ClusterManager::startHeartBeat()
     {
         if (!isEnable() || !role_)
             return;
@@ -133,7 +133,7 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return;
         }
-        leader->startHeardBeat(db_name);
+        leader->startCompare();
     }
 
     bool ClusterManager::startNotify(std::string db_name)
@@ -147,7 +147,12 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-        return leader->runTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare));
+        ClusterTaskInfo info(db_name, ClusterOperation_Prepare);
+        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+        info.setIndex(db_log.getIndex());
+        info.setNextIndex(db_log.getNextIndex());
+        info.setUid(db_log.getUid());
+        return leader->runTask(info);
     }
 
     void ClusterManager::addClusterDb(const std::string& db_name)
@@ -157,7 +162,7 @@ namespace cluster
         role_->addClusterDb(db_name);
     }
 
-    bool ClusterManager::startSync(std::string db_name, ClusterUpdateType operation, const std::string& file_name)
+    bool ClusterManager::startSync(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
     {
         if (!isEnable() || !role_)
             return false;
@@ -167,7 +172,14 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-        return leader->runAppendTask(db_name, operation, file_name);
+
+        ClusterTaskInfo info(db_name, ClusterOperation_Append, update_type, file_name);
+        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+        info.setIndex(db_log.getIndex());
+        info.setNextIndex(db_log.getNextIndex());
+        info.setUid(db_log.getUid());
+
+        return leader->runAppendTask(info);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)
@@ -236,12 +248,28 @@ namespace cluster
         return role_->getFollowNodeL();
     }
 
-    void ClusterManager::addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation)
+    void ClusterManager::addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type)
     {
         if (!isEnable() || !role_)
             return;
 
-        role_->addLog(db_name, index, status, operation);
+        role_->addLog(db_name, index, operation, update_type);
+    }
+
+    void ClusterManager::addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+
+        role_->addCommitLog(db_name, index, update_type, file_name);
+    }
+
+    void ClusterManager::buildDb(std::string db_name, uint64 uid)
+    {
+        if (!isEnable() || !role_)
+            return;
+
+        role_->buildDb(db_name, uid);
     }
 
     void ClusterManager::updateLogOperation(std::string db_name, uint64 index, ClusterOperation status)
@@ -403,6 +431,15 @@ namespace cluster
         return role_->getFirstIndex(db_name);
     }
 
+    uint64 ClusterManager::getDbNextIndexByIndex(const std::string& db_name, uint64 follower_index)
+    {
+        if (!isEnable() || !role_)
+            return 0;
+        if (db_name.empty())
+            return 0;
+        return role_->getDbNextIndexByindex(db_name, follower_index);
+    }
+
     void ClusterManager::addCachedNtFile(const std::vector<TripleInfo>& triples, const std::string& db_name, const std::string file_name)
     {
         if (!isEnable() || !role_)
@@ -475,7 +512,8 @@ namespace cluster
          || status == ClusterOperation_Drop
          || status == ClusterOperation_Append
          || status == ClusterOperation_Prepare
-         || status == ClusterOperation_Build)
+         || status == ClusterOperation_Build
+         || status == ClusterOperation_Compare)
         {
             return true;
         }
@@ -501,6 +539,13 @@ namespace cluster
         role_->dropDb(db_name);
     }
 
+    TermDbLog ClusterManager::getTermInfoDbLog(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return TermDbLog();
+        role_->getTermInfoDbLog(db_name);
+    }
+
     bool ClusterManager::addTask(ClusterTaskInfo info, bool sync)
     {
         if (!isEnable() || !role_)
@@ -516,21 +561,17 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-        uint64 index = 0;
-        if (info.operation == ClusterOperation_Drop)
+        TermDbLog db_log = getTermInfoDbLog(info.db_name);
+        // index = 0, empty db
+        if (info.operation != ClusterOperation_Drop && db_log.getNextIndex() == 0)
         {
-            // index = 0, empty db
-            index = getDbIndex(info.db_name);
+            SLOG_TRACE("start task opeartion " << info.operation << " fail, please check term.json, nextindex:" << info.index);
+            return false;
         }
-        else
-        {
-            index = getDbNextIndex(info.db_name);
-            if (index == 0)
-            {
-                SLOG_TRACE("start task status " << info.operation << " fail, please check term.json, index:" << index);
-                return false;
-            }
-        }
+
+        info.setIndex(db_log.getIndex());
+        info.setNextIndex(db_log.getNextIndex());
+        info.setUid(db_log.getUid());
 
         if (info.operation == ClusterOperation_Append)
         {
@@ -540,8 +581,6 @@ namespace cluster
                 return false;
             }
         }
-
-        info.setIndex(index);
 
         if (!sync && IsSupportTask(info.operation))
         {
@@ -554,14 +593,40 @@ namespace cluster
             task_queueL.push(task);
             uint64 end_time = leader->getTimeOutEndTime(info.db_name, info.file_name);
             end_time = leader->getTimeOutEndTime();
-            return leader->waitTimerPassNum(info.db_name, index, info.operation, end_time);
+            return leader->waitTimerPassNum(info.db_name, info.nextIndex, info.operation, end_time);
         }
         else
         {
-            SLOG_TRACE("not support task status " << info.operation << " ,db name:" << info.db_name << " fail, please check update.json, index:" << index);
+            SLOG_TRACE("not support task status " << info.operation << " ,db name:" << info.db_name << " fail, please check update.json, index:" << info.nextIndex);
         }
         
         return false;
+    }
+
+    bool ClusterManager::addTask(ClusterRecoverInfo info)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        if (info.db_name.empty())
+        {
+            SLOG_TRACE("please task db name is empty");
+            return false;
+        }
+        if (info.index == 0)
+        {
+            SLOG_TRACE("please task index is 0");
+            return false;
+        }
+
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return false;
+        }
+
+        ClusterEventPtr task = std::make_shared<ClusterRecoverTaskEvent>(info, leader);
+        task_queueL.push(task);
     }
 
     void ClusterManager::runTask()

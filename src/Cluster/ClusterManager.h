@@ -52,12 +52,12 @@ namespace cluster
         bool tryRecover(const std::vector<std::string>& dbs);
 
         //主从互通模块
-        // 启动心跳超时检测
-        void startHeartBeat(const std::string& db_name);
+        // 启动心跳超时检测(比对)
+        void startHeartBeat();
         // 启动更新通知, 返回应答数量
         bool startNotify(std::string db_name);
         // 启动同步通知, 返回应答数量
-        bool startSync(std::string db_name, ClusterUpdateType operation, const std::string& file_name);
+        bool startSync(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -75,6 +75,8 @@ namespace cluster
         std::vector<ClusterNode> getFollowNodeL();
         // 添加任务
         bool addTask(ClusterTaskInfo info, bool sync = false);
+        // 添加恢复任务任务
+        bool addTask(ClusterRecoverInfo info);
         // 启动跑任务
         void runTask();
         // 是否心跳类任务
@@ -83,10 +85,15 @@ namespace cluster
         bool IsSupportSync(ClusterOperation status);
         // 删除集群信息
         void dropDb(const std::string& db_name);
+        // 获取数据库同步信息
+        TermDbLog getTermInfoDbLog(const std::string& db_name);
 
         //日志模块
         //新增日志
-        void addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation);
+        void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
+        void addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name);
+        // 初始化建库, 生成集群日志
+        void buildDb(std::string db_name, uint64 uid);
         // 更新日志操作
         void updateLogOperation(std::string db_name, uint64 index, ClusterOperation status);
         // 更新日志操作类型
@@ -126,6 +133,7 @@ namespace cluster
         // 获取索引后面的索引和索引文件
         void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
         uint64 getDbFirstIndex(const std::string& db_name);
+        uint64 getDbNextIndexByIndex(const std::string& db_name, uint64 follower_index);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
@@ -162,14 +170,37 @@ namespace cluster
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
             }
-            if (info_.operation == ClusterOperation_HeartBeat)
+            if (info_.operation == ClusterOperation_Compare)
             {
-                per->startHeardBeat(info_.db_name);
+                per->startCompare(info_.db_name);
             }
             else
             {
                 per->runTask(info_);
             }
+        }
+    };
+
+    struct ClusterRecoverTaskEvent : public ClusterEvent
+    {
+        ClusterRecoverInfo info_;
+        ClusterEntityLeaderWeaker wer_;
+        ClusterRecoverTaskEvent(const ClusterRecoverInfo& info, ClusterEntityLeaderPtr per)
+        {
+            info_ = info;
+            wer_ = per;
+        }
+
+        void runEvent()const override
+        {
+            ClusterEntityLeaderPtr per = wer_.lock();
+            if (!per)
+            {
+                SLOG_TRACE("ClusterRecoverTaskEvent recover fail, per is free");
+                return;
+            }
+
+            per->runRestoreTask(info_);
         }
     };
 }

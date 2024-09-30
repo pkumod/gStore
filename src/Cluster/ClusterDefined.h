@@ -16,7 +16,7 @@ namespace cluster
         ClusterUpdateType_None   = 0,
         ClusterUpdateType_Insert = 1,
         ClusterUpdateType_Delete = 2,
-        ClusterUpdateType_Build  = 3,
+        ClusterUpdateType_Build  = 3, //empty db
     };
 
     enum ClusterOperation
@@ -37,6 +37,14 @@ namespace cluster
         ClusterOperation_Check     = 50,
         ClusterOperation_Replly    = 51,
         ClusterOperation_Undefine  = 52,
+    };
+
+    const std::map<ClusterUpdateType, std::string> ClusterUpdateType_str =
+    {
+        {ClusterUpdateType_None,   "none"},
+        {ClusterUpdateType_Insert, "insert"},
+        {ClusterUpdateType_Delete, "delete"},
+        {ClusterUpdateType_Build,  "build"},
     };
 
     const std::map<ClusterOperation, std::string> ClusterOperation_str =
@@ -66,6 +74,13 @@ namespace cluster
         static ClusterOperation to_enum(const std::string &type_str);
     };
 
+    class ClusterUpdateTypeHandle
+    {
+    public:
+        static std::string to_str(const ClusterUpdateType &type);
+        static ClusterUpdateType to_enum(const std::string &type_str);
+    };
+
     struct ClusterTaskInfo
     {
         std::string db_name;
@@ -73,13 +88,17 @@ namespace cluster
         ClusterUpdateType update_type;
         std::string file_name;
         uint64 index;
+        uint64 nextIndex;
+        uint64 uid;
         ClusterTaskInfo()
         {
             db_name   = "";
             operation    = ClusterOperation_None;
             update_type = ClusterUpdateType_None;
             file_name = "";
-            index     = 0;
+            index = 0;
+            nextIndex = 0;
+            uid = 0;
         }
         ClusterTaskInfo(const std::string& db_name_, ClusterOperation operation_)
         {
@@ -88,6 +107,8 @@ namespace cluster
             update_type = ClusterUpdateType_None;
             file_name = "";
             index    = 0;
+            nextIndex = 0;
+            uid = 0;
         }
         ClusterTaskInfo(const std::string& db_name_, ClusterOperation operation_, ClusterUpdateType update_type_, const std::string& file_name_)
         {
@@ -96,9 +117,35 @@ namespace cluster
             update_type = update_type_;
             file_name = file_name_;
             index    = 0;
+            nextIndex = 0;
+            uid = 0;
         }
 
         void setIndex(uint64 value){ index = value; }
+        void setNextIndex(uint64 value){ nextIndex = value; }
+        void setUid(uint64 value){ uid = value; }
+    };
+
+    struct ClusterRecoverInfo
+    {
+        std::string db_name;
+        uint64 index;
+        std::string ip;
+        std::string port;
+        ClusterRecoverInfo()
+        {
+            db_name = "";
+            index = 0;
+            ip = "";
+            port = "";
+        }
+        ClusterRecoverInfo(const std::string& db_name_, uint64 index_, std::string ip_, std::string port_)
+        {
+            db_name = db_name_;
+            index = index_;
+            ip = ip_;
+            port = port_;
+        }
     };
 
     struct ClusterNode

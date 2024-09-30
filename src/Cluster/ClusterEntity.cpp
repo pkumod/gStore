@@ -90,31 +90,59 @@ namespace cluster
         return it->second;
     }
 
-    void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterOperation status, ClusterUpdateType operation)
+    void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type)
     {
-        if (operation = ClusterUpdateType_Build)
+        if (update_type = ClusterUpdateType_Build)
         {
             auto it = databaseL_.find(db_name);
             if (it != databaseL_.end())
             {
                 dropDb(db_name);
             }
-            else
-            {
-                addClusterDb(db_name);
-            }
+            addClusterDb(db_name);
         }
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
-        uint64 last_index = getDbIndex(db_name);
+        uint64 last_index = getDbNextIndex(db_name);
         if (last_index != 0)
         {
             SLOG_TRACE("please sure last index is finish:" << last_index);
             // updateDbIndex(db_name, last_index);
         }
         updateDbNextIndex(db_name, index);
-        db->addLog(index, status, operation, getDbIndex(db_name));
+        db->addLog(index, operation, update_type, getDbIndex(db_name));
+    }
+
+    void ClusterEntity::addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return;
+        updateDbIndex(db_name, index);
+        db->addLog(index, ClusterOperation_Commit, update_type, getDbIndex(db_name));
+    }
+
+    void ClusterEntity::buildDb(std::string db_name, uint64 uid)
+    {
+        auto it = databaseL_.find(db_name);
+        if (it != databaseL_.end())
+        {
+            dropDb(db_name);
+        }
+        addClusterDb(db_name);
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_name << " , uid:" << uid);
+            return;
+        }
+        log.initDbUid(db_name, uid);
+        if (!writeToTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_name << " ,uid:" << uid);
+            return;
+        }
     }
 
     void ClusterEntity::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
@@ -199,7 +227,7 @@ namespace cluster
             return;
         }
         log.setTerm(term);
-        term_ = term;
+        setInlineTerm(term);
         if (!writeToTermFile(log))
         {
             SLOG_ERROR("term log status fail! ,term:" << term);
@@ -275,6 +303,14 @@ namespace cluster
         return log.getDbNextIndex(db_name);
     }
 
+    uint64 ClusterEntity::getDbNextIndexByindex(const std::string& db_name, uint64 index)
+    {
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return 0;
+        return db->getLogNextIndex(index);
+    }
+
     uint64 ClusterEntity::getFirstIndex(const std::string& db_name)
     {
         ClusterTermInfo log;
@@ -284,6 +320,25 @@ namespace cluster
             return 0;
         }
         return log.getFirstIndex(db_name);
+    }
+
+    bool ClusterEntity::getTermInfoDbLogs(ClusterTermInfo& info)
+    {
+        if (!readFromTermFile(info))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    TermDbLog ClusterEntity::getTermInfoDbLog(const std::string& db_name)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            return TermDbLog();
+        }
+        return log.getLog(db_name);
     }
 
     // nt file

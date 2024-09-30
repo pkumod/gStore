@@ -578,25 +578,15 @@ httpentities::ClusterResponse HttpUtil::appendEntries(const std::string& url, ht
 	params.insert(std::pair<std::string, std::string>("db_name", request.db_name));
 	params.insert(std::pair<std::string, std::string>("term", std::to_string(request.term)));
 	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
-	params.insert(std::pair<std::string, std::string>("operation", request.operation));
+	params.insert(std::pair<std::string, std::string>("nextIndex", std::to_string(request.nextIndex)));
+	params.insert(std::pair<std::string, std::string>("uid", std::to_string(request.uid)));
+	params.insert(std::pair<std::string, std::string>("updateType", request.updateType));
 	std::string body_str;
 	CURLcode status = PostFile(url, headers, 3600, request.file_path, params, body_str);
 	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse HttpUtil::heartBeat(const std::string& url, httpentities::HeartBeatRequest& request, const std::string& username, const std::string& password)
-{
-	std::string json_str;
-	request.to_json(json_str);
-	std::string body_str;
-	std::map<std::string, std::string> headers;
-	headers.insert(std::pair<std::string, std::string>("username", username));
-	headers.insert(std::pair<std::string, std::string>("password", password));
-	CURLcode status = Post(url, headers, 60, json_str, body_str);
-	return response_parser<httpentities::ClusterResponse>(status, body_str);
-}
-
-httpentities::ClusterResponse HttpUtil::cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password)
 {
 	std::string json_str;
 	request.to_json(json_str);
@@ -617,5 +607,21 @@ httpentities::ClusterResponse HttpUtil::clusterCheck(const std::string& url, htt
 	headers.insert(std::pair<std::string, std::string>("username", username));
 	headers.insert(std::pair<std::string, std::string>("password", password));
 	CURLcode status = Post(url, headers, 60, json_str, body_str);
+	return response_parser<httpentities::ClusterResponse>(status, body_str);
+}
+
+httpentities::ClusterResponse HttpUtil::recoverFollower(const std::string& url, httpentities::RecoverRequest& request, const std::string& username, const std::string& password)
+{
+	std::map<std::string, std::string> headers;
+	headers.insert(std::pair<std::string, std::string>("username", username));
+	headers.insert(std::pair<std::string, std::string>("password", password));
+	std::map<std::string, std::string> params;
+	params.insert(std::pair<std::string, std::string>("db_name", request.db_name));
+	params.insert(std::pair<std::string, std::string>("term", std::to_string(request.term)));
+	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
+	params.insert(std::pair<std::string, std::string>("nextIndex", std::to_string(request.nextIndex)));
+	params.insert(std::pair<std::string, std::string>("uid", std::to_string(request.uid)));
+	std::string body_str;
+	CURLcode status = PostFile(url, headers, 3600, request.file_path, params, body_str);
 	return response_parser<httpentities::ClusterResponse>(status, body_str);
 }

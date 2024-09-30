@@ -4,7 +4,6 @@
 #include "../Api/TimerProvider.h"
 #include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"
-#include "../Api/NlohmanJson.hpp"
 #include <map>
 #include <thread>
 
@@ -25,7 +24,9 @@ namespace cluster
         ClusterDbPtr addClusterDb(const std::string& db_name);
 
         // update.log
+        void buildDb(std::string db_name, uint64 uid);
         void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
+        void addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name);
         void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
         void setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType update_type);
         void setLogFileName(std::string db_name, uint64 index, std::string file_name);
@@ -44,6 +45,7 @@ namespace cluster
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
         std::string getNTFilePathByIndex(const std::string& db_name, uint64 index);
         // term.json
+        void setInlineTerm(uint32 term){ term_ = term; }
         void updateTerm(uint32 term);
         void updateDbIndex(std::string db_name, uint64 index);
         void updateDbNextIndex(std::string db_name, uint64 next_index);
@@ -51,6 +53,9 @@ namespace cluster
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);
         uint64 getFirstIndex(const std::string& db_name);
+        uint64 getDbNextIndexByindex(const std::string& db_name, uint64 index);
+        bool getTermInfoDbLogs(ClusterTermInfo& info);
+        TermDbLog getTermInfoDbLog(const std::string& db_name);
         static std::string getIpPort(const std::string& ip, const std::string& port);
         // virtual function in here
         public:
