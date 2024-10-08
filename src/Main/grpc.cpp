@@ -4185,7 +4185,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			string msg = "Operation Success.";
 			string operation = "batchRemove";
 			string remote_ip = task_of(response)->peer_addr();
-			if (apiUtil->trywrlock_databaseinfo(db_info, 300))
+			if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
 			{
 				msg = "Unable to batch remove due to loss of lock.";
 				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
@@ -6179,7 +6179,7 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 	}
 	if (form.find("file") == form.end() || form.find("db_name") == form.end() 
 		|| form.find("term") == form.end() || form.find("index") == form.end() 
-		|| form.find("operation") == form.end())
+		|| form.find("updateType") == form.end())
 	{
 		response->Error(StatusFileReadError, "Form data is illegal");
 		return;
