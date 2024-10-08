@@ -5976,7 +5976,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	}
 	if (form.find("file") == form.end() || form.find("db_name") == form.end() 
 		|| form.find("term") == form.end() || form.find("index") == form.end() 
-		|| form.find("operation") == form.end())
+		|| form.find("updateType") == form.end())
 	{
 		response->Error(StatusFileReadError, "Form data is illegal");
 		return;

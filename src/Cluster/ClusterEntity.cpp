@@ -92,7 +92,7 @@ namespace cluster
 
     void ClusterEntity::addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type)
     {
-        if (update_type = ClusterUpdateType_Build)
+        if (update_type == ClusterUpdateType_Build)
         {
             auto it = databaseL_.find(db_name);
             if (it != databaseL_.end())

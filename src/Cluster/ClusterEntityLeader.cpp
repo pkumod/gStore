@@ -99,6 +99,7 @@ namespace cluster
 
     void ClusterEntityLeader::postCompare(std::string db_name)
     {
+        return;
         uint32 term = getTerm();
         ClusterDbPtr db = findDb(db_name);
         if (!db)
@@ -194,8 +195,8 @@ namespace cluster
         }
 
         std::string file_path = Util::getExactPath(zip_path.c_str());
-        updateLogOperation(info.db_name, info.index, ClusterOperation_Append);
-        setLogUpdateType(info.db_name, info.index, info.update_type);
+        updateLogOperation(info.db_name, info.nextIndex, ClusterOperation_Append);
+        setLogUpdateType(info.db_name, info.nextIndex, info.update_type);
         postAppendTask(info, file_path);
         return true;
     }
@@ -237,7 +238,7 @@ namespace cluster
         uint32 term = getTerm();
         if (info.operation != ClusterOperation_Drop)
         {
-            updateLogOperation(info.db_name, info.index, info.operation);
+            updateLogOperation(info.db_name, info.nextIndex, info.operation);
         }
 
         std::string expection = ClusterOperationHandle::to_str(info.operation);

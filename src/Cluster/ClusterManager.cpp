@@ -543,7 +543,7 @@ namespace cluster
     {
         if (!isEnable() || !role_)
             return TermDbLog();
-        role_->getTermInfoDbLog(db_name);
+        return role_->getTermInfoDbLog(db_name);
     }
 
     bool ClusterManager::addTask(ClusterTaskInfo info, bool sync)
@@ -562,6 +562,11 @@ namespace cluster
             return false;
         }
         TermDbLog db_log = getTermInfoDbLog(info.db_name);
+        if (db_log.empty())
+        {
+            SLOG_TRACE("db log is empty db name:" << info.db_name);
+            return false;
+        }
         // index = 0, empty db
         if (info.operation != ClusterOperation_Drop && db_log.getNextIndex() == 0)
         {
@@ -624,9 +629,10 @@ namespace cluster
             SLOG_TRACE("please check conf.ini, not set leader");
             return false;
         }
-
+        
         ClusterEventPtr task = std::make_shared<ClusterRecoverTaskEvent>(info, leader);
         task_queueL.push(task);
+        return true;
     }
 
     void ClusterManager::runTask()
