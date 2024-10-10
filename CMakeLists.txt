@@ -44,12 +44,12 @@ add_subdirectory( src )
 add_subdirectory( ${GSTORE_TEST_DIR} )
 
 # init system.db
-add_custom_command( OUTPUT INIT
-    COMMAND echo "Compilation ends successfully!"
-    COMMAND bash scripts/init.sh
-    WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
-)
-add_custom_target( "init" DEPENDS INIT )
+# add_custom_command( OUTPUT INIT
+#     COMMAND echo "Compilation ends successfully!"
+#     COMMAND bash scripts/init.sh
+#     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
+# )
+# add_custom_target( "init" DEPENDS INIT )
 
 # make pre
 add_custom_target( pre
