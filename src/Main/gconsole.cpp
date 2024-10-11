@@ -13,7 +13,7 @@ CTRL+C to quit current command. CTRL+D to exit this console.
 =============================================================================*/
 #include <termios.h>
 #include "../Util/Util.h"
-#include "../Api/HttpUtil.h"
+#include "../Api/APIConnector.h"
 
 using namespace std;
 
@@ -396,10 +396,27 @@ public:
 		{
 			pfd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0777);
 		}
+		if (pfd == -1)
+		{
+			cout << "Failed to open file: " << file << endl;
+			return -1;
+		}
 		// now pfd is descriptor to file
 		int saved = dup(1); // now 1 and saved both are descriptor to ori_file(1 previously refer to)
 		// int dup2(int oldfd, int newfd);
-		dup2(pfd, 1); // would close descriptor 1 first, then now 1 and pfd both are descriptor to file(pfd previously refer to)
+		if (saved == -1)
+		{
+			cout << "Failed to save file descprition" << endl;
+			close(pfd);
+			return -1;
+		}
+		if (dup2(pfd, 1) == -1)
+		{
+			cout << "Failed to redirect stdout" << endl;
+			close(pfd);
+			close(saved);
+			return -1;
+		} // would close descriptor 1 first, then now 1 and pfd both are descriptor to file(pfd previously refer to)
 		close(pfd);	  // close descriptor pfd
 
 		ori_file_stk.push(saved);
@@ -419,7 +436,10 @@ public:
 
 			int saved = ori_file_stk.top();
 			ori_file_stk.pop();
-			dup2(saved, 1); // would close descriptor 1 first, then now 1 and saved both are descriptor to "saved previously refer to"
+			if (dup2(saved, 1) == -1)
+			{
+				cout << "Failed to flush redirected stdout" << endl;
+			}; // would close descriptor 1 first, then now 1 and saved both are descriptor to "saved previously refer to"
 			close(saved);	// close descriptor saved
 
 			// now only 1 is descriptor to "saved previously refer to"
@@ -788,7 +808,11 @@ int save_history()
 	}
 
 	// TODO: check this return value
-	Util::create_dirs("bin/.gconsole_history");
+	if (!Util::create_dirs("bin/.gconsole_history")) 
+	{
+		cout << "Failed to create history directory" << endl;
+		return -1;
+	}
 	ofstream fout("bin/.gconsole_history/" + usrname);
 
 	if (fout.is_open() == 0)
@@ -829,8 +853,8 @@ int load_history()
 bool login(const string& usrname, const string& password)
 {
 	httpentities::LoginRequest login_request(usrname, password);
-	httpentities::BaseResponse login_response = HttpUtil::login(API_URL, login_request);
-	if(login_response.StatusCode == CURLE_COULDNT_CONNECT)
+	httpentities::BaseResponse login_response = APIConnector::login(API_URL, login_request);
+	if(login_response.StatusCode == WFT_STATE_DNS_ERROR)
 	{
 		cout << "Could not connect to server. Please check server status" << endl;
 		exit(0);
@@ -852,6 +876,7 @@ void print_lowbits(unsigned priv, int sz)
 unsigned read_priv(string usr, string db_name)
 {
 	// TODO
+	
 	return 0;
 }
 
@@ -1036,6 +1061,7 @@ int check_argc_or(int argc, int std_argc_num, ...)
 int flushpriv_handler(const vector<string> &args)
 {
 	//TODO
+	CHECK_CURRENT_DB_LOADED
 	return 0;
 }
 
@@ -1054,7 +1080,7 @@ int raw_sparql_handler(string sparql)
 		query_url = API_URL;
 	}
 	httpentities::QueryRequest query_request(_current_database, sparql, "n-triple");
-	httpentities::QueryResponse query_response = HttpUtil::query(query_url, true, query_request);
+	httpentities::QueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
 		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
@@ -1325,7 +1351,7 @@ int show_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_LOADED
 	// monitor
 	httpentities::MonitorRequest monitor_request(_current_database);
-	httpentities::MonitorResponse monitor_response = HttpUtil::monitor(API_URL, true, monitor_request);
+	httpentities::MonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
 	if (!monitor_response.success())
 	{
 		cout << "Failed to monitor database: " << monitor_response.getStatusMsg() << endl;
@@ -1349,7 +1375,7 @@ int showdbs_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 0)
 	httpentities::ShowRequest show_request;
-	httpentities::ShowResponse show_response = HttpUtil::show(API_URL, true, show_request);
+	httpentities::ShowResponse show_response = APIConnector::show(API_URL, true, show_request);
 	std::vector<std::string> headers = {"database", "creater", "builtTime", "status"};
 	std::vector<std::vector<std::string>> rows;
 	for (auto &db : show_response.responseBody)
@@ -1386,7 +1412,7 @@ int create_handler(const vector<string> &args)
 		return -1;
 	}
 	httpentities::BuildRequest build_request(db_name, db_path);	
-	httpentities::BuildResponse build_response = HttpUtil::build(API_URL, true, build_request);
+	httpentities::BuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 	if (!build_response.success())
 	{
 		cout << "Build RDF database " << db_name << " failed: " << build_response.StatusMsg << endl;
@@ -1411,7 +1437,7 @@ int drop_handler(const vector<string> &args)
 		return -1;
 	}
 	httpentities::DropRequest drop_request(db_name, "0");
-	httpentities::BaseResponse drop_response = HttpUtil::drop(API_URL, true, drop_request);
+	httpentities::BaseResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
 	if (!drop_response.success())
 	{
 		cout << "Drop database " << db_name << " failed: " << drop_response.StatusMsg << endl;
@@ -1426,6 +1452,7 @@ int export_handler(const vector<string> &args)
 	// TODO
 	CHECK_CURRENT_DB_LOADED
 	CHECK_CURRENT_DB_NOT_SYSDB
+
 	cout << "Database " << _current_database << " exported successfully." << endl;
 	return 0;
 }
@@ -1470,7 +1497,7 @@ int use_handler(const vector<string> &args)
 		}
 	}
 	httpentities::LoadRequest load_request(new_db_name, "0");
-	httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_request);
+	httpentities::LoadResponse load_response = APIConnector::load(API_URL, true, load_request);
 	if (!load_response.success())
 	{
 		cout << "Load database " << new_db_name << " failed: " << load_response.StatusMsg << endl;
@@ -1490,7 +1517,7 @@ int unload_handler(const std::vector<std::string> &args)
 		return -1;
 	}
 	httpentities::UnloadRequest unload_request(_current_database);
-	httpentities::BaseResponse unload_response = HttpUtil::unload(API_URL, true, unload_request);
+	httpentities::BaseResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
 	if (!unload_response.success())
 	{
 		cout << "Unload database " << _current_database << " failed: " << unload_response.StatusMsg << endl;
@@ -1719,7 +1746,7 @@ int init_handler(const vector<string> &args)
 		return -1;
 	}
 	httpentities::InitRequest init_request(db_names);
-	httpentities::InitResponse init_response = HttpUtil::init(API_URL, true, init_request);
+	httpentities::InitResponse init_response = APIConnector::init(API_URL, true, init_request);
 	if (!init_response.success())
 	{
 		cout << "Init database " << db_names << " failed: " << init_response.StatusMsg << endl;
@@ -1740,7 +1767,7 @@ int refreshconf_handler(const vector<string> &args)
 {
 	Util::configure();
 	httpentities::RefreshconfRequest refresh_request;
-	httpentities::BaseResponse refresh_response = HttpUtil::refreshConf(API_URL, true, refresh_request);
+	httpentities::BaseResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
 	if (!refresh_response.success())
 	{
 		cout << "Refresh config failed: " << refresh_response.StatusMsg << endl;
@@ -1775,7 +1802,7 @@ int batchinsert_handler(const vector<string> &args)
 	}
 	httpentities::BatchInsertRequest insert_request(_current_database, file_path, dir_path);
 	long duration_time = Util::get_cur_time();
-	httpentities::BatchInsertResponse insert_response = HttpUtil::batchInsert(API_URL, true, insert_request);
+	httpentities::BatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
 	duration_time = Util::get_cur_time() - duration_time;
 	if (!insert_response.success())
 	{
@@ -1800,7 +1827,7 @@ int batchremove_handler(const vector<string> &args)
 	}
 	httpentities::BatchRemoveRequest remove_request(_current_database, file_path);
 	long duration_time = Util::get_cur_time();
-	httpentities::BatchRemoveResponse remove_response = HttpUtil::batchRemove(API_URL, true, remove_request);
+	httpentities::BatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = Util::get_cur_time() - duration_time;
 	if (!remove_response.success())
 	{
