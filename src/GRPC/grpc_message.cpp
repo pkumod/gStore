@@ -374,6 +374,12 @@ void GRPCResp::Json(const std::string &str)
     this->String(str);
 }
 
+void GRPCResp::nlohmannJson(const std::string &str)
+{
+    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+    this->String(str);
+}
+
 // void GRPCResp::Gzip(const ::Json &json)
 // {
 //     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);

@@ -156,6 +156,9 @@ public:
 
     void Json(const std::string &str);
 
+    // nlohmann json
+    void nlohmannJson(const std::string &str);
+
     // TODO compress with gzip
     // void set_compress(const Compress &compress);
 
