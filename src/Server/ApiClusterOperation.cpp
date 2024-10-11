@@ -280,7 +280,6 @@ namespace server
             return;
         }
         
-        std::string msg;
         // filename : filecontent
         std::pair<std::string, std::string>& fileinfo = form.at("file");
         if(fileinfo.first.empty())
@@ -319,9 +318,11 @@ namespace server
         const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
         const std::string zip_file_path = cluster_db_path + fileinfo.first;
         const std::string update_type = form.at("updateType").second;
-        const std::string content = std::move(fileinfo.second);
-        WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [apiUtil, clusterManagerPtr, leader_term, db_name, zip_file_path, cluster_db_path, update_type, db_log, local_port](WFFileIOTask *pwrite_task){
-            SLOG_DEBUG("saveing log file callback.");
+        std::string *save_content = new std::string;
+        *save_content = std::move(fileinfo.second);
+        WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, static_cast<const void *>((*save_content).c_str()), (*save_content).size(), 0, [save_content, apiUtil, clusterManagerPtr, leader_term, db_name, zip_file_path, cluster_db_path, update_type, db_log, local_port](WFFileIOTask *pwrite_task){
+            SLOG_DEBUG("saveing log file callback. detete content file");
+            delete save_content;
             // save success
             long ret = pwrite_task->get_retval();
             if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
@@ -500,9 +501,11 @@ namespace server
         // TODO check leader term and index with local
         const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
         const std::string zip_file_path = cluster_db_path + fileinfo.first;
-        const std::string content = std::move(fileinfo.second);
-        WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, content.c_str(),content.size(), 0, [apiUtil, clusterManagerPtr, leader_term, leader_index, db_name, zip_file_path, cluster_db_path, updateType, recoverIndex](WFFileIOTask *pwrite_task){
-            SLOG_DEBUG("saveing log file callback.");
+        std::string *save_content = new std::string;
+        *save_content = std::move(fileinfo.second);
+        WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, static_cast<const void *>((*save_content).c_str()), (*save_content).size(), 0, [save_content, apiUtil, clusterManagerPtr, leader_term, leader_index, db_name, zip_file_path, cluster_db_path, updateType, recoverIndex](WFFileIOTask *pwrite_task){
+            SLOG_DEBUG("saveing log file callback delete content file.");
+            delete save_content;
             // save success
             long ret = pwrite_task->get_retval();
             if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
