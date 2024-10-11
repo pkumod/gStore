@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <cstdio>
+#include <iostream>
 #include "../Api/NlohmanJson.hpp"
 using namespace nlohmann;
 namespace httpentities {
