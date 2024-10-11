@@ -1,8 +1,12 @@
 #/bin/bash
 
-# 根据打包环境修改os和architecture的配置
+# get os info
 os="linux"
-architecture="x86_64"
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    os=$ID
+fi
+architecture=`uname -m`
 version=$(awk -F '=' '/version/ {print$2}' "conf/conf.ini")
 product_name=$(awk -F '=' '/product_name/ {print$2}' "conf/conf.ini")
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
@@ -31,7 +35,7 @@ else
     make pre 
 fi
 if [ $? -eq 0 ]; then
-    make -j4 && make init
+    make -j4
     if [ $? -eq 0 ]; then
         cd ..
         echo "begin build package-------"

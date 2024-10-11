@@ -1363,8 +1363,22 @@ int create_handler(const vector<string> &args)
 {
 	CHECK_ARGC(2, 1, 2)
 
-	string db_name = args[0];
-	string db_path = args[1];
+	string db_name = "";
+	string db_path = "";
+	if (args.size() < 1 || args[0].size() < 3)
+	{
+		cout << "build param error, need param num at least 1 or database name need at least 3 character" << endl;
+		return -1;
+	}
+	if (args.size() == 1)
+	{
+		db_name = args[0];
+	}
+	else
+	{
+		db_name = args[0];
+		db_path = args[1];
+	}
 	if (db_name == Util::system_db)
 	{
 		cout << "Your db name can NOT be \"system\"." << endl;

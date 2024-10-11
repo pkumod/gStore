@@ -398,6 +398,32 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string msg)
         msg = "Remove db info from system failed.";
         return false;
     }
+
+    do
+    {
+       // remove databse info from system.db
+        string update = "DELETE WHERE {<" 
+            + db_name + "> <database_status> ?y1. <" 
+            + db_name + "> <built_by> ?y2. <" 
+            + db_name + "> <built_time> ?y3. }";
+		bool update_result = update_sys_db(update);
+        // remove all privileges of db_name
+        update = "DELETE WHERE {?s <has_query_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_load_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_unload_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_update_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_backup_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_restore_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+        update = "DELETE WHERE {?s <has_export_priv> <" + db_name + ">. }";
+        update_result = update_sys_db(update) || update_result;
+    } while (0);
+
     // system checkpoint
     refresh_sys_db();
     // clear all privileges 
