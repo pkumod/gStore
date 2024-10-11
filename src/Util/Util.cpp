@@ -131,6 +131,7 @@ Util::configure()
     // system
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "product_name");
+    Util::setGlobalConfig(ini_parser, "system", "website");
     Util::setGlobalConfig(ini_parser, "system", "db_home", "./dbhome/");
     Util::setGlobalConfig(ini_parser, "system", "db_suffix", ".db");
     Util::setGlobalConfig(ini_parser, "system", "root_username", "root");

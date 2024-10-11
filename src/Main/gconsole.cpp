@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 18
+#define TOTAL_COMMAND_NUM 19
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -130,7 +130,7 @@ COMMAND commands[] =
 		{"drop", drop_handler, "Drop a database.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
 		{"show", show_handler, "Show info and specified number of triples of current database or other database.", "show [<database_name>];", QUERY_PRIVILEGE_BIT},
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
-		// {"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
+		{"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
 		// {"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
 		// {"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
 		// {"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
@@ -250,6 +250,7 @@ string product_name, product_name_lower, product_version;
 string root_username, root_password;
 std::string _server_port;
 std::string _current_database;
+std::string _website;
 // global
 int main(int argc, char **argv)
 {
@@ -258,13 +259,13 @@ int main(int argc, char **argv)
 	_server_port = util.getConfigureValue("port");
 	_db_home = util.getConfigureValue("db_home");
 	_db_suffix = util.getConfigureValue("db_suffix");
+	_website = util.getConfigureValue("website");
 	
 	root_username = util.getConfigureValue("root_username");
 	product_version = util.getConfigureValue("version");
 	product_name = util.getConfigureValue("product_name");
 	product_name_lower = product_name;
 	product_name_lower[0] = std::tolower(product_name_lower[0]);
-
 	if (argc == 2)
 	{
 		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
@@ -1190,9 +1191,9 @@ int help_handler(const vector<string> &args)
 		cout << product_name << " Console , an interactive shell based utility to communicate with " << product_name_lower << " repositories." << endl;
 		cout << "" << endl;
 		cout << "For information about " << product_name_lower << " products and services, visit:" << endl;
-		cout << "   http://www.gstore.cn/" << endl;
+		cout << "   "<< _website << endl;
 		cout << "For developer information, including the " << product_name_lower << " Reference Manual, visit:" << endl;
-		cout << "   http://www.gstore.cn/pcsite/index.html#/documentation" << endl;
+		cout << "   "<< _website + "/pcsite/index.html#/documentation" << endl;
 		cout << "" << endl;
 		cout << "Commands end with ;. Cross line input is allowed." << endl;
 		cout << "Comment start with #." << endl;
@@ -1436,7 +1437,7 @@ int backup_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	// TODO
 	std::string backup_path;
-	cout << "Backup path: " << backup_path << endl;
+	// cout << "Backup path: " << backup_path << endl;
 	cout << "Database " << _current_database << " backup successfully." << endl;
 	return 0;
 }
