@@ -1,3 +1,6 @@
+#ifndef _WFHTTPUTIL_H
+#define _WFHTTPUTIL_H
+
 #include <workflow/WFTaskFactory.h>
 #include <workflow/WFFacilities.h>
 #include <iostream>
@@ -215,3 +218,5 @@ public:
 
 	static int Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse);
 };
+
+#endif
