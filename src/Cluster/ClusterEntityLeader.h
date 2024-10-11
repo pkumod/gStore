@@ -19,7 +19,7 @@ namespace cluster
         bool IsFollowerIp(const std::string& ip)const;
         void postAppendTask(const ClusterTaskInfo& info, const std::string& file_path);
         void startCompare();
-        void stopCompareTimer(std::string db_name);
+        void stopCompareTimer();
         void postTask(const ClusterTaskInfo& info);
         bool runTask(const ClusterTaskInfo& info);
         bool runAppendTask(const ClusterTaskInfo& info);

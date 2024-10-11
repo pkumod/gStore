@@ -553,6 +553,15 @@ namespace cluster
         return role_->getTermInfoDbLog(db_name);
     }
 
+    void ClusterManager::stopHeart()
+    {
+        if (!isEnable() || !role_)
+            return;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (leader)
+            leader->stopCompareTimer();
+    }
+
     bool ClusterManager::addTask(ClusterTaskInfo info, bool sync)
     {
         if (!isEnable() || !role_)

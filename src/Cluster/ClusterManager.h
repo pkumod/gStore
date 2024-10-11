@@ -87,6 +87,8 @@ namespace cluster
         void dropDb(const std::string& db_name);
         // 获取数据库同步信息
         TermDbLog getTermInfoDbLog(const std::string& db_name);
+        // 停掉心跳
+        void stopHeart();
 
         //日志模块
         //新增日志

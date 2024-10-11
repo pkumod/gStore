@@ -74,7 +74,7 @@ namespace cluster
         });
     }
 
-    void ClusterEntityLeader::stopCompareTimer(std::string db_name)
+    void ClusterEntityLeader::stopCompareTimer()
     {
         head_beat_timer_.Expire();
     }
