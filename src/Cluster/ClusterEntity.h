@@ -27,7 +27,7 @@ namespace cluster
         void buildDb(std::string db_name, uint64 uid);
         void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
         void addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name);
-        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type = ClusterUpdateType_Defaut, std::string file_name = "");
         void setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType update_type);
         void setLogFileName(std::string db_name, uint64 index, std::string file_name);
         void addLogReplyNum(std::string db_name, uint64 index, const std::string& ip, const std::string& port);

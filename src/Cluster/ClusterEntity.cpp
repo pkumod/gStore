@@ -120,7 +120,7 @@ namespace cluster
         if (!db)
             return;
         updateDbIndex(db_name, index);
-        db->addLog(index, ClusterOperation_Commit, update_type, getDbIndex(db_name));
+        db->addLog(index, ClusterOperation_Commit, update_type, getDbIndex(db_name), file_name);
     }
 
     void ClusterEntity::buildDb(std::string db_name, uint64 uid)
@@ -145,7 +145,7 @@ namespace cluster
         }
     }
 
-    void ClusterEntity::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
+    void ClusterEntity::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type, std::string file_name)
     {
         ClusterDbPtr db = findDb(db_name);
         if (!db)
@@ -161,7 +161,7 @@ namespace cluster
             // this operation is failed
             updateDbNextIndex(db_name, 0);
         }
-        db->updateLogOperation(index, operation);
+        db->updateLogOperation(index, operation, update_type, file_name);
     }
 
     void ClusterEntity::setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType update_type)

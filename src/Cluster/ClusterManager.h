@@ -95,7 +95,8 @@ namespace cluster
         // 初始化建库, 生成集群日志
         void buildDb(std::string db_name, uint64 uid);
         // 更新日志操作
-        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation status);
+        void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
+        void updateLogInfo(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type = ClusterUpdateType_Defaut, std::string file_name = "");
         // 更新日志操作类型
         void setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType operation);
         // 更新日志操作文件
@@ -169,10 +170,6 @@ namespace cluster
             {
                 SLOG_TRACE("ClusterHeartBeatEvent fail, per is free");
                 return;
-            }
-            if (info_.operation == ClusterOperation_Compare)
-            {
-                per->startCompare(info_.db_name);
             }
             else
             {

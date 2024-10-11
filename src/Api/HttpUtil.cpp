@@ -621,6 +621,8 @@ httpentities::ClusterResponse HttpUtil::recoverFollower(const std::string& url, 
 	params.insert(std::pair<std::string, std::string>("index", std::to_string(request.index)));
 	params.insert(std::pair<std::string, std::string>("nextIndex", std::to_string(request.nextIndex)));
 	params.insert(std::pair<std::string, std::string>("uid", std::to_string(request.uid)));
+	params.insert(std::pair<std::string, std::string>("updateType", request.updateType));
+	params.insert(std::pair<std::string, std::string>("recoverIndex", std::to_string(request.recoverIndex)));
 	std::string body_str;
 	CURLcode status = PostFile(url, headers, 3600, request.file_path, params, body_str);
 	return response_parser<httpentities::ClusterResponse>(status, body_str);

@@ -731,9 +731,10 @@ namespace httpentities {
         std::string file_path;
         std::string updateType;
         uint64_t recoverIndex;
-        RecoverRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string updateType, std::string filename, uint64_t recoverIndex): ClusterRequest(term, db_name, index, nextIndex, uid) {
+        RecoverRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string updateType, std::string file_path, uint64_t recoverIndex): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->updateType = updateType;
             this->recoverIndex = recoverIndex;
+            this->file_path = file_path;
         }
         void to_json(std::string& json_str) override
         {

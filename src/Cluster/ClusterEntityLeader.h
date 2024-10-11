@@ -12,13 +12,12 @@ namespace cluster
         uint32 relpy_timeout_;
         static uint32 headBeat_max_fail_num_;
         std::map<std::string, uint32> faileL_; //url:失败次数，大于多少次（代表此从节点应答失败，不在发送心跳包）
-        std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
+        // std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
+        TimerProvider head_beat_timer_;
         public:
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
         bool IsFollowerIp(const std::string& ip)const;
-        void postCompare(std::string db_name);
         void postAppendTask(const ClusterTaskInfo& info, const std::string& file_path);
-        void startCompare(std::string db_name);
         void startCompare();
         void stopCompareTimer(std::string db_name);
         void postTask(const ClusterTaskInfo& info);

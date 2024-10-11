@@ -159,7 +159,7 @@ namespace cluster
         }
     }
 
-    bool ClusterDbNameLogInfo::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index)
+    bool ClusterDbNameLogInfo::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index, std::string file_name)
     {
         auto it = logs_.find(index);
         if (it != logs_.end())
@@ -172,6 +172,7 @@ namespace cluster
         log.setOperation(operation);
         log.setUpdateType(update_type);
         log.setCreateTime(Util::get_date_time());
+        log.setFileName(file_name);
         logs_[index] = log;
 
         // set old next index is current index

@@ -272,11 +272,18 @@ namespace cluster
         role_->buildDb(db_name, uid);
     }
 
-    void ClusterManager::updateLogOperation(std::string db_name, uint64 index, ClusterOperation status)
+    void ClusterManager::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
     {
         if (!isEnable() || !role_)
             return;
-        role_->updateLogOperation(db_name, index, status);
+        role_->updateLogOperation(db_name, index, operation);
+    }
+
+    void ClusterManager::updateLogInfo(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type, std::string file_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->updateLogOperation(db_name, index, operation, update_type, file_name);
     }
 
     void ClusterManager::setLogUpdateType(std::string db_name, uint64 index, ClusterUpdateType operation)

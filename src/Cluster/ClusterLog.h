@@ -92,7 +92,7 @@ namespace cluster
         public:
         void setLogs(const nlohmann::json& s);
         void covertJson(nlohmann::json& s)const;
-        bool addLog(uint64 index, ClusterOperation status, ClusterUpdateType operation, uint64 last_index);
+        bool addLog(uint64 index, ClusterOperation status, ClusterUpdateType operation, uint64 last_index, std::string file_name = "");
         void updateLogOperation(uint64 index, ClusterOperation status);
         void setLogUpdateType(uint64 index, ClusterUpdateType operation);
         void setLogFileName(uint64 index, std::string file_name);

@@ -13,6 +13,7 @@ namespace cluster
 
     enum ClusterUpdateType
     {
+        ClusterUpdateType_Defaut = -1,
         ClusterUpdateType_None   = 0,
         ClusterUpdateType_Insert = 1,
         ClusterUpdateType_Delete = 2,
@@ -199,9 +200,9 @@ namespace cluster
         {
             return base_url + "/cluster/appendEntries";
         }
-        std::string getCancelUrl()const
+        std::string getRecoverlUrl()const
         {
-            return base_url + "/cluster/cancel";
+            return base_url + "/cluster/recover";
         }
         bool empty()const{ return ip.empty(); }
     };

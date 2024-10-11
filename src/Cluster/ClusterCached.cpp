@@ -136,13 +136,13 @@ namespace cluster
         return true;
     }
 
-    void ClusterDb::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index)
+    void ClusterDb::addLog(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, uint64 last_index, std::string file_name)
     {
         ClusterDbNameLogInfo log;
         std::string file_path = getUpdatePath(db_name_);
         if (!Util::file_exist(file_path))
         {
-            log.addLog(index, operation, update_type, 0);
+            log.addLog(index, operation, update_type, 0, file_name);
             SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", operation:" << operation << " ,update_type:" << update_type);
             if (!writeToUpdateFile(log))
             {
@@ -155,7 +155,7 @@ namespace cluster
             SLOG_ERROR("add log fail!" << db_name_ << index << operation);
             return;
         }
-        log.addLog(index, operation, update_type, last_index);
+        log.addLog(index, operation, update_type, last_index, file_name);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("add log fail!" << db_name_ << index << operation);
@@ -163,7 +163,7 @@ namespace cluster
         }
     }
 
-    void ClusterDb::updateLogOperation(uint64 index, ClusterOperation operation)
+    void ClusterDb::updateLogOperation(uint64 index, ClusterOperation operation, ClusterUpdateType update_type, std::string file_name)
     {
         ClusterDbNameLogInfo log;
         if (!readFromUpdateFile(log))
@@ -172,6 +172,10 @@ namespace cluster
             return;
         }
         log.updateLogOperation(index, operation);
+        if (update_type != ClusterUpdateType_Defaut)
+            log.setLogUpdateType(index, update_type);
+        if (!file_name.empty())
+            log.setLogFileName(index, file_name);
         if (!writeToUpdateFile(log))
         {
             SLOG_ERROR("update log operation fail!" << db_name_ << index << operation);
