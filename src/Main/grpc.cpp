@@ -2014,9 +2014,9 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	server::MessageLoadRequest request_data(json_data);
 	server::MessageLoadResponse response_data; 
 	server::ApiHandler::load(apiUtil, request_data, response_data);
-	if (response_data.status_code != server::StatusOK)
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		response->Error(response_data.status_code, response_data.status_msg);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
@@ -2971,7 +2971,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				rs_ansNum = min(rs_ansNum, rs_outputlimit);
 			}	
 
-			int status_code = 0;
+			int StatusCode = 0;
 			string file_name = "";
 			if (format.find("file") != string::npos)
 			{
@@ -2979,7 +2979,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			}
 			// add callback task for query log start
 			struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, remote_ip, sparql, 
-				rs_ansNum, format, file_name, status_code, query_time, db_name);
+				rs_ansNum, format, file_name, StatusCode, query_time, db_name);
 			task_of(response)->add_callback([query_log_ptr](GRPCTask *) {
 				apiUtil->write_query_log(query_log_ptr);
 				delete query_log_ptr;
@@ -3704,9 +3704,9 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	server::MessageBatchInsertResponse response_data; 
 	string remote_ip = task_of(response)->peer_addr();
 	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip, _db_home, _db_suffix);
-	if (response_data.status_code != server::StatusOK)
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		response->Error(response_data.status_code, response_data.status_msg);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
@@ -5419,9 +5419,9 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 	Form &form = request->form();
 	server::MessageResponse response_data;
 	server::ApiHandler::cluster_append(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.status_code != server::StatusOK)
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		response->Error(response_data.status_code, response_data.status_msg);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
@@ -5456,9 +5456,9 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 	Form &form = request->form();
 	server::MessageResponse response_data;
 	server::ApiHandler::cluster_recover(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.status_code != server::StatusOK)
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		response->Error(response_data.status_code, response_data.status_msg);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
