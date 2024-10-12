@@ -128,6 +128,16 @@ public:
             db_ptr = make_shared<Database>(db_name);
         }
     }
+    bool unloadDatabase()
+    {
+        if (db_ptr != nullptr) {
+            db_ptr.reset();
+            status = DatabaseStatus::AREADY_BUILT;
+            db_ptr = make_shared<Database>(db_name);
+            return true;
+        }
+        return false;
+    }
     rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
     {
         rapidjson::Value doc(rapidjson::kObjectType);
