@@ -4548,7 +4548,7 @@ bool Database::backup(std::string &_backup_path)
 		Util::create_dirs(_backup_path);
 	}
 	Util::string_suffix(_backup_path, '/');
-	_backup_path = _backup_path + this->name + Util::global_config["db_suffix"];
+	_backup_path = _backup_path + this->name + Util::global_config["db_suffix"] + "_" + Util::get_timestamp();
 
 	SLOG_CORE("Beginning backup, path is: "<< _backup_path);
 

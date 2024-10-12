@@ -112,7 +112,7 @@ int APIUtil::initialize()
                 f.open(Util::initfile);
                 f.close();
                 system_database.reset();
-                Util::init_backuplog();
+                // Util::init_backuplog();
                 string version = util.getConfigureValue("version");
                 string root_pwd = util.getConfigureValue("root_password");
                 string update_sparql = "INSERT DATA {\
@@ -439,7 +439,7 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string msg)
         SLOG_WARN("Remove db info from already build list failed.");
     }
     // delete backup log
-    util.delete_backuplog(db_name);
+    // util.delete_backuplog(db_name);
     return true;
 }
 
@@ -480,8 +480,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
     bool backup_rt = db_info->getDatabase()->backup(backup_path);
     unlock_databaseinfo(db_info);
     if (backup_rt && compress) {
-        string timestamp = Util::get_timestamp();
-        std::string zip_file_path = backup_path + "_" + timestamp + ".zip";
+        std::string zip_file_path = backup_path + ".zip";
         CompressUtil::CompressZip compress_util;
         backup_rt = compress_util.compressDirExportZip(backup_path, zip_file_path);
         if (backup_rt) {
@@ -531,18 +530,16 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             return false;
         }
         // mv unzip file to db_home
-        Util::string_suffix(unzip_path, '/');
-        restore_bool = mv_or_cp(unzip_path + "*", db_home_path, true);
+        restore_bool = mv_or_cp(unzip_path, db_home_path, true);
     } else {
         // cp backup path to db_home
-        Util::string_suffix(backup_path, '/');
-        restore_bool = mv_or_cp(backup_path + "*", db_home_path, false);
+        restore_bool = mv_or_cp(backup_path, db_home_path, false);
     }
     if (restore_bool) {
         if (db_info->getStatus() == DatabaseStatus::BUILDING) {
-            db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+            init_databaseinfo(db_name, username, db_info->getTime(), DatabaseStatus::AREADY_BUILT);
             init_privilege(username, db_name);
-            Util::add_backuplog(db_name);
+            // Util::add_backuplog(db_name);
         }
         // remove old db_home
         Util::remove_path(db_home_path + ".bak");
@@ -552,6 +549,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             mv_or_cp(db_home_path + ".bak", db_home_path, true);
         }
     }
+    unlock_databaseinfo(db_info);
     return restore_bool;
 }
 
@@ -597,7 +595,7 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         // copy privilege
         copy_privilege(db_name, new_db_name);
         // add backup log
-        Util::add_backuplog(new_db_name);
+        // Util::add_backuplog(new_db_name);
 
         // unlock old db
         unlock_databaseinfo(db_info);
@@ -1386,78 +1384,78 @@ bool APIUtil::clear_privilege(const string& username)
 
 bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const string& type, const string& db_name, int16_t op)
 {
-    if ((type == "query" || type == "all") && userinfo->query_priv.find(db_name) != userinfo->query_priv.end())
+    if ((type == "query" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->query_priv_set_lock));
         if (op == 1)
             userinfo->query_priv.insert(db_name);
-        else if (op == 0)
+        else if (op == 0 && userinfo->query_priv.find(db_name) != userinfo->query_priv.end())
             userinfo->query_priv.erase(db_name);
         else if (op == -1) 
             userinfo->query_priv.clear();
         pthread_rwlock_unlock(&(userinfo->query_priv_set_lock));
     }
-    else if((type == "update" || type == "all") && userinfo->update_priv.find(db_name) != userinfo->update_priv.end())
+    else if((type == "update" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->update_priv_set_lock));
         if (op == 1)
             userinfo->update_priv.insert(db_name);
-        else if (op == 0)
+        else if (op == 0 && userinfo->update_priv.find(db_name) != userinfo->update_priv.end())
             userinfo->update_priv.erase(db_name);
         else if (op == -1) 
             userinfo->update_priv.clear();
         pthread_rwlock_unlock(&(userinfo->update_priv_set_lock));
     }
-    else if((type == "load" || type == "all") && userinfo->load_priv.find(db_name) != userinfo->load_priv.end())
+    else if((type == "load" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->load_priv_set_lock));
         if (op == 1)
             userinfo->load_priv.insert(db_name);
-        else if (op == 0)
+        else if (op == 0 && userinfo->load_priv.find(db_name) != userinfo->load_priv.end())
             userinfo->load_priv.erase(db_name);
         else if (op == -1) 
             userinfo->load_priv.clear();
         pthread_rwlock_unlock(&(userinfo->load_priv_set_lock));
     }
-    else if((type == "unload" || type == "all") && userinfo->unload_priv.find(db_name) != userinfo->unload_priv.end())
+    else if((type == "unload" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->unload_priv_set_lock));
         if (op == 1)
             userinfo->unload_priv.insert(db_name);
-        else if (op == 0)
+        else if (op == 0 && userinfo->unload_priv.find(db_name) != userinfo->unload_priv.end())
             userinfo->unload_priv.erase(db_name);
         else if (op == -1) 
             userinfo->unload_priv.clear();
         pthread_rwlock_unlock(&(userinfo->unload_priv_set_lock));
     }
-    else if((type == "restore" || type == "all") && userinfo->restore_priv.find(db_name) != userinfo->restore_priv.end())
+    else if((type == "restore" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->restore_priv_set_lock));
         if (op == 1)
             userinfo->restore_priv.insert(db_name);
-        else if (op == 0) 
+        else if (op == 0 && userinfo->restore_priv.find(db_name) != userinfo->restore_priv.end()) 
             userinfo->restore_priv.erase(db_name);
         else if (op == -1) 
             userinfo->restore_priv.clear();
         pthread_rwlock_unlock(&(userinfo->restore_priv_set_lock));
     }
-    else if((type == "backup" || type == "all") && userinfo->backup_priv.find(db_name) != userinfo->backup_priv.end())
+    else if((type == "backup" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->backup_priv_set_lock));
         if (op == 1)
             userinfo->backup_priv.insert(db_name);
-        else if (op == 0) 
+        else if (op == 0 && userinfo->backup_priv.find(db_name) != userinfo->backup_priv.end()) 
             userinfo->backup_priv.erase(db_name);
         else if (op == -1) 
             userinfo->backup_priv.clear();
         pthread_rwlock_unlock(&(userinfo->backup_priv_set_lock));
     }
-    else if((type == "export" || type == "all") && userinfo->export_priv.find(db_name) != userinfo->export_priv.end())
+    else if((type == "export" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->export_priv_set_lock));
         if (op == 1)
             userinfo->export_priv.insert(db_name);
-        else if (op == 0)  
+        else if (op == 0 && userinfo->export_priv.find(db_name) != userinfo->export_priv.end())  
             userinfo->export_priv.erase(db_name);
         else if (op == -1) 
             userinfo->export_priv.clear();
@@ -1528,19 +1526,20 @@ bool APIUtil::mv_or_cp(const string& src, const string& dsc, bool is_mv)
     string log_info;
     if (util.dir_exist(src) == false) {
         // check the source path
-        SLOG_ERROR("Source path not exist!");
+        SLOG_ERROR("source path not exist!");
         return false;
     }
     // check the destnation path
-    if (util.dir_exist(dsc) == false) {
-        SLOG_CORE("create desc path: " + dsc);
-        util.create_dirs(dsc);
-    }
+    // if (!is_mv && util.dir_exist(dsc) == false) {
+    //     SLOG_CORE("create desc path: " + dsc);
+    //     util.create_dirs(dsc);
+    // }
     if (is_mv) {
         sys_cmd = "mv " + src + ' ' + dsc;
     } else {
         sys_cmd = "cp -r " + src + ' ' + dsc;
     }
+    SLOG_CORE(sys_cmd);
     int code = system(sys_cmd.c_str());
     return code == 0;
 }

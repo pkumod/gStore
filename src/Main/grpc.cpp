@@ -2067,8 +2067,7 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		else
 		{
 			apiUtil->remove_txn_manager(db_name, true);
-			db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-			db_info->getDatabase()->unload();
+			db_info->unloadDatabase();
 			apiUtil->unlock_databaseinfo(db_info);
 
 			response->Success("Database unloaded.");
@@ -3334,7 +3333,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		std::string username = jsonParam(json_data, "username");
 		txn_id_t tid;
-		if (apiUtil->begin_process(db_name, level, username, tid))
+		if (apiUtil->begin_process(db_name, level, username, tid) == false)
 		{
 			msg = "Transaction begin failed.";
 			response->Error(StatusTranscationManageFailed, msg);
@@ -3406,7 +3405,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m))
+		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
 		{
 			msg = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, msg);
@@ -3442,6 +3441,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response->Error(StatusOperationFailed, msg);
 		}
 		Json resp_data;
+		resp_data.SetObject();
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		if (ret == -100)
 		{
@@ -3524,7 +3524,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m))
+		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
 		{
 			apiUtil->unlock_databaseinfo(db_info);
 			msg = "Get database transaction manager error.";
@@ -3601,14 +3601,14 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m))
+		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
 		{
 			apiUtil->unlock_databaseinfo(db_info);
 			msg = "Get database transaction manager error.";
 			response->Error(StatusTranscationManageFailed, msg);
 			return;
 		}
-		if (apiUtil->rollback_process(txn_m, tid, msg) ==  false)
+		if (apiUtil->rollback_process(txn_m, tid, msg) == false)
 		{
 			response->Error(StatusOperationFailed, msg);
 		}
@@ -4672,6 +4672,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 		
 		std::string db_name = jsonParam(json_data, "db_name");
 		std::string privileges = jsonParam(json_data, "privileges");
+		// check db_name and built status and privileges if not clear privilege
 		if (type != "3")
 		{
 			if (apiUtil->check_param_value("db_name", db_name, msg) == false)
@@ -4692,7 +4693,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 				return;
 			}
 		} 
-		else if (type == "3")
+		if (type == "3")
 		{
 			// clear the user all privileges
 			if (apiUtil->clear_privilege(op_username))
@@ -4767,6 +4768,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 					}
 					privilegeNames = privilegeNames + privilegeTypes[i];
 				}
+				SLOG_DEBUG(type + "=" + privilegeNames);
 				if (type == "1")
 				{
 					if (apiUtil->add_privilege(op_username, privilegeTypes, db_name) == 0)
