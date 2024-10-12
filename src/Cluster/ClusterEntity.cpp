@@ -119,8 +119,9 @@ namespace cluster
         ClusterDbPtr db = findDb(db_name);
         if (!db)
             return;
+        uint64 last_index = getDbIndex(db_name);
         updateDbIndex(db_name, index);
-        db->addLog(index, ClusterOperation_Commit, update_type, getDbIndex(db_name), file_name);
+        db->addLog(index, ClusterOperation_Commit, update_type, last_index, file_name);
     }
 
     void ClusterEntity::buildDb(std::string db_name, uint64 uid)

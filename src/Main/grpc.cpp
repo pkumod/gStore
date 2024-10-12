@@ -2400,10 +2400,10 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					if (clusterManagerPtr->isEnable()) 
 					{
 						// cluster sync task begin
+						string log_file_name = to_string(log_index) + ".log";
 						if (success_num > 0)
 						{
 							SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-							string log_file_name = to_string(log_index) + ".log";
 							string tmp_dir_path = unz_dir_path;
 							bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
 							if (append_result)
@@ -2433,12 +2433,14 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 							{
 								// follower recover by heartbeat compare
 								SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
+								response->Json(resp_data);
 							}
 						}
 						else
 						{
 							SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-							clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+							clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+							Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
 							// remove unzip files
 							if (!unz_dir_path.empty())
 							{
@@ -3125,10 +3127,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			if (clusterManagerPtr->isEnable())
 			{
 				// add log appendEntities task
+				string log_file_name = to_string(log_index) + ".log";
 				if (ret_val > 0)
 				{
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
-					string log_file_name = to_string(log_index) + ".log";
 					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, cluster_update_type, log_file_name), true);
 					if (append_result)
 					{
@@ -3169,8 +3171,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				}
 				else
 				{
-					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+					SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+					Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
 					response->Json(resp_data);
 				}
 			}
@@ -3883,10 +3886,10 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			if (clusterManagerPtr->isEnable()) 
 			{
 				// cluster sync task begin
+				string log_file_name = to_string(log_index) + ".log";
 				if (success_num > 0)
 				{
 					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-					string log_file_name = to_string(log_index) + ".log";
 					string tmp_dir_path = unz_dir_path;
 					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Delete, log_file_name), true);
 					if (append_result)
@@ -3956,8 +3959,9 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 				}
 				else
 				{
-					SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+					SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
+					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+					Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
 					// remove unzip files
 					if (!unz_dir_path.empty())
 					{

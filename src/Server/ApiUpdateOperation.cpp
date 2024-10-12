@@ -184,10 +184,10 @@ namespace server
                 if (clusterManagerPtr->isEnable()) 
                 {
                     // cluster sync task begin
+                    string log_file_name = to_string(log_index) + ".log";
                     if (success_num > 0)
                     {
                         SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-                        string log_file_name = to_string(log_index) + ".log";
                         string tmp_dir_path = unz_dir_path;
                         bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
                         if (append_result)
@@ -250,8 +250,9 @@ namespace server
                     }
                     else
                     {
-                        SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
+                        SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
+                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+                        Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
                         // remove unzip files
                         if (!unz_dir_path.empty())
                         {
