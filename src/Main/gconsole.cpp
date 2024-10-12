@@ -808,10 +808,13 @@ int save_history()
 	}
 
 	// TODO: check this return value
-	if (!Util::create_dirs("bin/.gconsole_history")) 
+	if (!Util::dir_exist("bin/.gconsole_history"))
 	{
-		cout << "Failed to create history directory" << endl;
-		return -1;
+		if (!Util::create_dirs("bin/.gconsole_history")) 
+		{
+			cout << "Failed to create history directory" << endl;
+			return -1;
+		}
 	}
 	ofstream fout("bin/.gconsole_history/" + usrname);
 
