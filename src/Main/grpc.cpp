@@ -2861,14 +2861,14 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			return;
 		}
 		// check database load status
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (db_info->getStatus() != DatabaseStatus::LOADED)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
 			msg = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		// check database read lock
 		if (apiUtil->rdlock_databaseinfo(db_info) == false)
 		{
@@ -3226,14 +3226,14 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			return;
 		}
 		// check if database named [db_name] is already load
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (db_info->getStatus() == DatabaseStatus::LOADED)
+		if (apiUtil->check_db_loaded(db_name) == false)
 		{
 			msg = "Database not load yet.";
 			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 			return;
 		}
+		shared_ptr<DatabaseInfo> db_info;
+		apiUtil->get_databaseinfo(db_name, db_info);
 		if (apiUtil->rdlock_databaseinfo(db_info) == false)
 		{
 			msg = "get current database read lock fail.";
@@ -4327,6 +4327,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 				response->Error(StatusOperationFailed, msg);
 			    return;
 			}
+			// check database load status
 			if (apiUtil->check_db_loaded(db_name) == false)
 			{
 				msg = "Database not load yet!";
@@ -4334,9 +4335,8 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 			    return;
 			}
             shared_ptr<DatabaseInfo> db_info;
-			bool update_flag_bool=true;
-			// check database load status
 			apiUtil->get_databaseinfo(db_name, db_info);
+			bool update_flag_bool=true;
 			if (apiUtil->trywrlock_databaseinfo(db_info) ==  false)
 			{
 				msg = "get current database write lock fail.";
