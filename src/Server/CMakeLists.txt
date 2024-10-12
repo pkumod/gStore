@@ -1,3 +1,4 @@
 include_directories( ${INCLUDE_3RD_PATH} )
 aux_source_directory( . SRC_LIST )
+aux_source_directory( ./MessageProtocol/ SRC_LIST )
 add_library( server ${SRC_LIST} )

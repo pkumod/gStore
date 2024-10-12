@@ -2,10 +2,6 @@
 
 namespace server
 {
-    void ApiHandler::parseRequest(const grpc::GRPCReq *request, nlohmann::json &json_data)
-    {
-    }
-
     void ApiHandler::load(shared_ptr<APIUtil>& apiUtil, const MessageLoadRequest& resquest, MessageLoadResponse& response)
     {
         try
@@ -13,14 +9,14 @@ namespace server
             std::string msg;
             if (apiUtil->check_param_value("db_name", resquest.db_name, msg) == false)
             {
-                response.status_code = StatusParamIsIllegal;
-                response.status_msg = msg;
+                response.StatusCode = StatusParamIsIllegal;
+                response.StatusMsg = msg;
                 return;
             }
             if (!apiUtil->check_db_built(resquest.db_name))
             {
-                response.status_code = StatusOperationConditionsAreNotSatisfied;
-                response.status_msg = "The database [" + resquest.db_name + "] not built yet.";
+                response.StatusCode = StatusOperationConditionsAreNotSatisfied;
+                response.StatusMsg = "The database [" + resquest.db_name + "] not built yet.";
                 return;
             }
             shared_ptr<DatabaseInfo> current_database;
@@ -29,14 +25,14 @@ namespace server
             {
                 if (!apiUtil->trywrlock_databaseinfo(current_database))
                 {
-                    response.status_code = StatusLossOfLock;
-                    response.status_msg = "Unable to load due to loss of lock."; 
+                    response.StatusCode = StatusLossOfLock;
+                    response.StatusMsg = "Unable to load due to loss of lock."; 
                     return;
                 }
                 current_database->setStatus(DatabaseStatus::LOADING);
                 SLOG_DEBUG("begin loading...");
                 // progress notification
-                bool rt  = current_database->getDatabase()->load(resquest.csr);
+                bool rt  = current_database->getDatabase()->load(resquest.Csr());
                 SLOG_DEBUG("end loading.");
                 if (rt)
                 {
@@ -49,16 +45,16 @@ namespace server
                         csr_str = "1";
                     }
                     apiUtil->unlock_databaseinfo(current_database);
-                    response.status_code = StatusOK;
-                    response.status_msg = "Database loaded successfully.";
+                    response.StatusCode = StatusOK;
+                    response.StatusMsg = "Database loaded successfully.";
                     response.csr = csr_str;
                 }
                 else
                 {
                     current_database->setStatus(DatabaseStatus::AREADY_BUILT);
                     apiUtil->unlock_databaseinfo(current_database);
-                    response.status_code = StatusOperationFailed;
-                    response.status_msg = "load failed: unknow error.";
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "load failed: unknow error.";
                 }
             }
             else
@@ -68,15 +64,15 @@ namespace server
                 {
                     csr_str = "1";
                 }
-                response.status_code = StatusOK;
-                response.status_msg = "The database already load yet.";
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "The database already load yet.";
                 response.csr = csr_str;
             }
         }
         catch (const std::exception &e)
         {
-            response.status_code = StatusOperationFailed;
-            response.status_msg = "load fail: " + string(e.what());
+            response.StatusCode = StatusOperationFailed;
+            response.StatusMsg = "load fail: " + string(e.what());
         }
     }
 }

@@ -267,16 +267,16 @@ namespace server
     {
         if (form.empty())
         {   
-            response.status_code = StatusFileReadError;
-            response.status_msg = "Form data is empty";
+            response.StatusCode = StatusFileReadError;
+            response.StatusMsg = "Form data is empty";
             return;
         }
         if (form.find("file") == form.end() || form.find("db_name") == form.end() 
             || form.find("term") == form.end() || form.find("index") == form.end() 
             || form.find("updateType") == form.end())
         {
-            response.status_code = StatusFileReadError;
-            response.status_msg = "Form data is illegal";
+            response.StatusCode = StatusFileReadError;
+            response.StatusMsg = "Form data is illegal";
             return;
         }
         
@@ -284,22 +284,22 @@ namespace server
         std::pair<std::string, std::string>& fileinfo = form.at("file");
         if(fileinfo.first.empty())
         {
-            response.status_code = StatusParamIsIllegal;
-            response.status_msg = "append file can not be empty!";
+            response.StatusCode = StatusParamIsIllegal;
+            response.StatusMsg = "append file can not be empty!";
             return;
         }
         std::string file_suffix = Util::fileSuffix(fileinfo.first);
         if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
         {
-            response.status_msg =  "The type of append file is not supported!";
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg =  "The type of append file is not supported!";
+            response.StatusCode = StatusOperationFailed;
             return;
         }
         std::string db_name = form.at("db_name").second;
         if (db_name.empty())
         {
-            response.status_msg =  "db_name can not be empty!";
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg =  "db_name can not be empty!";
+            response.StatusCode = StatusOperationFailed;
             return;
         }
         uint64_t leader_uid = std::stoul(form.at("uid").second);
@@ -308,8 +308,8 @@ namespace server
         uint64_t leader_nextIndex = std::stoul(form.at("nextIndex").second);
         if (leader_uid != db_log.getUid() || leader_index != db_log.getIndex() || leader_nextIndex != db_log.getNextIndex())
         {
-            response.status_msg =  "follower different leader db name:" + db_name + " ,db uid:" + std::to_string(leader_uid) + " ,follower db uid:" + std::to_string(db_log.getUid());
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg =  "follower different leader db name:" + db_name + " ,db uid:" + std::to_string(leader_uid) + " ,follower db uid:" + std::to_string(db_log.getUid());
+            response.StatusCode = StatusOperationFailed;
             return;
         }
 
@@ -450,16 +450,16 @@ namespace server
     {
         if (form.empty())
         {   
-            response.status_code = StatusFileReadError;
-            response.status_msg = "Form data is empty";
+            response.StatusCode = StatusFileReadError;
+            response.StatusMsg = "Form data is empty";
             return;
         }
         if (form.find("file") == form.end() || form.find("db_name") == form.end() 
             || form.find("term") == form.end() || form.find("index") == form.end() 
             || form.find("updateType") == form.end())
         {
-            response.status_code = StatusFileReadError;
-            response.status_msg = "Form data is illegal";
+            response.StatusCode = StatusFileReadError;
+            response.StatusMsg = "Form data is illegal";
             return;
         }
         
@@ -467,22 +467,22 @@ namespace server
         std::pair<std::string, std::string>& fileinfo = form.at("file");
         if(fileinfo.first.empty())
         {
-            response.status_msg =  "append file can not be empty!";
-            response.status_code = StatusParamIsIllegal;
+            response.StatusMsg =  "append file can not be empty!";
+            response.StatusCode = StatusParamIsIllegal;
             return;
         }
         std::string file_suffix = Util::fileSuffix(fileinfo.first);
         if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
         {
-            response.status_msg =  "The type of append file is not supported!";
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg =  "The type of append file is not supported!";
+            response.StatusCode = StatusOperationFailed;
             return;
         }
         std::string db_name = form.at("db_name").second;
         if (db_name.empty())
         {
-            response.status_msg =  "db_name can not be empty!";
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg =  "db_name can not be empty!";
+            response.StatusCode = StatusOperationFailed;
             return;
         }
         uint64_t leader_index = std::stoul(form.at("index").second);
@@ -491,8 +491,8 @@ namespace server
         TermDbLog db_info = clusterManagerPtr->getTermInfoDbLog(db_name);
         if (leader_uid != db_info.getUid() || leader_index == db_info.getIndex())
         {
-            response.status_msg =  "ok";
-            response.status_code = StatusOK;
+            response.StatusMsg =  "ok";
+            response.StatusCode = StatusOK;
             return;
         }
         uint32_t leader_term = std::stol(form.at("term").second);

@@ -2,7 +2,9 @@
 #include "workflow/WFFacilities.h"
 #include "../Api/APIUtil.h"
 #include "../Cluster/ClusterManager.h"
-#include "ApiDefined.h"
+#include "MessageProtocol/MessageApi.h"
+#include "MessageProtocol/MessageCluster.h"
+#include "MessageProtocol/MessageApiUpdate.h"
 
 using namespace cluster;
 
@@ -15,7 +17,6 @@ namespace server
         ApiHandler(){};
         ~ApiHandler(){};
 
-        static void parseRequest(const grpc::GRPCReq *request, nlohmann::json &json_data);
         static void load(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadRequest& resquest, server::MessageLoadResponse& response);
 
         // update api

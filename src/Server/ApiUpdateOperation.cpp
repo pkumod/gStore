@@ -14,8 +14,8 @@ namespace server
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
-                response.status_code = StatusParamIsIllegal;
-                response.status_msg = msg;
+                response.StatusCode = StatusParamIsIllegal;
+                response.StatusMsg = msg;
                 return;
             }
             bool is_file = true;
@@ -24,33 +24,33 @@ namespace server
                 is_file = false;
                 if (apiUtil->check_param_value("dir", dir, msg) == false)
                 {
-                    response.status_msg = "file and dir cannot be empty at the same time!";
-                    response.status_code = StatusParamIsIllegal;
+                    response.StatusMsg = "file and dir cannot be empty at the same time!";
+                    response.StatusCode = StatusParamIsIllegal;
                     return;
                 }
             }
             if (is_file && Util::file_exist(file) == false)
             {
-                response.status_msg = "The data file is not exist";
-                response.status_code = StatusParamIsIllegal;
+                response.StatusMsg = "The data file is not exist";
+                response.StatusCode = StatusParamIsIllegal;
                 return;
             }
             if (!is_file && Util::file_exist(dir) == false)
             {
-                response.status_msg = "The data directory is not exist";
-                response.status_code = StatusParamIsIllegal;
+                response.StatusMsg = "The data directory is not exist";
+                response.StatusCode = StatusParamIsIllegal;
                 return;
             }
             if (apiUtil->check_db_built(db_name) == false)
             {
-                response.status_msg = "Database not built yet.";
-                response.status_code = StatusOperationConditionsAreNotSatisfied;
+                response.StatusMsg = "Database not built yet.";
+                response.StatusCode = StatusOperationConditionsAreNotSatisfied;
                 return;
             }
             if (apiUtil->check_db_loaded(db_name) == false)
             {
                 msg = "Database not load yet.";
-                response.status_code = StatusOperationConditionsAreNotSatisfied;
+                response.StatusCode = StatusOperationConditionsAreNotSatisfied;
                 return;
             }
             shared_ptr<ofstream> clusterlog = nullptr;
@@ -67,8 +67,8 @@ namespace server
                 if (!prepare_result)
                 {
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                    response.status_msg = "Less than half of the cluster nodes are confirmed.";
-                    response.status_code = StatusOperationFailed;
+                    response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
+                    response.StatusCode = StatusOperationFailed;
                     SLOG_ERROR(msg);
                     return;
                 }
@@ -94,8 +94,8 @@ namespace server
                         });
                     if( code != CompressUtil::UnZipOK )
                     {
-                        response.status_code = (StatusCode)code;
-                        response.status_msg = "uncompress is failed error.";
+                        response.StatusCode = (StatusCode)code;
+                        response.StatusMsg = "uncompress is failed error.";
                         if (clusterlog)
                             clusterlog->close();
                         return;
@@ -109,8 +109,8 @@ namespace server
                     if (code != CompressUtil::UnZipOK)
                     {
                         Util::remove_path(unz_dir_path);
-                        response.status_code = (StatusCode)code;
-                        response.status_msg = "uncompress is failed error.";
+                        response.StatusCode = (StatusCode)code;
+                        response.StatusMsg = "uncompress is failed error.";
                         if (clusterlog)
                             clusterlog->close();
                         return;
@@ -141,8 +141,8 @@ namespace server
                     apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
                     if (response)
                     {
-                        response->status_code = StatusLossOfLock;
-                        response->status_msg = msg;
+                        response->StatusCode = StatusLossOfLock;
+                        response->StatusMsg = msg;
                     }
                     return;
                 }
@@ -173,10 +173,10 @@ namespace server
                 apiUtil->update_access_log(StatusOK, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
                 // respnse data
                 MessageBatchInsertResponse resp_data;
-                resp_data.status_code = StatusOK;
-                resp_data.status_msg = msg;
-                resp_data.success_num = success_num;
-                resp_data.failed_num = parse_error_num;
+                resp_data.StatusCode = StatusOK;
+                resp_data.StatusMsg = msg;
+                resp_data.successNum = success_num;
+                resp_data.failedNum = parse_error_num;
                 resp_data.opt_id = opt_id;
                 std::string json_str;
                 resp_data.toJsonString(json_str);
@@ -237,8 +237,8 @@ namespace server
                             clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
                             if (response)
                             {
-                                response->status_code = StatusOperationFailed;
-                                response->status_msg = msg;
+                                response->StatusCode = StatusOperationFailed;
+                                response->StatusMsg = msg;
                             }
                             if (!callback.empty())
                             {
@@ -283,9 +283,9 @@ namespace server
                 // sub_task->add_callback([&](GRPCTask *task) {
                     
                 // });
-                response.status_code = StatusOK;
-                response.status_msg = "Operation success";
-                response.status_msg = "opt_id";
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "Operation success";
+                response.StatusMsg = "opt_id";
                 thread t(insert_helper, nullptr);
                 t.detach();
             }
@@ -296,8 +296,8 @@ namespace server
         }
         catch (const std::exception &e)
         {
-            response.status_msg = "Batch insert fail: " + string(e.what());
-            response.status_code = StatusOperationFailed;
+            response.StatusMsg = "Batch insert fail: " + string(e.what());
+            response.StatusCode = StatusOperationFailed;
         }
     }
 }
