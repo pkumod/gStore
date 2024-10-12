@@ -160,7 +160,6 @@ httpentities::BatchInsertResponse APIConnector::batchInsert(const std::string& u
 	else
 		request.to_json(json_str);
 	std::string body_str;
-	fprintf(stderr, "xx%s", body_str.c_str());
 	int status = WFHttpUtil::Post(url, json_str, body_str);
 	return response_parser<httpentities::BatchInsertResponse>(status, body_str);
 }
