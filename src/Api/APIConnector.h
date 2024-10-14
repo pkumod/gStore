@@ -1,8 +1,10 @@
-#ifndef _APICONNECTOR_H
-#define _APICONNECTOR_H
+#pragma once
 
-#include "HttpEntities.h"
+#include "../Server/MessageProtocol/MessageApi.h"
+#include "../Server/MessageProtocol/MessageApiUpdate.h"
+#include "../Server/MessageProtocol/MessageCluster.h"
 #include "WFHttpUtil.h"
+#include "HttpEntities.h"
 
 class APIConnector {
 	template<typename TResponse>
@@ -16,48 +18,115 @@ class APIConnector {
 private:
 
 public:
-	static httpentities::ShutdownResponse shutdown(const std::string& url, httpentities::ShutdownRequest& request);
+	static server::MessageShutdownResponse shutdown(const std::string& url, server::MessageShutdownRequest& request);
 
-	static httpentities::CheckResponse check(const std::string& url, httpentities::CheckRequest& request);
+	static server::MessageCheckResponse check(const std::string& url, server::MessageCheckRequest& request);
 
-	static httpentities::BaseResponse refreshConf(const std::string& url, const bool& inner, httpentities::RefreshconfRequest& request);
+	static server::MessageResponse refreshConf(const std::string& url, const bool& inner, server::MessageRefreshconfRequest& request);
 
-	static httpentities::TestConnectionResponse testConnection(const std::string& url, const bool& inner, httpentities::TestConnectionRequest& request);
+	static server::MessageTestConnectionResponse testConnection(const std::string& url, const bool& inner, server::MessageTestConnectionRequest& request);
 
-	static httpentities::InitResponse init(const std::string& url, const bool& inner, httpentities::InitRequest& request);
+	static server::MessageInitResponse init(const std::string& url, const bool& inner, server::MessageInitRequest& request);
 
-	static httpentities::LoadResponse load(const std::string& url, const bool& inner, httpentities::LoadRequest& request);
+	static server::MessageLoadResponse load(const std::string& url, const bool& inner, server::MessageLoadRequest& request);
 
-	static httpentities::BaseResponse login(const std::string& url, httpentities::LoginRequest& request);
+	static server::MessageResponse login(const std::string& url, server::MessageLoginRequest& request);
 
-	static httpentities::BaseResponse unload(const std::string& url, const bool& inner, httpentities::UnloadRequest& request);
+	static server::MessageResponse unload(const std::string& url, const bool& inner, server::MessageUnloadRequest& request);
 
-	static httpentities::BuildResponse build(const std::string& url, const bool& inner, httpentities::BuildRequest& request);
+	static server::MessageBuildResponse build(const std::string& url, const bool& inner, server::MessageBuildRequest& request);
 
-	static httpentities::BaseResponse drop(const std::string& url, const bool& inner, httpentities::DropRequest& request);
+	static server::MessageResponse drop(const std::string& url, const bool& inner, server::MessageDropRequest& request);
 
-	static httpentities::ShowResponse show(const std::string& url, const bool& inner, httpentities::ShowRequest& request);
+	static server::MessageShowResponse show(const std::string& url, const bool& inner, server::MessageShowRequest& request);
 
-	static httpentities::MonitorResponse monitor(const std::string& url, const bool& inner, httpentities::MonitorRequest& request);
+	static server::MessageMonitorResponse monitor(const std::string& url, const bool& inner, server::MessageMonitorRequest& request);
 
-	static httpentities::QueryResponse query(const std::string& url, const bool& inner, httpentities::QueryRequest& request);
+	static server::MessageQueryResponse query(const std::string& url, const bool& inner, server::MessageQueryRequest& request);
 
-	static httpentities::BatchInsertResponse batchInsert(const std::string& url, const bool& inner, httpentities::BatchInsertRequest& request);
+	static server::MessageBatchInsertResponse batchInsert(const std::string& url, const bool& inner, server::MessageBatchInsertRequest& request);
 
-	static httpentities::BatchRemoveResponse batchRemove(const std::string& url, const bool& inner, httpentities::BatchRemoveRequest& request);
+	static server::MessageBatchRemoveResponse batchRemove(const std::string& url, const bool& inner, server::MessageBatchRemoveRequest& request);
 
+	// start
+	// static server::MessageGetCoreVersionResponse getCoreVersion(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
+
+	// static server::MessageIpManageResponse ipManage(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
+
+	// //  static server::MessageGetCoreVersionResponse download(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
+
+	// static server::MessageStatResponse stat(const std::string& url, const bool& inner, server::MessageStatRequest& request);
+
+	// static server::MessageBackUpResponse backUp(const std::string& url, const bool& inner, server::MessageBackUpRequest& request);
+
+	// static server::MessageBackUpPathResponse backUpPath(const std::string& url, const bool& inner, server::MessageBackUpPathRequest& request);
+
+	// static server::MessageRestoreResponse restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request);
+
+	// static server::MessageExportResponse exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request);
+
+	// static server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request);
+
+	// static server::MessageCheckOperationStateResponse checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request);
+
+	// static server::MessageBeginResponse begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request);
+
+	// static server::MessageTqueryResponse tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request);
+
+	// static server::MessageCommitResponse commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request);
+
+	// static server::MessageRollBackResponse rollBack(const std::string& url, const bool& inner, server::MessageRollBackRequest& request);
+	
+	// static server::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request);
+
+	// static server::MessageShowUserResponse showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request);
+
+	// static server::MessageUserManageResponse userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request);
+
+	// static server::MessageUserPrivilegeManageResponse userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request);
+
+	// static server::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request);
+
+	// static server::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request);
+
+	// static server::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request);
+
+	// static server::MessageFunReviewResponse funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request);
+
+	// static server::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request);
+
+	// static server::MessageQueryLogDateResponse queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request);
+
+	// static server::MessageQueryLogResponse queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request);
+
+	// static server::MessageAccessLogDateResponse accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request);
+	
+	// static server::MessageAccessLogResponse accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request);
+	
+	// static server::MessageAddReasonResponse addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request);
+	
+	// static server::MessageListReasonResponse listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request);
+
+	// static server::MessageCompileReasonResponse compileReason(const std::string& url, const bool& inner, server::MessageCompileReasonRequest& request);
+
+	// static server::MessageExecuteReasonResponse executeReason(const std::string& url, const bool& inner, server::MessageExecuteReasonRequest& request);
+
+	// static server::MessageDisableReasonResponse disableReason(const std::string& url, const bool& inner, server::MessageDisableReasonRequest& request);
+
+	// static server::MessageShowReasonResponse showReason(const std::string& url, const bool& inner, server::MessageShowReasonRequest& request);
+
+	// static server::MessageDeleteReasonResponse deleteReason(const std::string& url, const bool& inner, server::MessageDeleteReasonRequest& request);
+	
+	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
+	
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);
 
 	static httpentities::ClusterResponse appendEntries(const std::string& url, httpentities::AppenEntriesRequest& request, const std::string& username, const std::string& password);
 
 	static httpentities::ClusterResponse heartBeat(const std::string& url, httpentities::HeartBeatRequest& request, const std::string& username, const std::string& password);
 
-	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
-
 	static httpentities::ClusterResponse clusterCheck(const std::string& url, httpentities::ClusterCheckRequest& request, const std::string& username, const std::string& password);
 
 	static httpentities::ClusterResponse recoverFollower(const std::string& url, httpentities::RecoverRequest& request, const std::string& username, const std::string& password);
+
 };
-
-
-#endif

@@ -855,8 +855,8 @@ int load_history()
 
 bool login(const string& usrname, const string& password)
 {
-	httpentities::LoginRequest login_request(usrname, password);
-	httpentities::BaseResponse login_response = APIConnector::login(API_URL, login_request);
+	server::MessageLoginRequest login_request(usrname, password);
+	server::MessageResponse login_response = APIConnector::login(API_URL, login_request);
 	if(login_response.StatusCode == WFT_STATE_DNS_ERROR)
 	{
 		cout << "Could not connect to server. Please check server status" << endl;
@@ -1082,8 +1082,8 @@ int raw_sparql_handler(string sparql)
 	{
 		query_url = API_URL;
 	}
-	httpentities::QueryRequest query_request(_current_database, sparql, "n-triple");
-	httpentities::QueryResponse query_response = APIConnector::query(query_url, true, query_request);
+	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
+	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
 		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
@@ -1353,8 +1353,8 @@ int show_handler(const vector<string> &args)
 	}
 	CHECK_CURRENT_DB_LOADED
 	// monitor
-	httpentities::MonitorRequest monitor_request(_current_database);
-	httpentities::MonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
+	server::MessageMonitorRequest monitor_request(_current_database);
+	server::MessageMonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
 	if (!monitor_response.success())
 	{
 		cout << "Failed to monitor database: " << monitor_response.getStatusMsg() << endl;
@@ -1377,8 +1377,8 @@ int show_handler(const vector<string> &args)
 int showdbs_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 0)
-	httpentities::ShowRequest show_request;
-	httpentities::ShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	server::MessageShowRequest show_request;
+	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
 	std::vector<std::string> headers = {"database", "creater", "builtTime", "status"};
 	std::vector<std::vector<std::string>> rows;
 	for (auto &db : show_response.responseBody)
@@ -1414,8 +1414,8 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
-	httpentities::BuildRequest build_request(db_name, db_path);	
-	httpentities::BuildResponse build_response = APIConnector::build(API_URL, true, build_request);
+	server::MessageBuildRequest build_request(db_name, db_path);	
+	server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 	if (!build_response.success())
 	{
 		cout << "Build RDF database " << db_name << " failed: " << build_response.StatusMsg << endl;
@@ -1439,8 +1439,8 @@ int drop_handler(const vector<string> &args)
 		cout << "You can NOT drop system database. " << endl;
 		return -1;
 	}
-	httpentities::DropRequest drop_request(db_name, "0");
-	httpentities::BaseResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
+	server::MessageDropRequest drop_request(db_name, "0");
+	server::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
 	if (!drop_response.success())
 	{
 		cout << "Drop database " << db_name << " failed: " << drop_response.StatusMsg << endl;
@@ -1499,8 +1499,8 @@ int use_handler(const vector<string> &args)
 			return -1;
 		}
 	}
-	httpentities::LoadRequest load_request(new_db_name, "0");
-	httpentities::LoadResponse load_response = APIConnector::load(API_URL, true, load_request);
+	server::MessageLoadRequest load_request(new_db_name, "0");
+	server::MessageLoadResponse load_response = APIConnector::load(API_URL, true, load_request);
 	if (!load_response.success())
 	{
 		cout << "Load database " << new_db_name << " failed: " << load_response.StatusMsg << endl;
@@ -1519,8 +1519,8 @@ int unload_handler(const std::vector<std::string> &args)
 		cout << "Use no database!";
 		return -1;
 	}
-	httpentities::UnloadRequest unload_request(_current_database);
-	httpentities::BaseResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
+	server::MessageUnloadRequest unload_request(_current_database);
+	server::MessageResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
 	if (!unload_response.success())
 	{
 		cout << "Unload database " << _current_database << " failed: " << unload_response.StatusMsg << endl;
@@ -1748,8 +1748,8 @@ int init_handler(const vector<string> &args)
 		cout << "You can NOT init system database. " << endl;
 		return -1;
 	}
-	httpentities::InitRequest init_request(db_names);
-	httpentities::InitResponse init_response = APIConnector::init(API_URL, true, init_request);
+	server::MessageInitRequest init_request(db_names);
+	server::MessageInitResponse init_response = APIConnector::init(API_URL, true, init_request);
 	if (!init_response.success())
 	{
 		cout << "Init database " << db_names << " failed: " << init_response.StatusMsg << endl;
@@ -1769,8 +1769,8 @@ int init_handler(const vector<string> &args)
 int refreshconf_handler(const vector<string> &args)
 {
 	Util::configure();
-	httpentities::RefreshconfRequest refresh_request;
-	httpentities::BaseResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
+	server::MessageRefreshconfRequest refresh_request;
+	server::MessageResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
 	if (!refresh_response.success())
 	{
 		cout << "Refresh config failed: " << refresh_response.StatusMsg << endl;
@@ -1803,9 +1803,9 @@ int batchinsert_handler(const vector<string> &args)
 		cout << "Dir " << dir_path << " does not exist." << endl;
 		return -1;
 	}
-	httpentities::BatchInsertRequest insert_request(_current_database, file_path, dir_path);
+	server::MessageBatchInsertRequest insert_request(_current_database, file_path, dir_path);
 	long duration_time = Util::get_cur_time();
-	httpentities::BatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
+	server::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
 	duration_time = Util::get_cur_time() - duration_time;
 	if (!insert_response.success())
 	{
@@ -1828,9 +1828,9 @@ int batchremove_handler(const vector<string> &args)
 		cout << "File " << file_path << " does not exist." << endl;
 		return -1;
 	}
-	httpentities::BatchRemoveRequest remove_request(_current_database, file_path);
+	server::MessageBatchRemoveRequest remove_request(_current_database, file_path);
 	long duration_time = Util::get_cur_time();
-	httpentities::BatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
+	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = Util::get_cur_time() - duration_time;
 	if (!remove_response.success())
 	{
