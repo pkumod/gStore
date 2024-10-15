@@ -334,6 +334,7 @@ int main(int argc, char *argv[])
 	_server_deamon = util.getConfigureValue("deamon");
 	_db_home = util.getConfigureValue("db_home");
 	_db_suffix = util.getConfigureValue("db_suffix");
+	string _website = util.getConfigureValue("website");
 	srand(time(NULL));
 	string command = "-s";
 	if (argc>1)
@@ -483,7 +484,7 @@ int main(int argc, char *argv[])
 			cout << "\tActive: inactive (dead)" << endl;
 			cout << "\tProcess: bin/gserver" << endl;
 		}
-		cout << "\tDocs: https://www.gstore.cn" << endl;
+		cout << "\tDocs: " + _website << endl;
 		return 0;
 	}
 	else if (command == "-b" || command == "--background")
