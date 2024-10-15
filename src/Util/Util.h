@@ -537,6 +537,10 @@ public:
 	static unsigned long long get_disk_free();
 	static int getIntFromJSON(rapidjson::Document &doc,string keyname);
 	static string getStringFromJSON(rapidjson::Document &doc,string keyname);
+	// alloctate memory
+	static int getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num);
+	static bool IsEnoughMemory(unsigned triple_num);
+	static bool IsEnoughDisk(unsigned triple_num);
  private:
 	
 private:

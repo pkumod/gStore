@@ -1631,8 +1631,19 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 							{
 								current_database->batch_insert(rdf_zip, false, nullptr);
 							}
-							current_database->save();
 							success_num = current_database->getTripleNum();
+							bool is_save = current_database->save();
+							if (!is_save)
+							{
+								Util::remove_path(_db_path);
+								current_database.reset();
+								if (async != "true")
+								{
+									result = "disk or memory not enough";
+									response->Error(StatusOperationFailed, result);
+								}
+								return;
+							}
 							current_database.reset();
 						}
 					}
@@ -3069,8 +3080,14 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 			else
 			{
 				txn_m->Checkpoint();
-				current_database->save();
+				bool is_save = current_database->save();
 				apiUtil->unlock_database(db_name);
+				if (!is_save)
+				{
+					error = "disk or memory not enough.";
+					response->Error(StatusTranscationManageFailed, error);
+					return;
+				}
 				string success = "Database saved successfully.";
 				response->Success(success);
 			}
@@ -3243,11 +3260,17 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 						// exclude Info line
 						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 					}
-					current_database->save();
+					bool is_save = current_database->save();
 					apiUtil->unlock_database(db_name);
 					if (!unz_dir_path.empty())
 					{
 						Util::remove_path(unz_dir_path);
+					}
+					if (!is_save)
+					{
+						success = "disk or memory not enough";
+						response->Error(StatusOperationFailed, success);
+						return;
 					}
 					apiUtil->update_access_log(0, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
 					if (async != "true")
@@ -3411,8 +3434,14 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 					}
 					else
 						current_database->batch_remove(file, false, nullptr);
-					current_database->save();
+					bool is_save = current_database->save();
 					apiUtil->unlock_database(db_name);
+					if (!is_save && async != "true")
+					{
+						success = "disk or memory not enough";
+						response->Error(StatusOperationFailed, success);
+						return;
+					}
 					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
 					if (async != "true")
 					{

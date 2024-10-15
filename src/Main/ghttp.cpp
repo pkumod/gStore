@@ -937,8 +937,19 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							{
 								current_database->batch_insert(rdf_zip, false, nullptr);
 							}
-							current_database->save();
 							success_num = current_database->getTripleNum();
+							bool is_save = current_database->save();
+							if (!is_save)
+							{
+								Util::remove_path(_db_path);
+								current_database.reset();
+								if (async != "true")
+								{
+									result = "disk or memory not enough";
+									sendResponseMsg(1005, result, operation, request, response);
+								}
+								return;
+							}
 
 							current_database.reset();
 						}
@@ -3848,8 +3859,14 @@ void checkpoint_thread_new(const shared_ptr<HttpServer::Request> &request, const
 			else
 			{
 				txn_m->Checkpoint();
-				current_database->save();
+				bool is_save = current_database->save();
 				apiUtil->unlock_database(db_name);
+				if (!is_save)
+				{
+					error = "disk or memory not enough.";
+					sendResponseMsg(1008, error, operation, request, response);
+					return;
+				}
 				string success = "Database saved successfully.";
 				sendResponseMsg(0, success, operation, request, response);
 			}
@@ -4065,12 +4082,18 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 						// exclude Info line
 						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 					}
-					current_database->save();
+					bool is_save = current_database->save();
 					string success = "Batch insert data successfully.";
 					apiUtil->unlock_database(db_name);
 					if (!unz_dir_path.empty())
 					{
 						Util::remove_path(unz_dir_path);
+					}
+					if (!is_save)
+					{
+						success = "disk or memory not enough";
+						sendResponseMsg(1005, success, operation, request, response);
+						return;
 					}
 					apiUtil->update_access_log(0, success, opt_id, 1, success_num, parse_error_num);
 					if (async != "true")
@@ -4229,8 +4252,14 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 					}
 					else
 						success_num = current_database->batch_remove(file, false, nullptr);
-					current_database->save();
+					bool is_save = current_database->save();
 					apiUtil->unlock_database(db_name);
+					if (!is_save && async != "true")
+					{
+						success = "disk or memory not enough";
+						sendResponseMsg(1005, success, operation, request, response);
+						return;
+					}
 					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
 					if (async != "true")
 					{

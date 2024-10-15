@@ -138,6 +138,8 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
+    Util::setGlobalConfig(ini_parser, "system", "min_million_disk", "50");
+    Util::setGlobalConfig(ini_parser, "system", "min_million_memory", "20");
     Util::system_path = Util::getConfigureValue("system_path");
     // server
     Util::setGlobalConfig(ini_parser, "server", "default_port");
@@ -317,6 +319,45 @@ string Util::getStringFromJSON(rapidjson::Document &doc,string keyname)
       
     }
     return result;
+}
+
+int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
+{
+    if (need_num < old_num)
+    {
+        return old_num;
+    }
+    unsigned num = (need_num - old_num)/1024 + 1;
+    num = num*1024 + old_num;
+    return num;
+}
+
+bool Util::IsEnoughMemory(unsigned triple_num)
+{
+    // uint mb
+	unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
+	unsigned million_need_memory = atoi(Util::getConfigureValue("min_million_memory").c_str());
+	int memory_free = Util::memoryLeft()*1000;
+	if (memory_free <= need_count*million_need_memory)
+	{
+		SLOG_ERROR("memory not enough, need at least memory:" << need_count*million_need_memory << "mb" << " ,current:" << memory_free << "db");
+		return false;
+	}
+    return true;
+}
+
+bool Util::IsEnoughDisk(unsigned triple_num)
+{
+    // uint mb
+	unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
+	unsigned million_need_disk = atoi(Util::getConfigureValue("min_million_disk").c_str());
+	int disk_free = Util::get_disk_free();
+	if (disk_free <= need_count*million_need_disk)
+	{
+		SLOG_ERROR("disk not enough, need at least disk:" << need_count*million_need_disk << "mb" << " ,disk:" << disk_free << "db");
+		return false;
+	}
+    return true;
 }
 
 bool

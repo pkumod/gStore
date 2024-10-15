@@ -61,8 +61,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurCacheSize = 0;
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
-		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurEntryNum = max(temp, SETKEYNUM);
+		CurEntryNum = Util::getAllocteMemoryEntryNum(_key_num, 0);
 		CurEntryNumChange = true;
 
 		BM = new IVBlockManager(filename, mode, CurEntryNum);
@@ -352,13 +351,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		// unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
-//		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
-		CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-		while (_key > CurEntryNum)
-		{
-			CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-		}
-
+		CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
 		{
@@ -737,11 +730,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			CurEntryNumChange = true;
 			//assuming one expand is enough
 			unsigned OldEntryNum = CurEntryNum;
-			CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-			while (_key > CurEntryNum)
-			{
-				CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-			}
+			CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
 
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)

@@ -58,6 +58,7 @@ Database::Database()
 	this->query_cache = new QueryCache();
 
 	this->if_loaded = false;
+	this->triple_update_num = 0;
 
 	// this->trie = NULL;
 
@@ -102,6 +103,7 @@ Database::Database(string _name)
 	this->triples_num = 0;
 
 	this->if_loaded = false;
+	this->triple_update_num = 0;
 
 	this->join = NULL;
 	this->pre2num = NULL;
@@ -1674,6 +1676,8 @@ bool Database::unload()
 {
 	// TODO: do we need to update the pre2num if update queries exist??
 	// or we just neglect this, that is ok because pre2num is just used to count
+	if (!Util::IsEnoughDisk(this->triple_update_num))
+		return false;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
 	delete[] this->pre2sub;
@@ -1705,6 +1709,7 @@ bool Database::unload()
 
 	this->if_loaded = false;
 	this->clear_update_log();
+	this->triple_update_num = 0;
 
 	return true;
 }
@@ -1747,12 +1752,15 @@ void Database::releaseIDBlock()
 // so flush() is a must
 bool Database::save()
 {
+	if (!Util::IsEnoughDisk(this->triple_update_num))
+		return false;
 	this->kvstore->flush();
 	this->saveDBInfoFile();
 	this->saveIDinfo();
 
 	this->stringindex->flush();
 	this->clear_update_log();
+	this->triple_update_num = 0;
 
 	return true;
 }
@@ -2254,6 +2262,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 	this->saveDBInfoFile();
 	this->writeIDinfo();
 	this->initIDinfo();
+	addTripleUpdateNum(this->triples_num);
 
 	return true;
 }
@@ -4063,6 +4072,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 {
 	if (_triple_num == 0)
 		return 0;
+	if (!Util::IsEnoughMemory(_triple_num) || !Util::IsEnoughDisk(_triple_num))
+		return 0;
 	TYPE_TRIPLE_NUM valid_num = 0;
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	unsigned update_num_s = 0;
@@ -4196,6 +4207,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	this->stringindex->change(predicates, *this->kvstore, false);
 	
 	this->kvstore->setCSRUpdate(true);
+	this->addTripleUpdateNum(update_num_s);
 
 	return update_num_s;
 }
@@ -4205,6 +4217,8 @@ unsigned
 Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	if (_triple_num == 0)
+		return 0;
+	if (!Util::IsEnoughMemory(_triple_num/10))
 		return 0;
 	TYPE_TRIPLE_NUM valid_num = 0;
 	unsigned update_num_s = 0;

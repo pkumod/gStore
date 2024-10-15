@@ -34,6 +34,7 @@ public:
 	static const int STRING_MODE = 1;
 	static const int ID_MODE = 2;
 	CSR *csr;
+	unsigned triple_update_num;
 	Database();
 	Database(std::string _name);
 	void release(FILE *fp0);
@@ -359,6 +360,7 @@ private:
 	void clear_update_log();
 	bool write_update_log(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
 	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id);
+	void addTripleUpdateNum(unsigned num){ triple_update_num += num; }
 };
 
 #endif //_DATABASE_DATABASE_H

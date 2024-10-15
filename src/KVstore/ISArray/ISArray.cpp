@@ -53,8 +53,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurCacheSize = 0;
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
-		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurEntryNum = max(temp, SETKEYNUM);
+		CurEntryNum = Util::getAllocteMemoryEntryNum(_key_num, 0);
 		CurEntryNumChange = true;
 
 		BM = new ISBlockManager(filename, mode, CurEntryNum);
@@ -345,10 +344,8 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		// Alloc = true;
 		CurEntryNumChange = true;
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
-		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
-		CurEntryNum = max(OldEntryNum << 1, temp);
-		CurEntryNum = ISMIN(CurEntryNum, static_cast<unsigned>(ISMAXKEYNUM));
+		CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
 		ISEntry* newp = new ISEntry[CurEntryNum];
 		//maybe using realloc and then initialize manually
 		if (newp == NULL)
