@@ -2883,7 +2883,16 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		QueryTree::UpdateType update_type;
 		bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
 		// check update operation
-		is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
+		try
+		{
+			is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
+		}
+		catch(const std::exception& e)
+		{
+			apiUtil->unlock_databaseinfo(db_info);
+			response->Error(StatusOperationFailed, e.what());
+			return;
+		}
 		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
 		{
 			apiUtil->unlock_databaseinfo(db_info);
