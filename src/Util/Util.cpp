@@ -341,7 +341,7 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
         while (num <= need_num)
         {
             num += (1 << 22);
-            SLOG_ERROR("alloc memory num:" << num << " ,need at least memory num:" << need_num);
+            SLOG_DEBUG("alloc memory num:" << num << " ,need at least memory num:" << need_num);
         }
     }
     return num;
@@ -1073,6 +1073,7 @@ Util::count_lines(const std::string _file, unsigned int _mode)
         {
             count++;
         }
+        reader.close();
     }
     
     return count;
