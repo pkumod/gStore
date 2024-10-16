@@ -334,7 +334,6 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
         while (num <= need_num)
         {
             num = num << 1;
-            SLOG_ERROR("memory not enough, need at least memory:" << num << "mb");
         }
     }
     else
@@ -342,7 +341,7 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
         while (num <= need_num)
         {
             num += (1 << 22);
-            SLOG_ERROR("memory not enough, need at least memory:" << num << "mb");
+            SLOG_ERROR("alloc memory num:" << num << " ,need at least memory num:" << need_num);
         }
     }
     return num;
