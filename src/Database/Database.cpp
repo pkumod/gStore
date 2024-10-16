@@ -3961,6 +3961,20 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 	long tv_load = Util::get_cur_time();
 
+	int triple_num = Util::count_lines(_rdf_file);
+	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
+	{
+		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
+	}
+	else
+	{
+		triple_num = triple_num * 3;
+	}
+	if (!Util::IsEnoughMemory(triple_num*3))
+	{
+		return -1;
+	}
+
 	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
@@ -4021,6 +4035,20 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		return -1;
 	}
 	SLOG_CORE("finish loading");
+
+	int triple_num = Util::count_lines(_rdf_file);
+	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
+	{
+		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
+	}
+	else
+	{
+		triple_num = triple_num * 3;
+	}
+	if (!Util::IsEnoughMemory(triple_num*3))
+	{
+		return -1;
+	}
 
 	long tv_load = Util::get_cur_time();
 	unsigned success_num = 0;
