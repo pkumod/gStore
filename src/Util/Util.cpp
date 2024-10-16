@@ -327,8 +327,24 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
     {
         return old_num;
     }
-    unsigned num = (need_num - old_num)/1024 + 1;
-    num = num*1024 + old_num;
+
+    unsigned num = old_num > 0 ? old_num : 1024;
+    if (need_num < 10000000)
+    {
+        while (num <= need_num)
+        {
+            num = num << 1;
+            SLOG_ERROR("memory not enough, need at least memory:" << num << "mb");
+        }
+    }
+    else
+    {
+        while (num <= need_num)
+        {
+            num += (1 << 22);
+            SLOG_ERROR("memory not enough, need at least memory:" << num << "mb");
+        }
+    }
     return num;
 }
 

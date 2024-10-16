@@ -346,11 +346,18 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
 		unsigned OldEntryNum = CurEntryNum;
 		CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
+		if (!Util::IsEnoughMemory(CurEntryNum))
+		{
+			CurEntryNum = OldEntryNum;
+			this->AccessLock.unlock();
+			return false;
+		}
 		ISEntry* newp = new ISEntry[CurEntryNum];
 		//maybe using realloc and then initialize manually
 		if (newp == NULL)
 		{
 			SLOG_ERROR("ISArray insert error: main memory full");
+			CurEntryNum = OldEntryNum;
 			this->AccessLock.unlock();
 			return false;
 		}

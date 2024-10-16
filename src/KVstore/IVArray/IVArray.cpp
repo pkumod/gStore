@@ -352,6 +352,12 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 		// unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
 		unsigned OldEntryNum = CurEntryNum;
 		CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
+		if (!Util::IsEnoughMemory(CurEntryNum))
+		{
+			CurEntryNum = OldEntryNum;
+			this->CacheLock.unlock();
+			return false;
+		}
 		IVEntry* newp = new IVEntry[CurEntryNum];
 		if (newp == NULL)
 		{
@@ -731,6 +737,12 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 			//assuming one expand is enough
 			unsigned OldEntryNum = CurEntryNum;
 			CurEntryNum = Util::getAllocteMemoryEntryNum(_key, OldEntryNum);
+			if (!Util::IsEnoughMemory(CurEntryNum))
+			{
+				CurEntryNum = OldEntryNum;
+				ArrayUnlock();
+				return false;
+			}
 
 			IVEntry* newp = new IVEntry[CurEntryNum];
 			if (newp == NULL)
