@@ -329,7 +329,8 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
     }
 
     unsigned num = old_num > 0 ? old_num : 1024;
-    if (need_num < 10000000)
+    unsigned alloc_num = 1 << 22;
+    if (need_num <= alloc_num)
     {
         while (num <= need_num)
         {
@@ -340,7 +341,7 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
     {
         while (num <= need_num)
         {
-            num += (1 << 22);
+            num += alloc_num;
             SLOG_DEBUG("alloc memory num:" << num << " ,need at least memory num:" << need_num);
         }
     }

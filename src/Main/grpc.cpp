@@ -3433,7 +3433,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 						}
 					}
 					else
-						current_database->batch_remove(file, false, nullptr);
+						success_num += current_database->batch_remove(file, false, nullptr);
 					bool is_save = current_database->save();
 					apiUtil->unlock_database(db_name);
 					if (!is_save && async != "true")
