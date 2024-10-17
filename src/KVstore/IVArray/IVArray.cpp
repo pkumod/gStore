@@ -61,7 +61,8 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurCacheSize = 0;
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
-		CurEntryNum = Util::getAllocteMemoryEntryNum(_key_num, 0);
+		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
+		CurEntryNum = max(temp, SETKEYNUM);
 		CurEntryNumChange = true;
 
 		BM = new IVBlockManager(filename, mode, CurEntryNum);
