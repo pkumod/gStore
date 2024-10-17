@@ -1452,33 +1452,86 @@ int drop_handler(const vector<string> &args)
 
 int export_handler(const vector<string> &args)
 {
-	// TODO
-	CHECK_CURRENT_DB_LOADED
-	CHECK_CURRENT_DB_NOT_SYSDB
-
-	cout << "Database " << _current_database << " exported successfully." << endl;
+	// // TODO
+	// CHECK_ARGC(1, 1)
+	// CHECK_CURRENT_DB_LOADED
+	// CHECK_CURRENT_DB_NOT_SYSDB
+	// string export_path = args[0];
+	// server::MessageExportRequest export_request();
+	// server::MessageResponse export_response = APIConnector::export(API_URL, true, request);
+	// if (!export_response.success())
+	// {
+	// 	cout << "Database " << _current_database << "exported failed: " << export_response.StatusMsg << endl;
+	// 	return -1;
+	// }
+	// cout << "Database " << _current_database << " exported successfully." << endl;
 	return 0;
 }
 
 int backup_handler(const vector<string> &args)
 {
-	CHECK_ARGC(2, 0, 1)
-	CHECK_CURRENT_DB_LOADED
-	CHECK_CURRENT_DB_NOT_SYSDB
-	// TODO
-	std::string backup_path;
-	// cout << "Backup path: " << backup_path << endl;
-	cout << "Database " << _current_database << " backup successfully." << endl;
+	// CHECK_ARGC(2, 0, 1)
+	// CHECK_CURRENT_DB_LOADED
+	// CHECK_CURRENT_DB_NOT_SYSDB
+	// // TODO
+	// string backup_path;
+	// if (!args.empty()) 
+	// {
+	// 	backup_path = args[0];
+	// }
+	// if (backup_path.empty())
+	// {
+	// 	backup_path = default_backup_path;
+	// }
+	// if (back_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
+	// {
+	// 	cout << "Backup path cannot be root or \"" + _db_home + "\", Backup Failed!" << endl;
+	// 	return -1;
+	// }
+	// Util::string_suffix(backup_path, '/');
+	// if (!Util::dir_exist(backup_path))
+	// {
+	// 	cout << "Backup path " + backup_path + "is not exist, create it now..." << endl;
+	// 	if (!Util::create_dirs(backup_path))
+	// 	{
+	// 		cout << "create Backup path Failed, Backup Failed!" << endl;
+	// 		return -1;
+	// 	}
+	// }
+
+	// server::MessageBackUpRequest backup_request();
+	// server::MessageBackUpResponse backup_response = APIConnector::export(API_URL, true, request);
+	// if (!backup_response.success())
+	// {
+	// 	cout << "Database " << _current_database << "backup failed: " << backup_response.StatusMsg << endl;
+	// 	return -1;
+	// }
+	// // cout << "Backup path: " << backup_path << endl;
+	// cout << "Database " << _current_database << " backup successfully." << endl;
 	return 0;
 }
 
 int restore_handler(const vector<string> &args)
 {
-	CHECK_ARGC(1, 2)
-	CHECK_CURRENT_DB_LOADED
-	CHECK_CURRENT_DB_NOT_SYSDB
-	// TODO
-	cout << "Database " << _current_database << " restored successfully." << endl;
+	// CHECK_ARGC(1, 2)
+	// CHECK_CURRENT_DB_LOADED
+	// CHECK_CURRENT_DB_NOT_SYSDB
+	// // TODO
+	// string db_name = args[0], backup_path = args[1];
+	// if (!Util::dir_exist(backup_path))
+	// {
+	// 	cout << "backup file path is not exist, restore Failed" << endl;
+	// 	return -1;
+	// }
+
+	// server::MessageRestoreRequest restore_request();
+	// server::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, request);
+	// if (!restore_response.success())
+	// {
+	// 	cout << "Database " << _current_database << "restore failed: " << restore_response.StatusMsg << endl;
+	// 	return -1;
+	// }
+	// cout << "Database " << _current_database << " restored successfully." << endl;
 	return 0;
 }
 
@@ -1628,18 +1681,142 @@ int pdb_handler(const vector<string> &args)
 
 int setpswd_handler(const vector<string> &args)
 {
-	CHECK_ARGC(2, 0, 1)
-	string prompt, tar_usr;
-	// TODO
-	cout << "Password set successfully." << endl;
-	return 0;
-}
+// 	CHECK_ARGC(2, 0, 1)
+// 	string prompt, tar_usr;
+// 	// set args[0]'s pswd
+// 	if (args.size() == 1)
+// 	{
+// 		if (usrname != root_username)
+// 		{
+// 			cout << "Permission denied. Only root is allowed to set other's pswd." << endl;
+// 			if (usrname == args[0])
+// 			{
+// 				cout << "If you want to set your pswd, just enter 'setpswd;'." << endl;
+// 			}
+// 			return -1;
+// 		}
 
-int setpriv_handler(const vector<string> &args)
-{
-	CHECK_ARGC(1, 2)
-	// TODO
-	cout << "Privilege set successfully." << endl;
+// 		prompt = "Enter your password: ";
+// 		tar_usr = args[0];
+// 	}
+// 	// set usrname pswd
+// 	else
+// 	{
+// 		prompt = "Enter old password: ";
+// 		tar_usr = usrname;
+// 	}
+
+// 	if (enter_pswd(prompt))
+// 	{
+// 		cout << "Fail to varify your id. Password set failed." << endl;
+// 		return -1;
+// 	}
+
+// 	HideStdinDisplay hide_ins; // hide stdin input and recover when out of scope
+
+// 	string new_pswd, confirm;
+// 	int not_match_cnt = 0;
+// 	do
+// 	{
+// 		if (not_match_cnt)
+// 		{
+// 			cout << "Not Matched." << endl;
+// 		}
+// 		++not_match_cnt;
+// 		cout << "Enter new password: ";
+// 		cin >> new_pswd;
+// 		cout << endl;
+// 		cout << "Enter new password again: ";
+// 		cin >> confirm;
+// 		cout << endl;
+// 	} while (not_match_cnt < MAX_WRONG_PSWD_TIMES && confirm != new_pswd);
+
+// 	if (not_match_cnt >= MAX_WRONG_PSWD_TIMES)
+// 	{
+// 		cout << "Too much not match. Password set failed." << endl;
+// 		return -1;
+// 	}
+
+// 	server::MessageUserPasswordRequest password_request();
+// 	server::MessageUserPasswordResponse password_response = APIConnector::userPassword(API_URL, true, password_request);
+// 	if (!password_response.success()) {
+// 		cout << "System db update failed. Password set failed." << endl;
+// 		return -1;
+// 	}
+
+// 	if (tar_usr == usrname)
+// 	{
+// 		stdpswd = new_pswd;
+// 	}
+// 	if (tar_usr == root_username)
+// 	{
+// 		root_password = new_pswd;
+// 	}
+
+// 	cout << "Password set successfully." << endl;
+// 	return 0;
+// }
+
+// int setpriv_handler(const vector<string> &args)
+// {
+// 	CHECK_ARGC(1, 2)
+// 	// TODO
+// 	if (usrname != root_username)
+// 	{
+// 		cout << "Permission denied. Only root is allowed to set other's privilege." << endl;
+// 		return -1;
+// 	}
+
+// 	string usr = args[0], db = args[1];
+// 	if (usr == root_username)
+// 	{
+// 		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
+// 		return -1;
+// 	}
+
+// 	if (enter_pswd("Enter your password: "))
+// 	{
+// 		cout << "Fail to varify your id. Privilege set failed." << endl;
+// 		return -1;
+// 	}
+
+// 	for (int i = 1; i < PRIVILEGE_NUM; ++i)
+// 	{
+// 		cout << "[" << i << "]" << priv_offset2name[i] << " ";
+// 	}
+// 	cout << "[" << PRIVILEGE_NUM << "]all\nEnter privilege number to assign separated by whitespace: " << endl;
+	
+// 	string line;
+// 	cin.clear();
+// 	getline(cin, line);
+// 	stringstream ss(line);
+// 	unsigned num, priv = 0;
+// 	while (ss >> num)
+// 	{
+// 		if (num > 0 && num < PRIVILEGE_NUM)
+// 		{
+// 			priv |= (1u << num);
+// 		}
+// 		else if (num == PRIVILEGE_NUM)
+// 		{
+// 			priv |= ALL_PRIVILEGE_BIT;
+// 		}
+// 	}
+
+// 	cout << "[will set priv:]";
+// 	print_lowbits(priv, 8);
+// 	cout << endl;
+
+// 	//TO DO;
+// 	server::MessageUserPrivilegeManageRequest setpriv_request();
+// 	server::MessageUserPrivilegeManageResponse setpriv_response = APIConnector::userPrivilegeManage(API_URL, true, setpriv_request);
+// 	if (!setpriv_response.success())
+// 	{
+// 		cout << "Privilege set failed" + setpriv_response.StatusMsg << endl;
+// 		return -1;
+// 	}
+
+// 	cout << "Privilege set successfully." << endl;
 	return 0;
 }
 
@@ -1647,6 +1824,22 @@ int setpriv_handler(const vector<string> &args)
 int adddelusr_handler(int add, string usr)
 {
 	// TODO
+	// if (usrname != root_username)
+	// {
+	// 	cout << "Permission denied. Only root is allowed to add user." << endl;
+	// 	return -1;
+	// }
+	// if (enter_pswd("Enter your password: "))
+	// {
+	// 	cout << "Fail to varify your id. User add failed." << endl;
+	// 	return -1;
+	// }
+	// server::MessageUserManageRequest adddeluser_request();
+	// server::MessageUserManageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
+	// if (!adddeluser_response.success())
+	// {
+	// 	return -1;
+	// }
 	return 0;
 }
 
@@ -1723,19 +1916,27 @@ int pusr_handler(const vector<string> &args)
 
 int showusrs_handler(const vector<string> &args)
 {
-	CHECK_ARGC(1, 0)
-	if (usrname != root_username)
-	{
-		cout << "Permission denied. Only root is allowed to view all usrs." << endl;
-		return -1;
-	}
+	// CHECK_ARGC(1, 0)
+	// if (usrname != root_username)
+	// {
+	// 	cout << "Permission denied. Only root is allowed to view all usrs." << endl;
+	// 	return -1;
+	// }
 
-	std::vector<std::string> headers = {"user", "privilege"};
-	std::vector<std::vector<std::string>> rows;
-	rows.push_back({root_username, "all privilege on all db"});
-
-	// TODO
-	Util::printConsole(headers, rows);
+	// std::vector<std::string> headers = {"user", "privilege"};
+	// std::vector<std::vector<std::string>> rows;
+	// rows.push_back({root_username, "all privilege on all db"});
+	
+	// server::MessageShowUserRequest showuser_request();
+	// server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
+	// if (!showuser_response.success())
+	// {
+	// 	cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
+	// 	return -1;
+	// }
+	
+	// //TO DO
+	// Util::printConsole(headers, rows);
 	return 0;
 }
 
