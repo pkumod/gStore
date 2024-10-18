@@ -1,19 +1,19 @@
 /*
 # Filename: GstoreConnector.java
 # Author: suxunbin
-# Last Modified: 2021-07-21 17:00
+# Last Modified: 2024-10-18 16:22
 # Description: http api for java
 */
-package com.bdkg.test;
 
 import java.io.*;
-import java.net.*;
-import java.lang.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.net.URLDecoder;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public class GstoreConnector {
 
@@ -22,7 +22,8 @@ public class GstoreConnector {
 
     private String serverIP;
     private int serverPort;
-    private String Url;
+    private String apiUrl;
+    private String fileUrl;
     private String username;
     private String password;
 
@@ -33,9 +34,12 @@ public class GstoreConnector {
             this.serverIP = _ip;
         }
         this.serverPort = _port;
-        this.Url = "http://" + this.serverIP + ":" + this.serverPort + "/";
+        this.apiUrl = "http://" + this.serverIP + ":" + this.serverPort + "/";
         if ("grpc".equals(_http_type)) {
-            this.Url = this.Url + "grpc/api";
+            this.fileUrl = this.apiUrl + "grpc/file";
+            this.apiUrl = this.apiUrl + "grpc/api";
+        } else {
+            this.fileUrl = this.apiUrl + "file";
         }
         this.username = _user;
         this.password = _passwd;
@@ -52,7 +56,7 @@ public class GstoreConnector {
         }
 
         try {
-            strUrl = this.Url + strUrl;
+            strUrl = this.apiUrl + strUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -62,6 +66,7 @@ public class GstoreConnector {
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
 
             // create the real connection
             connection.connect();
@@ -106,7 +111,7 @@ public class GstoreConnector {
         }
 
         try {
-            strUrl = this.Url;
+            strUrl = this.apiUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -116,6 +121,7 @@ public class GstoreConnector {
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
 
             connection.setDoOutput(true);
             connection.setDoInput(true);
@@ -172,7 +178,7 @@ public class GstoreConnector {
         }
 
         try {
-            strUrl = this.Url + strUrl;
+            strUrl = this.apiUrl + strUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -182,6 +188,7 @@ public class GstoreConnector {
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
 
             // create the real connection
             connection.connect();
@@ -241,7 +248,7 @@ public class GstoreConnector {
         }
 
         try {
-            strUrl = this.Url;
+            strUrl = this.apiUrl;
             URL realUrl = new URL(strUrl);
 
             // open the connection with the URL
@@ -251,6 +258,7 @@ public class GstoreConnector {
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
 
             connection.setDoOutput(true);
             connection.setDoInput(true);
@@ -293,7 +301,6 @@ public class GstoreConnector {
         }
         return;
     }
-
 
     public String check(String request_type) {
         String res = "";
@@ -383,41 +390,129 @@ public class GstoreConnector {
         return res;
     }
 
-    public String upload(String filepath, String request_type) {
-        String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=upload&filepath=" + filepath + "&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-        } else if (request_type.equals("POST")) {
-            String strPost = "{\"operation\": \"upload\",\"filepath\":\"" + filepath + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strPost);
+    public String upload(String filePath) throws IOException {
+        File fileToUpload = new File(filePath);
+        if (!fileToUpload.exists() || !fileToUpload.isFile()) {
+            throw new IOException("File is not exist: " + filePath);
         }
-        return res;
-    }
+        String targetUrl = this.fileUrl + "/upload";
+        URL url = new URL(targetUrl);
+        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+        try {
+            String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
+            StringBuilder sb = new StringBuilder();
+            sb.append("----");
+            Random random = new Random();
+            for (int i = 0; i < 32; i++) {
+                int index = random.nextInt(characters.length());
+                sb.append(characters.charAt(index));
+            }
+            String boundary = sb.toString();
+            // set method and content-type
+            httpConn.setDoOutput(true);
+            httpConn.setRequestMethod("POST");
+            httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-    public String upload(String filepath) {
-        String res = this.upload(filepath, "GET");
-        return res;
-    }
+            try (OutputStream outputStream = httpConn.getOutputStream();
+                 FileInputStream inputStream = new FileInputStream(fileToUpload)) {
+                // write params
+                String parameterData = "--" + boundary + "\r\n" +
+                        "Content-Disposition: form-data; name=\"username\"\r\n\r\n" +
+                        this.username + "\r\n";
+                outputStream.write(parameterData.getBytes(StandardCharsets.UTF_8));
 
+                parameterData = "--" + boundary + "\r\n" +
+                        "Content-Disposition: form-data; name=\"password\"\r\n\r\n" +
+                        this.password + "\r\n";
+                outputStream.write(parameterData.getBytes(StandardCharsets.UTF_8));
 
-    public String download(String filepath, String request_type) {
-        String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=download&filepath=" + filepath + "&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-        } else if (request_type.equals("POST")) {
-            String strPost = "{\"operation\": \"download\",\"filepath\":\"" + filepath + "\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strPost);
+                // write file bytes
+                String fileHeader = "--" + boundary + "\r\n" +
+                        "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileToUpload.getName() + "\"\r\n" +
+                        "Content-Type: application/octet-stream\r\n\r\n";
+                outputStream.write(fileHeader.getBytes(StandardCharsets.UTF_8));
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                // write end boundary
+                String boundaryEnd = "\r\n--" + boundary + "--\r\n";
+                outputStream.write(boundaryEnd.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = httpConn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                InputStream responseStream = httpConn.getInputStream();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseStream))) {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                    return stringBuilder.toString();
+                }
+            } else {
+                throw new IOException("Response error: " + responseCode);
+            }
+        } finally {
+            httpConn.disconnect();
         }
-        return res;
     }
 
-    public String download(String filepath) {
-        String res = this.download(filepath, "GET");
-        return res;
-    }
+    public String download(String filePath, String savePath) throws IOException {
+        String fileURL = this.fileUrl + "/download";
+        URL url = new URL(fileURL);
+        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+        try {
+            String strPost = "filepath="+filePath+"&username=" + this.username + "&password=" + this.password;
+            httpConn.setRequestMethod("POST");
+            httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            httpConn.setRequestProperty("Accept", "*/*");
+            httpConn.setRequestProperty("Accept-Encoding", "gzip");
 
+            httpConn.setDoOutput(true);
+            httpConn.setDoInput(true);
+
+            OutputStream connOutputStream = httpConn.getOutputStream();
+            connOutputStream.write(strPost.getBytes(StandardCharsets.UTF_8));
+            connOutputStream.flush();
+
+            int responseCode = httpConn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                String fileName = "";
+                String disposition = httpConn.getHeaderField("Content-Disposition");
+                if (disposition != null) {
+                    // parse filename from content-disposition
+                    int index = disposition.indexOf("filename=");
+                    if (index > 0) {
+                        fileName = disposition.substring(index + 10, disposition.length() - 1);
+                    }
+                } else {
+                    // from filepath
+                    fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+                }
+
+                // write to file
+                String saveFilePath = savePath + File.separator + fileName;
+                try (BufferedInputStream inputStream = new BufferedInputStream(httpConn.getInputStream());
+                     FileOutputStream outputStream = new FileOutputStream(saveFilePath)) {
+
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+                }
+                return saveFilePath;
+            } else {
+                throw new IOException("download failed: " + responseCode);
+            }
+        } finally {
+            httpConn.disconnect();
+        }
+    }
 
     public String stat(String request_type) {
         String res = "";
@@ -435,24 +530,6 @@ public class GstoreConnector {
         String res = this.stat("GET");
         return res;
     }
-
-    public String shutdown(String request_type) {
-        String res = "";
-        if (request_type.equals("GET")) {
-            String strUrl = "?operation=shutdown&username=" + this.username + "&password=" + this.password;
-            res = this.sendGet(strUrl);
-        } else if (request_type.equals("POST")) {
-            String strPost = "{\"operation\": \"shutdown\", \"username\": \"" + this.username + "\", \"password\": \"" + this.password + "\"}";
-            res = this.sendPost(strPost);
-        }
-        return res;
-    }
-
-    public String shutdown() {
-        String res = this.shutdown("GET");
-        return res;
-    }
-
 
     public String show(String request_type) {
         String res = "";
@@ -1066,57 +1143,4 @@ public class GstoreConnector {
         String res = this.reasonManage(type, db_name, rulename, "GET");
         return res;
     }
-
-
-    private static byte[] packageMsgData(String _msg) {
-        //byte[] data_context = _msg.getBytes();
-        byte[] data_context = null;
-        try {
-            data_context = _msg.getBytes("utf-8");
-        } catch (UnsupportedEncodingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            System.err.println("utf-8 charset is unsupported.");
-            data_context = _msg.getBytes();
-        }
-        int context_len = data_context.length + 1; // 1 byte for '\0' at the end of the context.
-        int data_len = context_len + 4; // 4 byte for one int(data_len at the data's head).
-        byte[] data = new byte[data_len];
-
-        // padding head(context_len).
-        byte[] head = GstoreConnector.intToByte4(context_len);
-        for (int i = 0; i < 4; i++) {
-            data[i] = head[i];
-        }
-
-        // padding context.
-        for (int i = 0; i < data_context.length; i++) {
-            data[i + 4] = data_context[i];
-        }
-        // in C, there should be '\0' as the terminator at the end of a char array. so we need add '\0' at the end of sending message.
-        data[data_len - 1] = 0;
-
-        return data;
-    }
-
-    private static byte[] intToByte4(int _x) // with Little Endian format.
-    {
-        byte[] ret = new byte[4];
-        ret[0] = (byte) (_x);
-        ret[1] = (byte) (_x >>> 8);
-        ret[2] = (byte) (_x >>> 16);
-        ret[3] = (byte) (_x >>> 24);
-
-        return ret;
-    }
-
-    private static int byte4ToInt(byte[] _b) // with Little Endian format.
-    {
-        int byte0 = _b[0] & 0xFF, byte1 = _b[1] & 0xFF, byte2 = _b[2] & 0xFF, byte3 = _b[3] & 0xFF;
-        int ret = (byte0) | (byte1 << 8) | (byte2 << 16) | (byte3 << 24);
-
-        return ret;
-    }
-
 }
-
