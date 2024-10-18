@@ -961,6 +961,7 @@ bool APIUtil::check_indentity(const std::string &username, const std::string &pa
     {
         SLOG_CORE("username not exist.");
         msg = "Username or password is wrong, username:" +username + ", password:" + password;
+        pthread_rwlock_unlock(&users_map_lock);
         return false;
     }
     else if (encryption == "1")
@@ -969,6 +970,7 @@ bool APIUtil::check_indentity(const std::string &username, const std::string &pa
         {
             SLOG_CORE("encryption password wrong.");
             msg = "Username or password is wrong.username:" + username + ", password:" + password;
+            pthread_rwlock_unlock(&users_map_lock);
             return false;
         }
     }
@@ -976,6 +978,7 @@ bool APIUtil::check_indentity(const std::string &username, const std::string &pa
     {
         SLOG_CORE("password wrong.");
         msg = "Username or password is wrong.username:" + username + ", password:" + password;
+        pthread_rwlock_unlock(&users_map_lock);
         return false;
     }
     pthread_rwlock_unlock(&users_map_lock);
