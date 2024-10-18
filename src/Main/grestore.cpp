@@ -171,7 +171,7 @@ main(int argc, char * argv[])
 				return 0;
 			}
 			cout << msg << endl;
-			Util::add_backuplog(db_name);
+			// Util::add_backuplog(db_name);
 		}
 
 		int ret = 0;

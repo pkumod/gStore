@@ -64,7 +64,7 @@ namespace server
                     f.open(_db_path + "/success.txt");
                     f.close();
                     // add backup.log
-                    Util::add_backuplog(db_name);
+                    // Util::add_backuplog(db_name);
                     // add log
                     clusterManagerPtr->buildDb(db_name, leader_uid);
                     httpentities::ClusterCheckRequest check_request(local_term, db_name, 0, 0, leader_uid, result, resquest.local_port);
@@ -115,7 +115,7 @@ namespace server
                 f.open(_db_path + "/success.txt");
                 f.close();
                 // add backup.log
-                Util::add_backuplog(db_name);
+                // Util::add_backuplog(db_name);
                 update_type = ClusterUpdateType_Build;
             } 
             else 

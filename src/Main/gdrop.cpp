@@ -101,7 +101,7 @@ int main(int argc, char * argv[])
 			else
 				cout << "WARN: Drop info about database " << db_name << " failed! Please check system db." << endl;
 			Util::remove_path(db_path);
-			Util::delete_backuplog(db_name);
+			// Util::delete_backuplog(db_name);
 			long tv_end = Util::get_cur_time();
 			cout << "Database " << db_name << " dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			return 0;
