@@ -1,11 +1,5 @@
 #pragma once
-#include <string>
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "../ServerStatusCode.h"
-#include "../../Api/NlohmanJson.hpp"
-#include "../ApiTypedef.h"
+#include "MessageApi.h"
 
 namespace server
 {

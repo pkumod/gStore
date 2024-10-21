@@ -6,13 +6,12 @@
 # Description: originally written by liyouhuan, modified by zengli
 =============================================================================*/
 
-#ifndef _QUERY_RESULTSET_H
-#define _QUERY_RESULTSET_H
-
+#pragma once
 #include "../Util/Util.h"
 #include "../Util/Bstr.h"
 #include "../Util/Stream.h"
 #include "TempResult.h"
+#include "../Api/NlohmanJson.hpp"
 
 class ResultSet
 {
@@ -43,6 +42,7 @@ public:
 	std::string to_str();
 	//convert to JSON string
 	std::string to_JSON();
+	void to_JSON(nlohmann::json& json);
 	TempResult to_tempresult();
 	void output(FILE* _fp);		//output all results using Stream
 	void prettyPrint();
@@ -56,6 +56,4 @@ public:
 	void setUsername(const std::string& _username);
 	std::string getUsername();
 };
-
-#endif //_QUERY_RESULTSET_H
 

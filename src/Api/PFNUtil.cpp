@@ -531,6 +531,38 @@ void PFNUtil::build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo* pfn_info
 	}
 }
 
+void PFNUtil::build_PFNInfo(const nlohmann::json &fun_info, struct PFNInfo *pfn_info)
+{
+    if (fun_info.contains("funName") && fun_info["funName"].is_string())
+	{
+		pfn_info->setFunName(fun_info["funName"]);
+	}
+	if (fun_info.contains("funDesc") && fun_info["funDesc"].is_string())
+	{
+		pfn_info->setFunDesc(fun_info["funDesc"]);
+	}
+	if (fun_info.contains("funArgs") && fun_info["funArgs"].is_string())
+	{
+		pfn_info->setFunArgs(fun_info["funArgs"]);
+	}
+	if (fun_info.contains("funBody") && fun_info["funBody"].is_string())
+	{
+		pfn_info->setFunBody(fun_info["funBody"]);
+	}
+	if (fun_info.contains("funSubs") && fun_info["funSubs"].is_string())
+	{
+		pfn_info->setFunSubs(fun_info["funSubs"]);
+	}
+	if (fun_info.contains("funStatus") && fun_info["funStatus"].is_string())
+	{
+		pfn_info->setFunStatus(fun_info["funStatus"]);
+	}
+	if (fun_info.contains("funReturn") && fun_info["funReturn"].is_string())
+	{
+		pfn_info->setFunReturn(fun_info["funReturn"]);
+	}
+}
+
 //get all specific file type files in a directory
 vector<string> 
 PFNUtil::get_files(const char *src_dir, const string& prefix)

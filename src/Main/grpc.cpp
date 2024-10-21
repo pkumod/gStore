@@ -294,6 +294,50 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 	}
 }
 
+void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
+{
+	if (request->contentType() == APPLICATION_JSON) //for application/json
+	{
+		request->json(json_data);
+	}
+	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
+	{
+		std::map<std::string, std::string> &form_data = request->formData();
+		std::map<std::string, std::string>::iterator iter = form_data.begin();
+		std::string v;
+		while (iter != form_data.end())
+		{
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
+			{
+				StringUtil::url_decode(v);
+			}
+			json_data[iter->first] = v;
+			iter++;
+		}
+	}
+	else // for get
+	{
+		SLOG_ERROR("aaaaaaaaaaaaaaaaaa4");
+		std::map<std::string, std::string> params = request->queryList();
+		if (params.empty() == false)
+		{
+			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::string v;
+			while (iter != params.end())
+			{
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					StringUtil::url_decode(v);
+				}
+				json_data[iter->first] = v;
+				iter++;
+			}
+		}
+	}
+}
+
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout)
 {
 	std::string waiting = ".";
@@ -1453,6 +1497,11 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return;
 	}
+
+	// nlohmann::json nlohmann_json_data;
+	// parseRequest(request, nlohmann_json_data);
+	// nlohmann_json_data["remote_ip"] = ip_addr.c_str();
+
 	Json json_data;
 	parseRequest(request, json_data);
 	Json::AllocatorType &allocator = json_data.GetAllocator();
@@ -2091,82 +2140,19 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageMonitorRequest request_data(json_data);
+	server::MessageMonitorResponse response_data; 
+	string remote_ip = task_of(response)->peer_addr();
+	server::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string disk = jsonParam(json_data, "disk");
-		// check the param value is legal or not.
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusOperationFailed, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> database_info;
-		apiUtil->get_databaseinfo(db_name, database_info);
-		if (apiUtil->rdlock_databaseinfo(database_info) == false)
-		{
-			msg = "Unable to monitor due to loss of lock";
-			response->Error(StatusLossOfLock, msg);
-			return;
-		}
-		shared_ptr<Database> current_database = database_info->getDatabase();
-		current_database->loadDBInfoFile();
-		current_database->loadStatisticsInfoFile();
-		apiUtil->unlock_databaseinfo(database_info);
-		std::string creator = database_info->getCreator();
-		std::string time = database_info->getTime();
-		unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		rapidjson::Value subjectList(kArrayType);
-		for (auto &kv : umap)
-		{
-			rapidjson::Value item(kObjectType);
-			item.AddMember("name", rapidjson::Value().SetString(Util::clear_angle_brackets(kv.first).c_str(), allocator), allocator);
-			item.AddMember("value", rapidjson::Value().SetUint64(kv.second), allocator);
-			subjectList.PushBack(item.Move(), allocator);
-		}
-		// /use JSON format to send message
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("database", StringRef(db_name.c_str()), allocator);
-		resp_data.AddMember("creator", StringRef(creator.c_str()), allocator);
-		resp_data.AddMember("builtTime", StringRef(time.c_str()), allocator);
-		char tripleNumString[128];
-		sprintf(tripleNumString, "%lld", current_database->getTripleNum());
-		resp_data.AddMember("tripleNum", StringRef(tripleNumString), allocator);
-		resp_data.AddMember("entityNum", current_database->getEntityNum(), allocator);
-		resp_data.AddMember("literalNum", current_database->getLiteralNum(), allocator);
-		resp_data.AddMember("subjectNum", current_database->getSubNum(), allocator);
-		resp_data.AddMember("predicateNum", current_database->getPreNum(), allocator);
-		resp_data.AddMember("connectionNum", apiUtil->get_connection_num(), allocator);
-		unsigned diskUsed = 0;
-		if (disk != "0") 
-		{
-			string db_path = _db_home + db_name + _db_suffix;
-			string real_path = Util::getExactPath(db_path.c_str());
-			if (!real_path.empty()) {
-				long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
-				// byte to MB
-				diskUsed = count_size_byte>>20;
-			}
-		}
-		resp_data.AddMember("diskUsed", diskUsed, allocator);
-		resp_data.AddMember("subjectList", subjectList, allocator);
-		response->Json(resp_data);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		std::string error = "Monitor fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -2180,319 +2166,25 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
-	try
+	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
-		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-		{
-			redirect_handler(request, response, series);
-			return;
-		}
-		std::string db_path = jsonParam(json_data, "db_path");
-		std::string msg;
-		if (!db_path.empty() && Util::file_exist(db_path) == false)
-		{
-			msg = "RDF file not exist.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string username = jsonParam(json_data, "username");
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		//check the db_name is system
-		if (db_name == Util::system_db)
-		{
-			msg = "The database name can not be system.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		// check if database named [db_name] is already built
-		if (apiUtil->check_db_built(db_name))
-		{
-			msg = "database already built.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		// check databse number
-		if (apiUtil->check_db_count() == false)
-		{
-			msg = "The total number of databases more than max_databse_num.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-
-		shared_ptr<ofstream> clusterlog = nullptr;
-		std::string cluster_db_path;
-		std::string logpath;
-		uint64 log_index;
-		if (clusterManagerPtr->isEnable()) 
-		{
-			// send [prepare] heartbeat and wait response
-			ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
-			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
-			if (!prepare_result)
-			{
-				msg =  "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				SLOG_ERROR(msg);
-				response->Error(StatusOperationFailed, msg);
-				return;
-			}
-			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
-			logpath = cluster_db_path + to_string(log_index) + ".log";
-			clusterlog = make_shared<ofstream>();
-			clusterlog->open(logpath.c_str());
-		}
-		apiUtil->init_databaseinfo(db_name, username, Util::get_date_time(), DatabaseStatus::BUILDING);
-		std::vector<std::string> zip_files;
-		std::string unz_dir_path;
-		std::string file_suffix = GRPCUtil::fileSuffix(db_path);
-		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-		if (is_zip)
-		{
-			auto code = CompressUtil::FileHelper::foreachZip(db_path,[](std::string filename)->bool
-				{
-					if (apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false)
-						return false;
-					return true;
-				});
-			if (code != CompressUtil::UnZipOK)
-			{
-				apiUtil->erase_databaseinfo(db_name);
-				msg = "uncompress is failed error.";
-				response->Error(code, msg);
-				return;
-			}
-			std::string file_name = GRPCUtil::fileName(db_path);
-			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			mkdir(unz_dir_path.c_str(), 0775);
-			CompressUtil::UnCompressZip upfile(db_path, unz_dir_path);
-			code = upfile.unCompress();
-			if (code != CompressUtil::UnZipOK)
-			{
-				Util::remove_path(unz_dir_path);
-				apiUtil->erase_databaseinfo(db_name);
-				msg = "uncompress is failed error.";
-				response->Error(code, msg);
-				return;
-			}
-			upfile.getFileList(zip_files, "");
-		}
-		std::string opt_id = apiUtil->generateUid();
-		string remote_ip = task_of(response)->peer_addr();
-		string operation = "build";
-		msg = "Operation Success.";
-		apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-		bool async = jsonBoolParam(json_data, "async", false);
-		string callback = jsonParam(json_data, "callback");
-		auto build_helper = [db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback,log_index,clusterlog]
-				(GRPCResp *response)
-				{
-					string _db_path = _db_home + db_name + _db_suffix;
-					string database = db_name;
-					SLOG_DEBUG("Import dataset to build database...");
-					SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
-					string result;
-					shared_ptr<Database> current_database = make_shared<Database>(database);
-					// build empty database
-					bool flag = current_database->BuildEmptyDB();
-					current_database.reset();
-					int success_num = 0;
-					int nt_file_num = 0;
-					if (flag)
-					{
-						// if zip file then excuse batchInsert
-						if (!db_path.empty() || zip_files.size() > 0)
-						{
-							current_database = make_shared<Database>(db_name);
-							bool rt  = current_database->load(false);
-							if (!rt)
-							{
-								result = "Import RDF file to database failed: load error.";
-								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-								clusterManagerPtr->dropDb(db_name);
-								Util::remove_path(_db_path);
-								if (!unz_dir_path.empty())
-								{
-									Util::remove_path(unz_dir_path);
-								}
-								apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
-								if (!async)
-									response->Error(StatusOperationFailed, result);
-								current_database.reset();
-								return;
-							}
-							if (!db_path.empty() && !is_zip)
-							{
-								current_database->batch_insert(db_path, false, nullptr, clusterlog);
-								nt_file_num = 1;
-							}
-							for (std::string rdf_zip : zip_files)
-							{
-								current_database->batch_insert(rdf_zip, false, nullptr, clusterlog);
-							}
-							nt_file_num += zip_files.size();
-							current_database->save();
-							success_num = current_database->getTripleNum();
-							current_database.reset();
-						}
-					}
-					else
-					{
-						result = "Import RDF file to database failed.";
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-						clusterManagerPtr->dropDb(db_name);
-						Util::remove_path(_db_path);
-						if (!unz_dir_path.empty())
-						{
-							Util::remove_path(unz_dir_path);
-						}
-						apiUtil->update_access_log(1005, result, opt_id, -1, 0, 0);
-						if (response)
-							response->Json(result);
-						return;
-					}	
-					// init databaseinfo
-					shared_ptr<DatabaseInfo> db_info;
-					apiUtil->get_databaseinfo(db_name, db_info);
-					db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-					db_info->initDatabase();
-					// init user privilege
-					apiUtil->init_privilege(username, db_name);
-					ofstream f;
-					f.open(_db_path + "/success.txt");
-					f.close();
-					// add backup.log
-					Util::add_backuplog(db_name);
-					// build response result
-					result = "Import RDF file to database done.";
-					string error_log = _db_path + "/parse_error.log";
-					size_t parse_error_num = Util::count_lines(error_log);
-					// exclude Info line
-					if (parse_error_num > 0)
-						parse_error_num = parse_error_num - nt_file_num;
-					if (parse_error_num > 0)
-					{
-						SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
-						SLOG_ERROR("See log file for details " + error_log);
-					}
-					// remove unzip dir
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					Util::add_backuplog(db_name);
-					apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
-					// response data
-					rapidjson::Document resp_data;
-					resp_data.SetObject();
-					rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(result.c_str()), allocator);
-					resp_data.AddMember("failed_num", parse_error_num, allocator);
-					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-					if (clusterManagerPtr->isEnable()) 
-					{
-						// cluster sync task begin
-						string log_file_name = to_string(log_index) + ".log";
-						if (success_num > 0)
-						{
-							SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-							string tmp_dir_path = unz_dir_path;
-							bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
-							if (append_result)
-							{
-								SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-								clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-								if (response)
-								{
-									response->Json(resp_data);
-								}
-								if (!callback.empty())
-								{
-									string postdata;
-									string res;
-									postdata += "{\"StatusCode\":\"0\",";
-									postdata += "\"StatusMsg\":\"" + result + "\",";
-									postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-									postdata += "\"opt_id\":\"" + opt_id + "\"}";
-									HttpUtil::Post(callback, postdata, res);
-								}
-								if (!tmp_dir_path.empty())
-								{
-									Util::remove_path(tmp_dir_path);
-								}
-							}
-							else
-							{
-								// follower recover by heartbeat compare
-								SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
-								response->Json(resp_data);
-							}
-						}
-						else
-						{
-							SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-							clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-							Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-							// remove unzip files
-							if (!unz_dir_path.empty())
-							{
-								Util::remove_path(unz_dir_path);
-							}
-							if (response != nullptr)
-							{
-								response->Json(resp_data);
-							}
-						}
-						// cluster sync task end
-					}
-					else
-					{
-						if (response)
-						{
-							response->Json(resp_data);
-						}
-						if (!callback.empty())
-						{
-							string postdata;
-							string res;
-							postdata += "{\"StatusCode\":\"0\",";
-							postdata += "\"StatusMsg\":\"" + result + "\",";
-							postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-							postdata += "\"opt_id\":\"" + opt_id + "\"}";
-							HttpUtil::Post(callback, postdata, res);
-						}
-					}
-					
-				};
-		if (async)
-		{
-			rapidjson::Document resp_data;
-			resp_data.SetObject();
-			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-			response->Json(resp_data);
-			thread t(build_helper, nullptr);
-			t.detach();
-		}
-		else
-		{
-			build_helper(response);
-		}
+		redirect_handler(request, response, series);
+		return;
 	}
-	catch (const std::exception &e)
+
+	server::MessageBuildRequest request_data(json_data);
+	server::MessageBuildResponse response_data; 
+	string remote_ip = task_of(response)->peer_addr();
+	server::ApiHandler::build(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string error = "Build fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -2506,59 +2198,21 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
  */
 void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
-	try
+	if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
-		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-		{
-			redirect_handler(request, response, series);
-			return;
-		}
-		std::string db_name = jsonParam(json_data, "db_name");
-		bool is_backup = jsonBoolParam(json_data, "is_backup", true);
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name))
-		{
-			apiUtil->remove_txn_manager(db_name, false);
-			SLOG_DEBUG("remove " + db_name + " from the txn managers.");
-		}
-		if (apiUtil->remove_databaseinfo(db_name, msg) == false)
-		{
-			response->Error(StatusOperationFailed, msg);
-			return;
-		}
-		SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-		string db_path = _db_home + db_name + _db_suffix;
-		if (is_backup == false)
-		{
-			Util::remove_path(db_path);
-			SLOG_DEBUG("remove_path"+db_path);
-		}
-		else
-		{
-			std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
-			SLOG_DEBUG(cmd);
-			system(cmd.c_str());
-		}
-		string success = "Database " + db_name + " dropped.";
-		clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-		clusterManagerPtr->dropDb(db_name);
-		response->Success(success);
+		redirect_handler(request, response, series);
+		return;
 	}
-	catch (const std::exception &e)
+	server::MessageDropRequest request_data(json_data);
+	server::MessageDropResponse response_data; 
+	server::ApiHandler::drop(apiUtil, clusterManagerPtr, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string error = "Drop fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		response->Success(response_data.StatusMsg);
 	}
 }
 
@@ -2828,288 +2482,34 @@ void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
-	try
-	{
-		std::string min_memory = Util::getConfigureValue("min_memory").c_str();
-		int memoryLeft = Util::memoryLeft();
-		if (memoryLeft < atoi(min_memory.c_str()))
+	server::MessageQueryRequest request_data(json_data);
+	server::MessageQueryResponse response_data; 
+	string remote_ip = task_of(response)->peer_addr();
+	bool redirect = false;
+	bool is_query = false;
+	server::DbQueryLogCall db_query_log_cb;
+	server::ApiHandler::query(apiUtil, clusterManagerPtr, request_data, response_data, redirect, is_query, [response](struct DBQueryLogInfo* query_log_ptr)
 		{
-			std::string error = "memory not enough, available:" + std::to_string(memoryLeft) + "GB, need minimum:" + min_memory + "GB";
-			response->Error(StatusOperationFailed, error);
-			return;
-		}
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string format = jsonParam(json_data, "format", "json");
-		std::string username = jsonParam(json_data, "username");
-		std::string sparql = jsonParam(json_data, "sparql");
-		// check db_name paramter
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		// check sparql paramter
-		if (apiUtil->check_param_value("sparql", sparql, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		// check database exist
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not build yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		// check database load status
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		// check database read lock
-		if (apiUtil->rdlock_databaseinfo(db_info) == false)
-		{
-			msg = "get current database read lock fail.";
-			response->Error(StatusLossOfLock, msg);
-			return;
-		}
-		string thread_id = Util::getThreadID();
-		bool is_update = false;
-		QueryTree::UpdateType update_type;
-		bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
-		// check update operation
-		try
-		{
-			is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
-		}
-		catch(const std::exception& e)
-		{
-			apiUtil->unlock_databaseinfo(db_info);
-			response->Error(StatusOperationFailed, e.what());
-			return;
-		}
-		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
-		{
-			apiUtil->unlock_databaseinfo(db_info);
-			redirect_handler(request, response, series);
-			return;
-		}
-		FILE *output = NULL;
-		ResultSet rs;
-		int ret_val;
-		int query_time = Util::get_cur_time();
-		shared_ptr<ofstream> clusterlog = nullptr;
-		std::string cluster_db_path;
-		std::string logpath;
-		uint64 log_index;
-		ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_None;
-		// update waiting follower reply
-		if (clusterManagerPtr->isEnable() && is_update) 
-		{
-			// send [prepare] heartbeat and wait response
-			if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
-				cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
-			else
-				cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
-			if (!prepare_result)
+			task_of(response)->add_callback([query_log_ptr](GRPCTask *)
 			{
-				apiUtil->unlock_databaseinfo(db_info);
-				msg = "Less than half of the cluster nodes are confirmed.";
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				SLOG_ERROR(msg);
-				response->Error(StatusOperationFailed, msg);
-				return;
-			}
-			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
-			logpath = cluster_db_path + to_string(log_index) + ".log";
-			clusterlog = make_shared<ofstream>();
-			clusterlog->open(logpath.c_str());
-		}
-
-		// set query_start_time
-		std::string query_start_time;
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		int s = tv.tv_usec / 1000;
-		int y = tv.tv_usec % 1000;
-		query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
-		try
-		{
-			SLOG_DEBUG("begin query...\n" + sparql);
-			rs.setUsername(username);
-			ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
-			query_time = Util::get_cur_time() - query_time;
-			if (clusterlog) 
-			{
-				clusterlog->close();
-				clusterlog.reset();
-			}
-			// unlock rdlock
-			apiUtil->unlock_databaseinfo(db_info);
-		} catch (const std::exception &e) {
-			apiUtil->unlock_databaseinfo(db_info);
-			msg = "Query fail: " + string(e.what());
-			response->Error(StatusOperationFailed, msg);
-			if (clusterlog)
-				clusterlog->close();
-			return;
-		}
-		string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
-		string localname = apiUtil->get_query_result_path() + filename;
-		string query_time_s = Util::int2string(query_time);
-		if (!is_update && (ret_val == -100))
-		{
-			// SLOG_DEBUG(thread_id + ":search query returned successfully.");
-
-			// record each query operation, including the sparql and the answer number
-			// accurate down to microseconds
-			// filter the IP from the test server
-			std::string remote_ip = jsonParam(json_data, "remote_ip");
-			long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-			long rs_outputlimit = (long)rs.output_limit;
-			if (rs_outputlimit != -1)
-			{
-				rs_ansNum = min(rs_ansNum, rs_outputlimit);
-			}	
-
-			int StatusCode = 0;
-			string file_name = "";
-			if (format.find("file") != string::npos)
-			{
-				file_name = string(filename.c_str());
-			}
-			// add callback task for query log start
-			struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, remote_ip, sparql, 
-				rs_ansNum, format, file_name, StatusCode, query_time, db_name);
-			task_of(response)->add_callback([query_log_ptr](GRPCTask *) {
 				apiUtil->write_query_log(query_log_ptr);
 				delete query_log_ptr;
 			});
+		});
+	if (redirect)
+	{
+		redirect_handler(request, response, series);
+		return;
+	}
 
-			// to void someone downloading all the data file by sparql query on purpose and to protect the data
-			// if the ansNum too large, for example, larger than 100000, we limit the return ans.
-			if (rs_ansNum > apiUtil->get_max_output_size())
-			{
-				if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
-				{
-					rs_outputlimit = apiUtil->get_max_output_size();
-				}
-			}
-
-			ofstream outfile;
-			string ans = "";
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			if (format == "json")
-			{
-				string success = rs.to_JSON();
-				rs.release();
-				resp_data.Parse(success.c_str());
-				if (!resp_data.HasParseError())
-				{
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", "success", allocator);
-					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-				} 
-				else
-				{
-					string filename2 = "error_" + filename;
-					string localname2 = apiUtil->get_query_result_path() + filename2;
-					outfile.open(localname2);
-					outfile << success;
-					outfile.close();
-					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) 
-							+ ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
-					msg = "Query fail: the result parse error.";
-					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				}
-			}
-			else if (format == "file")
-			{
-				outfile.open(localname);
-				outfile << rs.to_JSON();
-				outfile.close();
-				rs.release();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", "success", allocator);
-				resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-				resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-				resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-				resp_data.AddMember("FileName", StringRef(filename.c_str()), allocator);
-			}
-			else if (format == "n-triple")
-			{
-				// headers
-				nlohmann::json json_data;
-				json_data["head"] = nlohmann::json::array();
-				for(int i = 0; i < rs.true_select_var_num; i++)
-				{
-					json_data["head"].emplace_back(rs.var_name[i]);
-				}
-				// results
-				json_data["results"] = nlohmann::json::array();
-				for(int i = rs.output_offset; i < rs.ansNum; i++)
-				{
-					if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
-					{
-						break;
-					}	
-					if (i >= rs.output_offset)
-					{
-						std::vector<std::string> result_data;
-						for(int j = 0; j < rs.true_select_var_num; j++)
-						{
-							result_data.emplace_back(rs.answer[i][j]);
-						}
-						json_data["results"].emplace_back(result_data);
-					}
-				}
-				rs.release();
-				string json_data_str = json_data.dump();
-				resp_data.Parse(json_data_str.c_str());
-				if (!resp_data.HasParseError())
-				{
-					resp_data.AddMember("StatusCode", 0, allocator);
-					resp_data.AddMember("StatusMsg", "success", allocator);
-					resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-					resp_data.AddMember("OutputLimit", rs_outputlimit, allocator);
-					resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-					resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-				} 
-				else
-				{
-					
-					string filename2 = "error_" + filename;
-					string localname2 = apiUtil->get_query_result_path() + filename2;
-					outfile.open(localname2);
-					outfile << json_data_str;
-					outfile.close();
-					SLOG_ERROR("result parse error: ErrorCode=" + to_string(resp_data.GetParseError()) + ", ErrorPosition=" + to_string(resp_data.GetErrorOffset()) + ", ResultFile=" + localname2);
-					msg = "Query fail: the result parse error.";
-					resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				}
-			}
-			else
-			{
-				msg = "Unkown result format.";
-				resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-			}
-			// common data 
-			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
+	if (response_data.StatusCode != server::StatusOK)
+	{
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		if (is_query)
+		{
 			response->set_header_pair("Cache-Control", "no-cache");
 			response->set_header_pair("Pragma", "no-cache");
 			response->set_header_pair("Expires", "0");
@@ -3120,89 +2520,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 					response->headers["Content-Encoding"] = "gzip";
 				}
 			}
-			response->Json(resp_data);
 		}
-		else if (is_update)
-		{
-			SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "update query returns true.", allocator);
-			resp_data.AddMember("AnsNum", ret_val, allocator);
-			resp_data.AddMember("QueryTime", StringRef(query_time_s.c_str()), allocator);
-			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-			if (clusterManagerPtr->isEnable())
-			{
-				// add log appendEntities task
-				string log_file_name = to_string(log_index) + ".log";
-				if (ret_val > 0)
-				{
-					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
-					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, cluster_update_type, log_file_name), true);
-					if (append_result)
-					{
-						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-						response->Json(resp_data);
-					}
-					else
-					{
-						// restore data
-						SLOG_DEBUG("log appendEntities task failed, restore leader data.");
-						// try get wrlock timeout 600 senconds
-						if (apiUtil->trywrlock_databaseinfo(db_info, 600))
-						{
-							string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
-							if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
-							{
-								uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
-								SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
-							} 
-							else 
-							{
-								uint32_t num = db_info->getDatabase()->batch_remove(nt_file_path);
-								SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
-							}
-							apiUtil->unlock_databaseinfo(db_info);
-							Util::remove_path(nt_file_path);
-						}
-						else
-						{
-							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_update_type)+"]");
-						}
-						msg = "Less than half of the cluster nodes reply.";
-						SLOG_ERROR(msg);
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
-						response->Error(StatusOperationFailed, msg);
-					}
-				}
-				else
-				{
-					SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-					Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-					response->Json(resp_data);
-				}
-			}
-			else
-			{
-				response->Json(resp_data);
-			}
-		}
-		else
-		{
-			msg = "search query returns false.";
-			SLOG_DEBUG(msg);
-			response->Error(StatusOperationFailed, msg);
-		}
-		SLOG_DEBUG("query complete!");
-	}
-	catch (const std::exception &e)
-	{
-		std::string error = "Query fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3307,60 +2628,18 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageBeginRequest request_data(json_data);
+	server::MessageBeginResponse response_data; 
+	server::ApiHandler::begin(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string isolevel = jsonParam(json_data, "isolevel");
-		if (apiUtil->check_param_value("isolevel", isolevel, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		int level = stoi(isolevel);
-		if (level <= 0 || level > 3)
-		{
-			msg = "The isolation level's value only can been 1/2/3";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		std::string username = jsonParam(json_data, "username");
-		txn_id_t tid;
-		if (apiUtil->begin_process(db_name, level, username, tid) == false)
-		{
-			msg = "Transaction begin failed.";
-			response->Error(StatusTranscationManageFailed, msg);
-			return;
-		}
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "Transaction begin success", allocator);
-		resp_data.AddMember("TID", StringRef(to_string(tid).c_str()), allocator);
-		response->Json(resp_data);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		std::string error = "Transaction begin fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3374,110 +2653,18 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageTqueryRequest request_data(json_data);
+	server::MessageTqueryResponse response_data; 
+	server::ApiHandler::tquery(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string tid_s = jsonParam(json_data, "tid");
-		if (apiUtil->check_param_value("tid", tid_s, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		txn_id_t tid;
-		if (apiUtil->check_txn_id(tid_s, tid))
-		{
-			msg = "TID " + tid_s + " is not a pure number.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string sparql = jsonParam(json_data, "sparql");
-		if (apiUtil->check_param_value("sparql", sparql, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
-		{
-			msg = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, msg);
-			return;
-		}
-		SLOG_DEBUG("tquery sparql: " + sparql);
-		std::string res;
-		int ret = txn_m->Query(tid, sparql, res);
-		if (ret == -1)
-		{
-			msg = "Transaction query failed due to wrong TID";
-			response->Error(StatusOperationFailed, msg);
-		}
-		else if (ret == -10)
-		{
-			msg = "Database has been flushed or removed";
-			response->Error(StatusOperationFailed, msg);
-		}
-		else if (ret == -99)
-		{
-			msg = "Transaction is not in running status!";
-			response->Error(StatusOperationFailed, msg);
-		}
-		else if (ret == -20)
-		{
-			apiUtil->aborted_process(txn_m, tid, msg);
-			msg = "Transaction Abort due to Query failed!";
-			response->Error(StatusOperationFailed, msg);
-		}
-		else if (ret == -101)
-		{
-			msg = "Transaction query failed. Unknown query error";
-			response->Error(StatusOperationFailed, msg);
-		}
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		if (ret == -100)
-		{
-			resp_data.Parse(res.c_str());
-			if (resp_data.HasParseError())
-			{
-				SLOG_ERROR("tquery result parse error.\n" + res);
-				resp_data.Parse("{}");
-				resp_data.AddMember("result", StringRef(res.c_str()), allocator);
-			}
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "success", allocator);
-			response->Json(resp_data);
-		}
-		else
-		{
-			resp_data.AddMember("AnsNum", ret, allocator);
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "Transaction query success", allocator);
-			response->Json(resp_data);
-		}
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string error = "Transaction query fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3491,70 +2678,18 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageCommitRequest request_data(json_data);
+	server::MessageResponse response_data; 
+	server::ApiHandler::commit(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string tid_s = jsonParam(json_data, "tid");
-		if (apiUtil->check_param_value("TID", tid_s, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		txn_id_t tid;
-		if (apiUtil->check_txn_id(tid_s, tid))
-		{
-			msg = "TID " + tid_s + " is not a pure number.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-		{
-			msg = "Unable to commit due to loss of lock.";
-			response->Error(StatusLossOfLock, msg);
-			return;
-		}
-		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
-		{
-			apiUtil->unlock_databaseinfo(db_info);
-			msg = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, msg);
-			return;
-		}
-		if (apiUtil->commit_process(txn_m, tid, msg) ==  false)
-		{
-			response->Error(StatusOperationFailed, msg);
-		}
-		else
-		{
-			response->Success("Transaction commit success.");
-		}
-		apiUtil->unlock_databaseinfo(db_info);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string msg = "Transaction commit fail: " + string(e.what());
-		response->Error(StatusOperationFailed, msg);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3568,70 +2703,18 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageCommitRequest request_data(json_data);
+	server::MessageResponse response_data; 
+	server::ApiHandler::rollback(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string tid_s = jsonParam(json_data, "tid");
-		if (apiUtil->check_param_value("TID", tid_s, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		txn_id_t tid;
-		if (apiUtil->check_txn_id(tid_s, tid))
-		{
-			msg = "TID " + tid_s + " is not a pure number.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-		{
-			msg = "Unable to rollback due to loss of lock.";
-			response->Error(StatusLossOfLock, msg);
-			return;
-		}
-		shared_ptr<Txn_manager> txn_m;
-		if (apiUtil->get_txn_manager(db_name, txn_m) == false)
-		{
-			apiUtil->unlock_databaseinfo(db_info);
-			msg = "Get database transaction manager error.";
-			response->Error(StatusTranscationManageFailed, msg);
-			return;
-		}
-		if (apiUtil->rollback_process(txn_m, tid, msg) == false)
-		{
-			response->Error(StatusOperationFailed, msg);
-		}
-		else
-		{
-			response->Success("Transaction rollback success.");
-		}
-		apiUtil->unlock_databaseinfo(db_info);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string error = "Transaction rollback fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3644,53 +2727,18 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageCheckPointRequest request_data(json_data);
+	server::MessageResponse response_data; 
+	server::ApiHandler::checkpoint(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-		{
-			msg = "Unable to checkpoint due to loss of lock.";
-			response->Error(StatusLossOfLock, msg);
-			return;
-		}
-		shared_ptr<Txn_manager> txn_m;
-		if(apiUtil->get_txn_manager(db_name, txn_m) == false)
-		{
-			msg = "Get database transaction manager error.";
-			apiUtil->unlock_databaseinfo(db_info);
-			response->Error(StatusTranscationManageFailed, msg);
-			return;
-		}
-		txn_m->Checkpoint();
-		db_info->getDatabase()->save();
-		apiUtil->unlock_databaseinfo(db_info);
-		string success = "Database saved successfully.";
-		response->Success(success);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string error = "Checkpoint fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -3704,7 +2752,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
  */
 void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
-	if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
+	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
 		redirect_handler(request, response, series);
 		return;
@@ -3713,7 +2761,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	server::MessageBatchInsertRequest request_data(json_data);
 	server::MessageBatchInsertResponse response_data; 
 	string remote_ip = task_of(response)->peer_addr();
-	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip, _db_home, _db_suffix);
+	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -3736,289 +2784,25 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
  */
 void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
 {
-	try
+	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
-		if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-		{
-			// TODO upload file to leader node
-			redirect_handler(request, response, series);
-			return;
-		}
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string file = jsonParam(json_data, "file");
-		if (apiUtil->check_param_value("file", file, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (Util::file_exist(file) == false)
-		{
-			msg = "The data file is not exist";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "Database not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "Database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		shared_ptr<ofstream> clusterlog = nullptr;
-		std::string cluster_db_path;
-		std::string logpath;
-		uint64 log_index;
-		if (clusterManagerPtr->isEnable()) 
-		{
-			// send [prepare] heartbeat and wait response
-			ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-			log_index = apiUtil->generateUID();
-			clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
-			bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
-			if (!prepare_result)
-			{
-				msg = "Less than half of the cluster nodes are confirmed.";
-				SLOG_ERROR(msg);
-				clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-				response->Error(StatusOperationFailed, msg);
-				return;
-			}
-			cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
-			logpath = cluster_db_path + to_string(log_index) + ".log";
-			clusterlog = make_shared<ofstream>();
-			clusterlog->open(logpath.c_str());
-		}
-		std::vector<std::string> nt_files;
-		std::string unz_dir_path;
-		std::string file_suffix = GRPCUtil::fileSuffix(file);
-		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-		if (is_zip)
-		{
-			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
-				{
-					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
-						return false;
-					return true;
-				});
-			if( code != CompressUtil::UnZipOK )
-			{
-				msg = "uncompress is failed error.";
-				response->Error(code, msg);
-				if (clusterlog)
-					clusterlog->close();
-				return;
-			}
-			std::string file_name = GRPCUtil::fileName(file);
-			size_t pos = file_name.size() - file_suffix.size() - 1;
-			unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			Util::create_dirs(unz_dir_path);
-			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
-			code = upfile.unCompress();
-			if (code != CompressUtil::UnZipOK)
-			{
-				Util::remove_path(unz_dir_path);
-				msg = "uncompress is failed error.";
-				response->Error(code, msg);
-				if (clusterlog)
-					clusterlog->close();
-				return;
-			}
-			upfile.getFileList(nt_files, "");
-		}
-		else
-		{
-			nt_files.push_back(file);
-		}
-		std::string opt_id = apiUtil->generateUid();
-		bool async = jsonBoolParam(json_data, "async", false);
-		std::string callback = jsonParam(json_data, "callback");
-		auto remove_helper = [db_name, &nt_files, &unz_dir_path, opt_id, async, callback, &log_index, &clusterlog](GRPCResp *response){
-			shared_ptr<DatabaseInfo> db_info;
-			apiUtil->get_databaseinfo(db_name, db_info);
-			// access log
-			string msg = "Operation Success.";
-			string operation = "batchRemove";
-			string remote_ip = task_of(response)->peer_addr();
-			if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
-			{
-				msg = "Unable to batch remove due to loss of lock.";
-				apiUtil->write_access_log(operation, remote_ip, StatusLossOfLock, msg, opt_id);
-				response->Error(StatusLossOfLock, msg);
-				return;
-			}
-			apiUtil->write_access_log(operation, remote_ip, StatusOK, msg, opt_id);
-			unsigned success_num = 0;
-			unsigned total_num = 0;
-			size_t parse_error_num = 0;
-			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
-			total_num = Util::count_lines(error_log);
-			for (std::string rdf_file : nt_files)
-			{
-				SLOG_DEBUG("begin remove data from " + rdf_file);
-				success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr, clusterlog);
-			}
-			// exclude Info line
-			parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
-			// save data and unlock
-			db_info->getDatabase()->save();
-			apiUtil->unlock_databaseinfo(db_info);
-			// close cluster log
-			if (clusterlog) 
-			{
-				clusterlog->close();
-				clusterlog.reset();
-			}
-			// update access log
-			msg = "Batch remove data successfully.";
-			apiUtil->update_access_log(0, msg, opt_id, 1, success_num, parse_error_num);
-
-			// respnse data
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-			resp_data.AddMember("success_num", success_num, allocator);
-			resp_data.AddMember("failed_num", parse_error_num, allocator);
-			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-			
-			if (clusterManagerPtr->isEnable()) 
-			{
-				// cluster sync task begin
-				string log_file_name = to_string(log_index) + ".log";
-				if (success_num > 0)
-				{
-					SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-					string tmp_dir_path = unz_dir_path;
-					bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Delete, log_file_name), true);
-					if (append_result)
-					{
-						SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-						if (response)
-						{
-							response->Json(resp_data);
-						}
-						if (!callback.empty())
-						{
-							string res;
-							rapidjson::StringBuffer resBuffer;
-							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-							resp_data.Accept(resWriter);
-							HttpUtil::Post(callback, resBuffer.GetString(), res);
-						}
-						if (!tmp_dir_path.empty())
-						{
-							Util::remove_path(tmp_dir_path);
-						}
-					}
-					else
-					{
-						// restore data
-						// try get wrlock timeout 600 senconds
-						if (apiUtil->trywrlock_databaseinfo(db_info, 600))
-						{
-							uint64_t num = 0;
-							for (std::string rdf_file : nt_files)
-							{
-								num += db_info->getDatabase()->batch_insert(rdf_file);
-							}
-							SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
-							apiUtil->unlock_databaseinfo(db_info);
-						}
-						else
-						{
-							SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
-						}
-						if (!tmp_dir_path.empty())
-						{
-							Util::remove_path(tmp_dir_path);
-						}
-						msg = "Less than half of the cluster nodes reply.";
-						SLOG_ERROR(msg);
-						clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
-						if (response)
-						{
-							response->Error(StatusOperationFailed, msg);
-						}
-						if (!callback.empty())
-						{
-							Json resp_error;
-							resp_error.SetObject();
-							Json::AllocatorType &allocator_err = resp_error.GetAllocator();
-							resp_error.AddMember("StatusCode", 1005, allocator_err);
-							resp_error.AddMember("StatusMsg", StringRef(msg.c_str()), allocator_err);
-							string res;
-							rapidjson::StringBuffer resBuffer;
-							rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-							resp_error.Accept(resWriter);
-							HttpUtil::Post(callback, resBuffer.GetString(), res);
-						}
-					}
-				}
-				else
-				{
-					SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
-					clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-					Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-					// remove unzip files
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					if (response != nullptr)
-					{
-						response->Json(resp_data);
-					}
-					if (!callback.empty())
-					{
-						string res;
-						rapidjson::StringBuffer resBuffer;
-						rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-						resp_data.Accept(resWriter);
-						HttpUtil::Post(callback, resBuffer.GetString(), res);
-						// TODO retry?
-					}
-				}
-				// cluster sync task end
-			}
-			else
-			{
-				response->Json(resp_data);
-			}
-		};
-		if (async)
-		{
-			Json resp_data;
-			resp_data.SetObject();
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "Operation Success.", allocator);
-			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-			response->Json(resp_data);
-			thread t(remove_helper, nullptr);
-			t.detach();
-		}
-		else
-		{
-			remove_helper(response);
-		}
+		redirect_handler(request, response, series);
+		return;
 	}
-	catch (const std::exception &e)
+
+	server::MessageBatchRemoveRequest request_data(json_data);
+	server::MessageBatchRemoveResponse response_data; 
+	string remote_ip = task_of(response)->peer_addr();
+	server::ApiHandler::batch_remove(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		string error = "Batch remove fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -4049,99 +2833,6 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	catch (const std::exception &e)
 	{
 		std::string error = "Rename fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
-	}
-}
-
-// for user
-
-/**
- * user manager (include add user,delete user,alter user),notice that only support alter user's password
- * 
- * @param request 
- * @param response 
- * @param json_data 
- * {type: "1 for add user, 2 for delete user, 3 for alert user password", op_username: "the user who be operated", op_password: "new password(for type 3)"}
- */
-void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
-{
-	try
-	{
-		std::string op_username = jsonParam(json_data, "op_username");
-		std::string msg;
-		if (apiUtil->check_param_value("op_username", op_username, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string op_password = jsonParam(json_data, "op_password");
-		std::string type = jsonParam(json_data, "type");
-		if (type != "2")
-		{
-			if (apiUtil->check_param_value("op_password", op_password, msg) == false)
-			{
-				response->Error(StatusParamIsIllegal, msg);
-				return;
-			}
-		}
-		
-		if (type == "1") // add user
-		{
-			// check user number
-			if (apiUtil->check_user_count() == false)
-			{
-				msg = "The total number of users more than max_user_num.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-				return;
-			}
-			if (apiUtil->user_add(op_username, op_password))
-			{
-				response->Success("Add user done.");
-			}
-			else
-			{
-				msg = "Username already existed, add user failed.";
-				response->Error(StatusOperationFailed, msg);
-			}
-		}
-		else if (type == "2") // delete user
-		{
-			if (op_username == apiUtil->get_root_username())
-			{
-				msg = "You cannot delete root, delete user failed.";
-				response->Error(StatusOperationFailed, msg);
-			}
-			else if (apiUtil->user_delete(op_username))
-			{
-				response->Success("Delete user done.");
-			}
-			else
-			{
-				msg = "Username not exist, delete user failed.";
-				response->Error(StatusOperationFailed, msg);
-			}
-		}
-		else if (type == "3") // alert password
-		{
-			if (apiUtil->user_pwd_alert(op_username, op_password))
-			{
-				response->Success("Change password done.");
-			}
-			else
-			{
-				msg = "Username not exist, change password failed.";
-				response->Error(StatusOperationFailed, msg);
-			}
-		}
-		else
-		{
-			msg = "The operation is not support.";
-			response->Error(StatusParamIsIllegal, msg);
-		}
-	}
-	catch (const std::exception &e)
-	{
-		string error = "User manage fail: " + string(e.what());
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -4599,35 +3290,44 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
  */
 void user_show_task(const GRPCReq *request, GRPCResp *response)
 {
-	try
+	server::MessageShowUserResponse response_data; 
+	server::ApiHandler::show_users(apiUtil, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		vector<shared_ptr<struct DBUserInfo>> userList;
-		apiUtil->get_user_info(userList);
-		if (userList.empty())
-		{
-			response->Success("No Users");
-			return;
-		}
-		size_t count = userList.size();
-		Json resp_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.SetObject();
-		rapidjson::Value array_data(rapidjson::kArrayType);
-		for (size_t i = 0; i < count; i++)
-		{
-			shared_ptr<struct DBUserInfo> useInfo = userList[i];
-			array_data.PushBack(useInfo->toJSON(allocator).Move(), allocator);
-		}
-
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("ResponseBody", array_data, allocator);
-		response->Json(resp_data);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string error = "Show user fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
+	}
+}
+
+// for user
+
+/**
+ * user manager (include add user,delete user,alter user),notice that only support alter user's password
+ * 
+ * @param request 
+ * @param response 
+ * @param json_data 
+ * {type: "1 for add user, 2 for delete user, 3 for alert user password", op_username: "the user who be operated", op_password: "new password(for type 3)"}
+ */
+void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+{
+	server::MessageUserManageRequest request_data(json_data);
+	server::MessageUserManageResponse response_data; 
+	server::ApiHandler::user_manage(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
+	{
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -4646,182 +3346,18 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
  */
 void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageUserPrivilegeManageRequest request_data(json_data);
+	server::MessageUserPrivilegeManageResponse response_data; 
+	server::ApiHandler::user_privilege_manage(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string type = jsonParam(json_data, "type");
-		std::string msg;
-		if (apiUtil->check_param_value("type", type, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}  
-		else if (type != "1" && type != "2" && type != "3")
-		{
-			msg =  "The type " + type + " is not support.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string op_username = jsonParam(json_data, "op_username");
-		if (apiUtil->check_param_value("op_username", op_username, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		} 
-		else if (apiUtil->check_user_exist(op_username) == false)
-		{
-			msg =  "The username is not exists.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		else if (op_username == apiUtil->get_root_username())
-		{
-			msg =  "You can't change privileges for root user.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		} 
-		
-		std::string db_name = jsonParam(json_data, "db_name");
-		std::string privileges = jsonParam(json_data, "privileges");
-		// check db_name and built status and privileges if not clear privilege
-		if (type != "3")
-		{
-			if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-			{
-				response->Error(StatusParamIsIllegal, msg);
-				return;
-			}
-			// check database exist
-			if (apiUtil->check_db_built(db_name) == false)
-			{
-				msg =  "Database not build yet.";
-				response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-				return;
-			}
-			if (apiUtil->check_param_value("privileges", privileges, msg) == false)
-			{
-				response->Error(StatusParamIsIllegal, msg);
-				return;
-			}
-		} 
-		if (type == "3")
-		{
-			// clear the user all privileges
-			if (apiUtil->clear_privilege(op_username))
-			{
-				response->Success("Clear the all privileges for the user successfully!");
-			}
-			else
-			{
-				msg =  "Clear the all privileges for the user fail.";
-				response->Error(StatusOperationFailed, msg);
-			}
-		}
-		else
-		{
-			vector<string> privilege_vector;
-			if (privileges.substr(privileges.length() - 1, 1) != ",")
-			{
-				privileges = privileges + ",";
-			}
-			Util::split(privileges, ",", privilege_vector);
-			vector<string> privilegeTypes;
-			for (unsigned i = 0; i < privilege_vector.size(); i++)
-			{
-				std::string temp_privilege_int = privilege_vector[i];
-				if (temp_privilege_int.empty())
-				{
-					continue;
-				}
-				if (temp_privilege_int == "1")
-				{
-					privilegeTypes.push_back("query");
-				}
-				else if (temp_privilege_int == "2")
-				{
-					privilegeTypes.push_back("load");
-				}
-				else if (temp_privilege_int == "3")
-				{
-					privilegeTypes.push_back("unload");
-				}
-				else if (temp_privilege_int == "4")
-				{
-					privilegeTypes.push_back("update");
-				}
-				else if (temp_privilege_int == "5")
-				{
-					privilegeTypes.push_back("backup");
-				}
-				else if (temp_privilege_int == "6")
-				{
-					privilegeTypes.push_back("restore");
-				}
-				else if (temp_privilege_int == "7")
-				{
-					privilegeTypes.push_back("export");
-				} 
-				else
-				{
-					SLOG_WARN("The privilege " + temp_privilege_int + " undefined.");
-					continue;
-				} 
-			}
-			string result = "";
-			if (privilegeTypes.size() > 0) 
-			{
-				string privilegeNames="";
-				for (size_t i = 0; i < privilegeTypes.size(); i++)
-				{
-					if (i > 0) 
-					{
-						privilegeNames = privilegeNames + ",";
-					}
-					privilegeNames = privilegeNames + privilegeTypes[i];
-				}
-				SLOG_DEBUG(type + "=" + privilegeNames);
-				if (type == "1")
-				{
-					if (apiUtil->add_privilege(op_username, privilegeTypes, db_name) == 0)
-					{
-						result = result + "add privilege " + privilegeNames + " failed.";
-						response->Error(StatusOperationFailed, result);
-					}
-					else
-					{
-						result = result + "add privilege " + privilegeNames + " successfully.";
-						response->Success(result);
-					}
-				}
-				else if (type == "2")
-				{
-					if (apiUtil->del_privilege(op_username, privilegeTypes, db_name) == 0)
-					{
-						result += "delete privilege " + privilegeNames + " failed.";
-						response->Error(StatusOperationFailed, result);
-					}
-					else
-					{
-						result += "delete privilege " + privilegeNames + " successfully.";
-						response->Success(result);
-					}
-				}
-				else
-				{
-					result = "the operation type is not support.";
-					response->Error(StatusParamIsIllegal, result);
-				}
-			}
-			else
-			{
-				result = "not match any valid privilege, valid values between 1 and 7.";
-				response->Error(StatusParamIsIllegal, result);
-			}
-		}
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		std::string error = "User privilege manage fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -4835,35 +3371,18 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
  */
 void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageUserPasswordRequest request_data(json_data);
+	server::MessageUserPasswordResponse response_data; 
+	server::ApiHandler::user_passworrd(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string op_password = jsonParam(json_data, "op_password");
-		std::string msg;
-		if (apiUtil->check_param_value("op_password", op_password, msg) == false)
-		{
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string username = jsonParam(json_data, "username");
-		if (apiUtil->check_user_exist(username) == false)
-		{
-			msg =  "Username does not exist.";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		if (apiUtil->user_pwd_alert(username, op_password))
-		{
-			response->Success("Change password done.");
-		}
-		else
-		{
-			response->Success("Change password fail.");
-		}
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		string error = "Change password fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 // for log
@@ -5119,38 +3638,18 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
  */
 void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageFunQueryRequest request_data();
+	server::MessageFunQueryResponse response_data; 
+	server::ApiHandler::funquery(apiUtil, pfnUtil, response_data, json_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		struct PFNInfo pfn_info;
-		if (hasJsonParam(json_data, "funInfo"))
-		{
-			rapidjson::Value &fun_info = json_data["funInfo"];
-			pfnUtil->build_PFNInfo(fun_info, &pfn_info);
-		}
-		std::string username =  jsonParam(json_data, "username");
-		struct PFNInfos *pfn_infos = new PFNInfos();
-		pfnUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
-		vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
-		size_t count = list.size();
-		Json resp_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		rapidjson::Value array_data(rapidjson::kArrayType);
-		for (size_t i = 0; i < count; i++)
-		{
-			PFNInfo pfn_info = list[i];
-			array_data.PushBack(pfn_info.toJSON(allocator).Move(), allocator);
-		}
-		resp_data.SetObject();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("list", array_data, allocator);
-
-		response->Json(resp_data);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		std::string error = "Fun query fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -5174,86 +3673,17 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	std::string type = jsonParam(json_data, "type");
-	std::string msg;
-	if (apiUtil->check_param_value("type", type, msg) == false)
+	server::MessageFunCudbResponse response_data; 
+	server::ApiHandler::funcudb(apiUtil, pfnUtil, response_data, json_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		response->Error(StatusParamIsIllegal, msg);
-		return;
-	}
-	if (hasJsonParam(json_data, "funInfo") == false)
-	{
-		msg =  "the value of funInfo can not be empty!";
-		response->Error(StatusParamIsIllegal, msg);
-		return;
-	}
-	std::string username = jsonParam(json_data, "username");
-	struct PFNInfo pfn_info;
-	rapidjson::Value &fun_info = json_data["funInfo"];
-	pfnUtil->build_PFNInfo(fun_info, &pfn_info);
-	if (type == "1")
-	{
-		try
-		{
-			pfnUtil->fun_create(username, &pfn_info);
-			response->Success("Function create success.");
-		}
-		catch(const std::exception& e)
-		{
-			msg = "Function create fail: " + string(e.what());
-			response->Error(StatusOperationFailed, msg);
-		}
-	}
-	else if (type == "2")
-	{
-		try
-		{
-			pfnUtil->fun_update(username, &pfn_info);
-			response->Success("Function update success.");
-		}
-		catch(const std::exception& e)
-		{
-			msg = "Function update fail: " + string(e.what());
-			response->Error(StatusOperationFailed, msg);
-		}
-	}
-	else if (type == "3")
-	{
-		try
-		{
-			pfnUtil->fun_delete(username, &pfn_info);
-			response->Success("Function delete success.");
-		}
-		catch(const std::exception& e)
-		{
-			msg = "Function delete fail: " + string(e.what());
-			response->Error(StatusOperationFailed, msg);
-		}
-	}
-	else if (type == "4")
-	{
-		try
-		{
-			string result = pfnUtil->fun_build(username, pfn_info.getFunName());
-			if (result == "")
-			{
-				response->Success("Function build success.");
-			}
-			else
-			{
-				response->Error(StatusOperationFailed, result);
-			}
-		}
-		catch(const std::exception& e)
-		{
-			msg = "Function build fail: " + string(e.what());
-			response->Error(StatusOperationFailed, msg);
-		}
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
-		msg = "The type is invalid, please look up the api document.";
-		response->Error(StatusParamIsIllegal, msg);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 
@@ -5276,34 +3706,17 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  */
 void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	try
+	server::MessageReviewResponse response_data; 
+	server::ApiHandler::funreview(apiUtil, pfnUtil, response_data, json_data);
+	if (response_data.StatusCode != server::StatusOK)
 	{
-		std::string msg;
-		if (hasJsonParam(json_data, "funInfo") == false)
-		{
-			msg =  "the value of funInfo can not be empty!";
-			response->Error(StatusParamIsIllegal, msg);
-			return;
-		}
-		std::string username = jsonParam(json_data, "username");
-		struct PFNInfo pfn_info;
-		rapidjson::Value &fun_info = json_data["funInfo"];
-		pfnUtil->build_PFNInfo(fun_info, &pfn_info);
-		pfnUtil->fun_review(username, &pfn_info);
-		string content = pfn_info.getFunBody();
-		content = Util::urlEncode(content);
-		Json resp_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.SetObject();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("Result", StringRef(content.c_str()), allocator);
-		response->Json(resp_data);
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
-	catch (const std::exception &e)
+	else
 	{
-		std::string error = "Function review fail: " + string(e.what());
-		response->Error(StatusOperationFailed, error);
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 }
 

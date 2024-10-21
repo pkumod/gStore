@@ -3,6 +3,7 @@
 
 #include "workflow/HttpMessage.h"
 #include "workflow/WFTaskFactory.h"
+#include "../Api/NlohmanJson.hpp"
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -37,6 +38,8 @@ public:
     Form &form() const;
 
     Json &json() const;
+
+    void json(nlohmann::json& json_data) const;
 
     content_type contentType() const
     {

@@ -14,9 +14,12 @@ namespace server
         std::string op;
         std::string username;
         std::string password;
+        std::string remote_ip;
         MessageRequest(){}
         MessageRequest(std::string op) : op(op) {}
         MessageRequest(std::string op, std::string username, std::string password) : op(op), username(username), password(password) {}
+        MessageRequest(const rapidjson::Document& json_data);
+        MessageRequest(const nlohmann::json& json_data);
         void init(std::string username, std::string password);
         void toJson(nlohmann::json& json);
         virtual void to_json(std::string& json_str){};
@@ -36,12 +39,14 @@ namespace server
         std::string getStatusMsg() { return StatusMsg; }
         bool success() { return StatusCode == 0; }
         void toJson(nlohmann::json& json);
+        virtual void toJsonString(std::string& json_str);
+        void Error(int code, const std::string& msg){StatusCode = code; StatusMsg = msg;};
     };
 
     // shutdown
     struct MessageShutdownRequest : public MessageRequest
     {
-        MessageShutdownRequest() : MessageRequest("shutdown") {}
+        MessageShutdownRequest() : MessageRequest(std::string("shutdown")) {}
         MessageShutdownRequest(std::string username, std::string password) : MessageRequest("shutdown", username, password) {}
         void to_json (std::string& json_str) override;
     };
@@ -55,7 +60,7 @@ namespace server
     // test connect
     struct MessageTestConnectionRequest : public MessageRequest
     {
-        MessageTestConnectionRequest() : MessageRequest("testConnect") {}
+        MessageTestConnectionRequest() : MessageRequest(std::string("testConnect")) {}
         MessageTestConnectionRequest(std::string username, std::string password) : MessageRequest("testConnect", username, password) {}
         void to_json (std::string& json_str) override;
     };
@@ -71,7 +76,7 @@ namespace server
     // check server
     struct MessageCheckRequest : public MessageRequest
     {
-        MessageCheckRequest() : MessageRequest("check") {}
+        MessageCheckRequest() : MessageRequest(std::string("check")) {}
         std::string to_params(){return "operation="+op;}
         void to_json(std::string& json_str) override;
     };
@@ -108,7 +113,7 @@ namespace server
     // login
     struct MessageLoginRequest : public MessageRequest
     {
-        MessageLoginRequest() : MessageRequest("login") {}
+        MessageLoginRequest() : MessageRequest(std::string("login")) {}
         MessageLoginRequest(std::string username, std::string password) : MessageRequest("login",username,password) {}
         void to_json(std::string& json_str) override;
     };
@@ -116,7 +121,7 @@ namespace server
     // refresh configure
     struct MessageRefreshconfRequest : public MessageRequest
     {
-        MessageRefreshconfRequest() : MessageRequest("refreshconf") {}
+        MessageRefreshconfRequest() : MessageRequest(std::string("refreshconf")) {}
         MessageRefreshconfRequest(std::string username, std::string password) : MessageRequest("refreshconf",username,password) {}
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
@@ -148,7 +153,7 @@ namespace server
 
     // show dbs
     struct MessageShowRequest : public MessageRequest {
-        MessageShowRequest() : MessageRequest("show") {};
+        MessageShowRequest() : MessageRequest(std::string("show")) {};
         MessageShowRequest(std::string username, std::string password) : MessageRequest("show",username,password) {}
         void to_json(std::string& json_str) override;
     };
@@ -179,12 +184,14 @@ namespace server
         void to_inner_json(std::string& json_str) override;
     };
 
-    // mpnitor
+    // monitor
     struct MessageMonitorRequest : public MessageRequest
     {
         std::string db_name;
+        std::string disk;
         MessageMonitorRequest(std::string db_name);
         MessageMonitorRequest(std::string username, std::string password, std::string db_name);
+        MessageMonitorRequest(const rapidjson::Document& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -201,7 +208,10 @@ namespace server
         uint64_t predicateNum;
         uint32_t connectionNum;
         uint64_t diskUsed;
+        std::unordered_map<std::string, unsigned long long> subjectList;
+        MessageMonitorResponse();
         MessageMonitorResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageMonitorResponse(std::string body);
+        void toJsonString(std::string& json_str);
     };
 }

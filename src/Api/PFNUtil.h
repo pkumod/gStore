@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Util/Util.h"
+#include "../Api/NlohmanJson.hpp"
 
 using namespace std;
 using namespace rapidjson;
@@ -95,6 +96,18 @@ public:
         doc.AddMember("lastTime", rapidjson::Value().SetString(last_time.c_str(), allocator).Move(), allocator);
         return doc;
     }
+    nlohmann::json toJSON(nlohmann::json& doc)
+    {
+        doc["funName"] = fun_name;
+        doc["funDesc"] = fun_desc;
+        doc["funArgs"] = fun_args;
+        doc["funBody"] = fun_body;
+        doc["funSubs"] = fun_subs;
+        doc["funStatus"] = fun_status;
+        doc["funReturn"] = fun_return;
+        doc["lastTime"] = last_time;
+        return doc;
+    }
     string toJSON()
     {
         rapidjson::Document doc;
@@ -184,4 +197,5 @@ public:
     string fun_build(const std::string &username, const std::string fun_name);
     void fun_review(const std::string &username, struct PFNInfo *pfn_info);
     void build_PFNInfo(rapidjson::Value &fun_info, struct PFNInfo *pfn_info);
+    void build_PFNInfo(const nlohmann::json &fun_info, struct PFNInfo *pfn_info);
 };

@@ -4,16 +4,26 @@
 namespace server
 {
     // build db
-    MessageBuildRequest::MessageBuildRequest(std::string db_name, std::string db_path) : MessageRequest("build")
+    MessageBuildRequest::MessageBuildRequest(std::string db_name, std::string db_path) : MessageRequest(std::string("build"))
     {
         this->db_name = db_name;
         this->db_path = db_path;
     }
+
     MessageBuildRequest::MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path) : MessageRequest("build", username, password)
     {
         this->db_name = db_name;
         this->db_path = db_path;
     }
+
+    MessageBuildRequest::MessageBuildRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name", "");
+        this->db_path = jsonParam(json_data, "db_path");
+        this->async = jsonBoolParam(json_data, "async", false);
+        this->callback = jsonParam(json_data, "callback");
+    }
+
     void MessageBuildRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -24,6 +34,7 @@ namespace server
             {"db_path", this->db_path}};
         json_str = json.dump();
     }
+
     void MessageBuildRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -34,6 +45,12 @@ namespace server
             {"db_path", this->db_path},
             {"inner", "true"}};
         json_str = json.dump();
+    }
+
+    MessageBuildResponse::MessageBuildResponse()
+    {
+        this->failed_num = 0;
+        this->opt_id = "";
     }
 
     MessageBuildResponse::MessageBuildResponse(std::string body) : MessageResponse(body)
@@ -48,17 +65,35 @@ namespace server
         }
     }
 
+    void MessageBuildResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        json["failed_num"] = this->failed_num;
+        json["opt_id"] = this->opt_id;
+        json_str = json.dump();
+        SLOG_TRACE("MessageBuildResponse:" << json_str);
+    }
+
     // drop db
-    MessageDropRequest::MessageDropRequest(std::string db_name, std::string is_backup) : MessageRequest("drop")
+    MessageDropRequest::MessageDropRequest(std::string db_name, std::string is_backup) : MessageRequest(std::string("drop"))
     {
         this->db_name = db_name;
         this->is_backup = is_backup;
     }
+
     MessageDropRequest::MessageDropRequest(std::string username, std::string password, std::string db_name, std::string is_backup) : MessageRequest("drop", username, password)
     {
         this->db_name = db_name;
         this->is_backup = is_backup;
     }
+
+    MessageDropRequest::MessageDropRequest(const rapidjson::Document& json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name");
+        this->is_backup = jsonBoolParam(json_data, "is_backup", true);
+    }
+
     void MessageDropRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -69,6 +104,7 @@ namespace server
             {"is_backup", this->is_backup}};
         json_str = json.dump();
     }
+
     void MessageDropRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -81,18 +117,33 @@ namespace server
         json_str = json.dump();
     }
 
+    void MessageDropResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        json_str = json.dump();
+    }
+
     // query
-    MessageQueryRequest::MessageQueryRequest(std::string db_name,  std::string sparql, std::string format) : MessageRequest("query")
+    MessageQueryRequest::MessageQueryRequest(std::string db_name,  std::string sparql, std::string format) : MessageRequest(std::string("query"))
     {
         this->db_name = db_name;
         this->sparql = sparql;
         this->format = format;
     }
 
-    MessageQueryRequest::MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format) : MessageRequest("query", username, password) {
+    MessageQueryRequest::MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format) : MessageRequest("query", username, password)
+    {
         this->db_name = db_name;
         this->sparql = sparql;
         this->format = format;
+    }
+
+    MessageQueryRequest::MessageQueryRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name");
+        this->format = jsonParam(json_data, "format", "json");
+        this->sparql = jsonParam(json_data, "sparql");
     }
 
     void MessageQueryRequest::to_json(std::string& json_str)
@@ -139,8 +190,42 @@ namespace server
         }
     }
 
+    MessageQueryResponse::MessageQueryResponse()
+    {
+        this->ansNum = 0;
+        this->outputLimit = -1;
+        this->isUpdate = false;
+    }
+
+    void MessageQueryResponse::toJsonString(std::string& json_str)
+    {
+        if (!this->isUpdate)
+        {
+            toJson(this->query_json);
+            this->query_json["AnsNum"] = this->ansNum;
+            this->query_json["ThreadId"] = this->threadId;
+            this->query_json["QueryTime"] = this->queryTime;
+            this->query_json["OutputLimit"] = this->outputLimit;
+            if (!this->fileName.empty())
+            {
+                this->query_json["FileName"] = this->fileName;
+            }
+            json_str = this->query_json.dump();
+        }
+        else
+        {
+            nlohmann::json json;
+            toJson(json);
+            json["AnsNum"] = this->ansNum;
+            json["ThreadId"] = this->threadId;
+            json["QueryTime"] = this->queryTime;
+            json_str = json.dump();
+        }
+        SLOG_TRACE("MessageQueryResponse:" << json_str);
+    }
+
     // batch insert
-    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string db_name, std::string file, std::string dir) : MessageRequest("batchInsert")
+    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string db_name, std::string file, std::string dir) : MessageRequest(std::string("batchInsert"))
     {
         this->db_name = db_name;
         this->file = file;
@@ -176,7 +261,7 @@ namespace server
         json_str = json.dump();
     }
 
-    MessageBatchInsertRequest::MessageBatchInsertRequest(const rapidjson::Document& json_data)
+    MessageBatchInsertRequest::MessageBatchInsertRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
     {
         this->db_name = jsonParam(json_data, "db_name", "");
         this->file = jsonParam(json_data, "file");
@@ -211,19 +296,29 @@ namespace server
         json["failed_num"] = this->failedNum;
         json["opt_id"] = this->opt_id;
         json_str = json.dump();
-        SLOG_TRACE("MessageLoadResponse:" << json_str);
+        SLOG_TRACE("MessageBatchInsertResponse:" << json_str);
     }
 
     // batch remove
-    MessageBatchRemoveRequest::MessageBatchRemoveRequest(std::string db_name,  std::string file) : MessageRequest("batchRemove")
+    MessageBatchRemoveRequest::MessageBatchRemoveRequest(std::string db_name,  std::string file) : MessageRequest(std::string("batchRemove"))
     {
         this->db_name = db_name;
         this->file = file;
     }
+
+    MessageBatchRemoveRequest::MessageBatchRemoveRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name", "");
+        this->file = jsonParam(json_data, "file");
+        this->async = jsonBoolParam(json_data, "async", false);
+        this->callback = jsonParam(json_data, "callback");
+    }
+
     MessageBatchRemoveRequest::MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file) : MessageRequest("batchRemove", username, password) {
         this->db_name = db_name;
         this->file = file;
     }
+
     void MessageBatchRemoveRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -234,6 +329,7 @@ namespace server
             {"file", this->file}};
         json_str = json.dump();
     }
+
     void MessageBatchRemoveRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -246,6 +342,13 @@ namespace server
         json_str = json.dump();
     }
 
+    MessageBatchRemoveResponse::MessageBatchRemoveResponse()
+    {
+        this->successNum = 0;
+        this->failedNum = 0;
+        this->opt_id = "";
+    }
+
     MessageBatchRemoveResponse::MessageBatchRemoveResponse(std::string body) : MessageResponse(body)
     {
         if (json.is_object())
@@ -255,5 +358,22 @@ namespace server
             if (json.contains("failed_num"))
                 json.at("failed_num").get_to(this->failedNum);
         }
+    }
+
+    void MessageBatchRemoveResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        json["success_num"] = this->successNum;
+        json["failed_num"] = this->failedNum;
+        json["opt_id"] = this->opt_id;
+        json_str = json.dump();
+        SLOG_TRACE("MessageBatchRemoveResponse:" << json_str);
+    }
+
+    // checkPonit
+    MessageCheckPointRequest::MessageCheckPointRequest(const rapidjson::Document& json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name");
     }
 }

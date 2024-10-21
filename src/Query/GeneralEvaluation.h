@@ -9,6 +9,7 @@
 #ifndef _QUERY_GENERALEVALUATION_H
 #define _QUERY_GENERALEVALUATION_H
 
+#include "ResultSet.h"
 #include "../StringIndex/StringIndex.h"
 #include "../Database/CSR.h"
 #include "../Database/Optimizer.h"
@@ -18,7 +19,6 @@
 #include "RegexExpression.h"
 #include "TempResult.h"
 #include "QueryCache.h"
-#include "ResultSet.h"
 #include <dlfcn.h>
 #include "Algorithm/PathQueryHandler.h"
 

@@ -153,6 +153,24 @@ Json &GRPCReq::json() const
     return _req_data->json;
 }
 
+void GRPCReq::json(nlohmann::json& json_data) const
+{
+    if (_content_type == APPLICATION_JSON && _req_data->json.IsNull())
+    {
+        const std::string &body_content = this->body();
+        try
+        {
+            json_data = nlohmann::json::parse(body_content);
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("[GRPC] Parse json data error: " << body_content);
+            _req_data->json.Clear();
+        }
+        return;
+    }
+}
+
 const std::string &GRPCReq::header(const std::string &key) const
 {
     const auto it = _headers.find(key);

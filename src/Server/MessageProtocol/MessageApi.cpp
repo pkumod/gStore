@@ -10,6 +10,22 @@ namespace server
         this->password = password;
     }
 
+    MessageRequest::MessageRequest(const rapidjson::Document& json_data)
+    {
+        this->username = jsonParam(json_data, "username");
+        this->password = jsonParam(json_data, "password");
+        this->op = jsonParam(json_data, "operation");
+        this->remote_ip = jsonParam(json_data, "remote_ip");
+    }
+
+    MessageRequest::MessageRequest(const nlohmann::json& json_data)
+    {
+        this->username = jsonParam(json_data, "username");
+        this->password = jsonParam(json_data, "password");
+        this->op = jsonParam(json_data, "operation");
+        this->remote_ip = jsonParam(json_data, "remote_ip");
+    }
+
     void MessageRequest::toJson(nlohmann::json& json)
     {
         json["operation"] = this->op;
@@ -34,6 +50,13 @@ namespace server
     {
         json["StatusCode"]  = StatusCode;
         json["StatusMsg"]   = StatusMsg;
+    }
+
+    void MessageResponse::toJsonString(std::string& json_str)
+    {
+        this->json["StatusCode"]  = StatusCode;
+        this->json["StatusMsg"]   = StatusMsg;
+        json_str = this->json.dump();
     }
 
     MessageResponse::MessageResponse(const std::string& body) : body(body)
@@ -83,7 +106,7 @@ namespace server
         this->csr = jsonParam(json_data, "csr");
     }
 
-    MessageLoadRequest::MessageLoadRequest(std::string db_name, std::string csr) : MessageRequest("load")
+    MessageLoadRequest::MessageLoadRequest(std::string db_name, std::string csr) : MessageRequest(std::string("load"))
     {
         this->db_name = db_name;
         this->csr = csr;
@@ -169,7 +192,7 @@ namespace server
     }
 
     // init db
-    MessageInitRequest::MessageInitRequest(std::string db_names) : MessageRequest("init")
+    MessageInitRequest::MessageInitRequest(std::string db_names) : MessageRequest(std::string("init"))
     {
         this->db_names = db_names;
     }
@@ -251,7 +274,7 @@ namespace server
     }
 
     // unload db
-    MessageUnloadRequest::MessageUnloadRequest(std::string db_name) : MessageRequest("unload")
+    MessageUnloadRequest::MessageUnloadRequest(std::string db_name) : MessageRequest(std::string("unload"))
     {
         this->db_name = db_name;
     }
@@ -281,7 +304,7 @@ namespace server
     }
 
     // monitor
-    MessageMonitorRequest::MessageMonitorRequest(std::string db_name) : MessageRequest("monitor")
+    MessageMonitorRequest::MessageMonitorRequest(std::string db_name) : MessageRequest(std::string("monitor"))
     {
         this->db_name = db_name;
     }
@@ -289,6 +312,12 @@ namespace server
     MessageMonitorRequest::MessageMonitorRequest(std::string username, std::string password, std::string db_name) : MessageRequest("monitor", username, password)
     {
         this->db_name = db_name;
+    }
+
+    MessageMonitorRequest::MessageMonitorRequest(const rapidjson::Document& json_data)
+    {
+        this->db_name = jsonParam(json_data, "db_name");
+        this->disk = jsonParam(json_data, "disk");
     }
 
     void MessageMonitorRequest::to_json(std::string& json_str)
@@ -337,5 +366,47 @@ namespace server
             if (json.contains("diskUsed"))
                 json.at("diskUsed").get_to(this->diskUsed);
         }
+    }
+
+    MessageMonitorResponse::MessageMonitorResponse()
+    {
+        this->database = "";
+        this->creator = "";
+        this->database = "";
+        this->tripleNum = "0";
+        this->entityNum = 0;
+        this->literalNum = 0;
+        this->subjectNum = 0;
+        this->predicateNum = 0;
+        this->connectionNum = 0;
+        this->diskUsed = 0;
+    }
+
+    void MessageMonitorResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        json["database"] = this->database;
+        json["creator"] = this->creator;
+        json["builtTime"] = this->database;
+        json["tripleNum"] = this->tripleNum;
+        json["entityNum"] = this->entityNum;
+        json["literalNum"] = this->literalNum;
+        json["subjectNum"] = this->subjectNum;
+        json["predicateNum"] = this->predicateNum;
+        json["connectionNum"] = this->connectionNum;
+        json["diskUsed"] = this->diskUsed;
+        json["subjectList"] = nlohmann::json::array();
+        if (!this->subjectList.empty())
+        {
+            nlohmann::json temp;
+            for (auto &m : this->subjectList)
+            {
+                temp["name"] = m.first;
+                temp["value"] = m.second;
+                json["subjectList"].push_back(temp);
+            }
+        }
+        json_str = json.dump();
     }
 }

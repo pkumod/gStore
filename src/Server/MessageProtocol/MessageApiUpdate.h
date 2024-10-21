@@ -1,11 +1,4 @@
 #pragma once
-#include <string>
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "../ServerStatusCode.h"
-#include "../../Api/NlohmanJson.hpp"
-#include "../ApiTypedef.h"
 #include "MessageApi.h"
 
 namespace server
@@ -15,8 +8,11 @@ namespace server
     {
         std::string db_name;
         std::string db_path;
+        bool async;
+        std::string callback;
         MessageBuildRequest(std::string db_name, std::string db_path);
         MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path);
+        MessageBuildRequest(const rapidjson::Document& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -24,8 +20,11 @@ namespace server
     struct MessageBuildResponse : public MessageResponse
     {
         uint64_t failed_num;
+        std::string opt_id;
+        MessageBuildResponse();
         MessageBuildResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageBuildResponse(std::string body);
+        void toJsonString(std::string& json_str);
     };
 
     // drop db
@@ -34,8 +33,16 @@ namespace server
         std::string is_backup;
         MessageDropRequest(std::string db_name, std::string is_backup);
         MessageDropRequest(std::string username, std::string password, std::string db_name, std::string is_backup);
+        MessageDropRequest(const rapidjson::Document& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
+    };
+
+    struct MessageDropResponse : public MessageResponse
+    {
+        MessageDropResponse() : MessageResponse(){}
+        MessageDropResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        void toJsonString(std::string& json_str);
     };
 
     // query
@@ -44,6 +51,7 @@ namespace server
         std::string db_name;
         std::string sparql;
         std::string format;
+        MessageQueryRequest(const rapidjson::Document& json_data);
         MessageQueryRequest(std::string db_name,  std::string sparql, std::string format = "json");
         MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format = "json");
         void to_json(std::string& json_str) override;
@@ -55,11 +63,16 @@ namespace server
         std::vector<std::string> head;
         std::vector<std::vector<std::string>> results;
         uint64_t ansNum;
-        uint64_t outputLimit;
+        int outputLimit;
         std::string queryTime;
         std::string threadId;
+        bool isUpdate;
+        std::string fileName;
+        nlohmann::json query_json;
+        MessageQueryResponse();
         MessageQueryResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageQueryResponse(std::string body);
+        void toJsonString(std::string& json_str);
     };
 
     // batch insert
@@ -94,6 +107,9 @@ namespace server
     {
         std::string db_name;
         std::string file;
+        bool async;
+        std::string callback;
+        MessageBatchRemoveRequest(const rapidjson::Document& json_data);
         MessageBatchRemoveRequest(std::string db_name,  std::string file);
         MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file);
         void to_json(std::string& json_str) override;
@@ -103,7 +119,22 @@ namespace server
     struct MessageBatchRemoveResponse : public MessageResponse {
         uint32_t successNum;
         uint32_t failedNum;
+        std::string opt_id;
+        MessageBatchRemoveResponse();
         MessageBatchRemoveResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageBatchRemoveResponse(std::string body);
+        void toJsonString(std::string& json_str);
+    };
+
+    // check ponit
+    struct MessageCheckPointRequest : public MessageRequest
+    {
+        std::string db_name;
+        MessageCheckPointRequest(const rapidjson::Document& json_data);
+    };
+
+    struct MessageCheckPointResponse : public MessageResponse
+    {
+        //todo
     };
 }

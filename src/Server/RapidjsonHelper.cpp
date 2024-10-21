@@ -127,4 +127,132 @@ namespace server
     {
         return json.HasMember(key.c_str());
     }
+
+    // nlohmann
+    std::string to_json_string(const nlohmann::json& json)
+    {
+        return json.dump();
+    }
+
+    std::string jsonParam(const nlohmann::json& json, const std::string &key, const std::string& default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_string())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_boolean())
+            {
+                return "true";
+            }
+        }
+        return default_val;
+    }
+
+    int32_t jsonParam(const nlohmann::json& json, const std::string &key, const int32_t &default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_number_integer())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_string())
+            {
+                std::string value = json[key];
+                return std::stoi(value);
+            }
+        }
+        return default_val;
+    }
+
+    uint32_t jsonParam(const nlohmann::json& json, const std::string &key, const uint32_t &default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_number_unsigned())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_string())
+            {
+                uint32_t max = std::numeric_limits<uint32_t>::max();
+                std::string value = json[key];
+                int64_t val = std::stoll(value);
+                if (val > max)
+                {
+                    return default_val;
+                }
+                return val;
+            }
+        }
+        return default_val;
+    }
+
+    int64_t jsonParam(const nlohmann::json& json, const std::string &key, const int64_t &default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_number())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_string())
+            {
+                int64_t max = std::numeric_limits<int64_t>::max();
+                std::string value = json[key];
+                uint64_t val = std::stoll(value);
+                if (val > max) {
+                    return default_val;
+                }
+                return val;
+            }
+        }
+        return default_val;
+    }
+
+    uint64_t jsonParam(const nlohmann::json& json, const std::string &key, const uint64_t &default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_number())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_string())
+            {
+                std::string value = json[key];
+                return std::stoul(value);
+            }
+        }
+        return default_val;
+    }
+
+    bool jsonBoolParam(const nlohmann::json& json, const std::string &key, const bool &default_val)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_boolean())
+            {	    
+                return json[key];
+            }
+            else if (json[key].is_string())
+            {
+                std::string value = json[key];
+                return value == "true" || value == "1";
+            }
+            else if (json[key].is_number())
+            {
+                int value = json[key];
+                return value == 1;
+            }
+        }
+        return default_val;
+    }
+
+    bool hasJsonParam(const nlohmann::json& json, const std::string &key)
+    {
+        return json.contains(key);
+    }
 }
