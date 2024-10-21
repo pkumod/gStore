@@ -196,7 +196,7 @@ namespace server
                         f.open(_db_path + "/success.txt");
                         f.close();
                         // add backup.log
-                        Util::add_backuplog(db_name);
+                        // Util::add_backuplog(db_name);
                         // build response result
                         result = "Import RDF file to database done.";
                         string error_log = _db_path + "/parse_error.log";
@@ -214,7 +214,7 @@ namespace server
                         {
                             Util::remove_path(unz_dir_path);
                         }
-                        Util::add_backuplog(db_name);
+                        // Util::add_backuplog(db_name);
                         apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
                         MessageBuildResponse resp_data;
                         resp_data.StatusCode = StatusOK;
