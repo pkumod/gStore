@@ -10,7 +10,7 @@ namespace server
 
     struct MessageReasonManageResponse : public MessageResponse
     {
-        
+        std::vector<nlohmann::json> list;
         void toJsonString(std::string& json_str);
     };
 }
