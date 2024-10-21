@@ -35,7 +35,7 @@ bool save_db_info(const std::string& _db_name, const std::string& _db_path)
 		Util::remove_path(_db_path);
 		return 0;
 	}
-	Util::add_backuplog(_db_name);
+	// Util::add_backuplog(_db_name);
 	ofstream f;
 	f.open(_db_path + "/success.txt");
 	f.close();

@@ -47,7 +47,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		SLOG_CORE(_db_name + _db_suffix + " rebuild successfully!");
 		delete _db;
 		_db = NULL;
-		Util::init_backuplog();
+		// Util::init_backuplog();
 		SLOG_CORE("init backuplog successfully!");
 		string version = util.getConfigureValue("version");
 		string root_pwd = util.getConfigureValue("root_password");

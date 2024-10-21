@@ -949,7 +949,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							f.open(_db_path + "/success.txt");
 							f.close();
 							// add backup.log
-							Util::add_backuplog(db_name);
+							// Util::add_backuplog(db_name);
 							// build response result
 							result = "Import RDF file to database done.";
 							string error_log = _db_path + "/parse_error.log";
@@ -969,7 +969,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 							{
 								Util::remove_path(unz_dir_path);
 							}
-							Util::add_backuplog(db_name);
+							// Util::add_backuplog(db_name);
 							apiUtil->update_access_log(0, result, opt_id, 1, success_num, parse_error_num);
 							if (async != "true")
 							{
@@ -1441,7 +1441,7 @@ void drop_thread_new(const shared_ptr<HttpServer::Request> &request, const share
 				SLOG_DEBUG("delete the file: " + cmd);
 				system(cmd.c_str());
 			}
-			Util::delete_backuplog(db_name);
+			// Util::delete_backuplog(db_name);
 			string success = "Database " + db_name + " dropped.";
 			sendResponseMsg(0, success, operation, request, response);
 		}
@@ -2709,7 +2709,7 @@ void restore_thread_new(const shared_ptr<HttpServer::Request> &request, const sh
 			}
 			if (apiUtil->build_db_user_privilege(db_name, username))
 			{
-				Util::add_backuplog(db_name);
+				// Util::add_backuplog(db_name);
 			}
 			else
 			{
@@ -6481,12 +6481,12 @@ void rename_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 		// copy privileges
 		apiUtil->copy_privilege(db_name, new_name);
 		// add backuplog
-		Util::add_backuplog(new_name);
+		// Util::add_backuplog(new_name);
 
 		// remove old_name
 		apiUtil->delete_from_already_build(db_name);
 		// remove backuplog
-		Util::delete_backuplog(db_name);
+		// Util::delete_backuplog(db_name);
 
 		std::string success = "Database rename successfully.";
 		sendResponseMsg(0, success, operation, request, response);

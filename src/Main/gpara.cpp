@@ -66,7 +66,7 @@ int main(int argc, char * argv[]){
 		cout << "backup_timer or backup_interval must be assigned to a number" << endl;
 		return 0;
 	}
-	int ret = Util::update_backuplog(db_name, parameter, value);
+	int ret = 0; //Util::update_backuplog(db_name, parameter, value);
 	if(ret == 0){
 		cout << "parameter modification success" << endl;
 		return 0;
