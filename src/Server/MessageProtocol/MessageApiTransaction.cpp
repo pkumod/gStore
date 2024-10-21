@@ -32,13 +32,10 @@ namespace server
         {
             this->query_json["result"] = this->result;
         }
-        else
-        {
-            nlohmann::json json;
-            toJson(json);
-            json["AnsNum"] = this->ansNum;
-        }
-        json_str = json.dump();
+        toJson(this->query_json);
+        this->query_json["AnsNum"] = this->ansNum;
+        json_str = this->query_json.dump();
+        // SLOG_TRACE("MessageTqueryResponse:" << json_str);
     }
 
     // commit

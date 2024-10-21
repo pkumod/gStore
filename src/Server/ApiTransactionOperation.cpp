@@ -150,6 +150,7 @@ namespace server
             else
             {
                 response.ansNum = ret;
+                response.StatusMsg = StatusOK;
                 response.StatusMsg = "Transaction query success";
             }
         }

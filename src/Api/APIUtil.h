@@ -495,6 +495,20 @@ public:
         doc.AddMember("DbName", rapidjson::Value().SetString(dbName.c_str(), allocator).Move(), allocator);
         return doc;
     }
+
+    void toJSON(nlohmann::json& doc)
+    {
+        doc["QueryDateTime"] = queryDateTime;
+        doc["RemoteIP"] = remoteIP;
+        doc["Sparql"] = sparql;
+        doc["AnsNum"] = ansNum;
+        doc["Format"] = format;
+        doc["FileName"] = fileName;
+        doc["StatusCode"] = statusCode;
+        doc["QueryTime"] = queryTime;
+        doc["DbName"] = dbName;
+    }
+
     std::string toJSON()
     {
         rapidjson::Document doc;
@@ -663,6 +677,31 @@ public:
         }
         return doc;
     }
+
+    void toJSON(nlohmann::json& doc)
+    {
+        doc["ip"] = ip;
+        doc["operation"] = operation;
+        doc["code"] = code;
+        doc["msg"] = msg;
+        doc["createtime"] = createtime;
+        if (checkOperation() && !opt_id.empty())
+        {
+            doc["opt_id"] = opt_id;
+            doc["endtime"] = endtime;
+            doc["state"] = state;
+            if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
+            {
+                doc["num"] = num;
+                doc["fail_num"] = fail_num;
+            }
+            else if (operation == "backup")
+            {
+                doc["backupfilepath"] = backupfilepath;
+            }
+        }
+    }
+
     std::string toJSON()
     {
         rapidjson::Document doc;
@@ -780,6 +819,15 @@ public:
         doc.AddMember("begin_time", rapidjson::Value().SetString(begin_time.c_str(), allocator).Move(), allocator);
         doc.AddMember("end_time", rapidjson::Value().SetString(end_time.c_str(), allocator).Move(), allocator);
         return doc;
+    }
+    void toJSON(nlohmann::json& doc)
+    {
+        doc["db_name"] = db_name;
+        doc["TID"] = TID;
+        doc["user"] = user;
+        doc["state"] = state;
+        doc["begin_time"] = begin_time;
+        doc["end_time"] = end_time;
     }
     std::string toJSON()
     {

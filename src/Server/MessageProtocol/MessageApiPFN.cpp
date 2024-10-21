@@ -11,7 +11,11 @@ namespace server
     {
         nlohmann::json json;
         toJson(json);
-        json["list"] = this->list;
+        json["list"] = nlohmann::json::array();
+        for (const auto& m : list)
+        {
+            json["list"].push_back(m);
+        }
         json_str = json.dump();
     }
 

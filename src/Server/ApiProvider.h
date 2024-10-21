@@ -18,6 +18,8 @@
 #include "MessageProtocol/MessageApiTransaction.h"
 #include "MessageProtocol/MessageApiPFN.h"
 #include "MessageProtocol/MessageApiReason.h"
+#include "MessageProtocol/MessageApiLog.h"
+#include "MessageProtocol/MessageApiBackUpRestore.h"
 #include "../Reason/Reason.h"
 #include <unordered_map>
 
@@ -26,6 +28,8 @@ using namespace cluster;
 namespace server
 {
     typedef std::function<void(struct DBQueryLogInfo*)> DbQueryLogCall;
+    typedef std::function<void(std::string)> backup_call;
+    typedef std::function<void(std::string)> restore_call;
     class ApiHandler
     {
         private:
@@ -63,8 +67,23 @@ namespace server
         static void funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbResponse& response, rapidjson::Document& json);
         static void funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageReviewResponse& response, rapidjson::Document& json);
 
-        //reason
-        static void reason_manage_task(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageReasonManageResponse& response, rapidjson::Document& json);
+        // reason
+        static void reason_manage(shared_ptr<APIUtil>& apiUtil, server::MessageReasonManageResponse& response, rapidjson::Document& json);
+
+        // log
+        static void txn_log(shared_ptr<APIUtil>& apiUtil, server::MessageTxnLogRequest& resquest, server::MessageTxnLogResponse& response);
+        static void query_log(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogRequest& resquest, server::MessageQueryLogResponse& response);
+        static void query_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogDateRequest& resquest, server::MessageQueryLogDateResponse& response);
+        static void access_log(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogRequest& resquest, server::MessageAccessLogResponse& response);
+        static void access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& resquest, server::MessageAccessLogDateResponse& response);
+        static void checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& resquest, server::MessageCheckOperationStateResponse& response);
+
+        // backup restore
+        static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& resquest, server::MessageBackupResponse& response, const backup_call& cb);
+        static void backup(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, std::string& backup_path, bool compress, const std::string& callback);
+        static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& resquest, server::MessageBackupPathResponse& response);
+        static void restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& resquest, server::MessageRestoreResponse& response, const restore_call& cb);
+        static void restore(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, const std::string& username, std::string& backup_path, const std::string& callback);
 
         // cluster api
         static void cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest);

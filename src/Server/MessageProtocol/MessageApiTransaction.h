@@ -28,9 +28,10 @@ namespace server
 
     struct MessageTqueryResponse : public MessageResponse
     {
-        std::string ansNum;
+        int ansNum;
         std::string result;
         nlohmann::json query_json;
+        MessageTqueryResponse(){ansNum = 0;}
         void toJsonString(std::string& json_str) override;
     };
 

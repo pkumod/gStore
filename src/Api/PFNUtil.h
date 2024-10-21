@@ -96,7 +96,7 @@ public:
         doc.AddMember("lastTime", rapidjson::Value().SetString(last_time.c_str(), allocator).Move(), allocator);
         return doc;
     }
-    nlohmann::json toJSON(nlohmann::json& doc)
+    void toJSON(nlohmann::json& doc)
     {
         doc["funName"] = fun_name;
         doc["funDesc"] = fun_desc;
@@ -106,7 +106,6 @@ public:
         doc["funStatus"] = fun_status;
         doc["funReturn"] = fun_return;
         doc["lastTime"] = last_time;
-        return doc;
     }
     string toJSON()
     {
