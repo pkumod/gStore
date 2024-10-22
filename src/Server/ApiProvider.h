@@ -78,12 +78,13 @@ namespace server
         static void access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& resquest, server::MessageAccessLogDateResponse& response);
         static void checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& resquest, server::MessageCheckOperationStateResponse& response);
 
-        // backup restore
+        // backup restore export
         static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& resquest, server::MessageBackupResponse& response, const backup_call& cb);
         static void backup(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, std::string& backup_path, bool compress, const std::string& callback);
         static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& resquest, server::MessageBackupPathResponse& response);
         static void restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& resquest, server::MessageRestoreResponse& response, const restore_call& cb);
         static void restore(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, const std::string& username, std::string& backup_path, const std::string& callback);
+        static void export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& resquest, server::MessageExportResponse& response);
 
         // cluster api
         static void cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest);

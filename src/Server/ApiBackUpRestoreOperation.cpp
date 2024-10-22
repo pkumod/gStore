@@ -235,4 +235,83 @@ namespace server
             HttpUtil::Post(callback, j.dump(), msg);
         }
     }
+
+    void ApiHandler::export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& resquest, server::MessageExportResponse& response)
+    {
+        try
+        {
+            std::string db_name = resquest.db_name;
+            std::string msg;
+            if (apiUtil->check_param_value("db_name", db_name, msg) == false)
+            {
+                response.Error(StatusParamIsIllegal, msg);
+                return;
+            }
+            std::string db_path = resquest.db_path;
+            if (apiUtil->check_param_value("db_path", db_path, msg) == false)
+            {
+                response.Error(StatusParamIsIllegal, msg);
+                return;
+            }
+            if (apiUtil->check_db_built(db_name) == false)
+            {
+                msg = "Database not build yet.";
+                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
+                return;
+            }
+            // check if database named [db_name] is already load
+            if (apiUtil->check_db_loaded(db_name) == false)
+            {
+                msg = "Database not load yet.";
+                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
+                return;
+            }
+            shared_ptr<DatabaseInfo> db_info;
+            apiUtil->get_databaseinfo(db_name, db_info);
+            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            {
+                msg = "get current database read lock fail.";
+                response.Error(StatusLossOfLock, msg);
+                return;
+            }
+            Util::string_suffix(db_path, '/');
+            if (Util::dir_exist(db_path) == false)
+            {
+                Util::create_dirs(db_path);
+            }
+            std::string export_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+            bool compress = resquest.compress;
+            SLOG_DEBUG("export_path: " << export_path << " ,compress:" << compress);
+            FILE *ofp = fopen(export_path.c_str(), "w");
+            db_info->getDatabase()->export_db(ofp);
+            fflush(ofp);
+            fclose(ofp);
+            ofp = NULL;
+            // unlock
+            apiUtil->unlock_databaseinfo(db_info);
+            if (compress)
+            {
+                std::string zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
+                if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path))
+                {
+                    Util::remove_path(export_path);
+                    Util::remove_path(zip_path);
+                    msg = "export compress fail.";
+                    response.Error(StatusCompressError, msg);
+                    return;
+                }
+                Util::remove_path(export_path);
+                export_path = zip_path;
+            }
+            msg = "Export the database successfully.";
+            response.StatusCode = 0;
+            response.StatusMsg = msg;
+            response.filepath = export_path;
+        }
+        catch (const std::exception &e)
+        {
+            std::string error = "Export fail: " + string(e.what());
+            response.Error(StatusOperationFailed, error);
+        }
+    }
 }
