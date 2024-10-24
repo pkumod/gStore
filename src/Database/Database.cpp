@@ -1890,8 +1890,8 @@ void Database::export_db(FILE *fp)
 
 int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
 {
-	if (_result_set.ansNum > 0) 
-		_result_set.release();
+	//if (_result_set.ansNum > 0) 
+	_result_set.release();
 	string dictionary_store_path = this->store_path + "/dictionary.dc";
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
@@ -3972,7 +3972,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	}
 	if (!Util::IsEnoughMemory(triple_num*3))
 	{
-		return -1;
+		throw runtime_error("Not enough memory for batch insertion");
 	}
 
 	unsigned success_num = 0;
