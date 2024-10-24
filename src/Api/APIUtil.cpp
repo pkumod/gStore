@@ -172,13 +172,43 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
         
         // load system db
-        if(!util.dir_exist(get_Db_path() + "/system" + get_Db_suffix()))
+        std::string _sys_db_path = get_Db_path() + "/system" + get_Db_suffix();
+        if(!util.file_exist(Util::initfile) || !util.dir_exist(_sys_db_path))
         {
-            SLOG_ERROR("Can not find system" + get_Db_suffix());
-            return -1;
+            SLOG_INFO("System has not been initialized. Now initialize it");
+            if (util.dir_exist(_sys_db_path))
+            {
+                util.remove_path(_sys_db_path);
+            }
+            system_database  = make_shared<Database>(SYSTEM_DB_NAME);
+            bool _sys_build_rt = system_database->build(Util::system_path);
+            if (_sys_build_rt)
+            {
+                ofstream f;
+                f.open(_sys_db_path + "/success.txt");
+                f.close();
+                f.open(Util::initfile);
+                f.close();
+                system_database.reset();
+                // Util::init_backuplog();
+                string version = util.getConfigureValue("version");
+                string root_pwd = util.getConfigureValue("root_password");
+                string update_sparql = "INSERT DATA {\
+                    <CoreVersion> <value> \"" + version + "\". \
+                    <root> <has_password> \"" + root_pwd + "\" .}";
+                system_database = make_shared<Database>(SYSTEM_DB_NAME);
+                system_database->load();
+                update_sys_db(update_sparql);
+                refresh_sys_db();
+                system_database.reset();
+            }
+            else
+            {
+                SLOG_INFO("System initialization failed. Please manually initialize system");
+                return -1;
+            }
         }
         system_database = make_shared<Database>(SYSTEM_DB_NAME);
-        
         system_database->load();
         // #if defined(DEBUG)
         SLOG_CORE("add system database");

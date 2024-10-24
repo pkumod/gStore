@@ -3215,9 +3215,9 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		std::string opt_id = apiUtil->generateUid();
 		std::string async = jsonParam(json_data, "async");
-		auto insert_helper = [db_name, insert_files, dir, unz_dir_path, opt_id] (GRPCResp *response)
+		string remote_ip = task_of(response)->peer_addr();
+		auto insert_helper = [db_name, insert_files, dir, unz_dir_path, opt_id,remote_ip] (GRPCResp *response)
 		{
-			string remote_ip = task_of(response)->peer_addr();
 			string operation = "batchInsert";
 			string msg = "Batch insert data beginning.";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
@@ -3376,8 +3376,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		}
 		std::string opt_id = apiUtil->generateUid();
 		std::string async = jsonParam(json_data, "async");
-		auto remove_helper = [db_name, file, opt_id] (GRPCResp *response) {
-			string remote_ip = task_of(response)->peer_addr();
+		string remote_ip = task_of(response)->peer_addr();
+		auto remove_helper = [db_name, file, opt_id, remote_ip] (GRPCResp *response) {
 			string operation = "batchRemove";
 			string msg = "Batch remove data beginning.";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
@@ -3398,8 +3398,11 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			{
 				unsigned success_num = current_database->batch_remove(file, false, nullptr);
 				SLOG_DEBUG("batch remove data from " + file + " success.");
-				if (current_database->save()) {
-					throw std::runtime_error("disk or memory not enough");
+				if (!current_database->save()) {
+					msg = "disk or memory not enough";
+					apiUtil->unlock_database(db_name);
+					apiUtil->update_access_log(0, msg, opt_id, -1, 0, 0);
+					throw std::runtime_error(msg);
 				}
 				apiUtil->unlock_database(db_name);
 				msg = "Batch remove data successfully.";

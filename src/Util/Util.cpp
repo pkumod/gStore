@@ -17,6 +17,7 @@ using namespace rapidjson;
 //==================================================================================================================
 
 string Util::profile = "./conf/init.conf";
+string Util::initfile = "./conf/init.lock";
 
 map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;

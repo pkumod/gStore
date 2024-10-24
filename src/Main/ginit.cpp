@@ -26,12 +26,18 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix)
 	{
 		Util::remove_path(_db_path);
 	}
+	if (Util::file_exist(Util::initfile))
+	{
+		Util::remove_file(Util::initfile);
+	}
 	Database *_db = new Database(_db_name);
 	bool flag = _db->build(_rdf);
 	if (flag)
 	{
 		ofstream f;
 		f.open(_db_path + "/success.txt");
+		f.close();
+		f.open(Util::initfile);
 		f.close();
 
 		SLOG_CORE(_db_name + _db_suffix + " rebuild successfully!");
@@ -108,7 +114,7 @@ int main(int argc, char *argv[])
 		}
 		else if (command == "-m" || command == "--make")
 		{
-			if (Util::dir_exist(_db_path) == false)
+			if (Util::file_exist(Util::initfile) == false || Util::dir_exist(_db_path) == false)
 			{
 				int ret = init_system_db(_db_path, _db_name, _db_suffix);
 				return ret;
@@ -130,7 +136,7 @@ int main(int argc, char *argv[])
 	{
 
 		long tv_begin = Util::get_cur_time();
-		if (Util::dir_exist(_db_path) == false)
+		if (Util::file_exist(Util::initfile) == false || Util::dir_exist(_db_path) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return -1;

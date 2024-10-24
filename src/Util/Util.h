@@ -471,6 +471,7 @@ public:
 	Util();
 	~Util();
 	static std::string profile;
+	static std::string initfile;
 	//NOTICE: this function must be called out of any Database to config the basic settings
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application

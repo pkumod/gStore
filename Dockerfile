@@ -97,11 +97,7 @@ RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
 
 EXPOSE 9000
 
-# Default API service is ghttp, which can be configured with -e API_SERVICE=grpc
-# Default root password is 123456, witch can be configured with -e ROOT_PASSWD=your password
-# For example: 
-#    # this container will run grpc api server with 9999 and init root password with 123@abc
-#    # you can test server api with this command :
-#    # curl -X POST -H 'Content-Type: application/json' -d '{"username":"root","password":"123@abc","operation": "login"}' http://127.0.0.1:9999/grpc/api
-#    docker run -itd -p 9999:9000 -e API_SERVICE=grpc -e ROOT_PASSWD=123@abc gstore:latest
-ENTRYPOINT [ "sh", "/docker-entrypoint.sh" ]
+# Default API service is ghttp
+# Default root password is 123456
+# For example: docker run -itd -p 9999:9000 gstore:latest
+ENTRYPOINT ["/gstore/bin/ghttp"]
