@@ -153,7 +153,8 @@ main(int argc, char * argv[])
 			}
 			else
 			{
-				unzip.getFileList(zip_files, "");
+				_rdf = unzip.getMaxFilePath();
+				unzip.getFileList(zip_files, _rdf);
 			}
 		}
 		long tv_begin = Util::get_cur_time();
@@ -161,7 +162,7 @@ main(int argc, char * argv[])
 		{
 			Database _db(db_name);
 			bool flag = true;
-			if (_rdf.empty() || is_zip) 
+			if (_rdf.empty()) 
 				flag = _db.BuildEmptyDB();
 			else
 				flag = _db.build(_rdf);
