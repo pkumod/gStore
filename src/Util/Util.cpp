@@ -137,7 +137,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
-    Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
+    Util::setGlobalConfig(ini_parser, "system", "min_memory", "512");
     Util::setGlobalConfig(ini_parser, "system", "min_million_disk", "50");
     Util::setGlobalConfig(ini_parser, "system", "min_million_memory", "20");
     Util::system_path = Util::getConfigureValue("system_path");
@@ -335,6 +335,7 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
         while (num <= need_num)
         {
             num = num << 1;
+            SLOG_DEBUG("Memory num is not enough, need at least memory num:" << num);
         }
     }
     else
@@ -342,7 +343,7 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
         while (num <= need_num)
         {
             num += alloc_num;
-            SLOG_DEBUG("alloc memory num:" << num << " ,need at least memory num:" << need_num);
+            SLOG_DEBUG("Alloc memory num:" << num << ", need at least memory num:" << need_num);
         }
     }
     return num;
@@ -353,13 +354,25 @@ bool Util::IsEnoughMemory(unsigned triple_num)
     // uint mb
 	unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
 	unsigned million_need_memory = atoi(Util::getConfigureValue("min_million_memory").c_str());
-	int memory_free = Util::memoryLeft()*1000;
+	int memory_free = Util::memoryLeft();
 	if (memory_free <= need_count*million_need_memory)
 	{
-		SLOG_ERROR("memory not enough, need at least memory:" << need_count*million_need_memory << "mb" << " ,current:" << memory_free << "db");
+		SLOG_WARN("Memory is not enough, need at least memory:" << need_count*million_need_memory << "mb" << " ,current:" << memory_free << "mb");
 		return false;
 	}
     return true;
+}
+
+bool Util::IsEnoughMemoryMb(const size_t& bytes)
+{
+    int memory_free = Util::memoryLeft();
+    int need_memory = bytes >> 20;
+    if (memory_free <= need_memory) {
+        SLOG_WARN("Memory is not enough, need at least memory:" << need_memory << "mb" << " ,current:" << memory_free << "mb");
+        return false;
+    } else {
+        return true;
+    }
 }
 
 bool Util::IsEnoughDisk(unsigned triple_num)
@@ -370,7 +383,7 @@ bool Util::IsEnoughDisk(unsigned triple_num)
 	int disk_free = Util::get_disk_free();
 	if (disk_free <= need_count*million_need_disk)
 	{
-		SLOG_ERROR("disk not enough, need at least disk:" << need_count*million_need_disk << "mb" << " ,disk:" << disk_free << "db");
+		SLOG_WARN("Disk is not enough, need at least disk:" << need_count*million_need_disk << "mb" << " ,disk:" << disk_free << "db");
 		return false;
 	}
     return true;
@@ -587,6 +600,7 @@ Util::memoryLeft()
         return -1;
 
     char str[20], tail[3];
+    // unit is kB
     unsigned num, avail = 0, free = 0, buffer = 0, cache = 0;		//WARN:unsigned,memory cant be too large!
     while (fscanf(fp, "%s%u%s", str, &num, tail) != EOF)
     {
@@ -604,7 +618,8 @@ Util::memoryLeft()
     	avail = free + buffer + cache;
 
     fclose(fp);
-    return avail / Util::MB;
+    // KB->MB
+    return avail >> 10;
 }
 
 bool

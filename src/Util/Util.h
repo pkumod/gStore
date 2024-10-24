@@ -540,6 +540,7 @@ public:
 	// alloctate memory
 	static int getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num);
 	static bool IsEnoughMemory(unsigned triple_num);
+	static bool IsEnoughMemoryMb(const size_t& bytes);
 	static bool IsEnoughDisk(unsigned triple_num);
  private:
 	

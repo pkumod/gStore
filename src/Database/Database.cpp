@@ -1894,7 +1894,7 @@ void Database::export_db(FILE *fp)
 int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool update_flag, bool export_flag, shared_ptr<Transaction> txn)
 {
 	//if (_result_set.ansNum > 0) 
-		_result_set.release();
+	_result_set.release();
 	string dictionary_store_path = this->store_path + "/dictionary.dc";
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
@@ -2014,6 +2014,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
+		unsigned update_success_triple_num = 0;
 		/*if (trie == NULL)
 		{
 			trie = new Trie;
@@ -2030,9 +2031,19 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
 
 			update_triple_num = update_pattern.sub_group_pattern.size();
+			TYPE_TRIPLE_NUM check_triple_num = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? update_triple_num : (update_triple_num / 10);
+			if (!Util::IsEnoughMemory(check_triple_num))
+			{
+				throw runtime_error("Not enough memory for batch operation");
+			}
+			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data && !Util::IsEnoughDisk(check_triple_num)) 
+			{
+				throw runtime_error("Not enough disk space for batch insertion");
+			}
 			update_triple = new TripleWithObjType[update_triple_num];
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
+			{
 				if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
 				{
 					TripleWithObjType::ObjectType object_type = TripleWithObjType::None;
@@ -2056,20 +2067,21 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 						throw "Database::query failed";
 					}
 				}
+			}
 
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
 				if (txn)
-					success_num = insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = batch_insert(update_triple, update_triple_num, false, txn);
 			}
 			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 			{
 				if (txn)
-					success_num = remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = batch_remove(update_triple, update_triple_num, false, txn);
 			}
 		}
 		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
@@ -2086,9 +2098,9 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
 				if (txn)
-					success_num = remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = batch_remove(update_triple, update_triple_num, false, txn);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
@@ -2098,12 +2110,20 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
 				if (txn)
-					success_num = insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = batch_insert(update_triple, update_triple_num, false, txn);
 			}
 		}
-
+		if (update_success_triple_num == UINT32_MAX)
+		{
+			if (txn == nullptr)
+				pthread_rwlock_unlock(&(this->update_lock));
+			general_evaluation.releaseResult();
+			delete[] update_triple;
+			throw runtime_error("batch insert failed.");
+		}
+		success_num = update_success_triple_num;
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
@@ -2939,8 +2959,10 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 				_sub_id = this->allocEntityID();
 				this->sub_num++;
 				// this->entity_num++;
-				(this->kvstore)->setIDByEntity(_sub, _sub_id);
-				(this->kvstore)->setEntityByID(_sub_id, _sub);
+				if(!(this->kvstore)->setIDByEntity(_sub, _sub_id))
+					break;
+				if(!(this->kvstore)->setEntityByID(_sub_id, _sub))
+					break;
 			}
 			//  For predicate
 			string _pre = triple_array[i].getPredicate();
@@ -2951,8 +2973,10 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 				//_pre_id = this->pre_num;
 				_pre_id = this->allocPredicateID();
 				// this->pre_num++;
-				(this->kvstore)->setIDByPredicate(_pre, _pre_id);
-				(this->kvstore)->setPredicateByID(_pre_id, _pre);
+				if(!(this->kvstore)->setIDByPredicate(_pre, _pre_id))
+					break;
+				if(!(this->kvstore)->setPredicateByID(_pre_id, _pre))
+					break;
 			}
 
 			//  For object
@@ -2969,8 +2993,10 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 					//_obj_id = this->entity_num;
 					_obj_id = this->allocEntityID();
 					// this->entity_num++;
-					(this->kvstore)->setIDByEntity(_obj, _obj_id);
-					(this->kvstore)->setEntityByID(_obj_id, _obj);
+					if(!(this->kvstore)->setIDByEntity(_obj, _obj_id))
+						break;
+					if(!(this->kvstore)->setEntityByID(_obj_id, _obj))
+						break;
 				}
 			}
 			// obj is literal
@@ -2983,8 +3009,18 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 					//_obj_id = Util::LITERAL_FIRST_ID + (this->literal_num);
 					_obj_id = this->allocLiteralID();
 					// this->literal_num++;
-					(this->kvstore)->setIDByLiteral(_obj, _obj_id);
-					(this->kvstore)->setLiteralByID(_obj_id, _obj);
+					if((this->kvstore)->setIDByLiteral(_obj, _obj_id))
+						break;
+					if((this->kvstore)->setLiteralByID(_obj_id, _obj))
+						break;
+					//#ifdef DEBUG
+					// if(_obj == "\"Bob\"")
+					//{
+					// SLOG_CORE("this is id for Bob: " + to_string(_obj_id));
+					//}
+					// SLOG_CORE("literal should be bob: " + kvstore->getLiteralByID(_obj_id));
+					// SLOG_CORE("id for bob: " + to_string(kvstore->getIDByLiteral("\"Bob\"")));
+					//#endif
 				}
 			}
 
@@ -3291,8 +3327,10 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			{
 				_sub_id = this->allocEntityID();
 				this->sub_num++;
-				(this->kvstore)->setIDByEntity(_sub, _sub_id);
-				(this->kvstore)->setEntityByID(_sub_id, _sub);
+				if(!(this->kvstore)->setIDByEntity(_sub, _sub_id))
+					break;
+				if(!(this->kvstore)->setEntityByID(_sub_id, _sub))
+					break;
 				sub_lists.insert(_sub_id);
 			}
 			else if (sub_lists.find(_sub_id) == sub_lists.end())
@@ -3321,8 +3359,10 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 				{
 					_obj_id = this->allocEntityID();
-					(this->kvstore)->setIDByEntity(_obj, _obj_id);
-					(this->kvstore)->setEntityByID(_obj_id, _obj);
+					if(!(this->kvstore)->setIDByEntity(_obj, _obj_id))
+						break;
+					if(!(this->kvstore)->setEntityByID(_obj_id, _obj))
+						break;
 				}
 			}
 			// obj is literal
@@ -3413,8 +3453,8 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		_is_new_sub = true;
 		_sub_id = this->allocEntityID();
 		this->sub_num++;
-		(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
-		(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
+		if(!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+			return false;
 
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
@@ -3449,8 +3489,8 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		{
 			_is_new_obj = true;
 			_obj_id = this->allocEntityID();
-			(this->kvstore)->setIDByEntity(_triple.object, _obj_id);
-			(this->kvstore)->setEntityByID(_obj_id, _triple.object);
+			if(!(this->kvstore)->setIDByEntity(_triple.object, _obj_id) || !(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+				return false;
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -3958,7 +3998,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return -1;
+		throw runtime_error("Unable to load database");
 	}
 	SLOG_CORE("finish loading");
 
@@ -3983,9 +4023,8 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
 	{
-		SLOG_ERROR("fail to open : " << _rdf_file << ".@insert_test");
-		// exit(0);
-		return -1;
+		SLOG_CORE("fail to open : " + _rdf_file + ".@insert_test");
+		throw runtime_error("fail to open " + _rdf_file);
 	}
 
 	// NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -4004,6 +4043,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
 	// TYPE_TRIPLE_NUM triple_num = 0;
+	unsigned insert_num = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -4013,7 +4053,15 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 			break;
 		}
 		long tv_begin = Util::get_cur_time();
-		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
+
+		insert_num = this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
+		if (insert_num == UINT32_MAX)
+		{
+			delete[] triple_array;
+			triple_array = NULL;
+			throw runtime_error("batch insert failed: probably out of memory");
+		}
+		success_num += insert_num;
 		long tv_end = Util::get_cur_time();
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
@@ -4050,7 +4098,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	}
 	if (!Util::IsEnoughMemory(triple_num*3))
 	{
-		return -1;
+		throw runtime_error("Not enough memory for batch deletion");
 	}
 
 	long tv_load = Util::get_cur_time();
@@ -4103,8 +4151,6 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 {
 	if (_triple_num == 0)
 		return 0;
-	if (!Util::IsEnoughMemory(_triple_num) || !Util::IsEnoughDisk(_triple_num))
-		return 0;
 	TYPE_TRIPLE_NUM valid_num = 0;
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	unsigned update_num_s = 0;
@@ -4128,8 +4174,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		{
 			_sub_id = this->allocEntityID();
 			update_num_subject = update_num_subject + 1;
-			(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
-			(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
+			if (!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+				return UINT32_MAX;
 			vertices.push_back(_sub_id);
 			sub_lists.insert(_sub_id);
 		}
@@ -4143,8 +4189,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		if (_pre_id == INVALID_PREDICATE_ID)
 		{
 			_pre_id = this->allocPredicateID();
-			(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id);
-			(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate);
+			if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id) || !(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+				return UINT32_MAX;
 			predicates.push_back(_pre_id);
 		}
 
@@ -4156,8 +4202,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocEntityID();
-				(this->kvstore)->setIDByEntity(_triple.object, _obj_id);
-				(this->kvstore)->setEntityByID(_obj_id, _triple.object);
+				if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id) || !(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+					return UINT32_MAX;
 				vertices.push_back(_obj_id);
 				obj_lists.insert(_obj_id);
 			}
@@ -4168,8 +4214,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocLiteralID();
-				(this->kvstore)->setIDByLiteral(_triple.object, _obj_id);
-				(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
+				if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id) || !(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+					return UINT32_MAX;
 				vertices.push_back(_obj_id);
 			}
 		}
@@ -4201,7 +4247,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		bool ret = (this->kvstore)->GetExclusiveLocks(SLATCHES, OLATCHES, PLATCHES, txn);
 		if (ret == false)
 		{
-			return -1;
+			return 0;
 		}
 	}
 	// po inserts
@@ -4248,8 +4294,6 @@ unsigned
 Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	if (_triple_num == 0)
-		return 0;
-	if (!Util::IsEnoughMemory(_triple_num/10))
 		return 0;
 	TYPE_TRIPLE_NUM valid_num = 0;
 	unsigned update_num_s = 0;

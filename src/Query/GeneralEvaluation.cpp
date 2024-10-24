@@ -3527,7 +3527,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		ret_result.ansNum = (int)result0.result.size();
 
 #ifdef STREAM_ON
-		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
+		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::MB;
 		if (Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();

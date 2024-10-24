@@ -1585,9 +1585,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		std::string opt_id = apiUtil->generateUid();
 		string username = jsonParam(json_data, "username");
 		string async = jsonParam(json_data, "async");
-		string callback = jsonParam(json_data, "callback");
 		string remote_ip = task_of(response)->peer_addr();
-		auto build_helper = [db_name,username,unz_dir_path,zip_files,db_path,opt_id,callback,remote_ip](GRPCResp *response)
+		auto build_helper = [db_name,username,unz_dir_path,zip_files,db_path,opt_id,remote_ip](GRPCResp *response)
 		{
 			string msg = "Start building.";
 			string operation = "build";
@@ -1622,15 +1621,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					current_database.reset();
 					if (response != nullptr)
 						response->Error(StatusOperationFailed, msg);
-					if (callback != "")
-					{
-					    string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"1005\",";
-						postdata += "\"StatusMsg\":\"" + msg + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
+					else 
+						SLOG_DEBUG("async operation: " + msg);
 					return;
 				}
 				bool batch_insert_result = true;
@@ -1663,15 +1655,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 						apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
 						if (response != nullptr)
 							response->Error(StatusOperationFailed, msg);
-						if (callback != "")
-						{
-							string postdata;
-							string res;
-							postdata += "{\"StatusCode\":\"1005\",";
-							postdata += "\"StatusMsg\":\"" + msg + "\",";
-							postdata += "\"opt_id\":\"" + opt_id + "\"}";
-							HttpUtil::Post(callback, postdata, res);
-						}
 						return;
 					}
 				}
@@ -1718,16 +1701,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 					response->Json(resp_data);
 				}
-				else if (!callback.empty())
-				{
-					string postdata;
-					string res;
-					postdata += "{\"StatusCode\":\"0\",";
-					postdata += "\"StatusMsg\":\"" + msg + "\",";
-					postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-					postdata += "\"opt_id\":\"" + opt_id + "\"}";
-					HttpUtil::Post(callback, postdata, res);
-				} 
 				else 
 				{
 					SLOG_DEBUG("async operation: " + msg);
@@ -1745,15 +1718,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				apiUtil->update_access_log(1005, msg, opt_id, -1, 0, 0);
 				if (response != nullptr)
 					response->Json(msg);
-				if (!callback.empty())
-				{
-					string postdata;
-					string res;
-					postdata += "{\"StatusCode\":\"1005\",";
-					postdata += "\"StatusMsg\":\"" + msg + "\",";
-					postdata += "\"opt_id\":\"" + opt_id + "\"}";
-					HttpUtil::Post(callback, postdata, res);
-				}
+				else
+					SLOG_DEBUG("async operation: " + msg);
 			}
 		};
 		if (async == "true")
@@ -1762,7 +1728,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			resp_data.SetObject();
 			rapidjson::Document::AllocatorType &allocator = resp_data.GetAllocator();
 			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "Operation success.", allocator);
+			resp_data.AddMember("StatusMsg", "Async operation success, check state later.", allocator);
 			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 			response->Json(resp_data);
 			thread t(build_helper, nullptr);
@@ -2302,11 +2268,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
-		std::string min_memory = Util::getConfigureValue("min_memory").c_str();
+		int memoryNeed = apiUtil->get_configure_value("min_memory", 512) << 10; // GB->MB
 		int memoryLeft = Util::memoryLeft();
-		if (memoryLeft < atoi(min_memory.c_str()))
+		if (memoryLeft < memoryNeed)
 		{
-			std::string error = "memory not enough, available:" + std::to_string(memoryLeft) + "GB, need minimum:" + min_memory + "GB";
+			std::string error = "memory not enough, available:" + std::to_string(memoryLeft) + "MB, need minimum:" + to_string(memoryNeed) + "MB";
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
@@ -3202,164 +3168,160 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		std::vector<std::string> zip_files;
+		std::vector<std::string> insert_files;
 		std::string unz_dir_path;
-		std::string file_suffix = GRPCUtil::fileSuffix(file);
-		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-		if (is_zip)
+		if (is_file)
 		{
-			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+			std::string file_suffix = GRPCUtil::fileSuffix(file);
+			bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+			if (is_zip)
+			{
+				auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+					{
+						if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
+							return false;
+						return true;
+					});
+				if( code != CompressUtil::UnZipOK )
 				{
-					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
-						return false;
-					return true;
-				});
-			if( code != CompressUtil::UnZipOK )
-			{
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
-				return;
+					string error = "uncompress is failed error.";
+					response->Error(code, error);
+					return;
+				}
+				std::string file_name = GRPCUtil::fileName(file);
+				size_t pos = file_name.size() - file_suffix.size() - 1;
+				unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+				mkdir(unz_dir_path.c_str(), 0775);
+				CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+				code = upfile.unCompress();
+				if (code != CompressUtil::UnZipOK)
+				{
+					Util::remove_path(unz_dir_path);
+					string error = "uncompress is failed error.";
+					response->Error(code, error);
+					return;
+				}
+				upfile.getFileList(insert_files, "");
 			}
-			std::string file_name = GRPCUtil::fileName(file);
-			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			mkdir(unz_dir_path.c_str(), 0775);
-			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
-			code = upfile.unCompress();
-			if (code != CompressUtil::UnZipOK)
+			else
 			{
-				Util::remove_path(unz_dir_path);
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
-				return;
+				insert_files.push_back(file);
 			}
-			upfile.getFileList(zip_files, "");
-		}
-
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (apiUtil->trywrlock_database(db_name) == false)
+		} 
+		else
 		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			Util::string_suffix(dir, '/');
+			Util::dir_files(dir, "", insert_files);
+		}
+		std::string opt_id = apiUtil->generateUid();
+		std::string async = jsonParam(json_data, "async");
+		auto insert_helper = [db_name, insert_files, dir, unz_dir_path, opt_id] (GRPCResp *response)
+		{
+			string remote_ip = task_of(response)->peer_addr();
+			string operation = "batchInsert";
+			string msg = "Batch insert data beginning.";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+			
+			shared_ptr<Database> current_database;
+			apiUtil->get_database(db_name, current_database);
+			if (apiUtil->trywrlock_database(db_name) == false)
+			{
+				msg = "The operation can not been excuted due to loss of lock.";
+				apiUtil->update_access_log(StatusLossOfLock, msg, opt_id, -1, 0, 0);
+				if (!unz_dir_path.empty())
+				{
+					Util::remove_path(unz_dir_path);
+				}
+				if (response != nullptr)
+				{
+					response->Error(StatusLossOfLock, msg);
+				}
+				return;
+			}
+			unsigned success_num = 0;
+			unsigned total_num = 0;
+			unsigned parse_error_num = 0;
+			bool batch_insert_result = true;
+			string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+			total_num = Util::count_lines(error_log);
+			for (std::string rdf_file : insert_files)
+			{
+				try
+				{
+					success_num += current_database->batch_insert(rdf_file, false, nullptr);
+					SLOG_DEBUG("batch insert data from " + rdf_file + " success.");
+				}
+				catch(const std::exception& e)
+				{
+					SLOG_ERROR("batch insert data from " + rdf_file + " failed. ");
+					batch_insert_result = false;
+					msg = std::string(e.what());
+					break;
+				}
+			}
 			if (!unz_dir_path.empty())
 			{
 				Util::remove_path(unz_dir_path);
 			}
+			if (batch_insert_result)
+			{
+				// save data
+				if (!current_database->save())
+				{
+					apiUtil->unlock_database(db_name);
+					msg = "disk or memory is not enough";
+					apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+					if (response != nullptr)
+						response->Error(StatusOperationFailed, msg);
+					return;
+				}
+				// exclude Info line
+				parse_error_num = Util::count_lines(error_log) - total_num - insert_files.size();
+				apiUtil->unlock_database(db_name);
+				msg = "Batch insert data successfully.";
+				apiUtil->update_access_log(0, msg, opt_id, 1, success_num, parse_error_num);
+				if (response != nullptr)
+				{
+					Json resp_data;
+					resp_data.SetObject();
+					Json::AllocatorType &allocator = resp_data.GetAllocator();
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+					resp_data.AddMember("success_num", success_num, allocator);
+					resp_data.AddMember("failed_num", parse_error_num, allocator);
+					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+					response->Json(resp_data);
+				} 
+				else 
+				{
+					SLOG_DEBUG("async operation: " + msg);
+				}
+			}
+			else 
+			{
+				apiUtil->unlock_database(db_name);
+				apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+				if (response != nullptr)
+					response->Error(StatusOperationFailed, msg);
+			}
+		};
+		if (async == "true")
+		{
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "Operation success", allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			response->Json(resp_data);
+			thread t(insert_helper, nullptr);
+			t.detach();
 		}
 		else
 		{
-			std::string opt_id = apiUtil->generateUid();
-			string remote_ip = task_of(response)->peer_addr();
-			string msg = "Operation Success.";
-			string operation = "batchInsert";
-			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-			string _dir = dir;
-			std::string async = jsonParam(json_data, "async");
-			std::string callback = jsonParam(json_data, "callback");
-			auto insert_helper = [db_name,is_file,is_zip,file,zip_files,_dir,unz_dir_path,opt_id,async,callback]
-				(GRPCResp *response)
-				{
-					string success = "Batch insert data successfully.";
-					shared_ptr<Database> current_database;
-					apiUtil->get_database(db_name, current_database);
-					unsigned success_num = 0;
-					unsigned total_num = 0;
-					unsigned parse_error_num = 0;
-					string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
-					if (is_file)
-					{
-						if (!is_zip)
-						{
-							total_num = Util::count_lines(error_log);
-							success_num = current_database->batch_insert(file, false, nullptr);
-							// exclude Info line
-							parse_error_num = Util::count_lines(error_log) - total_num - 1;
-						}
-						else
-						{
-							total_num = Util::count_lines(error_log);
-							for (std::string rdf_zip : zip_files)
-							{
-								SLOG_DEBUG("begin insert data from " + rdf_zip);
-								success_num += current_database->batch_insert(rdf_zip, false, nullptr);
-							}
-							// exclude Info line
-							parse_error_num = Util::count_lines(error_log) - total_num - zip_files.size();
-						}
-					}
-					else
-					{
-						vector<string> files;
-						string dir = _dir;
-						Util::string_suffix(dir, '/');
-						Util::dir_files(dir, "", files);
-						total_num = Util::count_lines(error_log);
-						for (string rdf_file : files)
-						{
-							SLOG_DEBUG("begin insert data from " + dir + rdf_file);
-							success_num += current_database->batch_insert(dir + rdf_file, false, nullptr);
-						}
-						// exclude Info line
-						parse_error_num = Util::count_lines(error_log) - total_num - files.size();
-					}
-					bool is_save = current_database->save();
-					apiUtil->unlock_database(db_name);
-					if (!unz_dir_path.empty())
-					{
-						Util::remove_path(unz_dir_path);
-					}
-					if (!is_save)
-					{
-						success = "disk or memory not enough";
-						response->Error(StatusOperationFailed, success);
-						return;
-					}
-					apiUtil->update_access_log(0, "Batch insert data successfully.", opt_id, 1, success_num, parse_error_num);
-					if (async != "true")
-					{
-						Json resp_data;
-						resp_data.SetObject();
-						Json::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("success_num", success_num, allocator);
-						resp_data.AddMember("failed_num", parse_error_num, allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						response->Json(resp_data);
-					}
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
-						postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				};
-			if (async == "true")
-			{
-				Json resp_data;
-				resp_data.SetObject();
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-				response->Json(resp_data);
-				thread t(insert_helper, nullptr);
-				t.detach();
-			}
-			else
-			{
-				insert_helper(response);
-			}
-			
+			insert_helper(response);
 		}
-			
-			
 	}
 	catch (const std::exception &e)
 	{
@@ -3412,118 +3374,80 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 			response->Error(StatusOperationConditionsAreNotSatisfied, error);
 			return;
 		}
-		std::vector<std::string> zip_files;
-		std::string unz_dir_path;
-		std::string file_suffix = GRPCUtil::fileSuffix(file);
-		bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-		if (is_zip)
-		{
-			auto code = CompressUtil::FileHelper::foreachZip(file,[](std::string filename)->bool
+		std::string opt_id = apiUtil->generateUid();
+		std::string async = jsonParam(json_data, "async");
+		auto remove_helper = [db_name, file, opt_id] (GRPCResp *response) {
+			string remote_ip = task_of(response)->peer_addr();
+			string operation = "batchRemove";
+			string msg = "Batch remove data beginning.";
+			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+
+			shared_ptr<Database> current_database;
+			apiUtil->get_database(db_name, current_database);
+			if (apiUtil->trywrlock_database(db_name) == false)
+			{
+				msg = "The operation can not been excuted due to loss of lock.";
+				apiUtil->update_access_log(StatusLossOfLock, msg, opt_id, -1, 0, 0);
+				if (response != nullptr)
 				{
-					if( apiUtil->check_upload_allow_extensions(GRPCUtil::fileSuffix(filename)) == false )
-						return false;
-					return true;
-				});
-			if( code != CompressUtil::UnZipOK )
-			{
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
+					response->Error(StatusLossOfLock, msg);
+				}
 				return;
 			}
-			std::string file_name = GRPCUtil::fileName(file);
-			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
-			mkdir(unz_dir_path.c_str(), 0775);
-			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
-			code = upfile.unCompress();
-			if (code != CompressUtil::UnZipOK)
+			try
 			{
-				Util::remove_path(unz_dir_path);
-				string error = "uncompress is failed error.";
-				response->Error(code, error);
-				return;
+				unsigned success_num = current_database->batch_remove(file, false, nullptr);
+				SLOG_DEBUG("batch remove data from " + file + " success.");
+				if (current_database->save()) {
+					throw std::runtime_error("disk or memory not enough");
+				}
+				apiUtil->unlock_database(db_name);
+				msg = "Batch remove data successfully.";
+				apiUtil->update_access_log(0, msg, opt_id, 1, success_num, 0);
+				if (response != nullptr)
+				{
+					Json resp_data;
+					resp_data.SetObject();
+					Json::AllocatorType &allocator = resp_data.GetAllocator();
+					resp_data.AddMember("StatusCode", 0, allocator);
+					resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
+					resp_data.AddMember("success_num", success_num, allocator);
+					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
+					response->Json(resp_data);
+				}
+				else
+				{
+					SLOG_DEBUG("async operation: " + msg);
+				}
 			}
-			upfile.getFileList(zip_files, "");
-		}
-		shared_ptr<Database> current_database;
-		apiUtil->get_database(db_name, current_database);
-		if (apiUtil->trywrlock_database(db_name) == false)
+			catch (const std::exception &e)
+			{
+			    SLOG_ERROR("batch insert data from " + file + " failed. ");
+				msg = std::string(e.what());
+				apiUtil->unlock_database(db_name);
+				apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+				if (response != nullptr)
+				{
+					response->Error(StatusOperationFailed, msg);
+				}
+			}
+		};
+		if (async == "true")
 		{
-			error = "The operation can not been excuted due to loss of lock.";
-			response->Error(StatusLossOfLock, error);
+			Json resp_data;
+			resp_data.SetObject();
+			Json::AllocatorType &allocator = resp_data.GetAllocator();
+			resp_data.AddMember("StatusCode", 0, allocator);
+			resp_data.AddMember("StatusMsg", "Operation success", allocator);
+			resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
+			response->Json(resp_data);
+			thread t(remove_helper, nullptr);
+			t.detach();
 		}
 		else
 		{
-			std::string opt_id = apiUtil->generateUid();
-			string remote_ip = task_of(response)->peer_addr();
-			string msg = "Operation Success.";
-			string operation = "batchRemove";
-			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-			std::string async = jsonParam(json_data, "async");
-			std::string callback = jsonParam(json_data, "callback");
-			auto remove_helper = [db_name,operation,file,opt_id,is_zip,zip_files,async,callback]
-				(GRPCResp *response)
-				{
-					shared_ptr<Database> current_database;
-					apiUtil->get_database(db_name, current_database);
-					string success = "Batch remove data successfully.";
-					unsigned success_num = 0;
-					if (is_zip)
-					{
-						for (string rdf_file : zip_files)
-						{
-							success_num += current_database->batch_remove(rdf_file, false, nullptr);
-						}
-					}
-					else
-						success_num += current_database->batch_remove(file, false, nullptr);
-					bool is_save = current_database->save();
-					apiUtil->unlock_database(db_name);
-					if (!is_save && async != "true")
-					{
-						success = "disk or memory not enough";
-						response->Error(StatusOperationFailed, success);
-						return;
-					}
-					apiUtil->update_access_log(0, success, opt_id, 1, success_num, 0);
-					if (async != "true")
-					{
-						Json resp_data;
-						resp_data.SetObject();
-						Json::AllocatorType &allocator = resp_data.GetAllocator();
-						resp_data.AddMember("StatusCode", 0, allocator);
-						resp_data.AddMember("StatusMsg", StringRef(success.c_str()), allocator);
-						resp_data.AddMember("success_num", StringRef(Util::int2string(success_num).c_str()), allocator);
-						resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-						response->Json(resp_data);
-					}
-					if (!callback.empty())
-					{
-						string postdata;
-						string res;
-						postdata += "{\"StatusCode\":\"0\",";
-						postdata += "\"StatusMsg\":\"" + success + "\",";
-						postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
-						postdata += "\"opt_id\":\"" + opt_id + "\"}";
-						HttpUtil::Post(callback, postdata, res);
-					}
-				};
-			if (async == "true")
-			{
-				Json resp_data;
-				resp_data.SetObject();
-				Json::AllocatorType &allocator = resp_data.GetAllocator();
-				resp_data.AddMember("StatusCode", 0, allocator);
-				resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-				resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
-				response->Json(resp_data);
-				thread t(remove_helper, nullptr);
-				t.detach();
-			}
-			else
-			{
-				remove_helper(response);
-			}
+			remove_helper(response);
 		}
 	}
 	catch (const std::exception &e)

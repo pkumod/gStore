@@ -781,9 +781,23 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		}
 
 		//assert(_values[0] ==  _values[_values[1]*2+2] - _values[4] + 1);
-		assert(len == _values[0] + 2*_values[1] + 3);
+		unsigned _values_len =  _values[0] + 2*_values[1] + 3;
+		if(len != _values_len) 
+		{
+			SLOG_ERROR("validate error: len=" << len << ",_values[0] + 2*_values[1] + 3="<<_values_len);
+			delete [] _tmp;
+			delete [] _values;
+			throw runtime_error("validate error: len not equal (_values[0] + 2*_values[1] + 3)");
+		}
+		size_t mem_size = sizeof(unsigned) * len;
+		if (Util::IsEnoughMemoryMb(mem_size) == false) {
+			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
+			delete [] _tmp;
+			delete [] _values;
+			throw runtime_error("Memory is not enough");
+		}
 		values = new unsigned[len];
-		memcpy(values, _values, sizeof(unsigned) * len);
+		memcpy(values, _values, mem_size);
 		values_len = len;
 		delete [] _values;
 		update_num = values[0];
@@ -794,7 +808,14 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		unsigned long _values_len;
 		_values_len = _len + 3*n;
 		_values = new unsigned[_values_len];
-		memset(_values, 0, sizeof(unsigned)* _values_len);
+		size_t mem_size = sizeof(unsigned)* _values_len;
+		if (Util::IsEnoughMemoryMb(mem_size) == false) {
+			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
+			delete [] _values;
+			delete [] _tmp;
+			throw runtime_error("Memory is not enough");
+		}
+		memset(_values, 0, mem_size);
 		auto it = mp.begin();
 		int old_p_offset = 3, p_offset = 3;
 		int old_p_len = _tmp[1] * 2 + 3;
@@ -971,8 +992,15 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		_values[0] = len - 3 - _values[1]*2;
 		_values[2] = entity_num;
 		//assert(len == _values[0] + 2*_values[1] + 3);
+		mem_size = sizeof(unsigned) * len;
+		if (Util::IsEnoughMemoryMb(mem_size) == false) {
+			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
+			delete [] _tmp;
+			delete [] _values;
+			throw runtime_error("Memory is not enough");
+		}
 		values = new unsigned[len];
-		memcpy(values, _values, sizeof(unsigned) * len);
+		memcpy(values, _values, mem_size);
 		values_len = len;
 		delete [] _values;
 		update_num = values[0] - _tmp[0];
@@ -2421,7 +2449,12 @@ KVstore::setEntityByID(TYPE_ENTITY_LITERAL_ID _id, string _entity0)
 
 	memcpy(str, _entity0.c_str(), len);
 
-	return this->addValueByKey(this->id2entity, _id, str, len);
+	bool rt = this->addValueByKey(this->id2entity, _id, str, len);
+	if (!rt) {
+		SLOG_CORE("addValueByKey failed, delete char* str");
+		delete [] str;
+	}
+	return rt;
 }
 
 //for predicate2id
@@ -2577,7 +2610,12 @@ KVstore::setPredicateByID(TYPE_PREDICATE_ID _id, string _predicate0)
 	char* str = new char[len];
 	memcpy(str, _predicate0.c_str(), len);
 
-	return this->addValueByKey(this->id2predicate, _id, str, len);
+	bool rt = this->addValueByKey(this->id2predicate, _id, str, len);
+	if (!rt) {
+		SLOG_CORE("addValueByKey failed, delete char* str");
+		delete [] str;
+	}
+	return rt;
 }
 
 //for literal2id
@@ -2741,7 +2779,12 @@ KVstore::setLiteralByID(TYPE_ENTITY_LITERAL_ID _id, string _literal0)
 	char* str = new char[len];
 	memcpy(str, _literal0.c_str(), len);
 
-	return this->addValueByKey(this->id2literal, _id, str, len);
+	bool rt = this->addValueByKey(this->id2literal, _id, str, len);
+	if (!rt) {
+		SLOG_CORE("addValueByKey failed, delete char* str");
+		delete [] str;
+	}
+	return rt;
 }
 
 bool 
