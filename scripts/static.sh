@@ -1,18 +1,21 @@
 #/bin/bash
 
-# 根据打包环境修改os和architecture的配置
 os="linux"
-architecture="x86_64"
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    os=$ID
+fi
+architecture=`uname -m`
 version=$(awk -F '=' '/version/ {print$2}' "conf/conf.ini")
 product_name=$(awk -F '=' '/product_name/ {print$2}' "conf/conf.ini")
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
 static_pkg_name="$product_name_lower-$version-static-$os-$architecture"
 
-echo "系统: $os"
-echo "架构: $architecture"
-echo "版本: $version"
-echo "产品名称: $product_name"
-echo "安装包名: $static_pkg_name"
+echo "os: $os"
+echo "architecture: $architecture"
+echo "version: $version"
+echo "production: $product_name"
+echo "package: $static_pkg_name.tar.gz"
 
 echo "start build static package-------"
 
