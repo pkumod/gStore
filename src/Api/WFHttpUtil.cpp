@@ -101,7 +101,7 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, cons
     protocol::HttpResponse *resp = task -> get_resp();
     req -> set_method("POST");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", "3");
+    // // // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     req -> append_output_body(strPost);
     resp -> set_size_limit(40 * 1024 * 1024);
@@ -124,7 +124,7 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std:
     protocol::HttpRequest *req = task -> get_req();
     req -> set_method("POST");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", "3");
+    // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     req -> append_output_body(strPost);
     RespData data = {&strResponse, &wait_group};
@@ -215,7 +215,7 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
     protocol::HttpResponse *resp = task -> get_resp();
     req -> set_method("GET");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", "3");
+    // // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     resp -> set_size_limit(40 * 1024 * 1024);
     FileData data = {fw, &wait_group};
@@ -235,7 +235,7 @@ int WFHttpUtil::Get(const std::string& strUrl, std::string& strResponse)
     protocol::HttpRequest *req = task -> get_req();
     req -> set_method("GET");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", "3");
+    // // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     RespData data = {&strResponse, &wait_group};
     task -> user_data = (void*) &data;
@@ -253,7 +253,7 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::
     protocol::HttpResponse *resp = http_task -> get_resp();
     req -> set_method("GET");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", "3");
+    // // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     for (const auto &pair : headers) {
         req -> add_header_pair(pair.first, pair.second);

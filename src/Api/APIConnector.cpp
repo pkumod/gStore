@@ -215,17 +215,17 @@ server::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& 
 // 	return response_parser<server::MessageStatResponse>(status, body_str);
 // }
 
-// server::MessageBackUpResponse APIConnector::backUp(const std::string& url, const bool& inner, server::MessageBackUpRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageBackUpResponse>(status, body_str);
-// }
+server::MessageBackupResponse APIConnector::backup(const std::string& url, const bool& inner, server::MessageBackupRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageBackupResponse>(status, body_str);
+}
 
 // server::MessageBackUpPathResponse APIConnector::backUpPath(const std::string& url, const bool& inner, server::MessageBackUpPathRequest& request)
 // {
@@ -239,29 +239,29 @@ server::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& 
 // 	return response_parser<server::MessageBackUpPathResponse>(status, body_str);
 // }
 
-// server::MessageRestoreResponse APIConnector::restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageRestoreResponse>(status, body_str);
-// }
+server::MessageRestoreResponse APIConnector::restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageRestoreResponse>(status, body_str);
+}
 
-// server::MessageExportResponse APIConnector::exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageExportResponse>(status, body_str);
-// }
+server::MessageExportResponse APIConnector::exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageExportResponse>(status, body_str);
+}
 
 // server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request)
 // {
@@ -348,53 +348,53 @@ server::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& 
 // 	return response_parser<server::MessageCheckPointResponse>(status, body_str);
 // }
 
-// server::MessageShowUserResponse APIConnector::showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageShowUserResponse>(status, body_str);
-// }
+server::MessageShowUserResponse APIConnector::showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageShowUserResponse>(status, body_str);
+}
 
-// server::MessageUserManageResponse APIConnector::userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageUserManageResponse>(status, body_str);
-// }
+server::MessageResponse APIConnector::userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
+}
 
-// server::MessageUserPrivilegeManageResponse APIConnector::userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageUserPrivilegeManageResponse>(status, body_str);
-// }
+server::MessageUserPrivilegeManageResponse APIConnector::userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageUserPrivilegeManageResponse>(status, body_str);
+}
 
-// server::MessageUserPasswordResponse APIConnector::userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageUserPasswordResponse>(status, body_str);
-// }
+server::MessageUserPasswordResponse APIConnector::userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageUserPasswordResponse>(status, body_str);
+}
 
 // server::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request)
 // {

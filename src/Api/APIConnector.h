@@ -2,6 +2,8 @@
 
 #include "../Server/MessageProtocol/MessageApi.h"
 #include "../Server/MessageProtocol/MessageApiUpdate.h"
+#include "../Server/MessageProtocol/MessageApiUser.h"
+#include "../Server/MessageProtocol/MessageApiBackUpRestore.h"
 #include "../Server/MessageProtocol/MessageCluster.h"
 #include "WFHttpUtil.h"
 #include "HttpEntities.h"
@@ -57,13 +59,13 @@ public:
 
 	// static server::MessageStatResponse stat(const std::string& url, const bool& inner, server::MessageStatRequest& request);
 
-	// static server::MessageBackUpResponse backUp(const std::string& url, const bool& inner, server::MessageBackUpRequest& request);
+	static server::MessageBackupResponse backup(const std::string& url, const bool& inner, server::MessageBackupRequest& request);
 
 	// static server::MessageBackUpPathResponse backUpPath(const std::string& url, const bool& inner, server::MessageBackUpPathRequest& request);
 
-	// static server::MessageRestoreResponse restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request);
+	static server::MessageRestoreResponse restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request);
 
-	// static server::MessageExportResponse exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request);
+	static server::MessageExportResponse exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request);
 
 	// static server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request);
 
@@ -79,13 +81,13 @@ public:
 	
 	// static server::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request);
 
-	// static server::MessageShowUserResponse showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request);
+	static server::MessageShowUserResponse showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request);
 
-	// static server::MessageUserManageResponse userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request);
+	static server::MessageResponse userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request);
 
-	// static server::MessageUserPrivilegeManageResponse userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request);
+	static server::MessageUserPrivilegeManageResponse userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request);
 
-	// static server::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request);
+	static server::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request);
 
 	// static server::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request);
 

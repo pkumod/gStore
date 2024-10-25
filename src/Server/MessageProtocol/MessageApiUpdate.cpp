@@ -184,9 +184,22 @@ namespace server
             if (json.contains("ThreadId"))
                 json.at("ThreadId").get_to(this->threadId);
             if (json.contains("head"))
-                json.at("head").get_to(this->head);
-            if (json.contains("results"))
-                json.at("results").get_to(this->results);
+            {
+                json.at("head").at("vars").get_to(this->head);
+            }
+            if (json.contains("results") && !this->head.empty())
+            {
+                nlohmann::json results = json.at("results").at("bindings");
+                for (const auto &result : results)
+                {
+                    this->results.push_back({});
+                    std::vector<std::string> &result_part = this->results.back();
+                    for (const auto &var : this->head)
+                    {
+                        result_part.push_back(result.at(var).at("value"));
+                    }
+                }
+            }
         }
     }
 
@@ -371,7 +384,7 @@ namespace server
         SLOG_TRACE("MessageBatchRemoveResponse:" << json_str);
     }
 
-    // checkPonit
+    // checkPoint
     MessageCheckPointRequest::MessageCheckPointRequest(const rapidjson::Document& json_data)
     {
         this->db_name = jsonParam(json_data, "db_name");

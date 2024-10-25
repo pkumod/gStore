@@ -11,14 +11,19 @@ namespace server
         bool async;
         std::string callback;
         bool backup_zip;
-        MessageBackupRequest()=delete;
+        MessageBackupRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip);
         MessageBackupRequest(const rapidjson::Document& json_data);
+        void to_json(std::string& json_str) override;
+        void to_inner_json(std::string& json_str) override;
     };
 
     struct MessageBackupResponse : public MessageResponse
     {
         std::string backupfilepath;
         std::string opt_id;
+        MessageBackupResponse();
+        MessageBackupResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageBackupResponse(std::string body);
         void toJsonString(std::string& json_str) override;
     };
 
@@ -44,13 +49,38 @@ namespace server
         bool async;
         std::string callback;
         bool backup_zip;
-        MessageRestoreRequest()=delete;
+        MessageRestoreRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip);
         MessageRestoreRequest(const rapidjson::Document& json_data);
+        void to_json(std::string& json_str) override;
+        void to_inner_json(std::string& json_str) override;
     };
 
     struct MessageRestoreResponse : public MessageResponse
     {
         std::string opt_id;
+        MessageRestoreResponse();
+        MessageRestoreResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageRestoreResponse(std::string body);
+        void toJsonString(std::string& json_str) override;
+    };
+
+    struct MessageExportRequest : public MessageRequest
+    {
+        std::string db_name;
+        std::string db_path;
+        bool compress;
+        MessageExportRequest(std::string db_name, std::string db_path, bool compress);
+        MessageExportRequest(const rapidjson::Document& json_data);
+        void to_json(std::string& json_str) override;
+        void to_inner_json(std::string& json_str) override;
+    };
+
+    struct MessageExportResponse : public MessageResponse
+    {
+        std::string filepath;
+        MessageExportResponse();
+        MessageExportResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageExportResponse(std::string body);
         void toJsonString(std::string& json_str) override;
     };
 

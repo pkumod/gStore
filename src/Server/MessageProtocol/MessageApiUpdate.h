@@ -126,7 +126,7 @@ namespace server
         void toJsonString(std::string& json_str);
     };
 
-    // check ponit
+    // check point
     struct MessageCheckPointRequest : public MessageRequest
     {
         std::string db_name;

@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 19
+#define TOTAL_COMMAND_NUM 30
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -131,21 +131,21 @@ COMMAND commands[] =
 		{"show", show_handler, "Show info and specified number of triples of current database or other database.", "show [<database_name>];", QUERY_PRIVILEGE_BIT},
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
 		{"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
-		// {"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
-		// {"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
-		// {"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
+		{"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
+		{"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
+		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
         {"unload", unload_handler, "Unload the current database.","unload;", UNLOAD_PRIVILEGE_BIT},
         {"batchinsert", batchinsert_handler, "Batch inserts data into the current database.","batchinsert <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
         {"batchremove", batchremove_handler, "Batch deletes the current database data.","batchremove <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
 
 		// id and usr manage
-		// {"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
-		// {"pusr", pusr_handler, "Display user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
-		// {"setpswd", setpswd_handler, "Set your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
-		// {"setpriv", setpriv_handler, "Set user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
-		// {"addusr", addusr_handler, "Add user.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
-		// {"delusr", delusr_handler, "Del user.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
-		// {"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
+		{"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
+		{"pusr", pusr_handler, "Display user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
+		{"setpswd", setpswd_handler, "Set your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"setpriv", setpriv_handler, "Set user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
+		{"addusr", addusr_handler, "Add user.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"delusr", delusr_handler, "Del user.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
+		{"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
 
 		// other
 		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
@@ -205,7 +205,7 @@ COMMAND commands[] =
 		cout << "You can NOT do this for system database." << endl;                          \
 		return -1;                                                                                                 \
 	}
-
+	
 char *dupstr(const char *);
 char *stripwhite(char *);
 string stripwhite(const string &s);
@@ -261,6 +261,7 @@ int main(int argc, char **argv)
 	_db_suffix = util.getConfigureValue("db_suffix");
 	_website = util.getConfigureValue("website");
 	
+	default_backup_path = util.getConfigureValue("backup_path");
 	root_username = util.getConfigureValue("root_username");
 	product_version = util.getConfigureValue("version");
 	product_name = util.getConfigureValue("product_name");
@@ -879,8 +880,22 @@ void print_lowbits(unsigned priv, int sz)
 unsigned read_priv(string usr, string db_name)
 {
 	// TODO
-	
-	return 0;
+	server::MessageShowUserRequest showuser_request;
+	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);	
+	int priv = 0;
+	for (const auto &m : showuser_response.ResponseBody)
+	{
+		if (usr != m.username) continue;
+		priv |= QUERY_PRIVILEGE_BIT & (m.query_privilege.find(db_name) != std::string::npos) |
+				LOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != std::string::npos) |
+				UNLOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != std::string::npos) |
+				UPDATE_PRIVILEGE_BIT & (m.update_privilege.find(db_name) != std::string::npos) |
+				BACKUP_PRIVILEGE_BIT & (m.backup_privilege.find(db_name) != std::string::npos) |
+				RESTORE_PRIVILEGE_BIT & (m.restore_privilege.find(db_name) != std::string::npos) |
+				EXPORT_PRIVILEGE_BIT & (m.export_privilege.find(db_name) != std::string::npos);
+		break;
+	}
+	return priv;
 }
 
 // return priv bitset of usr on db_name
@@ -888,7 +903,30 @@ unsigned read_priv(string usr, string db_name)
 unsigned get_priv(string usr, string db_name)
 {
 	// TODO
-	return 0;
+	if (access(string(_db_home + db_name + _db_suffix).c_str(), F_OK))
+	{
+		cout << "Database " << db_name << " does not exist." << endl;
+		return -1u;
+	}
+
+	if (usr == root_username)
+	{
+		return ROOT_PRIVILEGE_BIT;
+	}
+	if (usr == usrname && db2priv.count(db_name))
+	{
+		return db2priv[db_name];
+	}
+
+	unsigned priv = read_priv(usr, db_name);
+	if (priv == -1u)
+	{
+		cout << "Read priv failed." << endl;
+		return -1u;
+	}
+	if (usr == usrname)
+		db2priv[db_name] = priv;
+	return priv;
 }
 
 // usrname has request_priv on db_name: return 0, else return -1;
@@ -896,6 +934,16 @@ unsigned get_priv(string usr, string db_name)
 int check_priv(string db_name, unsigned request_priv)
 {
 	// TODO
+	unsigned priv = get_priv(usrname, db_name);
+	if (priv == -1u)
+	{
+		return -1;
+	}
+	if (priv != ROOT_PRIVILEGE_BIT && (priv & request_priv) != request_priv)
+	{
+		cout << "Permission denied. Check your privilege with database: " << db_name << endl;
+		return -1;
+	}
 	return 0;
 }
 
@@ -1064,8 +1112,41 @@ int check_argc_or(int argc, int std_argc_num, ...)
 int flushpriv_handler(const vector<string> &args)
 {
 	//TODO
-	CHECK_CURRENT_DB_LOADED
-	return 0;
+	CHECK_ARGC(1, 0)
+	for (auto &p : db2priv)
+	{
+		unsigned priv = read_priv(usrname, p.first);
+		if (priv == -1u)
+		{
+			cout << "Warn: update priv on " << p.first << _db_suffix << " failed." << endl;
+		}
+		else
+		{
+	#ifdef _GCONSOLE_TRACE
+				if (p.second != priv)
+				{
+					cout << "\t[Update priv on " << p.first << "] before:";
+					print_lowbits(p.second, 8);
+					cout << "after:";
+					print_lowbits(priv, 8);
+					cout << endl;
+				}
+	#endif //_GCONSOLE_TRACE
+				p.second = priv;
+			}
+		}
+	#ifdef _GCONSOLE_TRACE
+		cout << "[db2priv after flush priv:][db:priv]:";
+		for (auto p : db2priv)
+		{
+			cout << p.first << ":";
+			print_lowbits(p.second, 8);
+			cout << endl;
+		}
+	#endif //_GCONSOLE_TRACE
+
+		cout << "Privilige Flushed for current user successfully." << endl;
+		return 0;
 }
 
 // ofp is set to output, and output need to be closed outer
@@ -1073,6 +1154,11 @@ int flushpriv_handler(const vector<string> &args)
 int raw_sparql_handler(string sparql)
 {
 	CHECK_CURRENT_DB_LOADED
+	std::string sparql_head;
+	for (int i = 0; i < 6; ++i) {
+		sparql_head += std::tolower(sparql[i]);
+	}
+	check_priv(_current_database, sparql_head == "select" ? QUERY_PRIVILEGE_BIT : UPDATE_PRIVILEGE_BIT);
 	string query_url;
 	if (_current_database == Util::system_db)
 	{
@@ -1082,7 +1168,7 @@ int raw_sparql_handler(string sparql)
 	{
 		query_url = API_URL;
 	}
-	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
+	server::MessageQueryRequest query_request(_current_database, sparql, "json");
 	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
@@ -1439,6 +1525,12 @@ int drop_handler(const vector<string> &args)
 		cout << "You can NOT drop system database. " << endl;
 		return -1;
 	}
+
+	if (db_name == _current_database)
+	{
+		cout << "You can NOT drop current database. Please UNLOAD current database through \"UNLOAD <database_name>;\" before you drop it.";
+		return -1;
+	}
 	server::MessageDropRequest drop_request(db_name, "0");
 	server::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
 	if (!drop_response.success())
@@ -1453,85 +1545,142 @@ int drop_handler(const vector<string> &args)
 int export_handler(const vector<string> &args)
 {
 	// // TODO
-	// CHECK_ARGC(1, 1)
-	// CHECK_CURRENT_DB_LOADED
-	// CHECK_CURRENT_DB_NOT_SYSDB
-	// string export_path = args[0];
-	// server::MessageExportRequest export_request();
-	// server::MessageResponse export_response = APIConnector::export(API_URL, true, request);
-	// if (!export_response.success())
-	// {
-	// 	cout << "Database " << _current_database << "exported failed: " << export_response.StatusMsg << endl;
-	// 	return -1;
-	// }
-	// cout << "Database " << _current_database << " exported successfully." << endl;
+	CHECK_ARGC(1, 1)
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	check_priv(_current_database, EXPORT_PRIVILEGE_BIT);
+	string export_path = args[0];
+	std::cout << _current_database << '\n';
+	
+	if (export_path[export_path.length() - 1] != '/')
+		export_path = export_path + "/";
+	if (!Util::dir_exist(export_path))
+		Util::create_dirs(export_path);
+	
+	server::MessageExportRequest export_request(_current_database, export_path, false);
+	server::MessageResponse export_response = APIConnector::exportDb(API_URL, true, export_request);
+	if (!export_response.success())
+	{
+		cout << "Database " << _current_database << " exported failed: " << export_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "Database " << _current_database << " exported successfully." << endl;
 	return 0;
 }
 
 int backup_handler(const vector<string> &args)
 {
-	// CHECK_ARGC(2, 0, 1)
-	// CHECK_CURRENT_DB_LOADED
-	// CHECK_CURRENT_DB_NOT_SYSDB
-	// // TODO
-	// string backup_path;
-	// if (!args.empty()) 
-	// {
-	// 	backup_path = args[0];
-	// }
-	// if (backup_path.empty())
-	// {
-	// 	backup_path = default_backup_path;
-	// }
-	// if (back_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
-	// {
-	// 	cout << "Backup path cannot be root or \"" + _db_home + "\", Backup Failed!" << endl;
-	// 	return -1;
-	// }
-	// Util::string_suffix(backup_path, '/');
-	// if (!Util::dir_exist(backup_path))
-	// {
-	// 	cout << "Backup path " + backup_path + "is not exist, create it now..." << endl;
-	// 	if (!Util::create_dirs(backup_path))
-	// 	{
-	// 		cout << "create Backup path Failed, Backup Failed!" << endl;
-	// 		return -1;
-	// 	}
-	// }
+	CHECK_ARGC(2, 0, 1)
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	check_priv(_current_database, BACKUP_PRIVILEGE_BIT);
+	// TODO
+	string backup_path;
+	if (!args.empty()) 
+	{
+		backup_path = args[0];
+	}
+	if (backup_path.empty())
+	{
+		backup_path = default_backup_path;
+	}
+	if (backup_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
+	{
+		cout << "Backup path cannot be root or \"" + _db_home + "\", Backup Failed!" << endl;
+		return -1;
+	}
+	Util::string_suffix(backup_path, '/');
+	if (!Util::dir_exist(backup_path))
+	{
+		cout << "Backup path " + backup_path + "is not exist, create it now..." << endl;
+		if (!Util::create_dirs(backup_path))
+		{
+			cout << "create Backup path Failed, Backup Failed!" << endl;
+			return -1;
+		}
+	}
 
-	// server::MessageBackUpRequest backup_request();
-	// server::MessageBackUpResponse backup_response = APIConnector::export(API_URL, true, request);
-	// if (!backup_response.success())
-	// {
-	// 	cout << "Database " << _current_database << "backup failed: " << backup_response.StatusMsg << endl;
-	// 	return -1;
-	// }
-	// // cout << "Backup path: " << backup_path << endl;
-	// cout << "Database " << _current_database << " backup successfully." << endl;
+	server::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
+	server::MessageBackupResponse backup_response = APIConnector::backup(API_URL, true, backup_request);
+	if (!backup_response.success())
+	{
+		cout << "Database " << _current_database << "backup failed: " << backup_response.StatusMsg << endl;
+		return -1;
+	}
+	// cout << "Backup path: " << backup_path << endl;
+	cout << "Database " << _current_database << " backup successfully." << endl;
 	return 0;
 }
 
 int restore_handler(const vector<string> &args)
 {
-	// CHECK_ARGC(1, 2)
+	CHECK_ARGC(1, 2)
 	// CHECK_CURRENT_DB_LOADED
 	// CHECK_CURRENT_DB_NOT_SYSDB
-	// // TODO
-	// string db_name = args[0], backup_path = args[1];
-	// if (!Util::dir_exist(backup_path))
+	// TODO
+	string db_name = args[0], backup_path = args[1];
+	check_priv(db_name, RESTORE_PRIVILEGE_BIT);
+	if (db_name == _current_database)
+	{
+		std::cout << "Database game restore failed: Database alreay load, need unload it first through \"UNLOAD <database_name>;\" before you restore it" << endl;
+		return -1;
+	}
+	if (backup_path[0] == '/')
+		backup_path = '.' + backup_path;
+	if (backup_path[backup_path.length() - 1] == '/')
+		backup_path = backup_path.substr(0, backup_path.length() - 1);
+
+	if (Util::get_backup_time(backup_path, db_name).size() == 0) 
+	{
+		cout << "Backup Path Does not match the Database name, Restore Failed" << endl;
+		return -1;
+	}
+
+	if (!Util::dir_exist(backup_path))
+	{
+		cout << "backup file path is not exist, restore Failed" << endl;
+		return -1;
+	}
+
+	bool db_exist = false;
+	server::MessageShowRequest show_request;
+	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	for (const auto& db : show_response.responseBody) 
+	{
+		if (db.database == db_name) db_exist = true;
+	}
+
+	if (!db_exist) {
+		cout << "Database " << db_name << " not exist, Now Rebuild it!" << endl;
+		server::MessageBuildRequest build_request(db_name, "");
+		server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
+		if (!build_response.success())
+		{
+			cout << "Rebuild Error, Restore Failed" << endl;
+			return -1; 
+		}
+		else
+		{
+			cout << "Add database info success." << endl;
+		}
+		Util::add_backuplog(db_name);
+	}
+
+	server::MessageRestoreRequest restore_request(db_name, backup_path, false, "", false);
+	server::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, restore_request);
+	
+	if (!restore_response.success())
+	{
+		cout << "Database " << db_name << " restore failed: " << restore_response.StatusMsg << endl;
+		return -1;
+	}
+
+	// if (db_name == _current_database)
 	// {
-	// 	cout << "backup file path is not exist, restore Failed" << endl;
-	// 	return -1;
+	// 	cout << "WARNNING: The database you restored just now is current database(" << db_name << "), will restore.\nRestore is done" << endl;
 	// }
 
-	// server::MessageRestoreRequest restore_request();
-	// server::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, request);
-	// if (!restore_response.success())
-	// {
-	// 	cout << "Database " << _current_database << "restore failed: " << restore_response.StatusMsg << endl;
-	// 	return -1;
-	// }
-	// cout << "Database " << _current_database << " restored successfully." << endl;
+	cout << "Database " << db_name << " restored successfully." << endl;
 	return 0;
 }
 
@@ -1539,6 +1688,7 @@ int use_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string new_db_name = args[0];
+	check_priv(new_db_name, LOAD_PRIVILEGE_BIT);
 	if (new_db_name == Util::system_db)
 	{
 		if (usrname == root_username)
@@ -1567,6 +1717,7 @@ int use_handler(const vector<string> &args)
 int unload_handler(const std::vector<std::string> &args)
 {
 	CHECK_CURRENT_DB_NOT_SYSDB
+	check_priv(_current_database, UNLOAD_PRIVILEGE_BIT);
 	if (_current_database.empty())
 	{
 		cout << "Use no database!";
@@ -1681,142 +1832,198 @@ int pdb_handler(const vector<string> &args)
 
 int setpswd_handler(const vector<string> &args)
 {
-// 	CHECK_ARGC(2, 0, 1)
-// 	string prompt, tar_usr;
-// 	// set args[0]'s pswd
-// 	if (args.size() == 1)
-// 	{
-// 		if (usrname != root_username)
-// 		{
-// 			cout << "Permission denied. Only root is allowed to set other's pswd." << endl;
-// 			if (usrname == args[0])
-// 			{
-// 				cout << "If you want to set your pswd, just enter 'setpswd;'." << endl;
-// 			}
-// 			return -1;
-// 		}
+	CHECK_ARGC(2, 0, 1)
+	string prompt, tar_usr;
+	// set args[0]'s pswd
+	if (args.size() == 1)
+	{
+		if (usrname != root_username)
+		{
+			cout << "Permission denied. Only root is allowed to set other's pswd." << endl;
+			if (usrname == args[0])
+			{
+				cout << "If you want to set your pswd, just enter 'setpswd;'." << endl;
+			}
+			return -1;
+		}
 
-// 		prompt = "Enter your password: ";
-// 		tar_usr = args[0];
-// 	}
-// 	// set usrname pswd
-// 	else
-// 	{
-// 		prompt = "Enter old password: ";
-// 		tar_usr = usrname;
-// 	}
+		prompt = "Enter your password: ";
+		tar_usr = args[0];
+	}
+	// set usrname pswd
+	else
+	{
+		prompt = "Enter old password: ";
+		tar_usr = usrname;
+	}
 
-// 	if (enter_pswd(prompt))
-// 	{
-// 		cout << "Fail to varify your id. Password set failed." << endl;
-// 		return -1;
-// 	}
+	if (enter_pswd(prompt))
+	{
+		cout << "Fail to varify your id. Password set failed." << endl;
+		return -1;
+	}
 
-// 	HideStdinDisplay hide_ins; // hide stdin input and recover when out of scope
+	HideStdinDisplay hide_ins; // hide stdin input and recover when out of scope
 
-// 	string new_pswd, confirm;
-// 	int not_match_cnt = 0;
-// 	do
-// 	{
-// 		if (not_match_cnt)
-// 		{
-// 			cout << "Not Matched." << endl;
-// 		}
-// 		++not_match_cnt;
-// 		cout << "Enter new password: ";
-// 		cin >> new_pswd;
-// 		cout << endl;
-// 		cout << "Enter new password again: ";
-// 		cin >> confirm;
-// 		cout << endl;
-// 	} while (not_match_cnt < MAX_WRONG_PSWD_TIMES && confirm != new_pswd);
+	string new_pswd, confirm;
+	int not_match_cnt = 0;
+	do
+	{
+		if (not_match_cnt)
+		{
+			cout << "Not Matched." << endl;
+		}
+		++not_match_cnt;
+		cout << "Enter new password: ";
+		cin >> new_pswd;
+		cout << endl;
+		cout << "Enter new password again: ";
+		cin >> confirm;
+		cout << endl;
+	} while (not_match_cnt < MAX_WRONG_PSWD_TIMES && confirm != new_pswd);
 
-// 	if (not_match_cnt >= MAX_WRONG_PSWD_TIMES)
-// 	{
-// 		cout << "Too much not match. Password set failed." << endl;
-// 		return -1;
-// 	}
-
-// 	server::MessageUserPasswordRequest password_request();
-// 	server::MessageUserPasswordResponse password_response = APIConnector::userPassword(API_URL, true, password_request);
-// 	if (!password_response.success()) {
-// 		cout << "System db update failed. Password set failed." << endl;
-// 		return -1;
-// 	}
-
-// 	if (tar_usr == usrname)
-// 	{
-// 		stdpswd = new_pswd;
-// 	}
-// 	if (tar_usr == root_username)
-// 	{
-// 		root_password = new_pswd;
-// 	}
-
-// 	cout << "Password set successfully." << endl;
-// 	return 0;
-// }
-
-// int setpriv_handler(const vector<string> &args)
-// {
-// 	CHECK_ARGC(1, 2)
-// 	// TODO
-// 	if (usrname != root_username)
-// 	{
-// 		cout << "Permission denied. Only root is allowed to set other's privilege." << endl;
-// 		return -1;
-// 	}
-
-// 	string usr = args[0], db = args[1];
-// 	if (usr == root_username)
-// 	{
-// 		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
-// 		return -1;
-// 	}
-
-// 	if (enter_pswd("Enter your password: "))
-// 	{
-// 		cout << "Fail to varify your id. Privilege set failed." << endl;
-// 		return -1;
-// 	}
-
-// 	for (int i = 1; i < PRIVILEGE_NUM; ++i)
-// 	{
-// 		cout << "[" << i << "]" << priv_offset2name[i] << " ";
-// 	}
-// 	cout << "[" << PRIVILEGE_NUM << "]all\nEnter privilege number to assign separated by whitespace: " << endl;
+	if (not_match_cnt >= MAX_WRONG_PSWD_TIMES)
+	{
+		cout << "Too much not match. Password set failed." << endl;
+		return -1;
+	}
 	
-// 	string line;
-// 	cin.clear();
-// 	getline(cin, line);
-// 	stringstream ss(line);
-// 	unsigned num, priv = 0;
-// 	while (ss >> num)
-// 	{
-// 		if (num > 0 && num < PRIVILEGE_NUM)
-// 		{
-// 			priv |= (1u << num);
-// 		}
-// 		else if (num == PRIVILEGE_NUM)
-// 		{
-// 			priv |= ALL_PRIVILEGE_BIT;
-// 		}
-// 	}
+	if (args.size() == 0)
+	{
+		server::MessageUserPasswordRequest password_request(tar_usr, stdpswd, new_pswd);
+		server::MessageUserPasswordResponse password_response = APIConnector::userPassword(API_URL, true, password_request);
+		if (!password_response.success()) 
+		{
+			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
+			return -1;
+		}
+	}
+	else 
+	{
+		server::MessageUserManageRequest password_request(3, tar_usr, new_pswd);
+		server::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
+		if (!password_response.success()) 
+		{
+			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
+			return -1;
+		}
+	}
 
-// 	cout << "[will set priv:]";
-// 	print_lowbits(priv, 8);
-// 	cout << endl;
+	if (tar_usr == usrname)
+	{
+		stdpswd = new_pswd;
+	}
+	if (tar_usr == root_username)
+	{
+		root_password = new_pswd;
+	}
 
-// 	//TO DO;
-// 	server::MessageUserPrivilegeManageRequest setpriv_request();
-// 	server::MessageUserPrivilegeManageResponse setpriv_response = APIConnector::userPrivilegeManage(API_URL, true, setpriv_request);
-// 	if (!setpriv_response.success())
-// 	{
-// 		cout << "Privilege set failed" + setpriv_response.StatusMsg << endl;
-// 		return -1;
-// 	}
+	cout << "Password set successfully." << endl;
+	return 0;
+}
 
-// 	cout << "Privilege set successfully." << endl;
+
+int setpriv_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 2)
+	// TODO
+	if (usrname != root_username)
+	{
+		cout << "Permission denied. Only root is allowed to set other's privilege." << endl;
+		return -1;
+	}
+
+	string usr = args[0], db = args[1];
+	if (usr == root_username)
+	{
+		cout << "Root has all privilege on all databases. No need to set root's privilege.\nPrivilege set failed." << endl;
+		return -1;
+	}
+
+	if (enter_pswd("Enter your password: "))
+	{
+		cout << "Fail to varify your id. Privilege set failed." << endl;
+		return -1;
+	}
+
+	for (int i = 1; i < PRIVILEGE_NUM; ++i)
+	{
+		cout << "[" << i << "]" << priv_offset2name[i] << " ";
+	}
+	cout << "[" << PRIVILEGE_NUM << "]all\nEnter privilege number to assign separated by whitespace: " << endl;
+	
+	string line;
+	cin.clear();
+	getline(cin, line);
+	stringstream ss(line);
+	unsigned num, priv = 0;
+	while (ss >> num)
+	{
+		if (num > 0 && num < PRIVILEGE_NUM)
+		{
+			priv |= (1u << num);
+		}
+		else if (num == PRIVILEGE_NUM)
+		{
+			priv |= ALL_PRIVILEGE_BIT;
+		}
+	}
+
+	cout << "[will set priv:]";
+	print_lowbits(priv, 8);
+	cout << endl;
+
+	//TO DO;
+	unsigned origin_priv = read_priv(usr, db);
+	fprintf(stderr, "%s\n", "no");
+	std::string priv_string;
+	for (int i = 1; i < PRIVILEGE_NUM; ++i) 
+	{
+		if (origin_priv & (1u << i)) 
+		{
+			priv_string += std::to_string(i);
+			priv_string += ',';
+		}
+	}
+	if (!priv_string.empty()) 
+	{
+		priv_string.pop_back();
+		server::MessageUserPrivilegeManageRequest deletepriv_request(2, usr, priv_string, db);
+		server::MessageUserPrivilegeManageResponse deletepriv_response = APIConnector::userPrivilegeManage(API_URL, true, deletepriv_request);
+		if (!deletepriv_response.success())
+		{
+			cout << "Privilege set failed " + deletepriv_response.StatusMsg << endl;
+			return -1;
+		}
+	}
+
+	
+
+	// Atomicity Problem
+	std::string addpriv_string;
+	for (int i = 1; i < PRIVILEGE_NUM; ++i) 
+	{
+		if (priv & (1 << i)) 
+		{
+			addpriv_string += std::to_string(i);
+			addpriv_string += ',';
+		}
+	}
+	if (!addpriv_string.empty())
+	{
+		addpriv_string.pop_back();
+		server::MessageUserPrivilegeManageRequest addpriv_request(1, usr, addpriv_string, db);
+		server::MessageUserPrivilegeManageResponse addpriv_response = APIConnector::userPrivilegeManage(API_URL, true, addpriv_request);
+		if (!addpriv_response.success())
+		{
+			cout << "Privilege set failed " + addpriv_response.StatusMsg << endl;
+			return -1;
+		}
+	}
+
+	
+
+	cout << "Privilege set successfully." << endl;
 	return 0;
 }
 
@@ -1824,22 +2031,22 @@ int setpswd_handler(const vector<string> &args)
 int adddelusr_handler(int add, string usr)
 {
 	// TODO
-	// if (usrname != root_username)
-	// {
-	// 	cout << "Permission denied. Only root is allowed to add user." << endl;
-	// 	return -1;
-	// }
-	// if (enter_pswd("Enter your password: "))
-	// {
-	// 	cout << "Fail to varify your id. User add failed." << endl;
-	// 	return -1;
-	// }
-	// server::MessageUserManageRequest adddeluser_request();
-	// server::MessageUserManageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
-	// if (!adddeluser_response.success())
-	// {
-	// 	return -1;
-	// }
+	if (usrname != root_username)
+	{
+		cout << "Permission denied. Only root is allowed to add user." << endl;
+		return -1;
+	}
+	if (enter_pswd("Enter your password: "))
+	{
+		cout << "Fail to varify your id. User add failed." << endl;
+		return -1;
+	}
+	server::MessageUserManageRequest adddeluser_request(add, usr, stdpswd);
+	server::MessageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
+	if (!adddeluser_response.success())
+	{
+		return -1;
+	}
 	return 0;
 }
 
@@ -1860,7 +2067,7 @@ int delusr_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string usr = args[0];
-	if (adddelusr_handler(0, usr))
+	if (adddelusr_handler(2, usr))
 	{
 		cout << "Del usr " << usr << " failed." << endl;
 		return -1;
@@ -1916,27 +2123,61 @@ int pusr_handler(const vector<string> &args)
 
 int showusrs_handler(const vector<string> &args)
 {
-	// CHECK_ARGC(1, 0)
-	// if (usrname != root_username)
-	// {
-	// 	cout << "Permission denied. Only root is allowed to view all usrs." << endl;
-	// 	return -1;
-	// }
+	CHECK_ARGC(1, 0)
+	if (usrname != root_username)
+	{
+		cout << "Permission denied. Only root is allowed to view all usrs." << endl;
+		return -1;
+	}
 
-	// std::vector<std::string> headers = {"user", "privilege"};
-	// std::vector<std::vector<std::string>> rows;
-	// rows.push_back({root_username, "all privilege on all db"});
+	std::vector<std::string> headers = {"user", "database", "privilege"};
+	std::vector<std::vector<std::string>> rows;
+	rows.push_back({root_username, "all", "all"});
 	
-	// server::MessageShowUserRequest showuser_request();
-	// server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
-	// if (!showuser_response.success())
-	// {
-	// 	cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
-	// 	return -1;
-	// }
-	
-	// //TO DO
-	// Util::printConsole(headers, rows);
+	server::MessageShowUserRequest showuser_request;
+	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
+	if (!showuser_response.success())
+	{
+		cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
+		return -1;
+	}
+
+	auto parse_priv = [] (const std::string &db_string, const std::string &priv_string, std::unordered_map<std::string, std::string> &db_priv) -> void
+	{
+		std::string buff;
+		for (const char &c : db_string)
+		{
+			if (c != ',') 
+			{
+				buff += c;
+			}
+			else
+			{
+				db_priv[buff] += priv_string;
+				db_priv[buff] += ',';
+				buff.clear();
+			}
+			
+		}
+	};
+
+	for (const auto &info : showuser_response.ResponseBody) {
+		if (info.username == root_username) continue;
+		std::unordered_map<std::string, std::string> db_priv;
+		parse_priv(info.query_privilege, "query",db_priv);
+		parse_priv(info.load_privilege, "load", db_priv);
+		parse_priv(info.unload_privilege, "unload", db_priv);
+		parse_priv(info.backup_privilege, "backup", db_priv);
+		parse_priv(info.restore_privilege, "restore", db_priv);
+		parse_priv(info.export_privilege, "export", db_priv);
+		for (auto &pair : db_priv) {
+			if (pair.second.empty()) continue;
+			pair.second.pop_back();
+			rows.push_back({info.username, pair.first, pair.second});
+		}
+	}
+	//TO DO
+	Util::printConsole(headers, rows);
 	return 0;
 }
 
