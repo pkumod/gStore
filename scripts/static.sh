@@ -31,6 +31,8 @@ else
     echo "build dir not exist"
     mkdir -p build
     cd build/
+    make clean
+    rm -rf *
     cmake .. -DCMAKE_BUILD_TYPE=Static
     make pre 
 fi

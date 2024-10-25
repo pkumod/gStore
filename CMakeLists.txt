@@ -1,6 +1,7 @@
-project( gstore1.3 )
-
 cmake_minimum_required( VERSION 3.17 )
+
+project( gstore )
+
 message( STATUS "this is source dir " ${CMAKE_SOURCE_DIR} )
 message( STATUS "this is current binary dir " ${CMAKE_BINARY_DIR} )
 
@@ -9,16 +10,19 @@ set( EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/../bin" )
 set( LIBRARY_OUTPUT_PATH  "${PROJECT_BINARY_DIR}/lib" )
 set( GSTORE_ROOT_DIR ${CMAKE_SOURCE_DIR} )
 
-# gdb debug or release, build type
+# gdb debug or release, build type, cmake .. -DCMAKE_BUILD_TYPE=
 if ( CMAKE_BUILD_TYPE STREQUAL Debug )
-    message( STATUS "start build ------------, build type is debug!" )
+    message( STATUS "start build ---------------debug--------------------" )
     SET( CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type -ggdb" )
 elseif ( CMAKE_BUILD_TYPE STREQUAL Static )
-    message( STATUS "start build ------------, build type is static!" )
+    message( STATUS "start build ---------------static--------------------" )
     set( CMAKE_EXE_LINKER_FLAGS "-O2 -pthread -std=c++11 -Werror=return-type -static" )
 elseif ( CMAKE_BUILD_TYPE STREQUAL Release )
-    message( STATUS "start build ------------, build type is release!" )
+    message( STATUS "start build -----------------------------------, build type is release!" )
     SET( CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb" )
+elseif (CMAKE_BUILD_TYPE STREQUAL Cpack)
+    message( STATUS "start build ----------------cpack-----------------------" )
+    set( CMAKE_EXE_LINKER_FLAGS "-O2 -pthread -std=c++11 -Werror=return-type -static" )
 else ()
     message( STATUS "start build ------------, default!!!" ${CMAKE_BUILD_TYPE} )
 endif()
@@ -163,3 +167,55 @@ add_custom_target( static
     COMMAND bash scripts/static.sh
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
 )
+
+# make cpack
+add_custom_target( cpack
+    COMMAND bash scripts/cpack.sh
+    WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
+)
+
+if (CMAKE_BUILD_TYPE STREQUAL Cpack)
+
+    # version
+    set( CPACK_PACKAGE_VERSION "1.4" )
+    set(CPACK_PACKAGE_CONTACT "gstore@pku.edu.cn")
+    set(CPACK_PACKAGE_DIRECTORY ${GSTORE_ROOT_DIR}/cpack_package)
+    # architecture
+    set( SYSTEM_ARCHITECTURE  ${CMAKE_HOST_SYSTEM_PROCESSOR} )
+    cmake_host_system_information(RESULT PRETTY_ID QUERY DISTRIB_ID)
+    set( SYSTEM_OS ${PRETTY_ID} )
+    cmake_host_system_information(RESULT PRETTY_VERSION_ID QUERY DISTRIB_VERSION_ID )
+    if ( ${PRETTY_ID} MATCHES "centos" )
+        set( PRETTY_ID "el" )
+    elseif ( ${PRETTY_ID} MATCHES "ubuntu" )
+        if (${SYSTEM_ARCHITECTURE} STREQUAL "x86_64" )
+            set( PRETTY_ID "" )
+            set( SYSTEM_ARCHITECTURE  "amd64" )
+        endif()
+    endif()
+
+    message( STATUS "system ${PRETTY_ID}, architecture:${PRETTY_ID}${PRETTY_VERSION_ID}.${SYSTEM_ARCHITECTURE}" )
+    set(CPACK_PACKAGE_RELEASE ${PRETTY_ID}${PRETTY_VERSION_ID})
+
+    if ( ${SYSTEM_OS} STREQUAL "ubuntu" )
+        set(CPACK_GENERATOR "DEB")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/gstore")
+        set(CPACK_DEB_PACKAGE_RELEASE ${CPACK_PACKAGE_RELEASE})
+        set(CPACK_DEB_PACKAGE_VENDOR ${SYSTEM_OS})
+    else ()
+        set(CPACK_GENERATOR "RPM")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/gstore")
+        set(CPACK_RPM_PACKAGE_RELEASE ${CPACK_PACKAGE_RELEASE})
+        set(CPACK_RPM_PACKAGE_VENDOR ${SYSTEM_OS})
+    endif()
+
+    # include dir
+    install( DIRECTORY conf DESTINATION ${CPACK_PACKAGING_INSTALL_PREFIX} USE_SOURCE_PERMISSIONS )
+    install( DIRECTORY bin DESTINATION ${CPACK_PACKAGING_INSTALL_PREFIX} USE_SOURCE_PERMISSIONS )
+    install( DIRECTORY data DESTINATION ${CPACK_PACKAGING_INSTALL_PREFIX} USE_SOURCE_PERMISSIONS )
+    install( FILES LICENSE DESTINATION ${CPACK_PACKAGING_INSTALL_PREFIX} )
+    install( FILES README.md DESTINATION ${CPACK_PACKAGING_INSTALL_PREFIX} )
+
+    set(CPACK_PACKAGE_FILE_NAME gstore-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${SYSTEM_ARCHITECTURE})
+    include(CPack)
+endif()

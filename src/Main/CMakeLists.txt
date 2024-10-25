@@ -1,5 +1,5 @@
 # alter the cmakelist
-if ( CMAKE_BUILD_TYPE STREQUAL Static )
+if ( CMAKE_BUILD_TYPE STREQUAL Static OR CMAKE_BUILD_TYPE STREQUAL Cpack )
         set( LIB_SYSTEM_DEP
                 boost_thread
                 boost_system
