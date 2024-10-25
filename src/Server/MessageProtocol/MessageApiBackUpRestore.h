@@ -84,19 +84,4 @@ namespace server
         void toJsonString(std::string& json_str) override;
     };
 
-    //export
-    struct MessageExportRequest : public MessageRequest
-    {
-        std::string db_name;
-        std::string db_path;
-        bool compress;
-        MessageExportRequest()=delete;
-        MessageExportRequest(const rapidjson::Document& json_data);
-    };
-
-    struct MessageExportResponse : public MessageResponse
-    {
-        std::string filepath;
-        void toJsonString(std::string& json_str) override;
-    };
 }

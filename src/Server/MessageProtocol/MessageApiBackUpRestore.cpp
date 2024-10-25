@@ -225,20 +225,4 @@ namespace server
         rJson["filepath"] = this->filepath;
         json_str = rJson.dump();   
     }
-
-    // export
-    MessageExportRequest::MessageExportRequest(const rapidjson::Document& json_data)
-    {
-        this->db_name     = jsonParam(json_data, "db_name");
-		this->db_path = jsonParam(json_data, "db_path");
-        this->compress = jsonBoolParam(json_data, "compress", false);
-    }
-
-    void MessageExportResponse::toJsonString(std::string& json_str)
-    {
-        nlohmann::json rJson;
-        toJson(rJson);
-        rJson["filepath"] = this->filepath;
-        json_str = rJson.dump();
-    }
 }
