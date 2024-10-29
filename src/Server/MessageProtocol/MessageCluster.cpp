@@ -11,6 +11,7 @@ namespace server
         this->db_name = jsonParam(json_data, "db_name");
         this->uid = jsonParam(json_data, "uid", 0ul);
         this->local_port = local_port;
+        this->follow_ip = jsonParam(json_data, "follow_ip", "");
     }
 
     MessageClusterReplyRequest::MessageClusterReplyRequest(const rapidjson::Document& json_data, std::string local_port) : MessageClusterRequest(json_data, local_port)
@@ -23,5 +24,6 @@ namespace server
     {
         this->result = jsonParam(json_data, "result", 0);
         this->port = jsonParam(json_data, "port");
+        this->follow_ip = jsonParam(json_data, "follow_ip", "");
     }
 }

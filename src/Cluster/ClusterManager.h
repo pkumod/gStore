@@ -137,6 +137,13 @@ namespace cluster
         void getDbNextIndexL(const std::string& db_name, uint64 index, std::vector<uint64StringPair>& indexl);
         uint64 getDbFirstIndex(const std::string& db_name);
         uint64 getDbNextIndexByIndex(const std::string& db_name, uint64 follower_index);
+        // 设置从节点ip(服务名称或则ip地址)
+        void setFollowIp(const std::string& ip);
+        // 获取从节点ip
+        std::string getFollowIp();
+        void addRestoreDb(const std::string& db_name);
+        void removeRestoreDb(const std::string& db_name);
+        bool isFollowerRestoring(const std::string& db_name);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储

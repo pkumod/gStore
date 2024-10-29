@@ -698,9 +698,16 @@ namespace httpentities {
 
     struct HeartBeatRequest: public ClusterRequest {
         std::string operation;
+        std::string follow_ip;
         HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string operation): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->operation = operation;
         }
+
+        void setFollowIp(const std::string& ip)
+        {
+            follow_ip = ip;
+        }
+
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
@@ -714,9 +721,14 @@ namespace httpentities {
     {
         uint16_t result;
         std::string port;
+        std::string follow_ip;
         ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, uint16_t result, std::string port):  ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->result = result;
             this->port = port;
+        }
+        void setFollowIp(const std::string& ip)
+        {
+            follow_ip = ip;
         }
         void to_json(std::string& json_str) override
         {

@@ -12,6 +12,7 @@ namespace server
         std::string db_name;
         uint64_t uid;
         std::string local_port; // local server port
+        std::string follow_ip;
         MessageClusterRequest()=delete;
         MessageClusterRequest(const rapidjson::Document& json_data, std::string local_port);
     };
@@ -30,6 +31,7 @@ namespace server
     {
         uint16_t result;
         std::string port;
+        std::string follow_ip;
         MessageClusterCheckRequest()=delete;
         MessageClusterCheckRequest(const rapidjson::Document& json_data, std::string local_port);
     };

@@ -14,6 +14,8 @@ namespace server
             uint64_t leader_uid = resquest.uid;
             std::string _db_home = Util::getConfigureValue("db_home");
             std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string follow_ip = resquest.follow_ip;
+            clusterManagerPtr->setFollowIp(follow_ip);
             if (!db_name.empty()) 
             {
                 // send ready response
@@ -23,8 +25,18 @@ namespace server
                 std::string password = leader_node.getPassword();
                 uint16_t result = 0; // default check failed
                 TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
+                if (clusterManagerPtr->isFollowerRestoring(db_name))
+                {
+                    // follower is restore, please wait
+                    result == -2;
+                    httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
+                    HttpUtil::clusterCheck(check_url, check_request, username, password);
+                    SLOG_TRACE("heart compare, follower is restoring, please wait......");
+                    return;
+                }
                 if (db_log.empty() || db_log.uid != leader_uid)
                 {
+                    clusterManagerPtr->addRestoreDb(db_name);
                     if (apiUtil->check_db_built(db_name))
                     {
                         if (apiUtil->check_db_loaded(db_name))
@@ -68,7 +80,9 @@ namespace server
                     // add log
                     clusterManagerPtr->buildDb(db_name, leader_uid);
                     httpentities::ClusterCheckRequest check_request(local_term, db_name, 0, 0, leader_uid, result, resquest.local_port);
+                    check_request.setFollowIp(follow_ip);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
+                    clusterManagerPtr->removeRestoreDb(db_name);
                 }
                 else
                 {
@@ -439,7 +453,7 @@ namespace server
                 }
                 if (restore_index != 0)
                 {
-                    ClusterRecoverInfo task_info(db_name, restore_index, remote_ip, port);
+                    ClusterRecoverInfo task_info(db_name, restore_index, resquest.follow_ip, port);
                     clusterManagerPtr->addTask(task_info);
                 }
             }
@@ -485,6 +499,12 @@ namespace server
             response.StatusCode = StatusOperationFailed;
             return;
         }
+        if (clusterManagerPtr->isFollowerRestoring(db_name))
+        {
+            response.StatusMsg =  "heart recocer, follower is restoring, please wait......";
+            response.StatusCode = StatusOperationFailed;
+            return;
+        }
         uint64_t leader_index = std::stoul(form.at("index").second);
         uint64_t leader_nextIndex = std::stoul(form.at("nextIndex").second);
         uint64_t leader_uid = std::stoul(form.at("uid").second);
@@ -501,6 +521,7 @@ namespace server
         // TODO check leader term and index with local
         const std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
         const std::string zip_file_path = cluster_db_path + fileinfo.first;
+        clusterManagerPtr->addRestoreDb(db_name);
         std::string *save_content = new std::string;
         *save_content = std::move(fileinfo.second);
         WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, static_cast<const void *>((*save_content).c_str()), (*save_content).size(), 0, [save_content, apiUtil, clusterManagerPtr, leader_term, leader_index, db_name, zip_file_path, cluster_db_path, updateType, recoverIndex](WFFileIOTask *pwrite_task){
@@ -508,7 +529,9 @@ namespace server
             delete save_content;
             // save success
             long ret = pwrite_task->get_retval();
-            if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0) {
+            if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
+            {
+                clusterManagerPtr->removeRestoreDb(db_name);
                 return;
             }
             // unzip file
@@ -518,6 +541,7 @@ namespace server
                 SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
                 // remove zip file
                 Util::remove_path(zip_file_path);
+                clusterManagerPtr->removeRestoreDb(db_name);
                 return;
             }
             std::vector<std::string> log_files;
@@ -527,11 +551,13 @@ namespace server
                 SLOG_WARN("zip file is empty: " + zip_file_path);
                 // remove zip file
                 Util::remove_path(zip_file_path);
+                clusterManagerPtr->removeRestoreDb(db_name);
                 return;
             }
             if (apiUtil->check_db_built(db_name) == false) 
             {
                 SLOG_WARN("db[" + db_name + "] is not built.");
+                clusterManagerPtr->removeRestoreDb(db_name);
                 return;
             }
             shared_ptr<DatabaseInfo> db_info = nullptr;
@@ -547,6 +573,7 @@ namespace server
                 SLOG_WARN("unable to get write lock of " + db_name + ".");
                 // remove zip file
                 Util::remove_path(zip_file_path);
+                clusterManagerPtr->removeRestoreDb(db_name);
                 return;
             }
             std::string log_file_name = Util::fileName(log_files[0]);
@@ -569,6 +596,7 @@ namespace server
             // update local log trem and index
             clusterManagerPtr->updateTerm(leader_term);
             clusterManagerPtr->addCommitLog(db_name, recoverIndex, log_updateType, Util::fileName(log_file_name));
+            clusterManagerPtr->removeRestoreDb(db_name);
         });
         std::thread([pwrite_task](){
             SLOG_DEBUG("saveing log file start...");

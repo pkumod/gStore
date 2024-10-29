@@ -14,6 +14,7 @@ namespace cluster
         std::map<std::string, uint32> faileL_; //url:失败次数，大于多少次（代表此从节点应答失败，不在发送心跳包）
         // std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
         TimerProvider head_beat_timer_;
+        std::map<std::string, std::set<std::string>> restoreDbL_; // follower ip:follower db name
         public:
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
         bool IsFollowerIp(const std::string& ip)const;
@@ -29,6 +30,9 @@ namespace cluster
         uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
         uint64 getTimeOutEndTime(const std::string& db_name = "", const std::string& file_name = "");
+        void addRestoreDb(const std::string& ip, const std::string& db_name);
+        void removeRestoreDb(const std::string& ip, const std::string& db_name);
+        bool isSendFollowerRestoring(const std::string& ip, const std::string& db_name);
 
         // virtual function in here
         public:

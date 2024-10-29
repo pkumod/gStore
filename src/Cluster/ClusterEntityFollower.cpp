@@ -29,4 +29,23 @@ namespace cluster
     {
         return leaderNode_;
     }
+
+    void ClusterEntityFollower::addRestoreDb(const std::string& db_name)
+    {
+        if (restoreDbL_.find(db_name) != restoreDbL_.end())
+            return;
+        restoreDbL_.insert(db_name);
+    }
+
+    void ClusterEntityFollower::removeRestoreDb(const std::string& db_name)
+    {
+        restoreDbL_.erase(db_name);
+    }
+
+    bool ClusterEntityFollower::isFollowerRestoring(const std::string& db_name)
+    {
+        if (restoreDbL_.find(db_name) != restoreDbL_.end())
+            return true;
+        return false;
+    }
 }

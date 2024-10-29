@@ -123,6 +123,76 @@ namespace cluster
         return leader->tryRecover(dbs);
     }
 
+    void ClusterManager::setFollowIp(const std::string& ip)
+    {
+        if (!isEnable() || !role_ || ip.empty())
+            return;
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return;
+        }
+
+        follower->setIp(ip);
+    }
+
+    std::string ClusterManager::getFollowIp()
+    {
+        if (!isEnable() || !role_)
+            return "";
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return "";
+        }
+
+        return follower->getIp();
+    }
+
+    void ClusterManager::addRestoreDb(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return;
+        }
+
+        follower->addRestoreDb(db_name);
+    }
+
+    void ClusterManager::removeRestoreDb(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return;
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return;
+        }
+
+        follower->removeRestoreDb(db_name);
+    }
+
+    bool ClusterManager::isFollowerRestoring(const std::string& db_name)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return false;
+        }
+
+        return follower->isFollowerRestoring(db_name);
+    }
+
     void ClusterManager::startHeartBeat()
     {
         if (!isEnable() || !role_)
