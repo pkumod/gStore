@@ -30,8 +30,8 @@ namespace server
                     // follower is restore, please wait
                     result == -2;
                     httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
-                    HttpUtil::clusterCheck(check_url, check_request, username, password);
                     check_request.setFollowIp(follow_ip);
+                    HttpUtil::clusterCheck(check_url, check_request, username, password);
                     SLOG_TRACE("heart compare, follower is restoring, please wait......");
                     return;
                 }
@@ -435,6 +435,11 @@ namespace server
         uint64_t follower_index = resquest.index;
         std::string db_name = resquest.db_name;
         std::string port = resquest.port;
+        if (resquest.follow_ip.empty())
+        {
+            SLOG_TRACE("follower ip do not null");
+            return;
+        }
         if (resquest.result == 0)
         {
             // TODO add a new task that starting with follower index
