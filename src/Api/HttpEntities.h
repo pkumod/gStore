@@ -713,6 +713,7 @@ namespace httpentities {
             nlohmann::json json;
             toJson(json);
             json["operation"] = operation;
+            json["follow_ip"] = follow_ip;
             json_str = json.dump();
         }
     };
@@ -736,6 +737,7 @@ namespace httpentities {
             toJson(json);
             json["result"] = result;
             json["port"]   = port;
+            json["follow_ip"] = follow_ip;
             json_str = json.dump();
         }
     };

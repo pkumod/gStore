@@ -31,6 +31,7 @@ namespace server
                     result == -2;
                     httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
+                    check_request.setFollowIp(follow_ip);
                     SLOG_TRACE("heart compare, follower is restoring, please wait......");
                     return;
                 }
@@ -92,6 +93,7 @@ namespace server
                         result == -1;
                     }
                     httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
+                    check_request.setFollowIp(follow_ip);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
                 }
             }
