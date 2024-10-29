@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:20.04 AS builder
 
 LABEL vendor="pkumod"
 LABEL description="gStore RDF Database Engine"
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -48,23 +50,27 @@ RUN cd build && cmake ..
 
 RUN cd build && make pre && make -j$(nproc)
 
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:20.04 AS runtime
+
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
 
 RUN apt-get update && apt-get install -y \
-    libboost-regex1.74.0 \
-    libboost-system1.74.0 \
-    libboost-thread1.74.0 \
+    libboost-regex1.71.0 \
+    libboost-system1.71.0 \
+    libboost-thread1.71.0 \
     libcurl4 \
-    libssl3 \
-    libzmq5 \
     uuid-runtime \
     libjemalloc2 \
     libreadline8 \
-    libopenmpi3 \
     coreutils \
-    g++ \
-    gcc \
+    g++-9 \
+    gcc-9 \
     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    libzmq3-dev \
+    libopenmpi3
 # executable files and library files
 COPY --from=builder /usr/src/gstore/bin/ /gstore/bin/
 COPY --from=builder /usr/src/gstore/pfn/ /gstore/pfn/
