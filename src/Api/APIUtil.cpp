@@ -8,8 +8,6 @@
  */
 #include "APIUtil.h"
 
-
-
 APIUtil::APIUtil()
 {
     pthread_rwlock_init(&users_map_lock, NULL);

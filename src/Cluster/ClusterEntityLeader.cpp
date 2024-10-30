@@ -145,6 +145,12 @@ namespace cluster
             SLOG_ERROR("follower data is sending, please waiting" << info.db_name);
             return false;
         }
+        ClusterNode node = FindFollower(info.ip, info.port);
+        if (node.empty())
+        {
+            SLOG_ERROR("follower ip or port not found ip:" << info.ip << " ,port:" << info.port);
+            return false;
+        }
         TermDbLog db_info = getTermInfoDbLog(info.db_name);
         if (db_info.empty() || db_info.getFirstIndex() == 0)
         {
@@ -173,7 +179,6 @@ namespace cluster
         std::string update_type = std::to_string(db->getUpdateType(info.index));
         std::string file_path = Util::getExactPath(zip_path.c_str());
         httpentities::RecoverRequest request(term, db_info.dbName, db_info.index, db_info.nextIndex, db_info.uid, update_type, file_path, info.index);
-        ClusterNode node = FindFollower(info.ip, info.port);
         HttpUtil::recoverFollower(node.getRecoverlUrl(), request, node.getUsername(), node.getPassword());
         removeRestoreDb(info.ip, info.db_name);
         return true;

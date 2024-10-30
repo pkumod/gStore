@@ -130,7 +130,7 @@ namespace cluster
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
         {
-            SLOG_TRACE("please check conf.ini, not set leader");
+            SLOG_TRACE("please check conf.ini, not set follower");
             return;
         }
 
@@ -144,7 +144,7 @@ namespace cluster
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
         {
-            SLOG_TRACE("please check conf.ini, not set leader");
+            SLOG_TRACE("please check conf.ini, not set follower");
             return "";
         }
 
@@ -158,7 +158,7 @@ namespace cluster
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
         {
-            SLOG_TRACE("please check conf.ini, not set leader");
+            SLOG_TRACE("please check conf.ini, not set follower");
             return;
         }
 
@@ -172,7 +172,7 @@ namespace cluster
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
         {
-            SLOG_TRACE("please check conf.ini, not set leader");
+            SLOG_TRACE("please check conf.ini, not set follower");
             return;
         }
 
@@ -186,7 +186,7 @@ namespace cluster
         ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
         if (!follower)
         {
-            SLOG_TRACE("please check conf.ini, not set leader");
+            SLOG_TRACE("please check conf.ini, not set follower");
             return false;
         }
 
