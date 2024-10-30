@@ -15,7 +15,8 @@ namespace server
             std::string _db_home = Util::getConfigureValue("db_home");
             std::string _db_suffix = Util::getConfigureValue("db_suffix");
             std::string follow_ip = resquest.follow_ip;
-            clusterManagerPtr->setFollowIp(follow_ip);
+            std::string follow_port = resquest.follow_port;
+            clusterManagerPtr->setFollowIpPort(follow_ip, follow_port);
             if (!db_name.empty()) 
             {
                 // send ready response
@@ -29,8 +30,8 @@ namespace server
                 {
                     // follower is restore, please wait
                     result == -2;
-                    httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
-                    check_request.setFollowIp(follow_ip);
+                    httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result);
+                    check_request.setFollowIpPort(follow_ip, resquest.follow_port);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
                     SLOG_TRACE("heart compare, follower is restoring, please wait......");
                     return;
@@ -80,8 +81,8 @@ namespace server
                     // Util::add_backuplog(db_name);
                     // add log
                     clusterManagerPtr->buildDb(db_name, leader_uid);
-                    httpentities::ClusterCheckRequest check_request(local_term, db_name, 0, 0, leader_uid, result, resquest.local_port);
-                    check_request.setFollowIp(follow_ip);
+                    httpentities::ClusterCheckRequest check_request(local_term, db_name, 0, 0, leader_uid, result);
+                    check_request.setFollowIpPort(follow_ip, follow_port);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
                     clusterManagerPtr->removeRestoreDb(db_name);
                 }
@@ -92,8 +93,8 @@ namespace server
                         // check ok
                         result == -1;
                     }
-                    httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result, resquest.local_port);
-                    check_request.setFollowIp(follow_ip);
+                    httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result);
+                    check_request.setFollowIpPort(follow_ip, follow_port);
                     HttpUtil::clusterCheck(check_url, check_request, username, password);
                 }
             }
@@ -163,7 +164,7 @@ namespace server
             std::string username = leader_node.getUsername();
             std::string password = leader_node.getPassword();
             std::string reply_operation = ClusterOperationHandle::to_str(ClusterOperation_Prepare);
-            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), leader_nextIndex, db_log.getUid(), reply_operation, resquest.local_port);
+            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), leader_nextIndex, db_log.getUid(), reply_operation, resquest.follow_port);
             HttpUtil::reply(reply_url, reply_request, username, password);
         }).detach();
     }
@@ -409,7 +410,12 @@ namespace server
             std::string username = leader_node.getUsername();
             std::string password = leader_node.getPassword();
             std::string expection = ClusterOperationHandle::to_str(cluster::ClusterOperation::ClusterOperation_Append);
-            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), db_log.getNextIndex(), db_log.getUid(), expection, local_port);
+            std::string follow_port = clusterManagerPtr->getFollowPort();
+            if (follow_port.empty())
+            {
+                follow_port = local_port;
+            }
+            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), db_log.getNextIndex(), db_log.getUid(), expection, follow_port);
             HttpUtil::reply(reply_url, reply_request, username, password);
         });
         std::thread([pwrite_task](){
@@ -424,9 +430,9 @@ namespace server
         // from follower reply, go into leader process 
         if (expection_enum == cluster::ClusterOperation::ClusterOperation_Prepare)
         {
-            clusterManagerPtr->addLogReplyNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.port);
+            clusterManagerPtr->addLogReplyNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.follow_port);
         } else if (expection_enum == cluster::ClusterOperation::ClusterOperation_Append) {
-            clusterManagerPtr->addLogSyncNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.port);
+            clusterManagerPtr->addLogSyncNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.follow_port);
         }
     }
 
@@ -434,7 +440,7 @@ namespace server
     {
         uint64_t follower_index = resquest.index;
         std::string db_name = resquest.db_name;
-        std::string port = resquest.port;
+        std::string port = resquest.follow_port;
         if (resquest.follow_ip.empty())
         {
             SLOG_TRACE("follower ip do not null");

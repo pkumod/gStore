@@ -25,6 +25,12 @@ namespace cluster
         return url;
     }
 
+    void ClusterEntityFollower::setIpPort(const std::string& ip, const std::string& port)
+    {
+        if(own_.empty())
+            own_.setIp(ip); own_.setPort(port);
+    }
+
     ClusterNode ClusterEntityFollower::getLearrNode()const
     {
         return leaderNode_;

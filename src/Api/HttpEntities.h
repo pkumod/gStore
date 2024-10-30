@@ -664,17 +664,17 @@ namespace httpentities {
     struct ReplyRequest: public ClusterRequest {
         std::string operation;
         // reply follower port
-        std::string port;
+        std::string follow_port;
         ReplyRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string operation, std::string port): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->operation = operation;
-            this->port = port;
+            this->follow_port = port;
         }
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
             toJson(json);
             json["operation"] = operation;
-            json["port"] = port;
+            json["follow_port"] = follow_port;
             json_str = json.dump();
         }
     };
@@ -698,14 +698,16 @@ namespace httpentities {
 
     struct HeartBeatRequest: public ClusterRequest {
         std::string operation;
+        std::string follow_port;
         std::string follow_ip;
         HeartBeatRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string operation): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->operation = operation;
         }
 
-        void setFollowIp(const std::string& ip)
+        void setFollowIpPort(const std::string& ip, const std::string& port)
         {
             follow_ip = ip;
+            follow_port = port;
         }
 
         void to_json(std::string& json_str) override
@@ -713,6 +715,7 @@ namespace httpentities {
             nlohmann::json json;
             toJson(json);
             json["operation"] = operation;
+            json["follow_port"] = follow_port;
             json["follow_ip"] = follow_ip;
             json_str = json.dump();
         }
@@ -721,22 +724,22 @@ namespace httpentities {
     struct ClusterCheckRequest: public ClusterRequest
     {
         uint16_t result;
-        std::string port;
+        std::string follow_port;
         std::string follow_ip;
-        ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, uint16_t result, std::string port):  ClusterRequest(term, db_name, index, nextIndex, uid) {
+        ClusterCheckRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, uint16_t result):  ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->result = result;
-            this->port = port;
         }
-        void setFollowIp(const std::string& ip)
+        void setFollowIpPort(const std::string& ip, const std::string& port)
         {
-            follow_ip = ip;
+            this->follow_ip = ip;
+            this->follow_port = port;
         }
         void to_json(std::string& json_str) override
         {
             nlohmann::json json;
             toJson(json);
             json["result"] = result;
-            json["port"]   = port;
+            json["follow_port"] = follow_port;
             json["follow_ip"] = follow_ip;
             json_str = json.dump();
         }

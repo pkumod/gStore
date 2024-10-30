@@ -123,7 +123,7 @@ namespace cluster
         return leader->tryRecover(dbs);
     }
 
-    void ClusterManager::setFollowIp(const std::string& ip)
+    void ClusterManager::setFollowIpPort(const std::string& ip, const std::string& port)
     {
         if (!isEnable() || !role_ || ip.empty())
             return;
@@ -134,7 +134,7 @@ namespace cluster
             return;
         }
 
-        follower->setIp(ip);
+        follower->setIpPort(ip, port);
     }
 
     std::string ClusterManager::getFollowIp()
@@ -149,6 +149,20 @@ namespace cluster
         }
 
         return follower->getIp();
+    }
+
+    std::string ClusterManager::getFollowPort()
+    {
+        if (!isEnable() || !role_)
+            return "";
+        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
+        if (!follower)
+        {
+            SLOG_TRACE("please check conf.ini, not set follower");
+            return "";
+        }
+
+        return follower->getPort();
     }
 
     void ClusterManager::addRestoreDb(const std::string& db_name)

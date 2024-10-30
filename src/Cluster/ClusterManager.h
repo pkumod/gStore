@@ -138,9 +138,10 @@ namespace cluster
         uint64 getDbFirstIndex(const std::string& db_name);
         uint64 getDbNextIndexByIndex(const std::string& db_name, uint64 follower_index);
         // 设置从节点ip(服务名称或则ip地址)
-        void setFollowIp(const std::string& ip);
+        void setFollowIpPort(const std::string& ip, const std::string& port);
         // 获取从节点ip
         std::string getFollowIp();
+        std::string getFollowPort();
         void addRestoreDb(const std::string& db_name);
         void removeRestoreDb(const std::string& db_name);
         bool isFollowerRestoring(const std::string& db_name);

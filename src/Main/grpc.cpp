@@ -2996,7 +2996,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	std::string expection = jsonParam(json_data, "operation");
 	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
-	server::MessageClusterRequest request_data(json_data, _server_port);
+	server::MessageClusterRequest request_data(json_data);
 	switch (expectionEnum)
 	{
 		case cluster::ClusterOperation_Compare:
@@ -3053,7 +3053,7 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterReplyRequest resquest_data(json_data, _server_port);
+	server::MessageClusterReplyRequest resquest_data(json_data);
 	server::ApiHandler::cluster_reply(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
 	response->Success("ok");
 }
@@ -3064,7 +3064,7 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterCheckRequest resquest_data(json_data, _server_port);
+	server::MessageClusterCheckRequest resquest_data(json_data);
 	server::ApiHandler::cluster_check(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
 	response->Success("ok");
 }

@@ -68,7 +68,7 @@ namespace cluster
                 for (const auto& node : followNodeL_)
                 {
                     httpentities::HeartBeatRequest request(info.getTerm(), db_name, index, nextIndex, uid, expection);
-                    request.setFollowIp(node.second.getIp());
+                    request.setFollowIpPort(node.second.getIp(), node.second.getPort());
                     HttpUtil::heartBeat(node.second.getHeartBeatUrl(), request, node.second.getUsername(), node.second.getPassword());
                 }
             }
@@ -197,6 +197,7 @@ namespace cluster
         auto helper = [this, request](ClusterNode node)
         {
             httpentities::HeartBeatRequest request_ = request;
+            request_.setFollowIpPort(node.getIp(), node.getPort());
 		    httpentities::ClusterResponse responce = HttpUtil::heartBeat(node.getHeartBeatUrl(), request_, node.getUsername(), node.getPassword());
             std::lock_guard<std::mutex> lock(fail_ip_mutex_);
             if (responce.getStatusCode() != CURLE_OK)
