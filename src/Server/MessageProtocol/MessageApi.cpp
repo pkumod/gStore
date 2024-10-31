@@ -409,4 +409,12 @@ namespace server
         }
         json_str = json.dump();
     }
+    
+    void MessageLicenseResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json _json;
+        toJson(_json);
+        _json["data"] = json;
+        json_str = _json.dump();
+    }
 }

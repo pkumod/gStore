@@ -14,6 +14,7 @@
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 #include "../Util/CompressFileUtil.h"
+#include "../Util/License.h"
 #include "APIUserUtil.h"
 #include "APIDatabaseUtil.h"
 #include "APILogQueryUtil.h"
@@ -69,6 +70,9 @@ private:
     pthread_rwlock_t query_log_lock;
     pthread_rwlock_t access_log_lock;
     pthread_rwlock_t transactionlog_lock;
+
+    //license info
+    struct LicenseInfo license_info;
 
     bool ip_check(const string& ip);
     bool ip_error_num_check(const string& ip);
@@ -134,7 +138,7 @@ public:
     bool init_privilege(const std::string& username, const std::string& db_name);
     bool copy_privilege(const std::string& src_db_name, const std::string& dst_db_name);
     bool clear_privilege(const string& username);
-
+    bool ask_sys_db(const std::string& sparql);
     bool query_sys_db(const std::string& sparql, ResultSet& _rs);
 
     //used by drop
@@ -168,6 +172,12 @@ public:
 	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
 	void get_transactionlog(int &page_no, int &page_size, shared_ptr<struct TransactionLogs> logPtr);
 	void abort_transactionlog(long end_time);
+
+    // for license
+    bool check_license(std::string& msg);
+    bool import_license(const string& license_file, std::string& msg);
+    bool remove_license(std::string& msg);
+    LicenseInfo& get_license();
 
     // for data get
     string get_Db_path();

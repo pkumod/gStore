@@ -36,13 +36,16 @@ APIUtil::~APIUtil()
         // warning: this is going to be blocked, if the time of the system changes
         // default timeout 60 seconds
         shared_ptr<DatabaseInfo> db_info_ptr = iter->second;
-        if (!trywrlock_databaseinfo(db_info_ptr, 60))
+        if (db_info_ptr->getStatus() == DatabaseStatus::LOADED)
         {
-            SLOG_WARN(database_name + " unable to save due to loss of lock");
-            continue;
+            if (!trywrlock_databaseinfo(db_info_ptr, 60))
+            {
+                SLOG_WARN(database_name + " unable to save due to loss of lock");
+                continue;
+            }
+            db_info_ptr->getDatabase()->save();
+            unlock_databaseinfo(db_info_ptr);
         }
-        db_info_ptr->getDatabase()->save();
-        unlock_databaseinfo(db_info_ptr);
     }
     if (system_database != nullptr)
     {
@@ -1465,6 +1468,38 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
     return true;
 }
 
+bool APIUtil::ask_sys_db(const std::string& sparql)
+{
+	pthread_rwlock_rdlock(&system_db_lock);
+	FILE* output = NULL;
+    QueryTree::UpdateType update_type;
+    system_database->isUpdate(sparql, update_type);
+    if (update_type == QueryTree::Not_Update && sparql.find("ASK") != std::string::npos)
+    {
+        ResultSet ask_rs;
+        bool ask_rt;
+    	int ret_val = system_database->query(sparql, ask_rs, output);
+        if (ret_val == -100)
+        {
+            ask_rt = ask_rs.answer[0][0] == "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+        }
+        else
+        {
+            ask_rt = false;
+        }
+        ask_rs.release();
+        SLOG_CORE("ask sparql: " + sparql + ", result: " + to_string(ask_rt) + ", ret_val: " + to_string(ret_val));
+        pthread_rwlock_unlock(&system_db_lock);
+        return ask_rt;
+    }
+    else
+    {
+        SLOG_CORE("not a ask query: " << sparql);
+        pthread_rwlock_unlock(&system_db_lock);
+        return false;
+    }
+}
+
 bool APIUtil::query_sys_db(const std::string& sparql, ResultSet& _rs)
 {
 	pthread_rwlock_rdlock(&system_db_lock);
@@ -2186,6 +2221,74 @@ void APIUtil::abort_transactionlog(long end_time)
     cmd += TRANSACTION_LOG_PATH;
     system(cmd.c_str());
     pthread_rwlock_unlock(&transactionlog_lock);
+}
+
+bool APIUtil::check_license(std::string& msg)
+{
+    if (license_info.validDate())
+    {
+        msg = license_info.desc;
+        return true;
+    } 
+    else
+    {
+        msg = license_info.desc;
+        return false;
+    }
+}
+
+bool APIUtil::import_license(const string& license_file, std::string& msg)
+{
+    std::string sparql = "ASK WHERE {<system> <licensepath> ?x}";
+    if(ask_sys_db(sparql))
+    {
+        msg = "License already exists, please remove it first";
+        return false;
+    }
+    LicenseHelper licenseHelper;
+    bool result = licenseHelper.validLicense(license_info, license_file);
+    if (!result) {
+        msg = license_info.desc;
+        return false;
+    }
+    sparql = "INSERT DATA {<system> <licensetype> \"business\". <system> <licensepath> \""+license_file+"\"}";
+    if(update_sys_db(sparql))
+    {
+        refresh_sys_db();
+        msg = license_info.desc;
+        return true;
+    } 
+    else
+    {
+        license_info.reset();
+        msg = "Failed to import license";
+        return false;
+    }
+}
+
+bool APIUtil::remove_license(std::string& msg)
+{
+    bool update_rt;
+    std::string sparql = "DELETE WHERE {<system> <licensetype> ?x}";
+    update_rt = update_sys_db(sparql);
+    sparql =  "DELETE WHERE {<system> <licensepath> ?x}";
+    update_rt = update_rt && update_sys_db(sparql);
+    if (update_rt)
+    {
+        msg = "License removed successfully";
+        license_info.reset();
+        refresh_sys_db();
+    }
+    else
+    {
+        msg = "Failed to remove license";
+    }
+    return update_rt;
+}
+
+LicenseInfo& APIUtil::get_license()
+{
+    return license_info;
 }
 
 string APIUtil::get_Db_path()

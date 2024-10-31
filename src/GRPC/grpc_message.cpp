@@ -308,6 +308,11 @@ GRPCReq &GRPCReq::operator=(GRPCReq&& other)
 // GRPCResp
 void GRPCResp::String(const std::string &str)
 {
+    stringstream strstream;
+    strstream << "\n==================== http-response ====================\n";
+    strstream << str;
+    strstream << "\n=======================================================";
+    SLOG_CORE(strstream.str());
     auto *compress_data = malloc(str.size());
     size_t compress_size = 0;
     int ret = this->compress(&str, compress_data, compress_size);

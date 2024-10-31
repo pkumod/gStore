@@ -400,7 +400,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "PPR" || tmp == "TRIANGLECOUNTING" || tmp == "CLOSENESSCENTRALITY" \
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
-				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \ 
+				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \
 				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14" \
 				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" \
 				|| tmp == "DEGREECORRELATION" || tmp == "KHOPSHORTESTPATHS" || tmp == "KHOPALLNEIGHBORS")	// Path calls

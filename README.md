@@ -2,7 +2,7 @@
   <img src="https://www.gstore.cn/pcsite/docs/logo.png" style="height: 200px;" alt="gStore logo"/>
 </div>
 
-**English** | [中文](README_ZH.md) | [Website](https://en.gstore.cn) | [网站](https://www.gstore.cn)
+[English] | [中文](README_ZH.md) | [Website](https://en.gstore.cn) | [网站](https://www.gstore.cn)
 
 <div align="center">
   <a href="https://github.com/pkumod/gStore/commits/1.2/"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/pkumod/gstore?logo=github"/></a>

@@ -214,4 +214,10 @@ namespace server
         MessageMonitorResponse(std::string body);
         void toJsonString(std::string& json_str);
     };
+
+    struct MessageLicenseResponse: public MessageResponse
+    {
+        MessageLicenseResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        void toJsonString(std::string& json_str);
+    };
 }

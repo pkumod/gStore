@@ -110,143 +110,147 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response);
 void cluster_reply_task(const GRPCReq *request, GRPCResp *response);
 void cluster_check_task(const GRPCReq *request, GRPCResp *response);
 void cluster_recover_task(const GRPCReq *request, GRPCResp *response);
+// for license
+void license_import(const GRPCReq *request, GRPCResp *response);
+void license_info(const GRPCReq *request, GRPCResp *response);
+void license_remove(const GRPCReq *request, GRPCResp *response);
 
-// common function
-std::string to_json_string(const Json& json);
-std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val = "");
-int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val);
-uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val);
-int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val);
-uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val);
-bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val);
-bool hasJsonParam(const Json &json, const std::string &key);
-void parseRequest(const GRPCReq *request, Json &json_data);
+// // common function
+// std::string to_json_string(const Json& json);
+// std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val = "");
+// int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val);
+// uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val);
+// int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val);
+// uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val);
+// bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val);
+// bool hasJsonParam(const Json &json, const std::string &key);
+// void parseRequest(const GRPCReq *request, Json &json_data);
 
-std::string to_json_string(const Json& json)
-{
-	rapidjson::StringBuffer resBuffer;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> resWriter(resBuffer);
-    json.Accept(resWriter);
-	return resBuffer.GetString();
-}
+// std::string to_json_string(const Json& json)
+// {
+// 	rapidjson::StringBuffer resBuffer;
+//     rapidjson::PrettyWriter<rapidjson::StringBuffer> resWriter(resBuffer);
+//     json.Accept(resWriter);
+// 	return resBuffer.GetString();
+// }
 
-std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val)
-{
-	if (json.HasMember(key.c_str()))
-	{
-		auto& value = json[key.c_str()];
-		if (value.IsString()) {	    
-			return value.GetString();
-		} else if (value.IsInt()) {
-			return std::to_string(value.GetInt());
-		} else if (value.IsUint()) {
-			return std::to_string(value.GetUint());
-		} else if (value.IsInt64()) {
-			return std::to_string(value.GetInt64());
-		} else if (value.IsUint64()) {
-			return std::to_string(value.GetUint64());
-		} else if (value.IsDouble()) {
-			return std::to_string(value.GetDouble());
-		} else if(value.IsFloat()){
-			return std::to_string(value.GetFloat());
-		}else if (value.IsTrue()) {
-			return "true";
-		} else if (value.IsFalse()) {
-			return "false";
-		}
-	}
-	return default_val;
-}
+// std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val)
+// {
+// 	if (json.HasMember(key.c_str()))
+// 	{
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsString()) {	    
+// 			return value.GetString();
+// 		} else if (value.IsInt()) {
+// 			return std::to_string(value.GetInt());
+// 		} else if (value.IsUint()) {
+// 			return std::to_string(value.GetUint());
+// 		} else if (value.IsInt64()) {
+// 			return std::to_string(value.GetInt64());
+// 		} else if (value.IsUint64()) {
+// 			return std::to_string(value.GetUint64());
+// 		} else if (value.IsDouble()) {
+// 			return std::to_string(value.GetDouble());
+// 		} else if(value.IsFloat()){
+// 			return std::to_string(value.GetFloat());
+// 		}else if (value.IsTrue()) {
+// 			return "true";
+// 		} else if (value.IsFalse()) {
+// 			return "false";
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val)
-{
-	if (json.HasMember(key.c_str()))
-	{
-		auto& value = json[key.c_str()];
-		if (value.IsInt()) {
-			return value.GetInt();
-		} else if (value.IsString()) {
-			return std::stoi(value.GetString());
-		}
-	}
-	return default_val;
-}
+// int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val)
+// {
+// 	if (json.HasMember(key.c_str()))
+// 	{
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsInt()) {
+// 			return value.GetInt();
+// 		} else if (value.IsString()) {
+// 			return std::stoi(value.GetString());
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val)
-{
-	if (json.HasMember(key.c_str()))
-	{
-		auto& value = json[key.c_str()];
-		if (value.IsUint()) {
-			return value.GetUint();
-		} else if (value.IsString()) {
-			uint32_t max = std::numeric_limits<uint32_t>::max();
-			int64_t val = std::stoll(value.GetString());
-			if (val > max) {
-				return default_val;
-			}
-			return val;
-		}
-	}
-	return default_val;
-}
+// uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val)
+// {
+// 	if (json.HasMember(key.c_str()))
+// 	{
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsUint()) {
+// 			return value.GetUint();
+// 		} else if (value.IsString()) {
+// 			uint32_t max = std::numeric_limits<uint32_t>::max();
+// 			int64_t val = std::stoll(value.GetString());
+// 			if (val > max) {
+// 				return default_val;
+// 			}
+// 			return val;
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val)
-{
-	if (json.HasMember(key.c_str()))
-	{
-		auto& value = json[key.c_str()];
-		if (value.IsInt64()) {
-			return value.GetInt64();
-		} else if (value.IsString()) {
-			int64_t max = std::numeric_limits<int64_t>::max();
-			uint64_t val = std::stoll(value.GetString());
-			if (val > max) {
-				return default_val;
-			}
-			return val;
-		}
-	}
-	return default_val;
-}
+// int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val)
+// {
+// 	if (json.HasMember(key.c_str()))
+// 	{
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsInt64()) {
+// 			return value.GetInt64();
+// 		} else if (value.IsString()) {
+// 			int64_t max = std::numeric_limits<int64_t>::max();
+// 			uint64_t val = std::stoll(value.GetString());
+// 			if (val > max) {
+// 				return default_val;
+// 			}
+// 			return val;
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val)
-{
-	if (json.HasMember(key.c_str()))
-	{
-		auto& value = json[key.c_str()];
-		if (value.IsInt64()) {
-			return value.GetInt64();
-		} else if (value.IsString()) {
-			return std::stoul(value.GetString());
-		}
-	}
-	return default_val;
-}
+// uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val)
+// {
+// 	if (json.HasMember(key.c_str()))
+// 	{
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsInt64()) {
+// 			return value.GetInt64();
+// 		} else if (value.IsString()) {
+// 			return std::stoul(value.GetString());
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val)
-{
-	if (json.HasMember(key.c_str())) {
-		auto& value = json[key.c_str()];
-		if (value.IsBool()) {
-			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetBool()));
-			return value.GetBool();
-		} else if (value.IsString()) {
-			std::string v = value.GetString();
-			SLOG_DEBUG("json[" + key + "]=" + v);
-			return v == "true" || v == "1";
-		} else if (value.IsInt()) {
-			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetInt()));
-			return value.GetInt() == 1;
-		}
-	}
-	return default_val;
-}
+// bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val)
+// {
+// 	if (json.HasMember(key.c_str())) {
+// 		auto& value = json[key.c_str()];
+// 		if (value.IsBool()) {
+// 			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetBool()));
+// 			return value.GetBool();
+// 		} else if (value.IsString()) {
+// 			std::string v = value.GetString();
+// 			SLOG_DEBUG("json[" + key + "]=" + v);
+// 			return v == "true" || v == "1";
+// 		} else if (value.IsInt()) {
+// 			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetInt()));
+// 			return value.GetInt() == 1;
+// 		}
+// 	}
+// 	return default_val;
+// }
 
-bool hasJsonParam(const Json &json, const std::string &key)
-{
-	return json.HasMember(key.c_str());
-}
+// bool hasJsonParam(const Json &json, const std::string &key)
+// {
+// 	return json.HasMember(key.c_str());
+// }
 
 void parseRequest(const GRPCReq *request, Json &json_data)
 {
@@ -972,6 +976,33 @@ void register_service(GRPCServer &svr)
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
+
+	svr.ROUTE(
+		"/lic/import", [](const GRPCReq *request, GRPCResp *response)
+		{
+			license_import(request, response);
+		},
+		ReqMethod::POST);
+	svr.ROUTE(
+		"/lic/import", [](const GRPCReq *request, GRPCResp *response)
+		{
+			response->add_header_pair("Access-Control-Allow-Origin", "*");
+			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->String("ok");
+		},
+		ReqMethod::OPTIONS);
+	svr.ROUTE(
+		"/lic/info", [](const GRPCReq *request, GRPCResp *response)
+		{
+			license_info(request, response);
+		},
+		methods);
+	svr.ROUTE(
+		"/lic/remove", [](const GRPCReq *request, GRPCResp *response)
+		{
+			license_remove(request, response);
+		},
+		ReqMethod::POST);
 }
 
 void shutdown(const GRPCReq *request, GRPCResp *response)
@@ -1199,9 +1230,9 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	ss += "\n==================================================";
 	SLOG_DEBUG(ss);
 	std::string error;
-	std::string username = jsonParam(json_data, "username");
-	std::string password = jsonParam(json_data, "password");
-	std::string filepath = jsonParam(json_data, "filepath");
+	std::string username = server::jsonParam(json_data, "username");
+	std::string password = server::jsonParam(json_data, "password");
+	std::string filepath = server::jsonParam(json_data, "filepath");
 	apiUtil->check_param_value("username", username, error);
 	if (error.empty() == false)
 	{
@@ -1233,7 +1264,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
-		// std::string compress = jsonParam(json_data, "compress", "0");
+		// std::string compress = server::jsonParam(json_data, "compress", "0");
 		// if (compress == "1") // compress to zip file
 		// {
 		// 	string filename = GRPCUtil::fileName(exact_path);
@@ -1393,7 +1424,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 {
 	Json json_data;
 	parseRequest(request, json_data);
-	bool is_inner = jsonBoolParam(json_data, "inner", false);
+	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	string msg;
@@ -1408,7 +1439,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 	{
 		string sparql;
 		ResultSet rs;
-		sparql = jsonParam(json_data, "sparql");
+		sparql = server::jsonParam(json_data, "sparql");
 		if (!apiUtil->check_param_value("sparql", sparql, msg))
 		{
 			response->Error(StatusParamIsIllegal, msg);
@@ -1507,7 +1538,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	Json::AllocatorType &allocator = json_data.GetAllocator();
 	// add remote_ip param
 	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
-	std::string operation = jsonParam(json_data, "operation");
+	std::string operation = server::jsonParam(json_data, "operation");
 	operation_type op_type = OperationType::to_enum(operation);
 	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
 	{
@@ -1563,11 +1594,11 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		response->Error(StatusParamIsIllegal, "username or password is empty");
 		return;
 	}
-	std::string username = jsonParam(json_data, "username");
-	std::string password = jsonParam(json_data, "password");
-	std::string encryption = jsonParam(json_data, "encryption");
-	std::string db_name = jsonParam(json_data, "db_name");
-	bool is_inner = jsonBoolParam(json_data, "inner", false);
+	std::string username = server::jsonParam(json_data, "username");
+	std::string password = server::jsonParam(json_data, "password");
+	std::string encryption = server::jsonParam(json_data, "encryption");
+	std::string db_name = server::jsonParam(json_data, "db_name");
+	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
 	bool need_check_privilege = true;
 	// skip check privilege for inner request
 	if (is_inner && "127.0.0.1" == ip_addr)
@@ -1957,7 +1988,7 @@ void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_da
  */
 void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
-	std::string db_names = jsonParam(json_data, "db_names");
+	std::string db_names = server::jsonParam(json_data, "db_names");
 	if (db_names.empty())
 	{
 		response->Error(StatusParamIsIllegal, "db_names can't be empty");
@@ -2087,7 +2118,7 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
+		std::string db_name = server::jsonParam(json_data, "db_name");
 		std::string msg;
 		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
@@ -2578,14 +2609,14 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
-		std::string db_name = jsonParam(json_data, "db_name");
+		std::string db_name = server::jsonParam(json_data, "db_name");
 		std::string msg;
 		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
 			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		std::string new_name = jsonParam(json_data, "new_name");
+		std::string new_name = server::jsonParam(json_data, "new_name");
 		if (apiUtil->check_param_value("new_name", new_name, msg) == false)
 		{
 			response->Error(StatusParamIsIllegal, msg);
@@ -2994,7 +3025,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 {
 	Json json_data;
 	parseRequest(request, json_data);
-	std::string expection = jsonParam(json_data, "operation");
+	std::string expection = server::jsonParam(json_data, "operation");
 	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	server::MessageClusterRequest request_data(json_data);
 	switch (expectionEnum)
@@ -3081,5 +3112,124 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 	else
 	{
 		response->Success("ok");
+	}
+}
+
+void license_import(const GRPCReq *request, GRPCResp *response)
+{
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
+	{
+		SLOG_DEBUG(ipCheckResult);
+		response->Error(StatusIPBlocked, ipCheckResult);
+		return;
+	}
+	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
+	if (request->contentType() != MULTIPART_FORM_DATA) //for multipart/form-data
+	{
+		response->Error(StatusFileReadError, "Content-Type not match");
+		return;
+	}
+	SLOG_INFO("receive [licenseImport] request from " << ip_addr);
+	Form &form = request->form();
+	if (form.empty())
+	{   
+		response->Error(StatusFileReadError, "Form data is empty");
+		return;
+	}
+	std::string error;
+	if (form.find("username") == form.end() || form.find("password") == form.end())
+	{
+		error = "username or password is empty";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	std::string username = form.at("username").second;
+	std::string password = form.at("password").second;
+	apiUtil->check_param_value("username", username, error);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	apiUtil->check_param_value("password", password, error);
+	if (error.empty() == false)
+	{
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	// filename : filecontent
+	std::pair<std::string, std::string>& fileinfo = form.at("file");
+	if(fileinfo.first.empty())
+	{
+		error = "Upload file can not be empty!";
+		response->Error(StatusParamIsIllegal, error);
+		return;
+	}
+	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	if (file_suffix != "lic")
+	{
+		error = "The type of license file is not supported!";
+		response->Error(StatusOperationFailed, error);
+		return;
+	}
+	// remove path info, only return base filename
+	std::string file_name = GRPCUtil::fileName(fileinfo.first);
+	size_t pos = file_name.size() - file_suffix.size() - 1;
+	std::string file_save_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
+    std::string license_context = fileinfo.second;
+    WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
+		file_save_path, static_cast<const void *>(license_context.c_str()), license_context.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
+			long ret = pwrite_task->get_retval();
+			GRPCServerTask *server_task = task_of(pwrite_task);
+			GRPCResp *resp = server_task->get_resp();
+			resp->headers["Access-Control-Allow-Origin"] = "*";
+			if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
+			{
+				resp->Error(StatusFileWriteError);
+			} 
+			else
+			{
+				string msg;
+				if(apiUtil->import_license(file_save_path, msg))
+				{
+					server::MessageLicenseResponse respData(server::StatusCode::StatusOK, msg);
+					respData.json = apiUtil->get_license();
+					std::string json_str;
+					respData.toJsonString(json_str);
+					resp->nlohmannJson(json_str);
+				}
+				else 
+				{
+					Util::remove_path(file_save_path);
+					resp->Error(server::StatusCode::StatusLicenseInvalid, msg);
+				}
+			}
+	});
+    **rpc_task << pwrite_task;
+}
+
+void license_info(const GRPCReq *request, GRPCResp *response)
+{
+	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
+	respData.json = apiUtil->get_license();
+	std::string json_str;
+	respData.toJsonString(json_str);
+	response->nlohmannJson(json_str);
+}
+
+void license_remove(const GRPCReq *request, GRPCResp *response)
+{
+	std::string msg;
+	if(apiUtil->remove_license(msg))
+	{
+		response->Success(msg);
+	}
+	else
+	{
+		response->Error(server::StatusCode::StatusOperationFailed, msg);
 	}
 }
