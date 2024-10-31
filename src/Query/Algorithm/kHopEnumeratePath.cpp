@@ -37,6 +37,8 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 			for (int i = 0; i < outNum; ++i)
 			{
 				to = getOutVertID(uid, pred, i);
+				if (to < 0 || to >= bar.size())
+					continue;	
 				bool stacked = false;
 				for (auto pr : s)
 					if (pr.first == to)
@@ -65,6 +67,8 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 			for (int i = 0; i < inNum; ++i)
 			{
 				to = getInVertID(uid, pred, i);
+				if (to < 0 || to >= bar.size())
+					continue;	
 				bool stacked = false;
 				for (auto pr : s)
 					if (pr.first == to)
@@ -113,9 +117,14 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 */
 vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int retNum, bool directed, int k, const std::vector<int> &pred_set)
 {
+	if (uid < 0 || vid < 0)
+		return vector<vector<int>>();
 	vector<vector<int>> ret;
 	vector<pair<int, int>> s;
-	vector<int> bar(getVertNum(), 0);
+	int size = getVertNum();
+	if (size == 0)
+		return vector<vector<int>>();
+	vector<int> bar(size, 0);
 	// Use reverse kBFS from destination to refine bar
 	queue<int> q;
 	q.push(vid);
@@ -123,14 +132,16 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int re
 	{
 		int cur = q.front();
 		q.pop();
-		if (bar[cur] >= k)
-			continue;
+		if (cur < 0 || bar[cur] >= k)
+			continue;	
 		for (int pred : pred_set)
 		{
 			int inNum = getInSize(cur, pred);
 			for (int i = 0; i < inNum; ++i)
 			{
 				int to = getInVertID(cur, pred, i);
+				if (to < 0)
+					continue;	
 				if (bar[to] == 0 && to != vid)
 				{
 					bar[to] = bar[cur] + 1;
@@ -143,6 +154,8 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int re
 			for (int i = 0; i < outNum; ++i)
 			{
 				int to = getOutVertID(cur, pred, i);
+				if (to < 0)
+					continue;	
 				if (bar[to] == 0 && to != vid)
 				{
 					bar[to] = bar[cur] + 1;

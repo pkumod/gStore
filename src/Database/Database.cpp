@@ -1747,12 +1747,15 @@ void Database::releaseIDBlock()
 // so flush() is a must
 bool Database::save()
 {
-	this->kvstore->flush();
-	this->saveDBInfoFile();
-	this->saveIDinfo();
+	if (if_loaded)
+	{
+		this->kvstore->flush();
+		this->saveDBInfoFile();
+		this->saveIDinfo();
 
-	this->stringindex->flush();
-	this->clear_update_log();
+		this->stringindex->flush();
+		this->clear_update_log();
+	}
 
 	return true;
 }
