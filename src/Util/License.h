@@ -39,6 +39,7 @@ public:
     std::string company;
     std::string type;
     std::string desc;
+    std::string content;
     void reset()
     {
         isvalid = false;
@@ -51,12 +52,14 @@ public:
         company = "";
         type = "";
         desc = "";
+        content= "";
     }
-    time_t time_to_stamp(std::string time)
+    time_t time_to_stamp(const std::string& time)
     {
-        struct tm *tm = (struct tm *)malloc(sizeof(struct tm));
-        strptime(time.c_str(), "%Y-%m-%d %H:%M:%S", tm);
-        time_t stamp = mktime(tm);
+        struct tm timeStruct = {0};
+        const char* format = "%Y-%m-%d %H:%M:%S";
+        strptime(time.c_str(), format, &timeStruct);
+        time_t stamp = mktime(&timeStruct);
         return stamp;
     }
     bool validDate()
@@ -73,15 +76,14 @@ public:
             isvalid = false;
             return isvalid;
         }
-        time_t _timer = time(0);
-        struct tm *tm_now = localtime(&_timer);
-        tm_now->tm_hour = 0;
-        tm_now->tm_min = 0;
-        tm_now->tm_sec = 0;
+        std::time_t now = std::time(0);
+        struct tm *tm_now = std::localtime(&now);
         time_t currentTime = mktime(tm_now);
-
-        time_t resStart = time_to_stamp(startdate + " 00:00:00");
-        time_t resEnd = time_to_stamp(enddate + " 23:59:59");
+        string st = startdate + " 00:00:00";
+        string et = enddate + " 23:59:59";
+        time_t resStart = time_to_stamp(st);
+        time_t resEnd = time_to_stamp(et);
+        SLOG_CORE("now:" + std::to_string(currentTime) + " start:" + std::to_string(resStart) + " end:" + std::to_string(resEnd));
         if (currentTime >= resStart && currentTime <= resEnd)
         {
             desc = "The license has been successfully verified and is valid from " + startdate + " to " + enddate;
@@ -129,4 +131,5 @@ public:
     LicenseHelper();
     ~LicenseHelper();
     bool validLicense(struct LicenseInfo &licenseInfo, const std::string licenseFile);
+    bool validLicense(struct LicenseInfo &licenseInfo, const char* licenseContent);
 };

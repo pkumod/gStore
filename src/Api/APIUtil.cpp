@@ -227,6 +227,7 @@ int APIUtil::initialize()
         ofp << '\n';
         ofp.flush();
         ofp.close();
+        init_license();
         // #if defined(DEBUG)
         SLOG_CORE("initialization end");
         // #endif
@@ -2223,6 +2224,28 @@ void APIUtil::abort_transactionlog(long end_time)
     pthread_rwlock_unlock(&transactionlog_lock);
 }
 
+void APIUtil::init_license()
+{
+    std::string sparql = "SELECT ?x ?y WHERE {<system> <license_type> ?x; <license_content> ?y.}";
+    ResultSet _rs;
+    if (query_sys_db(sparql, _rs) && _rs.ansNum == 1) 
+    {
+        std::string license_type = _rs.answer[0][0];
+        std::string license_content = _rs.answer[0][1];
+        if(license_content.size() > 2) 
+        {
+            LicenseHelper licenseHelper;
+            licenseHelper.validLicense(license_info, license_content.substr(1, license_content.size() - 2).c_str());
+            SLOG_CORE("license info: " + license_info.desc);
+        }
+        else
+        {
+            SLOG_CORE("invalid license: " + license_content);
+        }
+    }
+    _rs.release();
+}
+
 bool APIUtil::check_license(std::string& msg)
 {
     if (license_info.validDate())
@@ -2239,7 +2262,7 @@ bool APIUtil::check_license(std::string& msg)
 
 bool APIUtil::import_license(const string& license_file, std::string& msg)
 {
-    std::string sparql = "ASK WHERE {<system> <licensepath> ?x}";
+    std::string sparql = "ASK WHERE {<system> <license_content> ?x}";
     if(ask_sys_db(sparql))
     {
         msg = "License already exists, please remove it first";
@@ -2249,13 +2272,14 @@ bool APIUtil::import_license(const string& license_file, std::string& msg)
     bool result = licenseHelper.validLicense(license_info, license_file);
     if (!result) {
         msg = license_info.desc;
+        license_info.reset();
         return false;
     }
-    sparql = "INSERT DATA {<system> <licensetype> \"business\". <system> <licensepath> \""+license_file+"\"}";
+    sparql = "INSERT DATA {<system> <license_type> \""+license_info.type+"\". <system> <license_content> \""+license_info.content+"\"}";
     if(update_sys_db(sparql))
     {
         refresh_sys_db();
-        msg = license_info.desc;
+        msg = "License imported successfully";
         return true;
     } 
     else
@@ -2269,9 +2293,9 @@ bool APIUtil::import_license(const string& license_file, std::string& msg)
 bool APIUtil::remove_license(std::string& msg)
 {
     bool update_rt;
-    std::string sparql = "DELETE WHERE {<system> <licensetype> ?x}";
+    std::string sparql = "DELETE WHERE {<system> <license_type> ?x}";
     update_rt = update_sys_db(sparql);
-    sparql =  "DELETE WHERE {<system> <licensepath> ?x}";
+    sparql =  "DELETE WHERE {<system> <license_content> ?x}";
     update_rt = update_rt && update_sys_db(sparql);
     if (update_rt)
     {

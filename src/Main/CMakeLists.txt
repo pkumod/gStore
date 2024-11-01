@@ -62,14 +62,15 @@ set( BIN_LIST
         # ghttp
         # ginit
         # gmonitor          
-        # gquery      
+        gquery      
         # grestore     
         gserver         
         # gserver     
         # gserver_backup_scheduler     
         # gshow     
         # gsub
-        # greason     
+        # greason
+        glicense     
 )
 set( MAIN_LIST 
         # gadd.cpp  
@@ -81,7 +82,7 @@ set( MAIN_LIST
         # ghttp.cpp 
         # ginit.cpp 
         # gmonitor.cpp 
-        # gquery.cpp  
+        gquery.cpp  
         # grestore.cpp 
         grpc.cpp     
         # gserver.cpp 
@@ -89,6 +90,7 @@ set( MAIN_LIST
         # gshow.cpp
         # gsub.cpp
         # greason.cpp
+        glicense.cpp
 )
 include_directories( ${INCLUDE_3RD_PATH} )
 link_directories( 

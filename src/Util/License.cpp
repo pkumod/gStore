@@ -251,9 +251,14 @@ bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const std::str
     licenseInfo.desc = "The license file is not exist";
     return false;
   }
-
   std::string licenseStr = loadBinaryFile(licenseFile);
-  std::string decodeStr = base64Decode(licenseStr.c_str());
+  return validLicense(licenseInfo, licenseStr.c_str());
+}
+
+bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const char* licenseContent)
+{
+  SLOG_CORE("content:" << licenseContent);
+  std::string decodeStr = base64Decode(licenseContent);
   std::string decStr = rsa_pub_decrypt(decodeStr);
   SLOG_CORE("decstr:" << decStr);
   std::string product, version;
@@ -304,54 +309,52 @@ bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const std::str
     return false;
   }
   licenseInfo = data;
-  
   if (!licenseInfo.validDate())
   {
     return false;
   }
-  if (licenseInfo.type == "0")
-  {
-    // trial license
-    return true;
-  }
-  else
-  {
-    // business license
-    licenseInfo.type = "1";
-    // check MAC and CPUID
-    std::string licenseMac;
-    std::string licenseCPU;
-    if (data.contains("mac"))
-    {
-      data.at("mac").get_to(licenseMac);
-    }
-    else
-    {
-      licenseInfo.isvalid = false;
-      licenseInfo.desc = "The license is not complete!";
-      return false;
-    }
-
-    std::string mac;
-    if (getMacAddress(mac) == false || licenseMac != mac)
-    {
-      SLOG_CORE("current mac: " + mac + ", license mac: " + licenseMac);
-      licenseInfo.isvalid = false;
-      licenseInfo.desc = "The MAC address is mismatch!";
-      return false;
-    }
-    if (data.contains("cpu"))
-    {
-      std::string cpuid;
-      data.at("cpu").get_to(cpuid);
-      if(getCPUID(cpuid) == false || licenseCPU != cpuid)
-      {
-        SLOG_CORE("current CPU ID: " + cpuid + ", license CPU ID: " + licenseCPU);
-        licenseInfo.isvalid = false;
-        licenseInfo.desc = "The CPU ID is mismatch!";
-        return false;
-      }
-    }
-    return true;
-  }
+  licenseInfo.type = "0";
+  licenseInfo.content = licenseContent;
+  return true;
+  // std::string licenseMac;
+  // if (data.contains("mac"))
+  // {
+  //   data.at("mac").get_to(licenseMac);
+  // }
+  // if (licenseMac.empty())
+  // {
+  //   // trial license
+  //   licenseInfo.type = "0";
+  //   licenseInfo.isvalid = true;
+  //   return true;
+  // }
+  // else
+  // {
+  //   // business license
+  //   licenseInfo.type = "1";
+  //   // check MAC and CPUID
+  //   std::string mac;
+  //   if (getMacAddress(mac) == false || licenseMac != mac)
+  //   {
+  //     SLOG_CORE("current mac: " + mac + ", license mac: " + licenseMac);
+  //     licenseInfo.isvalid = false;
+  //     licenseInfo.desc = "The MAC address is mismatch!";
+  //     return false;
+  //   }
+  //   if (data.contains("cpu"))
+  //   {
+  //     std::string licenseCPU;
+  //     std::string cpuid;
+  //     data.at("cpu").get_to(licenseCPU);
+  //     if(getCPUID(cpuid) == false || licenseCPU != cpuid)
+  //     {
+  //       SLOG_CORE("current CPU ID: " + cpuid + ", license CPU ID: " + licenseCPU);
+  //       licenseInfo.isvalid = false;
+  //       licenseInfo.desc = "The CPU ID is mismatch!";
+  //       return false;
+  //     }
+  //   }
+  //   licenseInfo.content = licenseStr;
+  //   return true;
+  // }
 }

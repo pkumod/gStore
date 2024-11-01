@@ -58,7 +58,7 @@ void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *se
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
-void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip);
+void login_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
 void test_connect_task(const GRPCReq *request, GRPCResp *response);
 void core_version_task(const GRPCReq *request, GRPCResp *response);
 void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
@@ -115,143 +115,6 @@ void license_import(const GRPCReq *request, GRPCResp *response);
 void license_info(const GRPCReq *request, GRPCResp *response);
 void license_remove(const GRPCReq *request, GRPCResp *response);
 
-// // common function
-// std::string to_json_string(const Json& json);
-// std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val = "");
-// int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val);
-// uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val);
-// int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val);
-// uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val);
-// bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val);
-// bool hasJsonParam(const Json &json, const std::string &key);
-// void parseRequest(const GRPCReq *request, Json &json_data);
-
-// std::string to_json_string(const Json& json)
-// {
-// 	rapidjson::StringBuffer resBuffer;
-//     rapidjson::PrettyWriter<rapidjson::StringBuffer> resWriter(resBuffer);
-//     json.Accept(resWriter);
-// 	return resBuffer.GetString();
-// }
-
-// std::string jsonParam(const Json &json, const std::string &key, const std::string& default_val)
-// {
-// 	if (json.HasMember(key.c_str()))
-// 	{
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsString()) {	    
-// 			return value.GetString();
-// 		} else if (value.IsInt()) {
-// 			return std::to_string(value.GetInt());
-// 		} else if (value.IsUint()) {
-// 			return std::to_string(value.GetUint());
-// 		} else if (value.IsInt64()) {
-// 			return std::to_string(value.GetInt64());
-// 		} else if (value.IsUint64()) {
-// 			return std::to_string(value.GetUint64());
-// 		} else if (value.IsDouble()) {
-// 			return std::to_string(value.GetDouble());
-// 		} else if(value.IsFloat()){
-// 			return std::to_string(value.GetFloat());
-// 		}else if (value.IsTrue()) {
-// 			return "true";
-// 		} else if (value.IsFalse()) {
-// 			return "false";
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// int32_t jsonParam(const Json &json, const std::string &key, const int32_t &default_val)
-// {
-// 	if (json.HasMember(key.c_str()))
-// 	{
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsInt()) {
-// 			return value.GetInt();
-// 		} else if (value.IsString()) {
-// 			return std::stoi(value.GetString());
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// uint32_t jsonParam(const Json &json, const std::string &key, const uint32_t &default_val)
-// {
-// 	if (json.HasMember(key.c_str()))
-// 	{
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsUint()) {
-// 			return value.GetUint();
-// 		} else if (value.IsString()) {
-// 			uint32_t max = std::numeric_limits<uint32_t>::max();
-// 			int64_t val = std::stoll(value.GetString());
-// 			if (val > max) {
-// 				return default_val;
-// 			}
-// 			return val;
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// int64_t jsonParam(const Json &json, const std::string &key, const int64_t &default_val)
-// {
-// 	if (json.HasMember(key.c_str()))
-// 	{
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsInt64()) {
-// 			return value.GetInt64();
-// 		} else if (value.IsString()) {
-// 			int64_t max = std::numeric_limits<int64_t>::max();
-// 			uint64_t val = std::stoll(value.GetString());
-// 			if (val > max) {
-// 				return default_val;
-// 			}
-// 			return val;
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// uint64_t jsonParam(const Json &json, const std::string &key, const uint64_t &default_val)
-// {
-// 	if (json.HasMember(key.c_str()))
-// 	{
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsInt64()) {
-// 			return value.GetInt64();
-// 		} else if (value.IsString()) {
-// 			return std::stoul(value.GetString());
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// bool jsonBoolParam(const Json &json, const std::string &key, const bool &default_val)
-// {
-// 	if (json.HasMember(key.c_str())) {
-// 		auto& value = json[key.c_str()];
-// 		if (value.IsBool()) {
-// 			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetBool()));
-// 			return value.GetBool();
-// 		} else if (value.IsString()) {
-// 			std::string v = value.GetString();
-// 			SLOG_DEBUG("json[" + key + "]=" + v);
-// 			return v == "true" || v == "1";
-// 		} else if (value.IsInt()) {
-// 			SLOG_DEBUG("json[" + key + "]=" + to_string(value.GetInt()));
-// 			return value.GetInt() == 1;
-// 		}
-// 	}
-// 	return default_val;
-// }
-
-// bool hasJsonParam(const Json &json, const std::string &key)
-// {
-// 	return json.HasMember(key.c_str());
-// }
-
 void parseRequest(const GRPCReq *request, Json &json_data)
 {
 	json_data.SetObject();
@@ -277,23 +140,42 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 			iter++;
 		}
 	}
+	else if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
+	{
+		Form &form = request->form();
+		if (form.empty())
+		{
+			return;
+		}
+		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
+		{
+			string v = form.at(iter->first).second;
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			if (iter->first == "file")
+			{
+				string filename = form.at(iter->first).first;
+				json_data.AddMember(rapidjson::Value().SetString("filename", allocator).Move(), rapidjson::Value().SetString(filename.c_str(), allocator).Move(), allocator);
+			}
+		}
+	}
 	else // for get
 	{
 		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty() == false)
+		if (params.empty())
 		{
-			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::string v;
-			while (iter != params.end())
+			return;
+		}
+		std::map<std::string, std::string>::iterator iter = params.begin();
+		std::string v;
+		while (iter != params.end())
+		{
+			v = iter->second;
+			if (UrlEncode::is_url_encode(v))
 			{
-				v = iter->second;
-				if (UrlEncode::is_url_encode(v))
-				{
-					StringUtil::url_decode(v);
-				}
-				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-				iter++;
+				StringUtil::url_decode(v);
 			}
+			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			iter++;
 		}
 	}
 }
@@ -340,6 +222,130 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 			}
 		}
 	}
+}
+
+bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, Json &json_data)
+{
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	std::string ipCheckResult;
+	if (apiUtil->check_access_ip(ip_addr, 1, ipCheckResult) == false)
+	{
+		SLOG_WARN("request from " << ip_addr << " is blocked");
+		response->Error(StatusIPBlocked, ipCheckResult);
+		return false;
+	}
+
+	// nlohmann::json nlohmann_json_data;
+	// parseRequest(request, nlohmann_json_data);
+	// nlohmann_json_data["remote_ip"] = ip_addr.c_str();
+	std::string operation;
+	if (json_data.HasMember("operation")) 
+	{
+		operation = server::jsonParam(json_data, "operation");
+	}
+	parseRequest(request, json_data);
+	Json::AllocatorType &allocator = json_data.GetAllocator();
+	// add remote_ip param
+	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
+	if (operation.empty()) 
+	{
+		operation = server::jsonParam(json_data, "operation", "unknown");
+	}
+	op_type = OperationType::to_enum(operation);
+	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
+	{
+		if (apiUtil->check_access_ip(ip_addr, 2, ipCheckResult) == false)
+		{
+			SLOG_WARN("request from " << ip_addr << " is blocked");
+			response->Error(StatusIPBlocked, ipCheckResult);
+			return false;
+		}
+	}
+	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
+	std::string ss;
+	ss += "\n==================== http-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
+	if (!request->body().empty())
+	{
+		std::string body = request->body();
+		ss += "\n  request_body: ";
+		if (body.length() > 1024) 
+		{
+			ss += body.substr(0, 1024) + "...";
+		}
+		else
+		{
+			ss += body;
+		}
+	}
+	ss += "\n==================================================";
+	SLOG_DEBUG(ss);
+	if (operation == "unknown")
+	{
+		response->Error(StatusOperationUndefined);
+		return false;
+	}
+	// add callback task for access log start
+	auto *operation_ptr = new std::string(operation);
+	auto *ip_ptr = new std::string(ip_addr);
+	rpc_task->add_callback([operation_ptr, ip_ptr](GRPCTask *task) {
+		GRPCResp *resp = task->get_resp();
+		std::vector<std::string> async_op = {"build", "batchInsert", "batchRemove", "backup", "restore"};
+		if (std::find(async_op.begin(), async_op.end(), *operation_ptr) == async_op.end())
+			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
+		delete operation_ptr;
+		delete ip_ptr;
+	});
+	// add callback task for access log end
+	if (op_type == OP_CHECK)
+	{
+		return true;
+	}
+	if (json_data.HasMember("username") == false || json_data.HasMember("password") == false)
+	{
+		response->Error(StatusParamIsIllegal, "username or password is empty");
+		return false;
+	}
+	std::string username = server::jsonParam(json_data, "username");
+	std::string password = server::jsonParam(json_data, "password");
+	std::string encryption = server::jsonParam(json_data, "encryption");
+	std::string db_name = server::jsonParam(json_data, "db_name");
+	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
+	bool need_check_privilege = true;
+	// skip check privilege for inner request
+	if (is_inner && "127.0.0.1" == ip_addr)
+	{
+		need_check_privilege = false;
+	}
+	// check username and password
+	if(need_check_privilege) 
+	{
+		std::string checkidentityresult;
+		if (apiUtil->check_indentity(username, password, encryption, checkidentityresult) == false)
+		{
+			apiUtil->update_access_ip_error_num(ip_addr);
+			response->Error(StatusAuthenticationFailed, checkidentityresult);
+			return false;
+		}
+	}
+	// check privilege
+	if (username != ROOT_USERNAME)
+	{
+		need_check_privilege = true;
+	}
+	if (need_check_privilege && apiUtil->check_privilege(username, operation, db_name) == 0)
+	{
+		std::string msg = "You have no " + operation + " privilege";
+		response->Error(StatusOperationConditionsAreNotSatisfied, msg);
+		return false;
+	}
+	return true;
 }
 
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout)
@@ -1057,84 +1063,41 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
-	// check ip address
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult;
-	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
+	
+	operation_type op_type;
+	Json json_data;
+	json_data.SetObject();
+	json_data.AddMember("operation", "uploadfile", json_data.GetAllocator());
+	if (checkRequest(request, response, op_type, json_data) == false)
 	{
-		SLOG_DEBUG(ipCheckResult);
-		response->Error(StatusIPBlocked, ipCheckResult);
-		return;
-	}
-	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
-	if (request->contentType() != MULTIPART_FORM_DATA) //for application/json
-	{
-		response->Error(StatusFileReadError, "Content-Type not match");
-		return;
-	}
-	SLOG_INFO("receive [uploadfile] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== http-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	ss += "\n  Content-Length: " + request->header("Content-Length");
-	SLOG_DEBUG(ss);
-	Form &form = request->form();
-	if (form.empty())
-	{   
-		response->Error(StatusFileReadError, "Form data is empty");
-		return;
-	}
-	std::string error;
-	if (form.find("username") == form.end() || form.find("password") == form.end())
-	{
-		error = "username or password is empty";
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
-	std::string username = form.at("username").second;
-	std::string password = form.at("password").second;
-	apiUtil->check_param_value("username", username, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
-	apiUtil->check_param_value("password", password, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
 	// filename : filecontent
-	std::pair<std::string, std::string>& fileinfo = form.at("file");
-	if(fileinfo.first.empty())
+	std::string filename = server::jsonParam(json_data, "filename");
+	string msg;
+	if(msg.empty())
 	{
-		error = "Upload file can not be empty!";
-		response->Error(StatusParamIsIllegal, error);
+		msg = "Upload file can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
 	if(request->has_content_length_header())
 	{
-		size_t content_length = stoul(request->header("Content-Length"), nullptr, 0);
+		size_t content_length = stoul(request->header("Content-Length"));
 		size_t max_body_size = apiUtil->get_upload_max_body_size();
 		if (content_length > max_body_size)
 		{
 			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");
-			error = "Upload file more than max_body_size!";
-			response->Error(StatusOperationFailed, error);
+			msg = "Upload file more than max_body_size!";
+			response->Error(StatusOperationFailed, msg);
 			return;
 		}
 	}
-	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	std::string file_suffix = GRPCUtil::fileSuffix(filename);
 	if (!apiUtil->check_upload_allow_compress_packages(file_suffix) && apiUtil->check_upload_allow_extensions(file_suffix) == false)
 	{
-		error = "The type of upload file is not supported!";
-		response->Error(StatusOperationFailed, error);
+		msg = "The type of upload file is not supported!";
+		response->Error(StatusOperationFailed, msg);
 		return;
 	}
 	// redirect to cluster
@@ -1144,107 +1107,26 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		return;
 	}
 	// remove path info, only return base filename
-	std::string file_name = GRPCUtil::fileName(fileinfo.first);
+	std::string file_name = GRPCUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_dst = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
-	response->Save(file_dst, std::move(fileinfo.second), notify_msg);
+	std::string file_content = server::jsonParam(json_data, "file");
+	response->Save(file_dst, std::move(file_content), notify_msg);
 }
 
 void download_file(const GRPCReq *request, GRPCResp *response)
 {
-	// check ip address
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult;
-	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
-	{
-		SLOG_DEBUG(ipCheckResult);
-		response->Error(StatusIPBlocked, ipCheckResult);
-		return;
-	}
+	operation_type op_type;
 	Json json_data;
 	json_data.SetObject();
-	Json::AllocatorType &allocator = json_data.GetAllocator();
-	if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
+	json_data.AddMember("operation", "downloadfile", json_data.GetAllocator());
+	if (checkRequest(request, response, op_type, json_data) == false)
 	{
-		Form &form = request->form();
-		if (form.empty())
-		{   
-			response->Error(StatusFileReadError, "Form data is empty");
-			return;
-		}
-		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
-		{
-			string v = form.at(iter->first).second;
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-		}
+		return;
 	}
-	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
-	{
-		std::map<std::string, std::string> &form_data = request->formData();
-		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::string v;
-		while (iter != form_data.end())
-		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
-			{
-				StringUtil::url_decode(v);
-			}
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-			iter++;
-		}
-	}
-	else // for get
-	{
-		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty() == false)
-		{
-			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::string v;
-			while (iter != params.end())
-			{
-				v = iter->second;
-				if (UrlEncode::is_url_encode(v))
-				{
-					StringUtil::url_decode(v);
-				}
-				json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-				iter++;
-			}
-		}
-	}
-	SLOG_INFO("receive [downloadfile] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== http-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	if (!request->body().empty())
-	{
-		ss += "\n  request_body: " + request->body();
-	}
-	ss += "\n==================================================";
-	SLOG_DEBUG(ss);
 	std::string error;
-	std::string username = server::jsonParam(json_data, "username");
-	std::string password = server::jsonParam(json_data, "password");
 	std::string filepath = server::jsonParam(json_data, "filepath");
-	apiUtil->check_param_value("username", username, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
-	apiUtil->check_param_value("password", password, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
 	apiUtil->check_param_value("filepath", filepath, error);
 	if (error.empty() == false)
 	{
@@ -1260,27 +1142,36 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 		SLOG_DEBUG("file exact path: " + exact_path);
 		if (StringUtil::start_with(exact_path, cur_path) == false)
 		{
-			error = "Download file must in the gstore home dir";
+			string product_name = apiUtil->get_configure_value("product_name");
+			error = "Download file must in the "+ product_name +" home dir";
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
-		// std::string compress = server::jsonParam(json_data, "compress", "0");
-		// if (compress == "1") // compress to zip file
-		// {
-		// 	string filename = GRPCUtil::fileName(exact_path);
-		// 	string zipfile = exact_path + ".zip";
-		// 	string cmd = "zip " + zipfile + " " + exact_path;
-		// 	system(cmd.c_str());
-		// 	response->File(zipfile);
-		// }
-		// else 
-		// {
-		response->File(exact_path);
-		// }
+		bool compress = server::jsonBoolParam(json_data, "compress", false);
+		if (compress) // compress to zip file
+		{
+			std::string* zip_file_path = new string(exact_path + ".zip");
+			CompressUtil::CompressZip compress_util;
+			if (compress_util.compressDirExportZip(exact_path, *zip_file_path)) {
+				task_of(response)->add_callback([zip_file_path](GRPCTask *_task){
+					Util::remove_path(*zip_file_path);
+					delete zip_file_path;
+				});
+				response->File(*zip_file_path);
+			}
+			else
+			{
+				response->File(exact_path);
+			}
+		}
+		else 
+		{
+			response->File(exact_path);
+		}
 	}
 	else
 	{
-		error = "Download file not exists";
+		error = "Download file is not exist";
 		response->Error(StatusOperationFailed, error);
 	}
 }
@@ -1517,122 +1408,25 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 	}
 }
 
+
+
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
-	// check ip address
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult;
-	if (apiUtil->check_access_ip(ip_addr, 1, ipCheckResult) == false)
-	{
-		SLOG_DEBUG(ipCheckResult);
-		response->Error(StatusIPBlocked, ipCheckResult);
-		return;
-	}
-
-	// nlohmann::json nlohmann_json_data;
-	// parseRequest(request, nlohmann_json_data);
-	// nlohmann_json_data["remote_ip"] = ip_addr.c_str();
-
+	operation_type op_type;
 	Json json_data;
-	parseRequest(request, json_data);
-	Json::AllocatorType &allocator = json_data.GetAllocator();
-	// add remote_ip param
-	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
-	std::string operation = server::jsonParam(json_data, "operation");
-	operation_type op_type = OperationType::to_enum(operation);
-	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
+	json_data.SetObject();
+	if (checkRequest(request, response, op_type, json_data) == false) 
 	{
-		if (apiUtil->check_access_ip(ip_addr, 2, ipCheckResult) == false)
-		{
-			SLOG_DEBUG(ipCheckResult);
-			response->Error(StatusIPBlocked, ipCheckResult);
-			return;
-		}
-	}
-	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== http-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	if (!request->body().empty())
-	{
-		ss += "\n  request_body: " + request->body();
-	}
-	ss += "\n==================================================";
-	SLOG_DEBUG(ss);
-	// add callback task for access log start
-	auto *operation_ptr = new std::string(operation);
-	auto *ip_ptr = new std::string(ip_addr);
-	rpc_task->add_callback([operation_ptr,ip_ptr](GRPCTask *task) {
-		GRPCResp *resp = task->get_resp();
-		if (*operation_ptr != "build" && *operation_ptr != "batchInsert" && *operation_ptr != "batchRemove" 
-			&& *operation_ptr != "backup" && *operation_ptr != "restore")
-			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
-		else if (resp->resp_code != 0)
-			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
-		delete operation_ptr;
-		delete ip_ptr;
-	});
-	// end
-	if (operation.empty())
-	{
-		SLOG_DEBUG("unkown operation");
-		response->Error(StatusOperationUndefined);
-		return;
-	}
-	if (op_type == OP_CHECK)
-	{
-		check_task(request, response);
-		return;
-	}
-
-	if (json_data.HasMember("username") == false || json_data.HasMember("password") == false)
-	{
-		response->Error(StatusParamIsIllegal, "username or password is empty");
-		return;
-	}
-	std::string username = server::jsonParam(json_data, "username");
-	std::string password = server::jsonParam(json_data, "password");
-	std::string encryption = server::jsonParam(json_data, "encryption");
-	std::string db_name = server::jsonParam(json_data, "db_name");
-	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
-	bool need_check_privilege = true;
-	// skip check privilege for inner request
-	if (is_inner && "127.0.0.1" == ip_addr)
-	{
-		need_check_privilege = false;
-	}
-	// check username and password
-	if(need_check_privilege) 
-	{
-		std::string checkidentityresult;
-		if (apiUtil->check_indentity(username, password, encryption, checkidentityresult) == false)
-		{
-			apiUtil->update_access_ip_error_num(ip_addr);
-			response->Error(StatusAuthenticationFailed, checkidentityresult);
-			return;
-		}
-	}
-	// check privilege
-	if (username != ROOT_USERNAME)
-	{
-		need_check_privilege = true;
-	}
-	if (need_check_privilege && apiUtil->check_privilege(username, operation, db_name) == 0)
-	{
-		std::string msg = "You have no " + operation + " privilege, operation failed";
-		response->Error(StatusOperationConditionsAreNotSatisfied, msg);
 		return;
 	}
 	// api operation
 	switch (op_type)
 	{
+	case OP_CHECK:
+		check_task(request, response);
+		break;
 	case OP_LOGIN:
-		login_task(request, response, ip_addr);
+		login_task(request, response, json_data);
 		break;
 	case OP_TEST_CONNECT:
 		test_connect_task(request, response);
@@ -1777,7 +1571,7 @@ void check_task(const GRPCReq *request, GRPCResp *response)
  * @param request 
  * @param response 
  */
-void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip)
+void login_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
@@ -1798,7 +1592,8 @@ void login_task(const GRPCReq *request, GRPCResp *response, std::string &ip)
 		string cur_path = Util::get_cur_path();
 		resp_data.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
 		resp_data.AddMember("type", HTTP_TYPE, allocator);
-		apiUtil->reset_access_ip_error_num(ip);
+		string remote_ip = server::jsonParam(json_data, "remote_ip");
+		apiUtil->reset_access_ip_error_num(remote_ip);
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -2174,7 +1969,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	server::MessageMonitorRequest request_data(json_data);
 	server::MessageMonitorResponse response_data; 
-	string remote_ip = task_of(response)->peer_addr();
+	string remote_ip = server::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2206,7 +2001,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 
 	server::MessageBuildRequest request_data(json_data);
 	server::MessageBuildResponse response_data; 
-	string remote_ip = task_of(response)->peer_addr();
+	string remote_ip = server::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::build(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2350,7 +2145,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 {
 	server::MessageQueryRequest request_data(json_data);
 	server::MessageQueryResponse response_data; 
-	string remote_ip = task_of(response)->peer_addr();
+	string remote_ip = server::jsonParam(json_data, "remote_ip");
 	bool redirect = false;
 	bool is_query = false;
 	server::DbQueryLogCall db_query_log_cb;
@@ -2560,7 +2355,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchInsertRequest request_data(json_data);
 	server::MessageBatchInsertResponse response_data; 
-	string remote_ip = task_of(response)->peer_addr();
+	string remote_ip = server::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2592,7 +2387,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchRemoveRequest request_data(json_data);
 	server::MessageBatchRemoveResponse response_data; 
-	string remote_ip = task_of(response)->peer_addr();
+	string remote_ip = server::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::batch_remove(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -3118,72 +2913,37 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 
 void license_import(const GRPCReq *request, GRPCResp *response)
 {
-	// check ip address
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	std::string ipCheckResult;
-	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
+	operation_type op_type;
+	Json json_data;
+	json_data.SetObject();
+	json_data.AddMember("operation", "importLicense", json_data.GetAllocator());
+	if (checkRequest(request, response, op_type, json_data) == false)
 	{
-		SLOG_DEBUG(ipCheckResult);
-		response->Error(StatusIPBlocked, ipCheckResult);
-		return;
-	}
-	SLOG_DEBUG("Content-Type:" + ContentType::to_str(request->contentType()));
-	if (request->contentType() != MULTIPART_FORM_DATA) //for multipart/form-data
-	{
-		response->Error(StatusFileReadError, "Content-Type not match");
-		return;
-	}
-	SLOG_INFO("receive [licenseImport] request from " << ip_addr);
-	Form &form = request->form();
-	if (form.empty())
-	{   
-		response->Error(StatusFileReadError, "Form data is empty");
-		return;
-	}
-	std::string error;
-	if (form.find("username") == form.end() || form.find("password") == form.end())
-	{
-		error = "username or password is empty";
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
-	std::string username = form.at("username").second;
-	std::string password = form.at("password").second;
-	apiUtil->check_param_value("username", username, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
-		return;
-	}
-	apiUtil->check_param_value("password", password, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
 	// filename : filecontent
-	std::pair<std::string, std::string>& fileinfo = form.at("file");
-	if(fileinfo.first.empty())
+	std::string filename = server::jsonParam(json_data, "filename");
+	std::string filecontent = server::jsonParam(json_data, "file");
+	std::string msg;
+	if(filename.empty() || filecontent.empty())
 	{
-		error = "Upload file can not be empty!";
-		response->Error(StatusParamIsIllegal, error);
+		msg = "Upload file can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
-	std::string file_suffix = GRPCUtil::fileSuffix(fileinfo.first);
+	std::string file_suffix = GRPCUtil::fileSuffix(filename);
 	if (file_suffix != "lic")
 	{
-		error = "The type of license file is not supported!";
-		response->Error(StatusOperationFailed, error);
+		msg = "The type of license file is not supported!";
+		response->Error(StatusOperationFailed, msg);
 		return;
 	}
 	// remove path info, only return base filename
-	std::string file_name = GRPCUtil::fileName(fileinfo.first);
+	std::string file_name = GRPCUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_save_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
-    std::string license_context = fileinfo.second;
     WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
-		file_save_path, static_cast<const void *>(license_context.c_str()), license_context.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
+		file_save_path, static_cast<const void *>(filecontent.c_str()), filecontent.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
 			long ret = pwrite_task->get_retval();
 			GRPCServerTask *server_task = task_of(pwrite_task);
 			GRPCResp *resp = server_task->get_resp();
@@ -3210,11 +2970,20 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				}
 			}
 	});
+	auto* rpc_task = task_of(response);
     **rpc_task << pwrite_task;
 }
 
 void license_info(const GRPCReq *request, GRPCResp *response)
 {
+	operation_type op_type;
+	Json json_data;
+	json_data.SetObject();
+	json_data.AddMember("operation", "queryLicense", json_data.GetAllocator());
+	if (checkRequest(request, response, op_type, json_data) == false)
+	{
+		return;
+	}
 	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
 	respData.json = apiUtil->get_license();
 	std::string json_str;
@@ -3224,6 +2993,14 @@ void license_info(const GRPCReq *request, GRPCResp *response)
 
 void license_remove(const GRPCReq *request, GRPCResp *response)
 {
+	operation_type op_type;
+	Json json_data;
+	json_data.SetObject();
+	json_data.AddMember("operation", "removeLicense", json_data.GetAllocator());
+	if (checkRequest(request, response, op_type, json_data) == false)
+	{
+		return;
+	}
 	std::string msg;
 	if(apiUtil->remove_license(msg))
 	{

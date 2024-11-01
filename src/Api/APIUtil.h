@@ -174,6 +174,7 @@ public:
 	void abort_transactionlog(long end_time);
 
     // for license
+    void init_license();
     bool check_license(std::string& msg);
     bool import_license(const string& license_file, std::string& msg);
     bool remove_license(std::string& msg);

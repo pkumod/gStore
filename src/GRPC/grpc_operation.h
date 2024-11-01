@@ -62,7 +62,10 @@ namespace grpc
     OP(OP_CHECKOPERATIONSTATE,   checkOperationState) \
     OP(OP_REASON_MANAGE,                reasonManage) \
     OP(OP_INIT,                                 init) \
-    OP(OP_REFRESH_CONF,                  refreshconf) 
+    OP(OP_REFRESH_CONF,                  refreshconf) \
+    OP(OP_LICENSE_IMPORT,              importLicense) \
+    OP(OP_LICENSE_INFO,                 queryLicense) \
+    OP(OP_LICENSE_REMOVE,              removeLicense) 
 }
 
 enum operation_type
