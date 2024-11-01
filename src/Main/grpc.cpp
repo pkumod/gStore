@@ -1011,7 +1011,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	std::string ipCheckResult;
-	if (apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
+	if (!apiUtil || apiUtil->check_access_ip(ip_addr, 0, ipCheckResult) == false)
 	{
 		SLOG_DEBUG(ipCheckResult);
 		response->Error(StatusIPBlocked, ipCheckResult);
@@ -1387,7 +1387,8 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::Clus
 	std::string password = request->header("password");
 	// check username and password
 	std::string checkidentityresult;
-	if (apiUtil->check_indentity(username, password, "0", checkidentityresult) == false)
+	std::string encryption = "0";
+	if (apiUtil->check_indentity(username, password, encryption, checkidentityresult) == false)
 	{
 		response->Error(StatusAuthenticationFailed, checkidentityresult);
 		return;
@@ -3033,7 +3034,7 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 		case cluster::ClusterOperation_Compare:
 			// compare term and index with leader
 			server::ApiHandler::cluster_heartbeat_compare(apiUtil, clusterManagerPtr, request_data);
-			response->Json("ok");
+			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Prepare:
 			// prepare for log append
