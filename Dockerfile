@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:20.04 AS builder
 
 LABEL vendor="pkumod"
 LABEL description="gStore RDF Database Engine"
@@ -66,11 +66,10 @@ RUN apt-get update && apt-get install -y \
     coreutils \
     g++-9 \
     gcc-9 \
-    && rm -rf /var/lib/apt/lists/*
-    RUN apt-get update && apt-get install -y \
     libssl-dev \
     libzmq3-dev \
-    libopenmpi3
+    libopenmpi3 \
+    && rm -rf /var/lib/apt/lists/*
 # executable files and library files
 COPY --from=builder /usr/src/gstore/bin/ /gstore/bin/
 COPY --from=builder /usr/src/gstore/pfn/ /gstore/pfn/
