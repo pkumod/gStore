@@ -2306,7 +2306,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 {
 	try
 	{
-		int memoryNeed = apiUtil->get_configure_value("min_memory", 512) << 10; // GB->MB
+		int memoryNeed = apiUtil->get_configure_value("min_memory", 512);
 		int memoryLeft = Util::memoryLeft();
 		if (memoryLeft < memoryNeed)
 		{

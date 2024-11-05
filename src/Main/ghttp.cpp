@@ -2860,7 +2860,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 	string operation = "query";
 	try
 	{
-		int memoryNeed = apiUtil->get_configure_value("min_memory", 512) << 10; // GB->MB
+		int memoryNeed = apiUtil->get_configure_value("min_memory", 512);
 		int memoryLeft = Util::memoryLeft();
 		if (memoryLeft < memoryNeed)
 		{
