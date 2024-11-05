@@ -1384,31 +1384,18 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 				json_data["results"].emplace_back(result_data);
 			}
 		}
+		server::MessageQueryResponse resp_data;
+		resp_data.query_json = json_data;
+		resp_data.StatusCode = StatusOK;
+		resp_data.StatusMsg = "success";
+		resp_data.ansNum = rs.ansNum;
+		resp_data.outputLimit = -1;
+		resp_data.threadId = Util::getThreadID();
+		resp_data.queryTime = query_time;
 		rs.release();
-		string json_data_str = json_data.dump();
-		Json resp_data;
-		Json::AllocatorType& allocator = resp_data.GetAllocator();
-		resp_data.IsObject();
-		resp_data.Parse(json_data_str.c_str());
-		if (!resp_data.HasParseError())
-		{
-			uint32_t rs_ansNum = rs.ansNum;
-			std::string thread_id = Util::getThreadID();
-			rs.release();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "success", allocator);
-			resp_data.AddMember("AnsNum", rs_ansNum, allocator);
-			resp_data.AddMember("OutputLimit", -1, allocator);
-			resp_data.AddMember("ThreadId", StringRef(thread_id.c_str()), allocator);
-			resp_data.AddMember("QueryTime", StringRef(to_string(query_time).c_str()), allocator);
-		} 
-		else
-		{
-			msg = "Query fail: the result parse error.";
-			resp_data.AddMember("StatusCode", StatusOperationFailed, allocator);
-			resp_data.AddMember("StatusMsg", StringRef(msg.c_str()), allocator);
-		}
-		response->Json(resp_data);
+		std::string json_str;
+		resp_data.toJsonString(json_str);
+		response->nlohmannJson(json_str);
 	}
 	else
 	{

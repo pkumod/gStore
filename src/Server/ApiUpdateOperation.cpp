@@ -1187,28 +1187,12 @@ namespace server
                         }
                     }
                     rs.release();
-                    string json_data_str = json_data.dump();
-
-                    try
-                    {
-                        nlohmann::json parse_results_ = nlohmann::json::parse(json_data_str);
-                        response.StatusCode = StatusOK;
-                        response.StatusMsg = "success";
-                        response.ansNum = rs_ansNum;
-                        response.outputLimit = rs_outputlimit;
-                        response.queryTime = query_time_s;
-                    }
-                    catch (nlohmann::json::exception& e)
-                    {
-                        string filename2 = "error_" + filename;
-                        string localname2 = apiUtil->get_query_result_path() + filename2;
-                        outfile.open(localname2);
-                        outfile << json_data_str;
-                        outfile.close();
-                        SLOG_ERROR("result parse error: ErrorCode=" << e.id << ", ErrorPosition=" << e.what() << ", ResultFile=" << localname2);
-                        response.StatusMsg = "Query fail: the result parse error.";
-                        response.StatusCode = StatusOperationFailed;
-                    }
+                    response.query_json = json_data;
+                    response.StatusCode = StatusOK;
+                    response.StatusMsg = "success";
+                    response.ansNum = rs_ansNum;
+                    response.outputLimit = rs_outputlimit;
+                    response.queryTime = query_time_s;
                 }
                 else
                 {

@@ -1236,7 +1236,7 @@ int raw_sparql_handler(string sparql)
 	{
 		query_url = API_URL;
 	}
-	server::MessageQueryRequest query_request(_current_database, sparql, "json");
+	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
 	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
