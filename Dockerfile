@@ -59,6 +59,7 @@ RUN apt-get update && apt-get install -y \
     libboost-regex1.71.0 \
     libboost-system1.71.0 \
     libboost-thread1.71.0 \
+    libcurl4 \
     uuid-runtime \
     libjemalloc2 \
     libreadline8 \
