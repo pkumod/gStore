@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # build cmake
-source /etc/profile
+# source /etc/profile
 mkdir -p ./build
 cd ./build/
 cmake ..
 make pre
-make -j4
+make -j$(nproc)
 # init system.db
 # make init
-make APIexample
+# make APIexample
 
 echo "Compilation ends successfully!"

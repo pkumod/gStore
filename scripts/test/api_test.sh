@@ -77,7 +77,7 @@ backup() {
     echo "数据库备份"
     echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"backup","username":"root","password":"123456","db_name":"$DB_NAME"}' $BASE_URL"
     curl -X POST -H 'Content-Type: application/json' -d '{"operation":"backup","username":"root","password":"123456","db_name":"'"$DB_NAME"'"}' "$BASE_URL" > "rt.txt" 2>&1
-    BACKUP_PATH=$(awk -F '"' '/backupfilepath/ {print$14}' "rt.txt")
+    BACKUP_PATH=$(awk -F '"' '/backupfilepath/ {print$10}' "rt.txt")
     rm "rt.txt"
     echo "backupfilepath：$BACKUP_PATH"
 }
@@ -192,8 +192,8 @@ rename() {
 # 删除数据库
 drop() {
     echo "删除数据库"
-    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"drop","username":"root","password":"123456","db_name":"newlubm"}' $BASE_URL"
-    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"drop","username":"root","password":"123456","db_name":"newlubm", "is_backup":"false"}' "$BASE_URL"
+    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"drop","username":"root","password":"123456","db_name":"new$DB_NAME"}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"drop","username":"root","password":"123456","db_name":"new'$DB_NAME'", "is_backup":"false"}' "$BASE_URL"
     rm -rf backups/"$DB_NAME"*
     rm -rf export/"$DB_NAME"*
 }
