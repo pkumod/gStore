@@ -184,18 +184,34 @@ namespace server
                 json.at("ThreadId").get_to(this->threadId);
             if (json.contains("head"))
             {
-                json.at("head").at("vars").get_to(this->head);
+                if (json.at("head").contains("vars"))
+                    json.at("head").at("vars").get_to(this->head);
+                else 
+                    json.at("head").get_to(this->head);
             }
             if (json.contains("results") && !this->head.empty())
             {
-                nlohmann::json results = json.at("results").at("bindings");
+                nlohmann::json results;
+                if (json.at("results").contains("bindings"))
+                    results = json.at("results").at("bindings");
+                else
+                    results = json.at("results");
                 for (const auto &result : results)
                 {
-                    this->results.push_back({});
-                    std::vector<std::string> &result_part = this->results.back();
-                    for (const auto &var : this->head)
+                    if (!result.contains(this->head[0]))
                     {
-                        result_part.push_back(result.at(var).at("value"));
+                        this->results.push_back(result);
+                    }
+                    else 
+                    {
+                        this->results.push_back({});
+                        std::vector<std::string> &result_part = this->results.back();
+
+                        for (const auto &var : this->head)
+                        {
+                            if (result.contains(var) && result.at(var).contains("value"))
+                                result_part.push_back(result.at(var).at("value"));
+                        }
                     }
                 }
             }
