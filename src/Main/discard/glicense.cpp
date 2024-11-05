@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
 
     std::string productName = util.getConfigureValue("product_name");
     std::string version = util.getConfigureValue("version");
-    std::string lic_path = "new.lic";
+    std::string lic_path = "path_to_license";
 
     std:string msg;
     struct LicenseInfo licenseInfo;
