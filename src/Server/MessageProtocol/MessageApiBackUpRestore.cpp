@@ -74,7 +74,6 @@ namespace server
         rJson["backupfilepath"] = this->backupfilepath;
         rJson["opt_id"] = this->opt_id;
         json_str = rJson.dump();
-        // SLOG_TRACE("MessageBackupResponse:" << json_str);
     }
 
     // backup path
@@ -175,7 +174,7 @@ namespace server
     MessageExportRequest::MessageExportRequest(const rapidjson::Document& json_data)
     {
         this->db_name     = jsonParam(json_data, "db_name");
-		this->db_path = jsonParam(json_data, "backup_path");
+		this->db_path = jsonParam(json_data, "db_path");
         this->compress  = jsonBoolParam(json_data, "compress", false);
     }
 

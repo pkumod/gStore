@@ -75,7 +75,7 @@ Database::Database(string _name)
 	{
 		this->name.erase(found + 1);
 	}
-	this->store_path = Util::global_config["db_home"] + "/" + this->name + Util::global_config["db_suffix"];
+	this->store_path = Util::global_config["db_home"] + this->name + Util::global_config["db_suffix"];
 
 	this->signature_binary_file = "signature.binary";
 	this->six_tuples_file = "six_tuples";

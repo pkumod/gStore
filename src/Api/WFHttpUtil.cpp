@@ -89,7 +89,6 @@ bool WFHttpUtil::ErrorHandler(WFHttpTask *task) {
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -124,7 +123,6 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std:
 {
 
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -149,7 +147,6 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std:
 int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
 {
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -187,7 +184,6 @@ int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, 
 {
 
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -227,7 +223,6 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
 
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -258,7 +253,6 @@ int WFHttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
 
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
 
@@ -283,7 +277,6 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::
 {
 
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.connect_timeout = 2 * 1000;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
     

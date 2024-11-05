@@ -826,7 +826,7 @@ void initialServer(uint16_t port, bool background)
 
 void releaseGlobalPtr(bool renew)
 {
-	SLOG_DEBUG("release global pointer");
+	SLOG_DEBUG("release global pointer begin...");
 	latch.lockExclusive();
 	if (apiUtil) {
 		apiUtil.reset();
@@ -850,6 +850,7 @@ void releaseGlobalPtr(bool renew)
 		}
 	}
 	latch.unlock();
+	SLOG_DEBUG("release global pointer ok");
 }
 
 bool stopServer()
@@ -944,6 +945,13 @@ void register_service(GRPCServer &svr)
 		},
 		methods);
 		
+	svr.ROUTE(
+		"/", [](const GRPCReq *request, GRPCResp *response, SeriesWork *series)
+		{ 
+			api(request, response, series);
+		},
+		ReqMethod::POST);
+
 	svr.ROUTE(
 		"/api", [](const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		{ 

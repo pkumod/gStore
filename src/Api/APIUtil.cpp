@@ -25,7 +25,7 @@ APIUtil::APIUtil()
 
 APIUtil::~APIUtil()
 {
-    SLOG_CORE("call ~APIUtil()");
+    SLOG_DEBUG("call destructor");
     pthread_rwlock_rdlock(&already_build_map_lock);
     std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter;
     for (iter = already_build.begin(); iter != already_build.end(); iter++)
@@ -91,7 +91,7 @@ int APIUtil::initialize()
 {
     try
     {
-        SLOG_CORE("initialization start");
+        SLOG_DEBUG("initialization start");
         init_params();
         
         // load system db
@@ -227,10 +227,9 @@ int APIUtil::initialize()
         ofp << '\n';
         ofp.flush();
         ofp.close();
+        // init license
         init_license();
-        // #if defined(DEBUG)
-        SLOG_CORE("initialization end");
-        // #endif
+        SLOG_DEBUG("initialization end");
         return 1;
     }
     catch (const std::exception &e)

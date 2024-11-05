@@ -72,7 +72,6 @@ namespace server
         json["failed_num"] = this->failed_num;
         json["opt_id"] = this->opt_id;
         json_str = json.dump();
-        SLOG_TRACE("MessageBuildResponse:" << json_str);
     }
 
     // drop db
@@ -234,7 +233,6 @@ namespace server
             json["QueryTime"] = this->queryTime;
             json_str = json.dump();
         }
-        SLOG_TRACE("MessageQueryResponse:" << json_str);
     }
 
     // batch insert
@@ -309,7 +307,6 @@ namespace server
         json["failed_num"] = this->failedNum;
         json["opt_id"] = this->opt_id;
         json_str = json.dump();
-        SLOG_TRACE("MessageBatchInsertResponse:" << json_str);
     }
 
     // batch remove
@@ -381,7 +378,6 @@ namespace server
         json["failed_num"] = this->failedNum;
         json["opt_id"] = this->opt_id;
         json_str = json.dump();
-        SLOG_TRACE("MessageBatchRemoveResponse:" << json_str);
     }
 
     // checkPoint
