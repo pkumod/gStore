@@ -1586,7 +1586,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		string username = jsonParam(json_data, "username");
 		string async = jsonParam(json_data, "async");
 		string remote_ip = task_of(response)->peer_addr();
-		auto build_helper = [db_name,username,unz_dir_path,zip_files,db_path,opt_id,remote_ip](GRPCResp *response)
+		string callback = jsonParam(json_data, "callback");
+		auto build_helper = [db_name,username,unz_dir_path,zip_files,db_path,opt_id,callback,remote_ip](GRPCResp *response)
 		{
 			string msg = "Start building.";
 			string operation = "build";
@@ -1621,6 +1622,15 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					current_database.reset();
 					if (response != nullptr)
 						response->Error(StatusOperationFailed, msg);
+					if (callback != "")
+					{
+					    string postdata;
+						string res;
+						postdata += "{\"StatusCode\":\"1005\",";
+						postdata += "\"StatusMsg\":\"" + msg + "\",";
+						postdata += "\"opt_id\":\"" + opt_id + "\"}";
+						HttpUtil::Post(callback, postdata, res);
+					}
 					else 
 						SLOG_DEBUG("async operation: " + msg);
 					return;
@@ -1655,6 +1665,15 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 						apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
 						if (response != nullptr)
 							response->Error(StatusOperationFailed, msg);
+						if (callback != "")
+						{
+							string postdata;
+							string res;
+							postdata += "{\"StatusCode\":\"1005\",";
+							postdata += "\"StatusMsg\":\"" + msg + "\",";
+							postdata += "\"opt_id\":\"" + opt_id + "\"}";
+							HttpUtil::Post(callback, postdata, res);
+						}
 						return;
 					}
 				}
@@ -1701,6 +1720,16 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 					response->Json(resp_data);
 				}
+				else if (!callback.empty())
+				{
+					string postdata;
+					string res;
+					postdata += "{\"StatusCode\":\"0\",";
+					postdata += "\"StatusMsg\":\"" + msg + "\",";
+					postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+					postdata += "\"opt_id\":\"" + opt_id + "\"}";
+					HttpUtil::Post(callback, postdata, res);
+				} 
 				else 
 				{
 					SLOG_DEBUG("async operation: " + msg);
@@ -1718,6 +1747,15 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				apiUtil->update_access_log(1005, msg, opt_id, -1, 0, 0);
 				if (response != nullptr)
 					response->Json(msg);
+				if (!callback.empty())
+				{
+					string postdata;
+					string res;
+					postdata += "{\"StatusCode\":\"1005\",";
+					postdata += "\"StatusMsg\":\"" + msg + "\",";
+					postdata += "\"opt_id\":\"" + opt_id + "\"}";
+					HttpUtil::Post(callback, postdata, res);
+				}
 				else
 					SLOG_DEBUG("async operation: " + msg);
 			}
@@ -3216,7 +3254,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		std::string opt_id = apiUtil->generateUid();
 		std::string async = jsonParam(json_data, "async");
 		string remote_ip = task_of(response)->peer_addr();
-		auto insert_helper = [db_name, insert_files, dir, unz_dir_path, opt_id,remote_ip] (GRPCResp *response)
+		string callback = jsonParam(json_data, "callback");
+		auto insert_helper = [db_name, insert_files, dir, unz_dir_path, opt_id,callback,remote_ip] (GRPCResp *response)
 		{
 			string operation = "batchInsert";
 			string msg = "Batch insert data beginning.";
@@ -3292,6 +3331,17 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 					response->Json(resp_data);
+				}
+				if (!callback.empty())
+				{
+					string postdata;
+					string res;
+					postdata += "{\"StatusCode\":\"0\",";
+					postdata += "\"StatusMsg\":\"" + msg + "\",";
+					postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+					postdata += "\"failed_num\":\"" + std::to_string(parse_error_num) + "\",";
+					postdata += "\"opt_id\":\"" + opt_id + "\"}";
+					HttpUtil::Post(callback, postdata, res);
 				} 
 				else 
 				{
@@ -3377,7 +3427,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		std::string opt_id = apiUtil->generateUid();
 		std::string async = jsonParam(json_data, "async");
 		string remote_ip = task_of(response)->peer_addr();
-		auto remove_helper = [db_name, file, opt_id, remote_ip] (GRPCResp *response) {
+		string callback = jsonParam(json_data, "callback");
+		auto remove_helper = [db_name, file, opt_id, callback, remote_ip] (GRPCResp *response) {
 			string operation = "batchRemove";
 			string msg = "Batch remove data beginning.";
 			apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
@@ -3418,6 +3469,16 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 					resp_data.AddMember("opt_id", StringRef(opt_id.c_str()), allocator);
 					SLOG_DEBUG("response result:\n" << to_json_string(resp_data));
 					response->Json(resp_data);
+				}
+				if (!callback.empty())
+				{
+					string postdata;
+					string res;
+					postdata += "{\"StatusCode\":\"0\",";
+					postdata += "\"StatusMsg\":\"" + msg + "\",";
+					postdata += "\"success_num\":\"" + std::to_string(success_num) + "\",";
+					postdata += "\"opt_id\":\"" + opt_id + "\"}";
+					HttpUtil::Post(callback, postdata, res);
 				}
 				else
 				{
