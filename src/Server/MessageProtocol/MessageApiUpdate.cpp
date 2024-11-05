@@ -266,7 +266,7 @@ namespace server
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
             {"username", "root"},
-            {"password", ""},
+            {"password", "123456"},
             {"db_name", this->db_name},
             {"file", this->file},
             {"dir", this->dir},
@@ -348,7 +348,7 @@ namespace server
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
             {"username", "root"},
-            {"password", ""},
+            {"password", "123456"},
             {"db_name", this->db_name},
             {"file", this->file},
             {"inner", "true"}};
@@ -385,8 +385,28 @@ namespace server
     }
 
     // checkPoint
-    MessageCheckPointRequest::MessageCheckPointRequest(const rapidjson::Document& json_data)
+    MessageCheckPointRequest::MessageCheckPointRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("checkpoint"))
     {
         this->db_name = jsonParam(json_data, "db_name");
+    }
+
+    void MessageCheckPointRequest::to_json(std::string& json_str)
+    {
+        nlohmann::json json = nlohmann::json{
+            {"operation", this->op},
+            {"username", this->username},
+            {"password", this->password},
+            {"db_name", this->db_name}};
+        json_str = json.dump();
+    }
+    void MessageCheckPointRequest::to_inner_json(std::string& json_str)
+    {
+        nlohmann::json json = nlohmann::json{
+            {"operation", this->op},
+            {"username", this->username},
+            {"password", this->password},
+            {"db_name", this->db_name},
+            {"inner", "true"}};
+        json_str = json.dump();
     }
 }

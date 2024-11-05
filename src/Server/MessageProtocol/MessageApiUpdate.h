@@ -131,10 +131,15 @@ namespace server
     {
         std::string db_name;
         MessageCheckPointRequest(const rapidjson::Document& json_data);
+        MessageCheckPointRequest(const std::string& db_name) : MessageRequest(std::string("checkpoint")), db_name(db_name) { }
+        void to_json(std::string& json_str);
+        void to_inner_json(std::string& json_str);
     };
 
     struct MessageCheckPointResponse : public MessageResponse
     {
+        MessageCheckPointResponse(int code, std::string msg) : MessageResponse(code, msg) { };
+        MessageCheckPointResponse(const std::string& body) : MessageResponse(body) { }
         //todo
     };
 }

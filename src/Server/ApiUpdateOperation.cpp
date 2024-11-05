@@ -1212,7 +1212,7 @@ namespace server
                 }
                 else
                 {
-                    response.StatusMsg = "Unkown result format.";
+                    response.StatusMsg = "Unknown result format.";
                     response.StatusCode = StatusOperationFailed;
                 }
                 response.threadId = thread_id;

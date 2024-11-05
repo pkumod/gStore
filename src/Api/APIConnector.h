@@ -4,7 +4,11 @@
 #include "../Server/MessageProtocol/MessageApiUpdate.h"
 #include "../Server/MessageProtocol/MessageApiUser.h"
 #include "../Server/MessageProtocol/MessageApiBackUpRestore.h"
+#include "../Server/MessageProtocol/MessageApiPFN.h"
+#include "../Server/MessageProtocol/MessageApiLog.h"
+#include "../Server/MessageProtocol/MessageApiReason.h"
 #include "../Server/MessageProtocol/MessageCluster.h"
+#include "../Server/MessageProtocol/MessageApiTransaction.h"
 #include "WFHttpUtil.h"
 #include "HttpEntities.h"
 
@@ -69,17 +73,17 @@ public:
 
 	// static server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request);
 
-	// static server::MessageCheckOperationStateResponse checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request);
+	static server::MessageCheckOperationStateResponse checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request);
 
-	// static server::MessageBeginResponse begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request);
+	static server::MessageBeginResponse begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request);
 
-	// static server::MessageTqueryResponse tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request);
+	static server::MessageTqueryResponse tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request);
 
-	// static server::MessageCommitResponse commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request);
+	static server::MessageCommitResponse commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request);
 
-	// static server::MessageRollBackResponse rollBack(const std::string& url, const bool& inner, server::MessageRollBackRequest& request);
+	static server::MessageRollbackResponse rollBack(const std::string& url, const bool& inner, server::MessageRollbackRequest& request);
 	
-	// static server::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request);
+	static server::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request);
 
 	static server::MessageShowUserResponse showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request);
 
@@ -89,36 +93,28 @@ public:
 
 	static server::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request);
 
-	// static server::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request);
+	static server::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request);
 
-	// static server::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request);
+	static server::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request);
 
-	// static server::MessageFunReviewResponse funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request);
+	static server::MessageReviewResponse funReview(const std::string& url, const bool& inner, server::MessageReviewRequest& request);
 
-	// static server::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request);
+	static server::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request);
 
-	// static server::MessageQueryLogDateResponse queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request);
+	static server::MessageQueryLogDateResponse queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request);
 
-	// static server::MessageQueryLogResponse queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request);
+	static server::MessageQueryLogResponse queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request);
 
-	// static server::MessageAccessLogDateResponse accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request);
+	static server::MessageAccessLogDateResponse accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request);
 	
-	// static server::MessageAccessLogResponse accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request);
+	static server::MessageAccessLogResponse accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request);
 	
-	// static server::MessageAddReasonResponse addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request);
+	static server::MessageReasonManageResponse addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request);
+
+	static server::MessageReasonManageResponse listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request);
 	
-	// static server::MessageListReasonResponse listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request);
+	static server::MessageReasonManageResponse cedsdReason(const std::string& url, const bool& inner, server::MessageCedsdReasonRequest& request);
 
-	// static server::MessageCompileReasonResponse compileReason(const std::string& url, const bool& inner, server::MessageCompileReasonRequest& request);
-
-	// static server::MessageExecuteReasonResponse executeReason(const std::string& url, const bool& inner, server::MessageExecuteReasonRequest& request);
-
-	// static server::MessageDisableReasonResponse disableReason(const std::string& url, const bool& inner, server::MessageDisableReasonRequest& request);
-
-	// static server::MessageShowReasonResponse showReason(const std::string& url, const bool& inner, server::MessageShowReasonRequest& request);
-
-	// static server::MessageDeleteReasonResponse deleteReason(const std::string& url, const bool& inner, server::MessageDeleteReasonRequest& request);
-	
 	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
 	
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);

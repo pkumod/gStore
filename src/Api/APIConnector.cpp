@@ -275,78 +275,78 @@ server::MessageExportResponse APIConnector::exportDb(const std::string& url, con
 // 	return response_parser<server::MessageRenameResponse>(status, body_str);
 // }
 
-// server::MessageCheckOperationStateResponse APIConnector::checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageCheckOperationStateResponse>(status, body_str);
-// }
+server::MessageCheckOperationStateResponse APIConnector::checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageCheckOperationStateResponse>(status, body_str);
+}
 
 
-// server::MessageBeginResponse APIConnector::begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageBeginResponse>(status, body_str);
-// }
+server::MessageBeginResponse APIConnector::begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageBeginResponse>(status, body_str);
+}
 
-// server::MessageTqueryResponse APIConnector::tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageTqueryResponse>(status, body_str);
-// }
+server::MessageTqueryResponse APIConnector::tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageTqueryResponse>(status, body_str);
+}
 
-// server::MessageCommitResponse APIConnector::commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageCommitResponse>(status, body_str);
-// }
+server::MessageCommitResponse APIConnector::commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageCommitResponse>(status, body_str);
+}
 
-// server::MessageRollBackResponse APIConnector::rollBack(const std::string& url, const bool& inner, server::MessageRollBackRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageRollBackResponse>(status, body_str);
-// }
+server::MessageRollbackResponse APIConnector::rollBack(const std::string& url, const bool& inner, server::MessageRollbackRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageRollbackResponse>(status, body_str);
+}
 
-// server::MessageCheckPointResponse APIConnector::checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageCheckPointResponse>(status, body_str);
-// }
+server::MessageCheckPointResponse APIConnector::checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageCheckPointResponse>(status, body_str);
+}
 
 server::MessageShowUserResponse APIConnector::showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request)
 {
@@ -396,185 +396,139 @@ server::MessageUserPasswordResponse APIConnector::userPassword(const std::string
 	return response_parser<server::MessageUserPasswordResponse>(status, body_str);
 }
 
-// server::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageFunQueryResponse>(status, body_str);
-// }
+server::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageFunQueryResponse>(status, body_str);
+}
 
-// server::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageFunCudbResponse>(status, body_str);
-// }
+server::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageFunCudbResponse>(status, body_str);
+}
 
-// server::MessageFunReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageFunReviewResponse>(status, body_str);
-// }
+server::MessageReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, server::MessageReviewRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageReviewResponse>(status, body_str);
+}
 
-// server::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageTxnLogResponse>(status, body_str);
-// }
+server::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageTxnLogResponse>(status, body_str);
+}
 
-// server::MessageQueryLogDateResponse APIConnector::queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageQueryLogDateResponse>(status, body_str);
-// }
+server::MessageQueryLogDateResponse APIConnector::queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageQueryLogDateResponse>(status, body_str);
+}
 
-// server::MessageQueryLogResponse APIConnector::queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageQueryLogResponse>(status, body_str);
-// }
+server::MessageQueryLogResponse APIConnector::queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageQueryLogResponse>(status, body_str);
+}
 
-// server::MessageAccessLogDateResponse APIConnector::accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageAccessLogDateResponse>(status, body_str);
-// }
+server::MessageAccessLogDateResponse APIConnector::accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageAccessLogDateResponse>(status, body_str);
+}
 
-// server::MessageAccessLogResponse APIConnector::accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageAccessLogResponse>(status, body_str);
-// }
+server::MessageAccessLogResponse APIConnector::accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageAccessLogResponse>(status, body_str);
+}
 
-// server::MessageAddReasonResponse APIConnector::addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageAddReasonResponse>(status, body_str);
-// }
+server::MessageReasonManageResponse APIConnector::addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
+}
 
-// server::MessageListReasonResponse lAPIConnector::listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageListReasonResponse>(status, body_str);
-// }
 
-// server::MessageCompileReasonResponse APIConnector::compileReason(const std::string& url, const bool& inner, server::MessageCompileReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageCompileReasonResponse>(status, body_str);
-// }
+server::MessageReasonManageResponse APIConnector::listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
+}
 
-// server::MessageExecuteReasonResponse APIConnector::executeReason(const std::string& url, const bool& inner, server::MessageExecuteReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageExecuteReasonResponse>(status, body_str);
-// }
 
-// server::MessageDisableReasonResponse APIConnector::disableReason(const std::string& url, const bool& inner, server::MessageDisableReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageDisableReasonResponse>(status, body_str);
-// }
-
-// server::MessageShowReasonResponse APIConnector::showReason(const std::string& url, const bool& inner, server::MessageShowReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageShowReasonResponse>(status, body_str);
-// }
-
-// server::MessageDeleteReasonResponse APIConnector::deleteReason(const std::string& url, const bool& inner, server::MessageDeleteReasonRequest& request)
-// {
-// 	std::string json_str;
-// 	if (inner)
-// 		request.to_inner_json(json_str);
-// 	else
-// 		request.to_json(json_str);
-// 	std::string body_str;
-// 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<server::MessageDeleteReasonResponse>(status, body_str);
-// }
+server::MessageReasonManageResponse APIConnector::cedsdReason(const std::string& url, const bool& inner, server::MessageCedsdReasonRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
+}
 
 httpentities::ClusterResponse APIConnector::reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password)
 {

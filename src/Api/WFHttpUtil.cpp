@@ -88,6 +88,11 @@ bool WFHttpUtil::ErrorHandler(WFHttpTask *task) {
 */
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     WFFacilities::WaitGroup wait_group(1);
     FILE* fw = fopen(filename.c_str(), "wb");
     if (!fw)
@@ -117,6 +122,12 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, cons
 
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
+
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     WFFacilities::WaitGroup wait_group(1);
     strResponse.clear();
 
@@ -137,6 +148,11 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std:
 
 int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
 {
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     WFFacilities::WaitGroup wait_group(1);
     strResponse.clear();
 
@@ -169,6 +185,12 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std:
  */
 int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
 {
+
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     MultipartParser parser;
     parser.AddFile("file", filePath);
     for (const auto &pair : params) {
@@ -203,6 +225,12 @@ int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, 
 */
 int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
+
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     WFFacilities::WaitGroup wait_group(1);
     FILE* fw = fopen(filename.c_str(), "wb");
     if (!fw)
@@ -228,6 +256,12 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 int WFHttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
+
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+
     WFFacilities::WaitGroup wait_group(1);
     strResponse.clear();
     WFHttpTask *task = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, respwrite_callback);
@@ -247,6 +281,12 @@ int WFHttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 
 int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
 {
+
+    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
+    settings.endpoint_params.connect_timeout = 2 * 1000;
+    settings.endpoint_params.response_timeout = -1;
+    WORKFLOW_library_init(&settings);
+    
     WFFacilities::WaitGroup wait_group(1);
     WFHttpTask *http_task = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, respwrite_callback);
     protocol::HttpRequest *req = http_task -> get_req();

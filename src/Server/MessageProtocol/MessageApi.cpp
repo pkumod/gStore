@@ -388,7 +388,7 @@ namespace server
         toJson(json);
         json["database"] = this->database;
         json["creator"] = this->creator;
-        json["builtTime"] = this->database;
+        json["builtTime"] = this->builtTime;
         json["tripleNum"] = this->tripleNum;
         json["entityNum"] = this->entityNum;
         json["literalNum"] = this->literalNum;

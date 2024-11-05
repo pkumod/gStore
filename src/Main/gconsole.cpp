@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 30
+#define TOTAL_COMMAND_NUM 42
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -90,9 +90,26 @@ int restore_handler(const vector<string> &);
 int export_handler(const vector<string> &);
 int sparql_handler(const vector<string> &);
 int raw_sparql_handler(string query);
-int unload_handler(const std::vector<std::string>&);
-int batchinsert_handler(const std::vector<std::string>&);
-int batchremove_handler(const std::vector<std::string>&);
+int unload_handler(const vector<string>&);
+int batchinsert_handler(const vector<string>&);
+int batchremove_handler(const vector<string>&);
+server::MessageReasonManageResponse reason_manage_handler(int, const string&);
+int addreason_handler(const vector<string>&);
+int listreason_handler(const vector<string>&);
+int compilereason_handler(const vector<string>&);
+int executereason_handler(const vector<string>&);
+int disablereason_handler(const vector<string>&);
+int showreason_handler(const vector<string>&);
+int deletereason_handler(const vector<string>&);
+
+int funquery_handler(const vector<string>&);
+int funcudb_handler(int, const std::string&);
+int funcreate_handler(const vector<string>&);
+int funupdate_handler(const vector<string>&);
+int fundelete_handler(const vector<string>&);
+int funbuild_handler(const vector<string>&);
+int funreview_handler(const vector<string>&);
+
 
 int flushpriv_handler(const vector<string> &);
 int pusr_handler(const vector<string> &);
@@ -107,6 +124,18 @@ int showusrs_handler(const vector<string> &);
 
 int refreshconf_handler(const vector<string> &);
 int init_handler(const vector<string> &);
+
+int txnlog_handler(const vector<string> &);
+int querylogdate_handler(const vector<string> &);
+int querylog_handler(const vector<string> &);
+int accesslogdate_handler(const vector<string> &);
+int accesslog_handler(const vector<string> &);
+
+int begin_handler(const vector<string>&);
+int tquery_handler(const vector<string>&);
+int commit_handler(const vector<string>&);
+int rollback_handler(const vector<string>&);
+int checkpoint_handler(const vector<string>&);
 
 // int print_arg_handler(const vector<string> &);
 
@@ -137,7 +166,13 @@ COMMAND commands[] =
         {"unload", unload_handler, "Unload the current database.","unload;", UNLOAD_PRIVILEGE_BIT},
         {"batchinsert", batchinsert_handler, "Batch inserts data into the current database.","batchinsert <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
         {"batchremove", batchremove_handler, "Batch deletes the current database data.","batchremove <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
-
+		{"addreason", addreason_handler, "add reason rule into current database.", "addreason <json_file_path>;", 0},
+		{"listreason", listreason_handler, "show all reason rules of current database.", "listreason;", 0},
+		{"compilereason", compilereason_handler, "compile reason rule of current database with rulename.", "compilereason <rule_name>;", 0},
+		{"executereason", executereason_handler, "execute reason rule of current database with rulename.", "executereason <rule_name>;", 0},
+		{"disablereason", disablereason_handler, "disable reason rule of current database with rulename.", "disablereason <rule_name>;", 0},
+		{"showreason", showreason_handler, "show detailed information of some rule with rulename in current database.", "showreason <rule_name>;", 0},
+		{"deletereason", deletereason_handler, "delete reason rule of current database with rulename.", "deletereason <rule_name>;", 0},
 		// id and usr manage
 		{"flushpriv", flushpriv_handler, "Flush priv for current user, updating the in-memory structure.", "flushpriv;", 0},
 		{"pusr", pusr_handler, "Display user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
@@ -147,6 +182,14 @@ COMMAND commands[] =
 		{"delusr", delusr_handler, "Del user.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
 
+
+		// custom function
+		{"funquery", funquery_handler, "query custom function.", "funquery <func_name> <func_status>", 0},
+		{"funcreate", funcreate_handler, "create custom function.", "funcreate <json_file_path>", 0},
+		{"funupdate", funupdate_handler, "update custom function.", "funupdate <json_file_path>", 0},
+		{"fundelete", fundelete_handler, "delete custom function.", "fundelete <func_name>", 0},
+		{"funbuild", funbuild_handler, "build custom function.", "funbuild <func_name>", 0},
+		{"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
 		// other
 		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
 		{"help", help_handler, "Display help msg. Enter 'help;' see more about usage.", "help [edit/usage/<command>];", 0},
@@ -161,6 +204,20 @@ COMMAND commands[] =
 		// raw_sparql
 		{"raw_sparql", 0, "Support enter sparql query directedly in gconsole.",
 		 "Begin with SELECT, INSERT, DELETE, PREFIX or BASE. For more about SPARQL, see https://www.w3.org/TR/sparql11-query/ ", QUERY_PRIVILEGE_BIT},
+
+		// log
+		// {"txnlog", txnlog_handler, "show database transaction log", "txnlog <pageNo> <pageSize>", 0},
+		// {"querylogdate", querylogdate_handler, "get all query log dates for querylog operation", "querylogdate", 0},
+		// {"querylog", querylog_handler, "show database query log", "querylog <date> <pageNo> <pageSize>", 0},
+		// {"accesslogdate", accesslogdate_handler, "get all access log dates for accesslog operation", "accesslogdate", 0},
+		// {"accesslog", accesslog_handler, "show database access log", "accesslog <date> <pageNo> <pageSize>", 0},
+
+		// database transaction
+		// {"begin", begin_handler, "begin transaction", "begin <db_name> <iso_level>", 0},
+		// {"tquery", tquery_handler, "transactional query", "tquery <db_name> <tid> <sparql>", 0},
+		// {"commit", commit_handler, "commit transaction", "commit <db_name> <tid>", 0},
+		// {"rollback", rollback_handler, "transaction rollback", "rollback <db_name> <tid>", 0},
+		// {"checkpoint", checkpoint_handler, "confirm the data modify", "checkpoint <db_name>", 0}
 };
 
 /* **************************************************************** */
@@ -228,6 +285,8 @@ bool login(const string& usrname, const string& password);
 unsigned read_priv(string usr, string db_name);
 unsigned get_priv(string usr, string db_name);
 
+bool pure_digit(const string& s);
+
 /* **************************************************************** */
 /*                                                                  */
 /*                    global var and main                           */
@@ -248,9 +307,9 @@ unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, av
 string _db_home, _db_suffix, default_backup_path;
 string product_name, product_name_lower, product_version;
 string root_username, root_password;
-std::string _server_port;
-std::string _current_database;
-std::string _website;
+string _server_port;
+string _current_database;
+string _website;
 // global
 int main(int argc, char **argv)
 {
@@ -266,7 +325,7 @@ int main(int argc, char **argv)
 	product_version = util.getConfigureValue("version");
 	product_name = util.getConfigureValue("product_name");
 	product_name_lower = product_name;
-	product_name_lower[0] = std::tolower(product_name_lower[0]);
+	product_name_lower[0] = tolower(product_name_lower[0]);
 	if (argc == 2)
 	{
 		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
@@ -559,8 +618,8 @@ void single_cmd()
 	// a copy of the null-terminated character string pointed to by s. The length of the string is determined by the first null character.
 	string strline(line);
 	free(line);
-	// strline = rm_comment(std::move(strline));
-	strline = stripwhite(std::move(strline));
+	// strline = rm_comment(move(strline));
+	strline = stripwhite(move(strline));
 	replace_cr(strline);
 
 	if (strline.empty() == 0)
@@ -886,13 +945,13 @@ unsigned read_priv(string usr, string db_name)
 	for (const auto &m : showuser_response.ResponseBody)
 	{
 		if (usr != m.username) continue;
-		priv |= QUERY_PRIVILEGE_BIT & (m.query_privilege.find(db_name) != std::string::npos) |
-				LOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != std::string::npos) |
-				UNLOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != std::string::npos) |
-				UPDATE_PRIVILEGE_BIT & (m.update_privilege.find(db_name) != std::string::npos) |
-				BACKUP_PRIVILEGE_BIT & (m.backup_privilege.find(db_name) != std::string::npos) |
-				RESTORE_PRIVILEGE_BIT & (m.restore_privilege.find(db_name) != std::string::npos) |
-				EXPORT_PRIVILEGE_BIT & (m.export_privilege.find(db_name) != std::string::npos);
+		priv |= QUERY_PRIVILEGE_BIT & (m.query_privilege.find(db_name) != string::npos) |
+				LOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != string::npos) |
+				UNLOAD_PRIVILEGE_BIT & (m.load_privilege.find(db_name) != string::npos) |
+				UPDATE_PRIVILEGE_BIT & (m.update_privilege.find(db_name) != string::npos) |
+				BACKUP_PRIVILEGE_BIT & (m.backup_privilege.find(db_name) != string::npos) |
+				RESTORE_PRIVILEGE_BIT & (m.restore_privilege.find(db_name) != string::npos) |
+				EXPORT_PRIVILEGE_BIT & (m.export_privilege.find(db_name) != string::npos);
 		break;
 	}
 	return priv;
@@ -947,6 +1006,15 @@ int check_priv(string db_name, unsigned request_priv)
 	return 0;
 }
 
+bool pure_digit(const string& s) 
+{
+	for (const auto &c : s)
+	{
+		int ASCII = (int) c;
+		if (ASCII < 48 || ASCII > 57) return false;
+	}
+	return true;
+}
 /* **************************************************************** */
 /*                                                                  */
 /*                  Interface to Readline Completion                */
@@ -1154,9 +1222,9 @@ int flushpriv_handler(const vector<string> &args)
 int raw_sparql_handler(string sparql)
 {
 	CHECK_CURRENT_DB_LOADED
-	std::string sparql_head;
+	string sparql_head;
 	for (int i = 0; i < 6; ++i) {
-		sparql_head += std::tolower(sparql[i]);
+		sparql_head += tolower(sparql[i]);
 	}
 	check_priv(_current_database, sparql_head == "select" ? QUERY_PRIVILEGE_BIT : UPDATE_PRIVILEGE_BIT);
 	string query_url;
@@ -1172,17 +1240,17 @@ int raw_sparql_handler(string sparql)
 	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
-		std::cout << "Query failed: " << query_response.StatusMsg << std::endl;
+		cout << "Query failed: " << query_response.StatusMsg << endl;
 		return -1;
 	}
 	else if (!query_response.head.empty())
 	{
 		Util::printConsole(query_response.head, query_response.results);
-		std::cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
+		cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
 	} 
 	else
 	{
-		std::cout << "Update ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << std::endl;
+		cout << "Update ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
 	}
 	return 0;
 }
@@ -1314,8 +1382,8 @@ int help_handler(const vector<string> &args)
 		cout << "Comment start with #." << endl;
 		cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
 		cout << "List of all console commands:" << endl;
-		std::vector<std::string> headers = {"name", "description"};
-		std::vector<std::vector<std::string>> rows;
+		vector<string> headers = {"name", "description"};
+		vector<vector<string>> rows;
 		for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
 		{
 			rows.push_back({commands[i].name, commands[i].doc});
@@ -1332,8 +1400,8 @@ int help_handler(const vector<string> &args)
 	{
 		cout << "List of all gconsole commands:" << endl;
 		cout << "Note that all text commands must be end with ';' but need not be in one line." << endl;
-		std::vector<std::string> headers = {"name", "description", "usage"};
-		std::vector<std::vector<std::string>> rows;
+		vector<string> headers = {"name", "description", "usage"};
+		vector<vector<string>> rows;
 		for (int i = 0; i < TOTAL_COMMAND_NUM; ++i)
 		{
 			rows.push_back({commands[i].name, commands[i].doc, commands[i].usage});
@@ -1345,8 +1413,8 @@ int help_handler(const vector<string> &args)
 	if (name == "edit")
 	{
 		cout << "Frequently used GNU Readline shortcuts:" << endl;
-		std::vector<std::string> headers = {"name", "description"};
-		std::vector<std::vector<std::string>> rows;
+		vector<string> headers = {"name", "description"};
+		vector<vector<string>> rows;
 		rows.push_back({"CTRL-a", "move cursor to the beginning of line"});
 		rows.push_back({"CTRL-e", "move cursor to the end of line"});
 		rows.push_back({"CTRL-d", "delete a character"});
@@ -1447,11 +1515,12 @@ int show_handler(const vector<string> &args)
 		return -1;
 	}
 	
-	std::vector<std::string> header = {"name", "value"};
-	std::vector<std::vector<std::string>> rows;
+	vector<string> header = {"name", "value"};
+	vector<vector<string>> rows;
 	rows.push_back({"database", monitor_response.database});
 	rows.push_back({"creator", monitor_response.creator});
 	rows.push_back({"builtTime", monitor_response.builtTime});  
+	std::cout << monitor_response.builtTime << endl;
 	rows.push_back({"triple_num", monitor_response.tripleNum});
 	rows.push_back({"literalNum", to_string(monitor_response.literalNum)});
 	rows.push_back({"subjectNum", to_string(monitor_response.subjectNum)});
@@ -1465,12 +1534,13 @@ int showdbs_handler(const vector<string> &args)
 	CHECK_ARGC(1, 0)
 	server::MessageShowRequest show_request;
 	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
-	std::vector<std::string> headers = {"database", "creater", "builtTime", "status"};
-	std::vector<std::vector<std::string>> rows;
+	vector<string> headers = {"database", "creater", "builtTime", "status"};
+	vector<vector<string>> rows;
 	for (auto &db : show_response.responseBody)
 	{
 		rows.push_back({db.database, db.creator, db.builtTime, db.status});
 	}
+
 	Util::printConsole(headers, rows);
 	return 0;
 }
@@ -1549,8 +1619,9 @@ int export_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_LOADED
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, EXPORT_PRIVILEGE_BIT);
+
 	string export_path = args[0];
-	std::cout << _current_database << '\n';
+	cout << _current_database << '\n';
 	
 	if (export_path[export_path.length() - 1] != '/')
 		export_path = export_path + "/";
@@ -1589,6 +1660,7 @@ int backup_handler(const vector<string> &args)
 		cout << "Backup path cannot be root or \"" + _db_home + "\", Backup Failed!" << endl;
 		return -1;
 	}
+
 	Util::string_suffix(backup_path, '/');
 	if (!Util::dir_exist(backup_path))
 	{
@@ -1622,7 +1694,7 @@ int restore_handler(const vector<string> &args)
 	check_priv(db_name, RESTORE_PRIVILEGE_BIT);
 	if (db_name == _current_database)
 	{
-		std::cout << "Database game restore failed: Database alreay load, need unload it first through \"UNLOAD <database_name>;\" before you restore it" << endl;
+		cout << "Database game restore failed: Database alreay load, need unload it first through \"UNLOAD <database_name>;\" before you restore it" << endl;
 		return -1;
 	}
 	if (backup_path[0] == '/')
@@ -1689,6 +1761,7 @@ int use_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 	string new_db_name = args[0];
 	check_priv(new_db_name, LOAD_PRIVILEGE_BIT);
+	check_priv(new_db_name, UNLOAD_PRIVILEGE_BIT);
 	if (new_db_name == Util::system_db)
 	{
 		if (usrname == root_username)
@@ -1714,7 +1787,7 @@ int use_handler(const vector<string> &args)
 	return 0;
 }
 
-int unload_handler(const std::vector<std::string> &args)
+int unload_handler(const vector<string> &args)
 {
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, UNLOAD_PRIVILEGE_BIT);
@@ -1975,13 +2048,12 @@ int setpriv_handler(const vector<string> &args)
 
 	//TO DO;
 	unsigned origin_priv = read_priv(usr, db);
-	fprintf(stderr, "%s\n", "no");
-	std::string priv_string;
+	string priv_string;
 	for (int i = 1; i < PRIVILEGE_NUM; ++i) 
 	{
 		if (origin_priv & (1u << i)) 
 		{
-			priv_string += std::to_string(i);
+			priv_string += to_string(i);
 			priv_string += ',';
 		}
 	}
@@ -2000,12 +2072,12 @@ int setpriv_handler(const vector<string> &args)
 	
 
 	// Atomicity Problem
-	std::string addpriv_string;
+	string addpriv_string;
 	for (int i = 1; i < PRIVILEGE_NUM; ++i) 
 	{
 		if (priv & (1 << i)) 
 		{
-			addpriv_string += std::to_string(i);
+			addpriv_string += to_string(i);
 			addpriv_string += ',';
 		}
 	}
@@ -2130,8 +2202,8 @@ int showusrs_handler(const vector<string> &args)
 		return -1;
 	}
 
-	std::vector<std::string> headers = {"user", "database", "privilege"};
-	std::vector<std::vector<std::string>> rows;
+	vector<string> headers = {"user", "database", "privilege"};
+	vector<vector<string>> rows;
 	rows.push_back({root_username, "all", "all"});
 	
 	server::MessageShowUserRequest showuser_request;
@@ -2142,9 +2214,9 @@ int showusrs_handler(const vector<string> &args)
 		return -1;
 	}
 
-	auto parse_priv = [] (const std::string &db_string, const std::string &priv_string, std::unordered_map<std::string, std::string> &db_priv) -> void
+	auto parse_priv = [] (const string &db_string, const string &priv_string, unordered_map<string, string> &db_priv) -> void
 	{
-		std::string buff;
+		string buff;
 		for (const char &c : db_string)
 		{
 			if (c != ',') 
@@ -2163,7 +2235,7 @@ int showusrs_handler(const vector<string> &args)
 
 	for (const auto &info : showuser_response.ResponseBody) {
 		if (info.username == root_username) continue;
-		std::unordered_map<std::string, std::string> db_priv;
+		unordered_map<string, string> db_priv;
 		parse_priv(info.query_privilege, "query",db_priv);
 		parse_priv(info.load_privilege, "load", db_priv);
 		parse_priv(info.unload_privilege, "unload", db_priv);
@@ -2185,7 +2257,7 @@ int init_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string db_names = args[0];
-	if (db_names.find(Util::system_db) != std::string::npos)
+	if (db_names.find(Util::system_db) != string::npos)
 	{
 		cout << "You can NOT init system database. " << endl;
 		return -1;
@@ -2198,8 +2270,8 @@ int init_handler(const vector<string> &args)
 		return -1;
 	}
 	cout << "Init database result: " << endl;
-	std::vector<std::string> headers = {"db_name", "status", "msg"};
-	std::vector<std::vector<std::string>> rows;
+	vector<string> headers = {"db_name", "status", "msg"};
+	vector<vector<string>> rows;
 	for (auto &db : init_response.data)
 	{
 		rows.push_back({db.db_name, db.status, db.msg});
@@ -2280,5 +2352,631 @@ int batchremove_handler(const vector<string> &args)
 		return -1;
 	}
 	cout << "After removed triples num " << remove_response.successNum << ",failed num " << remove_response.failedNum <<",used " << duration_time << " ms" << endl;
+	return 0;
+}
+
+
+server::MessageReasonManageResponse reason_manage_handler(int type, const string &arg)
+{
+	server::MessageReasonManageResponse response;
+	if (type == 1)
+	{
+
+		ifstream file(arg);
+		if (!file.is_open())
+		{
+			std::cout << "failed to open file: " << arg << endl;
+		}
+
+		nlohmann::json ruleinfo;
+		file >> ruleinfo;
+		file.close();
+
+		server::MessageAddReasonRequest request(_current_database, ruleinfo);
+		response = APIConnector::addReason(API_URL, true, request);
+	}
+	else if (type == 2)
+	{
+		server::MessageListReasonRequest request(_current_database);
+		response = APIConnector::listReason(API_URL, true, request);
+	} 
+	else
+	{
+		server::MessageCedsdReasonRequest request(_current_database, to_string(type), arg);
+		response = APIConnector::cedsdReason(API_URL, true, request);
+	}
+
+	return std::move(response);
+}
+
+int addreason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	if (!Util::file_exist(args[0]))
+	{
+		cout << "File " << args[0] << " does not exist." << endl;
+		return -1;
+	}
+
+	server::MessageReasonManageResponse response = reason_manage_handler(1, args[0]);
+	// if (response.success())
+	// {
+	// 	cout <<  endl; 
+	// }
+	// else
+	// {
+	// 	cout << "ADD REASON FAILED!" << endl;
+	// }
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int listreason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 0)
+
+	server::MessageReasonManageResponse response = reason_manage_handler(2, args[0]);
+	vector<string> headers = {"ruleid", "rulename", "description"};
+	vector<vector<string> > rows;
+	int id = 1;
+	for (auto &rule_json : response.list)
+	{
+		vector<string> content;
+		content.push_back(to_string(id));
+		string rulename = "";
+		
+		rows.push_back({to_string(id), rule_json.at("rulename"), rule_json.at("description")});
+		Util::printConsole(headers, rows);
+		id++;
+	}
+	// if (!ret)
+	// {
+	// 	cout << "LIST REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	cout << "LIST REASON FAILED!" << endl;
+	// }
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int compilereason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	server::MessageReasonManageResponse response = reason_manage_handler(3, args[0]);
+	// if (!ret)
+	// {
+	// 	cout << "COMPILE REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	cout << "COMPILE REASON FAILED!" << endl;
+	// }
+	if (response.success())
+	{
+		vector<string> headers = {"insert_sparql", "delete_sparql"};
+		vector<vector<string> > rows = {{response.insert_sparql, response.delete_sparql}};
+		Util::printConsole(headers, rows);
+	}
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int executereason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+
+	server::MessageReasonManageResponse response = reason_manage_handler(4, args[0]);
+	// if (!ret)
+	// {
+	// 	cout << "EXECUTE REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	cout << "EXECUTE REASON FAILED!" << endl;
+	// }
+	if (response.success())
+	{
+		vector<string> headers = {"insert_sparql"};
+		vector<vector<string> > rows = {{response.insert_sparql}};
+		Util::printConsole(headers, rows);
+	}
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int disablereason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	server::MessageReasonManageResponse response = reason_manage_handler(5, args[0]);
+	// if (!ret)
+	// {
+	// 	cout << "DISABLE REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	cout << "DISABLE REASON FAILED!" << endl;
+	// }
+	if (response.success())
+	{
+		vector<string> headers = {"delete_sparql"};
+		vector<vector<string> > rows = {{response.delete_sparql}};
+		Util::printConsole(headers, rows);
+	}
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int showreason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	server::MessageReasonManageResponse response = reason_manage_handler(6, args[0]);
+	vector<string> headers = {"rulename", "description", "patterns", "filters"};
+	vector<vector<string> > rows;
+
+	server::RuleInfo rule_info;
+	rule_info.from_json(response.ruleinfo);
+	cout << rule_info.conditions.size() << endl;
+	for (auto &condition : rule_info.conditions)
+	{
+		string filter_str;
+		for (const auto &filter : condition.filters)
+		{
+			filter_str += filter;
+			filter_str += ';';
+		}
+
+		string pattern_str;
+		for (const auto &pattern : condition.patterns)
+		{
+			pattern_str += "<";
+			pattern_str += pattern.subject;
+			pattern_str += ",";
+			pattern_str += pattern.object;
+			pattern_str += ",";
+			pattern_str += pattern.subject;
+			pattern_str += ">";
+			rows.push_back({rule_info.rulename, rule_info.description,
+							pattern_str, filter_str});
+			pattern_str.clear();
+		}
+
+	}
+	Util::printConsole(headers, rows);
+	// if (!ret)
+	// {
+	// 	cout << "SHOW REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	cout << "SHOW REASON FAILED!" << endl;
+	// }
+	cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int deletereason_handler(const vector<string> &args)
+{
+	CHECK_CURRENT_DB_LOADED
+	CHECK_CURRENT_DB_NOT_SYSDB
+	CHECK_ARGC(1, 1)
+
+	server::MessageReasonManageResponse response = reason_manage_handler(7, args[0]);
+	// if (!ret)
+	// {
+	// 	std::cout << "DELETE REASON SUCCESSFULLY!" << endl; 
+	// }
+	// else
+	// {
+	// 	std::cout << "DELETE REASON FAILED!" << endl;
+	// }
+	std::cout << response.getStatusMsg() << endl;
+	return response.success();
+}
+
+int funquery_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 2);
+	string funName = args[0];
+	string funStatus = args[1];
+	server::FunInfo funInfo(funName, funStatus);
+	nlohmann::json json;
+	string json_str;
+	funInfo.to_json(json_str);
+	json = nlohmann::json::parse(json_str);
+	server::MessageFunQueryRequest funquery_request(json);
+	server::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
+	if (!funquery_response.success())
+	{
+		cout << "failed to query custom function named " << funName << endl;
+		return -1;
+	}
+	
+	vector<string> headers = {"funName", "funDesc", "funArgs", "funBody", "funStatus", "lastTime"};
+	vector<vector<string> > rows ={};
+
+	for (const auto &json : funquery_response.list)
+	{
+		server::FunInfo fun_info;
+		fun_info.from_json(json);
+		rows.push_back({fun_info.funName, fun_info.funDesc, fun_info.funArgs, 
+						"./pfn/" + fun_info.funName + ".cpp", fun_info.funStatus, fun_info.lastTime});
+	}
+	
+	Util::printConsole(headers, rows);
+	std::cout << "query custom function successfully!" << endl;
+	return 0;
+}
+
+int funcudb_handler(int type, const std::string& arg)
+{
+	nlohmann::json json;
+	if (type == 1 || type == 2)
+	{
+		ifstream file(arg);
+		if (!file.is_open())
+		{
+			std::cout << "failed to open file: " << arg << endl;
+		}
+		file >> json;
+		file.close();
+	}
+	else
+	{
+		server::FunInfo funInfo = server::FunInfo(arg, "");
+		std::string json_str;
+		funInfo.to_json(json_str);
+		json = nlohmann::json::parse(json_str);
+	}
+
+	server::MessageFunCudbRequest funcudb_request(to_string(type), json);
+	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
+	if (!funcudb_response.success())
+	{
+		std::cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+int funcreate_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+
+	if (!Util::file_exist(args[0]))
+	{
+		cout << "File " << args[0] << " does not exist." << endl;
+		return -1;
+	}
+
+	int ret = funcudb_handler(1, args[0]);
+	if (ret == -1)
+	{
+		std::cout << "failed to create custom function" << endl;
+	}
+	std::cout << "create custom function successfully!" << endl;
+	return 0;
+}
+
+int funupdate_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+
+	if (!Util::file_exist(args[0]))
+	{
+		cout << "File " << args[0] << " does not exist." << endl;
+		return -1;
+	}
+
+	int ret = funcudb_handler(2, args[0]);
+	if (ret == -1)
+	{
+		std::cout << "failed to update custom function" << endl;
+	}
+	std::cout << "update custom function successfully!" << endl;
+	return 0;
+}
+
+int fundelete_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+
+	int ret = funcudb_handler(3, args[0]);
+	if (ret == -1)
+	{
+		std::cout << "delete failed to custom function" << endl;
+	}
+	std::cout << "delete custom function successfully!" << endl;	
+	return 0;
+}
+
+int funbuild_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+
+	int ret = funcudb_handler(4, args[0]);
+	if (ret == -1)
+	{
+		std::cout << "failed to build custom function" << endl;
+	}
+	std::cout << "custom function build successfully!" << endl;
+	return 0;
+}
+
+int funreview_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+	if (!Util::file_exist(args[0]))
+	{
+		cout << "File " << args[0] << " does not exist." << endl;
+		return -1;
+	}
+
+	ifstream file(args[0]);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file: " << args[0] << endl;
+		return -1;
+	}
+
+	nlohmann::json funInfo;
+	file >> funInfo;
+	server::MessageReviewRequest review_request(funInfo);
+	server::MessageReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
+	if (!review_response.success())
+	{
+		std::cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
+	}
+
+	vector<string> headers = {"result"};
+	if (funInfo.contains("funName"))
+	{
+		vector<string> header = {"result"};
+		string file_path = funInfo.at("funName");
+		vector<vector<string> > rows = {{"./pfn/" + file_path + ".cpp"}};
+		Util::printConsole(headers, rows);
+	}
+		
+	std::cout << "review custom function successfully!" << endl;
+	return 0;
+}
+
+int txnlog_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 2)
+	// check args if numeric
+	if (!pure_digit(args[0]) || !pure_digit(args[1])) 
+	{
+		std::cout << "Illegal Argument: arg0 && arg1 must be number" << endl;
+		return -1;
+	}
+
+	int pageNo = stoi(args[0]);
+	int pageSize = stoi(args[1]);
+	server::MessageTxnLogRequest txnlog_request(pageNo, pageSize);
+	server::MessageTxnLogResponse txnlog_response = APIConnector::txnLog(API_URL, true, txnlog_request);
+	if (!txnlog_response.success())
+	{
+		cout << "Query txnlog failed: " << txnlog_response.StatusMsg << endl;
+		return -1;
+	}
+	vector<string> headers = {"dbname", "TID", "user", "state", "begintime", "endtime"};
+	vector<vector<string> > rows;
+	for (auto json : txnlog_response.list) {
+		server::TxnLog txnlog;
+		txnlog.from_json(json);
+		rows.push_back({txnlog.db_name, txnlog.TID, txnlog.user,
+						txnlog.state, txnlog.begin_time, txnlog.end_time});
+	}
+	Util::printConsole(headers, rows);
+	cout << "Query txnlog successfully." << endl;
+	return 0;
+}
+
+int querylogdate_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 0)
+	server::MessageQueryLogDateRequest querylogdate_request;
+	server::MessageQueryLogDateResponse querylogdate_response = APIConnector::queryLogDate(API_URL, true, querylogdate_request);
+	if (!querylogdate_response.success())
+	{
+		cout << "querylogdate failed: " << querylogdate_response.StatusMsg << endl;
+		return -1;
+	}
+	vector<string> headers = {"querylogdate"};
+	vector<vector<string> > rows;
+	for (auto date : querylogdate_response.list) {
+		rows.push_back({date});
+	}
+	Util::printConsole(headers, rows);
+	cout << "querylogdate successfully." << endl;
+	return 0;
+}
+
+int querylog_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 3)
+	string date = args[0];
+	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
+	{
+		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		return -1;
+	}
+	int pageNo = stoi(args[1]);
+	int pageSize = stoi(args[2]);
+	
+	server::MessageQueryLogRequest querylog_request(date, pageNo, pageSize);
+	server::MessageQueryLogResponse querylog_response = APIConnector::queryLog(API_URL, true, querylog_request);
+	if (!querylog_response.success())
+	{
+		cout << "querylog failed: " << querylog_response.StatusMsg << endl;
+		return -1;
+	}
+	vector<string> headers = {"QueryDateTime", "Sparql", "Format", "RemoteIP", "FileName", "QueryTime", "AnsNum"};
+	vector<vector<string> > rows;
+	for (auto json : querylog_response.list) {
+		server::QueryLog querylog;
+		querylog.from_json(json);
+		rows.push_back({querylog.QueryDateTime, querylog.Sparql, querylog.Format,
+						querylog.RemoteIP, querylog.FileName, to_string(querylog.QueryTime),
+						to_string(querylog.AnsNum)});
+	}
+	Util::printConsole(headers, rows);
+	return 0;
+}
+
+int accesslogdate_handler(const vector<string>& args) {
+	CHECK_ARGC(1, 0)
+	server::MessageAccessLogDateRequest accesslogdate_request;
+	server::MessageAccessLogDateResponse accesslogdate_response = APIConnector::accessLogDate(API_URL, true, accesslogdate_request);
+	if (!accesslogdate_response.success())
+	{
+		cout << "accesslogdate failed: " << accesslogdate_response.StatusMsg << endl;
+		return -1;
+	}
+	vector<string> headers = {"accesslogdate"};
+	vector<vector<string> > rows;
+	for (auto date : accesslogdate_response.list) {
+		rows.push_back({date});
+	}
+	Util::printConsole(headers, rows);
+	cout << "accesslogdate successfully." << endl;
+	return 0;
+}
+
+int accesslog_handler(const vector<string>& args) {
+	CHECK_ARGC(1, 3)
+	string date = args[0];
+	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
+	{
+		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		return -1;
+	}
+	int pageNo = stoi(args[1]);
+	int pageSize = stoi(args[2]);
+	
+	server::MessageAccessLogRequest accesslog_request(date, pageNo, pageSize);
+	server::MessageAccessLogResponse accesslog_response = APIConnector::accessLog(API_URL, true, accesslog_request);
+	if (!accesslog_response.success())
+	{
+		cout << "accessLog failed: " << accesslog_response.StatusMsg << endl;
+		return -1;
+	}
+	vector<string> headers = {"ip", "operation", "createtime", "code", "msg"};
+	vector<vector<string> > rows;
+	for (auto json : accesslog_response.list) {
+		server::AccessLog accesslog;
+		accesslog.from_json(json);
+		rows.push_back({accesslog.ip, accesslog.operation, accesslog.createtime,
+						accesslog.code, accesslog.msg});
+	}
+	Util::printConsole(headers, rows);
+	cout << "accessLog successfully." << endl;
+	return 0;
+}
+
+int begin_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 2)
+	if (!pure_digit(args[1])) 
+	{
+		std::cout << "Illegal Argument: arg1 must be number" << endl;
+		return -1;
+	}
+
+	string db_name = args[0];
+	string isolevel = args[1];
+	server::MessageBeginRequest begin_request(db_name, isolevel);
+	server::MessageBeginResponse begin_response = APIConnector::begin(API_URL, true, begin_request);
+	if (!begin_response.success())
+	{
+		std::cout << "begin operation failed: " << begin_response.getStatusMsg() << endl;
+		return -1; 
+	}
+
+	return 0;
+}
+
+int tquery_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 3)
+	string db_name = args[0];
+	string tid = args[1];
+	string sparql = args[2];
+	server::MessageTqueryRequest tquery_request(db_name, tid, sparql);
+	server::MessageTqueryResponse tquery_response = APIConnector::tquery(API_URL, true, tquery_request);
+	if (!tquery_response.success())
+	{
+		cout << "tquery failed: " << tquery_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "tquery successfully." << endl;
+	return 0;
+
+}
+
+int commit_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 2)
+	string db_name = args[0];
+	string tid = args[1];
+	server::MessageCommitRequest commit_request(db_name, tid);
+	server::MessageCommitResponse commit_response = APIConnector::commit(API_URL, true, commit_request);
+	if (!commit_response.success())
+	{
+		cout << "commit failed: " << commit_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "commit successfully." << endl;
+	return 0;	
+}
+
+int rollback_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 2)
+	string db_name = args[0];
+	string tid = args[1];
+	server::MessageRollbackRequest rollback_request(db_name, tid);
+	server::MessageRollbackResponse rollback_response = APIConnector::rollBack(API_URL, true, rollback_request);
+	if (!rollback_response.success())
+	{
+		cout << "rollback failed: " << rollback_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "rollback successfully." << endl;
+	return 0;
+}
+
+int checkpoint_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1)
+	string db_name = args[0];
+	server::MessageCheckPointRequest checkpoint_request(db_name);
+	server::MessageCheckPointResponse checkpoint_response = APIConnector::checkPoint(API_URL, true, checkpoint_request);
+	if (!checkpoint_response.success())
+	{
+		cout << "checkpoint failed: " << checkpoint_response.StatusMsg << endl;
+		return -1;
+	}
+	cout << "checkpoint successfully." << endl;
 	return 0;
 }
