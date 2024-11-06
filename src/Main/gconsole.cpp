@@ -2991,7 +2991,14 @@ int checkpoint_handler(const vector<string>& args)
 int importlicense_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 1)
+
 	string filepath = args[0];
+	if (!Util::file_exist(filepath))
+	{
+		cout << "failed to import license: file " + filepath + "does not exist" << endl;
+		return -1;
+	}
+
 	server::MessageRequest request;
 	server::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
 	

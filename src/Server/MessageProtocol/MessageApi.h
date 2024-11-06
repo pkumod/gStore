@@ -217,7 +217,18 @@ namespace server
 
     struct MessageLicenseResponse: public MessageResponse
     {
+        bool isvalid;
+        std::string product;
+        std::string version;
+        std::string cpu;
+        std::string mac;
+        std::string startdate;
+        std::string enddate;
+        std::string company;
+        std::string type;
+        std::string desc;
         MessageLicenseResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageLicenseResponse(std::string body);
         void toJsonString(std::string& json_str);
     };
 }
