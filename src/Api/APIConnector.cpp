@@ -530,6 +530,49 @@ server::MessageReasonManageResponse APIConnector::cedsdReason(const std::string&
 	return response_parser<server::MessageReasonManageResponse>(status, body_str);
 }
 
+
+server::MessageLicenseResponse APIConnector::importLicense(const std::string& url, const bool& inner, server::MessageRequest& request, std::string filepath)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	std::map<std::string, std::string> params;
+	params["operation"] = request.op;
+	params["username"] = "root";
+	params["remote_ip"] = request.remote_ip;
+	params["password"] = "123456";
+	params["inner"] = inner ? "true" : "false";
+	int status = WFHttpUtil::PostFile(url + "/lic/import", {}, -1, filepath, params, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
+}
+
+server::MessageLicenseResponse APIConnector::licenseInfo(const std::string& url, const bool& inner, server::MessageRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url + "/lic/info", json_str, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
+}
+
+server::MessageLicenseResponse APIConnector::removeLicense(const std::string& url, const bool& inner, server::MessageRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	std::string body_str;
+	int status = WFHttpUtil::Post(url + "/lic/remove", json_str, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
+}
+
 httpentities::ClusterResponse APIConnector::reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password)
 {
 	std::string json_str;

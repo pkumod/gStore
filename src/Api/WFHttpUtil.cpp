@@ -198,6 +198,7 @@ int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, 
     WFHttpTask *http_task = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, respwrite_callback);
     protocol::HttpRequest *req = http_task -> get_req();
     protocol::HttpResponse *resp = http_task -> get_resp();
+    
     for (const auto &pair : headers) {
         req -> add_header_pair(pair.first, pair.second);
     }

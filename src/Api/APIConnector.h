@@ -115,6 +115,11 @@ public:
 	
 	static server::MessageReasonManageResponse cedsdReason(const std::string& url, const bool& inner, server::MessageCedsdReasonRequest& request);
 
+	static server::MessageLicenseResponse importLicense(const std::string& url, const bool& inner, server::MessageRequest& request, std::string filepath);
+
+	static server::MessageLicenseResponse licenseInfo(const std::string& url, const bool& inner, server::MessageRequest& request);
+	
+	static server::MessageLicenseResponse removeLicense(const std::string& url, const bool& inner, server::MessageRequest& request);
 	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
 	
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);

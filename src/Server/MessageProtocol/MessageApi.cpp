@@ -417,4 +417,33 @@ namespace server
         _json["data"] = json;
         json_str = _json.dump();
     }
+
+    MessageLicenseResponse::MessageLicenseResponse(std::string body) : MessageResponse(body)
+    {
+        if (json.is_object() && json.contains("data"))
+        {
+            nlohmann::json license_json = json.at("data");
+            if (license_json.contains("isvalid"))
+                license_json.at("isvalid").get_to(this->isvalid);
+            if (license_json.contains("product"))
+                license_json.at("product").get_to(this->product);
+            if (license_json.contains("version"))
+                license_json.at("version").get_to(this->version);
+            if (license_json.contains("cpu"))
+                license_json.at("cpu").get_to(this->cpu);
+            if (license_json.contains("mac"))
+                license_json.at("mac").get_to(this->mac);
+            if (license_json.contains("startdate"))
+                license_json.at("startdate").get_to(this->startdate);
+            if (license_json.contains("enddate"))
+                license_json.at("enddate").get_to(this->enddate);
+            if (license_json.contains("company"))
+                license_json.at("company").get_to(this->company);
+            if (license_json.contains("type"))
+                license_json.at("type").get_to(this->type);
+            if (license_json.contains("desc"))
+                license_json.at("desc").get_to(this->desc);
+        }
+    }
+
 }

@@ -116,6 +116,10 @@ public:
     body_content_ += "\r\n--";
     body_content_ += boundary_;
     body_content_ += "--\r\n";
+    if (!body_content_.empty())
+    {
+        body_content_ = body_content_.substr(2);
+    }
     return body_content_;
 }
 
