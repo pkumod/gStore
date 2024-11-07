@@ -606,7 +606,7 @@ void ResultSet::to_JSON(nlohmann::json& json)
 	}
 	head["vars"] = vars;
 	nlohmann::json results;
-	nlohmann::json buildings;
+	nlohmann::json buildings = nlohmann::json::array();
 
 	if (this->useStream)
 		this->resetStream();
@@ -755,7 +755,8 @@ void ResultSet::to_JSON(nlohmann::json& json)
 				
 				json_var[ans_key] = json_item;
 			}
-			buildings.push_back(json_var);
+			if (!json_var.empty())
+				buildings.push_back(json_var);
 		}
 	}
 
