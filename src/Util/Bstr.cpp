@@ -69,7 +69,7 @@ void Bstr::assignCopy(const Bstr& _bstr)
 bool 
 Bstr::operator > (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == 1)
 		return true;
 	else
@@ -79,7 +79,7 @@ Bstr::operator > (const Bstr& _bstr)
 bool 
 Bstr::operator < (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == -1)
 		return true;
 	else
@@ -89,7 +89,7 @@ Bstr::operator < (const Bstr& _bstr)
 bool
 Bstr::operator == (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == 0)
 		return true;
 	else
@@ -99,7 +99,7 @@ Bstr::operator == (const Bstr& _bstr)
 bool
 Bstr::operator <= (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res <= 0)
 		return true;
 	else
@@ -109,7 +109,7 @@ Bstr::operator <= (const Bstr& _bstr)
 bool
 Bstr::operator >= (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res >= 0)
 		return true;
 	else
@@ -119,7 +119,7 @@ Bstr::operator >= (const Bstr& _bstr)
 bool
 Bstr::operator != (const Bstr& _bstr)
 {
-	int res = Util::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res != 0)
 		return true;
 	else
@@ -204,34 +204,15 @@ Bstr::release()
 }
 
 Bstr::~Bstr()	
-{	//avoid mutiple delete
+{	
+	//avoid mutiple delete
 	release();
 }
 
 void
 Bstr::print(string s) const
 {
-//TODO: add a new debug file in Util(maybe a total?)
-//#ifdef DEBUG
-//	Util::showtime();
-//	fputs("Class Bstr\n", Util::logsfp);
-//	fputs("Message: ", Util::logsfp);
-//	fputs(s.c_str(), Util::logsfp);
-//	fputs("\n", Util::logsfp);
-//	if(s == "BSTR")
-//	{	//total information, providing accurate debugging
-//		fprintf(Util::logsfp, "length: %u\t the string is:\n", this->length);
-//		unsigned i;
-//		for(i = 0; i < this->length; ++i)
-//			fputc(this->str[i], Util::logsfp);
-//		fputs("\n", Util::logsfp);
-//	}
-//	else if(s == "bstr")
-//	{	//only length information, needed when string is very long
-//		fprintf(Util::logsfp, "length: %u\n", this->length);
-//	}
-//	else;
-//#endif
+
 }
 
 bool

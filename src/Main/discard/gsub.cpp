@@ -78,7 +78,7 @@ main(int argc, char * argv[])
 			return -1;
 		}
 		//check the db_name is system
-		if (db_folder == Util::system_db)
+		if (db_folder == GlobalTypedef::system_db)
 		{
 			cout<<"The database name can not be system."<<endl;
 			return 0;
@@ -92,7 +92,7 @@ main(int argc, char * argv[])
 			cout << "the delete data file is empty! Input \"bin/gsub -h\" for help." << endl;
 			return 0;
 		}
-		Database system_db(Util::system_db);
+		Database system_db(GlobalTypedef::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
@@ -110,12 +110,12 @@ main(int argc, char * argv[])
 		bool is_zip = false;
 		if (Util::fileSuffix(filename) == "zip")
 			is_zip = true;
-		long tv_begin = Util::get_cur_time();
+		long tv_begin = gutil::TimeUtil::timestamp();
 		if (is_zip)
 		{
 			std::string unz_dir_path;
 			std::vector<std::string> zip_files;
-			unz_dir_path = filename + "_" + Util::getTimeString2();
+			unz_dir_path = filename + "_" + gutil::TimeUtil::now();
 			std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip unzip(filename, unz_dir_path);
@@ -136,7 +136,7 @@ main(int argc, char * argv[])
 		}
 		else
 			_db.batch_remove(filename, false, nullptr);
-		long tv_end = Util::get_cur_time();
+		long tv_end = gutil::TimeUtil::timestamp();
 		cout << "after remove, used " << (tv_end - tv_begin) << " ms" << endl;
 		_db.save();
 	}

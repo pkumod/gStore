@@ -219,9 +219,9 @@ bool
 Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 {
 	this->init(_basic_query,d_triple);
-	long begin = Util::get_cur_time();
+	long begin = gutil::TimeUtil::timestamp();
 	//bool ret1 = this->filter_before_join();
-	//long after_constant_filter = Util::get_cur_time();
+	//long after_constant_filter = gutil::TimeUtil::timestamp();
 	////fprintf(stderr, "after filter_before_join: used %ld ms\n", after_filter - begin);
 	//cout << "after filter_before_join: used " << (after_constant_filter - begin) << " ms" << endl;
 	//if (!ret1)
@@ -231,16 +231,16 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	//}
 
 	//this->add_literal_candidate();
-	//long after_add_literal = Util::get_cur_time();
+	//long after_add_literal = gutil::TimeUtil::timestamp();
 	//cout << "after add_literal_candidate: used " << (after_add_literal - after_constant_filter) << " ms" << endl;
 
 	//bool ret2 = this->allFilterByPres();
 	////bool ret2 = true;
-	//long after_pre_filter = Util::get_cur_time();
+	//long after_pre_filter = gutil::TimeUtil::timestamp();
 	//cout << "after allFilterByPres: used " << (after_pre_filter - after_add_literal) << " ms" << endl;
 	/*
 	bool ret2 = pre_handler();
-	long after_prehandler = Util::get_cur_time();
+	long after_prehandler = gutil::TimeUtil::timestamp();
 	cout << "after prehandler: used " << (after_prehandler - begin) << " ms" << endl;
 	
 	if (!ret2)
@@ -250,7 +250,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	}
 	*/
 	bool ret3 = this->join();
-	long after_joinbasic = Util::get_cur_time();
+	long after_joinbasic = gutil::TimeUtil::timestamp();
 	SLOG_CORE("during join_basic: used " << (after_joinbasic - begin) << " ms");
 	if (!ret3)
 	{
@@ -262,7 +262,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 所有结点都在上面join里面做完，因此不需要判断是否为卫星结点。
 */
 	bool ret4 = this->only_pre_filter_after_join();
-	long after_only_pre_filter = Util::get_cur_time();
+	long after_only_pre_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("during only pre filter: used " << (after_only_pre_filter - after_joinbasic) << " ms");
 	if (!ret4)
 	{
@@ -278,11 +278,11 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	//the generating process had better been placed at the final, just before copying result
 	this->pre_var_handler();
 	//BETTER:maybe also reduce to empty, return false
-	long after_pre_var = Util::get_cur_time();
+	long after_pre_var = gutil::TimeUtil::timestamp();
 	SLOG_CORE("during pre var: used " << (after_pre_var - after_only_pre_filter) << " ms");
 
 	this->copyToResult();
-	long after_copy = Util::get_cur_time();
+	long after_copy = gutil::TimeUtil::timestamp();
 	SLOG_CORE("during copy to result list: used " << (after_copy - after_pre_var) << " ms");
 
 	SLOG_CORE("Final result size: " << this->basic_query->getResultList().size());
@@ -649,7 +649,7 @@ Join::copyToResult()
 				}
 
 				char edge_type = this->basic_query->getEdgeType(id, j);
-				if (edge_type == Util::EDGE_OUT)
+				if (edge_type == GlobalTypedef::EDGE_OUT)
 				{
 					//if(preid < 0)
 					//{
@@ -837,7 +837,7 @@ Join::toStartJoin()
 		}
 		for(TYPE_ENTITY_LITERAL_ID i = 0; i < this->limitID_literal; ++i)
 		{
-			TYPE_ENTITY_LITERAL_ID id = i + Util::LITERAL_FIRST_ID;
+			TYPE_ENTITY_LITERAL_ID id = i + GlobalTypedef::LITERAL_FIRST_ID;
 			string literal = this->kvstore->getLiteralByID(id);
 			if(literal == "")
 			{
@@ -1110,7 +1110,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 
 				if (pre_id == -2)    //predicate var
 				{
-					if (edge_type == Util::EDGE_IN)
+					if (edge_type == GlobalTypedef::EDGE_IN)
 					{
 						s2o_pre_var = true;
 					}
@@ -1139,7 +1139,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 
 				unsigned* id_list;
 				unsigned id_list_len;
-				if (edge_type == Util::EDGE_IN)
+				if (edge_type == GlobalTypedef::EDGE_IN)
 				{
 #ifdef DEBUG_JOIN
 					SLOG_CORE("this is an edge to our id to join!");
@@ -1480,12 +1480,12 @@ Join::filter_before_join()
 		//otherwise, use BoolArray for n, only construct a time
 		//NOTICE: for parallelism, use a BoolArray for each BGP(either on join or in Strategy)
 
-		long begin = Util::get_cur_time();
+		long begin = gutil::TimeUtil::timestamp();
 		bool ret = this->constant_edge_filter(i);
-		long after_constant_edge_filter = Util::get_cur_time();
+		long after_constant_edge_filter = gutil::TimeUtil::timestamp();
 		SLOG_CORE("\t\tconstant_edge_filter: used " << (after_constant_edge_filter - begin) << " ms");
 		//		this->preid_filter(this->basic_query, i);
-		//		long after_preid_filter = Util::get_cur_time();
+		//		long after_preid_filter = gutil::TimeUtil::timestamp();
 		//cout << "\t\tafter_preid_filter: used " << (after_preid_filter-after_literal_edge_filter) << " ms" << endl;
 		SLOG_CORE("\t\t[" << i << "] after filter, candidate size= " << can_list.size() << endl << endl);
 
@@ -1535,7 +1535,7 @@ Join::constant_edge_filter(int _var_i)
 		Triple triple = this->basic_query->getTriple(triple_id);
 		string neighbor_name;
 
-		if (edge_type == Util::EDGE_OUT)
+		if (edge_type == GlobalTypedef::EDGE_OUT)
 		{
 			neighbor_name = triple.object;
 		}
@@ -1578,7 +1578,7 @@ Join::constant_edge_filter(int _var_i)
 		unsigned* id_list = NULL;
 		if (pre_id >= 0)
 		{
-			if (edge_type == Util::EDGE_OUT)
+			if (edge_type == GlobalTypedef::EDGE_OUT)
 			{
 				(this->kvstore)->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 			}
@@ -1589,7 +1589,7 @@ Join::constant_edge_filter(int _var_i)
 		}
 		else if (pre_id == -2)
 		{
-			if (edge_type == Util::EDGE_OUT)
+			if (edge_type == GlobalTypedef::EDGE_OUT)
 			{
 				(this->kvstore)->getsubIDlistByobjID(lit_id, id_list, id_list_len, true, txn);
 			}
@@ -1603,7 +1603,7 @@ Join::constant_edge_filter(int _var_i)
 			// note that we cannot support to query sparqls with predicate variables ?p.
 		{
 			id_list_len = 0;
-			//			if (edge_type == Util::EDGE_OUT)
+			//			if (edge_type == GlobalTypedef::EDGE_OUT)
 			//			{
 			//			    (this->kvstore)->getsubIDlistByobjID(lit_id, id_list, id_list_len);
 			//			}
@@ -1858,7 +1858,7 @@ Join::preFilter(int _var)
 		int triple_id = this->basic_query->getEdgeID(_var, i);
 		Triple triple = this->basic_query->getTriple(triple_id);
 		string neighbor;
-		if (edge_type == Util::EDGE_OUT)
+		if (edge_type == GlobalTypedef::EDGE_OUT)
 		{
 			neighbor = triple.object;
 		}
@@ -1900,7 +1900,7 @@ Join::preFilter(int _var)
 			this->dealed_triple[triple_id] = true;
 		}
 
-		if (edge_type == Util::EDGE_OUT)
+		if (edge_type == GlobalTypedef::EDGE_OUT)
 		{
 			out_edge_pre_id.insert(pre_id);
 		}
@@ -1978,7 +1978,7 @@ Join::only_pre_filter_after_join()
 				continue;
 			}
 			string neighbor_name;
-			if (edge_type == Util::EDGE_OUT)
+			if (edge_type == GlobalTypedef::EDGE_OUT)
 			{
 				neighbor_name = triple.object;
 			}
@@ -2005,7 +2005,7 @@ Join::only_pre_filter_after_join()
 				continue;
 			}
 
-			if (edge_type == Util::EDGE_OUT)
+			if (edge_type == GlobalTypedef::EDGE_OUT)
 			{
 				out_edge_pre_id.push_back(pre_id);
 			}

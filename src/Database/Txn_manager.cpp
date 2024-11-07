@@ -5,8 +5,8 @@ Txn_manager::Txn_manager(Database *db, string db_name)
 {
 	this->db = db;
 	this->db_name = db_name;
-	this->log_path = Util::global_config["db_home"] + "/" + db_name +  Util::global_config["db_suffix"] + "/update.log";
-	this->all_log_path = Util::global_config["db_home"] + "/" + db_name +  Util::global_config["db_suffix"] + "/update_since_backup.log";
+	this->log_path = GlobalTypedef::db_path(db_name) + "/update.log";
+	this->all_log_path = GlobalTypedef::db_path(db_name) + "/update_since_backup.log";
 	out.open(this->log_path.c_str(), ios::out | ios::app);
 	out_all.open(this->all_log_path.c_str(), ios::out | ios::app);
 	cnt.store(1);
@@ -123,7 +123,7 @@ inline txn_id_t Txn_manager::ArrangeTID()
 {
 	srand(time(NULL));
 	cnt++;
-	return stod(Util::get_timestamp()) * 10000 + (rand() + cnt) % 10000 ;
+	return stod(gutil::TimeUtil::timestamp_str()) * 10000 + (rand() + cnt) % 10000 ;
 }
 */
 
@@ -152,10 +152,10 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 		checkpoint_lock.unlock();
 		return TID;
 	}
-	shared_ptr<Transaction> txn = make_shared<Transaction>(this->db_name, Util::get_cur_time(), TID, isolationlevel);
+	shared_ptr<Transaction> txn = make_shared<Transaction>(this->db_name, gutil::TimeUtil::timestamp(), TID, isolationlevel);
 	txn->SetCommitID(TID);
 	add_transaction(TID, txn);
-	string log_str = "Begin " + Util::int2string(TID);
+	string log_str = "Begin " + to_string(TID);
 	//writelog(log_str);
 	txn->SetState(TransactionState::RUNNING);
 	return TID;
@@ -163,7 +163,7 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 
 int Txn_manager::Commit(txn_id_t TID)
 {
-	string log_str = "Commit " + Util::int2string(TID);
+	string log_str = "Commit " + to_string(TID);
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
 		SLOG_ERROR("wrong transaction id!");
@@ -187,7 +187,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	}
 	//writelog(log_str);
 	txn->SetState(TransactionState::COMMITTED);
-	txn->SetEndTime(Util::get_cur_time());
+	txn->SetEndTime(gutil::TimeUtil::timestamp());
 	add_dirty_keys(txn);
 	checkpoint_lock.unlock();
 	committed_num++;
@@ -201,7 +201,7 @@ int Txn_manager::Commit(txn_id_t TID)
 
 int Txn_manager::Abort(txn_id_t TID)
 {
-	string log_str = "Abort " + Util::int2string(TID);
+	string log_str = "Abort " + to_string(TID);
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if (txn == nullptr) {
 		SLOG_ERROR("wrong transaction id!");
@@ -216,7 +216,7 @@ int Txn_manager::Abort(txn_id_t TID)
 	}
 	//writelog(log_str);
 	txn->SetState(TransactionState::ABORTED);
-	txn->SetEndTime(Util::get_cur_time());
+	txn->SetEndTime(gutil::TimeUtil::timestamp());
 	checkpoint_lock.unlock();
 	//add_dirty_keys(txn);
 	return 0;

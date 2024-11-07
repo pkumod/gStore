@@ -17,7 +17,7 @@ ISStorage::ISStorage()
 	freelist = NULL;
 	treefp = NULL;
 	minheap = NULL;
-	max_buffer_size = Util::MAX_BUFFER_SIZE;
+	max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;
 	heap_size = max_buffer_size / ISNode::INTL_SIZE;
 	freemem = max_buffer_size;
 }
@@ -214,7 +214,7 @@ ISStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 		return 0;
 	else if (_blocknum > cur_block_num)
 	{
-		//print(string("error in Address: Invalid blocknum ") + Util::int2string(_blocknum));
+		//print(string("error in Address: Invalid blocknum ") + to_string(_blocknum));
 		return -1;		//address should be non-negative
 	}
 	//NOTICE: here should explictly use long
@@ -594,7 +594,7 @@ ISStorage::writeTree(ISNode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 
-	Util::Csync(this->treefp);
+	gutil::FileUtil::Csync(this->treefp);
 	//fclose(this->treefp);
 
 	return true;

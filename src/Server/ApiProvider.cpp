@@ -95,8 +95,8 @@ namespace server
         {
             std::string db_name = resquest.db_name;
             std::string disk = resquest.disk;
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string _db_home = GlobalTypedef::db_home();
+            std::string _db_suffix = GlobalTypedef::db_suffix();
             // check the param value is legal or not.
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)

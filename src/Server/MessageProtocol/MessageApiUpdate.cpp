@@ -124,18 +124,20 @@ namespace server
     }
 
     // query
-    MessageQueryRequest::MessageQueryRequest(std::string db_name,  std::string sparql, std::string format) : MessageRequest(std::string("query"))
+    MessageQueryRequest::MessageQueryRequest(std::string db_name,  std::string sparql, std::string format, bool async) : MessageRequest(std::string("query"))
     {
         this->db_name = db_name;
         this->sparql = sparql;
         this->format = format;
+        this->async = async;
     }
 
-    MessageQueryRequest::MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format) : MessageRequest("query", username, password)
+    MessageQueryRequest::MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format, bool async) : MessageRequest("query", username, password)
     {
         this->db_name = db_name;
         this->sparql = sparql;
         this->format = format;
+        this->async = async;
     }
 
     MessageQueryRequest::MessageQueryRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
@@ -143,6 +145,8 @@ namespace server
         this->db_name = jsonParam(json_data, "db_name");
         this->format = jsonParam(json_data, "format", "json");
         this->sparql = jsonParam(json_data, "sparql");
+        this->callback = jsonParam(json_data, "callback");
+        this->async = jsonBoolParam(json_data, "async", false);
     }
 
     void MessageQueryRequest::to_json(std::string& json_str)
@@ -153,6 +157,8 @@ namespace server
             {"password", this->password},
             {"db_name", this->db_name},
             {"sparql", this->sparql},
+            {"callback", this->callback},
+            {"async", this->async},
             {"format", this->format}};
         json_str = json.dump();
     }
@@ -166,6 +172,7 @@ namespace server
             {"db_name", this->db_name},
             {"sparql", this->sparql},
             {"format", this->format},
+            {"async", "false"},
             {"inner", "true"}};
         json_str = json.dump();
     }
@@ -238,6 +245,10 @@ namespace server
             {
                 this->query_json["FileName"] = this->fileName;
             }
+            if (!this->opt_id.empty())
+            {
+                this->query_json["opt_id"] = this->opt_id;
+            }
             json_str = this->query_json.dump();
         }
         else
@@ -247,6 +258,10 @@ namespace server
             json["AnsNum"] = this->ansNum;
             json["ThreadId"] = this->threadId;
             json["QueryTime"] = this->queryTime;
+            if (!this->opt_id.empty())
+            {
+                this->query_json["opt_id"] = this->opt_id;
+            }
             json_str = json.dump();
         }
     }

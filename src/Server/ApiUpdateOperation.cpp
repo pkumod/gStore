@@ -25,7 +25,7 @@ namespace server
                 return;
             }
             //check the db_name is system
-            if (db_name == Util::system_db)
+            if (db_name == GlobalTypedef::system_db)
             {
                 response.StatusMsg = "The database name can not be system.";
                 response.StatusCode = StatusParamIsIllegal;
@@ -54,7 +54,7 @@ namespace server
             {
                 // send [prepare] heartbeat and wait response
                 ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
-                log_index = apiUtil->generateUID();
+                log_index = gutil::IdUtil::nextUID();
                 clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
                 bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
                 if (!prepare_result)
@@ -70,7 +70,7 @@ namespace server
                 clusterlog = make_shared<ofstream>();
                 clusterlog->open(logpath.c_str());
             }
-            apiUtil->init_databaseinfo(db_name, username, Util::get_date_time(), DatabaseStatus::BUILDING);
+            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             std::vector<std::string> zip_files;
             std::string unz_dir_path;
             std::string file_suffix = Util::fileSuffix(db_path);
@@ -92,7 +92,7 @@ namespace server
                 }
                 std::string file_name = Util::fileName(db_path);
                 size_t pos = file_name.size() - file_suffix.size() - 1;
-                unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+                unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
                 mkdir(unz_dir_path.c_str(), 0775);
                 CompressUtil::UnCompressZip upfile(db_path, unz_dir_path);
                 code = upfile.unCompress();
@@ -107,16 +107,15 @@ namespace server
                 db_path = upfile.getMaxFilePath();
                 upfile.getFileList(zip_files, db_path);
             }
-            std::string opt_id = apiUtil->generateUid();
+            std::string opt_id;
+            gutil::IdUtil::nextUID(opt_id);
             string operation = "build";
             msg = "Operation Success.";
             apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
             auto build_helper = [apiUtil,clusterManagerPtr,db_name,username,unz_dir_path,is_zip,zip_files,db_path,operation,opt_id,async,callback,log_index,clusterlog]
                     (MessageBuildResponse *response)
                     {
-                        std::string _db_home = Util::getConfigureValue("db_home");
-                        std::string _db_suffix = Util::getConfigureValue("db_suffix");
-                        string _db_path = _db_home + db_name + _db_suffix;
+                        string _db_path = GlobalTypedef::db_path(db_name);
                         string database = db_name;
                         SLOG_DEBUG("Import dataset to build database...");
                         SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
@@ -320,8 +319,6 @@ namespace server
             std::string file = resquest.file;
             bool async = resquest.async;
             std::string callback = resquest.callback;
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -372,7 +369,7 @@ namespace server
             {
                 // send [prepare] heartbeat and wait response
                 ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
-                log_index = apiUtil->generateUID();
+                log_index = gutil::IdUtil::nextUID();
                 clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
                 bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
                 if (!prepare_result)
@@ -413,7 +410,7 @@ namespace server
                     }
                     std::string file_name = Util::fileName(file);
                     size_t pos = file_name.size() - file_suffix.size() - 1;
-                    unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+                    unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
                     Util::create_dirs(unz_dir_path);
                     CompressUtil::UnCompressZip upfile(file, unz_dir_path);
                     code = upfile.unCompress();
@@ -436,11 +433,12 @@ namespace server
             else
             {
                 // is dirctory
-                Util::string_suffix(dir, '/');
+                gutil::StringUtil::append(dir, '/');
                 Util::dir_files(dir, "", nt_files);
             }
-            std::string opt_id = apiUtil->generateUid();
-            auto insert_helper = [db_name, nt_files, unz_dir_path, opt_id, async, callback, log_index, clusterlog, apiUtil, remote_ip, clusterManagerPtr, _db_home, _db_suffix](MessageBatchInsertResponse *response) {
+            std::string opt_id;
+            gutil::IdUtil::nextUID(opt_id);
+            auto insert_helper = [db_name, nt_files, unz_dir_path, opt_id, async, callback, log_index, clusterlog, apiUtil, remote_ip, clusterManagerPtr](MessageBatchInsertResponse *response) {
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
                 // access log
@@ -461,7 +459,7 @@ namespace server
                 unsigned success_num = 0;
                 unsigned total_num = 0;
                 unsigned parse_error_num = 0;
-                string error_log = _db_home +  "/" + db_info->getName() + _db_suffix + "/parse_error.log";
+                string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
                 total_num = Util::count_lines(error_log);
                 for (std::string rdf_file : nt_files)
                 {
@@ -620,8 +618,6 @@ namespace server
             std::string file = resquest.file;
             bool async = resquest.async;
             std::string callback = resquest.callback;
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -661,7 +657,7 @@ namespace server
             {
                 // send [prepare] heartbeat and wait response
                 ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-                log_index = apiUtil->generateUID();
+                log_index = gutil::IdUtil::nextUID();
                 clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
                 bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
                 if (!prepare_result)
@@ -699,7 +695,7 @@ namespace server
                 }
                 std::string file_name = Util::fileName(file);
                 size_t pos = file_name.size() - file_suffix.size() - 1;
-                unz_dir_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2();
+                unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
                 Util::create_dirs(unz_dir_path);
                 CompressUtil::UnCompressZip upfile(file, unz_dir_path);
                 code = upfile.unCompress();
@@ -718,8 +714,9 @@ namespace server
             {
                 nt_files.push_back(file);
             }
-            std::string opt_id = apiUtil->generateUid();
-            auto remove_helper = [apiUtil,clusterManagerPtr,db_name, nt_files, &unz_dir_path, opt_id, async, callback, log_index, clusterlog,remote_ip,_db_home,_db_suffix](MessageBatchRemoveResponse *response){
+            std::string opt_id;
+            gutil::IdUtil::nextUID(opt_id);
+            auto remove_helper = [apiUtil,clusterManagerPtr,db_name, nt_files, &unz_dir_path, opt_id, async, callback, log_index, clusterlog,remote_ip](MessageBatchRemoveResponse *response){
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
                 // access log
@@ -739,7 +736,7 @@ namespace server
                 unsigned success_num = 0;
                 unsigned total_num = 0;
                 size_t parse_error_num = 0;
-                string error_log = _db_home +  "/" + db_name + _db_suffix + "/parse_error.log";
+                string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
                 total_num = Util::count_lines(error_log);
                 for (std::string rdf_file : nt_files)
                 {
@@ -890,8 +887,6 @@ namespace server
         {
             std::string db_name = resquest.db_name;
             bool is_backup = stringIsTrue(resquest.is_backup);
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -917,14 +912,15 @@ namespace server
                 return;
             }
             SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
-            string db_path = _db_home + db_name + _db_suffix;
+            string db_path = GlobalTypedef::db_path(db_name);
             if (is_backup == false)
             {
                 Util::remove_path(db_path);
-                SLOG_DEBUG("remove_path"+db_path);
+                SLOG_DEBUG("remove_path: " + db_path);
             }
             else
             {
+                std::string _db_home = GlobalTypedef::db_home();
                 std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
                 SLOG_DEBUG(cmd);
                 system(cmd.c_str());
@@ -942,22 +938,22 @@ namespace server
         }
     }
 
-    void ApiHandler::query(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageQueryRequest& resquest, MessageQueryResponse& response, bool &redirect, bool &is_query, const DbQueryLogCall& db_queryLog_cb)
+    void ApiHandler::query_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageQueryRequest& request, MessageQueryResponse& response, bool &is_update, const query_call& cb)
     {
         try
         {
-            std::string min_memory = Util::getConfigureValue("min_memory").c_str();
-            int memoryLeft = Util::memoryLeft();
-            if (memoryLeft < atoi(min_memory.c_str()))
+            int32_t min_memory = (apiUtil->get_configure_value("min_memory", 512)); // MB
+            int32_t memoryLeft = gutil::ResourceUtil::memoryLeft();
+            if (memoryLeft < (min_memory >> 10))
             {
-                response.StatusMsg = "memory not enough, available:" + std::to_string(memoryLeft) + "GB, need minimum:" + min_memory + "GB";
+                response.StatusMsg = "memory not enough, available:" + std::to_string(memoryLeft) + "MB, need minimum:" + std::to_string(min_memory) + "MB";
                 response.StatusCode = StatusOperationFailed;
                 return;
             }
-            std::string db_name = resquest.db_name;
-            std::string format = resquest.format;
-            std::string username = resquest.username;
-            std::string sparql = resquest.sparql;
+            std::string db_name = request.db_name;
+            std::string format = request.format;
+            std::string username = request.username;
+            std::string sparql = request.sparql;
             // check db_name paramter
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
@@ -996,8 +992,6 @@ namespace server
                 response.StatusCode = StatusLossOfLock;
                 return;
             }
-            string thread_id = Util::getThreadID();
-            bool is_update = false;
             QueryTree::UpdateType update_type;
             bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
             // check update operation
@@ -1012,30 +1006,32 @@ namespace server
                 response.StatusCode = StatusOperationFailed;
                 return;
             }
-            if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower() && is_update)
+            if(clusterManagerPtr->isFollower() && is_update)
             {
                 apiUtil->unlock_databaseinfo(db_info);
-                redirect = true;
+                response.StatusMsg = "Redirect";
+                response.StatusCode = StatusOK;
                 return;
             }
             FILE *output = NULL;
             ResultSet rs;
             int ret_val;
-            int query_time = Util::get_cur_time();
+            int query_time = gutil::TimeUtil::timestamp();
             shared_ptr<ofstream> clusterlog = nullptr;
             std::string cluster_db_path;
             std::string logpath;
             uint64 log_index;
+            std::string query_start_time;
             ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_None;
             // update waiting follower reply
-            if (clusterManagerPtr->isEnable() && is_update) 
+            if (is_update)
             {
                 // send [prepare] heartbeat and wait response
                 if (update_type == QueryTree::UpdateType::Insert_Data || update_type  == QueryTree::UpdateType::Insert_Clause) 
                     cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
                 else
                     cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-                log_index = apiUtil->generateUID();
+                log_index = gutil::IdUtil::nextUID();
                 clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
                 bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
                 if (!prepare_result)
@@ -1052,20 +1048,13 @@ namespace server
                 clusterlog = make_shared<ofstream>();
                 clusterlog->open(logpath.c_str());
             }
-
-            // set query_start_time
-            std::string query_start_time;
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-            int s = tv.tv_usec / 1000;
-            int y = tv.tv_usec % 1000;
-            query_start_time = Util::get_date_time() + ":" + Util::int2string(s) + "ms" + ":" + Util::int2string(y) + "microseconds";
             try
             {
                 SLOG_DEBUG("begin query...\n" + sparql);
                 rs.setUsername(username);
+                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
                 ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
-                query_time = Util::get_cur_time() - query_time;
+                query_time = gutil::TimeUtil::timestamp() - query_time;
                 if (clusterlog) 
                 {
                     clusterlog->close();
@@ -1081,35 +1070,18 @@ namespace server
                     clusterlog->close();
                 return;
             }
-            string filename = thread_id + "_" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
-            string localname = apiUtil->get_query_result_path() + filename;
-            string query_time_s = Util::int2string(query_time);
+            string thread_id = gutil::ThreadUtil::getThreadID();
+            string query_time_s = to_string(query_time);
+            long rs_ansNum = 0;
+            string file_name = "";
             if (!is_update && (ret_val == -100))
             {
-                // SLOG_DEBUG(thread_id + ":search query returned successfully.");
-
-                // record each query operation, including the sparql and the answer number
-                // accurate down to microseconds
-                // filter the IP from the test server
-                is_query = true;
-                std::string remote_ip = resquest.remote_ip;
-                long rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+                rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
                 long rs_outputlimit = (long)rs.output_limit;
                 if (rs_outputlimit != -1)
                 {
                     rs_ansNum = min(rs_ansNum, rs_outputlimit);
-                }	
-
-                int StatusCode = 0;
-                string file_name = "";
-                if (format.find("file") != string::npos)
-                {
-                    file_name = string(filename.c_str());
                 }
-                // add callback task for query log start
-                struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, remote_ip, sparql, 
-                    rs_ansNum, format, file_name, StatusCode, query_time, db_name);
-                db_queryLog_cb(query_log_ptr);
 
                 // to void someone downloading all the data file by sparql query on purpose and to protect the data
                 // if the ansNum too large, for example, larger than 100000, we limit the return ans.
@@ -1121,46 +1093,31 @@ namespace server
                     }
                 }
 
-                ofstream outfile;
-                string ans = "";
                 if (format == "json")
                 {
                     rs.to_JSON(response.query_json);
-                    string success = response.query_json.dump();
-                    rs.release();
-                    try
-                    {
-                        nlohmann::json parse_results_ = nlohmann::json::parse(success);
-                        response.StatusCode = StatusOK;
-                        response.StatusMsg = "success";
-                        response.ansNum = rs_ansNum;
-                        response.outputLimit = rs_outputlimit;
-                        response.queryTime = query_time_s;
-                    }
-                    catch (nlohmann::json::exception& e)
-                    {
-                        string filename2 = "error_" + filename;
-                        string localname2 = apiUtil->get_query_result_path() + filename2;
-                        outfile.open(localname2);
-                        outfile << success;
-                        outfile.close();
-                        SLOG_ERROR("result parse error: ErrorCode=" << e.id << ", ErrorPosition=" << e.what() << ", ResultFile=" << localname2);
-                        response.StatusMsg = "Query fail: the result parse error.";
-                        response.StatusCode = StatusOperationFailed;
-                    }
+                    response.StatusCode = StatusOK;
+                    response.StatusMsg = "success";
+                    response.ansNum = rs_ansNum;
+                    response.outputLimit = rs_outputlimit;
+                    response.queryTime = query_time_s;
                 }
                 else if (format == "file")
                 {
-                    outfile.open(localname);
-                    outfile << rs.to_JSON();
+                    file_name = db_name + "_" + thread_id + "_" + gutil::TimeUtil::now() + ".txt";
+                    string file_path = apiUtil->get_query_result_path() + file_name;
+                    nlohmann::json json_data;
+                    rs.to_JSON(json_data);
+                    ofstream outfile;
+                    outfile.open(file_path);
+                    outfile << json_data.dump();
                     outfile.close();
-                    rs.release();
                     response.StatusMsg = "success";
                     response.StatusCode = StatusOK;
                     response.ansNum = rs_ansNum;
                     response.outputLimit = rs_outputlimit;
                     response.queryTime = query_time_s;
-                    response.fileName = filename;
+                    response.fileName = file_name;
                 }
                 else if (format == "n-triple")
                 {
@@ -1202,7 +1159,6 @@ namespace server
                     response.StatusMsg = "Unknown result format.";
                     response.StatusCode = StatusOperationFailed;
                 }
-                response.threadId = thread_id;
             }
             else if (is_update)
             {
@@ -1211,61 +1167,57 @@ namespace server
                 response.StatusMsg = "update query returns true.";
                 response.ansNum = ret_val;
                 response.queryTime = query_time_s;
-                response.threadId = thread_id;
                 response.isUpdate = true;
                 std::string json_str;
                 response.toJsonString(json_str);
-                if (clusterManagerPtr->isEnable())
+                // add log appendEntities task
+                string log_file_name = to_string(log_index) + ".log";
+                if (ret_val > 0)
                 {
-                    // add log appendEntities task
-                    string log_file_name = to_string(log_index) + ".log";
-                    if (ret_val > 0)
+                    SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
+                    bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, cluster_update_type, log_file_name), true);
+                    if (append_result)
                     {
-                        SLOG_DEBUG("add log appendEntities task, copy num " + to_string(ret_val));
-                        bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, cluster_update_type, log_file_name), true);
-                        if (append_result)
-                        {
-                            SLOG_DEBUG("response result:\n" << json_str);
-                            clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-                        }
-                        else
-                        {
-                            // restore data
-                            SLOG_DEBUG("log appendEntities task failed, restore leader data.");
-                            // try get wrlock timeout 600 senconds
-                            if (apiUtil->trywrlock_databaseinfo(db_info, 600))
-                            {
-                                string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
-                                if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
-                                {
-                                    uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
-                                    SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
-                                } 
-                                else 
-                                {
-                                    uint32_t num = db_info->getDatabase()->batch_remove(nt_file_path);
-                                    SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
-                                }
-                                apiUtil->unlock_databaseinfo(db_info);
-                                Util::remove_path(nt_file_path);
-                            }
-                            else
-                            {
-                                SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_update_type)+"]");
-                            }
-                            msg = "Less than half of the cluster nodes reply.";
-                            SLOG_ERROR(msg);
-                            clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
-                            response.StatusMsg = msg;
-                            response.StatusCode = StatusOperationFailed;
-                        }
+                        SLOG_DEBUG("response result:\n" << json_str);
+                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
                     }
                     else
                     {
-                        SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
-                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                        Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
+                        // restore data
+                        SLOG_DEBUG("log appendEntities task failed, restore leader data.");
+                        // try get wrlock timeout 600 senconds
+                        if (apiUtil->trywrlock_databaseinfo(db_info, 600))
+                        {
+                            string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
+                            if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)
+                            {
+                                uint32_t num = db_info->getDatabase()->batch_insert(nt_file_path);
+                                SLOG_INFO("restore " + db_name + " data: batch insert num " << num);
+                            } 
+                            else 
+                            {
+                                uint32_t num = db_info->getDatabase()->batch_remove(nt_file_path);
+                                SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
+                            }
+                            apiUtil->unlock_databaseinfo(db_info);
+                            Util::remove_path(nt_file_path);
+                        }
+                        else
+                        {
+                            SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation["+to_string(cluster_update_type)+"]");
+                        }
+                        msg = "Less than half of the cluster nodes reply.";
+                        SLOG_ERROR(msg);
+                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
+                        response.StatusMsg = msg;
+                        response.StatusCode = StatusOperationFailed;
                     }
+                }
+                else
+                {
+                    SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
+                    clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
+                    Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
                 }
             }
             else
@@ -1275,7 +1227,13 @@ namespace server
                 response.StatusMsg = msg;
                 response.StatusCode = StatusOperationFailed;
             }
-            SLOG_DEBUG("query complete!");
+            response.threadId = thread_id;
+            // add callback task for query log start
+            struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
+                rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);
+            cb(query_log_ptr);
+            // release ResultSet
+            rs.release();
         }
         catch (const std::exception &e)
         {

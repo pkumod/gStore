@@ -9,7 +9,7 @@
 #ifndef _KVSTORE_SITREE_SITREE_H
 #define _KVSTORE_SITREE_SITREE_H
 
-#include "../../Util/Util.h"
+#include "../../Util/StringUtil.h"
 #include "../../Util/Stream.h"
 #include "../../Util/SpinLock.h"
 #include "node/SINode.h"

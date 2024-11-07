@@ -82,7 +82,7 @@ IVLeafNode::getValue(int _index) const
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in getValue: Invalid index ") + to_string(_index));
 		return NULL;
 	}
 	else
@@ -95,7 +95,7 @@ IVLeafNode::setValue(const Bstr* _value, int _index, bool _ifcopy)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in setValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 
@@ -119,7 +119,7 @@ IVLeafNode::getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) con
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in getValue: Invalid index ") + to_string(_index));
 		return NULL;
 	}
 
@@ -147,7 +147,7 @@ IVLeafNode::setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in setValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 
@@ -197,7 +197,7 @@ IVLeafNode::addValue(VList* _vlist, int _index, char* _str, unsigned _len, bool 
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in addValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 
@@ -240,7 +240,7 @@ IVLeafNode::subValue(VList* _vlist, int _index, bool ifdel)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in subValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 
@@ -269,7 +269,7 @@ IVLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in addValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;
@@ -290,7 +290,7 @@ IVLeafNode::subValue(int _index, bool ifdel)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in subValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 

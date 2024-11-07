@@ -196,10 +196,10 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string json_str;
     PFNUtil::fun_parse_from_name(username, fun_name, fun_info);
 
-    //create a temp file
-    string last_time = Util::get_timestamp();
+    //create a tmp file
+    string last_time = gutil::TimeUtil::now();
     string md5str = Util::md5(last_time);
-    string targetDir = pfn_lib_path + "/.temp";
+    string targetDir = pfn_lib_path + "/.tmp";
     Util::create_dirs(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = targetDir + "/lib" + file_name + md5str + ".out";
@@ -273,8 +273,8 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 {
     const string fun_name = fun_info->getFunName();
     const string fun_args = fun_info->getFunArgs();
-    const string fun_subs = Util::urlDecode(fun_info->getFunSubs());
-    string fun_body =  Util::urlDecode(fun_info->getFunBody());
+    const string fun_subs = gutil::StringUtil::url_decode(fun_info->getFunSubs());
+    string fun_body =  gutil::StringUtil::url_decode(fun_info->getFunBody());
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
     if(fun_body_o != NULL) 
     {
@@ -403,13 +403,13 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         }
         in.close();
         line = _buf.str();
-        string temp_path = pfn_cpp_path + "/temp.json";
+        string temp_path = pfn_cpp_path + "/tmp.json";
         string back_path = pfn_cpp_path + "/back.json";
         ofstream out(temp_path.c_str());
         if (!out.is_open())
         {
             pthread_rwlock_unlock(&pfn_data_lock);
-            throw std::runtime_error("open function json temp file error.");
+            throw std::runtime_error("open function json tmp file error.");
         }
         out << line;
         out.close();
@@ -419,7 +419,7 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         status = system(cmd.c_str());
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
         {
-            // mv pfn/cpp/{username}/temp.json pfn/cpp/{username}/data.json
+            // mv pfn/cpp/{username}/tmp.json pfn/cpp/{username}/data.json
             cmd = "mv -f " + temp_path + " " + json_file_path;
             status = system(cmd.c_str());
             #if defined(DEBUG)

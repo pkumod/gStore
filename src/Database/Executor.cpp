@@ -242,7 +242,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   IntermediateResult result_table;
 
-  // long t1 = Util::get_cur_time();
+  // long t1 = gutil::TimeUtil::timestamp();
   auto new_position_id_mapping = make_shared<PositionValue>();
 
   auto join_nodes = join_plan->public_variables_;
@@ -938,7 +938,7 @@ tuple<bool, TableContentShardPtr> gstore::Executor::GetAllSubObjId(bool need_lit
     }
   }
   if(need_literal) {
-    for (unsigned i = Util::LITERAL_FIRST_ID; i < this->limitID_literal_ + Util::LITERAL_FIRST_ID; ++i) {
+    for (unsigned i = GlobalTypedef::LITERAL_FIRST_ID; i < this->limitID_literal_ + GlobalTypedef::LITERAL_FIRST_ID; ++i) {
       auto entity_str = this->kv_store_->getLiteralByID(i);
       if (entity_str != "") {
         ids.insert(i);

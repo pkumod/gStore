@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 }
 
 bool isOnlyProcess(const char* argv0) {
-	return Util::getSystemOutput("pidof " + Util::getExactPath(argv0)) == Util::int2string(getpid());
+	return Util::getSystemOutput("pidof " + Util::getExactPath(argv0)) == to_string(getpid());
 }
 
 void checkSwap() {
@@ -276,10 +276,10 @@ bool startServer(bool _debug) {
 	if (_debug) {
 		Server server(port);
 		if (!server.createConnection()) {
-			cerr << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
+			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to create connection at port " << port << '.' << endl;
 			return false;
 		}
-		cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
+		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server started at port " << port << '.' << endl;
 		server.listen();
 		server.deleteConnection();
 		return true;
@@ -304,10 +304,10 @@ bool startServer(bool _debug) {
 			if (fpid == 0) {
 				Server server(port);
 				if (!server.createConnection()) {
-					cerr << Util::getTimeString() << "Failed to create connection at port " << port << '.' << endl;
+					cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to create connection at port " << port << '.' << endl;
 					return false;
 				}
-				cout << Util::getTimeString() << "Server started at port " << port << '.' << endl;
+				cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server started at port " << port << '.' << endl;
 				server.listen();
 				server.deleteConnection();
 				exit(0);
@@ -321,12 +321,12 @@ bool startServer(bool _debug) {
 					exit(0);
 					return true;
 				}
-				cerr << Util::getTimeString() << "Server stopped abnormally, restarting server..." << endl;
+				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server stopped abnormally, restarting server..." << endl;
 			}
 
 			// fork failure
 			else {
-				cerr << Util::getTimeString() << "Failed to start server: deamon fork failure." << endl;
+				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to start server: deamon fork failure." << endl;
 				return false;
 			}
 		}

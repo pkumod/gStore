@@ -147,7 +147,7 @@ IVNode::setNum(int _num)
 {
 	if (_num < 0 || (unsigned)_num > MAX_KEY_NUM)
 	{
-		print(string("error in setNum: Invalid num ") + Util::int2string(_num));
+		print(string("error in setNum: Invalid num ") + to_string(_num));
 		return false;
 	}
 	this->flag &= ~NF_KN;
@@ -209,7 +209,7 @@ IVNode::getKey(int _index) const
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in getKey: Invalid index ") + Util::int2string(_index));    
+		//print(string("error in getKey: Invalid index ") + to_string(_index));    
 		printf("error in getKey: Invalid index\n");
 		return -1;
 	}
@@ -223,7 +223,7 @@ IVNode::setKey(unsigned _key, int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in setKey: Invalid index ") + Util::int2string(_index));
+		print(string("error in setKey: Invalid index ") + to_string(_index));
 		return false;
 	}
 	keys[_index] = _key;
@@ -236,7 +236,7 @@ IVNode::addKey(unsigned _key, int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
+		print(string("error in addKey: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;
@@ -254,7 +254,7 @@ IVNode::subKey(int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in subKey: Invalid index ") + Util::int2string(_index));
+		print(string("error in subKey: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;

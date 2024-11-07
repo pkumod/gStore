@@ -95,22 +95,22 @@ int APIUtil::initialize()
         init_params();
         
         // load system db
-        std::string _sys_db_path = get_Db_path() + "/system" + get_Db_suffix();
-        if(!util.file_exist(Util::initfile) || !util.dir_exist(_sys_db_path))
+        std::string _sys_db_path = GlobalTypedef::db_path(GlobalTypedef::system_db);
+        if(!util.file_exist(GlobalTypedef::initfile) || !util.dir_exist(_sys_db_path))
         {
             SLOG_INFO("System has not been initialized. Now initialize it");
             if (util.dir_exist(_sys_db_path))
             {
                 util.remove_path(_sys_db_path);
             }
-            system_database  = make_shared<Database>(Util::system_db);
+            system_database  = make_shared<Database>(GlobalTypedef::system_db);
             bool _sys_build_rt = system_database->BuildEmptyDB();
             if (_sys_build_rt)
             {
                 ofstream f;
                 f.open(_sys_db_path + "/success.txt");
                 f.close();
-                f.open(Util::initfile);
+                f.open(GlobalTypedef::initfile);
                 f.close();
                 system_database.reset();
                 // Util::init_backuplog();
@@ -120,7 +120,7 @@ int APIUtil::initialize()
                     <system> <built_by> <root> . \
                     <CoreVersion> <value> \"" + version + "\". \
                     <root> <has_password> \"" + root_pwd + "\" .}";
-                system_database = make_shared<Database>(Util::system_db);
+                system_database = make_shared<Database>(GlobalTypedef::system_db);
                 system_database->load();
                 update_sys_db(update_sparql);
                 refresh_sys_db();
@@ -133,7 +133,7 @@ int APIUtil::initialize()
         }
         else
         {
-            system_database = make_shared<Database>(Util::system_db);
+            system_database = make_shared<Database>(GlobalTypedef::system_db);
             system_database->load();
         }
 
@@ -218,7 +218,7 @@ int APIUtil::initialize()
         init_transactionlog();
         // create system password file
         fstream ofp;
-        system_password = util.int2string(util.getRandNum());
+        system_password = to_string(gutil::IdUtil::randNum());
         std::string pid_path = PID_PATH;
         ofp.open(pid_path.c_str(), ios::out);
         ofp << getpid();
@@ -241,20 +241,20 @@ int APIUtil::initialize()
 void APIUtil::init_params()
 {
     // init params
-    thread_pool_num = get_configure_value("thread_num", thread_pool_num);
-    system_username = get_configure_value("system_username", system_username);
-    max_database_num = get_configure_value("max_database_num", max_database_num);
-    max_user_num = get_configure_value("max_user_num", max_user_num);
-    max_output_size = get_configure_value("max_output_size", max_output_size);
-    query_log_mode = get_configure_value("querylog_mode", query_log_mode);
-    query_log_path = get_configure_value("querylog_path", query_log_path);
-    access_log_mode = get_configure_value("accesslog_mode", access_log_mode);
-    access_log_path = get_configure_value("accesslog_path", access_log_path);
-    query_result_path = get_configure_value("queryresult_path", query_result_path);
+    thread_pool_num = Util::getConfigureIntValue("thread_num");
+    system_username = Util::getConfigureValue("system_username");
+    max_database_num = Util::getConfigureIntValue("max_database_num");
+    max_user_num = Util::getConfigureIntValue("max_user_num");
+    max_output_size = Util::getConfigureIntValue("max_output_size");
+    query_log_mode = Util::getConfigureValue("querylog_mode");
+    query_log_path = Util::getConfigureValue("querylog_path");
+    access_log_mode = Util::getConfigureValue("accesslog_mode");
+    access_log_path = Util::getConfigureValue("accesslog_path");
+    query_result_path = Util::getConfigureValue("queryresult_path");
 
     //load ip-list
-    ipWhiteFile = get_configure_value("ip_allow_path", ipWhiteFile);
-    ipBlackFile = get_configure_value("ip_deny_path", ipBlackFile);
+    ipWhiteFile = Util::getConfigureValue("ip_allow_path");
+    ipBlackFile = Util::getConfigureValue("ip_deny_path");
     if (ipWhiteFile.empty()) {
         whiteList = 0;
     } else {
@@ -274,12 +274,10 @@ void APIUtil::init_params()
         ipBlackList->Load(ipBlackFile);
     }
 
-    // init upload conf
-    upload_path = get_configure_value("upload_path", upload_path);
-    upload_max_body_size = get_configure_value("upload_max_body_size", upload_max_body_size);
-    string configure_extensions = get_configure_value("upload_allow_extensions",  "nt|ttl|n3|rdf|txt");
+    // init upload config
+    string configure_extensions = Util::getConfigureValue("upload_allow_extensions");
     Util::split(configure_extensions, "|", upload_allow_extensions);
-    string configure_compress_packages = get_configure_value("upload_allow_compress_packages",  "zip");
+    string configure_compress_packages = Util::getConfigureValue("upload_allow_compress_packages");
     Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
 }
 
@@ -328,7 +326,7 @@ bool APIUtil::init_databaseinfo(const std::string& db_name, const std::string cr
         string current_time = build_time; 
         if (current_time.empty())
         {
-            current_time = util.get_date_time();
+            current_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
         }
         shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name, creator, build_time, status);
         string update = "INSERT DATA {\
@@ -457,7 +455,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
         return false;
     }
     // Delete the oldest backup file
-    std::string db_name_suffix = db_name + get_Db_suffix();
+    std::string db_name_suffix = db_name + GlobalTypedef::db_suffix();
     vector<std::string> backup_files;
     Util::dir_files(backup_path, db_name_suffix, backup_files);
     int16_t max_backups = get_configure_value("max_backups", 3);
@@ -514,8 +512,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         msg = "backup path is not exist";
         return false;
     }
-    std::string db_suffix = get_Db_suffix();
-    std::string db_home_path = get_Db_path() + db_name + db_suffix;
+    std::string db_home_path = GlobalTypedef::db_path(db_name);
     bool restore_bool = false;
     // mv db_home to db_home.bak
     if (Util::dir_exist(db_home_path)) {
@@ -572,9 +569,7 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         msg = "Database name " + new_db_name + " already exists.";
         return false;
     }
-    std::string db_home = get_Db_path();
-    std::string db_suffix = get_Db_suffix();
-    std::string db_new_path = db_home + new_db_name + db_suffix;
+    std::string db_new_path = GlobalTypedef::db_path(new_db_name);
     // check new_db_path
     if (Util::dir_exist(db_new_path))
     {
@@ -588,7 +583,7 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         msg = "Unable to rename due to loss of lock.";
         return false;
     }
-    string db_path = db_home + db_name + db_suffix;
+    string db_path = GlobalTypedef::db_path(db_name);
     if (mv_or_cp(db_path, db_new_path, true))
     {
         // add new db info
@@ -1007,12 +1002,12 @@ bool APIUtil::check_param_value(const string& paramname, const string& value, st
 	}
 	if (paramname == "db_name")
 	{
-		if (value == Util::system_db)
+		if (value == GlobalTypedef::system_db)
 		{
 			msg = "you can not operate the system database";
 			return false;
 		}
-		string db_suffix = get_Db_suffix();
+		string db_suffix = GlobalTypedef::db_suffix();
         size_t len_suffix = db_suffix.length();
         string _tmp = value.substr(value.length() - len_suffix, len_suffix);
 		if (value.length() > len_suffix && _tmp == db_suffix)
@@ -1049,7 +1044,7 @@ bool APIUtil::add_privilege(const std::string& username, const vector<string>& t
 	}
     pthread_rwlock_rdlock(&users_map_lock);
     std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != Util::system_db)
+	if(it != users.end() && db_name != GlobalTypedef::system_db)
 	{
         string update = "INSERT DATA { ";
         for (unsigned i = 0; i < types.size(); i++)
@@ -1112,7 +1107,7 @@ bool APIUtil::del_privilege(const std::string& username, const vector<string>& t
 	}
     pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != Util::system_db)
+	if(it != users.end() && db_name != GlobalTypedef::system_db)
 	{
         string update = "";
         bool del_result = false;
@@ -1172,7 +1167,7 @@ bool APIUtil::del_privilege(const std::string& username, const vector<string>& t
 
 bool APIUtil::check_privilege(const std::string& username, const std::string& type, const std::string& db_name)
 {
-	if (db_name == Util::system_db) {
+	if (db_name == GlobalTypedef::system_db) {
 		return false;
     }
 
@@ -1265,7 +1260,7 @@ bool APIUtil::init_privilege(const std::string& username, const std::string& db_
 	}
     pthread_rwlock_rdlock(&users_map_lock);
     auto it = users.find(username);
-	if(it != users.end() && db_name != Util::system_db)
+	if(it != users.end() && db_name != GlobalTypedef::system_db)
 	{
         string update = "INSERT DATA { \
             <" + username + "> <has_query_priv> <" + db_name + ">. \
@@ -1549,7 +1544,7 @@ bool APIUtil::refresh_sys_db()
     pthread_rwlock_wrlock(&system_db_lock);
 	system_database->save();
     system_database.reset();
-    system_database = make_shared<Database>(Util::system_db);
+    system_database = make_shared<Database>(GlobalTypedef::system_db);
 	bool flag = system_database->load();
 	SLOG_CORE("system database refresh ok.");
     pthread_rwlock_unlock(&system_db_lock);
@@ -1879,7 +1874,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     {
         return;
     }
-    string iplog_name = util.get_date_day();
+    string iplog_name = gutil::TimeUtil::today();
     string iplogfile = access_log_path + iplog_name + ".log";
     if (util.file_exist(iplogfile) == false)
     {
@@ -1896,7 +1891,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&access_log_lock);
     // build json
-    string createTime = util.get_date_time();
+    string createTime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
     string status_msg = string(statusMsg.c_str());
     status_msg = util.string_replace(status_msg, "\r\n", "");
 	status_msg = util.string_replace(status_msg, "\n", "");
@@ -1912,7 +1907,7 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     _info.push_back('\n');
     fprintf(ip_logfp, "%s", _info.c_str());
 
-    util.Csync(ip_logfp);
+    gutil::FileUtil::Csync(ip_logfp);
     // long logSize = ftell(ip_logfp);
     fclose(ip_logfp);
     // SLOG_CORE("logSize:" + to_string(logSize);
@@ -1924,7 +1919,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     if (opt_id.empty())
         return;
     pthread_rwlock_wrlock(&access_log_lock);
-    string iplog_name = getConvertTimeById(opt_id);
+    string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     string file_temp_name = access_log_path + iplog_name + "temp.log";
     if (util.file_exist(filename) == false)
@@ -1951,7 +1946,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
         {
             logInfo->setCode(statusCode);
             logInfo->setMsg(statusMsg);
-            string endtime = util.get_date_time();
+            string endtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
             logInfo->setEndTime(endtime);
             logInfo->setState(state);
             logInfo->setNum(num);
@@ -1980,7 +1975,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
 bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
 {
     pthread_rwlock_wrlock(&access_log_lock);
-    string iplog_name = getConvertTimeById(opt_id);
+    string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     if (util.file_exist(filename) == false)
     {
@@ -2059,7 +2054,7 @@ void APIUtil::write_query_log(DBQueryLogInfo* log)
     {
         return;
     }
-    std::string queyrlog_name = util.get_date_day();
+    std::string queyrlog_name = gutil::TimeUtil::today();
     std::string querylog_file = query_log_path + queyrlog_name + ".log";
     if (util.file_exist(querylog_file) == false)
     {
@@ -2081,7 +2076,7 @@ void APIUtil::write_query_log(DBQueryLogInfo* log)
     _info.push_back('\n');
     std::fprintf(querylog_fp, "%s", _info.c_str());
 
-    util.Csync(querylog_fp);
+    gutil::FileUtil::Csync(querylog_fp);
     // long logSize = ftell(querylog_fp);
     std::fclose(querylog_fp);
     // SLOG_CORE("logSize: " + to_string(logSize));
@@ -2314,16 +2309,6 @@ LicenseInfo& APIUtil::get_license()
     return license_info;
 }
 
-string APIUtil::get_Db_path()
-{
-    return util.getConfigureValue("db_home");
-}
-
-string APIUtil::get_Db_suffix()
-{
-    return util.getConfigureValue("db_suffix");
-}
-
 string APIUtil::get_query_result_path()
 {
     return query_result_path;
@@ -2361,17 +2346,6 @@ void APIUtil::increase_connection_num()
     }
 }
 
-string APIUtil::get_configure_value(const string& key, string default_value)
-{
-    string value = util.getConfigureValue(key);
-    if (value.empty())
-    {
-        value = default_value;
-    }
-    return value;
-    
-}
-
 int APIUtil::get_configure_value(const string& key, int default_value)
 {
     string value = util.getConfigureValue(key);
@@ -2381,7 +2355,7 @@ int APIUtil::get_configure_value(const string& key, int default_value)
     } 
     else if (util.is_number(value))
     {
-        return util.string2int(value);
+        return stoi(value);
     }
     else
     {
@@ -2406,16 +2380,10 @@ size_t APIUtil::get_configure_value(const string& key, size_t default_value)
     }
 }
 
-std::string 
-APIUtil::get_upload_path()
-{
-    return upload_path;
-}
-
 size_t
 APIUtil::get_upload_max_body_size()
 {
-    return upload_max_body_size;
+    return Util::getConfigureIntValue("upload_max_body_size");
 }
 
 bool

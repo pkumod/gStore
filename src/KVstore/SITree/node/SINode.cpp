@@ -132,7 +132,7 @@ SINode::SetKeyNum(int _num)
 {
 	if (_num < 0 || (unsigned)_num > MAX_KEY_NUM)
 	{
-		print(string("error in SetKeyNum: Invalid num ") + Util::int2string(_num));
+		SLOG_ERROR("error in SetKeyNum: Invalid num " + to_string(_num));
 		return false;
 	}
 	this->node_flag_ &= ~NF_KN;
@@ -194,7 +194,7 @@ SINode::getKey(int _index) const
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in getKey: Invalid index ") + Util::int2string(_index));    
+		//print(string("error in getKey: Invalid index ") + gutil::StringUtil::int2string(_index));    
 		printf("error in getKey: Invalid index\n");
 		return NULL;
 	}
@@ -208,7 +208,7 @@ SINode::SetKey(const Bstr* _key, int _index, bool ifcopy)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in SetKey: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR("error in SetKey: Invalid index " + to_string(_index));
 		return false;
 	}
 	if (ifcopy)
@@ -229,12 +229,12 @@ SINode::addKey(const Bstr* _key, int _index, bool ifcopy)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
-		SLOG_ERROR(string("error in addKey: Invalid index ") << Util::int2string(_index));
+		SLOG_ERROR("error in addKey: Invalid index " + to_string(_index));
 		return false;
 	}
 	if (num == MAX_KEY_NUM)
 	{
-		SLOG_ERROR("error addKey MAX_KEY_NUM, should split:" << num);
+		SLOG_CORE("error addKey MAX_KEY_NUM, should split: " + to_string(num));
 	}
 	int i;
 	//NOTICE: if num == MAX_KEY_NUM, will visit keys[MAX_KEY_NUM], not legal!!!
@@ -255,7 +255,7 @@ SINode::addKey(char* _str, unsigned _len, int _index, bool ifcopy)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addKey: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR("error in addKey: Invalid index " + to_string(_index));
 		return false;
 	}
 	if (num == MAX_KEY_NUM)
@@ -286,7 +286,7 @@ SINode::subKey(int _index, bool ifdel)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		SLOG_ERROR("error sub keys _index >= num :" << _index << "num:" << num);
+		SLOG_ERROR("error sub keys _index >= num :" << _index << " num:" << num);
 		return false;
 	}
 	int i;
@@ -374,7 +374,7 @@ SINode::searchKey_less(const char* _str, unsigned _len) const
   while (low <= high)
   {
     mid = (low + high) / 2;
-    if (Util::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
+    if (gutil::StringUtil::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
     {
       if (low == mid)
         break;
@@ -414,7 +414,7 @@ SINode::searchKey_equal(const char* _str, unsigned _len) const
 
 	int ret = this->searchKey_less(_str, _len);
 	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+	if (ret > 0 && gutil::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
 		return ret - 1;
 	else
 		return num;
@@ -425,7 +425,7 @@ SINode::searchKey_lessEqual(const char* _str, unsigned _len) const
 {
 	int ret = this->searchKey_less(_str, _len);
 	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && Util::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+	if (ret > 0 && gutil::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
 		return ret - 1;
 	else
 		return ret;

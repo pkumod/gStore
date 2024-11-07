@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		//check the db_name is system
-		if (db_folder == Util::system_db)
+		if (db_folder == GlobalTypedef::system_db)
 		{
 			cout<<"The database name can not be system."<<endl;
 			return 0;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 		std::vector<std::string> zip_files;
 		if (is_zip)
 		{
-			unz_dir_path = filename + "_" + Util::getTimeString2();
+			unz_dir_path = filename + "_" + gutil::TimeUtil::now();
 			CompressUtil::UnCompressZip unzip(filename, unz_dir_path);
 			mkdir(unz_dir_path.c_str(), 0775);
 			if (unzip.unCompress() != CompressUtil::UnZipOK)
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 				unzip.getFileList(zip_files, "");
 			}
 		}
-		Database system_db(Util::system_db);
+		Database system_db(GlobalTypedef::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 		// Log.Info("finish loading.");
 		//_db.insert(argv[2]);
 		//_db.remove(argv[2]);
-		long tv_begin = Util::get_cur_time();
+		long tv_begin = gutil::TimeUtil::timestamp();
 		unsigned success_num = 0;
 		unsigned total_num = 0;
 		unsigned parse_error_num = 0 ;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 			// exclude Info line
 			parse_error_num = Util::count_lines(error_log) - total_num - files.size();
 		}
-		long tv_end = Util::get_cur_time();
+		long tv_end = gutil::TimeUtil::timestamp();
 		// cout << "finish insert data" << endl;
 		cout << "after inserted triples num "<< success_num <<",failed num " << parse_error_num <<",used " << (tv_end - tv_begin) << " ms" << endl;
 		if (parse_error_num > 0)
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 		ss << "after insert,used " << (tv_end - tv_begin) << " ms";
 		Log.Info(ss.str().c_str());*/
 		/*delete _db;
-		long tv_end1 = Util::get_cur_time();
+		long tv_end1 = gutil::TimeUtil::timestamp();
 		ss.str("");
 		ss << "persistence on disk" << (tv_end1 - tv_end) << " ms";
 		Log.Info(ss.str());*/

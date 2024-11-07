@@ -17,8 +17,8 @@ Server::Server(int _port)
 	this->connectionPort = _port;
 	this->connectionMaxNum = Socket::MAX_CONNECTIONS;
 	this->databaseMaxNum = 10;
-	this->db_home = Util::global_config["db_home"];
-	this->db_suffix = Util::global_config["db_suffix"];
+	this->db_home = GlobalTypedef::db_home();
+	this->db_suffix = GlobalTypedef::db_suffix();
 }
 
 Server::~Server()
@@ -34,21 +34,21 @@ Server::createConnection()
 	flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "Cannot create socket. @Server::createConnection" << endl;
+		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot create socket. @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.bind(this->connectionPort);
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "Cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.listen();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "Cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
@@ -122,7 +122,7 @@ int sockThread::GetThreadID()
 }
 void sockThread::run()
 {
-	cout << Util::getTimeString() << "Thread:" << tid << " run\n";
+	cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Thread:" << tid << " run\n";
 	server->handler(socket);
 }
 void sockThread::start()
@@ -147,22 +147,22 @@ Server::handler(Socket& _socket)
 		bool recv_return = _socket.recv(recv_cmd);
 		if (!recv_return)
 		{
-			cerr << Util::getTimeString() << "Receive command from client error. @Server::listen" << endl;
+			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Receive command from client error. @Server::listen" << endl;
 			repeated_num++;
 			continue;
 		}
 
-		cout << Util::getTimeString() << "Received msg: " << recv_cmd << endl;
+		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Received msg: " << recv_cmd << endl;
 
 		/**
 		* @brief Parse the command message and construct an operation.
 		*/
 		Operation operation;
 		bool parser_return = this->parser(recv_cmd, operation);
-		cout << Util::getTimeString() << "Parser_return=" << parser_return << endl; //debug
+		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser_return=" << parser_return << endl; //debug
 		if (!parser_return)
 		{
-			cout << Util::getTimeString() << "Parser command error. @Server::listen" << endl;
+			cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser command error. @Server::listen" << endl;
 			std::string error = "Invalid command.";
 			this->response(1001, error, _socket);
 			repeated_num++;
@@ -252,11 +252,11 @@ Server::handler(Socket& _socket)
 
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
-				cerr << Util::getTimeString() << "Failed to start timer." << endl;
+				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to start timer." << endl;
 			}
 			this->query(db_name, sparql, format, _socket);
 			if (timer != 0 && !Server::stop_timer(timer)) {
-				cerr << Util::getTimeString() << "Failed to stop timer." << endl;
+				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to stop timer." << endl;
 			}
 			break;
 		}
@@ -282,7 +282,7 @@ Server::handler(Socket& _socket)
 
 		default:
 		{
-			cerr << Util::getTimeString() << "This command is not supported by now. @Server::listen" << endl;
+			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "This command is not supported by now. @Server::listen" << endl;
 			std::string error = "Invalid command.";
 			this->response(1001, error, _socket);
 		}
@@ -314,20 +314,20 @@ Server::init()
 	*/
 	if (access((db_home + "/system" + db_suffix).c_str(), 00) != 0)
 	{
-		cerr << Util::getTimeString() << "Can not find system"+db_suffix+"." << endl;
+		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Can not find system"+db_suffix+"." << endl;
 		return;
 	}
-	localDBs.insert(pair<std::string, int>(Util::system_db, 1));
-	system_database = new Database(Util::system_db);
+	localDBs.insert(pair<std::string, int>(GlobalTypedef::system_db, 1));
+	system_database = new Database(GlobalTypedef::system_db);
 	bool flag = system_database->load();
 	if (!flag)
 	{
-		cerr << Util::getTimeString() << "Failed to load the database system.db." << endl;
+		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to load the database system.db." << endl;
 		delete system_database;
 		system_database = NULL;
 		return;
 	}
-	databases.insert(pair<std::string, Database*>(Util::system_db, system_database));
+	databases.insert(pair<std::string, Database*>(GlobalTypedef::system_db, system_database));
 
 	importSys();
 }
@@ -346,11 +346,11 @@ Server::listen()
 		*/
 		signal(SIGTERM, Server::stop_sigterm_handler);
 
-		cout << Util::getTimeString() << "Wait for connection..." << endl;
+		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Wait for connection..." << endl;
 
 		this->socket.accept(new_server_socket);
 
-		cout << Util::getTimeString() << "Accept a new socket connection." << endl;
+		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Accept a new socket connection." << endl;
 
 		/**
 		* @brief Create a thread for a client socket.
@@ -374,7 +374,7 @@ std::string Server::checkparamValue(std::string param, std::string value)
 	if (param == "db_name")
 	{
 		std::string database = value;
-		if (database == Util::system_db)
+		if (database == GlobalTypedef::system_db)
 		{
 			result = "You can not operate the system database.";
 			return result;
@@ -846,7 +846,7 @@ Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 	cout << "DB_store: " << _db_name << "\tRDF_data: " << _db_path << endl;
 
 	Database* database = new Database(_db_name);
-	bool flag = database->build(_db_path, _socket);
+	bool flag = database->build(_db_path);
 	delete database;
 	database = NULL;
 
@@ -1036,7 +1036,7 @@ Server::query(std::string _db_name, std::string _sparql, std::string format, Soc
 	{
 		if (ret_val >= 0)
 		{
-			std::string responsebody = "Update num: " + Util::int2string(ret_val);
+			std::string responsebody = "Update num: " + to_string(ret_val);
 			std::string success = "success";
 			std::string resJson = CreateJson(0, success, true, responsebody);
 			_socket.send(resJson);
@@ -1071,7 +1071,7 @@ Server::show(Socket& _socket)
 	Value jsonArray(kArrayType);
 	for (iter = localDBs.begin(); iter != localDBs.end(); iter++)
 	{
-		if (iter->first == Util::system_db)
+		if (iter->first == GlobalTypedef::system_db)
 			continue;
 		Value obj(kObjectType);
 		Value db_name;
@@ -1156,7 +1156,7 @@ void* Server::timer(void* _args) {
 	*/
 	signal(SIGTERM, Server::timer_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
-	cerr << Util::getTimeString() << "Query out of time." << endl;
+	cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Query out of time." << endl;
 	abort();
 }
 
@@ -1165,7 +1165,7 @@ void Server::timer_sigterm_handler(int _signal_num) {
 }
 
 void Server::stop_sigterm_handler(int _signal_num) {
-	cout << Util::getTimeString() << "Server stopped." << endl;
+	cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server stopped." << endl;
 	exit(_signal_num);
 }
 
@@ -1224,7 +1224,7 @@ bool Server::querySys(std::string _sparql, std::string& _res)
 		else /**< Query error. */
 		{
 			std::string error = "Query failed.";
-			cerr << Util::getTimeString() << error << endl;
+			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << error << endl;
 			return false;
 		}
 	}
@@ -1232,13 +1232,13 @@ bool Server::querySys(std::string _sparql, std::string& _res)
 	{
 		if (ret_val >= 0)
 		{
-			_res = "Update num: " + Util::int2string(ret_val) + "\n";
+			_res = "Update num: " + to_string(ret_val) + "\n";
 			return true;
 		}
 		else /**< Update error. */
 		{
 			std::string error = "Update failed.\n";
-			cerr << Util::getTimeString() << error << endl;
+			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << error << endl;
 			return false;
 		}
 	}

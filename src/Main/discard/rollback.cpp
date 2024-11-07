@@ -134,7 +134,7 @@ main(int argc, char * argv[])
 			cout<<"your database name can not end with " + _db_suffix + "! Input \"bin/rollback -h\" for help."<<endl;
 			return -1;
 		}
-		if (db_name == Util::system_db)
+		if (db_name == GlobalTypedef::system_db)
 		{
 			cout << "Your database's name can not be system." << endl;
 			return -1;
@@ -172,8 +172,8 @@ main(int argc, char * argv[])
         cout << "Backups Folder Empty, Please check " + _default_backup_path << endl;
         return 0;
     }
-    time_t timestamp = Util::time_to_stamp(restore_time);
-    time_t cur_time = Util::get_cur_time() / 1000l;
+    time_t timestamp = gutil::TimeUtil::parse(restore_time);
+    time_t cur_time = gutil::TimeUtil::timestamp() / 1000l;
     if(timestamp >  cur_time){
         cout << "Restore Time Error, Rollback Failed." << endl;
         return 0;
@@ -247,7 +247,7 @@ main(int argc, char * argv[])
         document.Parse(res.c_str());
         if(document.HasMember("StatusCode") && document["StatusCode"].GetInt() == 0)
         {
-            Database system_db(Util::system_db);
+            Database system_db(GlobalTypedef::system_db);
             system_db.load();
             string root_pwd = "";
             string query_sparql = "select ?x where { <" + _root_name + "> <has_password> ?x.}";
@@ -308,7 +308,7 @@ main(int argc, char * argv[])
     delete current_database;
     //undo updates according to log
     if(flag == 1)
-        SLOG_INFO("Database " + db_name + " has restored to time: " << Util::stamp2time(undo_point));
+        SLOG_INFO("Database " + db_name + " has restored to time: " << gutil::TimeUtil::format(undo_point));
     else
         SLOG_INFO("Database " + db_name + " has restored to time: " << folders[inx]);
     return 0;

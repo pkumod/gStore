@@ -18,10 +18,10 @@ using namespace std;
 bool save_db_info(const std::string& _db_name, const std::string& _db_path)
 {
 	cout<<"Save the database info to system database...."<<endl;
-	Database system_db(Util::system_db);
+	Database system_db(GlobalTypedef::system_db);
 	system_db.load();
 	// add database information to system.db
-	string time = Util::get_date_time();
+	string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 	string sparql = "INSERT DATA {<" + _db_name + "> <database_status> \"already_built\"; <built_by> <root>; <built_time> \"" + time + "\".}";
 	ResultSet _rs;
 	int ret = system_db.query(sparql, _rs, nullptr);
@@ -103,13 +103,13 @@ main(int argc, char * argv[])
 		}
 
 		//check if the db_name is system
-		if (db_name == Util::system_db)
+		if (db_name == GlobalTypedef::system_db)
 		{
 			cout<<"Your database's name can not be system."<<endl;
 			return -1;
 		}
 
-		if (Util::dir_exist(_db_home + Util::system_db + _db_suffix) == false)
+		if (Util::dir_exist(_db_home + GlobalTypedef::system_db + _db_suffix) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;
@@ -136,7 +136,7 @@ main(int argc, char * argv[])
 			is_zip = true;
 		if (is_zip)
 		{
-			unz_dir_path = _rdf + "_" + Util::getTimeString2();
+			unz_dir_path = _rdf + "_" + gutil::TimeUtil::now();
 			std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip unzip(_rdf, unz_dir_path);
@@ -151,7 +151,7 @@ main(int argc, char * argv[])
 				unzip.getFileList(zip_files, "");
 			}
 		}
-		long tv_begin = Util::get_cur_time();
+		long tv_begin = gutil::TimeUtil::timestamp();
 		do
 		{
 			Database _db(db_name);
@@ -198,7 +198,7 @@ main(int argc, char * argv[])
 			cout<< "RDF parse error num " << parse_error_num - 1 << endl;
 			cout<< "See log file for details " << error_log << endl;
 		}
-		long tv_end = Util::get_cur_time();
+		long tv_end = gutil::TimeUtil::timestamp();
 		//stringstream ss;
 		cout << "Build RDF database " << db_name << " successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 		return 0;

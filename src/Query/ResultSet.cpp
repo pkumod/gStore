@@ -160,9 +160,9 @@ ResultSet::to_str()
 				if (j != 0)
 					_buf << "\t";
 				if (!this->useStream)
-					_buf << Util::node2string(this->answer[i][j].c_str());
+					_buf << NodeUtil::node2string(this->answer[i][j].c_str());
 				else
-					_buf << Util::node2string(bp[j].getStr());
+					_buf << NodeUtil::node2string(bp[j].getStr());
 			}
 			_buf << "\n";
 		}
@@ -170,218 +170,6 @@ ResultSet::to_str()
 
 	return _buf.str();
 }
-
-//convert to JSON string
-/**
-string
-ResultSet::to_JSON()
-{
-	stringstream _buf;
-
-	_buf << "{ \"head\": { \"link\": [], \"vars\": [";
-	for (int i = 0; i < this->true_select_var_num; i++)
-	{
-		if (i != 0)
-			_buf << ", ";
-		_buf << "\"" + this->var_name[i].substr(1) + "\"";
-	}
-	_buf << "] }, \n";
-
-	_buf << "\t\"results\": \n";
-	_buf << "\t{\n";
-	_buf << "\t\t\"bindings\": \n";
-	_buf << "\t\t[\n";
-
-	if (this->useStream)
-		this->resetStream();
-
-	const Bstr* bp = NULL;
-	// match ^^<*> string
-	regex dataTypePattern("\\^\\^<(\\S*?)[^>]*>.*?|<.*? />");
-	smatch matchResult;
-	string::const_iterator iterStart;
-	string::const_iterator iterEnd;
-	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
-	{
-		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
-		{
-			  cout<<"the size is out than the output_limit"<<endl;
-              break;
-		}
-			
-		if (this->useStream)
-		{
-            bp = this->stream->read();
-		}
-			
-
-		if (i >= this->output_offset)
-		{
-			if (i != this->output_offset)
-				_buf << ",\n";
-
-			_buf << "\t\t\t{ ";
-
-			bool list_empty = true;
-			for(int j = 0; j < this->true_select_var_num; j++)
-			{
-				string ans_type, ans_str;
-
-				if (!this->useStream)
-					ans_str = this->answer[i][j];
-				else
-					ans_str = string(bp[j].getStr());
-
-				if (ans_str.length() == 0)
-					continue;
-                //ans_str=Util::replace_all(ans_str,"\n","");
-				if (!list_empty)
-					_buf << ",\t";
-				if (ans_str[0] == '<')
-				{
-					ans_type = "uri";
-					ans_str = ans_str.substr(1, ans_str.length() - 2);
-					_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-					_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-				    list_empty=false;
-				}
-				else if (ans_str[0] == '"')
-				{
-					if (ans_str.find("\"^^<") == string::npos)
-					{
-						if (ans_str.find("\"@") != string::npos)
-						{
-							//for language string
-							ans_type = "literal";
-							string data_type = ans_str.substr(ans_str.rfind("@")+1, ans_str.length());
-							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"lang\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-							list_empty = false;
-						}
-						else
-						{
-							//no has type string
-							ans_type = "literal";
-							ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-							list_empty = false;
-						}
-					}
-					else
-					{
-						string data_type = "";
-						if (ans_str[ans_str.length() - 1] == '>')
-						{
-							ans_type = "typed-literal";
-							int pos = ans_str.find("\"^^<");
-							// string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
-							iterStart = ans_str.begin();
-							iterEnd = ans_str.end();
-							while (regex_search(iterStart, iterEnd, matchResult, dataTypePattern))
-							{
-								data_type = matchResult[0];
-								break;
-							}
-							if (data_type.length() > 4)
-							{
-								// remove ^^<>
-								data_type = data_type.substr(3, data_type.length()-4);
-								if (data_type.find("^^<") != string::npos)
-								{
-									data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
-								}
-							}
-							else
-							{
-								data_type = "http://www.w3.org/2001/XMLSchema#string-complete";
-							}
-							ans_str = ans_str.substr(0, pos+1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
-							list_empty = false;
-						}
-						else
-						{
-							// the entity value is not complete
-							ans_type = "typed-literal";
-							int pos = ans_str.find("\"^^<");
-							data_type = "http://www.w3.org/2001/XMLSchema#string-not-complete";
-							ans_str = ans_str.substr(0, pos+1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string(ans_str.c_str()) + " }";
-							list_empty = false;
-						}
-					}
-				}
-				else if (ans_str[0] == '\'') 
-				{
-					if (ans_str.find("'^^<") == string::npos)
-					{
-						if (ans_str.find("'@") != string::npos)
-						{
-							//for language string
-							ans_type = "literal";
-							string data_type = ans_str.substr(ans_str.rfind("@")+1, ans_str.length());
-							ans_str = ans_str.substr(1, ans_str.rfind('\'') - 1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"lang\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-							list_empty = false;
-						}
-						else
-						{
-							//no has type string
-							ans_type = "literal";
-							ans_str = ans_str.substr(1, ans_str.rfind('\'') - 1);
-							_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-							_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-							list_empty = false;
-						}
-					}
-					else
-					{
-						_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\"}";
-						list_empty=false;
-					}
-				}
-				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") == string::npos && ans_str[ans_str.length() - 1] != '>' )
-				// {
-				// 	ans_type = "literal";
-				// 	ans_str = ans_str.substr(1, ans_str.rfind('"') - 1);
-				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-				// 	_buf << "\"type\": \"" + ans_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-				//     list_empty=false;
-				// }
-				// else if (ans_str[0] == '"' && ans_str.find("\"^^<") != string::npos && ans_str[ans_str.length() - 1] == '>' )
-				// {
-				// 	ans_type = "typed-literal";
-				// 	int pos = ans_str.find("\"^^<");
-				// 	string data_type = ans_str.substr(pos + 4, ans_str.length() - pos - 5);
-				// 	ans_str = ans_str.substr(1, pos - 1);
-				// 	_buf << "\"" + this->var_name[j].substr(1) + "\": { ";
-				// 	_buf << "\"type\": \"" + ans_type + "\", \"datatype\": \"" + data_type + "\", \"value\": " + Util::node2string((string("\"") + ans_str + "\"").c_str()) + " }";
-                //     list_empty=false;
-				// }
-				
-				else{
-					//string ans_str_new=Util::replace_all(ans_str,"\"","“");
-					_buf<<"\"error\":{\"errorMsg:\":\"the information is not complete!\"}";
-					list_empty=false;
-				}
-				//list_empty = false;
-			}
-			_buf << "}";
-		}
-	}
-
-	_buf << "\n\t\t]\n";
-	_buf << "\t}\n";
-	_buf << "}\n";
-
-	return _buf.str();
-}
-**/
 
 string
 ResultSet::to_JSON()
@@ -392,7 +180,7 @@ ResultSet::to_JSON()
 	#if defined(DEBUG)
 	Util::create_dirs("logs/result_set");
 	ofstream outfile;
-	string log_file_name = "logs/result_set/" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
+	string log_file_name = "logs/result_set/" + gutil::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
 	outfile.open(log_file_name);
 	#endif
 	rapidjson::Value head(rapidjson::kObjectType);
@@ -452,7 +240,7 @@ ResultSet::to_JSON()
 				if (ans_str[0] == '<')
 				{
 					ans_type = "uri";
-					ans_str = Util::clear_angle_brackets(ans_str);
+					ans_str = NodeUtil::clear_angle_brackets(ans_str);
 				}
 				else if (ans_str[0] == '"')
 				{
@@ -590,7 +378,7 @@ void ResultSet::to_JSON(nlohmann::json& json)
 	#if defined(DEBUG)
 	Util::create_dirs("logs/result_set");
 	ofstream outfile;
-	string log_file_name = "logs/result_set/" + Util::getTimeString2() + "_" + Util::int2string(Util::getRandNum()) + ".txt";
+	string log_file_name = "logs/result_set/" + gutil::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
 	outfile.open(log_file_name);
 	#endif
 	
@@ -650,7 +438,7 @@ void ResultSet::to_JSON(nlohmann::json& json)
 				if (ans_str[0] == '<')
 				{
 					ans_type = "uri";
-					ans_str = Util::clear_angle_brackets(ans_str);
+					ans_str = NodeUtil::clear_angle_brackets(ans_str);
 				}
 				else if (ans_str[0] == '"')
 				{
@@ -765,14 +553,6 @@ void ResultSet::to_JSON(nlohmann::json& json)
 	nlohmann::json doc;
 	json["head"] = head;
 	json["results"] = results;
-
-	#if defined(DEBUG)
-	rapidjson::StringBuffer prettyBuffer;
-	rapidjson::PrettyWriter<rapidjson::StringBuffer> prettyWriter(prettyBuffer);
-	doc.Accept(prettyWriter);
-	outfile << prettyBuffer.GetString();
-	outfile.close();
-	#endif
 }
 
 void
@@ -805,10 +585,10 @@ ResultSet::output(FILE* _fp)
 			bp = this->stream->read();
 			if (i >= this->output_offset)
 			{
-				fprintf(_fp, "%s", Util::node2string(bp[0].getStr()).c_str());
+				fprintf(_fp, "%s", NodeUtil::node2string(bp[0].getStr()).c_str());
 				for(int j = 1; j < this->true_select_var_num; j++)
 				{
-					fprintf(_fp, "\t%s", Util::node2string(bp[j].getStr()).c_str());
+					fprintf(_fp, "\t%s", NodeUtil::node2string(bp[j].getStr()).c_str());
 				}
 				fprintf(_fp, "\n");
 			}
@@ -839,10 +619,10 @@ ResultSet::output(FILE* _fp)
 
 			if (i >= this->output_offset)
 			{
-				fprintf(_fp, "%s", Util::node2string(this->answer[i][0].c_str()).c_str());
+				fprintf(_fp, "%s", NodeUtil::node2string(this->answer[i][0].c_str()).c_str());
 				for(int j = 1; j < this->true_select_var_num; j++)
 				{
-					fprintf(_fp, "\t%s", Util::node2string(this->answer[i][j].c_str()).c_str());
+					fprintf(_fp, "\t%s", NodeUtil::node2string(this->answer[i][j].c_str()).c_str());
 				}
 				// fprintf(_fp, ".\n");
 				fprintf(_fp, "\n");
@@ -882,7 +662,7 @@ ResultSet::prettyPrint()
 				std::vector<std::string> row;
 				for(int j = 0; j < this->true_select_var_num; j++)
 				{
-					row.emplace_back(Util::node2string(bp[j].getStr()));
+					row.emplace_back(NodeUtil::node2string(bp[j].getStr()));
 				}
 				rows.emplace_back(row);
 			}
@@ -901,7 +681,7 @@ ResultSet::prettyPrint()
 				std::vector<std::string> row;
 				for(int j = 0; j < this->true_select_var_num; j++)
 				{
-					row.emplace_back(Util::node2string(this->answer[i][j].c_str()));
+					row.emplace_back(NodeUtil::node2string(this->answer[i][j].c_str()));
 				}
 				rows.emplace_back(row);
 			}
@@ -1019,10 +799,10 @@ ResultSet::to_tempresult()
 			for(int j = 0; j < this->true_select_var_num; j++)
 			{
 				if (!this->useStream){
-					rp.str.push_back(Util::node2string(this->answer[i][j].c_str()));
+					rp.str.push_back(NodeUtil::node2string(this->answer[i][j].c_str()));
                     //cout<<","<<this->answer[i][j].c_str();
 				}else{
-					rp.str.push_back(Util::node2string(bp[j].getStr()));
+					rp.str.push_back(NodeUtil::node2string(bp[j].getStr()));
                     //cout<<";"<<bp[j].getStr();
                 }
 			}

@@ -9,7 +9,6 @@
 #ifndef _UTIL_VLIST_H
 #define _UTIL_VLIST_H
 
-#include "Util.h"
 #include "Bstr.h"
 #include "ClassForVlistCache.h"
 

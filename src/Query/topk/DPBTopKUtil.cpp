@@ -368,7 +368,7 @@ DPBUtil::GetAllSubObjId(KVstore *kv_store_,
       result->addID(i);
   }
   if(need_literal) {
-    for (unsigned i = Util::LITERAL_FIRST_ID; i < limitID_literal_; ++i) {
+    for (unsigned i = GlobalTypedef::LITERAL_FIRST_ID; i < limitID_literal_; ++i) {
       auto entity_str = kv_store_->getLiteralByID(i);
       if (entity_str != "")
         result->addID(i);

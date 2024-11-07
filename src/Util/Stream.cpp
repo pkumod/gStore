@@ -87,16 +87,16 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     this->record_size = new unsigned[this->colnum];
     for(unsigned i = 0; i < this->colnum; ++i)
     {
-		char* tmptr = new char[Util::TRANSFER_SIZE];
+		char* tmptr = new char[GlobalTypedef::TRANSFER_SIZE];
         this->record[i].setStr(tmptr);
-        this->record_size[i] = Util::TRANSFER_SIZE;
+        this->record_size[i] = GlobalTypedef::TRANSFER_SIZE;
     }
 
     this->mode = 0;    //wait for writing records
 
-    long long size = (long long)_rownum * (long long)_colnum * 100 / Util::GB;
+    long long size = (long long)_rownum * (long long)_colnum * 100 / GlobalTypedef::MB;
 	//TODO: get this arg from memory manager
-    if(Util::memoryLeft() < size)
+    if(gutil::ResourceUtil::memoryLeft() < size)
     {
         this->inMem = false;
         fprintf(stderr, "Stream: memory is not enough!\n");
@@ -141,7 +141,7 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     //below are for disk
     if(!this->needSort)	   // in disk and need sort
     {
-        string file_name = Util::tmp_path + "thread_" + Util::getThreadID() + "_"+ Util::int2string(Util::get_cur_time());
+        string file_name = GlobalTypedef::tmp_path + "thread_" + gutil::ThreadUtil::getThreadID() + "_"+ gutil::TimeUtil::timestamp_str();
         file_name += ".dat";
 #ifdef DEBUG_STREAM
         fprintf(stderr, "%s\n", file_name.c_str());
@@ -271,7 +271,7 @@ Stream::write(const Bstr* _bp)
     {
         if(this->tempfp == NULL)
         {
-            string name = Util::tmp_path + "thread_" + Util::getThreadID() + "_stream_" + Util::int2string(Util::get_cur_time());
+            string name = GlobalTypedef::tmp_path + "thread_" + gutil::ThreadUtil::getThreadID() + "_stream_" + gutil::TimeUtil::timestamp_str();
             name += ".dat";
 #ifdef DEBUG_STREAM
             fprintf(stderr, "%s\n", name.c_str());
@@ -390,7 +390,7 @@ Stream::isEnd()
 void
 Stream::mergeSort()
 {
-    string file_name = Util::tmp_path + Util::int2string(Util::get_cur_time());
+    string file_name = GlobalTypedef::tmp_path + gutil::TimeUtil::timestamp_str();
     file_name += ".dat";
 #ifdef DEBUG_STREAM
     fprintf(stderr, "%s\n", file_name.c_str());

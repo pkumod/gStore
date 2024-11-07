@@ -83,7 +83,7 @@ ISLeafNode::getValue(int _index) const
 	if (_index < 0 || _index >= num)
 	{
 		//cout<<"null in getValue: "<<_index<<endl;
-		//print(string("error in getValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in getValue: Invalid index ") + to_string(_index));
 		return NULL;
 	}
 	else
@@ -96,7 +96,7 @@ ISLeafNode::setValue(const Bstr* _value, int _index, bool ifcopy)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in setValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 	this->values[_index].release(); //NOTICE: only used in modify
@@ -113,7 +113,7 @@ ISLeafNode::addValue(const Bstr* _value, int _index, bool ifcopy)
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		print(string("error in addValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;
@@ -132,7 +132,7 @@ ISLeafNode::setValue(char* _str, unsigned _len, int _index, bool ifcopy)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in setValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in setValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 	this->values[_index].release(); //NOTICE: only used in modify
@@ -151,7 +151,7 @@ ISLeafNode::addValue(char* _str, unsigned _len, int _index, bool ifcopy)
 
 	if (_index < 0 || _index > num)
 	{
-		//print(string("error in addValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in addValue: Invalid index ") + to_string(_index));
 		//cout<<"error in addValue: "<<_index<<" "<<num<<endl;
 		return false;
 	}
@@ -172,7 +172,7 @@ ISLeafNode::subValue(int _index, bool ifdel)
 	int num = this->getNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in subValue: Invalid index ") + Util::int2string(_index));
+		//print(string("error in subValue: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;

@@ -6,7 +6,7 @@
 # Description: 
 =============================================================================*/
 
-#include "../Util/Util.h"
+#include <regex.h>
 
 #ifndef _QUERY_REGEXEXPRESSION_H
 #define _QUERY_REGEXEXPRESSION_H

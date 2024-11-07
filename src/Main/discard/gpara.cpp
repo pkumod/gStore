@@ -50,7 +50,7 @@ int main(int argc, char * argv[]){
 		cout << "database " + db_name + "is not built yet! please check your database name" << endl;
 		return 0;
 	}
-	if(parameter == "backup_timer" && db_name != Util::system_db){
+	if(parameter == "backup_timer" && db_name != GlobalTypedef::system_db){
 		cout << "parameter modification failed" << endl;
 		cout << "backup_timer only belongs to system!" << endl;
 		return 0;

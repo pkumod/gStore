@@ -9,6 +9,7 @@
 #ifndef _KVSTORE_SITREE_STORAGE_SISTORAGE_H
 #define _KVSTORE_SITREE_STORAGE_SISTORAGE_H
 
+#include "../../../Util/FileUtil.h"
 #include "../node/SIIntlNode.h"
 #include "../node/SILeafNode.h"
 #include "../heap/SIHeap.h"
@@ -57,7 +58,7 @@ class SIStorage
 {
 public:
   //fixed size of disk-block
-  static const unsigned BLOCK_SIZE = Util::STORAGE_BLOCK_SIZE;
+  static const unsigned BLOCK_SIZE = GlobalTypedef::STORAGE_BLOCK_SIZE;
   //max block-num ,must can be exactly divided by 8
   static const unsigned MAX_BLOCK_NUM = 1 << 24;
   //below two constants: must can be exactly divided by 8

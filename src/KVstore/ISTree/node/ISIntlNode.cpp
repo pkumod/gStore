@@ -58,7 +58,7 @@ ISIntlNode::getChild(int _index) const
 	int num = this->getNum();
 	if (_index < 0 || _index > num)  //num keys, num+1 childs
 	{
-		//print(string("error in getChild: Invalid index ") + Util::int2string(_index));
+		//print(string("error in getChild: Invalid index ") + to_string(_index));
 		return NULL;
 	}
 	else
@@ -71,7 +71,7 @@ ISIntlNode::setChild(ISNode* _child, int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in setChild: Invalid index ") + Util::int2string(_index));
+		print(string("error in setChild: Invalid index ") + to_string(_index));
 		return false;
 	}
 	this->childs[_index] = _child;
@@ -84,7 +84,7 @@ ISIntlNode::addChild(ISNode* _child, int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index > num + 1)
 	{
-		print(string("error in addChild: Invalid index ") + Util::int2string(_index));
+		print(string("error in addChild: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;
@@ -100,7 +100,7 @@ ISIntlNode::subChild(int _index)
 	int num = this->getNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in subchild: Invalid index ") + Util::int2string(_index));
+		print(string("error in subchild: Invalid index ") + to_string(_index));
 		return false;
 	}
 	int i;

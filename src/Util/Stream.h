@@ -14,9 +14,11 @@
 #ifndef _UTIL_STREAM_H
 #define _UTIL_STREAM_H
 
-#include "Util.h"
 #include "Bstr.h"
 #include "EvalMultitypeValue.h"
+#include "ThreadUtil.h"
+#include "TimeUtil.h"
+#include "ResourceUtil.h"
 
 //BETTER: use vector instead of table with fixed size, no need to indicate the rownum first(colnum required)
 //It is really a question to use Bstr[] or string[] to store a record

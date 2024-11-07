@@ -61,7 +61,7 @@ bool
 Strategy::handle(SPARQLquery& _query)
 {
 #ifdef MULTI_INDEX
-	Util::logging("IN GeneralEvaluation::handle");
+	SLOG_CORE("IN GeneralEvaluation::handle");
 
 	vector<BasicQuery*>& queryList = _query.getBasicQueryVec();
 	// enumerate each BasicQuery and retrieve their variables' mapping entity in the VSTree.
@@ -168,19 +168,19 @@ Strategy::handle(SPARQLquery& _query)
 #else
 	SLOG_CORE("this BasicQuery use original query strategy");
 	//VSTREE:
-	//long tv_handle = Util::get_cur_time();
+	//long tv_handle = gutil::TimeUtil::timestamp();
 	//(this->vstree)->retrieve(_query);
 	//cout << "after Retrieve, used " << (tv_retrieve - tv_handle) << "ms." << endl;
-	long tv_retrieve = Util::get_cur_time();
+	long tv_retrieve = gutil::TimeUtil::timestamp();
 
 	this->join = new Join(kvstore, pre2num, this->limitID_predicate, this->limitID_literal);
 	this->join->join_sparql(_query);
 	delete this->join;
 
-	long tv_join = Util::get_cur_time();
+	long tv_join = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after Join, used " << (tv_join - tv_retrieve) << "ms.");
 #endif
-	Util::logging("OUT Strategy::handle");
+	SLOG_CORE("OUT Strategy::handle");
 	return true;
 }
 
@@ -219,7 +219,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        Triple triple = basic_query->getTriple(triple_id);
 	        string neighbor_name;
 	        
-	        if (edge_type == Util::EDGE_OUT)
+	        if (edge_type == GlobalTypedef::EDGE_OUT)
 	        {
 	            neighbor_name = triple.object;
 	        }
@@ -253,7 +253,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        unsigned* id_list = NULL;
 	        if (pre_id >= 0)
 	        {
-	            if (edge_type == Util::EDGE_OUT)
+	            if (edge_type == GlobalTypedef::EDGE_OUT)
 	            {
 	                kvstore->getsubIDlistByobjIDpreID(lit_id, pre_id, id_list, id_list_len, true, txn);
 	            }
@@ -264,7 +264,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        }
 	        else if (pre_id == -2)
 	        {
-	            if (edge_type == Util::EDGE_OUT)
+	            if (edge_type == GlobalTypedef::EDGE_OUT)
 	            {
 	                kvstore->getsubIDlistByobjID(lit_id, id_list, id_list_len, true, txn);
 	            }
@@ -313,7 +313,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 				if (pre_id < 0) continue;
 	        	char edge_type = basic_query->getEdgeType(_var_i, j);
 			int estimate_val;
-			if (edge_type == Util::EDGE_OUT)				
+			if (edge_type == GlobalTypedef::EDGE_OUT)				
 			    estimate_val= _list.size()*pre2num[pre_id]/pre2sub[pre_id];
 			else
 			    estimate_val = _list.size()*pre2num[pre_id]/pre2obj[pre_id];
@@ -359,7 +359,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        int triple_id = basic_query->getEdgeID(_var, i);
 	        Triple triple = basic_query->getTriple(triple_id);
 	        string neighbor;
-	        if (edge_type == Util::EDGE_OUT)
+	        if (edge_type == GlobalTypedef::EDGE_OUT)
 	        {
 	            neighbor = triple.object;
 	        }
@@ -403,8 +403,8 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	        }
 
 	        int prefilter_num;
-		if((edge_type == Util::EDGE_OUT && (prefilter_num = pre2obj[pre_id]) > estimate_num[_var]) ||
-			(edge_type == Util::EDGE_IN && (prefilter_num = pre2sub[pre_id]) > estimate_num[_var]))
+		if((edge_type == GlobalTypedef::EDGE_OUT && (prefilter_num = pre2obj[pre_id]) > estimate_num[_var]) ||
+			(edge_type == GlobalTypedef::EDGE_IN && (prefilter_num = pre2sub[pre_id]) > estimate_num[_var]))
 		{
 			SLOG_CORE("skip the prefilter because the constant filter is strong enough");
 			// cout << "estimate_num:" << estimate_num[_var] << endl;
@@ -417,7 +417,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 	            dealed_triple[triple_id] = true;
 	        }
 	        
-	        if (edge_type == Util::EDGE_OUT)
+	        if (edge_type == GlobalTypedef::EDGE_OUT)
 	        {
 	            out_edge_pre_id.insert(pre_id);
 	        }
@@ -562,7 +562,7 @@ Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_N
 void
 Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	//long before_filter = Util::get_cur_time();
+	//long before_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("this BasicQuery use query strategy 0 database");
 
 	//BETTER:not all vars in join filtered by vstree
@@ -577,7 +577,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	//However, if containing ?p and 1-triple, we should treat it also as a special case, or select a variable as core vertex
 	//and retrieved (for example, ?s ?p o   or    s ?p ?o, generally no core vertex in these cases)
 
-	long tv_handle = Util::get_cur_time();
+	long tv_handle = gutil::TimeUtil::timestamp();
 	// int varNum = _bq->getVarNum();  //the num of vars needing to be joined
 	//TODO:parallel by pthread, requiring that index is parallelable
 	//for (int i = 0; i < varNum; ++i)
@@ -602,7 +602,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 
 	//BETTER:end directly if one is empty!
 
-	long tv_retrieve = Util::get_cur_time();
+	long tv_retrieve = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after Retrieve, used " << (tv_retrieve - tv_handle) << "ms.");
 
 	/*
@@ -615,7 +615,7 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	bool * d_triple = (bool*)calloc(_bq->getTripleNum(), sizeof(bool));
 
 	bool ret2 = pre_handler(_bq, kvstore, pre2num,pre2sub,pre2obj, d_triple);
-	long after_prehandler = Util::get_cur_time();
+	long after_prehandler = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after prehandler: used " << (after_prehandler - tv_retrieve) << " ms");
 	if(!ret2){
 		SLOG_CORE("after the prehandler, the canlist size is 0.");
@@ -625,14 +625,14 @@ Strategy::handler0(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	join->join_basic(_bq,d_triple);
 	delete join;
 
-	long tv_join = Util::get_cur_time();
+	long tv_join = gutil::TimeUtil::timestamp();
 	SLOG_CORE("during Join, used " << (tv_join - tv_retrieve) << "ms.");
 }
 
 void
 Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	long before_filter = Util::get_cur_time();
+	long before_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("this BasicQuery use query strategy 1");
 	//int neighbor_id = (*_bq->getEdgeNeighborID(0, 0);  //constant, -1
 	char edge_type = _bq->getEdgeType(0, 0);
@@ -641,7 +641,7 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	TYPE_PREDICATE_ID pre_id = _bq->getEdgePreID(0, 0);
 	unsigned* id_list = NULL;
 	unsigned id_list_len = 0;
-	if (edge_type == Util::EDGE_OUT)
+	if (edge_type == GlobalTypedef::EDGE_OUT)
 	{
 		//cout<<"edge out!!!"<<endl;
 		TYPE_ENTITY_LITERAL_ID nid = (this->kvstore)->getIDByEntity(triple.object);
@@ -658,7 +658,7 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		this->kvstore->getobjIDlistBysubIDpreID(this->kvstore->getIDByEntity(triple.subject), pre_id, id_list, id_list_len, true, txn);
 	}
 
-	long after_filter = Util::get_cur_time();
+	long after_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after filter, used " << (after_filter - before_filter) << "ms");
 	_result_list.clear();
 	//cout<<"now to copy result to list"<<endl;
@@ -669,7 +669,7 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		//cout<<this->kvstore->getEntityByID(record[0])<<endl;
 		_result_list.push_back(record);
 	}
-	long after_copy = Util::get_cur_time();
+	long after_copy = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
 	SLOG_CORE("Final result size: " << _result_list.size());
@@ -678,7 +678,7 @@ Strategy::handler1(BasicQuery* _bq, vector<unsigned*>& _result_list)
 void
 Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	long before_filter = Util::get_cur_time();
+	long before_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("this BasicQuery use query strategy 2");
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
@@ -704,7 +704,7 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 	{
 		SLOG_CORE("ERROR in Database::handle(): no selected var!");
 	}
-	long after_filter = Util::get_cur_time();
+	long after_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after filter, used " << (after_filter - before_filter) << "ms");
 	_result_list.clear();
 	for (unsigned i = 0; i < id_list_len; ++i)
@@ -713,7 +713,7 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		record[0] = id_list[i];
 		_result_list.push_back(record);
 	}
-	long after_copy = Util::get_cur_time();
+	long after_copy = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
 	SLOG_CORE("Final result size: " << _result_list.size());
@@ -722,7 +722,7 @@ Strategy::handler2(BasicQuery* _bq, vector<unsigned*>& _result_list)
 void
 Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 {
-	long before_filter = Util::get_cur_time();
+	long before_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("this BasicQuery use query strategy 3");
 	int triple_id = _bq->getEdgeID(0, 0);
 	Triple triple = _bq->getTriple(triple_id);
@@ -741,7 +741,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		return;
 	}
 
-	long after_filter = Util::get_cur_time();
+	long after_filter = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after filter, used " << (after_filter - before_filter) << "ms");
 
 	for (unsigned i = 0; i < id_list_len; i += 2)
@@ -752,7 +752,7 @@ Strategy::handler3(BasicQuery* _bq, vector<unsigned*>& _result_list)
 		_result_list.push_back(record);
 	}
 
-	long after_copy = Util::get_cur_time();
+	long after_copy = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after copy to result list: used " << (after_copy - after_filter) << " ms");
 	delete[] id_list;
 	SLOG_CORE("Final result size: " << _result_list.size());
@@ -976,18 +976,18 @@ Strategy::handler6(BasicQuery* _bq, vector<unsigned*>& _result_list)
   {
     TYPE_PREDICATE_ID pid = i;
     string p = this->kvstore->getPredicateByID(pid);
-    string pre = Util::node2string(p.c_str());
+    string pre = gutil::NodeUtil::node2string(p.c_str());
     this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len, true, txn);
     for (unsigned j = 0; j < id_list_len; j += 2)
     {
    		string s = this->kvstore->getEntityByID(id_list[j]);
-   	    string sub = Util::node2string(s.c_str());
+   	    string sub = gutil::NodeUtil::node2string(s.c_str());
    		string o;
-   		if(id_list[j + 1] >= Util::LITERAL_FIRST_ID)
+   		if(id_list[j + 1] >= GlobalTypedef::LITERAL_FIRST_ID)
    			o = this->kvstore->getLiteralByID(id_list[j + 1]);
    		else
    			o = this->kvstore->getEntityByID(id_list[j + 1]);
-   	    string obj = Util::node2string(o.c_str());
+   	    string obj = gutil::NodeUtil::node2string(o.c_str());
    		string record = sub + "\t" + pre + "\t" + obj + ".\n";
     	fprintf(this->fp, "%s", record.c_str());
 	rsize[0] += 1;

@@ -107,7 +107,7 @@ class EdgeInfo{
 
   		// var_descrip is a so_var
 
-  		if(var_descrip->so_edge_type_[index] == Util::EDGE_IN){
+  		if(var_descrip->so_edge_type_[index] == GlobalTypedef::EDGE_IN){
   			s_ = var_descrip->so_edge_nei_[index];
   			o_ = var_descrip->id_;
   		} else{
@@ -128,13 +128,13 @@ class EdgeInfo{
   		} else{
   			if(var_descrip->so_edge_pre_type_[index] == VarDescriptor::PreType::VarPreType){
   				// nei is const, pre is var
-  				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)
+  				if(var_descrip->so_edge_type_[index] == GlobalTypedef::EDGE_IN)
   					join_method_ = JoinMethod::s2po;
 				else
 					join_method_ = JoinMethod::o2ps;
   			} else{
   				// nei is const, pre is const
-  				if(var_descrip->so_edge_type_[index] == Util::EDGE_IN)
+  				if(var_descrip->so_edge_type_[index] == GlobalTypedef::EDGE_IN)
   					join_method_ = JoinMethod::sp2o;
 				else
 					join_method_ = JoinMethod::po2s;

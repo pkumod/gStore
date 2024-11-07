@@ -11,6 +11,9 @@
 #include "../Database/Database.h"
 #include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
+#include "../Util/FileUtil.h"
+#include "../Util/ResourceUtil.h"
+#include "../Util/ThreadUtil.h"
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 #include "../Util/CompressFileUtil.h"
@@ -26,19 +29,16 @@ class APIUtil
 {
 private:
     Util util;
-    GenerateUidManager uid_mgr_;
-    int thread_pool_num = 30;
+    int32_t thread_pool_num;
     
-    int max_output_size = 10000000;
-    size_t max_database_num = 100;
-    size_t max_user_num = 1000;
-    string query_log_mode = "0";
-    string query_log_path = "logs/endpoint/";
-    string access_log_mode = "0";
-    string access_log_path = "logs/ipaccess/";
-    string query_result_path = "logs/query_result/";
-    std::string upload_path = "./upload/";
-    size_t upload_max_body_size = 104857600; // 100M
+    int32_t max_output_size;
+    int32_t max_database_num;
+    int32_t max_user_num;
+    string query_log_mode;
+    string query_log_path;
+    string access_log_mode;
+    string access_log_path;
+    string query_result_path;
     std::vector<std::string> upload_allow_extensions;
     std::vector<std::string> upload_allow_compress_packages;
 
@@ -56,14 +56,14 @@ private:
     pthread_rwlock_t txn_m_lock;
     pthread_rwlock_t ips_map_lock;
     pthread_rwlock_t system_db_lock;
-    string system_username = "system";
+    string system_username;
     string system_password;
     string system_password_path;
     int connection_num = 0;
     int blackList = 0;
     int whiteList = 0;
-    string ipBlackFile = "ipDeny.config";
-    string ipWhiteFile = "";
+    string ipBlackFile;
+    string ipWhiteFile;
     std::unique_ptr<IPWhiteList> ipWhiteList;
     std::unique_ptr<IPBlackList> ipBlackList;
 
@@ -181,8 +181,6 @@ public:
     LicenseInfo& get_license();
 
     // for data get
-    string get_Db_path();
-    string get_Db_suffix();
     string get_query_result_path();
     int get_thread_pool_num();
     int get_max_output_size();
@@ -190,14 +188,9 @@ public:
     string get_system_username();
     int get_connection_num();
     void increase_connection_num();
-    string get_configure_value(const string& key, string default_value = "");
     int get_configure_value(const string& key, int default_value);
     size_t get_configure_value(const string& key, size_t default_value);
-    string get_upload_path();
     size_t get_upload_max_body_size();
     bool check_upload_allow_extensions(const string& suffix);
     bool check_upload_allow_compress_packages(const string& suffix);
-    std::string generateUid(){ return uid_mgr_.NextID(); }
-    uint64_t generateUID(){ return uid_mgr_.NextUID(); }
-    std::string getConvertTimeById(const std::string& uid)const{ return uid_mgr_.getConvertTimeById(uid); }
 };

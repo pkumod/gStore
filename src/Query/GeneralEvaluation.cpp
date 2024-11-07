@@ -148,7 +148,7 @@ GeneralEvaluation::loadCSR()
 	csr[1].init(pre_num);	
 	SLOG_CORE("pre_num: " << pre_num);
 
-	long begin_time = Util::get_cur_time();
+	long begin_time = gutil::TimeUtil::timestamp();
 
 	// Process out-edges (csr[0])
 	// i: predicate; j: subject; k: object
@@ -170,7 +170,7 @@ GeneralEvaluation::loadCSR()
 			unsigned len = objlist_len;	// the real object list length
 			for(unsigned k=0;k<objlist_len;k++)
 			{
-				if(objlist[k]>=Util::LITERAL_FIRST_ID)
+				if(objlist[k]>=GlobalTypedef::LITERAL_FIRST_ID)
 				{
 					--len;
 					continue;
@@ -207,7 +207,7 @@ GeneralEvaluation::loadCSR()
 		unsigned index = 0;
 		for(unsigned j=0;j<objlist_len;j++)
 		{
-			if(objlist[j]>=Util::LITERAL_FIRST_ID)
+			if(objlist[j]>=GlobalTypedef::LITERAL_FIRST_ID)
 				continue;
 			string obj = kvstore->getEntityByID(objlist[j]);
 			unsigned* sublist = NULL;
@@ -249,7 +249,7 @@ GeneralEvaluation::loadCSR()
 		ret += csr[1].adjacency_list[i].size();
 	csr[1].m = ret;
 
-	long end_time = Util::get_cur_time();
+	long end_time = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms");
 	this->kvstore->setCSRUpdate(false);
 }
@@ -587,7 +587,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							}
 						}
 
-					long tv_begin = Util::get_cur_time();
+					long tv_begin = gutil::TimeUtil::timestamp();
 					#ifndef TEST_BGPQUERY
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
@@ -599,7 +599,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						encode_constant_exist[k] = curr_exist;
 					}
 					#endif
-					long tv_encode = Util::get_cur_time();
+					long tv_encode = gutil::TimeUtil::timestamp();
 					SLOG_CORE("during Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// TODO: refine the fillcand strategy regarding the same layer
@@ -618,7 +618,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
 					// }
-					long tv_fillcand = Util::get_cur_time();
+					long tv_fillcand = gutil::TimeUtil::timestamp();
 					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					#ifndef TEST_BGPQUERY
@@ -637,7 +637,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 
-					long tv_handle = Util::get_cur_time();
+					long tv_handle = gutil::TimeUtil::timestamp();
 					SLOG_CORE("during Handle, used "<<(tv_handle - tv_encode)<<" ms.");
 
 					//collect and join the result of each BGP
@@ -662,12 +662,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							//if unconnected, time is incorrect
 							// int time = tv_handle - tv_begin;
 
-							long tv_bftry = Util::get_cur_time();
+							long tv_bftry = gutil::TimeUtil::timestamp();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
 							if (success)	SLOG_CORE("QueryCache cached");
 							else			SLOG_CORE("QueryCache didn't cache");
-							long tv_aftry = Util::get_cur_time();
+							long tv_aftry = gutil::TimeUtil::timestamp();
 							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
@@ -880,7 +880,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						}
 
 					// Encode BGPs //
-					long tv_begin = Util::get_cur_time();
+					long tv_begin = gutil::TimeUtil::timestamp();
 					#ifndef TEST_BGPQUERY
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
@@ -894,7 +894,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						encode_constant_exist[k] = curr_exist;
 					}
 					#endif
-					long tv_encode = Util::get_cur_time();
+					long tv_encode = gutil::TimeUtil::timestamp();
 					SLOG_CORE("after Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
@@ -907,7 +907,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
 					}
-					long tv_fillcand = Util::get_cur_time();
+					long tv_fillcand = gutil::TimeUtil::timestamp();
 					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					/* PLEASE REPLACE WITH OPTIMIZER */
@@ -942,7 +942,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 
-					long tv_handle = Util::get_cur_time();
+					long tv_handle = gutil::TimeUtil::timestamp();
 					SLOG_CORE("after Handle, used "<< (tv_handle - tv_fillcand) <<  " ms.");
 
 					// Collect and join the result of each BasicQuery //
@@ -969,12 +969,12 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							//if unconnected, time is incorrect
 							// int time = tv_handle - tv_begin;
 
-							long tv_bftry = Util::get_cur_time();
+							long tv_bftry = gutil::TimeUtil::timestamp();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
 							if (success)	SLOG_CORE("QueryCache cached");
 							else			SLOG_CORE("QueryCache didn't cache");
-							long tv_aftry = Util::get_cur_time();
+							long tv_aftry = gutil::TimeUtil::timestamp();
 							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
@@ -1380,7 +1380,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 	unsigned string_index_buffer_size = 0;
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
-		// long t0 = Util::get_cur_time();
+		// long t0 = gutil::TimeUtil::timestamp();
 
 		if (this->temp_result->results.empty())
 		{
@@ -2147,7 +2147,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						size_t len = path_str.size();
 						for (size_t i = 0; i < len; i++)
 						{
-							path_int.push_back(Util::string2int(path_str[i]));
+							path_int.push_back(stoi(path_str[i]));
 						}
 						pathVec2JSON(iri_id_set[0], iri_id_set[1], path_int, ss);
 					}
@@ -2171,7 +2171,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							string iri_dst = "";
 							if (Util::is_number(dst_str))
 							{
-								iri_dst = kvstore->getStringByID(Util::string2int(dst_str));
+								iri_dst = kvstore->getStringByID(stol(dst_str));
 							} 
 							else
 							{
@@ -2797,7 +2797,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									size_t len = path_str.size();
 									for (size_t i = 0; i < len; i++)
 									{
-										path_int.push_back(Util::string2int(path_str[i]));
+										path_int.push_back(stoi(path_str[i]));
 									}
 									if (path_int.size() != 0)
 									{
@@ -2828,7 +2828,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										string iri_dst = "";
 										if (Util::is_number(dst_str))
 										{
-											iri_dst = kvstore->getStringByID(Util::string2int(dst_str));
+											iri_dst = kvstore->getStringByID(stol(dst_str));
 										} 
 										else
 										{
@@ -3543,8 +3543,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 		ret_result.ansNum = (int)result0.result.size();
 
 #ifdef STREAM_ON
-		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / Util::GB;
-		if (Util::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
+		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / GlobalTypedef::MB;
+		if (gutil::ResourceUtil::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();
 			SLOG_CORE("set use Stream");
@@ -3892,9 +3892,9 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 	{
 		TempResultSet *temp = new TempResultSet();
 		temp->results.push_back(TempResult());
-		long tv_bfcheck = Util::get_cur_time();
+		long tv_bfcheck = gutil::TimeUtil::timestamp();
 		success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
-		long tv_afcheck = Util::get_cur_time();
+		long tv_afcheck = gutil::TimeUtil::timestamp();
 		SLOG_CORE("after checkCache, used "<<(tv_afcheck - tv_bfcheck)<<" ms.");
 
 		// If query cache hit, save partial result //
@@ -4059,12 +4059,12 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 			//if unconnected, time is incorrect
 			// int time = tv_handle - tv_begin;
 
-			long tv_bftry = Util::get_cur_time();
+			long tv_bftry = gutil::TimeUtil::timestamp();
 			// bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
 			bool success = false;
 			if (success)	SLOG_CORE("QueryCache cached");
 			else			SLOG_CORE("QueryCache didn't cache");
-			long tv_aftry = Util::get_cur_time();
+			long tv_aftry = gutil::TimeUtil::timestamp();
 			SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 		}
 
@@ -4099,7 +4099,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 	try
 	{
 		SLOG_CORE("execuse dynamic function begin...");
-		long startTime = Util::get_cur_time();
+		long startTime = gutil::TimeUtil::timestamp();
 		std::map<std::string, std::string> returnMap;
 		// check funInfo from json file.
 		string pfn_base_path = Util::getConfigureValue("pfn_base_path");
@@ -4505,7 +4505,7 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 			kvstore->getobjIDlistBysubIDpreID(curr, pred, outList, outSz); 
 			for(unsigned i = 0; i < outSz; i++)
 			{
-				if(outList[i] >= Util::LITERAL_FIRST_ID)
+				if(outList[i] >= GlobalTypedef::LITERAL_FIRST_ID)
 					continue;
 				outNei = outList[i];
 				if (ret_set.find(outNei) == ret_set.end())
@@ -4538,7 +4538,7 @@ void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward
 			kvstore->getsubIDlistByobjIDpreID(curr, pred, inList, inSz);
 			for(unsigned i = 0; i < inSz; i++)
 			{
-				if (inList[i] >= Util::LITERAL_FIRST_ID)
+				if (inList[i] >= GlobalTypedef::LITERAL_FIRST_ID)
 					continue;
 				inNei = inList[i];
 				if (ret_set.find(inNei) == ret_set.end())

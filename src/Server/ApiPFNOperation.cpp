@@ -136,7 +136,7 @@ namespace server
             pfnUtil->build_PFNInfo(fun_info, &pfn_info);
             pfnUtil->fun_review(username, &pfn_info);
             string content = pfn_info.getFunBody();
-            content = Util::urlEncode(content);
+            content = gutil::StringUtil::url_encode(content);
             response.StatusMsg = "success";
             response.result = content;
         }

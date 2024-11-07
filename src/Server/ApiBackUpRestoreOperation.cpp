@@ -10,8 +10,8 @@ namespace server
             std::string backup_path = resquest.backup_path;
             bool compress = resquest.backup_zip;
             std::string msg;
-             std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string _db_home = GlobalTypedef::db_home();
+            // std::string _db_suffix = GlobalTypedef::db_suffix();
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -26,7 +26,7 @@ namespace server
             // check backup path
             if (backup_path.empty())
             {
-                backup_path = Util::backup_path;
+                backup_path = GlobalTypedef::backup_path();
                 SLOG_DEBUG("backup_path is empty, set to default path: " + backup_path);
             }
             if (backup_path == "." || backup_path == "./" || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
@@ -39,7 +39,8 @@ namespace server
             bool async = resquest.async;
             std::string callback = resquest.callback;
             std::string operation = "backup";
-            std::string opt_id = apiUtil->generateUid();
+            std::string opt_id;
+            gutil::IdUtil::nextUID(opt_id);
             response.opt_id = opt_id;
             if (async)
             {
@@ -112,7 +113,7 @@ namespace server
                 return;
             }
             std::vector<std::string> file_list;
-            string backup_path = Util::backup_path;
+            string backup_path = GlobalTypedef::backup_path();
             Util::dir_files(backup_path, db_name, file_list);
             Document resp_data;
             Document pathsDoc;
@@ -170,7 +171,8 @@ namespace server
                 return;
             }
             
-            std::string opt_id = apiUtil->generateUid();
+            std::string opt_id;
+            gutil::IdUtil::nextUID(opt_id);
             string remote_ip = resquest.remote_ip;
             string operation = "restore";
             bool async = resquest.async;
@@ -274,12 +276,12 @@ namespace server
                 response.Error(StatusLossOfLock, msg);
                 return;
             }
-            Util::string_suffix(db_path, '/');
+            gutil::StringUtil::append(db_path, '/');
             if (Util::dir_exist(db_path) == false)
             {
                 Util::create_dirs(db_path);
             }
-            std::string export_path = db_path + db_name + "_" + Util::get_timestamp() + ".nt";
+            std::string export_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".nt";
             bool compress = resquest.compress;
             SLOG_DEBUG("export_path: " << export_path << " ,compress:" << compress);
             FILE *ofp = fopen(export_path.c_str(), "w");
@@ -291,7 +293,7 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             if (compress)
             {
-                std::string zip_path = db_path + db_name + "_" + Util::get_timestamp() + ".zip";
+                std::string zip_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".zip";
                 if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path))
                 {
                     Util::remove_path(export_path);

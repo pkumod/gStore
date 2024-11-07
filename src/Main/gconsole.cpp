@@ -269,7 +269,7 @@ COMMAND commands[] =
 		return -1;                                                                                                 \
 	}
 #define CHECK_CURRENT_DB_NOT_SYSDB                                                                                      \
-	if (_current_database == Util::system_db)                                                                                 \
+	if (_current_database == GlobalTypedef::system_db)                                                                                 \
 	{                                                                                                              \
 		cout << "You can NOT do this for system database." << endl;                          \
 		return -1;                                                                                                 \
@@ -1264,7 +1264,7 @@ int raw_sparql_handler(string sparql)
 	}
 	check_priv(_current_database, sparql_head == "select" ? QUERY_PRIVILEGE_BIT : UPDATE_PRIVILEGE_BIT);
 	string query_url;
-	if (_current_database == Util::system_db)
+	if (_current_database == GlobalTypedef::system_db)
 	{
 		query_url = BASE_URL + "/sys/query";
 	}
@@ -1608,7 +1608,7 @@ int create_handler(const vector<string> &args)
 		db_name = args[0];
 		db_path = args[1];
 	}
-	if (db_name == Util::system_db)
+	if (db_name == GlobalTypedef::system_db)
 	{
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
@@ -1633,7 +1633,7 @@ int drop_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string db_name = args[0];
-	if (db_name == Util::system_db)
+	if (db_name == GlobalTypedef::system_db)
 	{
 		cout << "You can NOT drop system database. " << endl;
 		return -1;
@@ -1707,7 +1707,7 @@ int backup_handler(const vector<string> &args)
 		return -1;
 	}
 
-	Util::string_suffix(backup_path, '/');
+	gutil::StringUtil::append(backup_path, '/');
 	if (!Util::dir_exist(backup_path))
 	{
 		cout << "Backup path " + backup_path + "is not exist, create it now..." << endl;
@@ -1821,7 +1821,7 @@ int use_handler(const vector<string> &args)
 	string new_db_name = args[0];
 	check_priv(new_db_name, LOAD_PRIVILEGE_BIT);
 	check_priv(new_db_name, UNLOAD_PRIVILEGE_BIT);
-	if (new_db_name == Util::system_db)
+	if (new_db_name == GlobalTypedef::system_db)
 	{
 		if (usrname == root_username)
 		{
@@ -2381,7 +2381,7 @@ int init_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 1)
 	string db_names = args[0];
-	if (db_names.find(Util::system_db) != string::npos)
+	if (db_names.find(GlobalTypedef::system_db) != string::npos)
 	{
 		cout << "You can NOT init system database. " << endl;
 		return -1;
@@ -2448,9 +2448,9 @@ int batchinsert_handler(const vector<string> &args)
 	server::MessageBatchInsertRequest insert_request(_current_database, file_path, dir_path);
 	insert_request.username = root_username;
 	insert_request.password = root_password;
-	long duration_time = Util::get_cur_time();
+	long duration_time = gutil::TimeUtil::timestamp();
 	server::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
-	duration_time = Util::get_cur_time() - duration_time;
+	duration_time = gutil::TimeUtil::timestamp() - duration_time;
 	if (!insert_response.success())
 	{
 		cout << "Insert data into " << _current_database << " failed: " << insert_response.StatusMsg << endl;
@@ -2476,8 +2476,9 @@ int batchremove_handler(const vector<string> &args)
 	remove_request.username = root_username;
 	remove_request.password = root_password;
 	long duration_time = Util::get_cur_time();
+	long duration_time = gutil::TimeUtil::timestamp();
 	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
-	duration_time = Util::get_cur_time() - duration_time;
+	duration_time = gutil::TimeUtil::timestamp() - duration_time;
 	if (!remove_response.success())
 	{
 		cout << "Delete the " << _current_database << " data failed: " << remove_response.StatusMsg << endl;

@@ -49,7 +49,7 @@ void StringIndexFile::save(KVstore &kv_store)
 		if (this->type == Entity)
 			str = kv_store.getEntityByID(i,false);
 		if (this->type == Literal)
-			str = kv_store.getLiteralByID(Util::LITERAL_FIRST_ID + i,false);
+			str = kv_store.getLiteralByID(GlobalTypedef::LITERAL_FIRST_ID + i,false);
 		if (this->type == Predicate)
 			str = kv_store.getPredicateByID(i,false);
 		unsigned length = str.length();
@@ -288,7 +288,7 @@ void StringIndexFile::change(unsigned id, KVstore &kv_store)
 	if (this->type == Entity)
 		str = kv_store.getEntityByID(id,false);
 	if (this->type == Literal)
-		str = kv_store.getLiteralByID(Util::LITERAL_FIRST_ID + id, false);
+		str = kv_store.getLiteralByID(GlobalTypedef::LITERAL_FIRST_ID + id, false);
 	if (this->type == Predicate)
 		str = kv_store.getPredicateByID(id, false);
 
@@ -364,7 +364,7 @@ void StringIndex::load()
 bool
 StringIndex::searchBuffer(unsigned _id, string* _str)
 {
-	if(_id < Util::LITERAL_FIRST_ID) //entity
+	if(_id < GlobalTypedef::LITERAL_FIRST_ID) //entity
 	{
 		if(_id < this->entity_buffer_size)
 		{
@@ -375,7 +375,7 @@ StringIndex::searchBuffer(unsigned _id, string* _str)
 	}
 	else //literal
 	{
-		_id -= Util::LITERAL_FIRST_ID;
+		_id -= GlobalTypedef::LITERAL_FIRST_ID;
 		if(_id < this->literal_buffer_size)
 		{
 			*_str = this->literal_buffer->get(_id);
@@ -391,13 +391,13 @@ bool StringIndex::randomAccess(unsigned id, string *str, char* &buffer, unsigned
 
 	if (is_entity_or_literal)
 	{
-		if (id < Util::LITERAL_FIRST_ID)
+		if (id < GlobalTypedef::LITERAL_FIRST_ID)
 		{
 			return this->entity.randomAccess(id, str, buffer, buffer_size, real);
 		}
 		else
 		{
-			return this->literal.randomAccess(id - Util::LITERAL_FIRST_ID, str, buffer, buffer_size, real);
+			return this->literal.randomAccess(id - GlobalTypedef::LITERAL_FIRST_ID, str, buffer, buffer_size, real);
 		}
 	}
 	else
@@ -420,13 +420,13 @@ void StringIndex::addRequest(std::vector<StringIndexFile::AccessRequest> *reques
 		//cout<<"found in string buffer"<<endl;
 		//return;
 		//}
-		if (id < Util::LITERAL_FIRST_ID) // entity
+		if (id < GlobalTypedef::LITERAL_FIRST_ID) // entity
 		{
 			this->entity.addRequest(requestVectors[0], id, str);
 		}	
 		else // literal
 		{
-			this->literal.addRequest(requestVectors[1], id - Util::LITERAL_FIRST_ID, str);
+			this->literal.addRequest(requestVectors[1], id - GlobalTypedef::LITERAL_FIRST_ID, str);
 		}	
 	}
 	else // predicate
@@ -455,10 +455,10 @@ void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_
 	{
 		for (unsigned i = 0; i < ids.size(); i++)
 		{
-			if (ids[i] < Util::LITERAL_FIRST_ID)
+			if (ids[i] < GlobalTypedef::LITERAL_FIRST_ID)
 				this->entity.change(ids[i], kv_store);
 			else
-				this->literal.change(ids[i] - Util::LITERAL_FIRST_ID, kv_store);
+				this->literal.change(ids[i] - GlobalTypedef::LITERAL_FIRST_ID, kv_store);
 		}
 	}
 	else
@@ -476,10 +476,10 @@ void StringIndex::disable(std::vector<unsigned> &ids, bool is_entity_or_literal)
 	{
 		for (unsigned i = 0; i < ids.size(); i++)
 		{
-			if (ids[i] < Util::LITERAL_FIRST_ID)
+			if (ids[i] < GlobalTypedef::LITERAL_FIRST_ID)
 				this->entity.disable(ids[i]);
 			else
-				this->literal.disable(ids[i] - Util::LITERAL_FIRST_ID);
+				this->literal.disable(ids[i] - GlobalTypedef::LITERAL_FIRST_ID);
 		}
 	}
 	else

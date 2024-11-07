@@ -61,7 +61,7 @@ Signature::encodeEdge2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _pre_id
 	else //entity part
 	{
 		//entity can be in edge or out edge
-		if (_type == Util::EDGE_OUT)
+		if (_type == GlobalTypedef::EDGE_OUT)
 		{
 			seed += Signature::STR_AND_EDGE_INTERVAL_BASE;
 		}
@@ -86,7 +86,7 @@ Signature::encodePredicate2Entity(EntityBitSet& _entity_bs, TYPE_PREDICATE_ID _p
 		unsigned seed_num = id % Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 
 		//int pos = Signature::STR_SIG_LENGTH;
-		if (_type == Util::EDGE_OUT)
+		if (_type == GlobalTypedef::EDGE_OUT)
 		{
 			seed_num += Signature::EDGE_SIG_INTERVAL_NUM_HALF;
 			//pos += Signature::EDGE_SIG_IN;
@@ -174,7 +174,7 @@ Signature::encodeStr2Entity(EntityBitSet& _entity_bs, TYPE_ENTITY_LITERAL_ID _ne
 	else //entity part
 	{
 		//entity can be in edge or out edge
-		if (_type == Util::EDGE_OUT)
+		if (_type == GlobalTypedef::EDGE_OUT)
 		{
 			seed += Signature::STR_SIG_LITERAL;
 		}

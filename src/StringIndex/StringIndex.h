@@ -10,7 +10,7 @@
 #define _STRING_INDEX_H
 
 #include "../KVstore/KVstore.h"
-#include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 #include "../Util/SpinLock.h"
 #include "../Util/Latch.h"
 

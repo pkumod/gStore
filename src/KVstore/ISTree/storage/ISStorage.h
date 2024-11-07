@@ -9,6 +9,7 @@
 #ifndef _KVSTORE_ISTREE_STORAGE_ISSTORAGE_H
 #define _KVSTORE_ISTREE_STORAGE_ISSTORAGE_H
 
+#include "../../../Util/FileUtil.h"
 #include "../node/ISIntlNode.h"
 #include "../node/ISLeafNode.h"
 #include "../heap/ISHeap.h"
@@ -17,7 +18,7 @@
 class ISStorage
 {
 public:
-	static const unsigned BLOCK_SIZE = Util::STORAGE_BLOCK_SIZE;	//fixed size of disk-block
+	static const unsigned BLOCK_SIZE = GlobalTypedef::STORAGE_BLOCK_SIZE;	//fixed size of disk-block
 	//there are 18 B+Tree indexes and one vstree index, so set 3G buffer size
 	//static const unsigned long long MAX_BUFFER_SIZE = Util::MAX_BUFFER_SIZE;		//max buffer size 
 	//static const unsigned SET_BUFFER_SIZE = 1 << 30;		//set buffer size

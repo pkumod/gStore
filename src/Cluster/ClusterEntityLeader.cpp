@@ -226,7 +226,7 @@ namespace cluster
         SLOG_DEBUG("waiting query task callback need num:" << need_num);
         while (1)
         {
-            uint64 current_time = Util::get_cur_time();
+            uint64 current_time = gutil::TimeUtil::timestamp();
             if (end_time > current_time )
             {
                 if (once_run > (end_time - current_time))
@@ -261,7 +261,7 @@ namespace cluster
 
             if (pass_num >= need_num)
                 break;
-            if (Util::get_cur_time() >= end_time)
+            if (gutil::TimeUtil::timestamp() >= end_time)
                 break;
         }
         SLOG_TRACE("db name:" << db_name << " ,operation:" << operation << "callback pass num:" << pass_num << "  ,need num:" << need_num);
@@ -312,10 +312,10 @@ namespace cluster
     {
         if (!db_name.empty() && !file_name.empty())
         {
-            return Util::get_cur_time() + getAppendTimeout(db_name, file_name);
+            return gutil::TimeUtil::timestamp() + getAppendTimeout(db_name, file_name);
         }
         
-        return Util::get_cur_time() + std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
+        return gutil::TimeUtil::timestamp() + std::atoi(Util::getConfigureValue("cluster_relpy_timeout").c_str())*1000;
     }
 
     std::vector<std::string> ClusterEntityLeader::getFollowrUrlArray()const

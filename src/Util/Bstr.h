@@ -12,7 +12,7 @@
 #ifndef _UTIL_BSTR_H
 #define _UTIL_BSTR_H
 
-#include "Util.h"
+#include "StringUtil.h"
 
 class Bstr
 {

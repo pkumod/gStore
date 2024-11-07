@@ -70,7 +70,7 @@ SILeafNode::GetValue(int _index) const
   int num = this->GetKeyNum();
   if (_index < 0 || _index >= num)
   {
-    //print(string("error in GetValue: Invalid index ") + Util::int2string(_index));
+    //print(string("error in GetValue: Invalid index ") + to_string(_index));
     SLOG_ERROR("error GetValue:" << _index);
     return 0;
   }
@@ -90,7 +90,7 @@ SILeafNode::SetValue(unsigned _val, int _index)
   int num = this->GetKeyNum();
   if (_index < 0 || _index >= num)
   {
-    print(string("error in SetValue: Invalid index ") + Util::int2string(_index));
+    SLOG_ERROR("error in SetValue: Invalid index " + to_string(_index));
     return false;
   }
   this->values[_index] = _val;
@@ -110,7 +110,7 @@ SILeafNode::AddValue(unsigned _val, int _index)
   int num = this->GetKeyNum();
   if (_index < 0 || _index > num)
   {
-    print(string("error in AddValue: Invalid index ") + Util::int2string(_index));
+    SLOG_ERROR("error in AddValue: Invalid index " + to_string(_index));
     return false;
   }
   int i;
@@ -131,7 +131,7 @@ SILeafNode::SubValue(int _index)
   int num = this->GetKeyNum();
   if (_index < 0 || _index >= num)
   {
-    print(string("error in SubValue: Invalid index ") + Util::int2string(_index));
+    SLOG_ERROR("error in SubValue: Invalid index " + to_string(_index));
     return false;
   }
   int i;

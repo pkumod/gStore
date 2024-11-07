@@ -73,15 +73,15 @@ int main(int argc, char *argv[])
 			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gquery -h\" for help." << endl;
 			return 0;
 		}
-		if (Util::dir_exist(_db_home + Util::system_db + _db_suffix) == false)
+		if (Util::dir_exist(_db_home + GlobalTypedef::system_db + _db_suffix) == false)
 		{
 			cout << "The system database is not exist,please use bin/ginit to rebuild the system database at first!" << endl;
 			return 0;
 		}
 
-		if (db_folder != Util::system_db)
+		if (db_folder != GlobalTypedef::system_db)
 		{
-			Database system_db(Util::system_db);
+			Database system_db(GlobalTypedef::system_db);
 			system_db.load();
 			string sparql = "ASK WHERE{<" + db_folder + "> <database_status> \"already_built\".}";
 			ResultSet ask_rs;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				long tv_begin = Util::get_cur_time();
+				long tv_begin = gutil::TimeUtil::timestamp();
 
 				_db.load();
 				// cout << "finish loading" << endl;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 				{
 					if (ret >= 0)
 					{
-						msg = "update num: " + Util::int2string(ret);
+						msg = "update num: " + to_string(ret);
 					}
 					else // update error
 					{
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 					}
 				}
 
-				long tv_end = Util::get_cur_time();
+				long tv_end = gutil::TimeUtil::timestamp();
 				// stringstream ss;
 				cout << "query database successfully, Used " << (tv_end - tv_begin) << " ms" << endl;
 				// Log.Info(ss.str().c_str());
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 				{
 					if (ret >= 0)
 					{
-						msg = "update num: " + Util::int2string(ret);
+						msg = "update num: " + to_string(ret);
 					}
 					else // update error
 					{

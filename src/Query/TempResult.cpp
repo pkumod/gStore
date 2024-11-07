@@ -284,8 +284,8 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 {
 	// long large_begin, large_end;
 	// long small_begin, small_end;
-	// large_begin = Util::get_cur_time();
-	// small_begin = Util::get_cur_time();
+	// large_begin = gutil::TimeUtil::timestamp();
+	// small_begin = gutil::TimeUtil::timestamp();
 
 	int this_id_cols = this->id_varset.getVarsetSize();
 	int x_id_cols = x.id_varset.getVarsetSize();
@@ -306,7 +306,7 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 	// long totalJoinTime = 0, totalSortTime = 0, totalFindBounderTime = 0, totalPreTime = 0;
 	// int iterLen = 0;
 
-	// small_end = Util::get_cur_time();
+	// small_end = gutil::TimeUtil::timestamp();
 	// totalPreTime = small_end - small_begin;
 
 	if (common.empty())
@@ -433,23 +433,23 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 		vector<int> common2this = common.mapTo(this->getAllVarset());
 		vector<int> common2x = common.mapTo(x.getAllVarset());
 
-		// small_begin = Util::get_cur_time();
+		// small_begin = gutil::TimeUtil::timestamp();
 		x.sort(0, (int)x.result.size() - 1, common2x);
-		// small_end = Util::get_cur_time();
+		// small_end = gutil::TimeUtil::timestamp();
 		// totalSortTime += small_end - small_begin;
 
 		int this_id_cols = this->id_varset.getVarsetSize();
 		for (int i = 0; i < (int)this->result.size(); i++)
 		{
-			// small_begin = Util::get_cur_time();
+			// small_begin = gutil::TimeUtil::timestamp();
 			int left = x.findLeftBounder(common2x, this->result[i], this_id_cols, common2this);
 			if (left == -1)	continue;
 			int right = x.findRightBounder(common2x, this->result[i], this_id_cols, common2this);
 			// iterLen += right - left + 1;
-			// small_end = Util::get_cur_time();
+			// small_end = gutil::TimeUtil::timestamp();
 			// totalFindBounderTime += small_end - small_begin;
 
-			// small_begin = Util::get_cur_time();
+			// small_begin = gutil::TimeUtil::timestamp();
 			for (int j = left; j <= right; j++)
 			{
 				r.result.push_back(ResultPair());
@@ -477,12 +477,12 @@ void TempResult::doJoin(TempResult &x, TempResult &r)
 						v[x2r_str_pos[k]] = x.result[j].str[k];
 				}
 			}
-			// small_end = Util::get_cur_time();
+			// small_end = gutil::TimeUtil::timestamp();
 			// totalJoinTime += small_end - small_begin;
 		}
 	}
 	// If x.result.empty(), do nothing
-	// large_end = Util::get_cur_time();
+	// large_end = gutil::TimeUtil::timestamp();
 	// if (common.empty())
 	// 	printf("Total time %ld ms\n", large_end - large_begin);
 	// printf("Total time %ld ms, common %d, join %ld ms, sort %ld ms, find bounder %ld ms, iterLen = %d, r_id_cols = %d, r_str_cols = %d\n", large_end - large_begin, common.empty(), totalJoinTime, totalSortTime, totalFindBounderTime, iterLen, r_id_cols, r_str_cols);
@@ -1351,7 +1351,7 @@ int TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 
 void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	// if (this->results.empty() || x.results.empty())
 	if (this->results.empty() && this->initial)
@@ -1383,25 +1383,25 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stri
 			Varset str_varset = this->results[i].str_varset + x.results[j].str_varset;
 
 			// long small_begin, small_end;
-			// small_begin = Util::get_cur_time();
+			// small_begin = gutil::TimeUtil::timestamp();
 			int pos = r.findCompatibleResult(id_varset, str_varset);
-			// small_end = Util::get_cur_time();
+			// small_end = gutil::TimeUtil::timestamp();
 			// totalFindCompTime += small_end - small_begin;
 
-			// small_begin = Util::get_cur_time();
+			// small_begin = gutil::TimeUtil::timestamp();
 			this->results[i].doJoin(x.results[j], r.results[pos]);
-			// small_end = Util::get_cur_time();
+			// small_end = gutil::TimeUtil::timestamp();
 			// totalInnerJoinTime += small_end - small_begin;
 		}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doJoin, used " << (tv_end - tv_begin) << " ms.");
 	// printf("after doJoin, used %ld ms (find compatible %ld ms, inner join %ld ms).\n", tv_end - tv_begin, totalFindCompTime, totalInnerJoinTime);
 }
 
 void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
@@ -1417,13 +1417,13 @@ void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 		    x.results[i].doUnion(r.results[pos]);
 	}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doUnion, used " << (tv_end - tv_begin) <<" ms.");
 }
 
 void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	// if (this->results.empty() || x.results.empty())
 	if (this->results.empty() && this->initial)
@@ -1468,13 +1468,13 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 		}
 	}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doOptional, used " << (tv_end - tv_begin) <<" ms.");
 }
 
 void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	if (x.results.empty())
 	{
@@ -1529,19 +1529,19 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *str
 		}
 	}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doMinus, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_num) {
     unsigned before_size = results[0].result.size();
-    long tv_begin = Util::get_cur_time();
+    long tv_begin = gutil::TimeUtil::timestamp();
 
     for (int i = 0; i < (int) this->results.size(); i++) {
         this->results[i].doFilter(filter, kvstore, entity_literal_varset, limit_num);
     }
 
-    long tv_end = Util::get_cur_time();
+    long tv_end = gutil::TimeUtil::timestamp();
     unsigned after_size = results[0].result.size();
 	SLOG_CORE("after doFilter, used " << (tv_end - tv_begin) << " ms.");
 	SLOG_CORE("before filter size " << before_size << ", after filter size " << after_size << ".");
@@ -1549,7 +1549,7 @@ void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varse
 
 void TempResultSet::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	if (this->results.size() == 0)
 	{
@@ -1560,13 +1560,13 @@ void TempResultSet::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Var
 	for (int i = 0; i < (int)this->results.size(); i++)
 		this->results[i].doBind(bind, kvstore,entity_literal_varset);
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doBind, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	Varset this_str_varset;
 
@@ -1626,13 +1626,13 @@ void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *s
 			}
 		}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doProjection, used " << (tv_end - tv_begin) << " ms.");
 }
 
 void TempResultSet::doDistinct1(TempResultSet &r)
 {
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 
 	if ((int)this->results.size() != 1)
 		return;
@@ -1687,7 +1687,7 @@ void TempResultSet::doDistinct1(TempResultSet &r)
 			}
 	}
 
-	long tv_end = Util::get_cur_time();
+	long tv_end = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after doDistinct, used " << (tv_end - tv_begin) << " ms.");
 }
 

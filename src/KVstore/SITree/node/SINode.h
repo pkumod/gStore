@@ -9,7 +9,6 @@
 #ifndef _KVSTORE_SITREE_NODE_SINODE_H
 #define _KVSTORE_SITREE_NODE_SINODE_H
 
-#include "../../../Util/Util.h"
 #include "../../../Util/Bstr.h"
 
 /**

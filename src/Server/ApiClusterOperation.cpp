@@ -12,8 +12,8 @@ namespace server
             uint64_t leader_index = resquest.index;
             uint64_t leader_nextIndex = resquest.nextIndex;
             uint64_t leader_uid = resquest.uid;
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string _db_home = GlobalTypedef::db_home();
+            std::string _db_suffix = GlobalTypedef::db_suffix();
             std::string follow_ip = resquest.follow_ip;
             std::string follow_port = resquest.follow_port;
             clusterManagerPtr->setFollowIpPort(follow_ip, follow_port);
@@ -62,7 +62,7 @@ namespace server
 
                     // build empty db
                     shared_ptr<DatabaseInfo> db_info = nullptr;
-                    apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, Util::get_date_time(), DatabaseStatus::BUILDING);
+                    apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
                     shared_ptr<Database> current_database = make_shared<Database>(db_name);
                     // build empty db
                     current_database->BuildEmptyDB();
@@ -109,14 +109,14 @@ namespace server
             string db_name = resquest.db_name;
             uint64_t leader_index = resquest.index;
             uint64_t leader_nextIndex = resquest.nextIndex;
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string _db_home = GlobalTypedef::db_home();
+            std::string _db_suffix = GlobalTypedef::db_suffix();
             shared_ptr<DatabaseInfo> db_info = nullptr;
             ClusterUpdateType update_type = ClusterUpdateType_None;
             TermDbLog db_log;
             if (apiUtil->check_db_built(db_name) == false)
             {
-                apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, Util::get_date_time(), DatabaseStatus::BUILDING);
+                apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
                 shared_ptr<Database> current_database = make_shared<Database>(db_name);
                 // build empty db
                 current_database->BuildEmptyDB();
@@ -251,8 +251,8 @@ namespace server
         string db_name = resquest.db_name;
         uint64_t leader_index = resquest.index;
         uint64_t leader_nextIndex = resquest.nextIndex;
-        std::string _db_home = Util::getConfigureValue("db_home");
-        std::string _db_suffix = Util::getConfigureValue("db_suffix");
+        std::string _db_home = GlobalTypedef::db_home();
+        std::string _db_suffix = GlobalTypedef::db_suffix();
         if (!db_name.empty())
         {
             if (!apiUtil->check_db_built(db_name))

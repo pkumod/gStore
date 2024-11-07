@@ -30,7 +30,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		cout << "Please stop server(use bin/gserver -t) and try again." << endl;
 		return -1;
 	}
-	long tv_begin = Util::get_cur_time();
+	long tv_begin = gutil::TimeUtil::timestamp();
 	SLOG_INFO("begin init the system database ....");
 	if (Util::dir_exist(_db_path))
 	{
@@ -64,7 +64,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		int ret = _db->query(update_sparql, _rs, ofp);
 		if (ret >= 0)
 		{	
-			long tv_end = Util::get_cur_time();
+			long tv_end = gutil::TimeUtil::timestamp();
 			SLOG_INFO("Insert data success, update num : " << ret);
 			SLOG_INFO(_db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl);
 		}
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	string _db_home = util.getConfigureValue("db_home");
 	string _db_suffix = util.getConfigureValue("db_suffix");
 	int _suffix_len = _db_suffix.length();
-	string _db_name = Util::system_db;
+	string _db_name = GlobalTypedef::system_db;
 	string _db_path = _db_home + "/" + _db_name + _db_suffix;
 	if (argc == 1)
 	{

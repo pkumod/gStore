@@ -101,7 +101,7 @@ unsigned PlanGenerator::GetCandidateSizeFromWholeDB(unsigned int var_id) const {
 
 	bool not_literal = false;
 	for(unsigned i = 0; i < var_descrip->degree_; ++i){
-		if (var_descrip->so_edge_type_[i] == Util::EDGE_OUT) {
+		if (var_descrip->so_edge_type_[i] == GlobalTypedef::EDGE_OUT) {
 			not_literal = true;
 			break;
 		}
@@ -197,7 +197,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 		mt19937 eng(rd());
 		uniform_real_distribution<double> dis(0.0, 1.0);
 
-		if (edge_type[0] == Util::EDGE_IN) {
+		if (edge_type[0] == GlobalTypedef::EDGE_IN) {
 			// not need to sample, because sampled in considering all scans
 			for (unsigned i = 0; i < var_to_sample_cache[last_node].size(); ++i) {
 				unsigned *s_o_list = nullptr;
@@ -222,7 +222,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 
 					unsigned k = 1;
 					for (; k < edge_type.size(); ++k) {
-						if (edge_type[k] == Util::EDGE_IN) {
+						if (edge_type[k] == GlobalTypedef::EDGE_IN) {
 							if (!kvstore->existThisTriple(var_to_sample_cache[last_node][i],
 														  p_list[k], s_o_list[j])) {
 								break;
@@ -299,7 +299,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 
 					unsigned k = 1;
 					for (; k < edge_type.size(); ++k) {
-						if (edge_type[k] == Util::EDGE_IN) {
+						if (edge_type[k] == GlobalTypedef::EDGE_IN) {
 							if (!kvstore->existThisTriple(s_o_list[j], p_list[k],
 														  var_to_sample_cache[next_join_node][i])) {
 								break;
@@ -357,7 +357,7 @@ long long PlanGenerator::CardEstimatorTwoNodes(unsigned int last_node, unsigned 
 			InsertEdgeSelectivityToCache(last_node, next_join_node, s_o_list2_total_num);
 		}
 
-		card_estimation = max((edge_type[0] == Util::EDGE_IN) ?
+		card_estimation = max((edge_type[0] == GlobalTypedef::EDGE_IN) ?
 				(long long) ((double) (now_sample_num * var_to_num_map[last_node]) / var_to_sample_cache[last_node].size()) :
 				(long long) ((double) (now_sample_num * var_to_num_map[next_join_node]) / var_to_sample_cache[next_join_node].size() )
 					, (long long) 1);
@@ -425,7 +425,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 			mt19937 eng(rd());
 			uniform_real_distribution<double> dis(0.0, 1.0);
 
-			if (edge_type[0] == Util::EDGE_IN) {
+			if (edge_type[0] == GlobalTypedef::EDGE_IN) {
 				for (unsigned i = 0; i < last_sample.size(); ++i) {
 					unsigned *s_o_list = nullptr;
 					unsigned s_o_list_len = 0;
@@ -446,7 +446,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 
 						unsigned k = 1;
 						for (; k < edge_type.size(); ++k) {
-							if (edge_type[k] == Util::EDGE_IN) {
+							if (edge_type[k] == GlobalTypedef::EDGE_IN) {
 								if (!kvstore->existThisTriple(last_sample[i][linked_nei_pos[k]], p_list[k],
 															  s_o_list[j])) {
 									break;
@@ -512,7 +512,7 @@ long long PlanGenerator::CardEstimatorMoreThanTwoNodes(const vector<unsigned> &l
 
 						unsigned k = 1;
 						for (; k < edge_type.size(); ++k) {
-							if (edge_type[k] == Util::EDGE_IN) {
+							if (edge_type[k] == GlobalTypedef::EDGE_IN) {
 								if (!kvstore->existThisTriple(last_sample[i][linked_nei_pos[k]], p_list[k],
 															  s_o_list[j])) {
 									break;
@@ -709,7 +709,7 @@ unsigned PlanGenerator::GetSampleFromWholeDatabase(unsigned int var_id, vector<u
 
 	bool not_literal = false;
 	for(unsigned i = 0; i < var_descrip->degree_; ++i){
-		if(var_descrip->so_edge_type_[i] == Util::EDGE_OUT){
+		if(var_descrip->so_edge_type_[i] == GlobalTypedef::EDGE_OUT){
 			not_literal = true;
 			break;
 		}
@@ -741,8 +741,8 @@ unsigned PlanGenerator::GetSampleFromWholeDatabase(unsigned int var_id, vector<u
 	already_sampled_num = 0;
 	dis = uniform_int_distribution<unsigned>(0, limitID_literal-1);
 	while (already_sampled_num < sample_literal_size){
-		// unsigned index_need_insert = rand() % limitID_literal + Util::LITERAL_FIRST_ID;
-		unsigned index_need_insert = dis(eng) + Util::LITERAL_FIRST_ID;
+		// unsigned index_need_insert = rand() % limitID_literal + GlobalTypedef::LITERAL_FIRST_ID;
+		unsigned index_need_insert = dis(eng) + GlobalTypedef::LITERAL_FIRST_ID;
 		auto literal_str = kvstore->getLiteralByID(index_need_insert);
 		if(!literal_str.empty()){
 			so_sample_cache.emplace_back(index_need_insert);
@@ -833,13 +833,13 @@ vector<shared_ptr<AffectOneNode>> PlanGenerator::CompleteCandidate() {
 				if ((!no_candidate) && (double)(pre2num[pre_id]) > border) {
 					continue;
 				}
-				if ((var_descrip->so_edge_type_[i] == Util::EDGE_IN && pre2obj[pre_id] > estimate_num) ||
-					(var_descrip->so_edge_type_[i] == Util::EDGE_OUT && pre2sub[pre_id] > estimate_num)) {
+				if ((var_descrip->so_edge_type_[i] == GlobalTypedef::EDGE_IN && pre2obj[pre_id] > estimate_num) ||
+					(var_descrip->so_edge_type_[i] == GlobalTypedef::EDGE_OUT && pre2sub[pre_id] > estimate_num)) {
 					continue;
 				}
 				unsigned triple_index = var_descrip->so_edge_index_[i];
 				candidate_edge_info->emplace_back(bgpquery->s_id_[triple_index], bgpquery->p_id_[triple_index], bgpquery->o_id_[triple_index],
-												  (var_descrip->so_edge_type_[i] == Util::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
+												  (var_descrip->so_edge_type_[i] == GlobalTypedef::EDGE_IN ? JoinMethod::p2o : JoinMethod::p2s));
 				candidate_edge_const_info->emplace_back(bgpquery->s_is_constant_[triple_index], bgpquery->p_is_constant_[triple_index],bgpquery->o_is_constant_[triple_index]);
 			}
 		}

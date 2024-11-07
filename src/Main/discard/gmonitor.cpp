@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 			cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gmonitor -h\" for help." << endl;
 			return 0;
 		}
-		Database system_db(Util::system_db);
+		Database system_db(GlobalTypedef::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
@@ -107,11 +107,11 @@ int main(int argc, char *argv[])
 		rows.push_back({"database", db_name});
 		rows.push_back({"creator", creator});
 		rows.push_back({"built_time", built_time});
-		rows.push_back({"triple_num", Util::int2string(_db.getTripleNum())});
-		rows.push_back({"entity_num", Util::int2string(_db.getEntityNum())});
-		rows.push_back({"literal_num", Util::int2string(_db.getLiteralNum())});
-		rows.push_back({"subject_num", Util::int2string(_db.getSubNum())});
-		rows.push_back({"predicate_num", Util::int2string(_db.getPreNum())});
+		rows.push_back({"triple_num", to_string(_db.getTripleNum())});
+		rows.push_back({"entity_num", to_string(_db.getEntityNum())});
+		rows.push_back({"literal_num", to_string(_db.getLiteralNum())});
+		rows.push_back({"subject_num", to_string(_db.getSubNum())});
+		rows.push_back({"predicate_num", to_string(_db.getPreNum())});
 		rows.push_back({"disk_used", to_string(diskUsed) + " MB"});
 		Util::printConsole(header, rows);
 
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 
 	cout<<"\n========================================\n";
 	string output = "database: " + db_name + "\ncreator: " + creator + "\nbuilt_time: " + built_time + "\n";
-	output = output + "triple num: " + Util::int2string(triple_num) + "\nentity num: " + Util::int2string(entity_num) + "\nliteral num: " + Util::int2string(literal_num) + "\nsubject num: " + Util::int2string(subject_num) + "\npredicate num: " + Util::int2string(predicate_num)
+	output = output + "triple num: " + to_string(triple_num) + "\nentity num: " + to_string(entity_num) + "\nliteral num: " + to_string(literal_num) + "\nsubject num: " + to_string(subject_num) + "\npredicate num: " + to_string(predicate_num)
 			+ "\n========================================\n";
 	cout<<output;
 	return 0;*/

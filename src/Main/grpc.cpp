@@ -134,7 +134,7 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
-				StringUtil::url_decode(v);
+				gutil::StringUtil::url_decode(v);
 			}
 			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
@@ -172,7 +172,7 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
-				StringUtil::url_decode(v);
+				gutil::StringUtil::url_decode(v);
 			}
 			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
 			iter++;
@@ -196,7 +196,7 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
-				StringUtil::url_decode(v);
+				gutil::StringUtil::url_decode(v);
 			}
 			json_data[iter->first] = v;
 			iter++;
@@ -215,7 +215,7 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
-					StringUtil::url_decode(v);
+					gutil::StringUtil::url_decode(v);
 				}
 				json_data[iter->first] = v;
 				iter++;
@@ -292,16 +292,16 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		return false;
 	}
 	// add callback task for access log start
-	auto *operation_ptr = new std::string(operation);
-	auto *ip_ptr = new std::string(ip_addr);
-	rpc_task->add_callback([operation_ptr, ip_ptr](GRPCTask *task) {
-		GRPCResp *resp = task->get_resp();
-		std::vector<std::string> async_op = {"build", "batchInsert", "batchRemove", "backup", "restore"};
-		if (std::find(async_op.begin(), async_op.end(), *operation_ptr) == async_op.end())
-			apiUtil->write_access_log(*operation_ptr, *ip_ptr, resp->resp_code, resp->resp_msg);
-		delete operation_ptr;
-		delete ip_ptr;
-	});
+	bool async = server::jsonBoolParam(json_data, "async", false);
+	if (async == false)
+	{
+		struct DBAccessLogInfo *access_log_info_ptr = new DBAccessLogInfo(ip_addr, operation, async, NULL, NULL);
+		rpc_task->add_callback([access_log_info_ptr](GRPCTask *task) {
+			GRPCResp *resp = task->get_resp();
+			apiUtil->write_access_log(access_log_info_ptr->getOperation(), access_log_info_ptr->getIP(), resp->resp_code, resp->resp_msg);
+			delete access_log_info_ptr;
+		});
+	}
 	// add callback task for access log end
 	if (op_type == OP_CHECK)
 	{
@@ -772,9 +772,9 @@ void initialServer(uint16_t port, bool background)
 		std::vector<std::vector<std::string>> rows;
 		std::string role = clusterManagerPtr->getCluterRole() == ClusterRoleType_Leader ? "leader" : "follower";
 		rows.push_back({"role", role});
-		rows.push_back({"heartbeat", apiUtil->get_configure_value("cluster_heartbeat") + " s"});
-		rows.push_back({"relpy_timeout", apiUtil->get_configure_value("cluster_relpy_timeout") + " s"});
-		rows.push_back({"data_path", apiUtil->get_configure_value("cluster_data_path")});
+		rows.push_back({"heartbeat", Util::getConfigureValue("cluster_heartbeat") + " s"});
+		rows.push_back({"relpy_timeout", Util::getConfigureValue("cluster_relpy_timeout") + " s"});
+		rows.push_back({"data_path", Util::getConfigureValue("cluster_data_path")});
 		if (clusterManagerPtr->isLeader()) {
 			uint16_t node_idx = 1;
 			for (auto& follower : clusterManagerPtr->getFollowrUrlArray()) {		    
@@ -861,7 +861,7 @@ bool stopServer()
 	{
 		return false;
 	}
-	string system_user = apiUtil->get_configure_value("system_username");
+	string system_user = Util::getConfigureValue("system_username");
 	string pid;
 	string system_password;
 	ifstream in;
@@ -1117,7 +1117,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	// remove path info, only return base filename
 	std::string file_name = GRPCUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
-	std::string file_dst = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
+	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
 	std::string file_content = server::jsonParam(json_data, "file");
 	response->Save(file_dst, std::move(file_content), notify_msg);
@@ -1148,9 +1148,9 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 		std::string cur_path = Util::get_cur_path();
 		SLOG_DEBUG("download file path: " + filepath);
 		SLOG_DEBUG("file exact path: " + exact_path);
-		if (StringUtil::start_with(exact_path, cur_path) == false)
+		if (gutil::StringUtil::start_with(exact_path, cur_path) == false)
 		{
-			string product_name = apiUtil->get_configure_value("product_name");
+			string product_name = Util::getConfigureValue("product_name");
 			error = "Download file must in the "+ product_name +" home dir";
 			response->Error(StatusOperationFailed, error);
 			return;
@@ -1251,7 +1251,7 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::Clus
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	// check cluster ip
-	string cluster_ip_check = apiUtil->get_configure_value("cluster_ip_check", "off");
+	string cluster_ip_check = Util::getConfigureValue("cluster_ip_check", "off");
 	if (cluster_ip_check == "on")
 	{
 		bool ipCheckResult;
@@ -1346,9 +1346,9 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 			return;
 		}
 		bool query_rt = false;
-		uint64_t query_time = Util::get_cur_time();
+		uint64_t query_time = gutil::TimeUtil::timestamp();
 		query_rt = apiUtil->query_sys_db(sparql, rs);
-		query_time = Util::get_cur_time() - query_time;
+		query_time = gutil::TimeUtil::timestamp() - query_time;
 		if (!query_rt)
 		{
 			response->Error(StatusOperationFailed, "Query failed");
@@ -1390,7 +1390,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		resp_data.StatusMsg = "success";
 		resp_data.ansNum = rs.ansNum;
 		resp_data.outputLimit = -1;
-		resp_data.threadId = Util::getThreadID();
+		resp_data.threadId = gutil::ThreadUtil::getThreadID();
 		resp_data.queryTime = query_time;
 		rs.release();
 		std::string json_str;
@@ -1786,7 +1786,7 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		return;
 	}
 	std::string username = json_data["username"].GetString();
-	std::string built_time = Util::get_date_time();
+	std::string built_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 	std::vector<std::string> db_name_vector;
 	Util::split(db_names, ",", db_name_vector);
 	nlohmann::json response_data = nlohmann::json{
@@ -2141,30 +2141,57 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	server::MessageQueryRequest request_data(json_data);
 	server::MessageQueryResponse response_data; 
 	string remote_ip = server::jsonParam(json_data, "remote_ip");
-	bool redirect = false;
-	bool is_query = false;
-	server::DbQueryLogCall db_query_log_cb;
-	server::ApiHandler::query(apiUtil, clusterManagerPtr, request_data, response_data, redirect, is_query, [response](struct DBQueryLogInfo* query_log_ptr)
+	bool async = server::jsonBoolParam(json_data, "async", false);
+	GRPCServerTask *sub_task = task_of(response);
+	bool is_update = false;
+	if (clusterManagerPtr->isEnable())
+	{
+		server::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](struct DBQueryLogInfo* query_log_ptr)
 		{
-			task_of(response)->add_callback([query_log_ptr](GRPCTask *)
+			sub_task->add_callback([query_log_ptr](GRPCTask *t)
+			{	
+				apiUtil->write_query_log(query_log_ptr);
+				delete query_log_ptr;
+			});
+		});
+		if (response_data.StatusCode == StatusOK && clusterManagerPtr->isFollower() && is_update)
+		{
+			redirect_handler(request, response, series);
+			return;
+		}
+	}
+	else if (async)
+	{
+		std::string opt_id;
+		gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
+			server::ApiHandler::query_async(apiUtil, request_data, opt_id);
+		});
+	}
+	else
+	{
+		server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](struct DBQueryLogInfo* query_log_ptr)
+		{
+			sub_task->add_callback([query_log_ptr](GRPCTask *)
 			{
 				apiUtil->write_query_log(query_log_ptr);
 				delete query_log_ptr;
 			});
 		});
-	if (redirect)
-	{
-		redirect_handler(request, response, series);
-		return;
 	}
-
+	
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
-		if (is_query)
+		if (!is_update)
 		{
 			response->set_header_pair("Cache-Control", "no-cache");
 			response->set_header_pair("Pragma", "no-cache");
@@ -2181,6 +2208,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		response_data.toJsonString(json_str);
 		response->nlohmannJson(json_str);
 	}
+
 }
 
 /**
@@ -2769,15 +2797,15 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	try
 	{
 		int pid = getpid();
-		float cup_usage = Util::get_cpu_usage(pid) * 100; // %
+		float cup_usage = gutil::ResourceUtil::get_app_cpu_usage(pid) * 100; // %
 		char cup_usage_char[32];
 		sprintf(cup_usage_char, "%f", cup_usage);
-		float mem_usage = Util::get_memory_usage(pid); // MB
+		float mem_usage = gutil::ResourceUtil::get_app_mem_usage(pid); // MB
 		char mem_usage_char[32];
 		sprintf(mem_usage_char, "%f", mem_usage);
-		unsigned long long disk_available = Util::get_disk_free(); // MB
+		uint64_t disk_available = gutil::ResourceUtil::get_disk_free(); // MB
 		char disk_available_char[32];
-		sprintf(disk_available_char, "%llu", disk_available);
+		sprintf(disk_available_char, "%lu", disk_available);
 		Json resp_data;
 		Json::AllocatorType &allocator = resp_data.GetAllocator();
 		resp_data.SetObject();
@@ -2936,7 +2964,7 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 	// remove path info, only return base filename
 	std::string file_name = GRPCUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
-	std::string file_save_path = apiUtil->get_upload_path() + file_name.substr(0, pos) + "_" + Util::getTimeString2() + "." + file_suffix;
+	std::string file_save_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
     WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
 		file_save_path, static_cast<const void *>(filecontent.c_str()), filecontent.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
 			long ret = pwrite_task->get_retval();

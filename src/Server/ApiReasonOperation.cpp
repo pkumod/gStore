@@ -9,8 +9,8 @@ namespace server
             std::string db_name = jsonParam(json_data, "db_name");
             std::string type= jsonParam(json_data, "type");
             std::string operation="AddReason";
-            std::string _db_home = Util::getConfigureValue("db_home");
-            std::string _db_suffix = Util::getConfigureValue("db_suffix");
+            std::string _db_home = GlobalTypedef::db_home();
+            std::string _db_suffix = GlobalTypedef::db_suffix();
             std::string msg;
             response.type = type;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
@@ -35,7 +35,7 @@ namespace server
                 }
                 Value reasonInfo=json_data["ruleinfo"].GetObject();
                 Document::AllocatorType &allocator = json_data.GetAllocator();
-                std::string createtime = Util::get_date_time();
+                std::string createtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
                 reasonInfo.AddMember("status","新建",allocator);
                 reasonInfo.AddMember("createtime",StringRef(createtime.c_str()),allocator);
                 ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
@@ -394,7 +394,7 @@ namespace server
                                 {
                                     string result_value=resultobj["value"].GetString();
                                     // int result_value_int=Util::string2int(result_value);
-                                    effectNum=Util::string2int(result_value);
+                                    effectNum=stoi(result_value);
                                 }
                                 else
                                 {

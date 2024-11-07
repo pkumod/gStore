@@ -51,9 +51,11 @@ namespace server
         std::string db_name;
         std::string sparql;
         std::string format;
+        std::string callback;
+        bool async;
         MessageQueryRequest(const rapidjson::Document& json_data);
-        MessageQueryRequest(std::string db_name,  std::string sparql, std::string format = "json");
-        MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format = "json");
+        MessageQueryRequest(std::string db_name,  std::string sparql, std::string format = "json", bool async = false);
+        MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format = "json", bool async = false);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -68,6 +70,7 @@ namespace server
         std::string threadId;
         bool isUpdate;
         std::string fileName;
+        std::string opt_id;
         nlohmann::json query_json;
         MessageQueryResponse();
         MessageQueryResponse(int code, std::string msg) : MessageResponse(code, msg) {}

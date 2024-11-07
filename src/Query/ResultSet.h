@@ -7,12 +7,13 @@
 =============================================================================*/
 
 #pragma once
-#include "../Util/Util.h"
+#include "../Util/NodeUtil.h"
 #include "../Util/Bstr.h"
 #include "../Util/Stream.h"
 #include "TempResult.h"
 #include "../Api/NlohmanJson.hpp"
 
+using namespace gutil;
 class ResultSet
 {
 private:

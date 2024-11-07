@@ -30,12 +30,12 @@ public:
 	string object;
 
 	triple(int s, int p, int o){
-		subject = "<s" + Util::int2string(s) + ">";
-		predicate = "<p" + Util::int2string(p) + ">";
+		subject = "<s" + to_string(s) + ">";
+		predicate = "<p" + to_string(p) + ">";
 		if (rand()%2)
-			object = "<o" + Util::int2string(o) + ">";
+			object = "<o" + to_string(o) + ">";
 		else
-			object = "\"o" + Util::int2string(o) + "\"";
+			object = "\"o" + to_string(o) + "\"";
 	}
 	triple(string s, string p, string o){
 		subject = s;

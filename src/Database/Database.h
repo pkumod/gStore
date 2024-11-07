@@ -15,7 +15,8 @@
 #include "../Parser/RDFParser.h"
 #include "../Parser/SPARQL/SPARQLParser.h"
 #include "../Query/GeneralEvaluation.h"
-#include "../Server/Socket.h"
+#include "../Util/FileUtil.h"
+#include "../Util/NodeUtil.h"
 #include "CSR.h"
 
 class Database
@@ -41,7 +42,6 @@ public:
 	~Database();
 
 	bool save();
-	bool load(Socket &socket, bool loadCSR = false);
 	bool load(bool loadCSR = false);
 	bool unload();
 	void clear();
@@ -56,7 +56,6 @@ public:
 	void InitEmptyDB();
 	void BuildEmptyKVstore();
 	bool BuildEmptyDB();
-	bool build(const string &_rdf_file, Socket &socket);
 	bool build(const string &_rdf_file, shared_ptr<ofstream> cluster_log = nullptr);
 	// interfaces to insert/delete from given rdf file
 	bool insert(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
@@ -66,7 +65,7 @@ public:
 	unsigned batch_remove(std::string _rdf_file, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
 	bool backup(std::string &_backup_path);
-	bool restore();
+	bool restore(const string &_backup_path);
 
 	// name of this DB
 	string getName();

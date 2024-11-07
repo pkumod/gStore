@@ -140,7 +140,7 @@ main(int argc, char * argv[])
 			}
 		}
 		//system.db
-		Database system_db(Util::system_db);
+		Database system_db(GlobalTypedef::system_db);
 		system_db.load();
 
 		string sparql = "ASK WHERE{<" + db_name + "> <database_status> \"already_built\".}";
@@ -163,7 +163,7 @@ main(int argc, char * argv[])
 			int ret = system_db.query(sparql, _rs, ofp);
 
 			if (ret >= 0)
-				msg = "update num: " + Util::int2string(ret);
+				msg = "update num: " + to_string(ret);
 			else
 			{
 				//update error
@@ -208,7 +208,7 @@ main(int argc, char * argv[])
 		string sys_cmd = "mv " + _db_home + "/" + folder_name + ' ' + db_path;
 		system(sys_cmd.c_str());
 
-		cout << "Time: " << Util::get_date_time() << endl;
+		cout << "Time: " << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << endl;
 		cout << "Database " + db_name + " restore done!" << endl;
 
 		return 0;
@@ -281,7 +281,7 @@ main(int argc, char * argv[])
 	// 	int ret = system_db.query(sparql, _rs, ofp);
 
 	// 	if (ret >= 0)
-	// 		msg = "update num : " + Util::int2string(ret);
+	// 		msg = "update num : " + to_string(ret);
 	// 	else {
 	// 		//update error
 	// 		cout << "Rebuild Error, Restore Failed" << endl;
@@ -297,7 +297,7 @@ main(int argc, char * argv[])
 	// 	cout << "Backup Path Error, Restore Failed!" << endl;
 	// }else{
 	// 	//TODO update the in system.db
-	// 	string time = Util::get_date_time();
+	// 	string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 	// 	cout << "Time:" + time << endl;
 	// 	cout << "DB:" + db_name + " Restore done!" << endl;
 	// }

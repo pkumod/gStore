@@ -66,7 +66,7 @@ SIIntlNode::setChild(SINode* _child, int _index)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in setChild: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR("error in setChild: Invalid index " + to_string(_index));
 		return false;
 	}
 	this->childs[_index] = _child;
@@ -86,7 +86,7 @@ SIIntlNode::AddChild(SINode* _child, int _index)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num + 1)
 	{
-		print(string("error in AddChild: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR("error in AddChild: Invalid index " + to_string(_index));
 		return false;
 	}
 	int i;
@@ -108,7 +108,7 @@ SIIntlNode::subChild(int _index)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
 	{
-		print(string("error in subchild: Invalid index ") + Util::int2string(_index));
+		SLOG_ERROR("error in subchild: Invalid index " + to_string(_index));
 		return false;
 	}
 	int i;

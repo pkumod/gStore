@@ -17,7 +17,7 @@ SIStorage::SIStorage()
   freelist = NULL;
   tree_fp_ = NULL;
   min_heap_ = NULL;
-  max_buffer_size = Util::MAX_BUFFER_SIZE;
+  max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;
   heap_size = max_buffer_size / SINode::INTL_SIZE;
   freemem = max_buffer_size;
 }
@@ -684,7 +684,7 @@ SIStorage::WriteTree(SINode* _np)	//
     bp = bp->next;
   }
 
-  Util::Csync(this->tree_fp_);
+  gutil::FileUtil::Csync(this->tree_fp_);
   //fclose(this->tree_fp_);
 
   return true;
@@ -770,9 +770,7 @@ SIStorage::handler(unsigned long long needed_mem)	//>0
 SIStorage::~SIStorage()
 {
   //release heap and freelist...
-#ifdef DEBUG_KVSTORE
-  printf("now to release the kvstore!\n");
-#endif
+  SLOG_CORE("now to release the kvstore!");
   BlockInfo* bp = this->freelist;
   BlockInfo* next;
   while (bp != NULL)
@@ -781,26 +779,16 @@ SIStorage::~SIStorage()
     delete bp;
     bp = next;
   }
-#ifdef DEBUG_KVSTORE
-  printf("already empty the freelist!\n");
-#endif
+  SLOG_CORE("already empty the freelist!");
   delete this->min_heap_;
   min_heap_ = NULL;
-#ifdef DEBUG_KVSTORE
-  printf("already empty the buffer heap!\n");
-#endif
+  SLOG_CORE("already empty the buffer heap!");
   fclose(this->tree_fp_);
 }
 
 void
 SIStorage::print(string s)
 {
-#ifdef DEBUG_KVSTORE
-  fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	fputs("Class SIStorage\n", Util::debug_kvstore);
-	fputs("Message: ", Util::debug_kvstore);
-	fputs(s.c_str(), Util::debug_kvstore);
-	fputs("\n", Util::debug_kvstore);
-#endif
+  SLOG_CORE(s);
 }
 

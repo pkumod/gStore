@@ -66,14 +66,14 @@ int main(int argc, char * argv[])
 				cout<<"The database name can not end with " + _db_suffix + "! Input \"bin/gdrop -h\" for help." << endl;
 				return 0;
 			}
-			if (db_name == Util::system_db)
+			if (db_name == GlobalTypedef::system_db)
 			{
 				cout << "the database name can not be system." << endl;
 				return 0;
 			}
 			cout<<"Begin to drop database...."<<endl;
-			long tv_begin = Util::get_cur_time();
-			Database system_db(Util::system_db);
+			long tv_begin = gutil::TimeUtil::timestamp();
+			Database system_db(GlobalTypedef::system_db);
 			system_db.load();
 			string db_path = _db_home + db_name + _db_suffix;
 			if (!Util::dir_exist(db_path))
@@ -102,7 +102,7 @@ int main(int argc, char * argv[])
 				cout << "WARN: Drop info about database " << db_name << " failed! Please check system db." << endl;
 			Util::remove_path(db_path);
 			// Util::delete_backuplog(db_name);
-			long tv_end = Util::get_cur_time();
+			long tv_end = gutil::TimeUtil::timestamp();
 			cout << "Database " << db_name << " dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			return 0;
 		}

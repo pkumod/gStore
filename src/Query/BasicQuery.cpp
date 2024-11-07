@@ -209,14 +209,14 @@ BasicQuery::getResultListPointer()
 bool 
 BasicQuery::isInEdge(int _var, int _i_th_edge)const
 {
-    return this->edge_type[_var][_i_th_edge] == Util::EDGE_IN;
+    return this->edge_type[_var][_i_th_edge] == GlobalTypedef::EDGE_IN;
 }
 
 // check whether the i-th edge of _var is OUT edge
 bool 
 BasicQuery::isOutEdge(int _var, int _i_th_edge)const
 {
-    return this->edge_type[_var][_i_th_edge] == Util::EDGE_OUT;
+    return this->edge_type[_var][_i_th_edge] == GlobalTypedef::EDGE_OUT;
 }
 
 bool 
@@ -349,7 +349,7 @@ BasicQuery::updateSubSig(int _sub_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
     // edge_id[var_id][i] : the ID of the i-th edge of the var
     this->edge_id[_sub_var_id][sub_degree] = _line_id;
     this->edge_nei_id[_sub_var_id][sub_degree] = _obj_var_id;
-    this->edge_type[_sub_var_id][sub_degree] = Util::EDGE_OUT;
+    this->edge_type[_sub_var_id][sub_degree] = GlobalTypedef::EDGE_OUT;
     this->edge_pre_id[_sub_var_id][sub_degree] = _pre_id;
     this->var_degree[_sub_var_id] ++;
 }
@@ -363,7 +363,7 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
     // edge_id[var_id][i] : the ID of the i-th edge of the var 
     this->edge_id[_obj_var_id][obj_degree] = _line_id;
     this->edge_nei_id[_obj_var_id][obj_degree] = _sub_var_id;
-    this->edge_type[_obj_var_id][obj_degree] = Util::EDGE_IN;
+    this->edge_type[_obj_var_id][obj_degree] = GlobalTypedef::EDGE_IN;
     this->edge_pre_id[_obj_var_id][obj_degree] = _pre_id;
     this->var_degree[_obj_var_id] ++;
 }
@@ -907,9 +907,9 @@ int
 BasicQuery::getVarID_FirstProcessWhenJoin()
 {
     int min_var = -1;
-    unsigned min_size = static_cast<unsigned int>(Util::TRIPLE_NUM_MAX);
+    unsigned min_size = static_cast<unsigned int>(GlobalTypedef::TRIPLE_NUM_MAX);
     //int min_var2 = -1;
-    //int min_size2 = Util::TRIPLE_NUM_MAX;
+    //int min_size2 = GlobalTypedef::TRIPLE_NUM_MAX;
     for(int i = 0; i < this->graph_var_num; ++i)
     {
         // when join variables' mapping candidate list, we should start with entity variable.
@@ -998,7 +998,6 @@ string BasicQuery::triple_str()
 
 string BasicQuery::to_str()
 {
-    Util::logging("IN BasicQuery::to_str");
     stringstream _ss;
 
     _ss << "Triples: " << endl;
@@ -1046,10 +1045,6 @@ string BasicQuery::to_str()
         //}
         //_ss << endl;
     //}
-
-    Util::logging(_ss.str()); //debug
-
-    Util::logging("OUT BasicQuery::to_str");
 
     return _ss.str();
 }

@@ -112,7 +112,7 @@ SITree::Search(const char* _str, unsigned _len, unsigned* _val)
     return false;
   }
   const Bstr* tmp = ret->getKey(store);
-  if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
+  if (gutil::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -199,7 +199,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
       this->tsm_->updateHeap(q, q->getRank(), true);
       this->tsm_->updateHeap(p, p->getRank(), true);
       const Bstr* tmp = p->getKey(i);
-      int cmp_res = Util::compare(str, len, tmp->getStr(), tmp->getLen());
+      int cmp_res = gutil::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
       if (cmp_res < 0)
         p = q;
       else
@@ -221,7 +221,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   if (i > 0)
   {
     const Bstr* tmp = p->getKey(i-1);
-    int cmp_res = Util::compare(str, len, tmp->getStr(), tmp->getLen());
+    int cmp_res = gutil::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
     if(cmp_res == 0)
     {
       ifexist = true;
@@ -272,7 +272,7 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
     return false;
   }
   const Bstr* tmp = ret->getKey(store);
-  if (Util::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
+  if (gutil::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -527,71 +527,69 @@ void SITree::PrintTree(SINode* _np)
 void
 SITree::Print(string s)
 {
-#ifdef DEBUG_KVSTORE
-  fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	fputs("Class SITree\n", Util::debug_kvstore);
-	fputs("Message: ", Util::debug_kvstore);
-	fputs(s.c_str(), Util::debug_kvstore);
-	fputs("\n", Util::debug_kvstore);
-	fprintf(Util::debug_kvstore, "Height: %d\n", this->height);
-	if (s == "tree" || s == "TREE")
-	{
-		if (this->root == NULL)
-		{
-			fputs("Null SITree\n", Util::debug_kvstore);
-			return;
-		}
-		SINode** ns = new SINode*[this->height];
-		int* ni = new int[this->height];
-		SINode* np;
-		int i, pos = 0;
-		ns[pos] = this->root;
-		ni[pos] = this->root->getNum();
-		pos++;
-		while (pos > 0)
-		{
-			np = ns[pos - 1];
-			i = ni[pos - 1];
-			this->prepare(np);
-			if (np->isLeaf() || i < 0)	//LeafSINode or ready IntlNode
-			{							//child-num ranges: 0~num
-				if (s == "tree")
-					np->print("node");
-				else
-					np->print("NODE");	//print full node-information
-				pos--;
-				continue;
-			}
-			else
-			{
-				ns[pos] = np->getChild(i);
-				ni[pos - 1]--;
-				ni[pos] = ns[pos]->getNum();
-				pos++;
-			}
-		}
-		delete[] ns;
-		delete[] ni;
-	}
-	else if (s == "LEAVES" || s == "leaves")
-	{
-		SINode* np;
-		for (np = this->leaves_head_; np != NULL; np = np->getNext())
-		{
-			this->prepare(np);
-			if (s == "leaves")
-				np->print("node");
-			else
-				np->print("NODE");
-		}
-	}
-	else if (s == "check tree")
-	{
-		//check the tree, if satisfy B+ definition
-		//TODO	
-	}
-	else;
-#endif
+  // fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	// fputs("Class SITree\n", Util::debug_kvstore);
+	// fputs("Message: ", Util::debug_kvstore);
+	// fputs(s.c_str(), Util::debug_kvstore);
+	// fputs("\n", Util::debug_kvstore);
+	// fprintf(Util::debug_kvstore, "Height: %d\n", this->height);
+	// if (s == "tree" || s == "TREE")
+	// {
+	// 	if (this->root == NULL)
+	// 	{
+	// 		fputs("Null SITree\n", Util::debug_kvstore);
+	// 		return;
+	// 	}
+	// 	SINode** ns = new SINode*[this->height];
+	// 	int* ni = new int[this->height];
+	// 	SINode* np;
+	// 	int i, pos = 0;
+	// 	ns[pos] = this->root;
+	// 	ni[pos] = this->root->getNum();
+	// 	pos++;
+	// 	while (pos > 0)
+	// 	{
+	// 		np = ns[pos - 1];
+	// 		i = ni[pos - 1];
+	// 		this->prepare(np);
+	// 		if (np->isLeaf() || i < 0)	//LeafSINode or ready IntlNode
+	// 		{							//child-num ranges: 0~num
+	// 			if (s == "tree")
+	// 				np->print("node");
+	// 			else
+	// 				np->print("NODE");	//print full node-information
+	// 			pos--;
+	// 			continue;
+	// 		}
+	// 		else
+	// 		{
+	// 			ns[pos] = np->getChild(i);
+	// 			ni[pos - 1]--;
+	// 			ni[pos] = ns[pos]->getNum();
+	// 			pos++;
+	// 		}
+	// 	}
+	// 	delete[] ns;
+	// 	delete[] ni;
+	// }
+	// else if (s == "LEAVES" || s == "leaves")
+	// {
+	// 	SINode* np;
+	// 	for (np = this->leaves_head_; np != NULL; np = np->getNext())
+	// 	{
+	// 		this->prepare(np);
+	// 		if (s == "leaves")
+	// 			np->print("node");
+	// 		else
+	// 			np->print("NODE");
+	// 	}
+	// }
+	// else if (s == "check tree")
+	// {
+	// 	//check the tree, if satisfy B+ definition
+	// 	//TODO	
+	// }
+	// else;
 }
 void
 SITree::SetSingleThread(bool _single)

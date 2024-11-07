@@ -16,7 +16,7 @@ IVStorage::IVStorage()
 	filepath = "";
 	freelist = NULL;
 	treefp = NULL;
-	max_buffer_size = Util::MAX_BUFFER_SIZE;
+	max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;
 	heap_size = max_buffer_size / IVNode::INTL_SIZE;
 	freemem = max_buffer_size;
 	minheap = NULL;
@@ -259,7 +259,7 @@ IVStorage::Address(unsigned _blocknum) const  //BETTER: inline function
 		return 0;
 	else if (_blocknum > cur_block_num)
 	{
-		//print(string("error in Address: Invalid blocknum ") + Util::int2string(_blocknum));
+		//print(string("error in Address: Invalid blocknum ") + to_string(_blocknum));
 		return -1;		//address should be non-negative
 	}
 	//NOTICE: here should explictly use long
@@ -686,7 +686,7 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 		bp = bp->next;
 	}
 
-	Util::Csync(this->treefp);
+	gutil::FileUtil::Csync(this->treefp);
 	//fclose(this->treefp);
 
 	return true;
@@ -695,7 +695,7 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 void
 IVStorage::updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const
 {
-	//long t1 = Util::get_cur_time();
+	//long t1 = gutil::TimeUtil::timestamp();
 	if (_inheap)	//already in heap, to modify
 	{
 		unsigned t = _np->getRank();
@@ -711,7 +711,7 @@ IVStorage::updateHeap(IVNode* _np, unsigned _rank, bool _inheap) const
 		_np->setRank(_rank);
 		this->minheap->insert(_np);
 	}
-	//long t2 = Util::get_cur_time();
+	//long t2 = gutil::TimeUtil::timestamp();
 	//updateHeapTime += (t2 - t1);
 }
 

@@ -118,12 +118,12 @@ runSS(Database* _db, string qf)		//given a query file
 	//getchar();getchar();
 	ResultSet _rs;
 	long tv_begin, tv_final;
-	tv_begin = Util::get_cur_time();
+	tv_begin = gutil::TimeUtil::timestamp();
 	//fprintf(fp0, "begin to query!\n");
 	//fflush(fp0);
 	_db->query(query, _rs, stdout);
 	//fprintf(fp0, "finish this query!\n");
-	tv_final = Util::get_cur_time();
+	tv_final = gutil::TimeUtil::timestamp();
 	//print to logs
 	fprintf(fp1, "%s\n%ld\n%s\n", qf.c_str(), tv_final - tv_begin, line1);//time is standarded as ms
 	fprintf(fp2, "%s\n%s%s\n", qf.c_str(), _rs.to_str().c_str(), line1);

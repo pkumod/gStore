@@ -9,7 +9,6 @@
 #ifndef _KVSTORE_SITREE_HEAP_SIHEAP_H
 #define _KVSTORE_SITREE_HEAP_SIHEAP_H
 
-#include "../../../Util/Util.h"
 #include "../node/SINode.h"
 
 /**

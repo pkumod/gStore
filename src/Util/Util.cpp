@@ -16,10 +16,6 @@ using namespace rapidjson;
 //configure() to config the basic options of gStore system
 //==================================================================================================================
 
-string Util::profile = "./conf/init.conf";
-string Util::initfile = "./conf/init.lock";
-
-map<string, string> Util::global_config;
 pthread_rwlock_t backuplog_lock;
 
 // #define BACKUP_PATH "./backups"
@@ -62,11 +58,6 @@ pthread_rwlock_t backuplog_lock;
 //int Util::entity_num = 0;
 //int Util::literal_num = 0;
 
-//string Util::tmp_path = "../.tmp/";
-//string Util::debug_path = "../.debug/";
-string Util::tmp_path = ".tmp/";
-string Util::debug_path = ".tmp/";
-
 //QUERY: assign all in Util()?
 //BETTER:assigned in KVstore, not one tree?
 FILE* Util::debug_kvstore = NULL;            //used by KVstore
@@ -76,9 +67,6 @@ FILE* Util::debug_vstree = NULL;			 //used by VSTree
 string Util::gserver_port_file = "bin/.gserver_port";
 string Util::gserver_port_swap = "bin/.gserver_port.swap";
 string Util::gserver_log = "logs/gserver.log";
-
-string Util::backup_path = "backups/";
-string Util::system_db = "system";
 
 //set hash table
 HashFunction Util::hash[] = { Util::simpleHash, Util::APHash, Util::BKDRHash, Util::DJBHash, Util::ELFHash, \
@@ -127,7 +115,7 @@ bool
 Util::configure()
 {
     INIParser ini_parser;
-    ini_parser.ReadINI("./conf/conf.ini");
+    ini_parser.ReadINI(GlobalTypedef::profile);
     // system
     Util::setGlobalConfig(ini_parser, "system", "version");
     Util::setGlobalConfig(ini_parser, "system", "product_name");
@@ -142,16 +130,16 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
     // server
     Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
-    Util::setGlobalConfig(ini_parser, "server", "port");
-    Util::setGlobalConfig(ini_parser, "server", "tcp_port");
-    Util::setGlobalConfig(ini_parser, "server", "thread_num");
-    Util::setGlobalConfig(ini_parser, "server", "max_database_num");
-    Util::setGlobalConfig(ini_parser, "server", "max_user_num");
-    Util::setGlobalConfig(ini_parser, "server", "max_output_size");
+    Util::setGlobalConfig(ini_parser, "server", "port", "9000");
+    Util::setGlobalConfig(ini_parser, "server", "tcp_port", "9100");
+    Util::setGlobalConfig(ini_parser, "server", "thread_num", "30");
+    Util::setGlobalConfig(ini_parser, "server", "max_database_num", "100");
+    Util::setGlobalConfig(ini_parser, "server", "max_user_num", "1000");
+    Util::setGlobalConfig(ini_parser, "server", "max_output_size", "100000");
     Util::setGlobalConfig(ini_parser, "server", "ip_allow_path");
-    Util::setGlobalConfig(ini_parser, "server", "ip_deny_path");
+    Util::setGlobalConfig(ini_parser, "server", "ip_deny_path", "conf/ipDeny.config");
     // log
-    Util::setGlobalConfig(ini_parser, "log", "log_mode");
+    Util::setGlobalConfig(ini_parser, "log", "log_mode", "conf/slog.properties");
     Util::setGlobalConfig(ini_parser, "log", "querylog_mode", "1");
     Util::setGlobalConfig(ini_parser, "log", "querylog_path", "logs/endpoint/");
     Util::setGlobalConfig(ini_parser, "log", "accesslog_mode", "0");
@@ -159,68 +147,67 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
     // backup
     Util::setGlobalConfig(ini_parser, "backup", "backup_path", "./backups/");
-    Util::setGlobalConfig(ini_parser, "backup", "auto_backup");
-    Util::setGlobalConfig(ini_parser, "backup", "max_backups");
-    Util::setGlobalConfig(ini_parser, "backup", "backup_time");
+    Util::setGlobalConfig(ini_parser, "backup", "auto_backup", "0");
+    Util::setGlobalConfig(ini_parser, "backup", "max_backups", "4");
+    Util::setGlobalConfig(ini_parser, "backup", "backup_time", "72000");
     // upload
     Util::setGlobalConfig(ini_parser, "upload", "upload_path", "./upload/");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions");
-    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size", "1073741824");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions", "nt|ttl|n3|rdf|txt");
+    Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages", "zip");
     // cluster
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_on", "off");
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_role");
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_node"); 
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_heartbeat", "3"); 
     Util::setGlobalConfig(ini_parser, "cluster", "cluster_relpy_timeout", "5"); 
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_data_path", "./cluster/"); 
+    Util::setGlobalConfig(ini_parser, "cluster", "cluster_data_path", "cluster/"); 
 
     // create db_home
-    string temp_str = Util::global_config["db_home"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["db_home"] = temp_str;
+    string temp_str = GlobalTypedef::global_config["db_home"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["db_home"] = temp_str;
     Util::create_dirs(temp_str);
     
     // create backup_path
     temp_str = Util::getConfigureValue("backup_path");
-    Util::string_suffix(temp_str, '/');
-    Util::backup_path = temp_str;
-    Util::global_config["backup_path"] = temp_str;
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["backup_path"] = temp_str;
     Util::create_dirs(temp_str);
 
     // create pfn_base_path
-    temp_str = Util::global_config["pfn_base_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["pfn_base_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["pfn_base_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["pfn_base_path"] = temp_str;
     Util::create_dirs(temp_str + "cpp");
     Util::create_dirs(temp_str + "lib");
 
     // create upload_path
-    temp_str = Util::global_config["upload_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["upload_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["upload_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["upload_path"] = temp_str;
     Util::create_dirs(temp_str);
 
     // create logs path
-    temp_str = Util::global_config["querylog_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["querylog_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["querylog_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["querylog_path"] = temp_str;
     Util::create_dirs(temp_str);
 
-    temp_str = Util::global_config["accesslog_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["accesslog_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["accesslog_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["accesslog_path"] = temp_str;
     Util::create_dirs(temp_str);
 
-    temp_str = Util::global_config["queryresult_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["queryresult_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["queryresult_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["queryresult_path"] = temp_str;
     Util::create_dirs(temp_str);
     
     // create cluster path
-    temp_str = Util::global_config["cluster_data_path"];
-    Util::string_suffix(temp_str, '/');
-    Util::global_config["cluster_data_path"] = temp_str;
+    temp_str = GlobalTypedef::global_config["cluster_data_path"];
+    gutil::StringUtil::append(temp_str, '/');
+    GlobalTypedef::global_config["cluster_data_path"] = temp_str;
     Util::create_dirs(temp_str);
 
     // init slog
@@ -232,7 +219,7 @@ Util::configure()
         vector<std::string> headers = {"name", "value"};
         PrettyPrint pp(headers);
         std::vector<std::vector<std::string>> rows;
-        for (map<string, string>::iterator it = Util::global_config.begin(); it != Util::global_config.end(); ++it)
+        for (map<string, string>::iterator it = GlobalTypedef::global_config.begin(); it != GlobalTypedef::global_config.end(); ++it)
         {
             pp.addRow({it->first, it->second});
         }
@@ -244,206 +231,34 @@ Util::configure()
     return true;
 }
 
-// bool
-// Util::config_debug()
-// {
-//     const unsigned len1 = 100;
-    // const unsigned len2 = 505;
-	// char AppName[] = "setting";
-    // char KeyName[] = "mode";
-	// char appname[len1], keyname[len1];
-    // char KeyVal[len1];
-    // char *buf, *c;
-    // char buf_i[len1], buf_o[len1];
-    // FILE *fp = NULL;
-    // int status = 0; // 1 AppName 2 KeyName
-// 	return true;
-// }
-
-// bool
-// Util::config_advanced()
-// {
-//     const unsigned len1 = 100;
-    // const unsigned len2 = 505;
-	// char AppName[] = "setting";
-    // char KeyName[] = "mode";
-	// char appname[len1], keyname[len1];
-    // char KeyVal[len1];
-    // char *buf, *c;
-    // char buf_i[len1], buf_o[len1];
-    // FILE *fp = NULL;
-    // int status = 0; // 1 AppName 2 KeyName
-// 	return true;
-// }
-
 bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname, string default_value)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
-        Util::global_config[keyname] = replace_all(value,"\"","");
+        GlobalTypedef::global_config[keyname] = replace_all(value,"\"","");
     else
-        Util::global_config[keyname] = default_value;
+        GlobalTypedef::global_config[keyname] = default_value;
     return true;
 }
 
-string Util::getConfigureValue(const std::string& keyname)
+string Util::getConfigureValue(const std::string& keyname, string default_value)
 {
-    map<string, string>::iterator iter = Util::global_config.find(keyname);
-	if (iter != Util::global_config.end())
+    map<string, string>::iterator iter = GlobalTypedef::global_config.find(keyname);
+	if (iter != GlobalTypedef::global_config.end())
 	{
 		return iter->second;
 	}
-	return "";
+	return default_value;
 }
 
-int Util::getIntFromJSON(rapidjson::Document &doc,string keyname)
+int32_t Util::getConfigureIntValue(const std::string& keyname, int32_t default_value)
 {
-    int result=0;
-    if(doc.HasMember(keyname.c_str())==false)
+    string value = Util::getConfigureValue(keyname);
+    if (!value.empty()) 
     {
-        throw runtime_error("the "+keyname+" has not exists!");
-
+        return stoi(value);
     }
-    else if(doc[keyname.c_str()].IsInt())
-    {
-        result=doc[keyname.c_str()].GetInt();
-    }
-    else {
-        throw runtime_error("the  "+keyname+" is not a Integer ");
-    }
-    return result;
-}
-
-string Util::getStringFromJSON(rapidjson::Document &doc,string keyname)
-{
-    string result="";
-    if(doc.HasMember(keyname.c_str())==false)
-    {
-
-       
-        throw runtime_error("the "+keyname+" has not exists!");
-        
-
-    }
-    else if(doc[keyname.c_str()].IsString())
-    {
-        result=doc[keyname.c_str()].GetString();
-    }
-    else {
-        throw runtime_error("the  "+keyname+" is not a String ");
-      
-    }
-    return result;
-}
-
-bool
-Util::config_setting()
-{
-    const unsigned len1 = 100;
-    const unsigned len2 = 505;
-	char AppName[] = "setting";
-    char KeyName[] = "mode";
-	char appname[len1], keyname[len1];
-    char KeyVal[len1];
-    char *buf, *c;
-    char buf_i[len2], buf_o[len2];
-    FILE *fp = NULL;
-    int status = 0; // 1 AppName 2 KeyName
-
-#ifdef DEBUG
-	fprintf(stderr, "profile: %s\n", profile.c_str());
-#endif
-    if((fp = fopen(profile.c_str(), "r")) == NULL)  //NOTICE: this is not a binary file
-    {
-#ifdef DEBUG
-        fprintf(stderr, "openfile [%s] error [%s]\n", profile.c_str(), strerror(errno));
-#endif
-        return false;
-    }
-    fseek(fp, 0, SEEK_SET);
-	memset(appname, 0, sizeof(appname));
-	sprintf(appname,"[%s]", AppName);
-#ifdef DEBUG
-	fprintf(stderr, "appname: %s\n", appname);
-#endif
-
-    while(!feof(fp) && fgets(buf_i, len2, fp) != NULL)
-    {
-		//fprintf(stderr, "buffer: %s\n", buf_i);
-        Util::l_trim(buf_o, buf_i);
-        if(strlen(buf_o) <= 0)
-            continue;
-        buf = NULL;
-        buf = buf_o;
-		if(buf[0] == '#')
-		{
-			continue;
-		}
-        if(status == 0)
-        {
-            if(strncmp(buf, appname, strlen(appname)) == 0)
-            {
-#ifdef DEBUG
-				fprintf(stderr, "app found!\n");
-#endif
-                status = 1;
-                continue;
-            }
-        }
-        else if(status == 1)
-        {
-			if(buf[0] == '[') 
-			{
-				//NOTICE: nested module is not allowed
-                break;
-            } 
-			else 
-			{
-                if((c = (char*)strchr(buf, '=')) == NULL)
-                    continue;
-                memset(keyname, 0, sizeof(keyname));
-                sscanf(buf, "%[^=|^ |^\t]", keyname);
-#ifdef DEBUG
-				fprintf(stderr, "keyname: %s\n", keyname);
-#endif
-                if(strcmp(keyname, KeyName) == 0) 
-				{
-#ifdef DEBUG
-					fprintf(stderr, "key found!\n");
-#endif
-                    sscanf(++c, "%[^\n]", KeyVal);
-                    char *KeyVal_o = (char *)calloc(strlen(KeyVal) + 1, sizeof(char));
-                    if(KeyVal_o != NULL) 
-					{
-                        Util::a_trim(KeyVal_o, KeyVal);
-#ifdef DEBUG
-						fprintf(stderr, "KeyVal: %s\n", KeyVal_o);
-#endif
-                        if(KeyVal_o && strlen(KeyVal_o) > 0)
-                            strcpy(KeyVal, KeyVal_o);
-                        xfree(KeyVal_o);
-                    }
-                    status = 2;
-                    break;
-                } 
-            }
-        }
-    }
-    fclose(fp);
-    //if(found == 2)
-        //return(0);
-    //else
-        //return(-1);
-    //fprintf(stderr, "%s\n", KeyVal);
-	if(strcmp(KeyVal, "distribute") == 0)
-	{
-#ifdef DEBUG
-		fprintf(stderr, "the gStore will run in distributed mode!\n");
-#endif
-		//Util::gStore_mode = true;
-	}
-
-    return true;   //config success
+    return default_value;
 }
 
 Util::Util()
@@ -499,84 +314,16 @@ Util::~Util()
 #endif
 }
 
-string 
-Util::getThreadID()
-{
-	//thread::id, neither int or long
-	auto myid = this_thread::get_id();
-	stringstream ss;
-	ss << myid;
-	return ss.str();
-}
-
-int
-Util::memUsedPercentage()
-{
-    FILE* fp = fopen("/proc/meminfo", "r");
-    if(fp == NULL)
-        return -1;
-    char str[20], tail[3];
-    unsigned t, sum, used = 0;		//WARN:unsigned,memory cant be too large!
-    fscanf(fp, "%s%u%s", str, &sum, tail);       //MemTotal, KB
-    fscanf(fp, "%s%u%s", str, &used, tail);		//MemFree
-    fscanf(fp, "%s%u%s", str, &t, tail);
-    if(strcmp(str, "MemAvailable") == 0)
-    {
-        //QUERY:what is the relation between MemFree and MemAvailable?
-        used = t;
-        //scanf("%s%u%s", str, &t, tail);		//Buffers
-        //used += t;
-        //scanf("%s%u%s", str, &t, tail);		//Cached
-        //used += t;
-    }
-    //else							//Buffers
-    //{
-    //	scanf("%s%u%s", str, &t, tail);		//Cached
-    //	used += t;
-    //}
-    used = sum - used;
-    fclose(fp);
-    return (int)(used * 100.0 / sum);
-}
-
-int
-Util::memoryLeft()
-{
-    FILE* fp = fopen("/proc/meminfo", "r");
-    if(fp == NULL)
-        return -1;
-
-    char str[20], tail[3];
-    unsigned num, avail = 0, free = 0, buffer = 0, cache = 0;		//WARN:unsigned,memory cant be too large!
-    while (fscanf(fp, "%s%u%s", str, &num, tail) != EOF)
-    {
-        if(strcmp(str, "MemAvailable:") == 0)
-        	avail = num;
-        if(strcmp(str, "MemFree:") == 0)
-        	free = num;
-        if(strcmp(str, "Buffers:") == 0)
-        	buffer = num;
-        if(strcmp(str, "Cached:") == 0)
-        	cache = num;
-    }
-
-    if (avail == 0)
-    	avail = free + buffer + cache;
-
-    fclose(fp);
-    return avail / Util::MB;
-}
-
 bool
 Util::is_literal_ele(TYPE_ENTITY_LITERAL_ID _id)
 {
-    return _id >= Util::LITERAL_FIRST_ID;
+    return _id >= GlobalTypedef::LITERAL_FIRST_ID;
 }
 
 bool 
 Util::is_entity_ele(TYPE_ENTITY_LITERAL_ID id) 
 {
-	return id < Util::LITERAL_FIRST_ID;
+	return id < GlobalTypedef::LITERAL_FIRST_ID;
 }
 
 bool 
@@ -1071,7 +818,7 @@ unsigned long long Util::count_dir_size(const char *_dir_path)
     while ((dir_entry = readdir(dirp)) != NULL)
     {
         char subdir[256];
-        snprintf(subdir, sizeof(subdir), "%s/%s", _dir_path, dir_entry->d_name);
+        snprintf(subdir, sizeof(subdir)-1, "%s/%s", _dir_path, dir_entry->d_name);
         lstat(subdir, &statbuf);
 
         if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
@@ -1254,68 +1001,12 @@ std::string Util::fileName(const std::string &filepath)
         directory += token;
     }
     return directory;
- }
-
-long
-Util::get_cur_time()
-{
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    return (tv.tv_sec*1000 + tv.tv_usec/1000);
-}
-
-string 
-Util::get_date_time()
-{
-	time_t timep;
-	time(&timep);
-	char tmp[64];
-	strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S",localtime(&timep) );
-	return tmp;
-}
-
-string
-Util::get_date_day()
-{
-	time_t timep;
-	time(&timep);
-	char tmp[64];
-	strftime(tmp, sizeof(tmp), "%Y%m%d",localtime(&timep) );
-	return tmp;
-}
-
-string
-Util::get_timestamp()
-{
-    string timestamp;
-    time_t timep;
-    time(&timep);
-    char year[5];
-    char tmp[64];
-    strftime(year, sizeof(year), "%Y", localtime(&timep));
-    timestamp += year[2]; timestamp += year[3];
-    strftime(tmp, sizeof(tmp), "%m%d%H%M%S",localtime(&timep) );
-    timestamp += tmp;
-    return timestamp;
-}
-
-time_t 
-Util::time_to_stamp(string time){
-    struct tm* tm = (struct tm*)malloc(sizeof(struct tm));
-    if (!tm) {
-        // Handle allocation failures
-        return 0;
-    }
-    strptime(time.c_str() , "%Y-%m-%d %H:%M:%S", tm);
-    time_t stamp = mktime(tm);
-    free(tm); // release memory
-    return stamp;
 }
 
 string
 Util::get_backup_time(const string path, const string db_name)
 {
-    string _db_name = db_name + Util::getConfigureValue("db_suffix");
+    string _db_name = db_name + GlobalTypedef::db_suffix();
     string::size_type position;
     position = path.find(_db_name);
 
@@ -1358,60 +1049,6 @@ Util::save_to_file(const char* _dir, const string _content)
     return false;
 }
 
-int
-Util::compare(const char* _str1, unsigned long _len1, const char* _str2, unsigned long _len2)
-{
-	int ifswap = 1;		//1 indicate: not swapped
-	if (_len1 > _len2)
-	{
-		const char* str = _str1;
-		_str1 = _str2;
-		_str2 = str;
-		unsigned long len = _len1;
-		_len1 = _len2;
-		_len2 = len;
-		ifswap = -1;
-	}
-	unsigned long i;
-	//DEBUG: if char can be negative, which cause problem when comparing(128+)
-	//
-	//NOTICE:little-endian-storage, when string buffer poniter is changed to
-	//unsigned long long*, the first char is the lowest byte!
-	/*
-	unsigned long long *p1 = (unsigned long long*)_str1, *p2 = (unsigned long long*)_str2;
-	unsigned limit = _len1/8;
-	for(i = 0; i < limit; ++i, ++p1, ++p2)
-	{
-	if((*p1 ^ *p2) == 0)	continue;
-	else
-	{
-	if(*p1 < *p2)	return -1 * ifswap;
-	else			return 1 * ifswap;
-	}
-	}
-	for(i = 8 * limit; i < _len1; ++i)
-	{
-	if(_str1[i] < _str2[i])	return -1 * ifswap;
-	else if(_str1[i] > _str2[i])	return 1 * ifswap;
-	else continue;
-	}
-	if(i == _len2)	return 0;
-	else	return -1 * ifswap;
-	*/
-	for (i = 0; i < _len1; ++i)
-	{   //ASCII: 0~127 but c: 0~255(-1) all transfered to unsigned char when comparing
-		if ((unsigned char)_str1[i] < (unsigned char)_str2[i])
-			return -1 * ifswap;
-		else if ((unsigned char)_str1[i] > (unsigned char)_str2[i])
-			return 1 * ifswap;
-		else;
-	}
-	if (i == _len2)
-		return 0;
-	else
-		return -1 * ifswap;
-}
-
 string
 Util::string_replace(string rec, const string src, const string des)
 {
@@ -1435,22 +1072,6 @@ Util::is_number(string s)
         if(!isdigit(s[pos])) return false;
     }
     return true;
-}
-
-int
-Util::string2int(string s)
-{
-    return atoi(s.c_str());
-}
-
-string
-Util::int2string(long n)
-{
-    string s;
-    stringstream ss;
-    ss<<n;
-    ss>>s;
-    return s;
 }
 
 //NOTICE: there does not exist itoa() function in Linux, atoi() is included in stdlib.h
@@ -1584,7 +1205,7 @@ string
 Util::getSystemOutput(string cmd)
 {
     string ans = "";
-    string file = Util::tmp_path;
+    string file = GlobalTypedef::tmp_path;
     file += "ans.txt";
     cmd += " > ";
     cmd += file;
@@ -1707,20 +1328,6 @@ Util::checkProcessExist(const std::string& processPath, const std::string& currP
     }
     closedir(dirp);
     return false;
-}
-void
-Util::logging(string _str)
-{
-    _str += "\n";
-#ifdef DEBUG_DATABASE
-    fputs(_str.c_str(), Util::debug_database);
-    fflush(Util::debug_database);
-#endif
-
-#ifdef DEBUG_VSTREE
-    fputs(_str.c_str(), Util::debug_vstree);
-    fflush(Util::debug_vstree);
-#endif
 }
 
 unsigned
@@ -2139,7 +1746,7 @@ Util::isValidPort(string str)
 		}
 	}
 
-	int port = Util::string2int(str);
+	int port = stoi(str);
 	if(port < 0 || port>65535) 
 	{
 		return false;
@@ -2199,36 +1806,6 @@ Util::getTimeName()
 	return myTime;
 }
 
-string
-Util::getTimeString() {
-	static const int max = 20; // max length of time string
-	char time_str[max];
-	time_t timep;
-	time(&timep);
-	strftime(time_str, max, "%Y%m%d %H:%M:%S", localtime(&timep));
-	return string(time_str);
-}
-
-string
-Util::getTimeString2() {
-	static const int max = 20; // max length of time string
-	char time_str[max];
-	time_t timep;
-	time(&timep);
-	strftime(time_str, max, "%Y%m%d%H%M%S", localtime(&timep));
-	return string(time_str);
-}
-int
-Util::getRandNum()
-{
-     unsigned seed;  // Random generator seed
-    // Use the time function to get a "seed” value for srand
-    seed = time(0);
-    srand(seed);
-    int result=rand();
-    return result;
-}
-
 bool Util::checkPort(int port, std::string p_name)
 {
     stringstream ss;
@@ -2262,79 +1839,6 @@ bool Util::checkPort(int port, std::string p_name)
 	}
     Util::remove_path(out_file);
 	return result;
-}
-
-//is ostream.write() ok to update to disk at once? all add ofstream.flush()?
-//http://bookug.cc/rwbuffer
-//BETTER: add a sync function in Util to support FILE*, fd, and fstream
-void 
-Util::Csync(FILE* _fp)
-{
-	//NOTICE: fclose will also do fflush() operation, but not others
-	if(_fp == NULL)
-	{
-		return; 
-	}
-	//this will update the buffer from user mode to kernel mode
-	fflush(_fp);
-	//change to Unix fd and use fsync to sync to disk: fileno(stdin)=0
-	int fd = fileno(_fp);
-	fsync(fd);
-	//FILE * fp = fdopen (1, "w+");   //file descriptor to file pointer 
-	//NOTICE: disk scheduler also has a small buffer, but there is no matter even if the power is off
-	//(UPS for each server to enable the synchronization between scheduler and disk)
-}
-
-string
-Util::node2string(const char* _raw_str) {
-	string _output;
-	unsigned _first_quote = 0;
-	unsigned _last_quote = 0;
-	bool _has_quote = false;
-	for (unsigned i = 0; _raw_str[i] != '\0'; i++) {
-		if (_raw_str[i] == '\"') {
-			if (!_has_quote) {
-				_first_quote = i;
-				_last_quote = i;
-				_has_quote = true;
-			}
-			else {
-				_last_quote = i;
-			}
-		}
-	}
-	if (_first_quote==_last_quote) {
-		_output += _raw_str;
-		return _output;
-	}
-	for (unsigned i = 0; i <= _first_quote; i++) {
-		_output += _raw_str[i];
-	}
-	for (unsigned i = _first_quote + 1; i < _last_quote; i++) {
-		switch (_raw_str[i]) {
-		case '\n':
-			_output += "\\n";
-			break;
-		case '\r':
-			_output += "\\r";
-			break;
-		case '\t':
-			_output += "\\t";
-			break;
-		case '\"':
-			_output += "\\\"";
-			break;
-		case '\\':
-			_output += "\\\\";
-			break;
-		default:
-			_output += _raw_str[i];
-		}
-	}
-	for (unsigned i = _last_quote; _raw_str[i] != 0; i++) {
-		_output += _raw_str[i];
-	}
-	return _output;
 }
 
 //TODO: change these compare functions from int to unsigned, but take care of the returned values
@@ -2686,7 +2190,7 @@ Util::init_backuplog()
     document.SetObject();
     Document::AllocatorType &allocator = document.GetAllocator();
 
-    document.AddMember("db_name", StringRef(Util::system_db.c_str()), allocator);
+    document.AddMember("db_name", StringRef(GlobalTypedef::system_db.c_str()), allocator);
     document.AddMember("backup_timer", DEFALUT_BACKUP_INTERVAL, allocator);
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
@@ -2704,7 +2208,7 @@ Util::init_backuplog()
 int 
 Util::add_backuplog(string db_name)
 {
-    if(db_name == Util::system_db){
+    if(db_name == GlobalTypedef::system_db){
         SLOG_ERROR("system can not be duplicated");
         return -1;
     }
@@ -2715,7 +2219,7 @@ Util::add_backuplog(string db_name)
     document.SetObject();
     Document::AllocatorType &allocator = document.GetAllocator();
 
-    string time = Util::get_date_time();
+    string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 
     document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
     document.AddMember("backup_interval", DEFALUT_BACKUP_INTERVAL, allocator);
@@ -2738,7 +2242,7 @@ Util::add_backuplog(string db_name)
 int 
 Util::delete_backuplog(string db_name)
 {
-    if(db_name == Util::system_db){
+    if(db_name == GlobalTypedef::system_db){
         SLOG_ERROR("system can not be deleted!");
         return -1;
     }
@@ -2868,7 +2372,8 @@ bool
 Util::has_record_backuplog(string db_name)
 {
     pthread_rwlock_rdlock(&backuplog_lock);
-    if(db_name == Util::system_db) return true;
+    if(db_name == GlobalTypedef::system_db) 
+        return true;
     FILE* fp = fopen(BACKUP_LOG_PATH, "r");
     char readBuffer[0xffff];
     while(fgets(readBuffer, 1024, fp)) {
@@ -2903,19 +2408,6 @@ Util::get_timestamp(string& line)
     line = line.substr(0, line.length() - i - 2);
     return timestamp;
 }
-
-string 
-Util::stamp2time(int timestamp)
-{
-    time_t tick = (time_t)timestamp;
-    struct tm tm;
-    char s[100];
-    tm = *localtime(&tick);
-    strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S", &tm);
-
-    return s;
-}
-
 
 //get all specific file type files in a directory
 vector<string> 
@@ -3017,19 +2509,6 @@ std::string Util::md5(const string& text)
     return _md5.toStr();
 }
 
-bool Util::iscontain(const string& _parent,const string& _child)
-{
- string::size_type idx = _parent.find(_child);
- if(idx != string::npos )
- {
-   return true;
- }
- else
- {
-   return false;
- }
-}
-
 void Util::printConsole(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows)
 {
     PrettyPrint pp(headers);
@@ -3061,73 +2540,6 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     }
 }
 
-std::string Util::urlEncode(const std::string& str)
-{
-    std::string strTemp = "";
-    size_t length = str.length();
-    unsigned char x;
-    for (size_t i = 0; i < length; i++)
-    {
-        if (isalnum((unsigned char)str[i]) ||
-            (str[i] == '-') ||
-            (str[i] == '_') ||
-            (str[i] == '.') ||
-            (str[i] == '~'))
-            strTemp += str[i];
-        else if (str[i] == ' ')
-            strTemp += "+";
-        else
-        {
-            strTemp += '%';
-            x = (unsigned char)str[i] >> 4;
-            strTemp += x > 9 ? x + 55 : x + 48;
-            x = (unsigned char)str[i] % 16;
-            strTemp += x > 9 ? x + 55 : x + 48;
-        }
-    }
-    return strTemp;
-}
-
-std::string Util::urlDecode(const std::string& str)
-{
-    std::string strTemp = "";
-    size_t length = str.length();
-    unsigned char x;
-    for (size_t i = 0; i < length; i++)
-    {
-        if (str[i] == '+')
-            strTemp += ' ';
-        else if (str[i] == '%')
-        {
-            assert(i + 2 < length);
-            x = (unsigned char)str[++i];
-            unsigned char high;
-            if (x >= 'A' && x <= 'Z')
-                high = x - 'A' + 10;
-            else if (x >= 'a' && x <= 'z')
-                high = x - 'a' + 10;
-            else if (x >= '0' && x <= '9')
-                high = x - '0';
-            else
-                assert(0);
-
-            x = (unsigned char)str[++i];
-            unsigned char low = 0;
-            if (x >= 'A' && x <= 'Z')
-                low = x - 'A' + 10;
-            else if (x >= 'a' && x <= 'z')
-                low = x - 'a' + 10;
-            else if (x >= '0' && x <= '9')
-                low = x - '0';
-
-            strTemp += high * 16 + low;
-        }
-        else
-            strTemp += str[i];
-    }
-    return strTemp;
-}
-
 std::string Util::get_cur_path()
 {
     char *buffer;
@@ -3141,159 +2553,5 @@ std::string Util::get_cur_path()
         string cur_path = string(buffer);
         SLOG_DEBUG("cur_path: " + cur_path);
         return cur_path;
-    }
-}
-
-const char* Util::get_cpu_items(const char* buffer, unsigned int item)
-{
-    const char* p = buffer;
-
-    int len = strlen(buffer);
-    unsigned int count = 0;
-    for (int i = 0; i < len; i++)
-    {
-        if (' ' == *p)
-        {
-            count++;
-            if (count == item)
-            {
-                p++;
-                break;
-            }
-        }
-        p++;
-    }
-    return p;
-}
-
-inline unsigned long Util::get_cpu_total()
-{
-    // different mode cpu occupy time
-    unsigned long user_time;
-    unsigned long nice_time;
-    unsigned long system_time;
-    unsigned long idle_time;
- 
-    FILE* fd;
-    char buff[1024] = { 0 };
- 
-    fd = fopen("/proc/stat", "r");
-    if (nullptr == fd)
-        return 0;
- 
-    fgets(buff, sizeof(buff), fd);
-    char name[64] = { 0 };
-    sscanf(buff, "%s %ld %ld %ld %ld", name, &user_time, &nice_time, &system_time, &idle_time);
-    fclose(fd);
- 
-    return (user_time + nice_time + system_time + idle_time);
-}
-
-inline unsigned long Util::get_cpu_proc(int pid)
-{
-    // get specific pid cpu use time
-    unsigned int tmp_pid;
-    unsigned long utime;  // user time
-    unsigned long stime;  // kernel time
-    unsigned long cutime; // all user time
-    unsigned long cstime; // all dead time
- 
-    char file_name[64] = { 0 };
-    FILE* fd;
-    char line_buff[1024] = { 0 };
-    sprintf(file_name, "/proc/%d/stat", pid);
- 
-    fd = fopen(file_name, "r");
-    if (nullptr == fd)
-        return 0;
- 
-    fgets(line_buff, sizeof(line_buff), fd);
- 
-    sscanf(line_buff, "%u", &tmp_pid);
-    const char* q = Util::get_cpu_items(line_buff, PROCESS_ITEM);
-    sscanf(q, "%ld %ld %ld %ld", &utime, &stime, &cutime, &cstime);
-    fclose(fd);
- 
-    return (utime + stime + cutime + cstime);
-}
-
-float Util::get_cpu_usage(int pid)
-{
-    unsigned long totalcputime1, totalcputime2;
-    unsigned long procputime1, procputime2;
-    totalcputime1 = get_cpu_total();
-    procputime1 = get_cpu_proc(pid);
-    // FIXME: the 200ms is a magic number, works well
-    usleep(200000); // sleep 200ms to fetch two time point cpu usage snapshots sample for later calculation
-    totalcputime2 = get_cpu_total();
-    procputime2 = get_cpu_proc(pid);
-    float pcpu = 0.0;
-    if (0 != totalcputime2 - totalcputime1)
-        pcpu = (procputime2 - procputime1) / float(totalcputime2 - totalcputime1); // float number
-    int cpu_num = get_nprocs();
-    pcpu *= cpu_num; // should multiply cpu num in multiple cpu machine
-    return pcpu;
-}
-
-float Util::get_memory_usage(int pid)
-{
-    char file_name[64] = {0};
-    FILE *fd;
-    char line_buff[512] = {0};
-    sprintf(file_name, "/proc/%d/status", pid);
-    fd = fopen(file_name, "r");
-    if (nullptr == fd)
-        return 0;
-    char name[64];
-    int vmrss = 0;
-    for (int i = 0; i < VMRSS_LINE - 1; i++)
-        fgets(line_buff, sizeof(line_buff), fd);
-    fgets(line_buff, sizeof(line_buff), fd);
-    sscanf(line_buff, "%s %d", name, &vmrss);
-    fclose(fd);
-    // cnvert VmRSS from KB to MB
-    return vmrss / 1024.0;
-}
-
- unsigned long long Util::get_disk_free()
-{
-    char* p = NULL;
-    const int len = 256;
-    char arr_tmp[len] = {0};
-    int n = readlink("/proc/self/exe", arr_tmp, len);
-    if (n == -1)
-    {
-        return 0;
-    }
-    if (NULL != (p = strrchr(arr_tmp, '/')))
-    {
-        *p = '\0';
-    }
-    std::string cur_path = std::string(arr_tmp);
-    struct statfs disk_info;
-    statfs(cur_path.c_str(), &disk_info);
-    // byte num of block
-    unsigned long long block_size = disk_info.f_bsize;
-    // total = block_size * block_num
-    #ifdef DEBUG
-    unsigned long long total_size = block_size * disk_info.f_blocks;
-    printf("Total_size = %llu B = %llu KB = %llu MB = %llu GB\n", total_size, total_size>>10, total_size>>20, total_size>>30);
-    #endif
-    // free = block_size * free_block_num
-    // available = block_size * available_block_num
-    unsigned long long available_disk = block_size * disk_info.f_bavail;
-    #ifdef DEBUG
-    unsigned long long free_disk = block_size * disk_info.f_bfree;
-    printf("Disk_free = %llu MB = %llu GB\nDisk_available = %llu MB = %llu GB\n", free_disk>>20, free_disk>>30, available_disk>>20, available_disk>>30);
-    #endif
-    // return MB
-    return available_disk>>20;
-}
-
-void Util::string_suffix(string& str, const char suffix)
-{
-    if (str[str.length()-1] != suffix)
-    {
-        str.push_back(suffix);
     }
 }

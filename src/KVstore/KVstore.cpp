@@ -2252,11 +2252,11 @@ KVstore::open_entity2id(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_entity2id_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_entity2id_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_entity2id_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_entity2id_query;
 	}
 	else 
 	{
@@ -2333,11 +2333,11 @@ KVstore::open_id2entity(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2entity_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2entity_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2entity_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2entity_query;
 	}
 	else 
 	{
@@ -2432,11 +2432,11 @@ KVstore::open_predicate2id(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_predicate2id_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_predicate2id_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_predicate2id_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_predicate2id_query;
 	}
 	else 
 	{
@@ -2507,11 +2507,11 @@ KVstore::open_id2predicate(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2predicate_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2predicate_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2predicate_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2predicate_query;
 	}
 	else 
 	{
@@ -2588,11 +2588,11 @@ KVstore::open_literal2id(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_literal2id_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_literal2id_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_literal2id_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_literal2id_query;
 	}
 	else 
 	{
@@ -2671,11 +2671,11 @@ KVstore::open_id2literal(int _mode)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2literal_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2literal_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_id2literal_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_id2literal_query;
 	}
 	else 
 	{
@@ -2750,11 +2750,11 @@ KVstore::open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num)
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_sID2values_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_sID2values_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_sID2values_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_sID2values_query;
 	}
 	else 
 	{
@@ -3420,11 +3420,11 @@ KVstore::open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num, TYPE_E
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_oID2values_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_oID2values_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) 
 	{
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_oID2values_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_oID2values_query;
 	}
 	else 
 	{
@@ -4069,10 +4069,10 @@ KVstore::open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num)
 {
 	unsigned long long buffer_size;
 	if (_mode == KVstore::CREATE_MODE) {
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_pID2values_build;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_pID2values_build;
 	}
 	else if (_mode == KVstore::READ_WRITE_MODE) {
-		buffer_size = Util::MAX_BUFFER_SIZE * buffer_pID2values_query;
+		buffer_size = GlobalTypedef::MAX_BUFFER_SIZE * buffer_pID2values_query;
 	}
 	else {
 		SLOG_ERROR("Invalid open mode in open_preID2values, mode = " << _mode);
@@ -4925,7 +4925,7 @@ KVstore::addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vle
 {
 	if (_array == this->id2literal)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return _array->insert(key, _val, _vlen);
 	}
 	return _array->insert(_key, _val, _vlen);
@@ -4942,7 +4942,7 @@ KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned long
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->insert(key, _val, _vlen);
 	}
 	return _array->insert(_key, _val, _vlen);
@@ -4965,7 +4965,7 @@ KVstore::setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vle
 {
 	if (_array == this->id2literal)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return _array->modify(key, _val, _vlen);
 	}
 	return _array->modify(_key, _val, _vlen);
@@ -4982,7 +4982,7 @@ KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->modify(key, _val, _vlen);
 	}
 	return _array->modify(_key, _val, _vlen);
@@ -5005,7 +5005,7 @@ KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _v
 {
 	if (_array == this->id2literal)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return _array->search(key, _val, _vlen);
 	}
 
@@ -5023,7 +5023,7 @@ KVstore::getValueByKey(IVArray* _array, unsigned _key, char* &_val, unsigned lon
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->search(key, _val, _vlen);
 	}
 	return _array->search(_key, _val, _vlen);
@@ -5061,7 +5061,7 @@ KVstore::removeKey(ISArray* _array, unsigned _key)
 {
 	if (_array == this->id2literal)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return _array->remove(key);
 	}
 	return _array->remove(_key);
@@ -5078,7 +5078,7 @@ KVstore::removeKey(IVArray* _array, unsigned _key)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->remove(key);
 	}
 
@@ -5133,7 +5133,7 @@ KVstore::binarySearch(unsigned _key, const unsigned* _list, unsigned _list_len, 
 bool 
 KVstore::isEntity(TYPE_ENTITY_LITERAL_ID id) 
 {
-	return id < Util::LITERAL_FIRST_ID;
+	return id < GlobalTypedef::LITERAL_FIRST_ID;
 }
 
 void
@@ -5153,7 +5153,7 @@ KVstore::AddIntoObjCache(TYPE_ENTITY_LITERAL_ID _entity_literal_id)
 	if (Util::is_literal_ele(_entity_literal_id))
 	{
 		TYPE_ENTITY_LITERAL_ID _literal_id = _entity_literal_id
-						- Util::LITERAL_FIRST_ID;
+						- GlobalTypedef::LITERAL_FIRST_ID;
 
 		objID2values_literal->PinCache(_literal_id);
 	}
@@ -5257,7 +5257,7 @@ KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned lon
 	//cout << "this is transaction getValueByKey ..................." << endl;
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->search(key, _val, _vlen, AddSet, DelSet, txn, latched, FirstRead);
 	}
 	return _array->search(_key, _val, _vlen, AddSet, DelSet, txn, latched,  FirstRead);
@@ -5313,7 +5313,7 @@ KVstore::insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->insert(key, addset, txn);
 	}
 	return _array->insert(_key, addset, txn);
@@ -5324,7 +5324,7 @@ KVstore::remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->remove(key, delset, txn);
 	}
 	else return _array->remove(_key, delset, txn);
@@ -5557,7 +5557,7 @@ KVstore::get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transact
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->TryExclusiveLatch(key, txn, has_read);
 	}
 	return _array->TryExclusiveLatch(_key, txn, has_read);
@@ -5595,7 +5595,7 @@ KVstore::invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> 
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->Rollback(key, txn, has_read);
 	}
 	return _array->Rollback(_key, txn, has_read);
@@ -5607,7 +5607,7 @@ KVstore::release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Tran
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->ReleaseLatch(key, txn, IVEntry::LatchType::EXCLUSIVE);
 	}
 	return _array->ReleaseLatch(_key, txn, IVEntry::LatchType::EXCLUSIVE);
@@ -5618,7 +5618,7 @@ KVstore::release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transac
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
-		unsigned key = _key - Util::LITERAL_FIRST_ID;
+		unsigned key = _key - GlobalTypedef::LITERAL_FIRST_ID;
 		return objID2values_literal->ReleaseLatch(key, txn, IVEntry::LatchType::SHARED);
 	}
 	return _array->ReleaseLatch(_key, txn, IVEntry::LatchType::SHARED);
@@ -5985,7 +5985,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		//cout << "_len:                                                 " <<  _len << endl;
 		//for(int i = 0; i < _len / sizeof(unsigned); i++) cout << _tmp[i] << " ";
 		//cout << endl;
-		this->clean_dirty_key(this->objID2values_literal, _obj_id - Util::LITERAL_FIRST_ID);
+		this->clean_dirty_key(this->objID2values_literal, _obj_id - GlobalTypedef::LITERAL_FIRST_ID);
 		if(_len == 0) {
 			if(base_empty == false)
 			{
