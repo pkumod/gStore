@@ -11,7 +11,6 @@
 
 IVArray::IVArray()
 {
-	array = NULL;
 	IVfile = NULL;
 	dir_path = "";
 	IVfile_name = "";
@@ -28,11 +27,6 @@ IVArray::IVArray()
 
 IVArray::~IVArray()
 {
-	if (array != NULL)
-	{
-		delete [] array;
-		array = NULL;
-	}
 	fclose(IVfile);
 	delete BM;
 	delete cache_head;
@@ -61,16 +55,15 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurCacheSize = 0;
 
 		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
-		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurEntryNum = max(temp, SETKEYNUM);
+		array_.allocBlock(_key_num);
+		CurEntryNum = array_.getEntryNum();
 		CurEntryNumChange = true;
 
 		BM = new IVBlockManager(filename, mode, CurEntryNum);
-		array = new IVEntry [CurEntryNum];
 
 		IVfile = fopen(IVfile_name.c_str(), "w+b");
 	
-		if (BM == NULL || array == NULL || IVfile == NULL)
+		if (BM == NULL || array_.empty() || IVfile == NULL)
 		{
 			SLOG_ERROR("Initialize IVArray ERROR");
 		}
@@ -91,6 +84,11 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 
 		pread(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
 
+		if (CurEntryNum > 0)
+			array_.allocBlock(CurEntryNum-1);
+		else
+			array_.allocBlock(CurEntryNum);
+
 		BM = new IVBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
@@ -98,12 +96,6 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 			exit(0);
 		}
 
-		array = new IVEntry [CurEntryNum];
-		if (array == NULL)
-		{
-			SLOG_ERROR(_filename << ": Fail to malloc enough space in main memory for array.");
-			exit(0);
-		}
 //		cout << _filename << " CurEntryNum = " << CurEntryNum << endl;
 		for(unsigned i = 0; i < CurEntryNum; i++)
 		{
@@ -114,17 +106,18 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 //			if (i % 1000000 == 0)
 //			cout << _filename << ": Key " << i << " stored in block " << _store << endl;
 
-			array[i].setStore(_store);
-			array[i].setDirtyFlag(false);
+			array_[i]->setStore(_store);
+			array_[i]->setDirtyFlag(false);
 		
 			if (_store > 0)
 			{
-				array[i].setUsedFlag(true);
+				array_[i]->setUsedFlag(true);
 			}	
 		}
 		//TODO PreLoad
 //		PreLoad();
 
+		CurEntryNum = array_.getEntryNum();
 	}
 //	cout << _filename << " Done." << endl;
 }
@@ -141,27 +134,27 @@ IVArray::save()
 
 	for(unsigned i = 0; i < CurEntryNum; i++)
 	{
-		if (array[i].isDirty())
+		if (array_[i]->isDirty())
 		{
 			char *str = NULL;
 			unsigned long len = 0;
 			unsigned int _store;
 			// probably value has been written but store has not	
-			if (array[i].isUsed() && array[i].getBstr(str, len, false))
+			if (array_[i]->isUsed() && array_[i]->getBstr(str, len, false))
 			{
 				//TODO Recycle free block
 				_store = BM->WriteValue(str, len);
-				array[i].setStore(_store);
+				array_[i]->setStore(_store);
 			}
 
-			_store = array[i].getStore();
+			_store = array_[i]->getStore();
 //			if (i == 839)
 //				cout << filename << " key " << i << " stored in block " << _store << endl;
 
 			off_t offset = (off_t)(i + 1) * sizeof(unsigned);
 			pwrite(fd, &_store, 1 * sizeof(unsigned), offset);
 
-			array[i].setDirtyFlag(false);
+			array_[i]->setDirtyFlag(false);
 
 		}
 
@@ -182,11 +175,11 @@ IVArray::SwapOut()
 		return false;
 	}
 
-	int nextID = array[targetID].getNext();
+	int nextID = array_[targetID]->getNext();
 	cache_head->setNext(nextID);
 	if (nextID != -1)
 	{
-		array[nextID].setPrev(-1);
+		array_[nextID]->setPrev(-1);
 	}
 	else // p is tail
 	{
@@ -195,19 +188,19 @@ IVArray::SwapOut()
 
 	char *str = NULL;
 	unsigned long len = 0;
-	array[targetID].getBstr(str, len, false);
+	array_[targetID]->getBstr(str, len, false);
 	CurCacheSize -= len;
-	if (array[targetID].isDirty())
+	if (array_[targetID]->isDirty())
 	{
 		//TODO recycle free blocks
 		unsigned store = BM->WriteValue(str, len);
 		if (store == 0)
 			return false;
-		array[targetID].setStore(store);
-	//	array[targetID].setDirtyFlag(false);
+		array_[targetID]->setStore(store);
+	//	array_[targetID]->setDirtyFlag(false);
 	}
-	array[targetID].release();
-	array[targetID].setCacheFlag(false);
+	array_[targetID]->release();
+	array_[targetID]->setCacheFlag(false);
 
 	return true;
 }
@@ -236,15 +229,15 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned long _len)
 	if (cache_tail_id == -1)
 		cache_head->setNext(_key);
 	else
-		array[cache_tail_id].setNext(_key);
+		array_[cache_tail_id]->setNext(_key);
 
-	array[_key].setPrev(cache_tail_id);
-	array[_key].setNext(-1);
+	array_[_key]->setPrev(cache_tail_id);
+	array_[_key]->setNext(-1);
 	cache_tail_id = _key;
 
 	CurCacheSize += _len;
-	array[_key].setBstr(_str, _len);
-	array[_key].setCacheFlag(true);
+	array_[_key]->setBstr(_str, _len);
+	array_[_key]->setCacheFlag(true);
 
 //	this->CacheLock.unlock();
 	return true;
@@ -254,7 +247,7 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned long _len)
 bool
 IVArray::UpdateTime(unsigned _key, bool HasLock)
 {
-	if (array[_key].isPined()) // the cache pined should not be swaped out
+	if (array_[_key]->isPined()) // the cache pined should not be swaped out
 		return true;
 
 	if (_key == (unsigned) cache_tail_id)// already most recent
@@ -263,19 +256,19 @@ IVArray::UpdateTime(unsigned _key, bool HasLock)
 //	if (!HasLock)
 //		this->CacheLock.lock();
 //	cout << "UpdateTime: " << _key << endl;
-	int prevID = array[_key].getPrev();
-	int nextID = array[_key].getNext();
+	int prevID = array_[_key]->getPrev();
+	int nextID = array_[_key]->getNext();
 
 	if (prevID == -1)
 		cache_head->setNext(nextID);
 	else
-		array[prevID].setNext(nextID);
+		array_[prevID]->setNext(nextID);
 
-	array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+	array_[nextID]->setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
 
-	array[_key].setPrev(cache_tail_id);
-	array[_key].setNext(-1);
-	array[cache_tail_id].setNext(_key);
+	array_[_key]->setPrev(cache_tail_id);
+	array_[_key]->setNext(-1);
+	array_[cache_tail_id]->setNext(_key);
 	cache_tail_id = _key;
 
 //	if (!HasLock)
@@ -287,7 +280,7 @@ bool
 IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 {
 	//printf("%s search %d: ", filename.c_str(), _key);
-	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	if (_key >= CurEntryNum ||!array_[_key]->isUsed())
 	{
 		_str = NULL;
 		_len = 0;
@@ -295,15 +288,15 @@ IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 	}
 	// try to read in main memory
 	this->CacheLock.lock();
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		UpdateTime(_key);
 		this->CacheLock.unlock();
-		bool ret = array[_key].getBstr(_str, _len);
+		bool ret = array_[_key]->getBstr(_str, _len);
 		return ret;
 	}
 	// read in disk
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		this->CacheLock.unlock();
@@ -311,15 +304,15 @@ IVArray::search(unsigned _key, char *&_str, unsigned long & _len)
 	}
 	if(!VList::isLongList(_len))
 	{
-//		if (array[_key].Lock.try_lock())
+//		if (array_[_key]->Lock.try_lock())
 //		{
-//			if (array[_key].inCache())
+//			if (array_[_key]->inCache())
 //				return true;
 			AddInCache(_key, _str, _len);
 			char *debug = new char [_len];
 			memcpy(debug, _str, _len);
 			_str = debug;
-	//		array[_key].Lock.unlock();
+	//		array_[_key]->Lock.unlock();
 	
 //		}
 	}
@@ -331,7 +324,7 @@ bool
 IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 {
 	this->CacheLock.lock();
-	if (_key < CurEntryNum && array[_key].isUsed())
+	if (_key < CurEntryNum && array_[_key]->isUsed())
 	{
 		this->CacheLock.unlock();
 		return false;
@@ -349,38 +342,15 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 	if (_key >= CurEntryNum)
 	{
 		CurEntryNumChange = true;
-		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
-		// unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
-		unsigned OldEntryNum = CurEntryNum;
-//		CurEntryNum = max(CurEntryNum + IVArray::SET_KEY_INC, temp);
-		CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-		while (_key > CurEntryNum)
-		{
-			CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-		}
-
-		IVEntry* newp = new IVEntry[CurEntryNum];
-		if (newp == NULL)
-		{
-			SLOG_ERROR("IVArray insert error: main memory full");
-			CurEntryNum = OldEntryNum;
-			delete[] newp;
-			this->CacheLock.unlock();
-			return false;
-		}
-
-		for(unsigned i = 0; i < OldEntryNum; i++)
-			newp[i].Copy(array[i]);
-
-		delete [] array;
-		array = newp;
+		array_.allocBlock(_key);
+		CurEntryNum = array_.getEntryNum();
 
 	}
 
 	// TODO maybe sometimes not to write in disk, but stored in main memory
 	if (VList::isLongList(_len))
 	{
-		array[_key].release();
+		array_[_key]->release();
 		unsigned store = BM->WriteValue(_str, _len);
 		if (store == 0)
 		{
@@ -388,7 +358,7 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 			this->CacheLock.unlock();
 			return false;
 		}
-		array[_key].setStore(store);
+		array_[_key]->setStore(store);
 		delete[] _str;
 	}
 	else
@@ -397,8 +367,8 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 	}
 	//AddInCache(_key, _str, _len);
 	
-	array[_key].setUsedFlag(true);
-	array[_key].setDirtyFlag(true);
+	array_[_key]->setUsedFlag(true);
+	array_[_key]->setDirtyFlag(true);
 	this->CacheLock.unlock();
 	return true;
 }
@@ -406,35 +376,35 @@ IVArray::insert(unsigned _key, char *_str, unsigned long _len)
 bool
 IVArray::remove(unsigned _key)
 {
-	if (!array[_key].isUsed())
+	if (!array_[_key]->isUsed())
 	{
 		return false;
 	}
 
 	this->CacheLock.lock();
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	BM->FreeBlocks(store);
 
-	array[_key].setUsedFlag(false);
-	array[_key].setDirtyFlag(true);
-	array[_key].setStore(0);
+	array_[_key]->setUsedFlag(false);
+	array_[_key]->setDirtyFlag(true);
+	array_[_key]->setStore(0);
 
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		RemoveFromLRUQueue(_key);
-		if(array[_key].isPined())
-			array[_key].setCachePinFlag(false);
+		if(array_[_key]->isPined())
+			array_[_key]->setCachePinFlag(false);
 
 		char *str = NULL;
-		unsigned long len = array[_key].getBstrLen();
+		unsigned long len = array_[_key]->getBstrLen();
 		CurCacheSize -= len;
-		array[_key].setCacheFlag(false);
+		array_[_key]->setCacheFlag(false);
 	}
 
-	if (array[_key].isPined())
-		array[_key].setCachePinFlag(false);
+	if (array_[_key]->isPined())
+		array_[_key]->setCachePinFlag(false);
 
-	array[_key].release();
+	array_[_key]->release();
 	this->CacheLock.unlock();
 	return true;
 
@@ -444,25 +414,25 @@ bool
 IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 {
 	//cout << "this IVArray::modify " << endl;
-	if (!array[_key].isUsed())
+	if (!array_[_key]->isUsed())
 	{
 		
 		return false;
 	}
-	array[_key].setDirtyFlag(true);
+	array_[_key]->setDirtyFlag(true);
 	this->CacheLock.lock();
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		RemoveFromLRUQueue(_key);
 		
-		if(array[_key].isPined())
-			array[_key].setCachePinFlag(false);
+		if(array_[_key]->isPined())
+			array_[_key]->setCachePinFlag(false);
 
 		char* str = NULL;
-		unsigned long len = array[_key].getBstrLen();
-		unsigned store = array[_key].getStore();
+		unsigned long len = array_[_key]->getBstrLen();
+		unsigned store = array_[_key]->getStore();
 		BM->FreeBlocks(store);
-		array[_key].release();
+		array_[_key]->release();
 		CurCacheSize -= len;
 
 		if (VList::isLongList(_len))
@@ -474,22 +444,22 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 				this->CacheLock.unlock();
 				return false;
 			}
-			array[_key].setStore(store);
-			array[_key].setCacheFlag(false);
+			array_[_key]->setStore(store);
+			array_[_key]->setCacheFlag(false);
 			delete[] _str;
 		}
 		else
 		{
-			array[_key].setStore(0);
+			array_[_key]->setStore(0);
 			AddInCache(_key, _str, _len);
 		}
 	}
 	else
 	{
 		//cout << "free disk and set" << endl;
-		unsigned store = array[_key].getStore();
+		unsigned store = array_[_key]->getStore();
 		BM->FreeBlocks(store);
-		array[_key].release();
+		array_[_key]->release();
 		if (VList::isLongList(_len))
 		{
 			store = BM->WriteValue(_str, _len);
@@ -499,19 +469,19 @@ IVArray::modify(unsigned _key, char *_str, unsigned long _len)
 				this->CacheLock.unlock();
 				return false;
 			}
-			array[_key].setStore(store);
-			array[_key].setCacheFlag(false);
+			array_[_key]->setStore(store);
+			array_[_key]->setCacheFlag(false);
 			delete[] _str;
 		}
 		else
 		{
-			array[_key].setStore(0);
+			array_[_key]->setStore(0);
 			AddInCache(_key, _str, _len);
 		}
 	}
 	
-	array[_key].setUsedFlag(true);
-	array[_key].setDirtyFlag(true);
+	array_[_key]->setUsedFlag(true);
+	array_[_key]->setDirtyFlag(true);
 	this->CacheLock.unlock();
 	return true;
 	
@@ -522,21 +492,21 @@ void
 IVArray::PinCache(unsigned _key)
 {
 	//printf("%s search %d: ", filename.c_str(), _key);
-	if (_key >= CurEntryNum ||!array[_key].isUsed())
+	if (_key >= CurEntryNum ||!array_[_key]->isUsed())
 	{
 		return;
 	}
 	// try to read in main memory
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		RemoveFromLRUQueue(_key);
 
-		array[_key].setCachePinFlag(true);
+		array_[_key]->setCachePinFlag(true);
 	
 		return;
 	}
 	// read in disk
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	char *_str = NULL;
 	unsigned long _len = 0;
 	if (!BM->ReadValue(store, _str, _len))
@@ -544,9 +514,9 @@ IVArray::PinCache(unsigned _key)
 		return;
 	}
 
-	array[_key].setBstr(_str, _len);
-	array[_key].setCacheFlag(true);
-	array[_key].setCachePinFlag(true);
+	array_[_key]->setBstr(_str, _len);
+	array_[_key]->setCacheFlag(true);
+	array_[_key]->setCachePinFlag(true);
 
 	return;
 }
@@ -554,29 +524,29 @@ IVArray::PinCache(unsigned _key)
 void
 IVArray::RemoveFromLRUQueue(unsigned _key)
 {
-	if (!array[_key].inCache() || array[_key].isPined())
+	if (!array_[_key]->inCache() || array_[_key]->isPined())
 		return;
 
 	//this->CacheLock.lock();
-	int prevID = array[_key].getPrev();
-	int nextID = array[_key].getNext();
+	int prevID = array_[_key]->getPrev();
+	int nextID = array_[_key]->getNext();
 
 	if (prevID == -1)
 		cache_head->setNext(nextID);
 	else
-		array[prevID].setNext(nextID);
+		array_[prevID]->setNext(nextID);
 
 	//cout << "next ID: " << nextID << endl;
 	if (nextID != -1)
-		array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+		array_[nextID]->setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
 	else
 		cache_tail_id = prevID;
 
-	array[_key].setCacheFlag(false);
-	array[_key].setPrev(-1);
-	array[_key].setNext(-1);
+	array_[_key]->setCacheFlag(false);
+	array_[_key]->setPrev(-1);
+	array_[_key]->setNext(-1);
 	/*UpdateTime(_key, true);
-	unsigned PrevID = array[_key].getPrev();
+	unsigned PrevID = array_[_key]->getPrev();
 	cache_tail_id = PrevID;
 	if (PrevID == -1)
 		cache_head->setNext(-1);
@@ -599,12 +569,12 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	{
 		_str = NULL;
 		_len = 0;
-		//cout << "_key >= CurEntryNum ||!array[_key].isUsed()......................................................" << endl;
+		//cout << "_key >= CurEntryNum ||!array_[_key]->isUsed()......................................................" << endl;
 		ArrayUnlock();
 		return false;
 	}
 	// try to read in main memory
-	bool ret = array[_key].ReadVersion(AddSet, DelSet, txn, latched, is_firstread);
+	bool ret = array_[_key]->ReadVersion(AddSet, DelSet, txn, latched, is_firstread);
 	// bool is_empty = AddSet.size() == 0 && DelSet.size() == 0;
 	
 	if(ret == false) {
@@ -617,7 +587,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 		return false;
 	}
 	this->CacheLock.lock();
-	if(!array[_key].isUsed())
+	if(!array_[_key]->isUsed())
 	{
 		//cerr << "empty entry!" << endl;
 		_str = NULL;
@@ -628,11 +598,11 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	
 	
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		UpdateTime(_key);
 		this->CacheLock.unlock();
-		bool ret = array[_key].getBstr(_str, _len);
+		bool ret = array_[_key]->getBstr(_str, _len);
 		//cout << ret << endl;
 		//_str maybe nullptr
 		//cout << "get base str success......................................................" << endl;
@@ -642,7 +612,7 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	
 	// read in disk
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	if (!BM->ReadValue(store, _str, _len))
 	{
 		this->CacheLock.unlock();
@@ -652,15 +622,15 @@ IVArray::search(unsigned _key, char *& _str, unsigned long & _len, VDataSet& Add
 	}
 	if(!VList::isLongList(_len) )
 	{
-//		if (array[_key].Lock.try_lock())
+//		if (array_[_key]->Lock.try_lock())
 //		{
-//			if (array[_key].inCache())
+//			if (array_[_key]->inCache())
 //				return true;
 			AddInCache(_key, _str, _len);
 			char *debug = new char [_len];
 			memcpy(debug, _str, _len);
 			_str = debug;
-	//		array[_key].Lock.unlock();
+	//		array_[_key]->Lock.unlock();
 	
 //		}
 	}
@@ -679,7 +649,7 @@ IVArray::remove(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 		VDataSet addset;
 		addset.clear();
 		
-		bool ret = array[_key].WriteVersion(addset, delta, txn);
+		bool ret = array_[_key]->WriteVersion(addset, delta, txn);
 		if(ret == false) txn->SetState(TransactionState::ABORTED);
 		ArrayUnlock();
 		return ret;
@@ -702,15 +672,15 @@ IVArray::insert(unsigned _key, VDataSet& delta, shared_ptr<Transaction> txn)
 	VDataSet delset;
 	delset.clear();
 	//check if first insert 
-	//array[_key].setDirtyFlag(true);
-	int ret = array[_key].WriteVersion(delta, delset, txn);
+	//array_[_key]->setDirtyFlag(true);
+	int ret = array_[_key]->WriteVersion(delta, delset, txn);
 	if(ret != 1) {
 		SLOG_ERROR("write version failed!");
 		txn->SetState(TransactionState::ABORTED);
 		ArrayUnlock();
 		return false;
 	}
-	//cout << "array[_key].inCache()" << array[_key].inCache() << endl;
+	//cout << "array_[_key]->inCache()" << array_[_key]->inCache() << endl;
 	ArrayUnlock();
 	return true;
 }
@@ -735,29 +705,9 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 		if(_key >= CurEntryNum) //recheck
 		{
 			CurEntryNumChange = true;
-			//assuming one expand is enough
-			unsigned OldEntryNum = CurEntryNum;
-			CurEntryNum = IVMIN(OldEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-			while (_key > CurEntryNum)
-			{
-				CurEntryNum = IVMIN(CurEntryNum << 1, static_cast<unsigned>(IVMAXKEYNUM));
-			}
-
-			IVEntry* newp = new IVEntry[CurEntryNum];
-			if (newp == NULL)
-			{
-				SLOG_ERROR("IVArray insert error: main memory full");
-				CurEntryNum = OldEntryNum;
-				delete[] newp;
-				ArrayUnlock();
-				return 0;
-			}
-
-			for(unsigned i = 0; i < OldEntryNum; i++)
-				newp[i].Copy(array[i]);
-
-			delete [] array;
-			array = newp;
+			
+			array_.allocBlock(_key);
+			CurEntryNum = array_.getEntryNum();
 		}
 		ArrayUnlock();
 		//cerr << "Array lock downgrade !" << endl;
@@ -765,7 +715,7 @@ IVArray::TryExclusiveLatch(unsigned _key, shared_ptr<Transaction> txn, bool has_
 	}
 	//assert(_key < CurEntryNum);
 	
-	int ret = array[_key].GetExclusiveLatch(txn, has_read);
+	int ret = array_[_key]->GetExclusiveLatch(txn, has_read);
 	ArrayUnlock();
 	return ret;
 }
@@ -779,7 +729,7 @@ IVArray::ReleaseLatch(unsigned _key, shared_ptr<Transaction> txn, IVEntry::Latch
 		ArrayUnlock();
 		return false;
 	}
-	bool ret = array[_key].UnLatch(txn, type);
+	bool ret = array_[_key]->UnLatch(txn, type);
 	ArrayUnlock();
 	return ret;
 }
@@ -793,10 +743,10 @@ IVArray::Rollback(unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 		ArrayUnlock();
 		return false;
 	}
-	//bool delete_ret = array[_key].deleteUnCommittedVersion(txn);
-	bool delete_ret = array[_key].InvalidExlusiveLatch(txn, has_read);
+	//bool delete_ret = array_[_key]->deleteUnCommittedVersion(txn);
+	bool delete_ret = array_[_key]->InvalidExlusiveLatch(txn, has_read);
 	//cerr << "delete_retdelete_ret TID:" << txn->GetTID() << " " << _key << "    " << delete_ret << endl;
-	//bool unlock_ret = array[_key].releaseExlusiveLock(txn);
+	//bool unlock_ret = array_[_key]->releaseExlusiveLock(txn);
 	ArrayUnlock();
 	return delete_ret;
 }
@@ -807,12 +757,12 @@ bool
 IVArray::CleanDirtyKey(unsigned _key)
 {
 	ArraySharedLock();
-	if (_key >= CurEntryNum || !array[_key].isVersioned())
+	if (_key >= CurEntryNum || !array_[_key]->isVersioned())
 	{
 		ArrayUnlock();
 		return false;
 	}
-	array[_key].CleanAllVersion();
+	array_[_key]->CleanAllVersion();
 	ArrayUnlock();
 	return true;
 

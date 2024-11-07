@@ -7,6 +7,8 @@
  * a Key-Value Index for ID-Value pair in form of Array
  * =======================================================================*/
 
+#pragma once
+#include "../EntryBlockList.h"
 #include "../../Util/Util.h"
 #include "../../Util/SpinLock.h"
 #include "IVEntry.h"
@@ -28,7 +30,7 @@ private:
 	unsigned long long MAX_CACHE_SIZE;
 
 private:
-	IVEntry* array;
+	EntryBlockList<IVEntry> array_;
 	IVEntry *cache_head;
 	int cache_tail_id;
 	FILE* IVfile; // file that records index-store

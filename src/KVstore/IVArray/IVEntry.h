@@ -6,6 +6,7 @@
  * Description: head file of IVEntry, the most basic unit of IVArray
  * =====================================================================*/
 
+#pragma once
 #include "../../Util/Util.h"
 #include "../../Util/VList.h"
 #include "../../Util/Version.h"

@@ -11,7 +11,6 @@
 
 ISArray::ISArray()
 {
-	array = NULL;
 	ISfile = NULL;
 	dir_path = "";
 	ISfile_name = "";
@@ -26,11 +25,6 @@ ISArray::ISArray()
 
 ISArray::~ISArray()
 {
-	if (array != NULL)
-	{
-		delete [] array;
-		array = NULL;
-	}
 	fclose(ISfile);
 	delete BM;
 	delete cache_head;
@@ -52,17 +46,15 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 	{
 		CurCacheSize = 0;
 
-		// temp is the smallest number >= _key_num and mod SET_KEY_INC = 0
-		unsigned temp = ((_key_num + (1 << 10) - 1) >> 10) << 10;
-		CurEntryNum = max(temp, SETKEYNUM);
+		array_.allocBlock(_key_num);
+		CurEntryNum = array_.getEntryNum();
 		CurEntryNumChange = true;
 
 		BM = new ISBlockManager(filename, mode, CurEntryNum);
-		array = new ISEntry [CurEntryNum];
 
 		ISfile = fopen(ISfile_name.c_str(), "w+b");
 	
-		if (BM == NULL || array == NULL || ISfile == NULL)
+		if (BM == NULL || array_.empty() || ISfile == NULL)
 		{
 			SLOG_ERROR("Initialize ISArray ERROR");
 		}
@@ -76,7 +68,12 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		int fd  = fileno(ISfile);
 
 		pread(fd, &CurEntryNum, 1 * sizeof(unsigned), 0);
-
+		
+		if (CurEntryNum > 0)
+			array_.allocBlock(CurEntryNum-1);
+		else
+			array_.allocBlock(CurEntryNum);
+		
 		BM = new ISBlockManager(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
@@ -84,44 +81,39 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 			exit(0);
 		}
 
-		array = new ISEntry [CurEntryNum];
-		if (array == NULL)
-		{
-			SLOG_ERROR(_filename << ": Fail to malloc enough space in main memory for array.");
-			exit(0);
-		}
 		for(unsigned i = 0; i < CurEntryNum; i++)
 		{
 			unsigned _store;
 			off_t offset = (i + 1) * sizeof(unsigned);
 			pread(fd, &_store, 1 * sizeof(unsigned), offset);
 
-			array[i].setStore(_store);
-			array[i].setDirtyFlag(false);
+			array_[i]->setStore(_store);
+			array_[i]->setDirtyFlag(false);
 		
 			if (_store > 0)
 			{
-				array[i].setUsedFlag(true);
+				array_[i]->setUsedFlag(true);
 			}	
 		}
 		//TODO PreLoad
 //		PreLoad();
 
+		CurEntryNum = array_.getEntryNum();
 	}
 }
 
 bool
 ISArray::PreLoad()
 {
-	if (array == NULL)
+	if (array_.empty())
 		return false;
 
 	for(unsigned i = 0; i < CurEntryNum; i++)
 	{
-		if (!array[i].isUsed())
+		if (!array_[i]->isUsed())
 			continue;
 
-		unsigned store = array[i].getStore();
+		unsigned store = array_[i]->getStore();
 		char *str = NULL;
 		unsigned len = 0;
 
@@ -150,26 +142,26 @@ ISArray::save()
 
 	for(unsigned i = 0; i < CurEntryNum; i++)
 	{
-		if (array[i].isDirty())
+		if (array_[i]->isDirty())
 		{
 			char *str = NULL;
 			unsigned len = 0;
 			unsigned _store;
 			// probably value has been written but store has not	
-			if (array[i].isUsed() && array[i].getBstr(str, len, false))
+			if (array_[i]->isUsed() && array_[i]->getBstr(str, len, false))
 			{
 				_store = BM->WriteValue(str, len);
-				array[i].setStore(_store);
+				array_[i]->setStore(_store);
 			}
 
-			_store = array[i].getStore();
+			_store = array_[i]->getStore();
 //			if (i == 839)
 //				cout << filename << " key " << i << " stored in block " << _store << endl;
 
 			off_t offset = (off_t)(i + 1) * sizeof(unsigned);
 			pwrite(fd, &_store, 1 * sizeof(unsigned), offset);
 
-			array[i].setDirtyFlag(false);
+			array_[i]->setDirtyFlag(false);
 
 		}
 
@@ -188,12 +180,12 @@ ISArray::SwapOut()
 	if ((targetID = cache_head->getNext()) == -1)
 		return false;
 
-	int nextID = array[targetID].getNext();
+	int nextID = array_[targetID]->getNext();
 	//cout << "nextID = " << nextID << endl;
 	cache_head->setNext(nextID);
 	if (nextID != -1)
 	{
-		array[nextID].setPrev(-1);
+		array_[nextID]->setPrev(-1);
 	}
 	else
 	{
@@ -202,19 +194,19 @@ ISArray::SwapOut()
 
 	char *str = NULL;
 	unsigned len = 0;
-	array[targetID].getBstr(str, len, false);
+	array_[targetID]->getBstr(str, len, false);
 	CurCacheSize -= len;
-	if (array[targetID].isDirty())
+	if (array_[targetID]->isDirty())
 	{
 		//TODO recycle free blocks
 		unsigned store = BM->WriteValue(str, len);
 		if (store == 0)
 			return false;
-		array[targetID].setStore(store);
+		array_[targetID]->setStore(store);
 		//array[targetID].setDirtyFlag(false);
 	}
-	array[targetID].release();
-	array[targetID].setCacheFlag(false);
+	array_[targetID]->release();
+	array_[targetID]->setCacheFlag(false);
 
 	return true;
 }
@@ -242,16 +234,16 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 	}
 
 	CurCacheSize += _len;
-	array[_key].setBstr(_str, _len);
-	array[_key].setCacheFlag(true);
+	array_[_key]->setBstr(_str, _len);
+	array_[_key]->setCacheFlag(true);
 
 	if (cache_tail_id == -1)
 		cache_head->setNext(_key);
 	else
-		array[cache_tail_id].setNext(_key);
+		array_[cache_tail_id]->setNext(_key);
 
-	array[_key].setPrev(cache_tail_id);
-	array[_key].setNext(-1);
+	array_[_key]->setPrev(cache_tail_id);
+	array_[_key]->setNext(-1);
 	cache_tail_id = _key;
 
 	return true;
@@ -264,17 +256,17 @@ ISArray::UpdateTime(unsigned _key)
 	if (_key == (unsigned) cache_tail_id)
 		return true;
 
-	int prevID = array[_key].getPrev();
-	int nextID = array[_key].getNext();
+	int prevID = array_[_key]->getPrev();
+	int nextID = array_[_key]->getNext();
 	if (prevID == -1)
 		cache_head->setNext(nextID);
 	else
-		array[prevID].setNext(nextID);
-	array[nextID].setPrev(prevID);
+		array_[prevID]->setNext(nextID);
+	array_[nextID]->setPrev(prevID);
 
-	array[_key].setPrev(cache_tail_id);
-	array[_key].setNext(-1);
-	array[cache_tail_id].setNext(_key);
+	array_[_key]->setPrev(cache_tail_id);
+	array_[_key]->setNext(-1);
+	array_[cache_tail_id]->setNext(_key);
 	cache_tail_id = _key;
 
 	return true;
@@ -285,7 +277,7 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 {
 	this->AccessLock.lock();
 	//	printf("%s search %d: \n", filename.c_str(), _key);
-	if (_key >= CurEntryNum || !array[_key].isUsed())
+	if (_key >= CurEntryNum || !array_[_key]->isUsed())
 	{
 		_str = NULL;
 		_len = 0;
@@ -293,15 +285,15 @@ ISArray::search(unsigned _key, char *&_str, unsigned &_len)
 		return false;
 	}
 	// try to read in main memory
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		UpdateTime(_key);
 		this->AccessLock.unlock();
-		return array[_key].getBstr(_str, _len);
+		return array_[_key]->getBstr(_str, _len);
 	}
 //	printf(" need to read disk ");
 	// read in disk
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 //	cout << "store: " << store << endl;
 //	printf("stored in block %d, ", store);
 	if (!BM->ReadValue(store, _str, _len))
@@ -324,7 +316,7 @@ bool
 ISArray::insert(unsigned _key, char *_str, unsigned _len)
 {
 	this->AccessLock.lock();
-	if (_key < CurEntryNum && array[_key].isUsed())
+	if (_key < CurEntryNum && array_[_key]->isUsed())
 	{
 		this->AccessLock.unlock();
 		return false;
@@ -342,38 +334,14 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	//if (CurKeyNum >= CurEntryNum) // need to realloc
 	if (_key >= CurEntryNum)
 	{
-		// Alloc = true;
 		CurEntryNumChange = true;
-		// temp is the smallest number >= _key and mod SET_KEY_INC = 0
-		unsigned temp = ((_key + (1 << 10) - 1) >> 10) << 10;
-		unsigned OldEntryNum = CurEntryNum;
-		CurEntryNum = max(OldEntryNum << 1, temp);
-		CurEntryNum = ISMIN(CurEntryNum, static_cast<unsigned>(ISMAXKEYNUM));
-		ISEntry* newp = new ISEntry[CurEntryNum];
-		//maybe using realloc and then initialize manually
-		if (newp == NULL)
-		{
-			SLOG_ERROR("ISArray insert error: main memory full");
-			this->AccessLock.unlock();
-			return false;
-		}
-		else
-		{
-			// cout << "Alloc new array size " << CurEntryNum << endl;
-		}
-
-		for(unsigned i = 0; i < OldEntryNum; i++)
-			newp[i].Copy(array[i]);
-
-		delete [] array;
-		array = newp;
-
-		// cout << "Finish Alloc" << endl;
+		array_.allocBlock(_key);
+		CurEntryNum = array_.getEntryNum();
 	}
 
 	AddInCache(_key, _str, _len);
-	array[_key].setUsedFlag(true);
-	array[_key].setDirtyFlag(true);
+	array_[_key]->setUsedFlag(true);
+	array_[_key]->setDirtyFlag(true);
 	this->AccessLock.unlock();
 	return true;
 }
@@ -382,32 +350,32 @@ bool
 ISArray::remove(unsigned _key)
 {
 	this->AccessLock.lock();
-	if (_key >= CurEntryNum || !array[_key].isUsed())
+	if (_key >= CurEntryNum || !array_[_key]->isUsed())
 	{
 		this->AccessLock.unlock();
 		return false;
 	}
 
 
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	BM->FreeBlocks(store);
 
-	array[_key].setUsedFlag(false);
-	array[_key].setDirtyFlag(true);
-	array[_key].setStore(0);
+	array_[_key]->setUsedFlag(false);
+	array_[_key]->setDirtyFlag(true);
+	array_[_key]->setStore(0);
 
-	if (array[_key].inCache())
+	if (array_[_key]->inCache())
 	{
 		RemoveFromLRUQueue(_key);
 
 		char *str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len, false);
+		array_[_key]->getBstr(str, len, false);
 		CurCacheSize -= len;
-		array[_key].setCacheFlag(false);
+		array_[_key]->setCacheFlag(false);
 	}
 
-	array[_key].release();
+	array_[_key]->release();
 
 	this->AccessLock.unlock();
 	return true;
@@ -418,30 +386,30 @@ bool
 ISArray::modify(unsigned _key, char *_str, unsigned _len)
 {
 	this->AccessLock.lock();
-	if (_key >= CurEntryNum || !array[_key].isUsed())
+	if (_key >= CurEntryNum || !array_[_key]->isUsed())
 	{
 		this->AccessLock.unlock();
 		return false;
 	}
 
-	array[_key].setDirtyFlag(true);
-	if (array[_key].inCache())
+	array_[_key]->setDirtyFlag(true);
+	if (array_[_key]->inCache())
 	{
 		RemoveFromLRUQueue(_key);
 
 		char* str = NULL;
 		unsigned len = 0;
-		array[_key].getBstr(str, len, false);
+		array_[_key]->getBstr(str, len, false);
 
 		CurCacheSize -= len;
-		array[_key].release();
-		array[_key].setCacheFlag(false);
+		array_[_key]->release();
+		array_[_key]->setCacheFlag(false);
 		//unsigned store = BM->WriteValue(_str, _len);
-		//array[_key].setStore(store);
+		//array_[_key]->setStore(store);
 		
 	}
 
-	unsigned store = array[_key].getStore();
+	unsigned store = array_[_key]->getStore();
 	BM->FreeBlocks(store);
 	AddInCache(_key, _str, _len);
 
@@ -453,28 +421,28 @@ ISArray::modify(unsigned _key, char *_str, unsigned _len)
 void
 ISArray::RemoveFromLRUQueue(unsigned _key)
 {
-	if (!array[_key].inCache())
+	if (!array_[_key]->inCache())
 		return;
-	int prevID = array[_key].getPrev();
-	int nextID = array[_key].getNext();
+	int prevID = array_[_key]->getPrev();
+	int nextID = array_[_key]->getNext();
 
 	if (prevID == -1)
 		cache_head->setNext(nextID);
 	else
-		array[prevID].setNext(nextID);
+		array_[prevID]->setNext(nextID);
 
 	//cout << "next ID: " << nextID << endl;
 	if (nextID != -1)
-		array[nextID].setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
+		array_[nextID]->setPrev(prevID); // since array[_key] is not tail, nextp will not be NULL
 	else
 		cache_tail_id = prevID;
 
-	array[_key].setCacheFlag(false);
-	array[_key].setPrev(-1);
-	array[_key].setNext(-1);
+	array_[_key]->setCacheFlag(false);
+	array_[_key]->setPrev(-1);
+	array_[_key]->setNext(-1);
 
 /*	UpdateTime(_key);
-	unsigned PrevID = array[_key].getPrev();
+	unsigned PrevID = array_[_key]->getPrev();
 	cache_tail_id = PrevID;
 	if (PrevID == -1)
 		cache_head->setNext(-1);
