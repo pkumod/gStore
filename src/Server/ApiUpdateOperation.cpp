@@ -104,7 +104,8 @@ namespace server
                     response.StatusCode = code;
                     return;
                 }
-                upfile.getFileList(zip_files, "");
+                db_path = upfile.getMaxFilePath();
+                upfile.getFileList(zip_files, db_path);
             }
             std::string opt_id = apiUtil->generateUid();
             string operation = "build";
@@ -122,14 +123,21 @@ namespace server
                         string result;
                         shared_ptr<Database> current_database = make_shared<Database>(database);
                         // build empty database
-                        bool flag = current_database->BuildEmptyDB();
-                        current_database.reset();
-                        int success_num = 0;
+                        bool flag = true;
                         int nt_file_num = 0;
+                        if (!db_path.empty())
+                        {
+                            flag = current_database->build(db_path, clusterlog);
+                            nt_file_num = 1;
+                        }
+                        else
+                            flag = current_database->BuildEmptyDB();
+                        int success_num = current_database->getTripleNum();
+                        current_database.reset();
                         if (flag)
                         {
                             // if zip file then excuse batchInsert
-                            if (!db_path.empty() || zip_files.size() > 0)
+                            if (zip_files.size() > 0)
                             {
                                 current_database = make_shared<Database>(db_name);
                                 bool rt  = current_database->load(false);
@@ -151,11 +159,6 @@ namespace server
                                     }
                                     current_database.reset();
                                     return;
-                                }
-                                if (!db_path.empty() && !is_zip)
-                                {
-                                    current_database->batch_insert(db_path, false, nullptr, clusterlog);
-                                    nt_file_num = 1;
                                 }
                                 for (std::string rdf_zip : zip_files)
                                 {

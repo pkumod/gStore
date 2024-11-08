@@ -2284,7 +2284,7 @@ bool Database::build(const string &_rdf_file, Socket &socket)
 	return true;
 }
 
-bool Database::build(const string &_rdf_file)
+bool Database::build(const string &_rdf_file, shared_ptr<ofstream> cluster_log)
 {
 	SLOG_CORE("---------Begin to Build Database `" << name << "`---------");
 	// NOTICE: it is not necessary to use multiple threads here, because some process may rely on others
@@ -2312,7 +2312,7 @@ bool Database::build(const string &_rdf_file)
 
 	// to be switched to new encodeRDF method.
 	//    this->encodeRDF(ret);
-	if (!this->encodeRDF_new(ret, error_log)) //<-- this->kvstore->id2* trees are closed
+	if (!this->encodeRDF_new(ret, error_log, cluster_log)) //<-- this->kvstore->id2* trees are closed
 	{
 		return false;
 	}
@@ -2602,7 +2602,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	return true;
 }
 
-bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
+bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, shared_ptr<ofstream> cluster_log)
 {
 #ifdef DEBUG
 	Util::logging("In encodeRDF_new");
@@ -2621,7 +2621,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	//(one way is to add a more structure to tell us which is entity, but this is costly)
 
 	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
-	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log))
+	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, cluster_log))
 	{
 		return false;
 	}
@@ -3094,7 +3094,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	return true;
 }
 
-bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log)
+bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, shared_ptr<ofstream> cluster_log)
 {
 	// NOTICE: if we keep the id_tuples always in memory, i.e. [unsigned*] each unsigned* is [3]
 	// then for freebase, there is 2.5B triples. the mmeory cost of this array is 25*10^8*3*4 + 25*10^8*8 = 50G
@@ -3234,6 +3234,8 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	int batch_count = 0;
 	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 	std::map<int, vector<ID_TUPLE>> id_tuples;
+	std::string split_str = cluster::TripleInfo::getSplitStr();
+	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
 	while (true)
 	{
 		++batch_count;
@@ -3364,6 +3366,8 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			tmp_id_tuple.subid = _sub_id;
 			tmp_id_tuple.preid = _pre_id;
 			tmp_id_tuple.objid = _obj_id;
+			if (cluster_log)
+				*cluster_log << _sub << split_str << _pre << split_str << _obj << split_str << operation << std::endl;
 			// when the predicat is type
 			if (triple_array[i].isObjEntity() && this->checkIsTypePredicate(_pre))
 				id_tuples[_obj_id].push_back(tmp_id_tuple);
