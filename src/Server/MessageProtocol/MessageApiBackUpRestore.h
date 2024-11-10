@@ -12,7 +12,7 @@ namespace server
         std::string callback;
         bool backup_zip;
         MessageBackupRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip);
-        MessageBackupRequest(const rapidjson::Document& json_data);
+        MessageBackupRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -32,7 +32,7 @@ namespace server
     {
         std::string db_name;
         MessageBackupPathRequest()=delete;
-        MessageBackupPathRequest(const rapidjson::Document& json_data);
+        MessageBackupPathRequest(const nlohmann::json& json_data);
     };
 
     struct MessageBackupPathResponse : public MessageResponse
@@ -50,7 +50,7 @@ namespace server
         std::string callback;
         bool backup_zip;
         MessageRestoreRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip);
-        MessageRestoreRequest(const rapidjson::Document& json_data);
+        MessageRestoreRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -70,7 +70,7 @@ namespace server
         std::string db_path;
         bool compress;
         MessageExportRequest(std::string db_name, std::string db_path, bool compress);
-        MessageExportRequest(const rapidjson::Document& json_data);
+        MessageExportRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };

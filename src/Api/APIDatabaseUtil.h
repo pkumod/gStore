@@ -1,8 +1,9 @@
 #pragma once
-#include "APIUtilDefined.h"
-
+#include <string>
+#include <vector>
+#include "nlohmann/json.hpp"
 using namespace std;
-using namespace rapidjson;
+using namespace nlohmann;
 
 enum DatabaseStatus 
 {
@@ -118,15 +119,15 @@ public:
         }
         return false;
     }
-    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
+    nlohmann::json toJSON()
     {
-        rapidjson::Value doc(rapidjson::kObjectType);
-        // doc.SetObject();
-        doc.AddMember("database", rapidjson::Value().SetString(db_name.c_str(), allocator).Move(), allocator);
-        doc.AddMember("creator", rapidjson::Value().SetString(creator.c_str(), allocator).Move(), allocator);
-        doc.AddMember("built_time", rapidjson::Value().SetString(build_time.c_str(), allocator).Move(), allocator);
-        doc.AddMember("status", rapidjson::Value().SetString(getStatusStr().c_str(), allocator).Move(), allocator);
-        return doc;
+        nlohmann::json json = {
+            {"database", db_name},
+            {"creator", creator},
+            {"built_time", build_time},
+            {"status", getStatusStr()}
+        };
+        return json;
     }
 };
 

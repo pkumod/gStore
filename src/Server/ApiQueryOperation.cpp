@@ -7,7 +7,7 @@ namespace server
     {
         try
         {
-            int32_t min_memory = (apiUtil->get_configure_value("min_memory", 512)); // MB
+            int32_t min_memory = Util::getConfigureIntValue("min_memory", 512); // MB
             int32_t memoryLeft = gutil::ResourceUtil::memoryLeft();
             if (memoryLeft < (min_memory >> 10))
             {
@@ -221,7 +221,7 @@ namespace server
         MessageQueryResponse response;
         try
         {
-            int32_t min_memory = (apiUtil->get_configure_value("min_memory", 512)); // MB
+            int32_t min_memory = Util::getConfigureIntValue("min_memory", 512); // MB
             int32_t memoryLeft = gutil::ResourceUtil::memoryLeft();
             if (memoryLeft < (min_memory >> 10))
             {
@@ -439,7 +439,6 @@ namespace server
             return false;
         }
     }
-
 
     void ApiHandler::query_result_notify(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response)
     {

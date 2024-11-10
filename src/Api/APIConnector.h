@@ -97,7 +97,7 @@ public:
 
 	static server::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request);
 
-	static server::MessageReviewResponse funReview(const std::string& url, const bool& inner, server::MessageReviewRequest& request);
+	static server::MessageFunReviewResponse funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request);
 
 	static server::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request);
 

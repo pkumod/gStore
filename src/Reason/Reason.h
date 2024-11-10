@@ -3,7 +3,7 @@
 #include "../Util/Util.h"
 
 using namespace std;
-using namespace rapidjson;
+
 struct ReasonSparql
 {
   /* data */
@@ -11,38 +11,30 @@ struct ReasonSparql
   string delete_sparql;
   string check_sparql;
   string error_message;
-  int issuccess=0;
+  int issuccess = 0;
 };
 struct ReasonOperationResult
 {
-  int issuccess=0;
+  int issuccess = 0;
   string error_message;
 };
 
 class ReasonHelper
 {
 private:
-    /* data */
+  /* data */
 public:
-    ReasonHelper(/* args */);
-    ~ReasonHelper();
-    static void addReasonRule(Document rule);
-    static vector<string> getReasonRuleList(string db_path);
-    static void alterReasonRule(Document rule);
-    static Document getReasonRuleById(string id);
-    static ReasonOperationResult getReasonInfo(string name,string db_name,string db_home,string db_suffix);
-    static ReasonOperationResult removeReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    static string getSparqlForReasonRule(Document rule);
-    static Document stringToRuleInfo(Value doc);
-    static string RuleInfoToString(Document ruleinfo);
-    static ReasonOperationResult saveReasonRuleInfo(Value& ruleInfo,string db_name,string db_home,string db_suffix);
-    static ReasonSparql compileReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    static ReasonSparql executeReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    static string updateReasonRuleInfo(string rulename,string db_name,Document ruleinfo,string db_home,string db_suffix);
-    static string updateReasonRuleStatus(string rulename,string db_name,string status,string db_home,string db_suffix);
-    static ReasonSparql disableReasonRule(string rulename,string db_name,string db_home,string db_suffix);
-    static string updateReasonRuleEffectNum(string rulename,string db_name,int effectNum,string db_home,string db_suffix,string checkResultMsg);
-    static ReasonSparql getCheckSparql(string rulename,string db_name,string db_home,string db_suffix);
+  ReasonHelper();
+  ~ReasonHelper();
+  static vector<string> getReasonRuleList(const string &db_path);
+  static ReasonOperationResult getReasonInfo(const string &rulename, const string &db_path);
+  static ReasonOperationResult removeReasonRule(const string &rulename, const string &db_path);
+  static ReasonOperationResult saveReasonRuleInfo(nlohmann::json &ruleInfo, const string &db_path);
+  static ReasonSparql compileReasonRule(const string &rulename, const string &db_path);
+  static ReasonSparql executeReasonRule(const string &rulename, const string &db_path);
+  static string updateReasonRuleInfo(nlohmann::json &ruleInfo, const string &db_path);
+  static string updateReasonRuleStatus(const string &rulename, const string &status, const string &db_path);
+  static ReasonSparql disableReasonRule(const string &rulename, const string &db_path);
+  static string updateReasonRuleEffectNum(const string &rulename, const string &db_path, int effectNum, string checkResultMsg);
+  static ReasonSparql getCheckSparql(const string &rulename, const string &db_path);
 };
-
-

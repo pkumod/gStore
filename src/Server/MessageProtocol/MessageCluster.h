@@ -14,7 +14,7 @@ namespace server
         std::string follow_port; // local server port
         std::string follow_ip;
         MessageClusterRequest()=delete;
-        MessageClusterRequest(const rapidjson::Document& json_data);
+        MessageClusterRequest(const nlohmann::json& json_data);
     };
 
     // cluster reply api
@@ -22,7 +22,7 @@ namespace server
     {
         std::string operation;
         MessageClusterReplyRequest()=delete;
-        MessageClusterReplyRequest(const rapidjson::Document& json_data);
+        MessageClusterReplyRequest(const nlohmann::json& json_data);
     };
 
     // cluster check api
@@ -30,6 +30,6 @@ namespace server
     {
         uint16_t result;
         MessageClusterCheckRequest()=delete;
-        MessageClusterCheckRequest(const rapidjson::Document& json_data);
+        MessageClusterCheckRequest(const nlohmann::json& json_data);
     };
 }

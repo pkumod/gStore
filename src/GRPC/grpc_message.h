@@ -3,11 +3,7 @@
 
 #include "workflow/HttpMessage.h"
 #include "workflow/WFTaskFactory.h"
-#include "../Api/NlohmanJson.hpp"
-
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
+#include "nlohmann/json.hpp"
 
 #include "grpc_noncopyable.h"
 #include "grpc_content.h"
@@ -15,8 +11,6 @@
 
 namespace grpc
 {
-
-using Json = rapidjson::Document;
 
 struct GRPCReqData;
 
@@ -37,7 +31,7 @@ public:
 
     Form &form() const;
 
-    Json &json() const;
+    nlohmann::json &json() const;
 
     void json(nlohmann::json& json_data) const;
 
@@ -146,7 +140,7 @@ public:
     // send string
     void String(const std::string &str);
 
-    void String(std::string &&str);
+    // void String(std::string &&str);
 
     // send file 
     void File(const std::string &path);
@@ -155,12 +149,9 @@ public:
     void Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg);
 
     // send json string
-    void Json(const Json &json);
+    void Json(const nlohmann::json &json);
 
-    void Json(const std::string &str);
-
-    // nlohmann json
-    void nlohmannJson(const std::string &str);
+    void Json(const std::string &json_str);
 
     // TODO compress with gzip
     // void set_compress(const Compress &compress);

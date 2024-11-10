@@ -2,29 +2,15 @@
 
 namespace server
 {
-    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryResponse& response, rapidjson::Document& json_data)
+    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryRequest& request, server::MessageFunQueryResponse& response)
     {
         try
         {
-            struct PFNInfo pfn_info;
-            if (hasJsonParam(json_data, "funInfo"))
-            {
-                rapidjson::Value &fun_info = json_data["funInfo"];
-                pfnUtil->build_PFNInfo(fun_info, &pfn_info);
-            }
-            std::string username =  jsonParam(json_data, "username");
+            PFNInfo funInfo = request.funInfo;
+            std::string username = request.username;
             struct PFNInfos *pfn_infos = new PFNInfos();
-            pfnUtil->fun_query(pfn_info.getFunName(), pfn_info.getFunStatus(), username, pfn_infos);
-            vector<struct PFNInfo> list = pfn_infos->getPFNInfoList();
-            size_t count = list.size();
-
-            nlohmann::json info;
-            for (size_t i = 0; i < count; i++)
-            {
-                PFNInfo pfn_info = list[i];
-                pfn_info.toJSON(info);
-                response.list.push_back(info);
-            }
+            pfnUtil->fun_query(funInfo.funName, funInfo.funStatus, username, pfn_infos);
+            response.list = pfn_infos->getPFNInfoList();
             response.StatusMsg = "success";
         }
         catch (const std::exception &e)
@@ -34,25 +20,23 @@ namespace server
         }
     }
 
-    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbResponse& response, rapidjson::Document& json_data)
+    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbRequest& request, server::MessageFunCudbResponse& response)
     {
-        std::string type = jsonParam(json_data, "type");
+        std::string type = request.type;
         std::string msg;
         if (apiUtil->check_param_value("type", type, msg) == false)
         {
             response.Error(StatusParamIsIllegal, msg);
             return;
         }
-        if (hasJsonParam(json_data, "funInfo") == false)
+        PFNInfo pfn_info = request.funInfo;
+        if (pfn_info.empty())
         {
             msg =  "the value of funInfo can not be empty!";
             response.Error(StatusParamIsIllegal, msg);
             return;
         }
-        std::string username = jsonParam(json_data, "username");
-        struct PFNInfo pfn_info;
-        rapidjson::Value &fun_info = json_data["funInfo"];
-        pfnUtil->build_PFNInfo(fun_info, &pfn_info);
+        std::string username = request.username;
         if (type == "1")
         {
             try
@@ -96,7 +80,7 @@ namespace server
         {
             try
             {
-                string result = pfnUtil->fun_build(username, pfn_info.getFunName());
+                string result = pfnUtil->fun_build(username, pfn_info.funName);
                 if (result == "")
                 {
                     response.StatusMsg = "Function build success.";
@@ -119,26 +103,24 @@ namespace server
         }
     }
 
-    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageReviewResponse& response, rapidjson::Document& json_data)
+    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunReviewRequest& request, server::MessageFunReviewResponse& response)
     {
         try
         {
             std::string msg;
-            if (hasJsonParam(json_data, "funInfo") == false)
+            struct PFNInfo pfn_info = request.funInfo;
+            if (pfn_info.empty())
             {
                 msg =  "the value of funInfo can not be empty!";
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string username = jsonParam(json_data, "username");
-            struct PFNInfo pfn_info;
-            rapidjson::Value &fun_info = json_data["funInfo"];
-            pfnUtil->build_PFNInfo(fun_info, &pfn_info);
+            std::string username = request.username;
             pfnUtil->fun_review(username, &pfn_info);
-            string content = pfn_info.getFunBody();
+            string content = pfn_info.funBody;
             content = gutil::StringUtil::url_encode(content);
             response.StatusMsg = "success";
-            response.result = content;
+            response.body = content;
         }
         catch (const std::exception &e)
         {

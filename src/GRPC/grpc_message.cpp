@@ -30,7 +30,7 @@ struct GRPCReqData
     std::string body;
     std::map<std::string, std::string> form_kv;
     Form form;
-    Json json = NULL;
+    nlohmann::json json = NULL;
 };
 
 
@@ -137,16 +137,19 @@ Form &GRPCReq::form() const
     return _req_data->form;
 }
 
-Json &GRPCReq::json() const
+nlohmann::json &GRPCReq::json() const
 {
-    if (_content_type == APPLICATION_JSON && _req_data->json.IsNull())
+    if (_content_type == APPLICATION_JSON && _req_data->json == NULL)
     {
         const std::string &body_content = this->body();
-        _req_data->json.Parse(body_content.c_str());
-        if (_req_data->json.HasParseError())
+        try
         {
-            fprintf(stderr, "[GRPC] %s:%s\n", "Parse json data error: ", body_content.c_str());
-            _req_data->json.Clear();
+            _req_data->json = nlohmann::json::parse(body_content);
+        }
+        catch (nlohmann::json::exception& e)
+        {
+            SLOG_ERROR("[GRPC] Parse json data error: " << body_content);
+            _req_data->json.clear();
         }
         return _req_data->json;
     }
@@ -155,19 +158,24 @@ Json &GRPCReq::json() const
 
 void GRPCReq::json(nlohmann::json& json_data) const
 {
-    if (_content_type == APPLICATION_JSON && _req_data->json.IsNull())
+    if (_content_type == APPLICATION_JSON)
     {
+        if (_req_data->json != NULL)
+        {
+            json_data = _req_data->json;
+            return;
+        }
         const std::string &body_content = this->body();
         try
         {
-            json_data = nlohmann::json::parse(body_content);
+            _req_data->json = nlohmann::json::parse(body_content);
+            json_data = _req_data->json;
         }
         catch (nlohmann::json::exception& e)
         {
             SLOG_ERROR("[GRPC] Parse json data error: " << body_content);
-            _req_data->json.Clear();
+            json_data.clear();
         }
-        return;
     }
 }
 
@@ -324,33 +332,31 @@ void GRPCResp::String(const std::string &str)
     {
         this->append_output_body_nocopy(compress_data, compress_size);
     }
-    this->resp_code = 0;
-    this->resp_msg = "Success";
     task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
 }
 
-void GRPCResp::String(std::string &&str)
-{
-    stringstream strstream;
-    strstream << "\n==================== http-response ====================\n";
-    strstream << str;
-    strstream << "\n=======================================================";
-    SLOG_CORE(strstream.str());
-    auto *compress_data = malloc(str.size());
-    size_t compress_size = 0;
-    int ret = this->compress(&str, compress_data, compress_size);
-    if(ret == StatusOK)
-    {   
-        this->append_output_body_nocopy(compress_data, compress_size);
-    }
-    else
-    {
-        this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
-    }
-    // this->resp_code = 0;
-    // this->resp_msg = "Success";
-    task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
-}
+// void GRPCResp::String(std::string &&str)
+// {
+//     stringstream strstream;
+//     strstream << "\n==================== http-response ====================\n";
+//     strstream << str;
+//     strstream << "\n=======================================================";
+//     SLOG_CORE(strstream.str());
+//     auto *compress_data = malloc(str.size());
+//     size_t compress_size = 0;
+//     int ret = this->compress(&str, compress_data, compress_size);
+//     if(ret == StatusOK)
+//     {   
+//         this->append_output_body_nocopy(compress_data, compress_size);
+//     }
+//     else
+//     {
+//         this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
+//     }
+//     // this->resp_code = 0;
+//     // this->resp_msg = "Success";
+//     task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
+// }
 
 void GRPCResp::File(const std::string &path)
 {
@@ -367,40 +373,32 @@ void GRPCResp::Save(const std::string &file_dst, const std::string &content, con
     GRPCUtil::saveFile(file_dst, content, this, notify_msg);
 }
 
-void GRPCResp::Json(const ::Json &json)
+void GRPCResp::Json(const nlohmann::json &json)
 {
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    rapidjson::StringBuffer resBuffer;
-    rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-    json.Accept(resWriter);
-    if (json.HasMember("StatusCode") && json["StatusCode"].IsInt())
-    {
-        this->resp_code = json["StatusCode"].GetInt();
-    }
-    if (json.HasMember("StatusMsg") && json["StatusMsg"].IsString())
-    {
-        this->resp_msg = json["StatusMsg"].GetString();
-    }
-    this->String(resBuffer.GetString());
+    if (json.contains("StatusCode"))
+        json.at("StatusCode").get_to(this->resp_code);
+    if (json.contains("StatusMsg"))
+        json.at("StatusMsg").get_to(this->resp_msg);
+    this->String(json.dump());
 }
 
-void GRPCResp::Json(const std::string &str)
+void GRPCResp::Json(const std::string &json_str)
 {
-    ::Json json_doc;
-    json_doc.Parse(str.c_str());
-    if (json_doc.HasParseError())
+    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+    try 
     {
-        this->Error(StatusJsonInvalid);
-        return;
+        nlohmann::json json = nlohmann::json::parse(json_str);
+        if (json.contains("StatusCode"))
+            json.at("StatusCode").get_to(this->resp_code);
+        if (json.contains("StatusMsg"))
+            json.at("StatusMsg").get_to(this->resp_msg);
     }
-    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    this->String(str);
-}
-
-void GRPCResp::nlohmannJson(const std::string &str)
-{
-    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    this->String(str);
+    catch (const nlohmann::json::parse_error &e)
+    {
+        SLOG_ERROR("Json parse error: " << e.what());
+    }
+    this->String(json_str);
 }
 
 // void GRPCResp::Gzip(const ::Json &json)
@@ -457,9 +455,6 @@ int GRPCResp::get_error() const
 void GRPCResp::Success(const std::string &msg)
 {
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    ::Json js;
-    js.SetObject();
-    ::Json::AllocatorType &allocator = js.GetAllocator();
     std::string code_msg;
     if(!msg.empty())
     {
@@ -469,10 +464,11 @@ void GRPCResp::Success(const std::string &msg)
     {
         code_msg = error_code_to_str(StatusOK);
     }
-    js.AddMember("StatusCode", StatusOK, allocator);
-    js.AddMember("StatusMsg", rapidjson::StringRef(code_msg.c_str()), allocator);
-    
-    this->Json(js);
+    nlohmann::json json_data = nlohmann::json {
+        { "StatusCode", StatusOK },
+        { "StatusMsg", code_msg }
+    };
+    this->Json(json_data);
 }
 
 void GRPCResp::Error(int error_code)
@@ -483,15 +479,8 @@ void GRPCResp::Error(int error_code)
 void GRPCResp::Error(int error_code, const std::string &errmsg)
 {
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    ::Json js;
-    ::Json::AllocatorType &allocator = js.GetAllocator();
-    js.SetObject();
     std::string code_msg;
-    if (errmsg.empty())
-    {
-       code_msg = error_code_to_str(error_code);
-    }
-    else
+    if (!errmsg.empty())
     {
         code_msg = errmsg;
         if (UrlEncode::is_url_encode(code_msg))
@@ -499,9 +488,15 @@ void GRPCResp::Error(int error_code, const std::string &errmsg)
             StringUtil::url_decode(code_msg);
         }
     }
-    js.AddMember("StatusCode", error_code, allocator);
-    js.AddMember("StatusMsg", rapidjson::StringRef(code_msg.c_str()), allocator);   
-    this->Json(js);
+    else
+    {
+        code_msg = error_code_to_str(error_code);
+    }
+    nlohmann::json json_data = nlohmann::json {
+        { "StatusCode", error_code },
+        { "StatusMsg", code_msg }
+    };
+    this->Json(json_data);
 }
 
 void GRPCResp::add_task(SubTask *task)

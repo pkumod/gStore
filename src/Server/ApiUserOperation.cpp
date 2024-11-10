@@ -85,7 +85,7 @@ namespace server
             }
             else if (type == "2") // delete user
             {
-                if (op_username == apiUtil->get_root_username())
+                if (op_username == GlobalTypedef::root_uname())
                 {
                     response.StatusMsg = "You cannot delete root, delete user failed.";
                     response.StatusCode = StatusOperationFailed;
@@ -157,7 +157,7 @@ namespace server
                 response.StatusCode = StatusOperationConditionsAreNotSatisfied;
                 return;
             }
-            else if (op_username == apiUtil->get_root_username())
+            else if (op_username == GlobalTypedef::root_uname())
             {
                 response.StatusMsg =  "You can't change privileges for root user.";
                 response.StatusCode = StatusOperationConditionsAreNotSatisfied;

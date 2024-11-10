@@ -3,7 +3,6 @@
 mkdir -p ../include ../lib
 
 # rm include
-rm -rf ../include/rapidjson/
 rm -rf ../include/antlr4/
 rm -rf ../include/workflow
 rm -rf ../include/log4cplus
@@ -15,7 +14,6 @@ rm -rf ../lib/libworkflow.a
 rm -rf ../lib/liblog4cplus.a
 rm -rf ../lib/libminizip.a
 # tar
-tar -xzvf rapidjson.tar.gz;
 tar -xzvf antlr4-cpp-runtime-4.tar.gz;
 tar -xzvf indicators.tar.gz;
 tar -xzvf workflow-0.10.3.tar.gz;
@@ -27,14 +25,13 @@ cd ../log4cplus; ./configure --enable-static; make; cp .libs/liblog4cplus.a ../.
 cd ../zlib-1.3; ./configure; make; cp *.h ./include/; cd contrib/minizip; make; cp *.h ../../include/; cp libminizip.a ../../../../lib/;
 # mv to include
 cd ../../../../include
-mkdir -p rapidjson antlr4 workflow log4cplus indicators minizip
+mkdir -p antlr4 workflow log4cplus indicators minizip
 cd ../3rdparty
-cp -r rapidjson/include/rapidjson/*  ../include/rapidjson/
 cp -r antlr4-cpp-runtime-4/runtime/src/* ../include/antlr4/
 cp -r workflow/_include/workflow/* ../include/workflow/
 cp -r log4cplus/include/log4cplus/* ../include/log4cplus/
 cp -r indicators/* ../include/indicators/
 cp -r zlib-1.3/include/* ../include/minizip/
-rm -rf rapidjson antlr4-cpp-runtime-4 workflow log4cplus indicators zlib-1.3
+rm -rf antlr4-cpp-runtime-4 workflow log4cplus indicators zlib-1.3
 
 echo "prepare successfully"

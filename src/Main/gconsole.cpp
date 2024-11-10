@@ -2752,7 +2752,7 @@ int funquery_handler(const vector<string>& args)
 	vector<string> headers = {"name", "desc", "returnType", "status", "lastBuildTime"};
 	vector<vector<string> > rows ={};
 
-	for (const auto &json : funquery_response.list)
+	for (const PFNInfo &item : funquery_response.list)
 	{
 		server::FunInfo fun_info;
 		fun_info.from_json(json);
@@ -2767,7 +2767,8 @@ int funquery_handler(const vector<string>& args)
 
 int funcudb_handler(int type, const string& arg)
 {
-	nlohmann::json json;
+	
+	PFNInfo funInfo;
 	if (type == 1 || type == 2)
 	{
 		ifstream file(arg);
@@ -2775,20 +2776,25 @@ int funcudb_handler(int type, const string& arg)
 		{
 			cout << "failed to open file: " << arg << endl;
 		}
+		nlohmann::json json;
 		file >> json;
 		file.close();
+		funInfo = PFNInfo(json);
 	}
-	else
+	else if(type == 3)
 	{
 		server::FunInfo funInfo = server::FunInfo(arg, "");
 		string json_str;
 		funInfo.to_json(json_str);
 		json = nlohmann::json::parse(json_str);
 	}
-
-	server::MessageFunCudbRequest funcudb_request(to_string(type), json);
-	funcudb_request.username = root_username;
-	funcudb_request.password = root_password;
+	else 
+	{
+		std::cout << "invalid type" << endl;
+		return -1;
+	}
+	server::MessageFunCudbRequest funcudb_request(to_string(type));
+	funcudb_request.funInfo = funInfo;
 	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
 	{
@@ -2867,39 +2873,40 @@ int funbuild_handler(const vector<string>& args)
 	return 0;
 }
 
-// int funreview_handler(const vector<string>& args)
-// {
-// 	CHECK_ARGC(1, 1);
-// 	if (!Util::file_exist(args[0]))
-// 	{
-// 		cout << "File " << args[0] << " does not exist." << endl;
-// 		return -1;
-// 	}
+int funreview_handler(const vector<string>& args)
+{
+	CHECK_ARGC(1, 1);
+	if (!Util::file_exist(args[0]))
+	{
+		cout << "File " << args[0] << " does not exist." << endl;
+		return -1;
+	}
 
-// 	ifstream file(args[0]);
-// 	if (!file.is_open())
-// 	{
-// 		cout << "failed to open file: " << args[0] << endl;
-// 		return -1;
-// 	}
+	ifstream file(args[0]);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file: " << args[0] << endl;
+		return -1;
+	}
 
-// 	nlohmann::json funInfo;
-// 	file >> funInfo;
-// 	server::MessageReviewRequest review_request(funInfo);
-// 	server::MessageReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
-// 	if (!review_response.success())
-// 	{
-// 		cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
-// 	}
+	nlohmann::json funInfo;
+	file >> funInfo;
+	server::MessageFunReviewRequest review_request;
+	review_request.funInfo = PFNInfo(funInfo);
+	server::MessageFunReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
+	if (!review_response.success())
+	{
+		std::cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
+	}
 
-// 	vector<string> headers = {"result"};
-// 	if (funInfo.contains("funName"))
-// 	{
-// 		vector<string> header = {"result"};
-// 		string file_path = funInfo.at("funName");
-// 		vector<vector<string> > rows = {{"./pfn/" + file_path + ".cpp"}};
-// 		Util::printConsole(headers, rows);
-// 	}
+	vector<string> headers = {"result"};
+	if (funInfo.contains("funName"))
+	{
+		vector<string> header = {"result"};
+		string file_path = funInfo.at("funName");
+		vector<vector<string> > rows = {{"./pfn/" + file_path + ".cpp"}};
+		Util::printConsole(headers, rows);
+	}
 		
 // 	cout << "review custom function successfully!" << endl;
 // 	return 0;

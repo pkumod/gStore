@@ -4,13 +4,13 @@
 namespace server
 {
     // begin
-    MessageBeginRequest::MessageBeginRequest(const rapidjson::Document& json_data)
+    MessageBeginRequest::MessageBeginRequest(const nlohmann::json &json_data) : MessageRequest(json_data)
     {
-        this->db_name = db_name = jsonParam(json_data, "db_name");
-        this->isolevel = jsonParam(json_data, "isolevel");
+        this->db_name = db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->isolevel = JsonUtil::jsonParam(json_data, "isolevel");
     }
 
-    void MessageBeginRequest::to_json(std::string& json_str)
+    void MessageBeginRequest::to_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -21,7 +21,7 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageBeginRequest::to_inner_json(std::string& json_str)
+    void MessageBeginRequest::to_inner_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -33,7 +33,7 @@ namespace server
         json_str = json.dump();
     }
 
-    MessageBeginResponse::MessageBeginResponse(const std::string& body) : MessageResponse(body)
+    MessageBeginResponse::MessageBeginResponse(const std::string &body) : MessageResponse(body)
     {
         if (json.is_object())
         {
@@ -42,7 +42,7 @@ namespace server
         }
     }
 
-    void MessageBeginResponse::toJsonString(std::string& json_str)
+    void MessageBeginResponse::toJsonString(std::string &json_str)
     {
         nlohmann::json json;
         toJson(json);
@@ -51,14 +51,14 @@ namespace server
     }
 
     // tquery
-    MessageTqueryRequest::MessageTqueryRequest(const rapidjson::Document& json_data)
+    MessageTqueryRequest::MessageTqueryRequest(const nlohmann::json &json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->tid = jsonParam(json_data, "tid");
-        this->sparql = jsonParam(json_data, "sparql");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->tid = JsonUtil::jsonParam(json_data, "tid");
+        this->sparql = JsonUtil::jsonParam(json_data, "sparql");
     }
 
-    void MessageTqueryRequest::to_json(std::string& json_str)
+    void MessageTqueryRequest::to_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -70,7 +70,7 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageTqueryRequest::to_inner_json(std::string& json_str)
+    void MessageTqueryRequest::to_inner_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -83,15 +83,14 @@ namespace server
         json_str = json.dump();
     }
 
-    MessageTqueryResponse::MessageTqueryResponse(const std::string& body) : MessageResponse(body)
+    MessageTqueryResponse::MessageTqueryResponse(const std::string &body) : MessageResponse(body)
     {
         if (json.is_object())
         {
-
         }
     }
 
-    void MessageTqueryResponse::toJsonString(std::string& json_str)
+    void MessageTqueryResponse::toJsonString(std::string &json_str)
     {
         if (!result.empty())
         {
@@ -104,13 +103,13 @@ namespace server
     }
 
     // commit
-    MessageCommitRequest::MessageCommitRequest(const rapidjson::Document& json_data)
+    MessageCommitRequest::MessageCommitRequest(const nlohmann::json &json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->tid = jsonParam(json_data, "tid");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->tid = JsonUtil::jsonParam(json_data, "tid");
     }
 
-    void MessageCommitRequest::to_json(std::string& json_str)
+    void MessageCommitRequest::to_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -121,7 +120,7 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageCommitRequest::to_inner_json(std::string& json_str)
+    void MessageCommitRequest::to_inner_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -133,19 +132,18 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageCommitResponse::toJsonString(std::string& json_str)
+    void MessageCommitResponse::toJsonString(std::string &json_str)
     {
-
     }
 
     // rollback
-    MessageRollbackRequest::MessageRollbackRequest(const rapidjson::Document& json_data)
+    MessageRollbackRequest::MessageRollbackRequest(const nlohmann::json &json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->tid = jsonParam(json_data, "tid");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->tid = JsonUtil::jsonParam(json_data, "tid");
     }
 
-    void MessageRollbackRequest::to_json(std::string& json_str)
+    void MessageRollbackRequest::to_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -156,7 +154,7 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageRollbackRequest::to_inner_json(std::string& json_str)
+    void MessageRollbackRequest::to_inner_json(std::string &json_str)
     {
         nlohmann::json json = nlohmann::json{
             {"username", this->username},
@@ -168,8 +166,7 @@ namespace server
         json_str = json.dump();
     }
 
-    void MessageRollbackResponse::toJsonString(std::string& json_str)
+    void MessageRollbackResponse::toJsonString(std::string &json_str)
     {
-
     }
 }

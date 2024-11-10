@@ -10,11 +10,10 @@
 
 #include "../Util/Util.h"
 #include "../Database/Database.h"
+#include "ApiProvider.h"
 #include "Socket.h"
 #include "Operation.h"
-
 #define SYSTEM_PATH "data/system/system.nt"
-
 class Server
 {
 public:
@@ -250,31 +249,6 @@ private:
 	* @param[out]  _filename : A filename list of the directory
 	*/
 	static void dirTraversal(const char* _dir_name, std::vector<std::string>& _filename);
-
-	/**
-	* @brief Query the system database.
-	* @param[in]  _sparql : A sparql query
-	* @param[out]  _res : Query results
-	* @return
-	*	true : Query the system database successfully. \n
-	*	false : Query the system database failed. \n
-	*/
-	bool querySys(std::string _sparql, std::string& _res);
-
-	/**
-	* @brief Import the built database list and the user list from sytsem.db.
-	*/
-	void importSys();
-
-	/**
-	* @brief Create a response in a JSON format.
-	* @param[in]  StatusCode
-	* @param[in]  StatusMsg
-	* @param[in]  _body_flag
-	* @param[in]  ResponseBody : Response context
-	* @return A response in a JSON format.
-	*/
-	std::string CreateJson(int StatusCode, std::string StatusMsg, bool _body_flag, std::string ResponseBody = "response");
 };
 
 #endif /* _SERVER_SERVER_H */

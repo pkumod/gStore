@@ -115,12 +115,6 @@ namespace server
             std::vector<std::string> file_list;
             string backup_path = GlobalTypedef::backup_path();
             Util::dir_files(backup_path, db_name, file_list);
-            Document resp_data;
-            Document pathsDoc;
-            resp_data.SetObject();
-            pathsDoc.SetArray();
-            Document::AllocatorType &allocator = resp_data.GetAllocator();
-
             for (size_t i = 0; i < file_list.size(); i++)
             {
                 response.paths.push_back(backup_path + file_list[i]);

@@ -20,7 +20,7 @@ namespace server
     {
         int pageNo;
         int pageSize;
-        MessageTxnLogRequest(const rapidjson::Document& json_data);
+        MessageTxnLogRequest(const nlohmann::json& json_data);
         
         // gconsole use
         MessageTxnLogRequest(int pageNo, int pageSize) : MessageRequest(std::string("txnlog")), pageNo(pageNo), pageSize(pageSize) { }
@@ -63,7 +63,7 @@ namespace server
         std::string date;
         int pageNo;
         int pageSize;
-        MessageQueryLogRequest(const rapidjson::Document& json_data);
+        MessageQueryLogRequest(const nlohmann::json& json_data);
 
         // gconsole use;
         MessageQueryLogRequest(const std::string& date, int pageNo, int pageSize) : MessageRequest(std::string("querylog")), date(date), pageNo(pageNo), pageSize(pageSize) { }
@@ -124,8 +124,8 @@ namespace server
         std::string date;
         int pageNo;
         int pageSize;
-        MessageAccessLogRequest(const std::string& date, int pageNo, int pageSize) : date(date), pageNo(pageNo), pageSize(pageSize) { }
-        MessageAccessLogRequest(const rapidjson::Document& json_data);
+        MessageAccessLogRequest(const std::string date, int pageNo, int pageSize) : MessageRequest(std::string("accesslog")), date(date), pageNo(pageNo), pageSize(pageSize) { }
+        MessageAccessLogRequest(const nlohmann::json& json_data);
         // gconsole use
         void to_json(std::string& json_str);
         void to_inner_json(std::string& json_str);
@@ -171,8 +171,7 @@ namespace server
     struct MessageCheckOperationStateRequest : public MessageRequest
     {
         std::string opt_id;
-        MessageCheckOperationStateRequest(const std::string& opt_id) : opt_id(opt_id) { }
-        MessageCheckOperationStateRequest(const rapidjson::Document& json_data);
+        MessageCheckOperationStateRequest(const nlohmann::json& json_data);
         // gconsole use
         void to_json(std::string& json_str);
         void to_inner_json(std::string& json_str);

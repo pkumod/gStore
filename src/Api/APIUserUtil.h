@@ -1,8 +1,12 @@
 #pragma once
-#include "APIUtilDefined.h"
+#include <string>
+#include <vector>
+#include <set>
+#include <pthread.h>
+#include "nlohmann/json.hpp"
 
 using namespace std;
-using namespace rapidjson;
+using namespace nlohmann;
 
 struct DBUserInfo
 {
@@ -62,7 +66,7 @@ public:
     }
     std::string getQuery(){
         std::string query_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             query_db = "all";
             return query_db;
@@ -77,7 +81,7 @@ public:
     }
     std::string getUpdate(){
         std::string update_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             update_db = "all";
             return update_db;
@@ -92,7 +96,7 @@ public:
     }
     std::string getLoad(){
         std::string load_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             load_db = "all";
             return load_db;
@@ -108,7 +112,7 @@ public:
     }
     std::string getUnload(){
         std::string unload_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             unload_db = "all";
             return unload_db;
@@ -124,7 +128,7 @@ public:
     }
     std::string getRestore(){
         std::string restore_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             restore_db = "all";
             return restore_db;
@@ -139,7 +143,7 @@ public:
     }
     std::string getBackup(){
         std::string backup_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             backup_db = "all";
             return backup_db;
@@ -154,7 +158,7 @@ public:
     }
     std::string getExport(){
         std::string export_db;
-        if(username == ROOT_USERNAME)
+        if(username == GlobalTypedef::root_uname())
         {
             export_db = "all";
             return export_db;
@@ -167,17 +171,15 @@ public:
         }
         return export_db;
     }
-    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator) {
-        rapidjson::Value doc(kObjectType);
-        doc.AddMember("username", rapidjson::Value().SetString(this->username.c_str(),allocator).Move(), allocator);
-        doc.AddMember("password", rapidjson::Value().SetString(this->password.c_str(),allocator).Move(), allocator);
-        doc.AddMember("query_privilege", rapidjson::Value().SetString(this->getQuery().c_str(),allocator).Move(), allocator);
-        doc.AddMember("update_privilege", rapidjson::Value().SetString(this->getUpdate().c_str(),allocator).Move(), allocator);
-        doc.AddMember("load_privilege", rapidjson::Value().SetString(this->getLoad().c_str(),allocator).Move(), allocator);
-        doc.AddMember("unload_privilege", rapidjson::Value().SetString(this->getUnload().c_str(),allocator).Move(), allocator);
-        doc.AddMember("backup_privilege", rapidjson::Value().SetString(this->getBackup().c_str(),allocator).Move(), allocator);
-        doc.AddMember("restore_privilege", rapidjson::Value().SetString(this->getRestore().c_str(),allocator).Move(), allocator);
-        doc.AddMember("export_privilege", rapidjson::Value().SetString(this->getExport().c_str(),allocator).Move(), allocator);
-        return doc;
+    void toJSON(nlohmann::json &json) {
+        json["username"] = username;
+        json["password"] = password;
+        json["query_privilege"] = query_priv;
+        json["update_privilege"] = update_priv;
+        json["load_privilege"] = load_priv;
+        json["unload_privilege"] = unload_priv;
+        json["backup_privilege"] = backup_priv;
+        json["restore_privilege"] = restore_priv;
+        json["export_privilege"] = export_priv;
     }
 };

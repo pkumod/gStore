@@ -200,14 +200,13 @@ int APIUtil::initialize()
                         update_privilege(user, _type, _db_name, 1);
                     }
                 }
-                rapidjson::Document doc;
-                rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-                rapidjson::Value user_json = user->toJSON(allocator);
-                rapidjson::StringBuffer resBuffer;
-                rapidjson::Writer<rapidjson::StringBuffer> resWriter(resBuffer);
-                user_json.Accept(resWriter);
-                SLOG_CORE(username + ":" + resBuffer.GetString());
                 users.insert(pair<std::string, shared_ptr<struct DBUserInfo>>(username, user));
+                if (Slog::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
+                {
+                    nlohmann::json user_json;
+                    user->toJSON(user_json);
+                    SLOG_CORE(username + ":" + user_json.dump());
+                }
             }
             pthread_rwlock_unlock(&users_map_lock);
         }
@@ -219,8 +218,7 @@ int APIUtil::initialize()
         // create system password file
         fstream ofp;
         system_password = to_string(gutil::IdUtil::randNum());
-        std::string pid_path = PID_PATH;
-        ofp.open(pid_path.c_str(), ios::out);
+        ofp.open(GlobalTypedef::pid_path.c_str(), ios::out);
         ofp << getpid();
         ofp << '\n';
         ofp << system_password;
@@ -246,9 +244,9 @@ void APIUtil::init_params()
     max_database_num = Util::getConfigureIntValue("max_database_num");
     max_user_num = Util::getConfigureIntValue("max_user_num");
     max_output_size = Util::getConfigureIntValue("max_output_size");
-    query_log_mode = Util::getConfigureValue("querylog_mode");
+    query_log_mode = Util::getConfigureValue("querylog_mode", "0");
     query_log_path = Util::getConfigureValue("querylog_path");
-    access_log_mode = Util::getConfigureValue("accesslog_mode");
+    access_log_mode = Util::getConfigureValue("accesslog_mode", "0");
     access_log_path = Util::getConfigureValue("accesslog_path");
     query_result_path = Util::getConfigureValue("queryresult_path");
 
@@ -458,7 +456,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
     std::string db_name_suffix = db_name + GlobalTypedef::db_suffix();
     vector<std::string> backup_files;
     Util::dir_files(backup_path, db_name_suffix, backup_files);
-    int16_t max_backups = get_configure_value("max_backups", 3);
+    int16_t max_backups = Util::getConfigureIntValue("max_backups", 3);
     int16_t cur_backups = backup_files.size();
     if (cur_backups > max_backups)
     {
@@ -642,7 +640,7 @@ void APIUtil::get_databaseinfos(const std::string& username, vector<shared_ptr<D
     for (iter = already_build.begin(); iter != already_build.end(); iter++) {
         std::string db_name = iter->first;
         shared_ptr<DatabaseInfo> db_info = iter->second;
-        if (username != ROOT_USERNAME && check_privilege(username, "query", db_name) == false) {
+        if (username != GlobalTypedef::root_uname() && check_privilege(username, "query", db_name) == false) {
             continue;
         }
         array.push_back(db_info);
@@ -1039,7 +1037,7 @@ bool APIUtil::check_user_count()
 
 bool APIUtil::add_privilege(const std::string& username, const vector<string>& types, const std::string& db_name)
 {
-    if(username == ROOT_USERNAME) {
+    if(username == GlobalTypedef::root_uname()) {
 		return true;
 	}
     pthread_rwlock_rdlock(&users_map_lock);
@@ -1102,7 +1100,7 @@ bool APIUtil::add_privilege(const std::string& username, const vector<string>& t
 
 bool APIUtil::del_privilege(const std::string& username, const vector<string>& types, const std::string& db_name)
 {
-    if (username == ROOT_USERNAME) {
+    if (username == GlobalTypedef::root_uname()) {
 		return false;
 	}
     pthread_rwlock_rdlock(&users_map_lock);
@@ -1171,7 +1169,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 		return false;
     }
 
-	if (username == ROOT_USERNAME) {
+	if (username == GlobalTypedef::root_uname()) {
 		return true;
     }
 
@@ -1255,7 +1253,7 @@ bool APIUtil::check_privilege(const std::string& username, const std::string& ty
 
 bool APIUtil::init_privilege(const std::string& username, const std::string& db_name)
 {
-    if(username == ROOT_USERNAME) {
+    if(username == GlobalTypedef::root_uname()) {
 		return true;
 	}
     pthread_rwlock_rdlock(&users_map_lock);
@@ -1351,7 +1349,7 @@ bool APIUtil::copy_privilege(const std::string& src_db_name, const std::string& 
 
 bool APIUtil::clear_privilege(const string& username)
 {
-    if (username == ROOT_USERNAME)
+    if (username == GlobalTypedef::root_uname())
 	{
 		return false;
 	}
@@ -1868,25 +1866,18 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     logPtr->setTotalPage(total_page);
 }
 
-void APIUtil::write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string opt_id)
+void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, const string &optId)
 {
     if (access_log_mode == "0")
     {
         return;
     }
     string iplog_name = gutil::TimeUtil::today();
-    string iplogfile = access_log_path + iplog_name + ".log";
-    if (util.file_exist(iplogfile) == false)
+    string iplog_file = access_log_path + iplog_name + ".log";
+    if (FileUtil::fileExists(iplog_file) == false)
     {
         SLOG_CORE("ip access log file is not exist, now create it.");
-        util.create_file(iplogfile);
-    }
-    // SLOG_CORE("accesslog: " + iplogfile);
-    FILE *ip_logfp = fopen(iplogfile.c_str(), "a");
-    if (ip_logfp == NULL)
-    {
-        SLOG_ERROR("open ip log error.");
-        return;
+        FileUtil::createFile(iplog_file);
     }
     // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&access_log_lock);
@@ -1896,21 +1887,18 @@ void APIUtil::write_access_log(string operation, string remoteIP, int statusCode
     status_msg = util.string_replace(status_msg, "\r\n", "");
 	status_msg = util.string_replace(status_msg, "\n", "");
     status_msg = util.string_replace(status_msg, "    ", "");
-    struct DBAccessLogInfo dbAccessLogInfo(remoteIP, operation, statusCode, status_msg, createTime);
-    if (!opt_id.empty())
+    struct DBAccessLogInfo dbAccessLogInfo(remoteIP, operation);
+    dbAccessLogInfo.code = statusCode;
+    dbAccessLogInfo.msg = status_msg;
+    dbAccessLogInfo.createtime = createTime;
+    if (!optId.empty())
     {
-        dbAccessLogInfo.setOptId(opt_id);
+        dbAccessLogInfo.opt_id = optId;
     }
-    
-    string _info = dbAccessLogInfo.toJSON();
-    // _info.push_back(',');
-    _info.push_back('\n');
-    fprintf(ip_logfp, "%s", _info.c_str());
-
-    gutil::FileUtil::Csync(ip_logfp);
-    // long logSize = ftell(ip_logfp);
-    fclose(ip_logfp);
-    // SLOG_CORE("logSize:" + to_string(logSize);
+    nlohmann::json json_data;
+    dbAccessLogInfo.toJSON(json_data);
+    string line = json_data.dump();
+    FileUtil::writeLine(iplog_file, line);
     pthread_rwlock_unlock(&access_log_lock);
 }
 
@@ -1922,7 +1910,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     string file_temp_name = access_log_path + iplog_name + "temp.log";
-    if (util.file_exist(filename) == false)
+    if (FileUtil::fileExists(filename) == false)
     {
         SLOG_CORE("error ip access log file is not exist");
         return;
@@ -1930,39 +1918,43 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     FILE* file = fopen(filename.c_str(), "r");
     FILE* temp_file = fopen(file_temp_name.c_str(), "w");
     char readBuffer[0xffff];
-    struct DBAccessLogInfo *logInfo = nullptr;
+    string match_key = "\"opt_id\":\""+opt_id+"\"";
+    bool found = false;
     while (fgets(readBuffer, 1024, file))
     {
-        string rec = readBuffer;
-        logInfo = new DBAccessLogInfo(rec);
-        if (logInfo->getOptId() != opt_id)
+        string line = readBuffer;
+        if (!found && line.find(match_key) != string::npos)
         {
-            fputs(readBuffer, temp_file);
-            delete logInfo;
-            logInfo = NULL;
-            continue;
-        }
-        if (logInfo->checkOperation())
-        {
-            logInfo->setCode(statusCode);
-            logInfo->setMsg(statusMsg);
-            string endtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
-            logInfo->setEndTime(endtime);
-            logInfo->setState(state);
-            logInfo->setNum(num);
-            logInfo->setFailNum(failnum);
-            logInfo->setBackupfilepath(backupfilepath);
-            string line = logInfo->toJSON();
-            line.push_back('\n');
+            struct DBAccessLogInfo logInfo;
+            if (DBAccessLogInfo::fromJSON(line, logInfo)) 
+            {         
+                if (logInfo.checkOperation())
+                {
+                    logInfo.code = statusCode;
+                    logInfo.msg = statusMsg;
+                    logInfo.endtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+                    logInfo.state = state;
+                    logInfo.num = num;
+                    logInfo.fail_num = failnum;
+                    logInfo.backupfilepath = backupfilepath;
+                    nlohmann::json json_data;
+                    logInfo.toJSON(json_data);
+                    line = json_data.dump();
+                    line.push_back('\n');
+                }
+                else
+                {
+                    SLOG_ERROR("update access log corrupted: do not support update " +opt_id + "["+logInfo.operation+"]");
+                }
+            }
+            else
+            {
+                SLOG_ERROR("update access log corrupted: parse from json fail (" + line + ")");
+            }
+            found = true;
             fputs(line.c_str(), temp_file);
         }
-        else
-        {
-            fputs(readBuffer, temp_file);
-            SLOG_ERROR("access log corrupted, this operation not it!");
-        }
-        delete logInfo;
-        logInfo = NULL;
+        fputs(readBuffer, temp_file);
     }
     fclose(file);
     fclose(temp_file);
@@ -1977,29 +1969,31 @@ bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
     pthread_rwlock_wrlock(&access_log_lock);
     string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
-    if (util.file_exist(filename) == false)
+    std::fstream file;
+    file.open(filename, std::ios::in);
+    if (!file.is_open())
     {
-        SLOG_CORE("error ip access log file is not exist");
+         SLOG_CORE("access log file["+iplog_name+".log] is not exist");
         return false;
     }
-    FILE* file = fopen(filename.c_str(), "r");
-    char readBuffer[0xffff];
-    struct DBAccessLogInfo logInfo;
-    bool find = false;
-    while (fgets(readBuffer, 1024, file))
+    bool found = false;
+    string match_key = "\"opt_id\":\""+opt_id+"\"";
+    string line;
+    while (std::getline(file, line))
     {
-        string rec = readBuffer;
-        logInfo = DBAccessLogInfo(rec);
-        if (logInfo.checkOperation() && logInfo.getOptId() == opt_id)
+        if (!found && line.find(match_key) != string::npos)
         {
-            log = logInfo;
-            find = true;
+            if (!DBAccessLogInfo::fromJSON(line, log))
+            {
+                SLOG_ERROR("parse access log from json fail (" + line + ")");
+            }
+            found = true;
             break;
         }
     }
-    fclose(file);
+    file.close();
     pthread_rwlock_unlock(&access_log_lock);
-    return find;
+    return found;
 }
 
 void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
@@ -2056,55 +2050,38 @@ void APIUtil::write_query_log(DBQueryLogInfo* log)
     }
     std::string queyrlog_name = gutil::TimeUtil::today();
     std::string querylog_file = query_log_path + queyrlog_name + ".log";
-    if (util.file_exist(querylog_file) == false)
+    if (FileUtil::fileExists(querylog_file) == false)
     {
-        SLOG_CORE("query log file is not exist, now create it.");
-        util.create_file(querylog_file);
+        SLOG_CORE("query log file is not exist, now create it: " + querylog_file);
+        FileUtil::createFile(querylog_file);
     }
-    // SLOG_CORE("querylog: " + to_string(querylog_file);
-    FILE *querylog_fp = fopen(querylog_file.c_str(), "a");
-    if (querylog_fp == NULL)
-    {
-        SLOG_ERROR("open query log error.");
-        return;
-    }
-
-    // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&query_log_lock);
-    std::string _info = log->toJSON();
-    _info.push_back(',');
-    _info.push_back('\n');
-    std::fprintf(querylog_fp, "%s", _info.c_str());
-
-    gutil::FileUtil::Csync(querylog_fp);
-    // long logSize = ftell(querylog_fp);
-    std::fclose(querylog_fp);
-    // SLOG_CORE("logSize: " + to_string(logSize));
+    nlohmann::json json_data = *log;
+    std::string line = json_data.dump();
+    FileUtil::writeLine(querylog_file, line);
     pthread_rwlock_unlock(&query_log_lock);
 }
 
 void APIUtil::init_transactionlog()
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
-    if (util.file_exist(TRANSACTION_LOG_PATH)) {
+    if (FileUtil::fileExists(GlobalTypedef::transaction_log_path)) {
         SLOG_CORE("transaction log has been created.");
         pthread_rwlock_unlock(&transactionlog_lock);
         return;
     }
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "w");
-    fclose(fp);
+    FileUtil::createFile(GlobalTypedef::transaction_log_path);
     pthread_rwlock_unlock(&transactionlog_lock);
 }
 
 int APIUtil::add_transactionlog(std::string db_name, std::string user, std::string TID, std::string begin_time, std::string state , std::string end_time)
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "a");
     struct TransactionLogInfo logInfo(db_name, TID, user, state, begin_time, end_time);
-    string rec = logInfo.toJSON();
-    rec.push_back('\n');
-    fputs(rec.c_str(), fp);
-    fclose(fp);
+    nlohmann::json json_data;
+    logInfo.toJSON(json_data);
+    string line = json_data.dump();
+    FileUtil::writeLine(GlobalTypedef::transaction_log_path, line);
     pthread_rwlock_unlock(&transactionlog_lock);
     return 0;
 }
@@ -2112,63 +2089,61 @@ int APIUtil::add_transactionlog(std::string db_name, std::string user, std::stri
 int APIUtil::update_transactionlog(std::string TID, std::string state, std::string end_time)
 {
     pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
-    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
+    string file_path = GlobalTypedef::transaction_log_path;
+    string file_tmp_path = GlobalTypedef::transaction_log_path + ".tmp";
+    if (FileUtil::fileExists(file_path) == false)
+    {
+        SLOG_CORE("transaction log file is not exist: " + file_path);
+        return false;
+    }
+    FILE* file = fopen(GlobalTypedef::transaction_log_path.c_str(), "r");
+    FILE* tmp_file = fopen(file_tmp_path.c_str(), "w");
     char readBuffer[0xffff];
-    int ret = 0;
-    struct TransactionLogInfo *logInfo = nullptr;
-    while (fgets(readBuffer, 1024, fp)) {
+    string match_key = "\"TID\":\""+TID+"\"";
+    bool found = false;
+    while (fgets(readBuffer, 1024, file)) {
         string rec = readBuffer;
-        logInfo = new TransactionLogInfo(rec);
-        if (logInfo->getTID() != TID) {
-            fputs(readBuffer, fp1);
-            delete logInfo;
-            logInfo = NULL;
-            continue;
-        }
-        if (!logInfo->getState().empty() && !logInfo->getEndTime().empty()) {
-            // COMMITED is final state, dosen't be change
-            if (logInfo->getState() != "COMMITED" && logInfo->getState() != "ABORTED" && logInfo->getState() != "ROLLBACK")
+        if (!found && rec.find(match_key) != std::string::npos) 
+        {
+            TransactionLogInfo logInfo;
+            if(TransactionLogInfo::fromJSON(rec, logInfo))
             {
-                logInfo->setState(state);
-                logInfo->setEndTime(end_time);
-                string line = logInfo->toJSON();
-                line.push_back('\n');
-                fputs(line.c_str(), fp1);
+                 if (!logInfo.state.empty() && !logInfo.end_time.empty()) {
+                    // COMMITED is final state, dosen't be change
+                    if (logInfo.state != "COMMITED" && logInfo.state != "ABORTED" && logInfo.state != "ROLLBACK")
+                    {
+                        logInfo.state = state;
+                        logInfo.end_time = end_time;
+                        nlohmann::json json_data;
+                        logInfo.toJSON(json_data);
+                        rec = json_data.dump();
+                        rec.push_back('\n');
+                    }
+                 }
             }
             else
             {
-                fputs(readBuffer, fp1);
+                SLOG_ERROR("update transaction log corrupted: parse from json fail(" + rec + ")");
             }
+            found = true;
         }
-        else 
-        {
-            fputs(readBuffer, fp1);
-            SLOG_ERROR("Transaction log corrupted, please initilize it!");
-            ret = 1;
-        }
-        delete logInfo;
-        logInfo = NULL;
+        fputs(readBuffer, tmp_file);
     }
-    fclose(fp);
-    fclose(fp1);
-    Util::remove_path(TRANSACTION_LOG_PATH);
-    string cmd = "mv ";
-    cmd += TRANSACTION_LOG_TEMP_PATH;
-    cmd += ' ';
-    cmd += TRANSACTION_LOG_PATH;
+    fclose(file);
+    fclose(tmp_file);
+    Util::remove_path(file_path);
+    string cmd = "mv " + file_tmp_path + ' ' + file_tmp_path;
     system(cmd.c_str());
     pthread_rwlock_unlock(&transactionlog_lock);
-    return ret;
+    return found;
 }
 
 void APIUtil::get_transactionlog(int &page_no, int &page_size, shared_ptr<struct TransactionLogs> logPtr)
 {
-    string transactionLog = TRANSACTION_LOG_PATH;
     vector<std::string> lines;
     int total_size = 0;
     int total_page = 0;
-    if (get_file_lines(lines, transactionLog, page_no, page_size, total_size, total_page, &transactionlog_lock)) 
+    if (get_file_lines(lines, GlobalTypedef::transaction_log_path, page_no, page_size, total_size, total_page, &transactionlog_lock)) 
     {
         size_t count = lines.size();
         string line;
@@ -2180,42 +2155,6 @@ void APIUtil::get_transactionlog(int &page_no, int &page_size, shared_ptr<struct
     }
     logPtr->setTotalSize(total_size);
     logPtr->setTotalPage(total_page);
-}
-
-void APIUtil::abort_transactionlog(long end_time)
-{
-    pthread_rwlock_wrlock(&transactionlog_lock);
-    FILE* fp = fopen(TRANSACTION_LOG_PATH, "r");
-    FILE* fp1 = fopen(TRANSACTION_LOG_TEMP_PATH, "w");
-    char readBuffer[0xffff];
-    struct TransactionLogInfo *logInfo = nullptr;
-    while (fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        logInfo = new TransactionLogInfo(rec);
-        if (logInfo->getState() == "RUNNING") 
-        {
-            logInfo->setState("ROLLBACK");
-            logInfo->setEndTime(to_string(end_time));
-            string line = logInfo->toJSON();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
-        }
-        else 
-        {
-            fputs(readBuffer, fp1);
-        }
-        delete logInfo;
-        logInfo = NULL;
-    }
-    fclose(fp);
-    fclose(fp1);
-    Util::remove_path(TRANSACTION_LOG_PATH);
-    string cmd = "mv ";
-    cmd += TRANSACTION_LOG_TEMP_PATH;
-    cmd += ' ';
-    cmd += TRANSACTION_LOG_PATH;
-    system(cmd.c_str());
-    pthread_rwlock_unlock(&transactionlog_lock);
 }
 
 void APIUtil::init_license()
@@ -2324,15 +2263,6 @@ int APIUtil::get_max_output_size()
     return max_output_size;
 }
 
-string APIUtil::get_root_username()
-{
-    return ROOT_USERNAME;
-}
-
-string APIUtil::get_system_username()
-{
-    return system_username;
-}
 int APIUtil::get_connection_num()
 {
     return connection_num;
@@ -2343,40 +2273,6 @@ void APIUtil::increase_connection_num()
     if (connection_num < INT32_MAX)
     {
         connection_num += 1;
-    }
-}
-
-int APIUtil::get_configure_value(const string& key, int default_value)
-{
-    string value = util.getConfigureValue(key);
-    if (value.empty())
-    {
-       return default_value;
-    } 
-    else if (util.is_number(value))
-    {
-        return stoi(value);
-    }
-    else
-    {
-        return default_value;
-    }
-}
-
-size_t APIUtil::get_configure_value(const string& key, size_t default_value)
-{
-    string value = util.getConfigureValue(key);
-    if (value.empty())
-    {
-       return default_value;
-    } 
-    else if (util.is_number(value))
-    {
-        return stoul(value, nullptr, 0);
-    }
-    else
-    {
-        return default_value;
     }
 }
 
@@ -2416,7 +2312,7 @@ bool
 APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock) {
     total_size = 0;
     total_page = 0;
-    if(util.file_exist(log_file))
+    if(FileUtil::fileExists(log_file))
     {
         pthread_rwlock_rdlock(rw_lock);
         ifstream in;

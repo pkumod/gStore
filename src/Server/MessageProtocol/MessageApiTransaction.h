@@ -8,8 +8,7 @@ namespace server
     {
         std::string db_name;
         std::string isolevel;
-        MessageBeginRequest() { }
-        MessageBeginRequest(const rapidjson::Document& json_data);
+        MessageBeginRequest(const nlohmann::json& json_data);
 
 
 
@@ -38,7 +37,7 @@ namespace server
         std::string db_name;
         std::string tid;
         std::string sparql;
-        MessageTqueryRequest(const rapidjson::Document& json_data);
+        MessageTqueryRequest(const nlohmann::json& json_data);
         
         // gconsole use
         MessageTqueryRequest(const std::string db_name, const std::string tid, const std::string sparql) : MessageRequest(std::string("tquery")), db_name(db_name), tid(tid), sparql(sparql) { };        
@@ -64,7 +63,7 @@ namespace server
     {
         std::string db_name;
         std::string tid;
-        MessageCommitRequest(const rapidjson::Document& json_data);
+        MessageCommitRequest(const nlohmann::json& json_data);
         
         // gconsole use
         MessageCommitRequest(const std::string db_name, const std::string tid) : MessageRequest(std::string("commit")), db_name(db_name), tid(tid) { };        
@@ -85,7 +84,7 @@ namespace server
     {
         std::string db_name;
         std::string tid;
-        MessageRollbackRequest(const rapidjson::Document& json_data);
+        MessageRollbackRequest(const nlohmann::json& json_data);
 
         // gconsole use
         MessageRollbackRequest(const std::string db_name, const std::string tid) : MessageRequest(std::string("rollback")), db_name(db_name), tid(tid) { };        

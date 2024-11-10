@@ -8,10 +8,10 @@ namespace server
         this->db_name = db_name;
         this->type = type;
     }
-    MessageReasonManageRequest::MessageReasonManageRequest(const rapidjson::Document& json_data)
+    MessageReasonManageRequest::MessageReasonManageRequest(const nlohmann::json& json_data): MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->type = jsonParam(json_data, "type");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->type = JsonUtil::jsonParam(json_data, "type");
     }
     void MessageReasonManageRequest::to_json(std::string& json_str)
     {
@@ -46,12 +46,12 @@ namespace server
 
     void Pattern::from_json(const nlohmann::json &json)
     {
-        if (hasJsonParam(json, "subject"))
-            this->subject = jsonParam(json, "subject");
-        if (hasJsonParam(json, "predicate"))
-            this->predicate = jsonParam(json, "predicate");
-        if (hasJsonParam(json, "object"))
-            this->object = jsonParam(json, "object");
+        if (json.contains("subject"))
+            json.at("subject").get_to(this->subject);
+        if (json.contains("predicate"))
+            json.at("predicate").get_to(this->predicate);
+        if (json.contains("object"))
+            json.at("object").get_to(this->object);
     }
 
     void Condition::to_json(std::string& json_str)
@@ -81,7 +81,7 @@ namespace server
 
     void Condition::from_json(const nlohmann::json &json)
     {
-        if (hasJsonParam(json, "patterns"))
+        if (json.contains("patterns"))
         {
             for (auto pattern_json : json["patterns"])
             {
@@ -91,7 +91,7 @@ namespace server
             }
         }
 
-        if (hasJsonParam(json, "filters"))
+        if (json.contains("filters"))
         {
             for (auto filter_json : json["filters"])
             {
@@ -99,7 +99,7 @@ namespace server
             }
         }
 
-        if (hasJsonParam(json, "countInfo"))
+        if (json.contains("countInfo"))
             this->countInfo.from_json(json["countInfo"]);
     }
 
@@ -115,14 +115,14 @@ namespace server
 
     void Return::from_json(const nlohmann::json &json)
     {
-        if (hasJsonParam(json, "source"))
-            this->source = jsonParam(json, "source");
-        if (hasJsonParam(json, "target"))    
-            this->target = jsonParam(json, "target");
-        if (hasJsonParam(json, "label"))
-            this->label = jsonParam(json, "label");
-        if (hasJsonParam(json, "value"))
-            this->value = jsonParam(json, "value");
+        if (json.contains("source"))
+            json.at("source").get_to(this->source);
+        if (json.contains("target"))
+            json.at("target").get_to(this->target);
+        if (json.contains("label"))
+            json.at("label").get_to(this->label);
+        if (json.contains("value"))
+            json.at("value").get_to(this->value);
     }
 
     void RuleInfo::to_json(std::string& json_str)
@@ -154,26 +154,26 @@ namespace server
 
     void RuleInfo::from_json(const nlohmann::json &json)
     {
-        if (hasJsonParam(json, "rulename"))
-            this->rulename = jsonParam(json, "rulename");
-        if (hasJsonParam(json, "description"))
-            this->description = jsonParam(json, "description");
-        if (hasJsonParam(json, "isenable"))
-            this->isenable = jsonParam(json, "isenable", 0);
-        if (hasJsonParam(json, "type"))
-            this->type = jsonParam(json, "type", 0);
-        if (hasJsonParam(json, "logic"))
-            this->logic = jsonParam(json, "logic", 0);
-        if (hasJsonParam(json, "status"))
-            this->status = jsonParam(json, "status");
-        if (hasJsonParam(json, "insert_sparql"))
-            this->insert_sparql = jsonParam(json, "insert_sparql");
-        if (hasJsonParam(json, "delete_sparql"))
-            this->delete_sparql = jsonParam(json, "delete_sparql");
-        if (hasJsonParam(json, "createtime"))
-            this->createtime = jsonParam(json, "createtime");
+        if (json.contains("rulename"))
+            this->rulename = JsonUtil::jsonParam(json, "rulename");
+        if (json.contains("description"))
+            this->description = JsonUtil::jsonParam(json, "description");
+        if (json.contains("isenable"))
+            this->isenable = JsonUtil::jsonParam(json, "isenable", 0);
+        if (json.contains("type"))
+            this->type = JsonUtil::jsonParam(json, "type", 0);
+        if (json.contains("logic"))
+            this->logic = JsonUtil::jsonParam(json, "logic", 0);
+        if (json.contains("status"))
+            this->status = JsonUtil::jsonParam(json, "status");
+        if (json.contains("insert_sparql"))
+            this->insert_sparql = JsonUtil::jsonParam(json, "insert_sparql");
+        if (json.contains("delete_sparql"))
+            this->delete_sparql = JsonUtil::jsonParam(json, "delete_sparql");
+        if (json.contains("createtime"))
+            this->createtime = JsonUtil::jsonParam(json, "createtime");
 
-        if (hasJsonParam(json, "conditions"))
+        if (json.contains("conditions"))
         {
             for (auto &condition_json : json.at("conditions"))
             {
@@ -183,10 +183,10 @@ namespace server
             }
         }
 
-        if (hasJsonParam(json, "return"))
+        if (json.contains("return"))
         {
             Return ret;
-            ret.from_json(jsonParam(json, "return"));
+            ret.from_json(JsonUtil::jsonParam(json, "return"));
             this->returnInfo = std::move(ret);
         }
     }
@@ -195,10 +195,10 @@ namespace server
     {
         this->ruleinfo = ruleinfo;
     }
-    MessageAddReasonRequest::MessageAddReasonRequest(const rapidjson::Document& json_data) : MessageReasonManageRequest(json_data)
+    MessageAddReasonRequest::MessageAddReasonRequest(const nlohmann::json& json_data) : MessageReasonManageRequest(json_data)
     {
         std::string ruleinfo;
-        ruleinfo = jsonParam(json_data, "ruleinfo");
+        ruleinfo = JsonUtil::jsonParam(json_data, "ruleinfo");
         this->ruleinfo = nlohmann::json::parse(ruleinfo);
     }
     void MessageAddReasonRequest::to_json(std::string& json_str)
@@ -229,7 +229,7 @@ namespace server
     }
 
     MessageListReasonRequest::MessageListReasonRequest(std::string db_name) : MessageReasonManageRequest(db_name, "2") { };
-    MessageListReasonRequest::MessageListReasonRequest(const rapidjson::Document& json_data) : MessageReasonManageRequest(json_data) { };
+    MessageListReasonRequest::MessageListReasonRequest(const nlohmann::json& json_data) : MessageReasonManageRequest(json_data) { };
     void MessageListReasonRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
@@ -256,9 +256,9 @@ namespace server
     {
         this->rulename = rulename;
     }
-    MessageCedsdReasonRequest::MessageCedsdReasonRequest(const rapidjson::Document& json_data) : MessageReasonManageRequest(json_data)
+    MessageCedsdReasonRequest::MessageCedsdReasonRequest(const nlohmann::json& json_data) : MessageReasonManageRequest(json_data)
     {
-        this->rulename = jsonParam(json_data, "rulename");
+        this->rulename = JsonUtil::jsonParam(json_data, "rulename");
     }
     void MessageCedsdReasonRequest::to_json(std::string& json_str)
     {

@@ -8,13 +8,41 @@ namespace gutil
         if (!file.is_open())
             return false;
        content = string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+       file.close();
        return true;
     }
 
-    bool FileUtil::writeFile(const std::string& path, const std::string& content)
+    bool FileUtil::createFile(const std::string& path)
     {
         std::ofstream file(path);
-        file << content;
+        if (!file.is_open())
+            return false;
+        file.close();
+        return true;
+    }
+
+    bool FileUtil::writeLine(const std::string& path, const std::string& line)
+    {
+        std::ofstream file(path, std::ios_base::app);
+        if (!file.is_open())
+            return false;
+        file << line << endl;
+        file.flush();
+        file.close();
+        return true;
+    }
+    
+    bool FileUtil::writeLines(const std::string& path, const vector<std::string>& lines)
+    {
+        std::ofstream file(path, std::ios_base::app);
+        if (!file.is_open())
+            return false;
+        for (std::string line : lines)
+        {
+            file << line << endl;
+        }    
+        file.flush();
+        file.close();
         return true;
     }
 

@@ -2,7 +2,6 @@
 #include "ClusterDefined.h"
 #include "ClusterLog.h"
 #include "../Api/TimerProvider.h"
-#include "../Api/NlohmanJson.hpp"
 #include "../Api/HttpUtil.h"
 #include <map>
 #include <thread>

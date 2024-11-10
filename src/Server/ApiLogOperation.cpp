@@ -58,11 +58,9 @@ namespace server
             vector<struct DBQueryLogInfo> logList = dbQueryLogsPtr->getQueryLogInfoList();
             size_t count = logList.size();
             
-            nlohmann::json info;
             for (size_t i = 0; i < count; i++)
             {
-                DBQueryLogInfo log_info = logList[i];
-                log_info.toJSON(info);
+                nlohmann::json info = logList[i];
                 response.list.push_back(info);
             }
 
@@ -192,20 +190,19 @@ namespace server
                 response.Error(StatusOperationFailed, msg);
                 return;
             }
-            string msg = log.getMsg();
-            std::string backupfilepath = log.getBackupfilepath();
+            std::string backupfilepath = log.backupfilepath;
             response.StatusCode = StatusOK;
-            response.StatusMsg = msg;
-            response.state = log.getState();
-            std::string log_operation = log.getOperation();
+            response.StatusMsg = log.msg;
+            response.state = log.state;
+            std::string log_operation = log.operation;
             if (log_operation == "backup")
             {
                 response.backupfilepath = backupfilepath;
             }
             else if(log_operation != "restore")
             {
-                response.success_num = log.getNum();
-                response.failed_num = log.getFailNum();
+                response.success_num = log.num;
+                response.failed_num = log.fail_num;
             }
         }
         catch (const std::exception &e)

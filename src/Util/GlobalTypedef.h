@@ -318,9 +318,12 @@ public:
 
 	static std::string tmp_path;
 	static std::string debug_path;
+	static std::string pid_path;
 	static std::string system_db;
 	static std::string profile;
 	static std::string initfile;
+	static std::string transaction_log_path;
+	static std::string backup_log_path;
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;
 	static std::string db_home();
@@ -328,7 +331,9 @@ public:
 	static std::string db_path(const string& db_name);
 	static std::string backup_path();
 	static std::string upload_path();
-	
+	static std::string root_uname();	
+	static std::string sys_uname();
+	static int32_t backup_interval();
 };
 
 /**

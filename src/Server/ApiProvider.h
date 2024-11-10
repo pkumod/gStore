@@ -9,7 +9,7 @@
 #pragma once
 #include "workflow/WFFacilities.h"
 #include "../Api/APIUtil.h"
-#include "../Api/PFNUtil.h"
+#include "../Pfn/PFNUtil.h"
 #include "../Cluster/ClusterManager.h"
 #include "MessageProtocol/MessageApi.h"
 #include "MessageProtocol/MessageCluster.h"
@@ -66,12 +66,12 @@ namespace server
         static void rollback(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response);
 
         //PFN personalize function
-        static void funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryResponse& response, rapidjson::Document& json);
-        static void funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbResponse& response, rapidjson::Document& json);
-        static void funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageReviewResponse& response, rapidjson::Document& json);
+        static void funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryRequest& request, server::MessageFunQueryResponse& response);
+        static void funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbRequest& request, server::MessageFunCudbResponse& response);
+        static void funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunReviewRequest& request, server::MessageFunReviewResponse& response);
 
         // reason
-        static void reason_manage(shared_ptr<APIUtil>& apiUtil, server::MessageReasonManageResponse& response, rapidjson::Document& json);
+        static void reason_manage(shared_ptr<APIUtil>& apiUtil, server::MessageReasonManageResponse& response, nlohmann::json& json);
 
         // log
         static void txn_log(shared_ptr<APIUtil>& apiUtil, server::MessageTxnLogRequest& request, server::MessageTxnLogResponse& response);
@@ -101,24 +101,4 @@ namespace server
         static void cluster_check(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterCheckRequest& request, const string& remote_ip);
         static void cluster_recover(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, std::map<std::string, std::pair<std::string, std::string>>& form, MessageResponse& response, const string& local_port);
     };
-
-    // rapidjson
-    std::string to_json_string(const rapidjson::Document& json);
-    std::string jsonParam(const rapidjson::Document& json, const std::string &key, const std::string& default_val = "");
-    int32_t jsonParam(const rapidjson::Document& json, const std::string &key, const int32_t &default_val);
-    uint32_t jsonParam(const rapidjson::Document& json, const std::string &key, const uint32_t &default_val);
-    int64_t jsonParam(const rapidjson::Document& json, const std::string &key, const int64_t &default_val);
-    uint64_t jsonParam(const rapidjson::Document& json, const std::string &key, const uint64_t &default_val);
-    bool jsonBoolParam(const rapidjson::Document& json, const std::string &key, const bool &default_val);
-    bool hasJsonParam(const rapidjson::Document& json, const std::string &key);
-    
-    // nlohmann
-    std::string to_json_string(const nlohmann::json& json);
-    std::string jsonParam(const nlohmann::json& json, const std::string &key, const std::string& default_val = "");
-    int32_t jsonParam(const nlohmann::json& json, const std::string &key, const int32_t &default_val);
-    uint32_t jsonParam(const nlohmann::json& json, const std::string &key, const uint32_t &default_val);
-    int64_t jsonParam(const nlohmann::json& json, const std::string &key, const int64_t &default_val);
-    uint64_t jsonParam(const nlohmann::json& json, const std::string &key, const uint64_t &default_val);
-    bool jsonBoolParam(const nlohmann::json& json, const std::string &key, const bool &default_val);
-    bool hasJsonParam(const nlohmann::json& json, const std::string &key);
 }

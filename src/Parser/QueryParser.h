@@ -13,7 +13,7 @@
 #include "SPARQL/SPARQLParser.h"
 #include "SPARQL/SPARQLBaseVisitor.h"
 #include "../Query/QueryTree.h"
-#include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 
 /**
 	Parser for SPARQL queries, inherited from SPARQLBaseVisitor, which is

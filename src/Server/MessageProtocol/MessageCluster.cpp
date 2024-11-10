@@ -3,24 +3,24 @@
 
 namespace server
 {
-    MessageClusterRequest::MessageClusterRequest(const rapidjson::Document& json_data)
+    MessageClusterRequest::MessageClusterRequest(const nlohmann::json& json_data)
     {
-        this->term = jsonParam(json_data, "uid", 0ul);
-        this->index = jsonParam(json_data, "index", 0ul);
-        this->nextIndex = jsonParam(json_data, "nextIndex", 0ul);
-        this->db_name = jsonParam(json_data, "db_name");
-        this->uid = jsonParam(json_data, "uid", 0ul);
-        this->follow_port = jsonParam(json_data, "follow_port", "");
-        this->follow_ip = jsonParam(json_data, "follow_ip", "");
+        this->term = JsonUtil::jsonParam(json_data, "uid", 0ul);
+        this->index = JsonUtil::jsonParam(json_data, "index", 0ul);
+        this->nextIndex = JsonUtil::jsonParam(json_data, "nextIndex", 0ul);
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->uid = JsonUtil::jsonParam(json_data, "uid", 0ul);
+        this->follow_port = JsonUtil::jsonParam(json_data, "follow_port", "");
+        this->follow_ip = JsonUtil::jsonParam(json_data, "follow_ip", "");
     }
 
-    MessageClusterReplyRequest::MessageClusterReplyRequest(const rapidjson::Document& json_data) : MessageClusterRequest(json_data)
+    MessageClusterReplyRequest::MessageClusterReplyRequest(const nlohmann::json& json_data) : MessageClusterRequest(json_data)
     {
-        this->operation = jsonParam(json_data, "operation");
+        this->operation = JsonUtil::jsonParam(json_data, "operation");
     }
 
-    MessageClusterCheckRequest::MessageClusterCheckRequest(const rapidjson::Document& json_data) : MessageClusterRequest(json_data)
+    MessageClusterCheckRequest::MessageClusterCheckRequest(const nlohmann::json& json_data) : MessageClusterRequest(json_data)
     {
-        this->result = jsonParam(json_data, "result", 0);
+        this->result = JsonUtil::jsonParam(json_data, "result", 0);
     }
 }

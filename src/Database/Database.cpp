@@ -8,7 +8,6 @@
 
 #include "Database.h"
 
-using namespace rapidjson;
 using namespace std;
 
 Database::Database()
@@ -4741,23 +4740,6 @@ void Database::TransactionCommit(shared_ptr<Transaction> txn)
 	// 	cerr << "WARNING: not all lockes get unlocked! " << endl;
 	// 	cerr << "Please REBOOT service!" << endl;
 	// }
-}
-
-std::string
-Database::CreateJson(int StatusCode, std::string StatusMsg, std::string ResponseBody)
-{
-	StringBuffer s;
-	PrettyWriter<StringBuffer> writer(s);
-	writer.StartObject();
-	writer.Key("ResponseBody");
-	writer.String(StringRef(ResponseBody.c_str()));
-	writer.Key("StatusCode");
-	writer.Uint(StatusCode);
-	writer.Key("StatusMsg");
-	writer.String(StringRef(StatusMsg.c_str()));
-	writer.EndObject();
-	std::string res = s.GetString();
-	return res;
 }
 
 bool Database::saveStatisticsInfoFile()

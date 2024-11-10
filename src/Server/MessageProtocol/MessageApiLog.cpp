@@ -18,24 +18,24 @@ namespace server
 
     void TxnLog::from_json(const nlohmann::json& json)
     {
-        if (hasJsonParam(json, "db_name"))
-            this->db_name = jsonParam(json, "db_name");
-        if (hasJsonParam(json, "TID"))
-            this->TID = jsonParam(json, "TID");
-        if (hasJsonParam(json, "user"))
-            this->user = jsonParam(json, "user");
-        if (hasJsonParam(json, "state"))
-            this->state = jsonParam(json, "state");
-        if (hasJsonParam(json, "begin_time"))
-            this->begin_time = jsonParam(json, "begin_time");
-        if (hasJsonParam(json, "end_time"))
-            this->end_time = jsonParam(json, "end_time");
+        if (json.contains("db_name"))
+            json["db_name"].get_to(this->db_name);
+        if (json.contains("TID"))
+            json["TID"].get_to(this->TID);
+        if (json.contains("user"))
+            json["user"].get_to(this->user);
+        if (json.contains("state"))
+            json["state"].get_to(this->state);
+        if (json.contains("begin_time"))
+            json["begin_time"].get_to(this->begin_time);
+        if (json.contains("end_time"))
+            json["end_time"].get_to(this->end_time);
     }
 
-    MessageTxnLogRequest::MessageTxnLogRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("txnlog"))
+    MessageTxnLogRequest::MessageTxnLogRequest(const nlohmann::json& json_data) : MessageRequest(std::string("txnlog"))
     {
-        this->pageNo = jsonParam(json_data, "pageNo", 1);
-        this->pageSize = jsonParam(json_data, "pageSize", 10);
+        this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
+        this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
     }
 
     void MessageTxnLogRequest::to_json(std::string& json_str)
@@ -118,27 +118,27 @@ namespace server
 
     void QueryLog::from_json(const nlohmann::json& json)
     {
-        if (hasJsonParam(json, "QueryDateTime"))
-            this->QueryDateTime = jsonParam(json, "QueryDateTime");
-        if (hasJsonParam(json, "Sparql"))
-            this->Sparql = jsonParam(json, "Sparql");
-        if (hasJsonParam(json, "Format"))
-            this->Format = jsonParam(json, "Format");
-        if (hasJsonParam(json, "RemoteIP"))
-            this->RemoteIP = jsonParam(json, "RemoteIP");
-        if (hasJsonParam(json, "FileName"))
-            this->FileName = jsonParam(json, "FileName");
-        if (hasJsonParam(json, "QueryTime"))
-            this->QueryTime = jsonParam(json, "QueryTime", 0);
-        if (hasJsonParam(json, "AnsNum"))
-            this->AnsNum = jsonParam(json, "AnsNum", 0);
+        if (json.contains("QueryDateTime"))
+            json.at("QueryDateTime").get_to(this->QueryDateTime);
+        if (json.contains("Sparql"))
+            json.at("Sparql").get_to(this->Sparql);
+        if (json.contains("Format"))
+            json.at("Format").get_to(this->Format);
+        if (json.contains("RemoteIP"))
+            json.at("RemoteIP").get_to(this->RemoteIP);
+        if (json.contains("FileName"))
+            json.at("FileName").get_to(this->FileName);
+        if (json.contains("QueryTime"))
+            json.at("QueryTime").get_to(this->QueryTime);
+        if (json.contains("AnsNum"))
+            json.at("AnsNum").get_to(this->AnsNum);
     }
 
-    MessageQueryLogRequest::MessageQueryLogRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("querylog"))
+    MessageQueryLogRequest::MessageQueryLogRequest(const nlohmann::json& json_data) : MessageRequest(std::string("querylog"))
     {
-        this->date = jsonParam(json_data, "date");
-        this->pageNo = jsonParam(json_data, "pageNo", 1);
-        this->pageSize = jsonParam(json_data, "pageSize", 10);
+        this->date = JsonUtil::jsonParam(json_data, "date");
+        this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
+        this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
     }
 
     void MessageQueryLogRequest::to_json(std::string& json_str)
@@ -250,25 +250,25 @@ namespace server
         if (json.is_object())
         {
             if (json.contains("ip"))
-                this->ip = jsonParam(json, "ip");
+                json.at("ip").get_to(this->ip);
             if (json.contains("operation"))
-                this->ip = jsonParam(json, "operation");
+                json.at("operation").get_to(this->operation);
             if (json.contains("createtime"))
-                this->ip = jsonParam(json, "createtime");
+                json.at("createtime").get_to(this->createtime);
             if (json.contains("code"))
-                this->ip = jsonParam(json, "code");
+                json.at("code").get_to(this->code);
             if (json.contains("msg"))
-                this->ip = jsonParam(json, "msg");
+                json.at("msg").get_to(this->msg);
         }
     }
 
     MessageQueryLogDateResponse::MessageQueryLogDateResponse(const std::string& body) : MessageResponse(body) { }
     
-    MessageAccessLogRequest::MessageAccessLogRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("accesslog"))
+    MessageAccessLogRequest::MessageAccessLogRequest(const nlohmann::json& json_data) : MessageRequest(std::string("accesslog"))
     {
-        this->date = jsonParam(json_data, "date");
-        this->pageNo = jsonParam(json_data, "pageNo", 1);
-        this->pageSize = jsonParam(json_data, "pageSize", 10);
+        this->date = JsonUtil::jsonParam(json_data, "date");
+        this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
+        this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
     }
 
     void MessageAccessLogRequest::to_json(std::string& json_str)
@@ -366,9 +366,10 @@ namespace server
     MessageAccessLogDateResponse::MessageAccessLogDateResponse(const std::string& body) : MessageResponse(body) { }
 
     // check operation state
-    MessageCheckOperationStateRequest::MessageCheckOperationStateRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("checkOperationState"))
+    MessageCheckOperationStateRequest::MessageCheckOperationStateRequest(const nlohmann::json& json_data) : MessageRequest(std::string("checkOperationState"))
     {
-        this->opt_id = jsonParam(json_data, "opt_id");
+        if(json_data.contains("operation"))
+            json_data.at("operation").get_to(this->op);
     }
 
     void MessageCheckOperationStateRequest::to_json(std::string& json_str)
@@ -398,11 +399,11 @@ namespace server
         if (json.is_object())
         {
             if (json.contains("success_num"))
-                this->success_num = jsonParam(json, "success_num", 0);
+                json["success_num"].get_to(this->success_num);
             if (json.contains("failed_num"))
-                this->failed_num = jsonParam(json, "failed_num", 0);
+                json["failed_num"].get_to(this->failed_num);
             if (json.contains("state"))
-                this->state = jsonParam(json, "state", 0);
+                json["state"].get_to(this->state);
         }
     }
 

@@ -12,7 +12,7 @@ namespace server
         std::string callback;
         MessageBuildRequest(std::string db_name, std::string db_path);
         MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path);
-        MessageBuildRequest(const rapidjson::Document& json_data);
+        MessageBuildRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -33,7 +33,7 @@ namespace server
         std::string is_backup;
         MessageDropRequest(std::string db_name, std::string is_backup);
         MessageDropRequest(std::string username, std::string password, std::string db_name, std::string is_backup);
-        MessageDropRequest(const rapidjson::Document& json_data);
+        MessageDropRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -53,7 +53,9 @@ namespace server
         std::string format;
         std::string callback;
         bool async;
-        MessageQueryRequest(const rapidjson::Document& json_data);
+        MessageQueryRequest(const MessageQueryRequest& other);
+        MessageQueryRequest& operator=(const MessageQueryRequest& other);
+        MessageQueryRequest(const nlohmann::json& json_data);
         MessageQueryRequest(std::string db_name,  std::string sparql, std::string format = "json", bool async = false);
         MessageQueryRequest(std::string username, std::string password, std::string db_name, std::string sparql, std::string format = "json", bool async = false);
         void to_json(std::string& json_str) override;
@@ -87,7 +89,7 @@ namespace server
         bool async;
         std::string callback;
         MessageBatchInsertRequest()=delete;
-        MessageBatchInsertRequest(const rapidjson::Document& json_data);
+        MessageBatchInsertRequest(const nlohmann::json& json_data);
         MessageBatchInsertRequest(std::string db_name, std::string file, std::string dir);
         MessageBatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file, std::string dir);
         void to_json(std::string& json_str) override;
@@ -112,7 +114,7 @@ namespace server
         std::string file;
         bool async;
         std::string callback;
-        MessageBatchRemoveRequest(const rapidjson::Document& json_data);
+        MessageBatchRemoveRequest(const nlohmann::json& json_data);
         MessageBatchRemoveRequest(std::string db_name,  std::string file);
         MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file);
         void to_json(std::string& json_str) override;
@@ -133,7 +135,7 @@ namespace server
     struct MessageCheckPointRequest : public MessageRequest
     {
         std::string db_name;
-        MessageCheckPointRequest(const rapidjson::Document& json_data);
+        MessageCheckPointRequest(const nlohmann::json& json_data);
         MessageCheckPointRequest(const std::string& db_name) : MessageRequest(std::string("checkpoint")), db_name(db_name) { }
         void to_json(std::string& json_str);
         void to_inner_json(std::string& json_str);

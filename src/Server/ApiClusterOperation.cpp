@@ -62,7 +62,7 @@ namespace server
 
                     // build empty db
                     shared_ptr<DatabaseInfo> db_info = nullptr;
-                    apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+                    apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
                     shared_ptr<Database> current_database = make_shared<Database>(db_name);
                     // build empty db
                     current_database->BuildEmptyDB();
@@ -72,7 +72,7 @@ namespace server
                     db_info->initDatabase();
                     db_info->setStatus(DatabaseStatus::AREADY_BUILT);
                     // init privilege
-                    apiUtil->init_privilege(ROOT_USERNAME, db_name);
+                    apiUtil->init_privilege(GlobalTypedef::root_uname(), db_name);
                     string _db_path = _db_home + "/" + db_name + _db_suffix;
                     ofstream f;
                     f.open(_db_path + "/success.txt");
@@ -116,7 +116,7 @@ namespace server
             TermDbLog db_log;
             if (apiUtil->check_db_built(db_name) == false)
             {
-                apiUtil->init_databaseinfo(db_name, ROOT_USERNAME, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+                apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
                 shared_ptr<Database> current_database = make_shared<Database>(db_name);
                 // build empty db
                 current_database->BuildEmptyDB();
@@ -126,7 +126,7 @@ namespace server
                 db_info->initDatabase();
                 db_info->setStatus(DatabaseStatus::AREADY_BUILT);
                 // init privilege
-                apiUtil->init_privilege(ROOT_USERNAME, db_name);
+                apiUtil->init_privilege(GlobalTypedef::root_uname(), db_name);
                 string _db_path = _db_home + "/" + db_name + _db_suffix;
                 ofstream f;
                 f.open(_db_path + "/success.txt");

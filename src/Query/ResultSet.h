@@ -11,7 +11,7 @@
 #include "../Util/Bstr.h"
 #include "../Util/Stream.h"
 #include "TempResult.h"
-#include "../Api/NlohmanJson.hpp"
+#include "../Util/JsonUtil.h"
 
 using namespace gutil;
 class ResultSet
@@ -42,8 +42,8 @@ public:
 	//convert to TSV string
 	std::string to_str();
 	//convert to JSON string
-	std::string to_JSON();
-	void to_JSON(nlohmann::json& json);
+	bool to_JSON(std::string& str);
+	bool to_JSON(nlohmann::json& json);
 	TempResult to_tempresult();
 	void output(FILE* _fp);		//output all results using Stream
 	void prettyPrint();

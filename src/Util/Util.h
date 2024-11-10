@@ -15,16 +15,13 @@ in the sparql query can point to the same node in data graph)
 #define _UTIL_UTIL_H
 
 #include "GlobalTypedef.h"
+#include "JsonUtil.h"
 #include "TimeUtil.h"
 #include "NodeUtil.h"
 #include "StringUtil.h"
 #include "IdUtil.h"
 
 //basic macros and types are defined here, including common headers 
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"  
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
 #include "INIParser.h"
 #include "indicators/progress_bar.hpp"
 

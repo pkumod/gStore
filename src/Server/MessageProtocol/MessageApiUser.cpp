@@ -78,11 +78,11 @@ namespace server
     }
 
     // user manger
-    MessageUserManageRequest::MessageUserManageRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageUserManageRequest::MessageUserManageRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->op_username = jsonParam(json_data, "op_username");
-        this->op_password = jsonParam(json_data, "op_password");
-        this->type = jsonParam(json_data, "type");
+        this->op_username = JsonUtil::jsonParam(json_data, "op_username");
+        this->op_password = JsonUtil::jsonParam(json_data, "op_password");
+        this->type = JsonUtil::jsonParam(json_data, "type");
     }
 
     void MessageUserManageRequest::to_json(std::string& json_str)
@@ -131,12 +131,12 @@ namespace server
     }
 
     // user privilege manger
-    MessageUserPrivilegeManageRequest::MessageUserPrivilegeManageRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageUserPrivilegeManageRequest::MessageUserPrivilegeManageRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->type = jsonParam(json_data, "type");
-        this->op_username = jsonParam(json_data, "op_username");
-        this->db_name = jsonParam(json_data, "db_name");
-        this->privileges = jsonParam(json_data, "privileges");
+        this->type = JsonUtil::jsonParam(json_data, "type");
+        this->op_username = JsonUtil::jsonParam(json_data, "op_username");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->privileges = JsonUtil::jsonParam(json_data, "privileges");
     }
 
     void MessageUserPrivilegeManageRequest::to_json(std::string& json_str)
@@ -178,11 +178,11 @@ namespace server
         this->op_password = op_password;
     }
     // user password
-    MessageUserPasswordRequest::MessageUserPasswordRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageUserPasswordRequest::MessageUserPasswordRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->username = jsonParam(json_data, "username");
-        this->password = jsonParam(json_data, "password");
-        this->op_password = jsonParam(json_data, "op_password");
+        this->username = JsonUtil::jsonParam(json_data, "username");
+        this->password = JsonUtil::jsonParam(json_data, "password");
+        this->op_password = JsonUtil::jsonParam(json_data, "op_password");
     }
 
     void MessageUserPasswordRequest::to_json(std::string& json_str)

@@ -9,21 +9,33 @@ namespace server
         this->username = username;
         this->password = password;
     }
-
-    MessageRequest::MessageRequest(const rapidjson::Document& json_data)
+    
+    MessageRequest::MessageRequest(const MessageRequest &other)
     {
-        this->username = jsonParam(json_data, "username");
-        this->password = jsonParam(json_data, "password");
-        this->op = jsonParam(json_data, "operation");
-        this->remote_ip = jsonParam(json_data, "remote_ip");
+        this->username = other.username;
+        this->password = other.password;
+        this->op = other.op;
+        this->remote_ip = other.remote_ip;
+    }
+
+    MessageRequest &MessageRequest::operator=(const MessageRequest &other)
+    {
+        if (this != &other)
+        {
+            this->username = other.username;
+            this->password = other.password;
+            this->op = other.op;
+            this->remote_ip = other.remote_ip;
+        }
+        return *this;
     }
 
     MessageRequest::MessageRequest(const nlohmann::json& json_data)
     {
-        this->username = jsonParam(json_data, "username");
-        this->password = jsonParam(json_data, "password");
-        this->op = jsonParam(json_data, "operation");
-        this->remote_ip = jsonParam(json_data, "remote_ip");
+        this->username = JsonUtil::jsonParam(json_data, "username");
+        this->password = JsonUtil::jsonParam(json_data, "password");
+        this->op = JsonUtil::jsonParam(json_data, "operation");
+        this->remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
     }
 
     void MessageRequest::toJson(nlohmann::json& json)
@@ -100,10 +112,10 @@ namespace server
     }
 
     // load
-    MessageLoadRequest::MessageLoadRequest(const rapidjson::Document& json_data)
+    MessageLoadRequest::MessageLoadRequest(const nlohmann::json& json_data): MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->csr = jsonParam(json_data, "csr");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->csr = JsonUtil::jsonParam(json_data, "csr");
     }
 
     MessageLoadRequest::MessageLoadRequest(std::string db_name, std::string csr) : MessageRequest(std::string("load"))
@@ -314,10 +326,10 @@ namespace server
         this->db_name = db_name;
     }
 
-    MessageMonitorRequest::MessageMonitorRequest(const rapidjson::Document& json_data)
+    MessageMonitorRequest::MessageMonitorRequest(const nlohmann::json& json_data): MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->disk = jsonParam(json_data, "disk");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->disk = JsonUtil::jsonParam(json_data, "disk");
     }
 
     void MessageMonitorRequest::to_json(std::string& json_str)

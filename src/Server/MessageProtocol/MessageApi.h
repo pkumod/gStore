@@ -1,11 +1,8 @@
 #pragma once
 #include <string>
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
 #include "../ServerStatusCode.h"
-#include "../../Api/NlohmanJson.hpp"
 #include "../ApiTypedef.h"
+#include "../../Util/JsonUtil.h"
 
 namespace server
 {
@@ -15,10 +12,10 @@ namespace server
         std::string username;
         std::string password;
         std::string remote_ip;
-        MessageRequest(){}
+        MessageRequest(const MessageRequest &other);
+        MessageRequest &operator=(const MessageRequest &other);
         MessageRequest(std::string op) : op(op) {}
         MessageRequest(std::string op, std::string username, std::string password) : op(op), username(username), password(password) {}
-        MessageRequest(const rapidjson::Document& json_data);
         MessageRequest(const nlohmann::json& json_data);
         void init(std::string username, std::string password);
         void toJson(nlohmann::json& json);
@@ -93,7 +90,7 @@ namespace server
         std::string db_name;
         std::string csr;
         MessageLoadRequest()=delete;
-        MessageLoadRequest(const rapidjson::Document& json_data);
+        MessageLoadRequest(const nlohmann::json& json_data);
         MessageLoadRequest(std::string db_name, std::string csr);
         MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr);
         void to_json(std::string& json_str) override;
@@ -191,7 +188,7 @@ namespace server
         std::string disk;
         MessageMonitorRequest(std::string db_name);
         MessageMonitorRequest(std::string username, std::string password, std::string db_name);
-        MessageMonitorRequest(const rapidjson::Document& json_data);
+        MessageMonitorRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };

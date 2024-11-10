@@ -5,7 +5,7 @@
 #include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
 #include "../Api/APIUtil.h"
-#include "../Api/PFNUtil.h"
+#include "../Pfn/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
 #include "../Cluster/ClusterManager.h"
@@ -32,10 +32,6 @@ std::shared_ptr<cluster::ClusterManager> clusterManagerPtr =  nullptr;
 
 Latch latch;
 
-std::string _db_home;
-
-std::string _db_suffix;
-
 std::string _server_port;
 
 std::string _server_deamon;
@@ -48,6 +44,9 @@ void initialServer(uint16_t port, bool background = false);
 void releaseGlobalPtr(bool renew = false);
 void register_service(GRPCServer &grpcServer);
 
+void parseRequest(const GRPCReq *request, nlohmann::json &json_data);
+bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data);
+
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
@@ -58,52 +57,52 @@ void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *se
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
-void login_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void test_connect_task(const GRPCReq *request, GRPCResp *response);
 void core_version_task(const GRPCReq *request, GRPCResp *response);
-void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void ip_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void refresh_conf_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for db
-void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
-void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
-void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
-void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
-void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data);
-void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void init_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
+void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
+void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void backup_path_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
+void export_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void begin_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void tquery_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void commit_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void rollback_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void checkpoint_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
+void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
+void rename_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for user
-void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void user_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void user_show_task(const GRPCReq *request, GRPCResp *response);
-void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void user_privilege_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void user_password_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for log
-void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void txn_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void query_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void query_log_date_task(const GRPCReq *request, GRPCResp *response);
-void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void access_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void access_log_date_task(const GRPCReq *request, GRPCResp *response);
-void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for personalized function
-void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
-void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void fun_query_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void fun_cudb_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for system stat
-void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void stat_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for reason engine
-void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data);
+void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for cluster
 void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response);
 void cluster_append_task(const GRPCReq *request, GRPCResp *response);
@@ -115,14 +114,11 @@ void license_import(const GRPCReq *request, GRPCResp *response);
 void license_info(const GRPCReq *request, GRPCResp *response);
 void license_remove(const GRPCReq *request, GRPCResp *response);
 
-void parseRequest(const GRPCReq *request, Json &json_data)
+void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 {
-	json_data.SetObject();
-	Json::AllocatorType &allocator = json_data.GetAllocator();
 	if (request->contentType() == APPLICATION_JSON) //for application/json
 	{
-		Json &json = request->json();
-		json_data.CopyFrom(json, allocator);
+		json_data = request->json();
 	}
 	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
 	{
@@ -134,9 +130,9 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
-				gutil::StringUtil::url_decode(v);
+				v = gutil::StringUtil::url_decode(iter->second);
 			}
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			json_data[iter->first] = v;
 			iter++;
 		}
 	}
@@ -150,11 +146,10 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
 		{
 			string v = form.at(iter->first).second;
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
+			json_data[iter->first] = v;
 			if (iter->first == "file")
 			{
-				string filename = form.at(iter->first).first;
-				json_data.AddMember(rapidjson::Value().SetString("filename", allocator).Move(), rapidjson::Value().SetString(filename.c_str(), allocator).Move(), allocator);
+				json_data["filename"] = form.at(iter->first).first;
 			}
 		}
 	}
@@ -172,59 +167,15 @@ void parseRequest(const GRPCReq *request, Json &json_data)
 			v = iter->second;
 			if (UrlEncode::is_url_encode(v))
 			{
-				gutil::StringUtil::url_decode(v);
-			}
-			json_data.AddMember(rapidjson::Value().SetString(iter->first.c_str(), allocator).Move(), rapidjson::Value().SetString(v.c_str(), allocator).Move(), allocator);
-			iter++;
-		}
-	}
-}
-
-void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
-{
-	if (request->contentType() == APPLICATION_JSON) //for application/json
-	{
-		request->json(json_data);
-	}
-	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
-	{
-		std::map<std::string, std::string> &form_data = request->formData();
-		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::string v;
-		while (iter != form_data.end())
-		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
-			{
-				gutil::StringUtil::url_decode(v);
+				v = gutil::StringUtil::url_decode(iter->second);
 			}
 			json_data[iter->first] = v;
 			iter++;
 		}
 	}
-	else // for get
-	{
-		SLOG_ERROR("aaaaaaaaaaaaaaaaaa4");
-		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty() == false)
-		{
-			std::map<std::string, std::string>::iterator iter = params.begin();
-			std::string v;
-			while (iter != params.end())
-			{
-				v = iter->second;
-				if (UrlEncode::is_url_encode(v))
-				{
-					gutil::StringUtil::url_decode(v);
-				}
-				json_data[iter->first] = v;
-				iter++;
-			}
-		}
-	}
 }
 
-bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, Json &json_data)
+bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data)
 {
 	// check ip address
 	auto *rpc_task = task_of(response);
@@ -236,22 +187,22 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return false;
 	}
-
-	// nlohmann::json nlohmann_json_data;
-	// parseRequest(request, nlohmann_json_data);
-	// nlohmann_json_data["remote_ip"] = ip_addr.c_str();
 	std::string operation;
-	if (json_data.HasMember("operation")) 
+	if (json_data.contains("operation")) 
 	{
-		operation = server::jsonParam(json_data, "operation");
+		operation = JsonUtil::jsonParam(json_data, "operation");
 	}
 	parseRequest(request, json_data);
-	Json::AllocatorType &allocator = json_data.GetAllocator();
+	SLOG_DEBUG("Parse request: \n" << json_data.dump(4));
+	if (operation.empty() && json_data.contains("operation"))
+	{
+		operation = JsonUtil::jsonParam(json_data, "operation");
+	}
 	// add remote_ip param
-	json_data.AddMember("remote_ip", StringRef(ip_addr.c_str()), allocator);
+	json_data["remote_ip"] = ip_addr;
 	if (operation.empty()) 
 	{
-		operation = server::jsonParam(json_data, "operation", "unknown");
+		operation = JsonUtil::jsonParam(json_data, "operation", "unknown");
 	}
 	op_type = OperationType::to_enum(operation);
 	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
@@ -292,13 +243,13 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		return false;
 	}
 	// add callback task for access log start
-	bool async = server::jsonBoolParam(json_data, "async", false);
+	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	if (async == false)
 	{
-		struct DBAccessLogInfo *access_log_info_ptr = new DBAccessLogInfo(ip_addr, operation, async, NULL, NULL);
+		struct DBAccessLogInfo *access_log_info_ptr = new DBAccessLogInfo(ip_addr, operation);
 		rpc_task->add_callback([access_log_info_ptr](GRPCTask *task) {
 			GRPCResp *resp = task->get_resp();
-			apiUtil->write_access_log(access_log_info_ptr->getOperation(), access_log_info_ptr->getIP(), resp->resp_code, resp->resp_msg);
+			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg);
 			delete access_log_info_ptr;
 		});
 	}
@@ -307,16 +258,16 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	{
 		return true;
 	}
-	if (json_data.HasMember("username") == false || json_data.HasMember("password") == false)
+	if (json_data.contains("username") == false || json_data.contains("password") == false)
 	{
 		response->Error(StatusParamIsIllegal, "username or password is empty");
 		return false;
 	}
-	std::string username = server::jsonParam(json_data, "username");
-	std::string password = server::jsonParam(json_data, "password");
-	std::string encryption = server::jsonParam(json_data, "encryption");
-	std::string db_name = server::jsonParam(json_data, "db_name");
-	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
+	std::string username = JsonUtil::jsonParam(json_data, "username");
+	std::string password = JsonUtil::jsonParam(json_data, "password");
+	std::string encryption = JsonUtil::jsonParam(json_data, "encryption");
+	std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
+	bool is_inner = JsonUtil::jsonBoolParam(json_data, "inner", false);
 	bool need_check_privilege = true;
 	// skip check privilege for inner request
 	if (is_inner && "127.0.0.1" == ip_addr)
@@ -335,7 +286,7 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		}
 	}
 	// check privilege
-	if (username != ROOT_USERNAME)
+	if (username != GlobalTypedef::root_uname())
 	{
 		need_check_privilege = true;
 	}
@@ -386,8 +337,6 @@ int main(int argc, char *argv[])
 	}, NULL);
 	_server_port = util.getConfigureValue("port");
 	_server_deamon = util.getConfigureValue("deamon");
-	_db_home = util.getConfigureValue("db_home");
-	_db_suffix = util.getConfigureValue("db_suffix");
 	string _website = util.getConfigureValue("website");
 	srand(time(NULL));
 	string command = "-s";
@@ -475,7 +424,7 @@ int main(int argc, char *argv[])
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(check_response.success()) {
 			// read pid file
-			ifstream ifp(PID_PATH);
+			ifstream ifp(GlobalTypedef::pid_path.c_str());
 			std::string line;
 			if (ifp.is_open()) {
 				int current_line = 0;
@@ -519,7 +468,7 @@ int main(int argc, char *argv[])
 		cout << "The service will be forcibly stopped!" << endl;
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		// remove pid file
-		Util::remove_path(PID_PATH);
+		Util::remove_path(GlobalTypedef::pid_path);
 		return 0;
 	}
 	else if (command == "-S" || command == "--status")
@@ -758,7 +707,7 @@ void initialServer(uint16_t port, bool background)
 	}
 	// save start type to pid file
 	fstream ofp;
-	std::string pid_path = PID_PATH;
+	std::string pid_path = GlobalTypedef::pid_path;
 	ofp.open(pid_path.c_str(), ios::app);
 	ofp << background;
 	ofp << '\n';
@@ -855,7 +804,7 @@ void releaseGlobalPtr(bool renew)
 
 bool stopServer()
 {
-	string pid_path = PID_PATH;
+	string pid_path = GlobalTypedef::pid_path;
 	SLOG_DEBUG("pid path: " + pid_path);
 	if (!Util::file_exist(pid_path))
 	{
@@ -1045,7 +994,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
-	if (username != apiUtil->get_system_username())
+	if (username != GlobalTypedef::root_uname())
 	{
 		msg =  "You have no rights to stop the server.";
         response->Error(StatusAuthenticationFailed, msg);
@@ -1071,17 +1020,16 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
-	
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
-	json_data.AddMember("operation", "uploadfile", json_data.GetAllocator());
+	nlohmann::json json_data = nlohmann::json{
+		{"operation", "uploadfile"}
+	};
 	if (checkRequest(request, response, op_type, json_data) == false)
 	{
 		return;
 	}
 	// filename : filecontent
-	std::string filename = server::jsonParam(json_data, "filename");
+	std::string filename = JsonUtil::jsonParam(json_data, "filename");
 	string msg;
 	if(msg.empty())
 	{
@@ -1119,22 +1067,22 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
-	std::string file_content = server::jsonParam(json_data, "file");
+	std::string file_content = JsonUtil::jsonParam(json_data, "file");
 	response->Save(file_dst, std::move(file_content), notify_msg);
 }
 
 void download_file(const GRPCReq *request, GRPCResp *response)
 {
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
-	json_data.AddMember("operation", "downloadfile", json_data.GetAllocator());
+	nlohmann::json json_data = nlohmann::json{
+		{"operation", "downloadfile"}
+	};
 	if (checkRequest(request, response, op_type, json_data) == false)
 	{
 		return;
 	}
 	std::string error;
-	std::string filepath = server::jsonParam(json_data, "filepath");
+	std::string filepath = JsonUtil::jsonParam(json_data, "filepath");
 	apiUtil->check_param_value("filepath", filepath, error);
 	if (error.empty() == false)
 	{
@@ -1155,7 +1103,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
-		bool compress = server::jsonBoolParam(json_data, "compress", false);
+		bool compress = JsonUtil::jsonBoolParam(json_data, "compress", false);
 		if (compress) // compress to zip file
 		{
 			std::string* zip_file_path = new string(exact_path + ".zip");
@@ -1322,9 +1270,9 @@ void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::Clus
 
 void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation)
 {
-	Json json_data;
+	nlohmann::json json_data;
 	parseRequest(request, json_data);
-	bool is_inner = server::jsonBoolParam(json_data, "inner", false);
+	bool is_inner = JsonUtil::jsonBoolParam(json_data, "inner", false);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	string msg;
@@ -1339,7 +1287,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 	{
 		string sparql;
 		ResultSet rs;
-		sparql = server::jsonParam(json_data, "sparql");
+		sparql = JsonUtil::jsonParam(json_data, "sparql");
 		if (!apiUtil->check_param_value("sparql", sparql, msg))
 		{
 			response->Error(StatusParamIsIllegal, msg);
@@ -1393,9 +1341,9 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		resp_data.threadId = gutil::ThreadUtil::getThreadID();
 		resp_data.queryTime = query_time;
 		rs.release();
-		std::string json_str;
-		resp_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		nlohmann::json resp_json;
+		resp_data.toJson(resp_json);
+		response->Json(resp_json);
 	}
 	else
 	{
@@ -1408,8 +1356,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 {
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
+	nlohmann::json json_data = nlohmann::json::object();
 	if (checkRequest(request, response, op_type, json_data) == false) 
 	{
 		return;
@@ -1566,28 +1513,25 @@ void check_task(const GRPCReq *request, GRPCResp *response)
  * @param request 
  * @param response 
  */
-void login_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "login successfully", allocator);
-		string version = Util::getConfigureValue("version");
-		resp_data.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+		nlohmann::json resp_data = nlohmann::json{
+			{"StatusCode", 0},
+			{"StatusMsg", "login successfully"}
+		};
 		string licensetype = Util::getConfigureValue("licensetype");
 		string product_name = Util::getConfigureValue("product_name");
 		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
 		if (product_name != "gstore") {
 			licensetype = "";
 		}
-		resp_data.AddMember("licensetype", StringRef(licensetype.c_str()), allocator);
-		string cur_path = Util::get_cur_path();
-		resp_data.AddMember("RootPath", StringRef(cur_path.c_str()), allocator);
-		resp_data.AddMember("type", HTTP_TYPE, allocator);
-		string remote_ip = server::jsonParam(json_data, "remote_ip");
+		resp_data["licensetype"] = licensetype;
+		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["RootPath"] = Util::get_cur_path();
+		resp_data["type"] = HTTP_TYPE;
+		string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 		apiUtil->reset_access_ip_error_num(remote_ip);
 		response->Json(resp_data);
 	}
@@ -1608,21 +1552,19 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 {
 	try
 	{
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		string version = Util::getConfigureValue("version");
-		resp_data.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
+		nlohmann::json resp_data = nlohmann::json{
+			{"StatusCode", 0},
+			{"StatusMsg", "success"}
+		};
 		string licensetype = Util::getConfigureValue("licensetype");
 		string product_name = Util::getConfigureValue("product_name");
 		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
 		if (product_name != "gstore") {
 			licensetype = "";
 		}
-		resp_data.AddMember("licensetype", StringRef(licensetype.c_str()), allocator);
-		resp_data.AddMember("type", HTTP_TYPE, allocator);
+		resp_data["licensetype"] = licensetype;
+		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["type"] = HTTP_TYPE;
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -1641,14 +1583,12 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
 {
 	try
 	{
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		string version = Util::getConfigureValue("version");
-		resp_data.AddMember("CoreVersion", StringRef(version.c_str()), allocator);
-		resp_data.AddMember("type", HTTP_TYPE, allocator);
+		nlohmann::json resp_data = nlohmann::json{
+			{"StatusCode", 0},
+			{"StatusMsg", "success"}
+		};
+		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["type"] = HTTP_TYPE;
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -1666,12 +1606,12 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
  * @param json_data 
  * {type: "1 for query, 2 for save", ip_type: "1 for black list, 2 for white list", ips:"ip list, split with ','"}
  */
-void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void ip_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
 		std::string error;
-		string type = json_data["type"].GetString();
+		string type = json_data["type"];
 		if (type == "1")
 		{
 			string IPtype = apiUtil->ip_enabled_type();
@@ -1684,28 +1624,25 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			vector<string> ip_list;
 			apiUtil->ip_list(IPtype, ip_list);
 			size_t count = ip_list.size();
-			Json resp_data;
-			Json::AllocatorType &allocator = resp_data.GetAllocator();
-			rapidjson::Value responseBody(kObjectType);
-			rapidjson::Value ips(kArrayType);
+			nlohmann::json ips = nlohmann::json::array();
 			for (size_t i = 0; i < count; i++)
 			{
-				ips.PushBack(rapidjson::Value().SetString(ip_list[i].c_str(), allocator).Move(), allocator);
+				ips.push_back(std::move(ip_list[i]));
 			}
-
-			responseBody.AddMember("ip_type", rapidjson::Value().SetString(IPtype.c_str(), allocator).Move(), allocator);
-			responseBody.AddMember("ips", ips, allocator);
-
-			resp_data.SetObject();
-			resp_data.AddMember("StatusCode", 0, allocator);
-			resp_data.AddMember("StatusMsg", "success", allocator);
-			resp_data.AddMember("ResponseBody", responseBody, allocator);
+			nlohmann::json resp_data = nlohmann::json{
+				{"StatusCode", 0},
+				{"StatusMsg", "success"}
+			};
+			resp_data["ResponseBody"] = nlohmann::json{
+				{"ip_type", IPtype},
+				{"ips", ips}
+			};
 			response->Json(resp_data);
 		}
 		else if (type == "2")
 		{
-			std::string ips = json_data["ips"].GetString();
-			std::string ip_type = json_data["ip_type"].GetString();
+			std::string ips = json_data["ips"];
+			std::string ip_type = json_data["ip_type"];
 			if (ips.empty())
 			{
 				error = "the ips can't be empty";
@@ -1761,7 +1698,7 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param response 
  * @param json_data
  */
-void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void refresh_conf_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	apiUtil->refresh_conf();
 	clusterManagerPtr->refresh();
@@ -1777,15 +1714,15 @@ void refresh_conf_task(const GRPCReq *request, GRPCResp *response, Json &json_da
  * {username: "the user who is the owner of database or has rights to access the database"}
  * {database: "the name of database"}
  */
-void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void init_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	std::string db_names = server::jsonParam(json_data, "db_names");
+	std::string db_names = JsonUtil::jsonParam(json_data, "db_names");
 	if (db_names.empty())
 	{
 		response->Error(StatusParamIsIllegal, "db_names can't be empty");
 		return;
 	}
-	std::string username = json_data["username"].GetString();
+	std::string username = json_data["username"];
 	std::string built_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 	std::vector<std::string> db_name_vector;
 	Util::split(db_names, ",", db_name_vector);
@@ -1805,11 +1742,11 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 			response_data["data"].push_back(db_info);
 			continue;
 		} 
-		std::string db_path = _db_home + db_name + _db_suffix;
+		std::string db_path = GlobalTypedef::db_home() + db_name + GlobalTypedef::db_suffix();
 		if(!Util::dir_exist(db_path))
 		{
 			db_info["status"] = "1";
-			db_info["msg"] = db_name + _db_suffix + " not exist.";
+			db_info["msg"] = db_name + GlobalTypedef::db_suffix() + " is not exist.";
 			response_data["data"].push_back(db_info);
 			continue;
 		}
@@ -1825,10 +1762,7 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		}
 		response_data["data"].push_back(db_info);
 	}
-	Json resp_data;
-	resp_data.SetObject();
-	resp_data.Parse(response_data.dump().c_str());
-	response->Json(resp_data);
+	response->Json(response_data);
 }
 
 /**
@@ -1839,30 +1773,26 @@ void init_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {username: "the user who is the owner of database or has rights to access the database"}
  */
-void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
-		std::string username = json_data["username"].GetString();
+		std::string username = json_data["username"];
 
 		vector<shared_ptr<DatabaseInfo>> array;
 		apiUtil->get_databaseinfos(username, array);
 
-		Json resp_data;
-		resp_data.SetObject();
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
+		nlohmann::json resp_data = nlohmann::json{
+			{"StatusCode", 0},
+			{"StatusMsg", "Get the database list successfully!"},
+			{"ResponseBody", {}}
+		};
 		size_t count = array.size();
-		
-		rapidjson::Value array_data(rapidjson::kArrayType);
 		for (size_t i = 0; i < count; i++)
 		{
 			shared_ptr<DatabaseInfo> dbInfo = array[i];
-			array_data.PushBack(dbInfo->toJSON(allocator).Move(), allocator);
+			resp_data["ResponseBody"].push_back(dbInfo->toJSON());
 		}
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "Get the database list successfully!", allocator);
-		resp_data.AddMember("ResponseBody", array_data, allocator);
-
 		// set response status and message
 		response->Json(resp_data);
 	}
@@ -1881,7 +1811,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database", csr: "load csr resource flag, default '0'"}
  */
-void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageLoadRequest request_data(json_data);
 	server::MessageLoadResponse response_data; 
@@ -1894,7 +1824,7 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 /**
@@ -1905,11 +1835,11 @@ void load_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database"}
  */
-void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
-		std::string db_name = server::jsonParam(json_data, "db_name");
+		std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
 		std::string msg;
 		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
@@ -1960,11 +1890,11 @@ void unload_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database"}
  */
-void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageMonitorRequest request_data(json_data);
 	server::MessageMonitorResponse response_data; 
-	string remote_ip = server::jsonParam(json_data, "remote_ip");
+	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -1974,7 +1904,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -1986,7 +1916,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the name of database that would build", db_path: "the data file path"}
  */
-void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
+void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
 	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
@@ -1996,7 +1926,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 
 	server::MessageBuildRequest request_data(json_data);
 	server::MessageBuildResponse response_data; 
-	string remote_ip = server::jsonParam(json_data, "remote_ip");
+	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::build(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2006,7 +1936,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2018,7 +1948,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
  * @param json_data 
  * {db_name: "the name of database that would drop", "is_backup": "'true' for logic delete, 'false' for physically delete"}
  */
-void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
+void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
 	if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
@@ -2046,7 +1976,7 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, J
  * @param json_data 
  * {db_name: "the name of database that would backup", "backup_path": "the backup path, default path ./backups"}
  */
-void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageBackupRequest request_data(json_data);
 	server::MessageBackupResponse response_data;
@@ -2067,7 +1997,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2078,7 +2008,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param response 
  * @param json_data 
  */
-void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void backup_path_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageBackupPathRequest request_data(json_data);
 	server::MessageBackupPathResponse response_data;
@@ -2091,7 +2021,7 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2103,7 +2033,7 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
  * @param json_data 
  * {db_name: "the operation database name", backup_path: "the backup path", username: "the operation username"}
  */
-void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageRestoreRequest request_data(json_data);
 	server::MessageRestoreResponse response_data;
@@ -2124,7 +2054,7 @@ void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2136,12 +2066,12 @@ void restore_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the operation database name", format: "json/html/file", sparql: "the sparql"}
  */
-void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
+void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
 	server::MessageQueryRequest request_data(json_data);
 	server::MessageQueryResponse response_data; 
-	string remote_ip = server::jsonParam(json_data, "remote_ip");
-	bool async = server::jsonBoolParam(json_data, "async", false);
+	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
+	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	GRPCServerTask *sub_task = task_of(response);
 	bool is_update = false;
 	if (clusterManagerPtr->isEnable())
@@ -2206,7 +2136,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 
 }
@@ -2219,7 +2149,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
  * @param json_data 
  * {db_name: "the operation database name", "db_path": "the export path"}
  */
-void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void export_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageExportRequest request_data(json_data);
 	server::MessageExportResponse response_data;
@@ -2232,7 +2162,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2244,7 +2174,7 @@ void export_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the operation database name", isolevel: "the Isolation level， 1:RC(read committed) 2:SI(snapshot isolation) 3:SR(seriablizable）"}
  */
-void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void begin_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageBeginRequest request_data(json_data);
 	server::MessageBeginResponse response_data; 
@@ -2257,7 +2187,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2269,7 +2199,7 @@ void begin_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the operation database name", sparql: "the sparql", tid: "the transcation id while begin transcation"}
  */
-void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void tquery_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageTqueryRequest request_data(json_data);
 	server::MessageTqueryResponse response_data; 
@@ -2282,7 +2212,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2294,7 +2224,7 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the operation database name", tid: "the transcation id while begin transcation"}
  */
-void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void commit_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageCommitRequest request_data(json_data);
 	server::MessageResponse response_data; 
@@ -2307,7 +2237,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2319,7 +2249,7 @@ void commit_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {db_name: "the operation database name", tid: "the transcation id while begin transcation"}
  */
-void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void rollback_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageCommitRequest request_data(json_data);
 	server::MessageResponse response_data; 
@@ -2332,7 +2262,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2343,7 +2273,7 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param response 
  * @param json_data 
  */
-void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void checkpoint_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageCheckPointRequest request_data(json_data);
 	server::MessageResponse response_data; 
@@ -2356,7 +2286,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2368,7 +2298,7 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, Json &json_data
  * @param json_data 
  * {db_name: "the operation database name", file: "the insert data file"}
  */
-void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
+void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
 	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
@@ -2378,7 +2308,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchInsertRequest request_data(json_data);
 	server::MessageBatchInsertResponse response_data; 
-	string remote_ip = server::jsonParam(json_data, "remote_ip");
+	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2388,7 +2318,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2400,7 +2330,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
  * @param json_data 
  * {db_name: "the operation database name", file: "the insert data file"}
  */
-void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, Json &json_data)
+void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
 	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
 	{
@@ -2410,7 +2340,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchRemoveRequest request_data(json_data);
 	server::MessageBatchRemoveResponse response_data; 
-	string remote_ip = server::jsonParam(json_data, "remote_ip");
+	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 	server::ApiHandler::batch_remove(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2420,22 +2350,22 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
-void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void rename_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
-		std::string db_name = server::jsonParam(json_data, "db_name");
+		std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
 		std::string msg;
 		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
 		{
 			response->Error(StatusParamIsIllegal, msg);
 			return;
 		}
-		std::string new_name = server::jsonParam(json_data, "new_name");
+		std::string new_name = JsonUtil::jsonParam(json_data, "new_name");
 		if (apiUtil->check_param_value("new_name", new_name, msg) == false)
 		{
 			response->Error(StatusParamIsIllegal, msg);
@@ -2455,7 +2385,7 @@ void rename_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 }
 
-void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageReasonManageResponse response_data; 
 	server::ApiHandler::reason_manage(apiUtil, response_data, json_data);
@@ -2467,7 +2397,7 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 /**
@@ -2488,7 +2418,7 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2502,7 +2432,7 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
  * @param json_data 
  * {type: "1 for add user, 2 for delete user, 3 for alert user password", op_username: "the user who be operated", op_password: "new password(for type 3)"}
  */
-void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void user_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageUserManageRequest request_data(json_data);
 	server::MessageUserManageResponse response_data; 
@@ -2515,7 +2445,7 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2532,7 +2462,7 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, Json &json_dat
  *   db_name: "the operation database name"
  * }
  */
-void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void user_privilege_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageUserPrivilegeManageRequest request_data(json_data);
 	server::MessageUserPrivilegeManageResponse response_data; 
@@ -2545,7 +2475,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2557,7 +2487,7 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, Json &json_
  * @param json_data 
  * {op_password: "new password"}
  */
-void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void user_password_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageUserPasswordRequest request_data(json_data);
 	server::MessageUserPasswordResponse response_data; 
@@ -2570,7 +2500,7 @@ void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_d
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 // for log
@@ -2582,7 +2512,7 @@ void user_password_task(const GRPCReq *request, GRPCResp *response, Json &json_d
  * @param json_data 
  * {pageNo: "page number, default 1", pageSize: "number of per page, default 10"}
  */
-void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void txn_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageTxnLogRequest request_data(json_data);
 	server::MessageTxnLogResponse response_data; 
@@ -2595,7 +2525,7 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2607,7 +2537,7 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  * @param json_data 
  * {date:"log date, required format is yyyyMMdd", pageNo: "page number, default 1", pageSize: "number of per page, default 10"}
  */
-void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void query_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageQueryLogRequest request_data(json_data);
 	server::MessageQueryLogResponse response_data; 
@@ -2620,7 +2550,7 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2643,7 +2573,7 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2655,7 +2585,7 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
  * @param json_data 
  * {date:"log date, required format is yyyyMMdd", pageNo: "page number, default 1", pageSize: "number of per page, default 10"}
  */
-void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void access_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageAccessLogRequest request_data(json_data);
 	server::MessageAccessLogResponse response_data; 
@@ -2668,7 +2598,7 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2691,7 +2621,7 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2708,11 +2638,12 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
  *   }
  * }
  */
-void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void fun_query_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageFunQueryRequest request_data();
-	server::MessageFunQueryResponse response_data; 
-	server::ApiHandler::funquery(apiUtil, pfnUtil, response_data, json_data);
+	server::MessageFunQueryRequest request_data;
+	server::MessageFunQueryResponse response_data;
+	request_data.funInfo = PFNInfo(json_data["funInfo"]);
+	server::ApiHandler::funquery(apiUtil, pfnUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2721,7 +2652,7 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2743,10 +2674,13 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  *    }
  * }
  */
-void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void fun_cudb_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageFunCudbResponse response_data; 
-	server::ApiHandler::funcudb(apiUtil, pfnUtil, response_data, json_data);
+	server::MessageFunCudbRequest request_data;
+	server::MessageFunCudbResponse response_data;
+	request_data.type = json_data["type"];
+	request_data.funInfo = PFNInfo(json_data["funInfo"]);
+	server::ApiHandler::funcudb(apiUtil, pfnUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2755,7 +2689,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
@@ -2776,10 +2710,12 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
  *    }
  * }
  */
-void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageReviewResponse response_data; 
-	server::ApiHandler::funreview(apiUtil, pfnUtil, response_data, json_data);
+	server::MessageFunReviewRequest request_data;
+	server::MessageFunReviewResponse response_data; 
+	request_data.funInfo = PFNInfo(json_data["funInfo"]);
+	server::ApiHandler::funreview(apiUtil, pfnUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2788,11 +2724,11 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, Json &json_data
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
-void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void stat_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	try
 	{
@@ -2806,14 +2742,13 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 		uint64_t disk_available = gutil::ResourceUtil::get_disk_free(); // MB
 		char disk_available_char[32];
 		sprintf(disk_available_char, "%lu", disk_available);
-		Json resp_data;
-		Json::AllocatorType &allocator = resp_data.GetAllocator();
-		resp_data.SetObject();
-		resp_data.AddMember("StatusCode", 0, allocator);
-		resp_data.AddMember("StatusMsg", "success", allocator);
-		resp_data.AddMember("cup_usage", StringRef(cup_usage_char), allocator);
-		resp_data.AddMember("mem_usage", StringRef(mem_usage_char), allocator);
-		resp_data.AddMember("disk_available", StringRef(disk_available_char), allocator);
+		nlohmann::json resp_data = nlohmann::json {
+			{"StatusCode", 0},
+			{"StatusMsg", "success"},
+			{"cup_usage", cup_usage_char},
+			{"mem_usage", mem_usage_char},
+			{"disk_available", disk_available_char}
+		};
 		response->Json(resp_data);
 	}
 	catch (const std::exception &e)
@@ -2823,7 +2758,7 @@ void stat_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 	}
 }
 
-void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
+void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageCheckOperationStateRequest request_data(json_data);
 	server::MessageCheckOperationStateResponse response_data; 
@@ -2836,15 +2771,15 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, Json &
 	{
 		std::string json_str;
 		response_data.toJsonString(json_str);
-		response->nlohmannJson(json_str);
+		response->Json(json_str);
 	}
 }
 
 void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 {
-	Json json_data;
+	nlohmann::json json_data;
 	parseRequest(request, json_data);
-	std::string expection = server::jsonParam(json_data, "operation");
+	std::string expection = JsonUtil::jsonParam(json_data, "operation");
 	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
 	server::MessageClusterRequest request_data(json_data);
 	switch (expectionEnum)
@@ -2899,7 +2834,7 @@ void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 
 void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 {
-	Json json_data;
+	nlohmann::json json_data;
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
@@ -2910,7 +2845,7 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 
 void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 {
-	Json json_data;
+	nlohmann::json json_data;
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
@@ -2937,16 +2872,16 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 void license_import(const GRPCReq *request, GRPCResp *response)
 {
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
-	json_data.AddMember("operation", "importLicense", json_data.GetAllocator());
+	nlohmann::json json_data = nlohmann::json {
+		{"operation", "importLicense"}
+	};
 	if (checkRequest(request, response, op_type, json_data) == false)
 	{
 		return;
 	}
 	// filename : filecontent
-	std::string filename = server::jsonParam(json_data, "filename");
-	std::string filecontent = server::jsonParam(json_data, "file");
+	std::string filename = JsonUtil::jsonParam(json_data, "filename");
+	std::string filecontent = JsonUtil::jsonParam(json_data, "file");
 	std::string msg;
 	if(filename.empty() || filecontent.empty())
 	{
@@ -2982,9 +2917,7 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				{
 					server::MessageLicenseResponse respData(server::StatusCode::StatusOK, msg);
 					respData.json = apiUtil->get_license();
-					std::string json_str;
-					respData.toJsonString(json_str);
-					resp->nlohmannJson(json_str);
+					resp->Json(respData.json);
 				}
 				else 
 				{
@@ -3000,26 +2933,24 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 void license_info(const GRPCReq *request, GRPCResp *response)
 {
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
-	json_data.AddMember("operation", "queryLicense", json_data.GetAllocator());
+	nlohmann::json json_data = nlohmann::json {
+		{"operation", "queryLicense"}
+	};
 	if (checkRequest(request, response, op_type, json_data) == false)
 	{
 		return;
 	}
 	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
 	respData.json = apiUtil->get_license();
-	std::string json_str;
-	respData.toJsonString(json_str);
-	response->nlohmannJson(json_str);
+	response->Json(respData.json);
 }
 
 void license_remove(const GRPCReq *request, GRPCResp *response)
 {
 	operation_type op_type;
-	Json json_data;
-	json_data.SetObject();
-	json_data.AddMember("operation", "removeLicense", json_data.GetAllocator());
+	nlohmann::json json_data = nlohmann::json {
+		{"operation", "removeLicense"}
+	};
 	if (checkRequest(request, response, op_type, json_data) == false)
 	{
 		return;

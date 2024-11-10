@@ -41,7 +41,7 @@ namespace server
         std::string op_username;
         std::string op_password;
         MessageUserManageRequest(int type, std::string username, std::string password);
-        MessageUserManageRequest(const rapidjson::Document& json_data);
+        MessageUserManageRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -62,7 +62,7 @@ namespace server
         std::string privileges;
         std::string db_name;
         MessageUserPrivilegeManageRequest(int type, std::string username, std::string privileges, std::string db_name);
-        MessageUserPrivilegeManageRequest(const rapidjson::Document& json_data);
+        MessageUserPrivilegeManageRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -82,7 +82,7 @@ namespace server
         std::string password;
         std::string op_password;
         MessageUserPasswordRequest(std::string username, std::string password, std::string op_password);
-        MessageUserPasswordRequest(const rapidjson::Document& json_data);
+        MessageUserPasswordRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };

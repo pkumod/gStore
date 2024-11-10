@@ -57,9 +57,8 @@ namespace server
     {
         std::string db_name;
         std::string type;
-        MessageReasonManageRequest() {}
         MessageReasonManageRequest(std::string db_name, std::string type);
-        MessageReasonManageRequest(const rapidjson::Document& json_data);
+        MessageReasonManageRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -69,7 +68,7 @@ namespace server
     {
         nlohmann::json ruleinfo;
         MessageAddReasonRequest(std::string db_name, nlohmann::json ruleinfo);
-        MessageAddReasonRequest(const rapidjson::Document& json_data);
+        MessageAddReasonRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -78,7 +77,7 @@ namespace server
     struct MessageListReasonRequest : MessageReasonManageRequest
     {
         MessageListReasonRequest(std::string db_name);
-        MessageListReasonRequest(const rapidjson::Document& json_data);
+        MessageListReasonRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -87,7 +86,7 @@ namespace server
     {
         std::string rulename;
         MessageCedsdReasonRequest(std::string db_name, std::string type, std::string rulename);
-        MessageCedsdReasonRequest(const rapidjson::Document& json_data);
+        MessageCedsdReasonRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };

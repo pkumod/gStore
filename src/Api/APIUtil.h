@@ -23,7 +23,6 @@
 #include "APILogQueryUtil.h"
 
 using namespace std;
-using namespace rapidjson;
 
 class APIUtil
 {
@@ -157,7 +156,7 @@ public:
     // for access log
     void get_access_log_files(std::vector<std::string> &file_list);
     void get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr);
-    void write_access_log(string operation, string remoteIP, int statusCode, string statusMsg, string optId = "");
+    void write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, const string &optId = "");
     void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath = "");
     bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
 
@@ -171,7 +170,6 @@ public:
 	int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "INF");
 	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
 	void get_transactionlog(int &page_no, int &page_size, shared_ptr<struct TransactionLogs> logPtr);
-	void abort_transactionlog(long end_time);
 
     // for license
     void init_license();
@@ -184,12 +182,8 @@ public:
     string get_query_result_path();
     int get_thread_pool_num();
     int get_max_output_size();
-    string get_root_username();
-    string get_system_username();
     int get_connection_num();
     void increase_connection_num();
-    int get_configure_value(const string& key, int default_value);
-    size_t get_configure_value(const string& key, size_t default_value);
     size_t get_upload_max_body_size();
     bool check_upload_allow_extensions(const string& suffix);
     bool check_upload_allow_compress_packages(const string& suffix);

@@ -12,13 +12,13 @@ namespace server
         this->backup_zip = backup_zip;
     }
 
-    MessageBackupRequest::MessageBackupRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageBackupRequest::MessageBackupRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name     = jsonParam(json_data, "db_name");
-		this->backup_path = jsonParam(json_data, "backup_path");
-        this->backup_zip  = jsonBoolParam(json_data, "backup_zip", false);
-        this->async = jsonBoolParam(json_data, "async", false);
-        this->callback = jsonParam(json_data, "callback");
+        this->db_name     = JsonUtil::jsonParam(json_data, "db_name");
+		this->backup_path = JsonUtil::jsonParam(json_data, "backup_path");
+        this->backup_zip  = JsonUtil::jsonBoolParam(json_data, "backup_zip", false);
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
     void MessageBackupRequest::to_json(std::string& json_str)
@@ -77,9 +77,9 @@ namespace server
     }
 
     // backup path
-    MessageBackupPathRequest::MessageBackupPathRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageBackupPathRequest::MessageBackupPathRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name     = jsonParam(json_data, "db_name");
+        this->db_name     = JsonUtil::jsonParam(json_data, "db_name");
     }
 
     void MessageBackupPathResponse::toJsonString(std::string& json_str)
@@ -104,12 +104,12 @@ namespace server
         this->backup_zip = backup_zip; 
     }
 
-    MessageRestoreRequest::MessageRestoreRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageRestoreRequest::MessageRestoreRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name     = jsonParam(json_data, "db_name");
-		this->backup_path = jsonParam(json_data, "backup_path");
-        this->async = jsonBoolParam(json_data, "async", false);
-        this->callback = jsonParam(json_data, "callback");
+        this->db_name     = JsonUtil::jsonParam(json_data, "db_name");
+		this->backup_path = JsonUtil::jsonParam(json_data, "backup_path");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
     void MessageRestoreRequest::to_json(std::string& json_str)
@@ -171,11 +171,11 @@ namespace server
         this->compress = compress;
     }
 
-    MessageExportRequest::MessageExportRequest(const rapidjson::Document& json_data)
+    MessageExportRequest::MessageExportRequest(const nlohmann::json& json_data): MessageRequest(json_data)
     {
-        this->db_name     = jsonParam(json_data, "db_name");
-		this->db_path = jsonParam(json_data, "db_path");
-        this->compress  = jsonBoolParam(json_data, "compress", false);
+        this->db_name     = JsonUtil::jsonParam(json_data, "db_name");
+		this->db_path = JsonUtil::jsonParam(json_data, "db_path");
+        this->compress  = JsonUtil::jsonBoolParam(json_data, "compress", false);
     }
 
     void MessageExportRequest::to_json(std::string& json_str)

@@ -2154,31 +2154,30 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					else if (rt_type == "kvalue") 
 					{
 						// str is JSONArray sting: [{vid1:value1},{vid2:value2}...]
-						rapidjson::Document doc;
-						doc.IsArray();
-						doc.Parse(str.c_str());
-						string iri_src = kvstore->getStringByID(iri_id_set[0]);
 						ss << "[";
-						for (size_t i = 0; i < doc.Size(); i++)
+						if (nlohmann::json::accept(str))
 						{
-							if (i > 0) 
+							nlohmann::json doc = nlohmann::json::parse(str);
+							string iri_src = kvstore->getStringByID(iri_id_set[0]);
+							for (size_t i = 0; i < doc.size(); i++)
 							{
-								ss << ",";
+								if (i > 0)
+									ss << ",";
+								nlohmann::json obj = doc[i];
+								string dst_str = JsonUtil::jsonParam(obj, "dst", "unknown");
+								string value_str = JsonUtil::jsonParam(obj, "value");
+								string iri_dst = "";
+								if (Util::is_number(dst_str))
+								{
+									iri_dst = kvstore->getStringByID(stol(dst_str));
+								} 
+								else
+								{
+									iri_dst = dst_str;
+								}
+								ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
+									<< value_str << "\"}";
 							}
-							rapidjson::Value obj = doc[i].GetObject();
-							string dst_str = obj.HasMember("dst") ? obj["dst"].GetString(): "unkown";
-							string value_str = obj.HasMember("value") ? obj["value"].GetString() : "";
-							string iri_dst = "";
-							if (Util::is_number(dst_str))
-							{
-								iri_dst = kvstore->getStringByID(stol(dst_str));
-							} 
-							else
-							{
-								iri_dst = dst_str;
-							}
-							ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
-								<< value_str << "\"}";
 						}
 						ss << "]";
 					}
@@ -2811,31 +2810,30 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								else if (rt_type == "kvalue") 
 								{
 									// str is JSONArray sting: [{vid1:value1},{vid2:value2}...]
-									rapidjson::Document doc;
-									doc.IsArray();
-									doc.Parse(str.c_str());
-									string iri_src = kvstore->getStringByID(iri_id_set[0]);
 									ss << "[";
-									for (size_t i = 0; i < doc.Size(); i++)
+									if (nlohmann::json::accept(str))
 									{
-										if (i > 0) 
+										nlohmann::json doc = nlohmann::json::parse(str);
+										string iri_src = kvstore->getStringByID(iri_id_set[0]);
+										for (size_t i = 0; i < doc.size(); i++)
 										{
-											ss << ",";
+											if (i > 0)
+												ss << ",";
+											nlohmann::json obj = doc[i];
+											string dst_str = JsonUtil::jsonParam(obj, "dst", "unknown");
+											string value_str = JsonUtil::jsonParam(obj, "value");
+											string iri_dst = "";
+											if (Util::is_number(dst_str))
+											{
+												iri_dst = kvstore->getStringByID(stol(dst_str));
+											} 
+											else
+											{
+												iri_dst = dst_str;
+											}
+											ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
+												<< value_str << "\"}";
 										}
-										rapidjson::Value obj = doc[i].GetObject();
-										string dst_str = obj.HasMember("dst") ? obj["dst"].GetString(): "unkown";
-										string value_str = obj.HasMember("value") ? obj["value"].GetString() : "";
-										string iri_dst = "";
-										if (Util::is_number(dst_str))
-										{
-											iri_dst = kvstore->getStringByID(stol(dst_str));
-										} 
-										else
-										{
-											iri_dst = dst_str;
-										}
-										ss << "{\"src\":\"" <<iri_src << "\",\"dst\":\""<< iri_dst << "\",\"value\":\""
-											<< value_str << "\"}";
 									}
 									ss << "]";
 								}
@@ -4120,48 +4118,45 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 		}
 		string line;
 		bool isMatch;
-		string temp_name, md5Str;
-		string fun_args, fun_status, fun_return;
+		string md5Str;
+		string fun_args, fun_status, fun_return, last_time;
 		isMatch = false;
 		fun_return = "";
+		string match_name = "\"funName\":\""+fun_name+"\"";
 		while (getline(in, line))
 		{
-			rapidjson::Document doc;
-			doc.SetObject();
-			if (!doc.Parse(line.c_str()).HasParseError())
+			if (line.find(match_name) != std::string::npos)
 			{
-				if (doc.HasMember("funName"))
+				if (!nlohmann::json::accept(line))
 				{
-					temp_name = doc["funName"].GetString();
-					if (temp_name == fun_name)
-					{
-						if (doc.HasMember("funStatus"))
-							fun_status = doc["funStatus"].GetString();
-						if (fun_status != "2")
-						{
-							SLOG_ERROR("abort function '" << fun_name << "' not compile yet");
-							throw runtime_error("function '" + fun_name + "' not compile yet");
-						}
-						if (doc.HasMember("funArgs"))
-							fun_args = doc["funArgs"].GetString();
-						if (doc.HasMember("funReturn"))
-							fun_return = doc["funReturn"].GetString();
-						if (doc.HasMember("lastTime"))
-						{
-							md5Str = doc["lastTime"].GetString();
-							md5Str = Util::md5(md5Str);
-						}
-						isMatch = true;
-						break;
-					}
+					throw runtime_error("function '" + fun_name + "' json file format error");
 				}
+				nlohmann::json doc = nlohmann::json::parse(line);
+				if (doc.contains("funStatus"))
+					doc.at("funStatus").get_to(fun_status);
+				if (fun_status != "2")
+				{
+					SLOG_ERROR("abort function '" << fun_name << "' not compile yet");
+					throw runtime_error("function '" + fun_name + "' not compile yet");
+				}
+				if (doc.contains("funArgs"))
+					doc.at("funArgs").get_to(fun_args);
+				if (doc.contains("funReturn"))
+					doc.at("contains").get_to(fun_return);
+				if (doc.contains("lastTime"))
+				{
+					doc.at("lastTime").get_to(last_time);
+					md5Str = Util::md5(last_time);
+				}
+				isMatch = true;
+				break;
 			}
 		}
 		in.close();
 		if (!isMatch)
 		{
-			SLOG_ERROR("abort function '" << fun_name << "' not exist");
-			throw runtime_error("function '" + fun_name + "' not exist");
+			SLOG_ERROR("abort function '" << fun_name << "' is not exist");
+			throw runtime_error("function '" + fun_name + "' is not exist");
 		}
 		// check funInfo end
 		string error_msg;

@@ -16,12 +16,12 @@ namespace server
         this->db_path = db_path;
     }
 
-    MessageBuildRequest::MessageBuildRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageBuildRequest::MessageBuildRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name", "");
-        this->db_path = jsonParam(json_data, "db_path");
-        this->async = jsonBoolParam(json_data, "async", false);
-        this->callback = jsonParam(json_data, "callback");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
+        this->db_path = JsonUtil::jsonParam(json_data, "db_path");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
     void MessageBuildRequest::to_json(std::string& json_str)
@@ -75,7 +75,7 @@ namespace server
     }
 
     // drop db
-    MessageDropRequest::MessageDropRequest(std::string db_name, std::string is_backup) : MessageRequest(std::string("drop"))
+    MessageDropRequest::MessageDropRequest(std::string db_name, std::string is_backup):MessageRequest(std::string("drop"))
     {
         this->db_name = db_name;
         this->is_backup = is_backup;
@@ -87,10 +87,10 @@ namespace server
         this->is_backup = is_backup;
     }
 
-    MessageDropRequest::MessageDropRequest(const rapidjson::Document& json_data)
+    MessageDropRequest::MessageDropRequest(const nlohmann::json& json_data):MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->is_backup = jsonBoolParam(json_data, "is_backup", true);
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->is_backup = JsonUtil::jsonBoolParam(json_data, "is_backup", true);
     }
 
     void MessageDropRequest::to_json(std::string& json_str)
@@ -140,13 +140,36 @@ namespace server
         this->async = async;
     }
 
-    MessageQueryRequest::MessageQueryRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageQueryRequest::MessageQueryRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name");
-        this->format = jsonParam(json_data, "format", "json");
-        this->sparql = jsonParam(json_data, "sparql");
-        this->callback = jsonParam(json_data, "callback");
-        this->async = jsonBoolParam(json_data, "async", false);
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->format = JsonUtil::jsonParam(json_data, "format", "json");
+        this->sparql = JsonUtil::jsonParam(json_data, "sparql");
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+    }
+
+    MessageQueryRequest::MessageQueryRequest(const MessageQueryRequest& other) : MessageRequest(other)
+    {
+        this->db_name = other.db_name;
+        this->format = other.format;
+        this->sparql = other.sparql;
+        this->callback = other.callback;
+        this->async = other.async;
+    }
+
+    MessageQueryRequest &MessageQueryRequest::operator=(const MessageQueryRequest& other) 
+    {
+        if (this != &other)
+        {
+            MessageRequest::operator=(other);
+            this->db_name = other.db_name;
+            this->format = other.format;
+            this->sparql = other.sparql;
+            this->callback = other.callback;
+            this->async = other.async;
+        }
+        return *this;
     }
 
     void MessageQueryRequest::to_json(std::string& json_str)
@@ -303,13 +326,13 @@ namespace server
         json_str = json.dump();
     }
 
-    MessageBatchInsertRequest::MessageBatchInsertRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageBatchInsertRequest::MessageBatchInsertRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name", "");
-        this->file = jsonParam(json_data, "file");
-        this->dir = jsonParam(json_data, "dir");
-        this->async = jsonBoolParam(json_data, "async", false);
-        this->callback = jsonParam(json_data, "callback");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
+        this->file = JsonUtil::jsonParam(json_data, "file");
+        this->dir = JsonUtil::jsonParam(json_data, "dir");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
     MessageBatchInsertResponse::MessageBatchInsertResponse()
@@ -347,12 +370,12 @@ namespace server
         this->file = file;
     }
 
-    MessageBatchRemoveRequest::MessageBatchRemoveRequest(const rapidjson::Document& json_data) : MessageRequest(json_data)
+    MessageBatchRemoveRequest::MessageBatchRemoveRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
-        this->db_name = jsonParam(json_data, "db_name", "");
-        this->file = jsonParam(json_data, "file");
-        this->async = jsonBoolParam(json_data, "async", false);
-        this->callback = jsonParam(json_data, "callback");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
+        this->file = JsonUtil::jsonParam(json_data, "file");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
     MessageBatchRemoveRequest::MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file) : MessageRequest("batchRemove", username, password) {
@@ -412,9 +435,9 @@ namespace server
     }
 
     // checkPoint
-    MessageCheckPointRequest::MessageCheckPointRequest(const rapidjson::Document& json_data) : MessageRequest(std::string("checkpoint"))
+    MessageCheckPointRequest::MessageCheckPointRequest(const nlohmann::json& json_data) : MessageRequest(std::string("checkpoint"))
     {
-        this->db_name = jsonParam(json_data, "db_name");
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
     }
 
     void MessageCheckPointRequest::to_json(std::string& json_str)

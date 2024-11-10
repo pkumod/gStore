@@ -420,7 +420,7 @@ server::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, con
 	return response_parser<server::MessageFunCudbResponse>(status, body_str);
 }
 
-server::MessageReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, server::MessageReviewRequest& request)
+server::MessageFunReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -429,7 +429,7 @@ server::MessageReviewResponse APIConnector::funReview(const std::string& url, co
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<server::MessageReviewResponse>(status, body_str);
+	return response_parser<server::MessageFunReviewResponse>(status, body_str);
 }
 
 server::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request)

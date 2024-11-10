@@ -1,12 +1,14 @@
 #pragma once
-#include "APIUtilDefined.h"
+#include <string>
+#include <vector>
+#include "nlohmann/json.hpp"
 
 using namespace std;
-using namespace rapidjson;
+using namespace nlohmann;
 
 struct DBQueryLogInfo
 {
-private:
+public:
     std::string queryDateTime;
     std::string remoteIP;
     std::string sparql;
@@ -17,123 +19,11 @@ private:
     size_t queryTime;
     std::string dbName;
 public:
-    DBQueryLogInfo () {}
-    DBQueryLogInfo (string _queryDateTime, string _remoteIP, string _sparql, long _ansNum, string _format, string _fileName, int _statusCode, size_t _queryTime, string _dbName)
-    {
-        queryDateTime = _queryDateTime;
-        remoteIP = _remoteIP;
-        sparql = _sparql;
-        ansNum = _ansNum;
-        format = _format;
-        fileName = _fileName;
-        statusCode = _statusCode;
-        queryTime = _queryTime;
-        dbName = _dbName;
-    }
-    DBQueryLogInfo(string json_str)
-    {
-        rapidjson::Document doc;
-        doc.SetObject();
-        if(!doc.Parse(json_str.c_str()).HasParseError())
-        {
-            if (doc.HasMember("QueryDateTime") && doc["QueryDateTime"].IsString())
-            {
-                queryDateTime = doc["QueryDateTime"].GetString();
-            } 
-            if (doc.HasMember("RemoteIP") && doc["RemoteIP"].IsString())
-            {
-                remoteIP = doc["RemoteIP"].GetString();
-            }             
-            if (doc.HasMember("Sparql") && doc["Sparql"].IsString())
-            {
-                sparql = doc["Sparql"].GetString();
-            }
-            if (doc.HasMember("AnsNum") && doc["AnsNum"].IsInt())
-            {
-                ansNum = doc["AnsNum"].GetInt();
-            }
-            if (doc.HasMember("Format") && doc["Format"].IsString())
-            {
-                format = doc["Format"].GetString();
-            }                
-            if (doc.HasMember("FileName") && doc["FileName"].IsString())
-            {
-                fileName = doc["FileName"].GetString();
-            }               
-            if (doc.HasMember("StatusCode") && doc["StatusCode"].IsInt())
-            {
-                statusCode = doc["StatusCode"].GetInt();
-            }               
-            if (doc.HasMember("QueryTime") && doc["QueryTime"].IsUint64())
-            {
-                queryTime = doc["QueryTime"].GetUint64();
-            }               
-            if (doc.HasMember("DbName") && doc["DbName"].IsString())
-            {
-                dbName = doc["DbName"].GetString();
-            }
-        }
-    }
-    void setQueryDateTime(string _queryDateTime){queryDateTime = _queryDateTime;}
-    void setRemoteIP(string _remoteIP) {remoteIP = _remoteIP;}
-    void setSparql(string _sparql) {sparql = _sparql;}
-    void setAnsNum(long _ansNum) {ansNum = _ansNum;}
-    void setFormat(string _format) {format = _format;}
-    void setFileName(string _fileName) {fileName = _fileName;}
-    void setStatusCode(int _statusCode) {statusCode = _statusCode;}
-    void setQueryTime(int _queryTime) {queryTime = _queryTime;}
-    void setDbName(string _dbName) {dbName = _dbName;}
-
-    std::string getQueryDateTime(){return queryDateTime;}
-    std::string getRemoteIP() {return remoteIP;}
-    std::string getSparql() {return sparql;}
-    long getAnsNum() {return ansNum;}
-    std::string getFormat() {return format;}
-    std::string getFileName() {return fileName;}
-    int getStatusCode() {return statusCode;}
-    int getQueryTime() {return queryTime;}
-    std::string getDbName() {return dbName;}
-    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
-    {
-        rapidjson::Value doc(kObjectType);
-        doc.AddMember("QueryDateTime", rapidjson::Value().SetString(queryDateTime.c_str(), allocator).Move(), allocator);
-        doc.AddMember("RemoteIP", rapidjson::Value().SetString(remoteIP.c_str(), allocator).Move(), allocator);
-        doc.AddMember("Sparql", rapidjson::Value().SetString(sparql.c_str(), allocator).Move(), allocator);
-        doc.AddMember("AnsNum", ansNum, allocator);
-        doc.AddMember("Format", rapidjson::Value().SetString(format.c_str(), allocator).Move(), allocator);
-        doc.AddMember("FileName", rapidjson::Value().SetString(fileName.c_str(), allocator).Move(), allocator);
-        doc.AddMember("StatusCode", statusCode, allocator);
-        doc.AddMember("QueryTime", queryTime, allocator);
-        doc.AddMember("DbName", rapidjson::Value().SetString(dbName.c_str(), allocator).Move(), allocator);
-        return doc;
-    }
-
-    void toJSON(nlohmann::json& doc)
-    {
-        doc["QueryDateTime"] = queryDateTime;
-        doc["RemoteIP"] = remoteIP;
-        doc["Sparql"] = sparql;
-        doc["AnsNum"] = ansNum;
-        doc["Format"] = format;
-        doc["FileName"] = fileName;
-        doc["StatusCode"] = statusCode;
-        doc["QueryTime"] = queryTime;
-        doc["DbName"] = dbName;
-    }
-
-    std::string toJSON()
-    {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        rapidjson::Value jsonValue = toJSON(allocator);
-
-        rapidjson::StringBuffer strBuf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        jsonValue.Accept(writer);
-	    string json_str = strBuf.GetString();
-        return json_str;
-    }
+    DBQueryLogInfo() {}
+    DBQueryLogInfo(const string &_queryDateTime, const string &_remoteIP, const string &_sparql, long _ansNum, const string &_format, const string &_fileName, int _statusCode, size_t _queryTime, const string &_dbName):
+    queryDateTime(_queryDateTime), remoteIP(_remoteIP), sparql(_sparql), ansNum(_ansNum), format(_format), fileName(_fileName), statusCode(_statusCode), queryTime(_queryTime), dbName(_dbName) {}
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DBQueryLogInfo, queryDateTime, remoteIP, sparql, ansNum, format, fileName, statusCode, queryTime, dbName);
 
 struct DBQueryLogs
 {
@@ -168,10 +58,13 @@ public:
     {
         return totalPage;
     }
-    void addQueryLogInfo(const string & json_str)
+    void addQueryLogInfo(const string &json_str)
     {
-        DBQueryLogInfo item(json_str);
-        list.push_back(item);
+        if(json::accept(json_str))
+        {
+            DBQueryLogInfo item = json::parse(json_str);
+            list.push_back(item);
+        }
     }
     vector<struct DBQueryLogInfo> getQueryLogInfoList()
     {
@@ -181,7 +74,7 @@ public:
 
 struct DBAccessLogInfo
 {
-private:
+public:
     std::string ip;
     std::string operation;
     int code;
@@ -189,107 +82,19 @@ private:
     std::string createtime;
     std::string opt_id;
     std::string endtime;
-    int state;
-    int num;
-    int fail_num;
+    int state = 0;
+    int num = 0;
+    int fail_num = 0;
     std::string backupfilepath;
 public:
     DBAccessLogInfo() {}
-    DBAccessLogInfo(string _ip, string _operation, int _code, string _msg, string _createtime) 
-    {
-        ip = _ip;
-        operation = _operation;
-        code = _code;
-        msg = _msg;
-        createtime = _createtime;
-        opt_id = "";
-        endtime = "";
-        state = 0;
-        num = 0;
-        fail_num = 0;
-        backupfilepath = "";
-    }
-    DBAccessLogInfo(string json_str)
-    {
-        rapidjson::Document doc;
-        doc.SetObject();
-        if(!doc.Parse(json_str.c_str()).HasParseError())
-        {
-            if (doc.HasMember("ip") && doc["ip"].IsString())
-                ip = doc["ip"].GetString();
-            if (doc.HasMember("operation") && doc["operation"].IsString())
-                operation = doc["operation"].GetString();
-            if (doc.HasMember("code") && doc["code"].IsInt())
-                code = doc["code"].GetInt();
-            if (doc.HasMember("msg") && doc["msg"].IsString())
-                msg = doc["msg"].GetString();
-            if (doc.HasMember("createtime") && doc["createtime"].IsString())
-                createtime = doc["createtime"].GetString();
-            if (checkOperation())
-            {
-                if (doc.HasMember("opt_id") && doc["opt_id"].IsString())
-                    opt_id = doc["opt_id"].GetString();
-                if (doc.HasMember("endtime") && doc["endtime"].IsString())
-                    endtime = doc["endtime"].GetString();
-                if (doc.HasMember("state") && doc["state"].IsInt())
-                    state = doc["state"].GetInt();
-                if (doc.HasMember("num") && doc["num"].IsInt())
-                    num = doc["num"].GetInt();
-                if (doc.HasMember("fail_num") && doc["fail_num"].IsInt())
-                    fail_num = doc["fail_num"].GetInt();
-                if (doc.HasMember("backupfilepath") && doc["backupfilepath"].IsString())
-                    backupfilepath = doc["backupfilepath"].GetString();
-            }
-        }
-    }
-    std::string getIP() {return ip;}
-    std::string getOperation() {return operation;}
-    int getCode() {return code;}
-    std::string getMsg() {return msg;}
-    std::string getCreateTime() {return createtime;}
-    std::string getOptId() {return opt_id;}
-    int getState() {return state;}
-    int getNum() {return num;}
-    int getFailNum() {return fail_num;}
-    std::string getBackupfilepath() {return backupfilepath;}
-    void setOptId(const std::string& value) {opt_id = value;}
-    void setCode(int value) {code = value;}
-    void setMsg(const std::string& value) {msg = value;}
-    void setEndTime(const std::string& value) {endtime = value;}
-    void setState(int value) {state = value;}
-    void setNum(int value) {num = value;}
-    void setFailNum(int value) {fail_num = value;}
-    void setBackupfilepath(const std::string& value) {backupfilepath = value;}
+    DBAccessLogInfo(const string &_ip, const string &_operation): ip(_ip), operation(_operation){}
     bool checkOperation()
     {
         if (operation == "build" || operation == "batchInsert" || operation == "batchRemove" || operation == "backup" || operation == "restore")
             return true;
         return false;
     }
-    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
-    {
-        rapidjson::Value doc(kObjectType);
-        doc.AddMember("ip", rapidjson::Value().SetString(ip.c_str(), allocator).Move(), allocator);
-        doc.AddMember("operation", rapidjson::Value().SetString(operation.c_str(), allocator).Move(), allocator);
-        doc.AddMember("code", code, allocator);
-        doc.AddMember("msg", rapidjson::Value().SetString(msg.c_str(), allocator).Move(), allocator);
-        doc.AddMember("createtime", rapidjson::Value().SetString(createtime.c_str(), allocator).Move(), allocator);
-        if (checkOperation() && !opt_id.empty())
-        {
-            doc.AddMember("opt_id", rapidjson::Value().SetString(opt_id.c_str(), allocator).Move(), allocator);
-            doc.AddMember("endtime", rapidjson::Value().SetString(endtime.c_str(), allocator).Move(), allocator);
-            doc.AddMember("state", state, allocator);
-            if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
-            {
-                doc.AddMember("num", num, allocator);
-                doc.AddMember("fail_num", fail_num, allocator);
-            }
-            else if (operation == "backup")
-                doc.AddMember("backupfilepath", rapidjson::Value().SetString(backupfilepath.c_str(), allocator).Move(), allocator);
-        }
-        return doc;
-    }
-
     void toJSON(nlohmann::json& doc)
     {
         doc["ip"] = ip;
@@ -297,34 +102,46 @@ public:
         doc["code"] = code;
         doc["msg"] = msg;
         doc["createtime"] = createtime;
-        if (checkOperation() && !opt_id.empty())
-        {
+        if (!opt_id.empty())
             doc["opt_id"] = opt_id;
+        if (!endtime.empty())
             doc["endtime"] = endtime;
+        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
+        {
             doc["state"] = state;
-            if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
-            {
-                doc["num"] = num;
-                doc["fail_num"] = fail_num;
-            }
-            else if (operation == "backup")
-            {
-                doc["backupfilepath"] = backupfilepath;
-            }
+            doc["num"] = num;
+            doc["fail_num"] = fail_num;
+        }
+        if (operation == "backup")
+        {
+            doc["backupfilepath"] = backupfilepath;
         }
     }
-
-    std::string toJSON()
+    static bool fromJSON(const string& json_str, DBAccessLogInfo& item)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        rapidjson::Value jsonValue = toJSON(allocator);
-
-        rapidjson::StringBuffer strBuf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        jsonValue.Accept(writer);
-	    string json_str = strBuf.GetString();
-        return json_str;
+        if(!json::accept(json_str))
+        {
+            return false;
+        }
+        json doc = json::parse(json_str);
+        doc["ip"].get_to(item.ip);
+        doc["operation"].get_to(item.operation);
+        doc["code"].get_to(item.code);
+        doc["msg"].get_to(item.msg);
+        doc["createtime"].get_to(item.createtime);
+        if (doc.contains("opt_id"))
+            doc["opt_id"].get_to(item.opt_id);
+        if (doc.contains("endtime"))
+            doc["endtime"].get_to(item.endtime);
+        if (doc.contains("state"))
+            doc["state"].get_to(item.state);
+        if (doc.contains("num"))
+            doc["num"].get_to(item.num);
+        if (doc.contains("fail_num"))
+            doc["fail_num"].get_to(item.fail_num);
+        if (doc.contains("backupfilepath"))
+            doc["backupfilepath"].get_to(item.backupfilepath);
+        return true;
     }
 };
 
@@ -363,8 +180,9 @@ public:
     }
     void addAccessLogInfo(const string & json_str)
     {
-        DBAccessLogInfo item(json_str);
-        list.push_back(item);
+        struct DBAccessLogInfo item;
+        if(DBAccessLogInfo::fromJSON(json_str, item))
+            list.push_back(item);
     }
     vector<struct DBAccessLogInfo> getAccessLogInfoList()
     {
@@ -374,7 +192,7 @@ public:
 
 struct TransactionLogInfo
 {
-private:
+public:
     std::string db_name;
     std::string TID;
     std::string user;
@@ -383,55 +201,8 @@ private:
     std::string end_time;
 public:
     TransactionLogInfo() {}
-    TransactionLogInfo(string _db_name, string _TID, string _user, string _state, string _begin_time, string _end_time) 
-    {
-        db_name = _db_name;
-        TID = _TID;
-        user = _user;
-        state = _state;
-        begin_time = _begin_time;
-        end_time = _end_time;
-
-    }
-    TransactionLogInfo(string json_str)
-    {
-        rapidjson::Document doc;
-        doc.SetObject();
-        if(!doc.Parse(json_str.c_str()).HasParseError())
-        {
-            if (doc.HasMember("db_name") && doc["db_name"].IsString())
-                db_name = doc["db_name"].GetString();
-            if (doc.HasMember("TID") && doc["TID"].IsString())
-                TID = doc["TID"].GetString();
-            if (doc.HasMember("user") && doc["user"].IsString())
-                user = doc["user"].GetString();
-            if (doc.HasMember("state") && doc["state"].IsString())
-                state = doc["state"].GetString();
-            if (doc.HasMember("begin_time") && doc["begin_time"].IsString())
-                begin_time = doc["begin_time"].GetString();
-            if (doc.HasMember("end_time") && doc["end_time"].IsString())
-                end_time = doc["end_time"].GetString();
-        }
-    }
-    std::string getDbName() {return db_name;}
-    std::string getTID() {return TID;}
-    std::string getUser() {return user;}
-    std::string getState() {return state;}
-    std::string getBeginTime() {return begin_time;}
-    std::string getEndTime() {return end_time;}
-    void setState(string value) {state = value;}
-    void setEndTime(string value) {end_time = value;}
-    rapidjson::Value toJSON(rapidjson::Document::AllocatorType& allocator)
-    {
-        rapidjson::Value doc(rapidjson::kObjectType);
-        doc.AddMember("db_name", rapidjson::Value().SetString(db_name.c_str(), allocator).Move(), allocator);
-        doc.AddMember("TID", rapidjson::Value().SetString(TID.c_str(), allocator).Move(), allocator);
-        doc.AddMember("user", rapidjson::Value().SetString(user.c_str(), allocator).Move(), allocator);
-        doc.AddMember("state", rapidjson::Value().SetString(state.c_str(), allocator).Move(), allocator);
-        doc.AddMember("begin_time", rapidjson::Value().SetString(begin_time.c_str(), allocator).Move(), allocator);
-        doc.AddMember("end_time", rapidjson::Value().SetString(end_time.c_str(), allocator).Move(), allocator);
-        return doc;
-    }
+    TransactionLogInfo(string _db_name, string _TID, string _user, string _state, string _begin_time, string _end_time):
+    db_name(_db_name), TID(_TID), user(_user), state(_state), begin_time(_begin_time), end_time(_end_time) {}
     void toJSON(nlohmann::json& doc)
     {
         doc["db_name"] = db_name;
@@ -441,17 +212,26 @@ public:
         doc["begin_time"] = begin_time;
         doc["end_time"] = end_time;
     }
-    std::string toJSON()
+    static bool fromJSON(const string& json_str, TransactionLogInfo& item)
     {
-        rapidjson::Document doc;
-        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-        rapidjson::Value jsonValue = toJSON(allocator);
-
-        rapidjson::StringBuffer strBuf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-        jsonValue.Accept(writer);
-	    string json_str = strBuf.GetString();
-        return json_str;
+        if(!json::accept(json_str))
+        {
+            return false;
+        }
+        json doc = json::parse(json_str);
+        if (doc.contains("db_name"))
+            doc["db_name"].get_to(item.db_name);
+        if (doc.contains("TID"))
+            doc["TID"].get_to(item.TID);
+        if (doc.contains("user"))
+            doc["user"].get_to(item.user);
+        if (doc.contains("state"))
+            doc["state"].get_to(item.state);
+        if (doc.contains("begin_time"))
+            doc["begin_time"].get_to(item.begin_time);
+        if (doc.contains("end_time"))
+            doc["end_time"].get_to(item.end_time);
+        return true;
     }
 };
 
@@ -490,8 +270,11 @@ public:
     }
     void addTransactionLogInfo(const string & json_str)
     {
-        TransactionLogInfo item(json_str);
-        list.push_back(item);
+        struct TransactionLogInfo item;
+        if(TransactionLogInfo::fromJSON(json_str, item))
+        {
+            list.push_back(item);
+        }
     }
     vector<struct TransactionLogInfo> getTransactionLogInfoList()
     {

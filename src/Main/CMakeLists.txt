@@ -50,6 +50,7 @@ set( LIB_GSTROE_DEP
         util
         gcov
         reason
+        pfn
         cluster
 )
 set( BIN_LIST

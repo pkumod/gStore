@@ -7,7 +7,7 @@
 
 #include "Server.h"
 
-using namespace rapidjson;
+
 using namespace std;
 
 bool _stop = false; /**< A stopServer flag. */
@@ -66,7 +66,7 @@ Server::deleteConnection()
 bool
 Server::response(int _code, std::string _msg, Socket& _socket)
 {
-	std::string resJson = CreateJson(_code, _msg, 0);
+	std::string resJson = "{\"code\":" + std::to_string(_code) + ",\"msg\":\"" + _msg + "\"}";
 	bool flag = _socket.send(resJson);
 	return flag;
 }
@@ -309,27 +309,7 @@ Server::handler(Socket& _socket)
 void
 Server::init()
 {
-	/**
-	* @brief Load the system database.
-	*/
-	if (access((db_home + "/system" + db_suffix).c_str(), 00) != 0)
-	{
-		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Can not find system"+db_suffix+"." << endl;
-		return;
-	}
-	localDBs.insert(pair<std::string, int>(GlobalTypedef::system_db, 1));
-	system_database = new Database(GlobalTypedef::system_db);
-	bool flag = system_database->load();
-	if (!flag)
-	{
-		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to load the database system.db." << endl;
-		delete system_database;
-		system_database = NULL;
-		return;
-	}
-	databases.insert(pair<std::string, Database*>(GlobalTypedef::system_db, system_database));
-
-	importSys();
+	// TODO: init the server
 }
 
 void
@@ -422,9 +402,7 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 	/**
 	* @brief Check if the command is a valid JSON string.
 	*/
-	Document document;
-	document.Parse(_raw_cmd.c_str());
-	if (document.HasParseError())
+	if (JsonUtil::accept(_raw_cmd) == false)
 		return false;
 
 	/**
@@ -583,513 +561,63 @@ Server::parser(std::string _raw_cmd, Operation& _ret_oprt)
 bool
 Server::drop(std::string _db_name, Socket& _socket)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the database name is legal.
-	*/
-	std::string result = checkparamValue("db_name", _db_name);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] exists.
-	*/
-	if (!this->checkdbexist(_db_name))
-	{
-		std::string error = "Database not built yet.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] is already loaded.
-	*/
-	if (this->checkdbload(_db_name))
-	{
-		std::string error = "Need to unload database first.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	std::string cmd = "rm -rf " + db_home + "/" + _db_name + db_suffix;
-	int ret = system(cmd.c_str());
-	if (ret == 0) {
-		localDBs.erase(_db_name);
-		std::string success = "Drop database done.";
-		this->response(0, success, _socket);
-		return true;
-	}
-	else {
-		std::string error = "Drop database failed.";
-		this->response(1005, error, _socket);
-		return false;
-	}
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
+	return true;
 }
 
 bool
 Server::login(std::string _username, std::string _password, Socket& _socket)
 {
-	/**
-	* @brief Check if the client's username and password is right.
-	*/
-	std::map<std::string, std::string>::iterator iter = users.find(_username);
-	if (iter == users.end())
-	{
-		std::string error = "username not find.";
-		this->response(903, error, _socket);
-		return false;
-	}
-	else if (iter->second != _password)
-	{
-		std::string error = "wrong password.";
-		this->response(902, error, _socket);
-		return false;
-	}
-	logins.insert(pair<std::string, int>(_username, 1));
-
-	std::string success = "Login successfully.";
-	this->response(0, success, _socket);
-	_socket.username = _username;
-	_socket.password = _password;
-
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
 	return true;
 }
 
 bool
 Server::load(std::string _db_name, Socket& _socket, bool load_csr)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the database name is legal.
-	*/
-	std::string result = checkparamValue("db_name", _db_name);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] exists.
-	*/
-	if (!this->checkdbexist(_db_name))
-	{
-		std::string error = "Database not built yet.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] is already loaded.
-	*/
-	if (this->checkdbload(_db_name))
-	{
-		std::string error = "Database already load.";
-		this->response(0, error, _socket);
-		return false;
-	}
-
-	Database* database = new Database(_db_name);
-	bool flag = database->load(load_csr);
-
-	if (!flag)
-	{
-		std::string error = "Failed to load the database.";
-		this->response(1005, error, _socket);
-		delete database;
-		database = NULL;
-		return false;
-	}
-
-	databases.insert(pair<std::string, Database*>(_db_name, database));
-
-	Document resDoc;
-	Document::AllocatorType& allocator = resDoc.GetAllocator();
-	resDoc.SetObject();
-	resDoc.AddMember("StatusCode", 0, allocator);
-	resDoc.AddMember("StatusMsg", "Load database successfully.", allocator);
-	if (load_csr) {
-		resDoc.AddMember("csr", "1", allocator);
-	}
-	else {
-		resDoc.AddMember("csr", "0", allocator);
-	}
-	StringBuffer resBuffer;
-	PrettyWriter<StringBuffer> resWriter(resBuffer);
-	resDoc.Accept(resWriter);
-	std::string resJson = resBuffer.GetString();
-	_socket.send(resJson);
-
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
 	return true;
 }
 
 bool
 Server::unload(std::string _db_name, Socket& _socket)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the database name is legal.
-	*/
-	std::string result = checkparamValue("db_name", _db_name);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] exists.
-	*/
-	if (!this->checkdbexist(_db_name))
-	{
-		std::string error = "Database not built yet.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] is already unloaded.
-	*/
-	std::map<std::string, Database*>::iterator iter = databases.find(_db_name);
-	if (iter == databases.end())
-	{
-		std::string error = "Database: " + _db_name + " is not loaded yet.";
-		this->response(0, error, _socket);
-		return false;
-	}
-
-	Database* database = iter->second;
-	delete database;
-	database = NULL;
-	databases.erase(_db_name);;
-
-	std::string success = "Unload database done.";
-	this->response(0, success, _socket);
-
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
 	return true;
 }
 
 bool
 Server::build(std::string _db_name, std::string _db_path, Socket& _socket)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the database name is legal.
-	*/
-	std::string result = checkparamValue("db_name", _db_name);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the rdf file path is legal.
-	*/
-	result = checkparamValue("db_path", _db_path);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] is already built.
-	*/
-	if (this->checkdbexist(_db_name))
-	{
-		std::string error = "Database already built.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	cout << "Import dataset to build database..." << endl;
-	cout << "DB_store: " << _db_name << "\tRDF_data: " << _db_path << endl;
-
-	Database* database = new Database(_db_name);
-	bool flag = database->build(_db_path);
-	delete database;
-	database = NULL;
-
-	/**
-	* @brief Build the database failed.
-	*/
-	if (!flag)
-	{
-		std::string error = "Import RDF file to database failed.";
-		this->response(1005, error, _socket);
-		std::string cmd = "rm -rf " + db_home + "/" + _db_name + db_suffix;
-		system(cmd.c_str());
-		return false;
-	}
-
-	/**
-	* @brief Create a success flag file.
-	*/
-	ofstream fsuc;
-	fsuc.open(db_home + "/" + _db_name + db_suffix + "/success.txt");
-	fsuc.close();
-
-	localDBs.insert(pair<std::string, int>(_db_name, 1));
-	std::string success = "Import RDF file to database done.";
-	this->response(0, success, _socket);
-
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
 	return true;
 }
 
 bool
 Server::query(std::string _db_name, std::string _sparql, std::string format, Socket& _socket)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the database name is legal.
-	*/
-	std::string result = checkparamValue("db_name", _db_name);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if the sparql query is legal.
-	*/
-	result = checkparamValue("sparql", _sparql);
-	if (result.empty() == false)
-	{
-		this->response(1003, result, _socket);
-		return false;
-	}
-
-	/**
-	* @brief Check if database named [db_name] is already loaded.
-	*/
-	std::map<std::string, Database*>::iterator iter = databases.find(_db_name);
-	if (iter == databases.end())
-	{
-		std::string error = "Need to load database first.";
-		this->response(1004, error, _socket);
-		return false;
-	}
-
-	Database* database = iter->second;
-
-	FILE* output = NULL;
-	ResultSet res_set;
-	std::string _ret_msg;
-	int ret_val = database->query(_sparql, res_set, output);
-	if (output != NULL)
-		fclose(output);
-
-	/**
-	* @brief Select query.
-	*/
-	if (ret_val < -1)
-	{
-		if (ret_val == -100)
-		{
-// #ifdef SERVER_SEND_JSON
-			if (format == "json") {
-				_ret_msg = res_set.to_JSON();
-				Document resDoc;
-				Document::AllocatorType& allocator = resDoc.GetAllocator();
-				resDoc.Parse(_ret_msg.c_str());
-				resDoc.AddMember("StatusCode", 0, allocator);
-				resDoc.AddMember("StatusMsg", "success", allocator);
-				StringBuffer resBuffer;
-				PrettyWriter<StringBuffer> resWriter(resBuffer);
-				resDoc.Accept(resWriter);
-				std::string resJson = resBuffer.GetString();
-				_socket.send(resJson);
-			}
-// #else
-			else if (format == "file") {
-				_ret_msg = res_set.to_str();
-				time_t now = time(0);
-				tm* ltm = localtime(&now);
-				char digit[15];
-				strftime(digit, sizeof(digit), "%Y%m%d%H%M%S", ltm);
-				std::string filename = digit;
-				filename += ".txt";
-				std::string folderPath = "./query_result/";
-				if (0 != access(folderPath.c_str(), 0)) {
-					mkdir(folderPath.c_str(), 0777);
-				}
-				std::ofstream file(folderPath + filename);
-				if (file.is_open()) {
-					file << _ret_msg;
-					file.close();
-				}
-				else {
-					std::string error = "Open file failed.";
-					this->response(1001, error, _socket);
-					return false;
-				}
-				Document resDoc;
-				Document::AllocatorType& allocator = resDoc.GetAllocator();
-				resDoc.SetObject();
-				resDoc.AddMember("StatusCode", 0, allocator);
-				resDoc.AddMember("StatusMsg", "success", allocator);
-				resDoc.AddMember("FileName", rapidjson::Value(filename.c_str(), allocator), allocator);
-				StringBuffer resBuffer;
-				PrettyWriter<StringBuffer> resWriter(resBuffer);
-				resDoc.Accept(resWriter);
-				std::string resJson = resBuffer.GetString();
-				_socket.send(resJson);
-			}
-// #endif
-			else if (format == "json+file"||format == "file+json") {
-				_ret_msg = res_set.to_JSON();
-				Document resDoc;
-				Document::AllocatorType& allocator = resDoc.GetAllocator();
-				resDoc.Parse(_ret_msg.c_str());
-
-				_ret_msg = res_set.to_str();
-				time_t now = time(0);
-				tm* ltm = localtime(&now);
-				char digit[15];
-				strftime(digit, sizeof(digit), "%Y%m%d%H%M%S", ltm);
-				std::string filename = digit;
-				filename += ".txt";
-				std::string folderPath = "./query_result/";
-				if (0 != access(folderPath.c_str(), 0)) {
-					mkdir(folderPath.c_str(), 0777);
-				}
-				std::ofstream file(folderPath + filename);
-				if (file.is_open()) {
-					file << _ret_msg;
-					file.close();
-				}
-				else {
-					std::string error = "Open file failed.";
-					this->response(1001, error, _socket);
-					return false;
-				}
-
-				resDoc.AddMember("StatusCode", 0, allocator);
-				resDoc.AddMember("StatusMsg", "success", allocator);
-				resDoc.AddMember("FileName", rapidjson::Value(filename.c_str(), allocator), allocator);
-				StringBuffer resBuffer;
-				PrettyWriter<StringBuffer> resWriter(resBuffer);
-				resDoc.Accept(resWriter);
-				std::string resJson = resBuffer.GetString();
-				_socket.send(resJson);
-			}
-			return true;
-		}
-		else /**< Query error. */
-		{
-			std::string error = "Query failed.";
-			this->response(1005, error, _socket);
-			return false;
-		}
-	}
-	else /**< Update query. */
-	{
-		if (ret_val >= 0)
-		{
-			std::string responsebody = "Update num: " + to_string(ret_val);
-			std::string success = "success";
-			std::string resJson = CreateJson(0, success, true, responsebody);
-			_socket.send(resJson);
-			return true;
-		}
-		else /**< Update error. */
-		{
-			std::string error = "Update failed.";
-			this->response(1005, error, _socket);
-			return false;
-		}
-	}
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
+	return true;
 }
 
 bool
 Server::show(Socket& _socket)
 {
-	/**
-	* @brief Check if the client logins.
-	*/
-	if (logins.find(_socket.username) == logins.end())
-	{
-		std::string error = "Need to login first.";
-		this->response(1001, error, _socket);
-		return false;
-	}
-
-	std::map<std::string, int>::iterator iter;
-	Document resDoc;
-	resDoc.SetObject();
-	Document::AllocatorType& allocator = resDoc.GetAllocator();
-	Value jsonArray(kArrayType);
-	for (iter = localDBs.begin(); iter != localDBs.end(); iter++)
-	{
-		if (iter->first == GlobalTypedef::system_db)
-			continue;
-		Value obj(kObjectType);
-		Value db_name;
-		db_name.SetString(iter->first.c_str(), iter->first.length(), allocator);
-		if (databases.find(iter->first) == databases.end())
-			obj.AddMember(db_name, "unloaded", allocator);
-		else
-			obj.AddMember(db_name, "loaded", allocator);
-		jsonArray.PushBack(obj, allocator);
-	}
-	resDoc.AddMember("ResponseBody", jsonArray, allocator);
-	resDoc.AddMember("StatusCode", 0, allocator);
-	resDoc.AddMember("StatusMsg", "success", allocator);
-	StringBuffer resBuffer;
-	PrettyWriter<StringBuffer> resWriter(resBuffer);
-	resDoc.Accept(resWriter);
-	string resJson = resBuffer.GetString();
-	_socket.send(resJson);
+	// TODO: call ApiProvider
+	string msg = "success";
+	_socket.send(msg);
 	return true;
 }
 
@@ -1199,139 +727,4 @@ void Server::dirTraversal(const char* _dir_name, std::vector<std::string>& _file
 		_filename.push_back(filename->d_name);
 	}
 	return;
-}
-
-bool Server::querySys(std::string _sparql, std::string& _res)
-{
-	FILE* output = NULL;
-	ResultSet res_set;
-	int ret_val = system_database->query(_sparql, res_set, output);
-
-	/**
-	* @brief Select query.
-	*/
-	if (ret_val < -1)
-	{
-		if (ret_val == -100)
-		{
-#ifdef SERVER_SEND_JSON
-			_res = res_set.to_JSON();
-#else
-			_res = res_set.to_str();
-#endif
-			return true;
-		}
-		else /**< Query error. */
-		{
-			std::string error = "Query failed.";
-			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << error << endl;
-			return false;
-		}
-	}
-	else /**< Update query. */
-	{
-		if (ret_val >= 0)
-		{
-			_res = "Update num: " + to_string(ret_val) + "\n";
-			return true;
-		}
-		else /**< Update error. */
-		{
-			std::string error = "Update failed.\n";
-			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << error << endl;
-			return false;
-		}
-	}
-}
-
-void Server::importSys()
-{
-	/**
-	* @brief Query the system.db and get all users.
-	*/
-	std::string sparql = "select ?x ?y where{?x <has_password> ?y.}";
-	std::string strJson;
-	querySys(sparql, strJson);
-
-	Document document;
-	document.Parse(strJson.c_str());
-	Value& p1 = document["results"];
-	Value& p2 = p1["bindings"];
-
-	for (unsigned i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		Value& pp2 = pp["y"];
-		std::string username = pp1["value"].GetString();
-		std::string password = pp2["value"].GetString();
-		users.insert(pair<std::string, std::string>(username, password));
-	}
-
-	/**
-	* @brief Query the system.db and get all databases.
-	*/
-	sparql = "select ?x where{?x <database_status> \"already_built\".}";
-	querySys(sparql, strJson);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
-
-	for (unsigned i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		std::string db_name = pp1["value"].GetString();
-
-		localDBs.insert(pair<std::string, int>(db_name, 1));
-	}
-
-	/**
-	* @brief Query the system.db and get the core version.
-	*/
-	sparql = "select ?x where{<CoreVersion> <value> ?x.}";
-	querySys(sparql, strJson);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
-	for (unsigned i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		CoreVersion = pp1["value"].GetString();
-	}
-
-	/**
-	* @brief Query the system.db and get the API version.
-	*/
-	sparql = "select ?x where{<APIVersion> <value> ?x.}";
-	querySys(sparql, strJson);
-	document.Parse(strJson.c_str());
-	p1 = document["results"];
-	p2 = p1["bindings"];
-	for (unsigned i = 0; i < p2.Size(); i++)
-	{
-		Value& pp = p2[i];
-		Value& pp1 = pp["x"];
-		APIVersion = pp1["value"].GetString();
-	}
-}
-
-std::string Server::CreateJson(int StatusCode, std::string StatusMsg, bool _body_flag, std::string ResponseBody)
-{
-	StringBuffer s;
-	PrettyWriter<StringBuffer> writer(s);
-	writer.StartObject();
-	if (_body_flag)
-	{
-		writer.Key("ResponseBody");
-		writer.String(StringRef(ResponseBody.c_str()));
-	}
-	writer.Key("StatusCode");
-	writer.Uint(StatusCode);
-	writer.Key("StatusMsg");
-	writer.String(StringRef(StatusMsg.c_str()));
-	writer.EndObject();
-	std::string res = s.GetString();
-	return res;
 }

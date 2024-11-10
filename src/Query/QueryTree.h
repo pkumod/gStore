@@ -9,7 +9,7 @@
 #ifndef _QUERY_QUERYTREE_H
 #define _QUERY_QUERYTREE_H
 
-#include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 #include "Varset.h"
 
 class QueryTreeRelabeler

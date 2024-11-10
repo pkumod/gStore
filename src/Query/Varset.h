@@ -9,7 +9,7 @@
 #ifndef _QUERY_VARSET_H
 #define _QUERY_VARSET_H
 
-#include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 
 class Varset
 {

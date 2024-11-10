@@ -2,7 +2,8 @@
 #include <string>
 #include <cstdio>
 #include <iostream>
-#include "../Api/NlohmanJson.hpp"
+#include "nlohmann/json.hpp"
+
 using namespace nlohmann;
 namespace httpentities {
     struct BaseRequest {

@@ -11,7 +11,6 @@
 #include "Util.h"
 
 using namespace std;
-using namespace rapidjson;
 //==================================================================================================================
 //configure() to config the basic options of gStore system
 //==================================================================================================================
@@ -19,11 +18,6 @@ using namespace rapidjson;
 pthread_rwlock_t backuplog_lock;
 
 // #define BACKUP_PATH "./backups"
-
-#define BACKUP_LOG_PATH "./conf/backup.json"
-#define BACKUP_LOG_TMEP_PATH "./temp.json"
-#define DEFALUT_BACKUP_INTERVAL "600" //hour
-#define DEFALUT_BACKUP_TIMER "600" //hour
 
 //database home directory, which is an absolute path by config
 //TODO:everywhere using database, the prefix should be it
@@ -2183,212 +2177,212 @@ Util::split(const std::string& str, const std::string& pat, std::vector<std::str
 void 
 Util::init_backuplog()
 {
-    pthread_rwlock_wrlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "w");
+    // pthread_rwlock_wrlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "w");
 
-    Document document;
-    document.SetObject();
-    Document::AllocatorType &allocator = document.GetAllocator();
+    // Document document;
+    // document.SetObject();
+    // Document::AllocatorType &allocator = document.GetAllocator();
 
-    document.AddMember("db_name", StringRef(GlobalTypedef::system_db.c_str()), allocator);
-    document.AddMember("backup_timer", DEFALUT_BACKUP_INTERVAL, allocator);
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    document.Accept(writer);
-    string rec = buffer.GetString();
-    rec = Util::string_replace(rec, "\n", "");
-    rec = Util::string_replace(rec, "    ", "");
-    rec.push_back('\n');
-    fputs(rec.c_str(), fp);
+    // document.AddMember("db_name", StringRef(GlobalTypedef::system_db.c_str()), allocator);
+    // document.AddMember("backup_timer", DEFALUT_BACKUP_INTERVAL, allocator);
+    // StringBuffer buffer;
+    // PrettyWriter<StringBuffer> writer(buffer);
+    // document.Accept(writer);
+    // string rec = buffer.GetString();
+    // rec = Util::string_replace(rec, "\n", "");
+    // rec = Util::string_replace(rec, "    ", "");
+    // rec.push_back('\n');
+    // fputs(rec.c_str(), fp);
 
-    fclose(fp);
-    pthread_rwlock_unlock(&backuplog_lock);
+    // fclose(fp);
+    // pthread_rwlock_unlock(&backuplog_lock);
 }
 
 int 
 Util::add_backuplog(string db_name)
 {
-    if(db_name == GlobalTypedef::system_db){
-        SLOG_ERROR("system can not be duplicated");
-        return -1;
-    }
-    if(has_record_backuplog(db_name)) return 1;
-    pthread_rwlock_wrlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "a");
-    Document document;
-    document.SetObject();
-    Document::AllocatorType &allocator = document.GetAllocator();
+    // if(db_name == GlobalTypedef::system_db){
+    //     SLOG_ERROR("system can not be duplicated");
+    //     return -1;
+    // }
+    // if(has_record_backuplog(db_name)) return 1;
+    // pthread_rwlock_wrlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "a");
+    // Document document;
+    // document.SetObject();
+    // Document::AllocatorType &allocator = document.GetAllocator();
 
-    string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+    // string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
 
-    document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
-    document.AddMember("backup_interval", DEFALUT_BACKUP_INTERVAL, allocator);
-    document.AddMember("last_backup_time", StringRef(time.c_str()), allocator);
-    document.AddMember("is_backup", "false", allocator);
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    document.Accept(writer);
-    string rec = buffer.GetString();
-    rec = Util::string_replace(rec, "\n", "");
-    rec = Util::string_replace(rec, "    ", "");
-    rec.push_back('\n');
-    fputs(rec.c_str(), fp);
+    // document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
+    // document.AddMember("backup_interval", DEFALUT_BACKUP_INTERVAL, allocator);
+    // document.AddMember("last_backup_time", StringRef(time.c_str()), allocator);
+    // document.AddMember("is_backup", "false", allocator);
+    // StringBuffer buffer;
+    // PrettyWriter<StringBuffer> writer(buffer);
+    // document.Accept(writer);
+    // string rec = buffer.GetString();
+    // rec = Util::string_replace(rec, "\n", "");
+    // rec = Util::string_replace(rec, "    ", "");
+    // rec.push_back('\n');
+    // fputs(rec.c_str(), fp);
 
-    fclose(fp);
-    pthread_rwlock_unlock(&backuplog_lock);
+    // fclose(fp);
+    // pthread_rwlock_unlock(&backuplog_lock);
     return 0;
 }
 
 int 
 Util::delete_backuplog(string db_name)
 {
-    if(db_name == GlobalTypedef::system_db){
-        SLOG_ERROR("system can not be deleted!");
-        return -1;
-    }
-    pthread_rwlock_wrlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
-    FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
-    char readBuffer[0xffff];
+    // if(db_name == GlobalTypedef::system_db){
+    //     SLOG_ERROR("system can not be deleted!");
+    //     return -1;
+    // }
+    // pthread_rwlock_wrlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    // FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
+    // char readBuffer[0xffff];
     int ret = 1;
-    while(fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if(d["db_name"].GetString() == db_name){
-            ret = 0;
-            continue;
-        }
-        fputs(readBuffer, fp1);
-    }
-    fclose(fp);
-    fclose(fp1);
-    Util::remove_path(BACKUP_LOG_PATH);
-    string cmd = "mv ";
-    cmd += BACKUP_LOG_TMEP_PATH;
-    cmd += ' ';
-    cmd += BACKUP_LOG_PATH;
-    system(cmd.c_str());
-    pthread_rwlock_unlock(&backuplog_lock);
+    // while(fgets(readBuffer, 1024, fp)) {
+    //     string rec = readBuffer;
+    //     StringStream is(readBuffer);
+    //     Document d;
+    //     d.ParseStream(is);
+    //     if(d["db_name"].GetString() == db_name){
+    //         ret = 0;
+    //         continue;
+    //     }
+    //     fputs(readBuffer, fp1);
+    // }
+    // fclose(fp);
+    // fclose(fp1);
+    // Util::remove_path(BACKUP_LOG_PATH);
+    // string cmd = "mv ";
+    // cmd += BACKUP_LOG_TMEP_PATH;
+    // cmd += ' ';
+    // cmd += BACKUP_LOG_PATH;
+    // system(cmd.c_str());
+    // pthread_rwlock_unlock(&backuplog_lock);
     return ret;
 }
 
 int 
 Util::update_backuplog(string db_name, string parameter, string value)
 {
-    if(parameter == "db_name"){
-       SLOG_ERROR("parameter can not be db_name!");
-        return -1;
-    }
-    pthread_rwlock_wrlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
-    FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
-    char readBuffer[0xffff];
+    // if(parameter == "db_name"){
+    //    SLOG_ERROR("parameter can not be db_name!");
+    //     return -1;
+    // }
+    // pthread_rwlock_wrlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    // FILE* fp1 = fopen(BACKUP_LOG_TMEP_PATH, "w");
+    // char readBuffer[0xffff];
     int ret = 0;
-    while(fgets(readBuffer, 1024, fp)){
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if(d["db_name"].GetString() != db_name){
-            fputs(readBuffer, fp1);
-            continue;
-        }
-        if(d.HasMember(parameter.c_str())){
-            Value& S = d[parameter.c_str()];
-            S.SetString(value.c_str(), value.length());
-            StringBuffer buffer;
-            Writer<StringBuffer> writer(buffer);
-            d.Accept(writer);
-            string line = buffer.GetString();
-            line.push_back('\n');
-            fputs(line.c_str(), fp1);
-        }
-        else{
-            fputs(readBuffer, fp1);
-            SLOG_ERROR("wrong parameter!");
-            ret = 1;
-        }
-    }
-    fclose(fp);
-    fclose(fp1);
-    Util::remove_path(BACKUP_LOG_PATH);
-    string cmd = "mv ";
-    cmd += BACKUP_LOG_TMEP_PATH;
-    cmd += ' ';
-    cmd += BACKUP_LOG_PATH;
-    system(cmd.c_str());
-    pthread_rwlock_unlock(&backuplog_lock);
+    // while(fgets(readBuffer, 1024, fp)){
+    //     string rec = readBuffer;
+    //     StringStream is(readBuffer);
+    //     Document d;
+    //     d.ParseStream(is);
+    //     if(d["db_name"].GetString() != db_name){
+    //         fputs(readBuffer, fp1);
+    //         continue;
+    //     }
+    //     if(d.HasMember(parameter.c_str())){
+    //         Value& S = d[parameter.c_str()];
+    //         S.SetString(value.c_str(), value.length());
+    //         StringBuffer buffer;
+    //         Writer<StringBuffer> writer(buffer);
+    //         d.Accept(writer);
+    //         string line = buffer.GetString();
+    //         line.push_back('\n');
+    //         fputs(line.c_str(), fp1);
+    //     }
+    //     else{
+    //         fputs(readBuffer, fp1);
+    //         SLOG_ERROR("wrong parameter!");
+    //         ret = 1;
+    //     }
+    // }
+    // fclose(fp);
+    // fclose(fp1);
+    // Util::remove_path(BACKUP_LOG_PATH);
+    // string cmd = "mv ";
+    // cmd += BACKUP_LOG_TMEP_PATH;
+    // cmd += ' ';
+    // cmd += BACKUP_LOG_PATH;
+    // system(cmd.c_str());
+    // pthread_rwlock_unlock(&backuplog_lock);
     return ret;
 }
 
 string 
 Util::query_backuplog(string db_name, string parameter)
 {
-    pthread_rwlock_rdlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
-    char readBuffer[0xffff];
-    while(fgets(readBuffer, 1024, fp)){
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if(d["db_name"].GetString() != db_name) continue;
-        if(d.HasMember(parameter.c_str())){
-            fclose(fp);
-            pthread_rwlock_unlock(&backuplog_lock);
-            return d[parameter.c_str()].GetString();
+    // pthread_rwlock_rdlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    // char readBuffer[0xffff];
+    // while(fgets(readBuffer, 1024, fp)){
+    //     string rec = readBuffer;
+    //     StringStream is(readBuffer);
+    //     Document d;
+    //     d.ParseStream(is);
+    //     if(d["db_name"].GetString() != db_name) continue;
+    //     if(d.HasMember(parameter.c_str())){
+    //         fclose(fp);
+    //         pthread_rwlock_unlock(&backuplog_lock);
+    //         return d[parameter.c_str()].GetString();
 
-        }
-        else{
-            SLOG_ERROR("wrong parameter!");
-        }
-    }
-    fclose(fp);
-    pthread_rwlock_unlock(&backuplog_lock);
+    //     }
+    //     else{
+    //         SLOG_ERROR("wrong parameter!");
+    //     }
+    // }
+    // fclose(fp);
+    // pthread_rwlock_unlock(&backuplog_lock);
     return " ";
 }
 
 void 
 Util::search_backuplog(vector<string> &res, string parameter, string value)
 {
-    pthread_rwlock_rdlock(&backuplog_lock);
-    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
-    char readBuffer[0xffff];
-    while(fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if(d.HasMember(parameter.c_str()) && d[parameter.c_str()].GetString() == value)
-            res.push_back(d["db_name"].GetString());
-    }
-    fclose(fp);
-    pthread_rwlock_unlock(&backuplog_lock);
+    // pthread_rwlock_rdlock(&backuplog_lock);
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    // char readBuffer[0xffff];
+    // while(fgets(readBuffer, 1024, fp)) {
+    //     string rec = readBuffer;
+    //     StringStream is(readBuffer);
+    //     Document d;
+    //     d.ParseStream(is);
+    //     if(d.HasMember(parameter.c_str()) && d[parameter.c_str()].GetString() == value)
+    //         res.push_back(d["db_name"].GetString());
+    // }
+    // fclose(fp);
+    // pthread_rwlock_unlock(&backuplog_lock);
 }
 
 bool 
 Util::has_record_backuplog(string db_name)
 {
-    pthread_rwlock_rdlock(&backuplog_lock);
-    if(db_name == GlobalTypedef::system_db) 
-        return true;
-    FILE* fp = fopen(BACKUP_LOG_PATH, "r");
-    char readBuffer[0xffff];
-    while(fgets(readBuffer, 1024, fp)) {
-        string rec = readBuffer;
-        StringStream is(readBuffer);
-        Document d;
-        d.ParseStream(is);
-        if (d["db_name"].GetString() == db_name){
-            SLOG_DEBUG(rec);
-            pthread_rwlock_unlock(&backuplog_lock);
-            return true;
-        }
-    }
-    fclose(fp);
-    pthread_rwlock_unlock(&backuplog_lock);
+    // pthread_rwlock_rdlock(&backuplog_lock);
+    // if(db_name == GlobalTypedef::system_db) 
+    //     return true;
+    // FILE* fp = fopen(BACKUP_LOG_PATH, "r");
+    // char readBuffer[0xffff];
+    // while(fgets(readBuffer, 1024, fp)) {
+    //     string rec = readBuffer;
+    //     StringStream is(readBuffer);
+    //     Document d;
+    //     d.ParseStream(is);
+    //     if (d["db_name"].GetString() == db_name){
+    //         SLOG_DEBUG(rec);
+    //         pthread_rwlock_unlock(&backuplog_lock);
+    //         return true;
+    //     }
+    // }
+    // fclose(fp);
+    // pthread_rwlock_unlock(&backuplog_lock);
 
     return false;
 }

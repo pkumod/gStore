@@ -37,11 +37,11 @@ set( GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/scripts/test )
 set( INCLUDE_3RD_PATH
         ${GSTORE_ROOT_DIR}/src
         ${GSTORE_3RDINCLUDE_DIR}
-        ${GSTORE_3RDINCLUDE_DIR}/rapidjson
         ${GSTORE_3RDINCLUDE_DIR}/antlr4
         ${GSTORE_3RDINCLUDE_DIR}/workflow
         ${GSTORE_3RDINCLUDE_DIR}/log4cplus
         ${GSTORE_3RDINCLUDE_DIR}/indicators
+        ${GSTORE_3RDINCLUDE_DIR}/nlohmann
 )
 
 add_subdirectory( src )
@@ -57,7 +57,7 @@ add_subdirectory( ${GSTORE_TEST_DIR} )
 
 # make pre
 add_custom_target( pre
-    COMMAND [ -d ${GSTORE_3RDINCLUDE_DIR} ] && [ -d ${GSTORE_3RDLIB_DIR} ] || bash init.sh
+    COMMAND [ -d ${GSTORE_3RDINCLUDE_DIR}/antlr4 ] && [ -d ${GSTORE_3RDLIB_DIR} ] || bash init.sh
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/3rdparty/
 )
 
@@ -177,8 +177,8 @@ add_custom_target( cpack
 if (CMAKE_BUILD_TYPE STREQUAL Cpack)
 
     # version
-    set( CPACK_PACKAGE_VERSION "1.4" )
-    set(CPACK_PACKAGE_CONTACT "gstore@pku.edu.cn")
+    set( CPACK_PACKAGE_VERSION "1.0" )
+    set(CPACK_PACKAGE_CONTACT "service@topgraph.cn")
     set(CPACK_PACKAGE_DIRECTORY ${GSTORE_ROOT_DIR}/cpack_package)
     # architecture
     set( SYSTEM_ARCHITECTURE  ${CMAKE_HOST_SYSTEM_PROCESSOR} )
