@@ -294,7 +294,7 @@ int enter_pswd(string prompt);
 bool login(const string& usrname, const string& password);
 unsigned read_priv(string usr, string db_name);
 unsigned get_priv(string usr, string db_name);
-
+bool check_license();
 bool pure_digit(const string& s);
 
 /* **************************************************************** */
@@ -386,6 +386,7 @@ int main(int argc, char **argv)
 	cout << endl;
 	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
 	PRINT_VERSION
+	bool isvalid = check_license();
 	cout << "" << endl;
 	cout << "Welcome to the "<<product_name<<" Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
@@ -393,6 +394,8 @@ int main(int argc, char **argv)
 	cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
 	cout << "Type 'help;' for help. " << endl
 		 << endl;
+	if (!isvalid) cout << "-----Warning: License Expired, please update your license in time------" << endl;
+	
 
 	// signal handler for ctrl+c
 	signal(SIGINT, ctrlc_handler);
@@ -1014,6 +1017,21 @@ int check_priv(string db_name, unsigned request_priv)
 		return -1;
 	}
 	return 0;
+}
+
+bool check_license()
+{
+
+	server::MessageRequest request;
+	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
+
+	if (response.isvalid)
+	{
+		cout << "Licensed to " + response.company << endl
+			 << "Active Until " << response.enddate << endl;
+		return true;
+	}
+	return false;
 }
 
 bool pure_digit(const string& s) 
