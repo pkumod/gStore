@@ -7,8 +7,8 @@ using namespace std;
 int main(int argc, char** argv) {
     Util util;
 
-    std::string productName = util.getConfigureValue("product_name");
-    std::string version = util.getConfigureValue("version");
+    std::string productName = GlobalTypedef::product_name;
+    std::string version = GlobalTypedef::product_version;
     std::string lic_path = "path_to_license";
 
     std:string msg;

@@ -1,5 +1,8 @@
 #include "GlobalTypedef.h"
 
+string GlobalTypedef::product_name = "TopGraph图数据库";
+string GlobalTypedef::product_version = "1.0";
+string GlobalTypedef::product_website = "https://www.topgraph.cn";
 string GlobalTypedef::tmp_path = ".tmp/";
 string GlobalTypedef::debug_path = ".tmp/";
 string GlobalTypedef::pid_path = "./conf/topgraph.pid";

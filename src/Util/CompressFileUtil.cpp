@@ -296,42 +296,35 @@ namespace CompressUtil
         return UnZipOK;
     }
 
-    int GzipHelper::compress(const std::string *data, void *compress_data, size_t &compress_size)
+    int GzipHelper::compress(const void *buf, const size_t& buf_size, void *compress_data, size_t &compress_size)
     {
         z_stream c_stream;
-        int err = 0;
-        unsigned int size = data->size();
-        if (data && size > 0)
+        int err = Z_DATA_ERROR;
+        if (buf && buf_size > 0)
         {
-            c_stream.zalloc = (alloc_func)0;
-            c_stream.zfree  = (free_func)0;
-            c_stream.opaque = (voidpf)0;
-            if (deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAXWBITS+GZIPENCODING, 8, Z_DEFAULT_STRATEGY) != Z_OK)
-                return -1;
-            c_stream.avail_in = size;
-            c_stream.avail_out= size;//Generally smaller than the encrypted string
-            c_stream.next_in  = (Bytef *)data->c_str();
+            c_stream.zalloc = Z_NULL;
+            c_stream.zfree  = Z_NULL;
+            c_stream.opaque = Z_NULL;
+            c_stream.avail_in = buf_size;
+            c_stream.next_in  = (Bytef *)buf;
+            c_stream.avail_out= buf_size * 2;
             c_stream.next_out = (Bytef *)compress_data;
-            while (c_stream.avail_in != 0 && c_stream.total_out < size) 
+            err = deflateInit2(&c_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+            if (err != Z_OK)
             {
-                if (deflate(&c_stream, Z_NO_FLUSH) != Z_OK)
-                    return -1;
+                return err;
             }
-            if (c_stream.avail_in != 0)
-                return c_stream.avail_in;
-            for (;;)
+            err = deflate(&c_stream, Z_FINISH);
+            if (err != Z_STREAM_END)
             {
-                if ((err = deflate(&c_stream, Z_FINISH)) == Z_STREAM_END)
-                    break;
-                if (err != Z_OK)
-                    return -1;
+                deflateEnd(&c_stream);
+                return err;
             }
-            if (deflateEnd(&c_stream) != Z_OK)
-                return -1;
+            deflateEnd(&c_stream);
             compress_size = c_stream.total_out;
-            return 0;
+            return Z_OK;
         }
-        return -1;
+        return err;
     }
 
     int GzipHelper::unCompress(const char * data, int size, char *uncompress_data, size_t uncompress_size)

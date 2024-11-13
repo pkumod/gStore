@@ -328,14 +328,14 @@ int main(int argc, char **argv)
 	Util util;
 	//  read conf from conf.ini: version, root_name, root_pswd
 	_server_port = util.getConfigureValue("port");
-	_db_home = util.getConfigureValue("db_home");
-	_db_suffix = util.getConfigureValue("db_suffix");
-	_website = util.getConfigureValue("website");
+	_db_home = GlobalTypedef::db_home();
+	_db_suffix = GlobalTypedef::db_suffix();
+	_website = GlobalTypedef::product_website;
 	
-	default_backup_path = util.getConfigureValue("backup_path");
-	root_username = util.getConfigureValue("root_username");
-	product_version = util.getConfigureValue("version");
-	product_name = util.getConfigureValue("product_name");
+	default_backup_path = GlobalTypedef::backup_path();
+	root_username = GlobalTypedef::root_uname();
+	product_version = GlobalTypedef::product_version;
+	product_name = GlobalTypedef::product_name;
 	product_name_lower = product_name;
 	product_name_lower[0] = tolower(product_name_lower[0]);
 	if (argc == 2)

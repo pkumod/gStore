@@ -27,7 +27,6 @@ using namespace std;
 class APIUtil
 {
 private:
-    Util util;
     int32_t thread_pool_num;
     
     int32_t max_output_size;
@@ -176,7 +175,8 @@ public:
     bool check_license(std::string& msg);
     bool import_license(const string& license_file, std::string& msg);
     bool remove_license(std::string& msg);
-    LicenseInfo& get_license();
+    LicenseInfo get_license();
+    void print_license();
 
     // for data get
     string get_query_result_path();

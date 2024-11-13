@@ -173,4 +173,36 @@ namespace gutil
         }
         return strTemp;
     }
+
+    std::string StringUtil::clear_linebreak(const std::string& str)
+    {
+        string result = str;
+        result.erase(remove(result.begin(), result.end(), '\n'), result.end());
+        result.erase(remove(result.begin(), result.end(), '\r'), result.end());
+        result.erase(remove(result.begin(), result.end(), '\t'), result.end());
+        result.erase(remove(result.begin(), result.end(), '\v'), result.end());
+        result.erase(remove(result.begin(), result.end(), '\f'), result.end());
+        return result;
+    }
+
+    std::string StringUtil::replace_all(const std::string& str, const std::string oldtext, const std::string newtext)
+    {
+        std::string result = str;
+        size_t pos = 0;
+        while ((pos = result.find(oldtext, pos)) != std::string::npos) {
+            result.replace(pos, oldtext.length(), newtext);
+            pos += newtext.length();
+        }
+        return result;
+    }
+
+     void StringUtil::lower_case(std::string& str)
+     {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+     }
+
+     void StringUtil::upper_case(std::string& str)
+     {
+        std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+     }
 }

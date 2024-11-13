@@ -49,9 +49,23 @@ void pread_callback(WFFileIOTask *pread_task)
     if (pread_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
     {
         resp->Error(StatusFileReadError);
-    } else
+    } 
+    else
     {
-        resp->append_output_body_nocopy(args->buf, ret);
+        auto *compress_data = malloc(args->count*2);
+        size_t compress_size = 0;
+        int ret = resp->compress(args->buf, args->count, compress_data, compress_size);
+        if(ret != StatusOK)
+        {
+            SLOG_CORE("file compress failed(error code:"+to_string(ret)+"), origin file size " + to_string(args->count) + "Byte");
+            resp->append_output_body_nocopy(args->buf, args->count);
+        } 
+        else 
+        {
+            SLOG_CORE("file compress success, compressed file size " + to_string(compress_size) + "Byte");
+            resp->append_output_body_nocopy(compress_data, compress_size);
+        }
+        task_of(resp)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
     }
 }
 
@@ -68,15 +82,16 @@ void pwrite_callback(WFFileIOTask *pwrite_task)
     } 
     else
     {
-        if(save_context->notify_msg.empty()) 
-        {
-            resp->append_output_body_nocopy("Upload file success\n", 18);
-        } 
-        else 
+        if(!save_context->notify_msg.empty() && nlohmann::json::accept(save_context->notify_msg))
         {
             resp->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-            resp->append_output_body_nocopy(save_context->notify_msg.c_str(), save_context->notify_msg.size());
         }
+        else
+        {
+            save_context->notify_msg = "Upload file success";
+            resp->headers["Content-Type"] = ContentType::to_str(TEXT_PLAIN);
+        }
+        resp->String(save_context->notify_msg);
     }
 }
 
@@ -158,13 +173,8 @@ nlohmann::json &GRPCReq::json() const
 
 void GRPCReq::json(nlohmann::json& json_data) const
 {
-    if (_content_type == APPLICATION_JSON)
+    if (_content_type == APPLICATION_JSON && _req_data->json == NULL)
     {
-        if (_req_data->json != NULL)
-        {
-            json_data = _req_data->json;
-            return;
-        }
         const std::string &body_content = this->body();
         try
         {
@@ -177,6 +187,7 @@ void GRPCReq::json(nlohmann::json& json_data) const
             json_data.clear();
         }
     }
+    json_data = _req_data->json;
 }
 
 const std::string &GRPCReq::header(const std::string &key) const
@@ -321,15 +332,22 @@ void GRPCResp::String(const std::string &str)
     strstream << str;
     strstream << "\n=======================================================";
     SLOG_CORE(strstream.str());
-    auto *compress_data = malloc(str.size());
+    size_t buf_size = str.size();
+    // std::vector<Bytef> buf_data;
+    // buf_data.resize(buf_size);
+    // std::copy(str.begin(), str.end(), buf_data.begin());
+    const void *buf = str.c_str();
+    auto *compress_data = malloc(buf_size*2);
     size_t compress_size = 0;
-    int ret = this->compress(&str, compress_data, compress_size);
+    int ret = this->compress(buf, buf_size, compress_data, compress_size);
     if(ret != StatusOK)   
     {
-        this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
+        SLOG_CORE("response compress failed(error code:"+to_string(ret)+"), origin data size " + to_string(buf_size) + "Byte");
+        this->append_output_body(buf, buf_size);
     } 
     else 
     {
+        SLOG_CORE("response compress success, compressed data size " + to_string(compress_size) + "Byte");
         this->append_output_body_nocopy(compress_data, compress_size);
     }
     task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
@@ -368,9 +386,9 @@ void GRPCResp::File(const std::string &path)
 }
 
 
-void GRPCResp::Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg)
+void GRPCResp::Save(const std::string &file_dst, const void *buf, size_t size, const std::string &notify_msg)
 {
-    GRPCUtil::saveFile(file_dst, content, this, notify_msg);
+    GRPCUtil::saveFile(file_dst, buf, size, this, notify_msg);
 }
 
 void GRPCResp::Json(const nlohmann::json &json)
@@ -385,7 +403,6 @@ void GRPCResp::Json(const nlohmann::json &json)
 
 void GRPCResp::Json(const std::string &json_str)
 {
-    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
     try 
     {
         nlohmann::json json = nlohmann::json::parse(json_str);
@@ -393,9 +410,11 @@ void GRPCResp::Json(const std::string &json_str)
             json.at("StatusCode").get_to(this->resp_code);
         if (json.contains("StatusMsg"))
             json.at("StatusMsg").get_to(this->resp_msg);
+        this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
     }
     catch (const nlohmann::json::parse_error &e)
     {
+        this->headers["Content-Type"] = ContentType::to_str(TEXT_PLAIN);
         SLOG_ERROR("Json parse error: " << e.what());
     }
     this->String(json_str);
@@ -505,7 +524,7 @@ void GRPCResp::add_task(SubTask *task)
     **server_task << task;
 }
 
-int GRPCResp::compress(const std::string * const data, void *compress_data, size_t &compress_size)
+int GRPCResp::compress(const void *buf, const size_t& buf_size, void *compress_data, size_t &compress_size)
 {
     if (headers.find("Content-Encoding") != headers.end())
     {
@@ -513,13 +532,14 @@ int GRPCResp::compress(const std::string * const data, void *compress_data, size
         {
             if (compress_data != nullptr)
             {
-                int rt = CompressUtil::GzipHelper::compress(data, compress_data, compress_size);
+                int rt = CompressUtil::GzipHelper::compress(buf, buf_size, compress_data, compress_size);
                 if (rt == 0)
                 {
                     return StatusOK;
                 }
                 else
                 {
+                    SLOG_CORE("gzip compress error: " + to_string(rt));
                     return StatusCompressError;
                 }
             }
@@ -706,17 +726,16 @@ int GRPCUtil::send_file(const std::string &path, size_t file_start, size_t file_
     return StatusOK;
 }
 
-void GRPCUtil::saveFile(const std::string &dst_path, const std::string &content, GRPCResp *resp, const std::string &notify_msg) 
+void GRPCUtil::saveFile(const std::string &dst_path, const void *buf, size_t size, GRPCResp *resp, const std::string &notify_msg) 
 {
     GRPCServerTask *server_task = task_of(resp);
 
-    auto *save_context = new SaveFileContext; 
-    save_context->content = content;    // copy
+    auto *save_context = new SaveFileContext;
     save_context->notify_msg = notify_msg;  // copy
 
     WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(dst_path,
-                                                                  static_cast<const void *>(save_context->content.c_str()),
-                                                                  save_context->content.size(),
+                                                                  buf,
+                                                                  size,
                                                                   0,
                                                                   pwrite_callback);
     **server_task << pwrite_task;

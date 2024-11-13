@@ -214,35 +214,31 @@ namespace server
                 json.at("ThreadId").get_to(this->threadId);
             if (json.contains("head"))
             {
-                if (json.at("head").contains("vars"))
-                    json.at("head").at("vars").get_to(this->head);
-                else 
-                    json.at("head").get_to(this->head);
+                nlohmann::json head = json.at("head");
+                if (head.is_array())
+                    head.get_to(this->head);
+                else if (head.is_object() && head.contains("vars"))
+                    head.at("vars").get_to(this->head);
             }
             if (json.contains("results") && !this->head.empty())
             {
-                nlohmann::json results;
-                if (json.at("results").contains("bindings"))
-                    results = json.at("results").at("bindings");
-                else
-                    results = json.at("results");
-                for (const auto &result : results)
-                {
-                    if (!result.contains(this->head[0]))
-                    {
-                        this->results.push_back(result);
-                    }
-                    else 
+                nlohmann::json results = json.at("results");
+                if (results.is_object())
+                {   
+                    nlohmann::json bindings = results.at("bindings");
+                    for (const auto &result : bindings)
                     {
                         this->results.push_back({});
                         std::vector<std::string> &result_part = this->results.back();
-
                         for (const auto &var : this->head)
                         {
-                            if (result.contains(var) && result.at(var).contains("value"))
-                                result_part.push_back(result.at(var).at("value"));
+                            result_part.push_back(result.at(var).at("value"));
                         }
                     }
+                }
+                else if (results.is_array())
+                {
+                    results.get_to(this->results);
                 }
             }
         }
@@ -255,38 +251,33 @@ namespace server
         this->isUpdate = false;
     }
 
-    void MessageQueryResponse::toJsonString(std::string& json_str)
+    void MessageQueryResponse::toJson(nlohmann::json& json)
     {
         if (!this->isUpdate)
         {
-            toJson(this->query_json);
-            this->query_json["AnsNum"] = this->ansNum;
-            this->query_json["ThreadId"] = this->threadId;
-            this->query_json["QueryTime"] = this->queryTime;
-            this->query_json["OutputLimit"] = this->outputLimit;
+            json = this->query_json;
+            json["OutputLimit"] = this->outputLimit;
             if (!this->fileName.empty())
             {
-                this->query_json["FileName"] = this->fileName;
+                json["FileName"] = this->fileName;
             }
-            if (!this->opt_id.empty())
-            {
-                this->query_json["opt_id"] = this->opt_id;
-            }
-            json_str = this->query_json.dump();
         }
-        else
+        json["StatusCode"] = this->StatusCode;
+        json["StatusMsg"] = this->StatusMsg;
+        json["AnsNum"] = this->ansNum;
+        json["ThreadId"] = this->threadId;
+        json["QueryTime"] = this->queryTime;
+        if (!this->opt_id.empty())
         {
-            nlohmann::json json;
-            toJson(json);
-            json["AnsNum"] = this->ansNum;
-            json["ThreadId"] = this->threadId;
-            json["QueryTime"] = this->queryTime;
-            if (!this->opt_id.empty())
-            {
-                this->query_json["opt_id"] = this->opt_id;
-            }
-            json_str = json.dump();
+            json["opt_id"] = this->opt_id;
         }
+    }
+
+    void MessageQueryResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json_data;
+        this->toJson(json_data);
+        json_str = json_data.dump();
     }
 
     // batch insert

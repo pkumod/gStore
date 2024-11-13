@@ -42,6 +42,8 @@ enum StatusCode
     StatusTranscationManageFailed,
     StatusOperationUndefined = 1100,
     StatusIPBlocked,
+    StatusLicenseExpired,
+    StatusLicenseInvalid,
 };
 
 const char* error_code_to_str(int code);

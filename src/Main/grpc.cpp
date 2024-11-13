@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include "workflow/WFFacilities.h"
-#include "../Api/HttpUtil.h"
 #include "../GRPC/grpc_server.h"
 #include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
+// #include "../Api/APIConnector.h"
 #include "../Api/APIUtil.h"
+#include "../Api/HttpUtil.h"
 #include "../Pfn/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
@@ -32,6 +33,8 @@ std::shared_ptr<cluster::ClusterManager> clusterManagerPtr =  nullptr;
 
 Latch latch;
 
+bool _is_server_running = false;
+
 std::string _server_port;
 
 std::string _server_deamon;
@@ -45,7 +48,7 @@ void releaseGlobalPtr(bool renew = false);
 void register_service(GRPCServer &grpcServer);
 
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data);
-bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data);
+bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data, bool check_license=true);
 
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
@@ -145,11 +148,20 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 		}
 		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
 		{
-			string v = form.at(iter->first).second;
-			json_data[iter->first] = v;
 			if (iter->first == "file")
 			{
 				json_data["filename"] = form.at(iter->first).first;
+				string hex_v = form.at(iter->first).second;
+				size_t hex_size = hex_v.size();
+				std::vector<uint8_t> file_data;
+				file_data.resize(hex_size);
+				std::copy(hex_v.begin(), hex_v.end(), file_data.begin());
+				json_data["file"] = nlohmann::json::binary(file_data, hex_size);
+			}
+			else
+			{
+				string v = form.at(iter->first).second;
+				json_data[iter->first] = v;
 			}
 		}
 	}
@@ -175,8 +187,16 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 	}
 }
 
-bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data)
-{
+bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data, bool check_license)
+{			
+	if (request->hasHeader("Accept-Encoding")) 
+	{
+		std::string accept_encoding = request->header("Accept-Encoding");
+		if (accept_encoding.find("gzip") != std::string::npos)
+		{
+			response->headers["Content-Encoding"] = "gzip";
+		}
+	}
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
@@ -187,17 +207,49 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return false;
 	}
+	// check license
+	string msg;
+	if (check_license && apiUtil->check_license(msg) == false)
+	{
+		SLOG_INFO("License is invalid: " << msg);
+		response->Error(server::StatusCode::StatusLicenseInvalid, msg);
+		return false;
+	}
+	std::string ss;
+	ss += "\n==================== http-api ====================";
+	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
+	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
+	ss += "\n  method: " +  string(request->get_method());
+	ss += "\n  httpVersion: " +  string(request->get_http_version());
+	ss += "\n  requestUri: " +  string(request->get_request_uri());
+	if (request->contentType() != MULTIPART_FORM_DATA && !request->body().empty())
+	{
+		std::string body = gutil::StringUtil::clear_linebreak(request->body());
+		ss += "\n  request_body: ";
+		if (body.length() > 1024) 
+		{
+			ss += body.substr(0, 1024) + "...";
+		}
+		else
+		{
+			ss += body;
+		}
+	}
+	ss += "\n==================================================";
+	SLOG_DEBUG(ss);
 	std::string operation;
 	if (json_data.contains("operation")) 
 	{
 		operation = JsonUtil::jsonParam(json_data, "operation");
 	}
+	// parse request
 	parseRequest(request, json_data);
-	SLOG_DEBUG("Parse request: \n" << json_data.dump(4));
+	SLOG_DEBUG("Parse request params: \n" << json_data.dump(4));
 	if (operation.empty() && json_data.contains("operation"))
 	{
 		operation = JsonUtil::jsonParam(json_data, "operation");
 	}
+	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
 	// add remote_ip param
 	json_data["remote_ip"] = ip_addr;
 	if (operation.empty()) 
@@ -214,29 +266,6 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 			return false;
 		}
 	}
-	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== http-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	if (!request->body().empty())
-	{
-		std::string body = request->body();
-		ss += "\n  request_body: ";
-		if (body.length() > 1024) 
-		{
-			ss += body.substr(0, 1024) + "...";
-		}
-		else
-		{
-			ss += body;
-		}
-	}
-	ss += "\n==================================================";
-	SLOG_DEBUG(ss);
 	if (operation == "unknown")
 	{
 		response->Error(StatusOperationUndefined);
@@ -337,7 +366,7 @@ int main(int argc, char *argv[])
 	}, NULL);
 	_server_port = util.getConfigureValue("port");
 	_server_deamon = util.getConfigureValue("deamon");
-	string _website = util.getConfigureValue("website");
+	string _website = GlobalTypedef::product_website;
 	srand(time(NULL));
 	string command = "-s";
 	if (argc>1)
@@ -354,8 +383,8 @@ int main(int argc, char *argv[])
 		cout << "Options:" << endl;
 		cout << "\t-h,--help\t\tDisplay this message." << endl;
 		cout << "\t-s,--start[default]\t\tStart gServer." << endl;
-		cout << "\t-db,--database[option],\t\tthe database name.Default value is empty."<< endl;
-		cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
+		// cout << "\t-db,--database[option],\t\tthe database name.Default value is empty."<< endl;
+		// cout << "\t-c,--csr[option],\t\tEnable CSR Struct or not. 0 denote that false, 1 denote that true. Default value is 0." << endl;
 		cout << "\t-t,--stop\t\tSafe shutdow gServer." << endl;
 		cout << "\t-r,--restart\t\tRestart gServer." << endl;
 		cout << "\t-k,--kill\t\tForce shutdow gServer." << endl;
@@ -364,9 +393,11 @@ int main(int argc, char *argv[])
 		cout << endl;
 		return 0;
 	}
-	else if ((command == "-s" || command == "--start") && (argc == 1 || argc == 2 || argc == 4 || argc == 6))
+	else if ((command == "-s" || command == "--start"))
 	{
 		// check server thread
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if (check_response.success())
@@ -374,38 +405,12 @@ int main(int argc, char *argv[])
 			cout << "the server already running." << endl;
 			return 1;
 		}
-		if (startServer(false))
-		{
-			sleep(1);
-			// load db
-			if(argc == 4 || argc == 6)
-			{
-				string db_name = Util::getArgValue(argc, argv, "db", "database");
-				string csr = Util::getArgValue(argc, argv, "c", "csr", "0");
-				httpentities::LoadRequest load_requst(db_name, csr);
-				httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_requst);
-				if (load_response.success())
-				{
-					SLOG_INFO("load " + db_name + " success.");
-				}
-				else
-				{
-					SLOG_INFO("load failed: unknow error.");
-				}
-			}
-			else
-			{
-				SLOG_INFO("No database is loaded!");
-			}
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
+		startServer(false);
 	}
 	else if (command == "-t" || command == "--stop")
 	{
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(!check_response.success()) {
@@ -420,6 +425,8 @@ int main(int argc, char *argv[])
 	else if (command == "-r" || command == "--restart")
 	{
 		bool background = false;
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(check_response.success()) {
@@ -458,6 +465,8 @@ int main(int argc, char *argv[])
 	}
 	else if (command  == "-k" || command == "--kill")
 	{
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(!check_response.success()) {
@@ -474,6 +483,8 @@ int main(int argc, char *argv[])
 	else if (command == "-S" || command == "--status")
 	{
 		// show server status
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		cout << "gStore API Server(gserver)" << endl;
@@ -490,9 +501,11 @@ int main(int argc, char *argv[])
 		cout << "\tDocs: " + _website << endl;
 		return 0;
 	}
-	else if (command == "-b" || command == "--background")
+	else if ((command == "-b" || command == "--background"))
 	{
 		// check server thread
+		// server::MessageCheckRequest check_request;
+		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if (check_response.success())
@@ -502,26 +515,6 @@ int main(int argc, char *argv[])
 		}
 		if (startServer(true))
 		{
-			// load db
-			if(argc == 4 || argc == 6)
-			{
-				string db_name = Util::getArgValue(argc, argv, "db", "database");
-				string csr = Util::getArgValue(argc, argv, "c", "csr", "0");
-				httpentities::LoadRequest load_requst(db_name, csr);
-				httpentities::LoadResponse load_response = HttpUtil::load(API_URL, true, load_requst);
-				if (load_response.success())
-				{
-					SLOG_INFO("load " + db_name + " success.");
-				}
-				else
-				{
-					SLOG_INFO("load failed: unknow error.");
-				}
-			}
-			else
-			{
-				SLOG_INFO("No database is loaded!");
-			}
 			return 0;
 		}
 		else
@@ -642,7 +635,6 @@ bool startServer(bool background)
 		// parent
 		else if (fpid > 0)
 		{
-			SLOG_INFO("Server started at port " + _server_port);
 			return true;
 		}
 		// fork failure
@@ -758,16 +750,26 @@ void initialServer(uint16_t port, bool background)
 		SLOG_ERROR("Server start failed.");
 		exit(EXIT_FAILURE);
 	}
-	if (!background)
-		SLOG_INFO("Server started at port " + _server_port);
+	std::string lic_msg;
+	if (apiUtil->check_license(lic_msg))
+	{
+		apiUtil->print_license();
+	}
+	else
+	{
+		SLOG_DEBUG("check license result: " + lic_msg);
+		SLOG_WARN("The license is invalid. Please import a new license in time");
+	}
+	SLOG_INFO("Server started at port " + _server_port);
+	_is_server_running = true;
 	// handle the Ctrl+C signal
 	signal(SIGINT, sig_handler);
 	signal(SIGTERM, sig_handler);
 	wait_group.wait();
 	grpcServer.stop();
-	apiUtil.reset();
-	pfnUtil.reset();
-	clusterManagerPtr.reset();
+	// apiUtil.reset();
+	// pfnUtil.reset();
+	// clusterManagerPtr.reset();
 	SLOG_INFO("Server stoped.");
 	std::cout.flush();
 	exit(EXIT_SUCCESS);
@@ -810,7 +812,7 @@ bool stopServer()
 	{
 		return false;
 	}
-	string system_user = Util::getConfigureValue("system_username");
+	string system_user = GlobalTypedef::sys_uname();
 	string pid;
 	string system_password;
 	ifstream in;
@@ -819,8 +821,10 @@ bool stopServer()
 	getline(in, system_password, '\n');
 	in.close();
 	SLOG_DEBUG("port: " + _server_port + ", system user: " + system_user + ", password: " + system_password);
-	httpentities::ShutdownRequest shutdwon_request(system_user, system_password);
-	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdwon_request);
+	// server::MessageShutdownRequest shutdown_request(system_user, system_password);
+	// server::MessageShutdownResponse shutdown_response = APIConnector::shutdown(OFF_URL, shutdown_request);
+	httpentities::ShutdownRequest shutdown_request(system_user, system_password);
+	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdown_request);
 	if (shutdown_response.success())
 	{
 		SLOG_INFO("the Server [" + pid + "] stop successfully.");
@@ -994,7 +998,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusParamIsIllegal, msg);
 		return;
 	}
-	if (username != GlobalTypedef::root_uname())
+	if (username != GlobalTypedef::sys_uname())
 	{
 		msg =  "You have no rights to stop the server.";
         response->Error(StatusAuthenticationFailed, msg);
@@ -1031,7 +1035,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	// filename : filecontent
 	std::string filename = JsonUtil::jsonParam(json_data, "filename");
 	string msg;
-	if(msg.empty())
+	if(filename.empty() || JsonUtil::hasJsonParam(json_data, "file") == false)
 	{
 		msg = "Upload file can not be empty!";
 		response->Error(StatusParamIsIllegal, msg);
@@ -1067,8 +1071,8 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
-	std::string file_content = JsonUtil::jsonParam(json_data, "file");
-	response->Save(file_dst, std::move(file_content), notify_msg);
+	nlohmann::byte_container_with_subtype<std::vector<uint8_t>> file_binary =  json_data["file"].get_binary();
+	response->Save(file_dst, static_cast<const void *>(file_binary.data()), file_binary.size(), notify_msg);
 }
 
 void download_file(const GRPCReq *request, GRPCResp *response)
@@ -1098,8 +1102,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 		SLOG_DEBUG("file exact path: " + exact_path);
 		if (gutil::StringUtil::start_with(exact_path, cur_path) == false)
 		{
-			string product_name = Util::getConfigureValue("product_name");
-			error = "Download file must in the "+ product_name +" home dir";
+			error = "Download file must in the "+ GlobalTypedef::product_name +" home dir";
 			response->Error(StatusOperationFailed, error);
 			return;
 		}
@@ -1339,7 +1342,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 		resp_data.ansNum = rs.ansNum;
 		resp_data.outputLimit = -1;
 		resp_data.threadId = gutil::ThreadUtil::getThreadID();
-		resp_data.queryTime = query_time;
+		resp_data.queryTime = to_string(query_time);
 		rs.release();
 		nlohmann::json resp_json;
 		resp_data.toJson(resp_json);
@@ -1521,14 +1524,17 @@ void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
 			{"StatusCode", 0},
 			{"StatusMsg", "login successfully"}
 		};
-		string licensetype = Util::getConfigureValue("licensetype");
-		string product_name = Util::getConfigureValue("product_name");
-		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
-		if (product_name != "gstore") {
-			licensetype = "";
+		string licensetype;
+		if (apiUtil->get_license().type == "0") 
+		{
+			licensetype = "trial";
+		}
+		else
+		{
+			licensetype = "official";
 		}
 		resp_data["licensetype"] = licensetype;
-		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["RootPath"] = Util::get_cur_path();
 		resp_data["type"] = HTTP_TYPE;
 		string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
@@ -1556,14 +1562,17 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
-		string licensetype = Util::getConfigureValue("licensetype");
-		string product_name = Util::getConfigureValue("product_name");
-		std::transform(product_name.begin(), product_name.end(), product_name.begin(), ::tolower);
-		if (product_name != "gstore") {
-			licensetype = "";
+		string licensetype;
+		if (apiUtil->get_license().type == "0") 
+		{
+			licensetype = "trial";
+		}
+		else
+		{
+			licensetype = "official";
 		}
 		resp_data["licensetype"] = licensetype;
-		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["type"] = HTTP_TYPE;
 		response->Json(resp_data);
 	}
@@ -1587,7 +1596,7 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
-		resp_data["CoreVersion"] = Util::getConfigureValue("version");
+		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["type"] = HTTP_TYPE;
 		response->Json(resp_data);
 	}
@@ -1784,9 +1793,9 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 
 		nlohmann::json resp_data = nlohmann::json{
 			{"StatusCode", 0},
-			{"StatusMsg", "Get the database list successfully!"},
-			{"ResponseBody", {}}
+			{"StatusMsg", "Get the database list successfully!"}
 		};
+		resp_data["ResponseBody"] = nlohmann::json::array();
 		size_t count = array.size();
 		for (size_t i = 0; i < count; i++)
 		{
@@ -2121,19 +2130,9 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	}
 	else
 	{
-		if (!is_update)
-		{
-			response->set_header_pair("Cache-Control", "no-cache");
-			response->set_header_pair("Pragma", "no-cache");
-			response->set_header_pair("Expires", "0");
-			if (request->hasHeader("Accept-Encoding")) {
-				std::string accept_encoding = request->header("Accept-Encoding");
-				if (accept_encoding.find("gzip") != std::string::npos)
-				{
-					response->headers["Content-Encoding"] = "gzip";
-				}
-			}
-		}
+		response->set_header_pair("Cache-Control", "no-cache");
+		response->set_header_pair("Pragma", "no-cache");
+		response->set_header_pair("Expires", "0");
 		std::string json_str;
 		response_data.toJsonString(json_str);
 		response->Json(json_str);
@@ -2875,15 +2874,14 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 	nlohmann::json json_data = nlohmann::json {
 		{"operation", "importLicense"}
 	};
-	if (checkRequest(request, response, op_type, json_data) == false)
+	if (checkRequest(request, response, op_type, json_data, false) == false)
 	{
 		return;
 	}
 	// filename : filecontent
 	std::string filename = JsonUtil::jsonParam(json_data, "filename");
-	std::string filecontent = JsonUtil::jsonParam(json_data, "file");
 	std::string msg;
-	if(filename.empty() || filecontent.empty())
+	if(filename.empty() || JsonUtil::hasJsonParam(json_data, "file") == false)
 	{
 		msg = "Upload file can not be empty!";
 		response->Error(StatusParamIsIllegal, msg);
@@ -2896,12 +2894,13 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusOperationFailed, msg);
 		return;
 	}
+	nlohmann::byte_container_with_subtype<std::vector<uint8_t>> file_binary =  json_data["file"].get_binary();
 	// remove path info, only return base filename
 	std::string file_name = GRPCUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_save_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
     WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
-		file_save_path, static_cast<const void *>(filecontent.c_str()), filecontent.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
+		file_save_path, static_cast<const void *>(file_binary.data()), file_binary.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
 			long ret = pwrite_task->get_retval();
 			GRPCServerTask *server_task = task_of(pwrite_task);
 			GRPCResp *resp = server_task->get_resp();
@@ -2936,13 +2935,24 @@ void license_info(const GRPCReq *request, GRPCResp *response)
 	nlohmann::json json_data = nlohmann::json {
 		{"operation", "queryLicense"}
 	};
-	if (checkRequest(request, response, op_type, json_data) == false)
+	if (checkRequest(request, response, op_type, json_data, false) == false)
 	{
 		return;
 	}
+	LicenseInfo lic = apiUtil->get_license();
 	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
-	respData.json = apiUtil->get_license();
-	response->Json(respData.json);
+	if (lic.isvalid) 
+	{
+		respData.json = lic;
+	}
+	else
+	{
+		respData.json["isvalid"] = lic.isvalid;
+		respData.json["desc"] = lic.desc;
+	}
+	nlohmann::json respJson;
+	respData.toJson(respJson);
+	response->Json(respJson);
 }
 
 void license_remove(const GRPCReq *request, GRPCResp *response)
@@ -2951,7 +2961,7 @@ void license_remove(const GRPCReq *request, GRPCResp *response)
 	nlohmann::json json_data = nlohmann::json {
 		{"operation", "removeLicense"}
 	};
-	if (checkRequest(request, response, op_type, json_data) == false)
+	if (checkRequest(request, response, op_type, json_data, false) == false)
 	{
 		return;
 	}

@@ -51,7 +51,7 @@ public:
         enddate = "";
         company = "";
         type = "";
-        desc = "";
+        desc = "Please import the license first";
         content= "";
     }
     time_t time_to_stamp(const std::string& time)
@@ -64,6 +64,10 @@ public:
     }
     bool validDate()
     {
+        if (!isvalid)
+        {
+            return isvalid;
+        }
         if(startdate.empty())
         {
             desc = "the license is not complete!";
@@ -86,7 +90,7 @@ public:
         SLOG_CORE("now:" + std::to_string(currentTime) + " start:" + std::to_string(resStart) + " end:" + std::to_string(resEnd));
         if (currentTime >= resStart && currentTime <= resEnd)
         {
-            desc = "The license has been successfully verified and is valid from " + startdate + " to " + enddate;
+            desc = "The license is valid, from " + startdate + " to " + enddate;
             isvalid = true;
         }
         else
@@ -96,8 +100,53 @@ public:
         }
         return isvalid;
     }
+    void fromJSON(nlohmann::json &j)
+    {
+        j.at("product").get_to(product);
+        j.at("version").get_to(version);
+        j.at("company").get_to(company);
+        j.at("startdate").get_to(startdate);
+        j.at("enddate").get_to(enddate);
+        if (j.contains("isvalid"))
+        {
+            j.at("isvalid").get_to(isvalid);
+        }
+        if (j.contains("cpu"))
+        {
+            j.at("cpu").get_to(cpu);
+        }
+        if (j.contains("mac"))
+        {
+            j.at("mac").get_to(mac);
+        }
+        if (j.contains("type"))
+        {
+            j.at("type").get_to(type);
+        }
+        if (j.contains("desc"))
+        {
+            j.at("desc").get_to(desc);
+        }
+        if (j.contains("content"))
+        {
+            j.at("content").get_to(content);
+        }
+    }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LicenseInfo, isvalid, product, version, cpu, mac, startdate, enddate, company, type, desc);
+
+inline void to_json(nlohmann::json& nlohmann_json_j, const LicenseInfo& nlohmann_json_t) 
+{ 
+    nlohmann_json_j["isvalid"] = nlohmann_json_t.isvalid; 
+    nlohmann_json_j["product"] = nlohmann_json_t.product; 
+    nlohmann_json_j["version"] = nlohmann_json_t.version; 
+    nlohmann_json_j["cpu"] = nlohmann_json_t.cpu; 
+    nlohmann_json_j["mac"] = nlohmann_json_t.mac; 
+    nlohmann_json_j["startdate"] = nlohmann_json_t.startdate; 
+    nlohmann_json_j["enddate"] = nlohmann_json_t.enddate; 
+    nlohmann_json_j["company"] = nlohmann_json_t.company; 
+    nlohmann_json_j["type"] = nlohmann_json_t.type; 
+    nlohmann_json_j["desc"] = nlohmann_json_t.desc; 
+};
 
 struct LicenseFileContext 
 {

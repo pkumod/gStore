@@ -78,14 +78,6 @@ bool WFHttpUtil::ErrorHandler(WFHttpTask *task) {
     return true;
 }
 
-
-/**
-* @brief: HTTP POST request
-* @param strUrl: the Url of the request, for example: http://api.gstore.cn
-* @param strPost: json string
-* @param strResponse: content returned
-* @return: returned value
-*/
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
@@ -105,7 +97,6 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, cons
     protocol::HttpResponse *resp = task -> get_resp();
     req -> set_method("POST");
     req -> add_header_pair("Connection", "close");
-    // // // req -> add_header_pair("Timeout", "3");
     req -> add_header_pair("Content-Type", "application/json");
     req -> append_output_body(strPost);
     resp -> set_size_limit(40 * 1024 * 1024);
@@ -122,32 +113,18 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, cons
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
 
-    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.response_timeout = -1;
-    WORKFLOW_library_init(&settings);
-
-    WFFacilities::WaitGroup wait_group(1);
-    strResponse.clear();
-
-    WFHttpTask *task = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, respwrite_callback);
-    protocol::HttpRequest *req = task -> get_req();
-    req -> set_method("POST");
-    req -> add_header_pair("Connection", "close");
-    // req -> add_header_pair("Timeout", "3");
-    req -> add_header_pair("Content-Type", "application/json");
-    req -> append_output_body(strPost);
-    RespData data = {&strResponse, &wait_group};
-    task -> user_data = (void*) &data;
-    task -> start();
-    wait_group.wait();
-
-    return task -> get_state();
+    return Post(strUrl, {}, -1, strPost, strResponse);
 }
 
-int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
+int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, const std::string& strPost, std::string& strResponse)
 {
+    int _timeout = timeOut;
+    if (timeOut > 0)
+    {
+        _timeout = timeOut * 1000;
+    }
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.response_timeout = -1;
+    settings.endpoint_params.response_timeout = _timeout;
     WORKFLOW_library_init(&settings);
 
     WFFacilities::WaitGroup wait_group(1);
@@ -157,7 +134,6 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std:
     protocol::HttpRequest *req = task -> get_req();
     req -> set_method("POST");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", std::to_string(timeOut));
     req -> add_header_pair("Content-Type", "application/json");
     req -> append_output_body(strPost);
     for (auto &pair : headers) {
@@ -171,20 +147,15 @@ int WFHttpUtil::Post(const std::string& strUrl, const std::map<std::string, std:
     return task -> get_state();
 }
 
-/**
- * @brief: HTTP POST file request no bigger than 40MB
- * @param strUrl: the Url of the request, for example: http://api.gstore.cn
- * @param headers: HTTP head
- * @param timeOut: operation timeout (second)
- * @param filePath: upload file
- * @param params: form data params
- * @param strResponse: content returned
- */
-int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
+int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
 {
-
+    int _timeout = timeOut;
+    if (timeOut > 0)
+    {
+        _timeout = timeOut * 1000;
+    }
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.response_timeout = -1;
+    settings.endpoint_params.response_timeout = _timeout;
     WORKFLOW_library_init(&settings);
 
     MultipartParser parser;
@@ -206,7 +177,6 @@ int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, 
     http_task -> user_data = (void*) &data;
     req -> set_method("POST");
     req -> add_header_pair("Connection", "close");
-    req -> add_header_pair("Timeout", std::to_string(timeOut));
     req -> add_header_pair("Content-Type", "multipart/form-data; boundary=" + boundary);
     req -> append_output_body_nocopy(body);
     http_task -> start();
@@ -214,15 +184,9 @@ int WFHttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, 
     return http_task -> get_state();
 }
 
-/**
-* @brief: HTTP GET request
-* @param strUrl: the Url of the request, for example: http://api.gstore.cn
-* @param strResponse: content returned
-* @return: returned value
-*/
+
 int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
-
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
     settings.endpoint_params.response_timeout = -1;
     WORKFLOW_library_init(&settings);
@@ -239,8 +203,6 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
     protocol::HttpResponse *resp = task -> get_resp();
     req -> set_method("GET");
     req -> add_header_pair("Connection", "close");
-    // // req -> add_header_pair("Timeout", "3");
-    req -> add_header_pair("Content-Type", "application/json");
     resp -> set_size_limit(40 * 1024 * 1024);
     FileData data = {fw, &wait_group};
     task -> user_data = (void*) &data;
@@ -252,33 +214,18 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 int WFHttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
-
-    struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.response_timeout = -1;
-    WORKFLOW_library_init(&settings);
-
-    WFFacilities::WaitGroup wait_group(1);
-    strResponse.clear();
-    WFHttpTask *task = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, respwrite_callback);
-    
-    protocol::HttpRequest *req = task -> get_req();
-    req -> set_method("GET");
-    req -> add_header_pair("Connection", "close");
-    // // req -> add_header_pair("Timeout", "3");
-    req -> add_header_pair("Content-Type", "application/json");
-    RespData data = {&strResponse, &wait_group};
-    task -> user_data = (void*) &data;
-    task -> start();
-    wait_group.wait();
-
-    return task -> get_state();
+    return Get(strUrl, {}, -1, strResponse);
 }
 
-int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
+int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, std::string& strResponse)
 {
-
+    int _timeout = timeOut;
+    if (timeOut > 0)
+    {
+        _timeout = timeOut * 1000;
+    }
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
-    settings.endpoint_params.response_timeout = -1;
+    settings.endpoint_params.response_timeout = _timeout;
     WORKFLOW_library_init(&settings);
     
     WFFacilities::WaitGroup wait_group(1);
@@ -287,8 +234,6 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::
     protocol::HttpResponse *resp = http_task -> get_resp();
     req -> set_method("GET");
     req -> add_header_pair("Connection", "close");
-    // // req -> add_header_pair("Timeout", "3");
-    req -> add_header_pair("Content-Type", "application/json");
     for (const auto &pair : headers) {
         req -> add_header_pair(pair.first, pair.second);
     }

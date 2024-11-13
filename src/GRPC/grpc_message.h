@@ -146,7 +146,7 @@ public:
     void File(const std::string &path);
 
     // save file
-    void Save(const std::string &file_dst, const std::string &content, const std::string &notify_msg);
+    void Save(const std::string &file_dst, const void *buf, size_t size, const std::string &notify_msg);
 
     // send json string
     void Json(const nlohmann::json &json);
@@ -180,8 +180,8 @@ public:
 
     void add_task(SubTask *task);
 
+    int compress(const void *buf, const size_t& buf_size, void *compress_data, size_t &compress_size);
 private:
-    int compress(const std::string * const data, void *compress_data, size_t &compress_size);
 
 public:
     GRPCResp() = default;
@@ -222,7 +222,7 @@ public:
 public:
     static int send_file(const std::string &path, size_t start, size_t end, GRPCResp *resp);
 
-    static void saveFile(const std::string &dst_path, const std::string &content,  GRPCResp *resp, const std::string &notify_msg);
+    static void saveFile(const std::string &dst_path, const void *buf, size_t size, GRPCResp *resp, const std::string &notify_msg);
 };
 using GRPCTask = WFNetworkTask<GRPCReq, GRPCResp>;
 

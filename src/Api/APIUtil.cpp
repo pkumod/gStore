@@ -20,7 +20,8 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&transactionlog_lock, NULL);
     ipWhiteList = std::unique_ptr<IPWhiteList>(new IPWhiteList());
     ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
-    // util.configure();
+    license_info.product = GlobalTypedef::product_name;
+    license_info.version = GlobalTypedef::product_version;
 }
 
 APIUtil::~APIUtil()
@@ -96,12 +97,12 @@ int APIUtil::initialize()
         
         // load system db
         std::string _sys_db_path = GlobalTypedef::db_path(GlobalTypedef::system_db);
-        if(!util.file_exist(GlobalTypedef::initfile) || !util.dir_exist(_sys_db_path))
+        if(!Util::file_exist(GlobalTypedef::initfile) || !Util::dir_exist(_sys_db_path))
         {
             SLOG_INFO("System has not been initialized. Now initialize it");
-            if (util.dir_exist(_sys_db_path))
+            if (Util::dir_exist(_sys_db_path))
             {
-                util.remove_path(_sys_db_path);
+                Util::remove_path(_sys_db_path);
             }
             system_database  = make_shared<Database>(GlobalTypedef::system_db);
             bool _sys_build_rt = system_database->BuildEmptyDB();
@@ -114,8 +115,8 @@ int APIUtil::initialize()
                 f.close();
                 system_database.reset();
                 // Util::init_backuplog();
-                string version = util.getConfigureValue("version");
-                string root_pwd = util.getConfigureValue("root_password");
+                string version = GlobalTypedef::product_version;
+                string root_pwd = Util::getConfigureValue("root_password");
                 string update_sparql = "INSERT DATA {\
                     <system> <built_by> <root> . \
                     <CoreVersion> <value> \"" + version + "\". \
@@ -151,9 +152,9 @@ int APIUtil::initialize()
                 }
                 for (unsigned int i = 0; i < rs.ansNum; i++)
                 {
-                    string db_name = util.clear_angle_brackets(rs.answer[i][0]);
-                    std::string creator = util.clear_angle_brackets(rs.answer[i][1]);
-                    std::string built_time = util.replace_all(rs.answer[i][2], "\"", "");
+                    string db_name = NodeUtil::clear_angle_brackets(rs.answer[i][0]);
+                    std::string creator = NodeUtil::clear_angle_brackets(rs.answer[i][1]);
+                    std::string built_time = StringUtil::replace_all(rs.answer[i][2], "\"", "");
                     shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name, creator, built_time, DatabaseStatus::AREADY_BUILT);
                     already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(db_name, temp_db));
                 }
@@ -178,8 +179,8 @@ int APIUtil::initialize()
             pthread_rwlock_wrlock(&users_map_lock);
             for (unsigned int i = 0; i < rs.ansNum; i++)
             {
-                string username = util.clear_angle_brackets(rs.answer[i][0]);
-                string password = util.replace_all(rs.answer[i][1], "\"", "");
+                string username = NodeUtil::clear_angle_brackets(rs.answer[i][0]);
+                string password = StringUtil::replace_all(rs.answer[i][1], "\"", "");
                 shared_ptr<struct DBUserInfo> user = make_shared<struct DBUserInfo>(username, password);
                 
                 //privilege add
@@ -191,8 +192,8 @@ int APIUtil::initialize()
                 {
                     for(unsigned j = 0; j < _user_rs.ansNum; j++)
                     {
-                        std::string type = util.clear_angle_brackets(_user_rs.answer[j][0]);
-                        std::string _db_name = util.clear_angle_brackets(_user_rs.answer[j][1]);
+                        std::string type = NodeUtil::clear_angle_brackets(_user_rs.answer[j][0]);
+                        std::string _db_name = NodeUtil::clear_angle_brackets(_user_rs.answer[j][1]);
                         size_t pos1 = type.find_first_of("_");
                         size_t pos2 = type.find_last_of("_");
                         std::string _type = type.substr(pos1 + 1, pos2 - pos1 - 1);
@@ -282,7 +283,7 @@ void APIUtil::init_params()
 void APIUtil::refresh_conf()
 {
     // reload config file;
-    util.configure();
+    Util::configure();
     // init params
     init_params();
 }
@@ -436,7 +437,7 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string msg)
         SLOG_WARN("Remove db info from already build list failed.");
     }
     // delete backup log
-    // util.delete_backuplog(db_name);
+    // Util::delete_backuplog(db_name);
     return true;
 }
 
@@ -899,13 +900,13 @@ bool APIUtil::aborted_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std
 
 bool APIUtil::check_txn_id(const string& tid_s, txn_id_t& tid)
 {
-    if(util.is_number(tid_s)) {
+    if(Util::is_number(tid_s)) {
 		tid = strtoull(tid_s.c_str(), NULL, 0);
 	} else if (tid_s.find("_") != string::npos) {
         // case for workbench call commit and rollback: "beginTime_tid"
         int pos = tid_s.find("_") + 1;
         string tid_s_new = tid_s.substr(pos, tid_s.size()-pos);
-        if (util.is_number(tid_s_new)) {
+        if (Util::is_number(tid_s_new)) {
             tid = strtoull(tid_s_new.c_str(), NULL, 0);
         } else {
             tid = INVALID_ID;
@@ -960,7 +961,7 @@ bool APIUtil::check_indentity(const std::string &username, const std::string &pa
     }
     else if (encryption == "1")
     {
-        if (util.md5(it->second->getPassword()) != password)
+        if (Util::md5(it->second->getPassword()) != password)
         {
             SLOG_CORE("encryption password wrong.");
             msg = "Username or password is wrong.username:" + username + ", password:" + password;
@@ -1310,7 +1311,7 @@ bool APIUtil::copy_privilege(const std::string& src_db_name, const std::string& 
             }
             for (unsigned int i = 0; i < rs.ansNum; i++) {
                 ss << rs.answer[i][0] + " <has_" + type + "_priv> <" + dst_db_name + ">.";
-                it->second.push_back(util.clear_angle_brackets(rs.answer[i][0]));
+                it->second.push_back(NodeUtil::clear_angle_brackets(rs.answer[i][0]));
             }
         }
         rs.release();
@@ -1502,7 +1503,7 @@ bool APIUtil::query_sys_db(const std::string& sparql, ResultSet& _rs)
     if (update_type == QueryTree::Not_Update)
     {
     	int ret_val = system_database->query(sparql, _rs, output);
-        SLOG_CORE("select sparql: " + sparql + ", ansNum: " + to_string(_rs.ansNum) + ", ret_val: " + to_string(ret_val));
+        SLOG_CORE("sparql: " + StringUtil::clear_linebreak(sparql) + ", ansNum: " + to_string(_rs.ansNum) + ", ret_val: " + to_string(ret_val));
         pthread_rwlock_unlock(&system_db_lock);
         return (ret_val == -100);
     }
@@ -1553,15 +1554,15 @@ bool APIUtil::mv_or_cp(const string& src, const string& dsc, bool is_mv)
 {
     string sys_cmd;
     string log_info;
-    if (util.dir_exist(src) == false) {
+    if (Util::dir_exist(src) == false) {
         // check the source path
         SLOG_ERROR("source path not exist!");
         return false;
     }
     // check the destnation path
-    // if (!is_mv && util.dir_exist(dsc) == false) {
+    // if (!is_mv && Util::dir_exist(dsc) == false) {
     //     SLOG_CORE("create desc path: " + dsc);
-    //     util.create_dirs(dsc);
+    //     Util::create_dirs(dsc);
     // }
     if (is_mv) {
         sys_cmd = "mv " + src + ' ' + dsc;
@@ -1883,10 +1884,8 @@ void APIUtil::write_access_log(const string &operation, const string &remoteIP, 
     pthread_rwlock_wrlock(&access_log_lock);
     // build json
     string createTime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
-    string status_msg = string(statusMsg.c_str());
-    status_msg = util.string_replace(status_msg, "\r\n", "");
-	status_msg = util.string_replace(status_msg, "\n", "");
-    status_msg = util.string_replace(status_msg, "    ", "");
+    string status_msg = StringUtil::clear_linebreak(statusMsg);
+    status_msg = StringUtil::replace_all(status_msg, "    ", "");
     struct DBAccessLogInfo dbAccessLogInfo(remoteIP, operation);
     dbAccessLogInfo.code = statusCode;
     dbAccessLogInfo.msg = status_msg;
@@ -2176,6 +2175,12 @@ void APIUtil::init_license()
             SLOG_CORE("invalid license: " + license_content);
         }
     }
+    else
+    {
+        license_info.isvalid = false;
+        license_info.desc = "Please import the license first";
+        SLOG_CORE("license not found");
+    }
     _rs.release();
 }
 
@@ -2202,9 +2207,11 @@ bool APIUtil::import_license(const string& license_file, std::string& msg)
         return false;
     }
     LicenseHelper licenseHelper;
+    license_info.product = GlobalTypedef::product_name;
+    license_info.version = GlobalTypedef::product_version;
     bool result = licenseHelper.validLicense(license_info, license_file);
     if (!result) {
-        msg = license_info.desc;
+        msg = std::move(license_info.desc);
         license_info.reset();
         return false;
     }
@@ -2243,7 +2250,13 @@ bool APIUtil::remove_license(std::string& msg)
     return update_rt;
 }
 
-LicenseInfo& APIUtil::get_license()
+void APIUtil::print_license()
+{
+    SLOG_INFO("Licensed to " + license_info.company);
+    SLOG_INFO("Active until " + license_info.enddate);
+}
+
+LicenseInfo APIUtil::get_license()
 {
     return license_info;
 }

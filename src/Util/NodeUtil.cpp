@@ -65,20 +65,13 @@ namespace gutil
 
     std::string NodeUtil::clear_angle_brackets(const string& _node_str)
     {
-        std::string _output;
-        size_t len = _node_str.size();
-        if (_node_str[0] == '<' && _node_str[len-1] == '>')
-        {
-            _output = _node_str.substr(1, len-2);
-        } 
-        else if (_node_str[0] == '<') 
-        {
-            _output = _node_str.substr(1, len-1);
+        string result = _node_str;
+        if (!result.empty() && result[0] == '<') {
+            result.erase(result.begin());
         }
-        else if (_node_str[len-1] == '>') 
-        {
-            _output = _node_str.substr(0, len-2);
+        if (!result.empty() && result[result.size() - 1] == '>') {
+            result.erase(result.end() - 1);
         }
-        return _output;
+        return result;
     }
 }

@@ -111,9 +111,9 @@ Util::configure()
     INIParser ini_parser;
     ini_parser.ReadINI(GlobalTypedef::profile);
     // system
-    Util::setGlobalConfig(ini_parser, "system", "version");
-    Util::setGlobalConfig(ini_parser, "system", "product_name");
-    Util::setGlobalConfig(ini_parser, "system", "website");
+    // Util::setGlobalConfig(ini_parser, "system", "version");
+    // Util::setGlobalConfig(ini_parser, "system", "product_name");
+    // Util::setGlobalConfig(ini_parser, "system", "website");
     Util::setGlobalConfig(ini_parser, "system", "db_home", "./dbhome/");
     Util::setGlobalConfig(ini_parser, "system", "db_suffix", ".db");
     Util::setGlobalConfig(ini_parser, "system", "root_username", "root");
@@ -2096,7 +2096,7 @@ Util::read_backup_time()
 }
 
 std::string
-Util::replace_all(std::string _content,const std::string oldtext,const std::string newtext)
+Util::replace_all(std::string _content, const std::string oldtext, const std::string newtext)
 {
      while(true)   {
             string::size_type  pos(0);

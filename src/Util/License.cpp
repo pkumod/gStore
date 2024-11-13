@@ -161,7 +161,7 @@ bool LicenseHelper::getCPUID(std::string &cpuid)
   }
   char buffer[512];
   bool rt = false;
-  if(fgets(buffer, sizeof(buffer), pipe) != NULL)
+  if (fgets(buffer, sizeof(buffer), pipe) != NULL)
   {
     cpuid = string(buffer);
     cpuid.erase(std::remove(cpuid.begin(), cpuid.end(), '\n'), cpuid.end());
@@ -235,7 +235,6 @@ bool LicenseHelper::getMacAddress(std::string &mac)
   }
 }
 
-
 bool LicenseHelper::file_exist(const char *_path)
 {
   struct stat buffer;
@@ -255,12 +254,11 @@ bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const std::str
   return validLicense(licenseInfo, licenseStr.c_str());
 }
 
-bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const char* licenseContent)
+bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const char *licenseContent)
 {
   SLOG_CORE("content:" << licenseContent);
   std::string decodeStr = base64Decode(licenseContent);
   std::string decStr = rsa_pub_decrypt(decodeStr);
-  SLOG_CORE("decstr:" << decStr);
   std::string product, version;
   // 解析JSON字符串
   nlohmann::json data;
@@ -269,7 +267,7 @@ bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const char* li
     try
     {
       data = nlohmann::json::parse(decStr);
-      licenseInfo = data;
+      SLOG_CORE("parse license success:\n" << data.dump(4));
     }
     catch (const nlohmann::json::exception &e)
     {
@@ -299,62 +297,62 @@ bool LicenseHelper::validLicense(struct LicenseInfo &licenseInfo, const char* li
   if (product != licenseInfo.product)
   {
     licenseInfo.isvalid = false;
-    licenseInfo.desc = "The product name["+product+"] does not match";
+    licenseInfo.desc = "The product name[" + product + "] does not match";
     return false;
   }
   else if (version != licenseInfo.version)
   {
     licenseInfo.isvalid = false;
-    licenseInfo.desc = "The version["+version+"] is mismatch";
+    licenseInfo.desc = "The version[" + version + "] is mismatch";
     return false;
   }
-  licenseInfo = data;
+  licenseInfo.fromJSON(data);
+  licenseInfo.isvalid = true;
   if (!licenseInfo.validDate())
   {
     return false;
   }
-  licenseInfo.type = "0";
-  licenseInfo.content = licenseContent;
-  return true;
-  // std::string licenseMac;
-  // if (data.contains("mac"))
-  // {
-  //   data.at("mac").get_to(licenseMac);
-  // }
-  // if (licenseMac.empty())
-  // {
-  //   // trial license
-  //   licenseInfo.type = "0";
-  //   licenseInfo.isvalid = true;
-  //   return true;
-  // }
-  // else
-  // {
-  //   // business license
-  //   licenseInfo.type = "1";
-  //   // check MAC and CPUID
-  //   std::string mac;
-  //   if (getMacAddress(mac) == false || licenseMac != mac)
-  //   {
-  //     SLOG_CORE("current mac: " + mac + ", license mac: " + licenseMac);
-  //     licenseInfo.isvalid = false;
-  //     licenseInfo.desc = "The MAC address is mismatch!";
-  //     return false;
-  //   }
-  //   if (data.contains("cpu"))
-  //   {
-  //     std::string licenseCPU;
-  //     std::string cpuid;
-  //     data.at("cpu").get_to(licenseCPU);
-  //     if(getCPUID(cpuid) == false || licenseCPU != cpuid)
-  //     {
-  //       SLOG_CORE("current CPU ID: " + cpuid + ", license CPU ID: " + licenseCPU);
-  //       licenseInfo.isvalid = false;
-  //       licenseInfo.desc = "The CPU ID is mismatch!";
-  //       return false;
-  //     }
-  //   }
-  //   licenseInfo.content = licenseStr;
-  //   return true;
-  // }
+  std::string licenseMac;
+  if (data.contains("mac"))
+  {
+    data.at("mac").get_to(licenseMac);
+  }
+  if (licenseMac.empty())
+  {
+    // trial license
+    licenseInfo.type = "0";
+    licenseInfo.isvalid = true;
+    licenseInfo.content = licenseContent;
+    return true;
+  }
+  else
+  {
+    // check MAC and CPUID
+    std::string mac;
+    if (getMacAddress(mac) == false || licenseMac != mac)
+    {
+      SLOG_CORE("current mac: " + mac + ", license mac: " + licenseMac);
+      licenseInfo.isvalid = false;
+      licenseInfo.desc = "The MAC address is mismatch!";
+      return false;
+    }
+    if (data.contains("cpu"))
+    {
+      std::string licenseCPU;
+      std::string cpuid;
+      data.at("cpu").get_to(licenseCPU);
+      if (getCPUID(cpuid) == false || licenseCPU != cpuid)
+      {
+        SLOG_CORE("current CPU ID: " + cpuid + ", license CPU ID: " + licenseCPU);
+        licenseInfo.isvalid = false;
+        licenseInfo.desc = "The CPU ID is mismatch!";
+        return false;
+      }
+    }
+    // business license
+    licenseInfo.type = "1";
+    licenseInfo.isvalid = true;
+    licenseInfo.content = licenseContent;
+    return true;
+  }
 }

@@ -316,6 +316,9 @@ public:
 	static const int II_TREE = 2;
 	static const int IS_TREE = 3;
 
+	static std::string product_name;
+	static std::string product_version;
+	static std::string product_website;
 	static std::string tmp_path;
 	static std::string debug_path;
 	static std::string pid_path;

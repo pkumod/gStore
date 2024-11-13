@@ -58,12 +58,6 @@ namespace server
         StatusMsg  = "";
     }
 
-    void MessageResponse::toJson(nlohmann::json& json)
-    {
-        json["StatusCode"]  = StatusCode;
-        json["StatusMsg"]   = StatusMsg;
-    }
-
     void MessageResponse::toJsonString(std::string& json_str)
     {
         this->json["StatusCode"]  = StatusCode;
@@ -420,6 +414,13 @@ namespace server
             }
         }
         json_str = json.dump();
+    }
+    
+    void MessageLicenseResponse::toJson(nlohmann::json& json_data)
+    {
+        json_data["StatusCode"] = this->StatusCode;
+        json_data["StatusMsg"] = this->StatusMsg;
+        json_data["data"] = this->json;
     }
     
     void MessageLicenseResponse::toJsonString(std::string& json_str)

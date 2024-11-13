@@ -35,7 +35,11 @@ namespace server
         int getStatusCode() { return StatusCode; }
         std::string getStatusMsg() { return StatusMsg; }
         bool success() { return StatusCode == 0; }
-        void toJson(nlohmann::json& json);
+        virtual void toJson(nlohmann::json& json)
+        {
+            json["StatusCode"]  = StatusCode;
+            json["StatusMsg"]   = StatusMsg;
+        };
         virtual void toJsonString(std::string& json_str);
         void Error(int code, const std::string& msg){StatusCode = code; StatusMsg = msg;};
     };
@@ -225,7 +229,7 @@ namespace server
         std::string type;
         std::string desc;
         MessageLicenseResponse(int code, std::string msg) : MessageResponse(code, msg) {}
-        MessageLicenseResponse(std::string body);
+        void toJson(nlohmann::json& json_data);
         void toJsonString(std::string& json_str);
     };
 }

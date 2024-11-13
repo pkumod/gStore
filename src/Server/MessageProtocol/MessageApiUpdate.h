@@ -66,8 +66,8 @@ namespace server
     {
         std::vector<std::string> head;
         std::vector<std::vector<std::string>> results;
-        uint64_t ansNum;
-        int outputLimit;
+        uint64_t ansNum = 0;
+        int outputLimit = 0;
         std::string queryTime;
         std::string threadId;
         bool isUpdate;
@@ -77,6 +77,7 @@ namespace server
         MessageQueryResponse();
         MessageQueryResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageQueryResponse(std::string body);
+        void toJson(nlohmann::json& json);
         void toJsonString(std::string& json_str);
     };
 

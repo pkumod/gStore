@@ -7,7 +7,7 @@ server::MessageShutdownResponse APIConnector::shutdown(const std::string& url, s
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", request.username));
 	headers.insert(std::pair<std::string, std::string>("password", request.password));
-	int status = WFHttpUtil::Post(url, headers, 60, "", body_str);
+	int status = WFHttpUtil::Post(url, headers, -1, "", body_str);
 	return response_parser<server::MessageShutdownResponse>(status, body_str);
 }
 

@@ -191,33 +191,65 @@ public:
 	* @brief: HTTP POST request
 	* @param strUrl: the Url of the request, for example: http://api.gstore.cn
 	* @param strPost: json string
-	* @param strResponse: content returned
+	* @param filename: response write file name
 	* @return: returned value
 	*/
 	static int Post(const std::string& strUrl, const std::string& strPost, const std::string& filename);
 
+    /**
+     * @brief: HTTP POST request
+     * @param strUrl: the Url of the request, for example: http://api.gstore.cn
+     * @param strPost: json string
+     * @param strResponse: content returned
+     * @return: returned value
+     */
 	static int Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse);
 
-	static int Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse);
-	/**
+    /**
+     * @brief: HTTP POST request
+     * @param strUrl: the Url of the request, for example: http://api.gstore.cn
+     * @param headers: HTTP head
+     * @param timeOut: operation timeout (second), -1 means no timeout
+     * @param strPost: json string
+     * @param strResponse: content returned
+     * @return: returned value
+     */
+	static int Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, const std::string& strPost, std::string& strResponse);
+	
+    /**
 	 * @brief: HTTP POST file request no bigger than 40MB
 	 * @param strUrl: the Url of the request, for example: http://api.gstore.cn
 	 * @param headers: HTTP head
-	 * @param timeOut: operation timeout (second)
+	 * @param timeOut: operation timeout (second), -1 means no timeout
 	 * @param filePath: upload file
 	 * @param params: form data params
 	 * @param strResponse: content returned
 	 */
-	static int PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse);
-	/**
+	static int PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse);
+	
+    /**
 	* @brief: HTTP GET request
 	* @param strUrl: the Url of the request, for example: http://api.gstore.cn
-	* @param strResponse: content returned
+	* @param filename: response write file name
 	* @return: returned value
 	*/
 	static int Get(const std::string& strUrl, const std::string& filename);
     
+    /**
+     * @brief: HTTP GET request
+     * @param strUrl: the Url of the request, for example: http://api.gstore.cn
+     * @param strResponse: content returned
+     * @return: returned value
+     */
 	static int Get(const std::string& strUrl, std::string& strResponse);
 
-	static int Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse);
+    /**
+     * @brief: HTTP GET request
+     * @param strUrl: the Url of the request, for example: http://api.gstore.cn
+     * @param headers: HTTP head
+     * @param timeOut: operation timeout (second), -1 means no timeout
+     * @param strResponse: content returned
+     * @return: returned value
+     */
+	static int Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, std::string& strResponse);
 };

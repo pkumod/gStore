@@ -20,7 +20,12 @@ Parser/Sparql*
 logs
 
 #backup files
-./conf/backup.json
+backups
+
+#config files
+conf/backup.json
+conf/init.lock
+conf/*.pid
 
 #download files
 *.torrent
@@ -117,7 +122,11 @@ pfn
 # build
 3rdparty
 build
-include
+include/antlr4
+include/indicators
+include/log4cplus
+include/workflow
+include/minizip
 lib
 bin
 
