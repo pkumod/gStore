@@ -229,6 +229,7 @@ namespace server
         std::string type;
         std::string desc;
         MessageLicenseResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageLicenseResponse(std::string body);
         void toJson(nlohmann::json& json_data);
         void toJsonString(std::string& json_str);
     };

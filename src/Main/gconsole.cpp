@@ -103,7 +103,7 @@ int showreason_handler(const vector<string>&);
 int deletereason_handler(const vector<string>&);
 
 int funquery_handler(const vector<string>&);
-int funcudb_handler(int, const string&);
+int funcudb_handler(int, const std::string&);
 int funcreate_handler(const vector<string>&);
 int funupdate_handler(const vector<string>&);
 int fundelete_handler(const vector<string>&);
@@ -137,10 +137,6 @@ int tquery_handler(const vector<string>&);
 int commit_handler(const vector<string>&);
 int rollback_handler(const vector<string>&);
 int checkpoint_handler(const vector<string>&);
-
-int importlicense_handler(const vector<string>&);
-int licenseinfo_handler(const vector<string>&);
-int removelicense_handler(const vector<string>&);
 
 // int print_arg_handler(const vector<string> &);
 
@@ -190,18 +186,12 @@ COMMAND commands[] =
 
 
 		// custom function
-		{"showpfn", funquery_handler, "query custom function.", "showpfn", 0},
-		{"addpfn", funcreate_handler, "create custom function.", "addpfn <json_file_path>", 0},
-		{"mdfpfn", funupdate_handler, "update custom function.", "mdfpfn <json_file_path>", 0},
-		{"delpfn", fundelete_handler, "delete custom function.", "delpfn <func_name>", 0},
-		{"buildpfn", funbuild_handler, "build custom function.", "buildpfn <func_name>", 0},
-		// {"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
-
-		// license
-		{"importlicense", importlicense_handler, "import your license", "importlicense <license_file_path>", 0},
-		{"licenseinfo", licenseinfo_handler, "show your license information", "licenseinfo", 0},
-		{"removelicense", removelicense_handler, "remove your current license", "removelicense", 0},
-
+		{"funquery", funquery_handler, "query custom function.", "funquery <func_name> <func_status>", 0},
+		{"funcreate", funcreate_handler, "create custom function.", "funcreate <json_file_path>", 0},
+		{"funupdate", funupdate_handler, "update custom function.", "funupdate <json_file_path>", 0},
+		{"fundelete", fundelete_handler, "delete custom function.", "fundelete <func_name>", 0},
+		{"funbuild", funbuild_handler, "build custom function.", "funbuild <func_name>", 0},
+		{"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
 		// other
 		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
 		{"help", help_handler, "Display help msg. Enter 'help;' see more about usage.", "help [edit/usage/<command>];", 0},
@@ -296,7 +286,7 @@ int enter_pswd(string prompt);
 bool login(const string& usrname, const string& password);
 unsigned read_priv(string usr, string db_name);
 unsigned get_priv(string usr, string db_name);
-bool check_license();
+
 bool pure_digit(const string& s);
 
 /* **************************************************************** */
@@ -390,7 +380,6 @@ int main(int argc, char **argv)
 	cout << endl;
 	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
 	PRINT_VERSION
-	bool isvalid = check_license();
 	cout << "" << endl;
 	cout << "Welcome to the "<<product_name<<" Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
@@ -1027,21 +1016,6 @@ int check_priv(string db_name, unsigned request_priv)
 	return 0;
 }
 
-bool check_license()
-{
-
-	server::MessageRequest request;
-	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
-
-	if (response.isvalid)
-	{
-		cout << "Licensed to " + response.company << endl
-			 << "Active Until " << response.enddate << endl;
-		return true;
-	}
-	return false;
-}
-
 bool pure_digit(const string& s) 
 {
 	for (const auto &c : s)
@@ -1391,6 +1365,7 @@ int sparql_handler(const vector<string> &args)
 
 		/*query sparql*/
 		sparql = stripwhite(sparql);
+
 		if (sparql.empty() == 0 && raw_sparql_handler(sparql))
 		{
 			cout << "Query failed: " << sparql << endl;
@@ -1557,7 +1532,7 @@ int show_handler(const vector<string> &args)
 	rows.push_back({"database", monitor_response.database});
 	rows.push_back({"creator", monitor_response.creator});
 	rows.push_back({"builtTime", monitor_response.builtTime});  
-	cout << monitor_response.builtTime << endl;
+	std::cout << monitor_response.builtTime << endl;
 	rows.push_back({"triple_num", monitor_response.tripleNum});
 	rows.push_back({"literalNum", to_string(monitor_response.literalNum)});
 	rows.push_back({"subjectNum", to_string(monitor_response.subjectNum)});
@@ -2498,7 +2473,7 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		ifstream file(arg);
 		if (!file.is_open())
 		{
-			cout << "failed to open file: " << arg << endl;
+			std::cout << "failed to open file: " << arg << endl;
 		}
 
 		nlohmann::json ruleinfo;
@@ -2525,7 +2500,7 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		response = APIConnector::cedsdReason(API_URL, true, request);
 	}
 
-	return move(response);
+	return std::move(response);
 }
 
 int addreason_handler(const vector<string> &args)
@@ -2721,11 +2696,11 @@ int deletereason_handler(const vector<string> &args)
 	server::MessageReasonManageResponse response = reason_manage_handler(7, args[0]);
 	// if (!ret)
 	// {
-	// 	cout << "DELETE REASON SUCCESSFULLY!" << endl; 
+	// 	std::cout << "DELETE REASON SUCCESSFULLY!" << endl; 
 	// }
 	// else
 	// {
-	// 	cout << "DELETE REASON FAILED!" << endl;
+	// 	std::cout << "DELETE REASON FAILED!" << endl;
 	// }
 	cout << "delete reason" + args[0] + "successfully!" << endl;
 	return response.success();
@@ -2733,39 +2708,36 @@ int deletereason_handler(const vector<string> &args)
 
 int funquery_handler(const vector<string>& args)
 {
-	CHECK_ARGC(1, 0);
-	server::FunInfo funInfo("", "");
-	nlohmann::json json;
-	string json_str;
-	funInfo.to_json(json_str);
-	json = nlohmann::json::parse(json_str);
-	server::MessageFunQueryRequest funquery_request(json);
-	funquery_request.username = root_username;
-	funquery_request.password = root_password;
+	CHECK_ARGC(1, 2);
+	string funName = args[0];
+	string funStatus = args[1];
+	PFNInfo funInfo;
+	funInfo.funName = funName;
+	funInfo.funStatus = funStatus;
+	server::MessageFunQueryRequest funquery_request;
+	funquery_request.funInfo = funInfo;
 	server::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
 	if (!funquery_response.success())
 	{
-		cout << "failed to query custom function: " << funquery_response.StatusMsg << endl;
+		cout << "failed to query custom function named " << funName << endl;
 		return -1;
 	}
 	
-	vector<string> headers = {"name", "desc", "returnType", "status", "lastBuildTime"};
+	vector<string> headers = {"funName", "funDesc", "funArgs", "funBody", "funStatus", "lastTime"};
 	vector<vector<string> > rows ={};
 
 	for (const PFNInfo &item : funquery_response.list)
 	{
-		server::FunInfo fun_info;
-		fun_info.from_json(json);
-		rows.push_back({fun_info.funName, fun_info.funDesc, fun_info.funArgs, 
-						fun_info.funStatus, fun_info.lastTime});
+		rows.push_back({item.funName, item.funDesc, item.funArgs, 
+						"./pfn/" + item.funName + ".cpp", item.funStatus, item.lastTime});
 	}
 	
 	Util::printConsole(headers, rows);
-	cout << "query custom function successfully!" << endl;
+	std::cout << "query custom function successfully!" << endl;
 	return 0;
 }
 
-int funcudb_handler(int type, const string& arg)
+int funcudb_handler(int type, const std::string& arg)
 {
 	
 	PFNInfo funInfo;
@@ -2774,7 +2746,8 @@ int funcudb_handler(int type, const string& arg)
 		ifstream file(arg);
 		if (!file.is_open())
 		{
-			cout << "failed to open file: " << arg << endl;
+			std::cout << "failed to open file: " << arg << endl;
+			return -1;
 		}
 		nlohmann::json json;
 		file >> json;
@@ -2783,10 +2756,7 @@ int funcudb_handler(int type, const string& arg)
 	}
 	else if(type == 3)
 	{
-		server::FunInfo funInfo = server::FunInfo(arg, "");
-		string json_str;
-		funInfo.to_json(json_str);
-		json = nlohmann::json::parse(json_str);
+		funInfo.funName = arg;
 	}
 	else 
 	{
@@ -2798,7 +2768,7 @@ int funcudb_handler(int type, const string& arg)
 	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
 	{
-		cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
+		std::cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
 		return -1;
 	}
 
@@ -2821,7 +2791,7 @@ int funcreate_handler(const vector<string>& args)
 		cout << "failed to create custom function" << endl;
 		return -1;
 	}
-	cout << "create custom function successfully!" << endl;
+	std::cout << "create custom function successfully!" << endl;
 	return 0;
 }
 
@@ -2841,7 +2811,7 @@ int funupdate_handler(const vector<string>& args)
 		cout << "failed to update custom function" << endl;
 		return -1;
 	}
-	cout << "update custom function successfully!" << endl;
+	std::cout << "update custom function successfully!" << endl;
 	return 0;
 }
 
@@ -2855,7 +2825,7 @@ int fundelete_handler(const vector<string>& args)
 		cout << "delete failed to custom function" << endl;
 		return -1;
 	}
-	cout << "delete custom function successfully!" << endl;	
+	std::cout << "delete custom function successfully!" << endl;	
 	return 0;
 }
 
@@ -2869,7 +2839,7 @@ int funbuild_handler(const vector<string>& args)
 		cout << "failed to build custom function" << endl;
 		return -1;
 	}
-	cout << "custom function build successfully!" << endl;
+	std::cout << "custom function build successfully!" << endl;
 	return 0;
 }
 
@@ -2908,9 +2878,9 @@ int funreview_handler(const vector<string>& args)
 		Util::printConsole(headers, rows);
 	}
 		
-// 	cout << "review custom function successfully!" << endl;
-// 	return 0;
-// }
+	std::cout << "review custom function successfully!" << endl;
+	return 0;
+}
 
 int txnlog_handler(const vector<string>& args)
 {
@@ -2918,7 +2888,7 @@ int txnlog_handler(const vector<string>& args)
 	// check args if numeric
 	if (!pure_digit(args[0]) || !pure_digit(args[1])) 
 	{
-		cout << "Illegal Argument: arg0 && arg1 must be number" << endl;
+		std::cout << "Illegal Argument: arg0 && arg1 must be number" << endl;
 		return -1;
 	}
 
@@ -2974,7 +2944,7 @@ int querylog_handler(const vector<string>& args)
 	string date = args[0];
 	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
 	{
-		cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
 		return -1;
 	}
 	int pageNo = stoi(args[1]);
@@ -3028,7 +2998,7 @@ int accesslog_handler(const vector<string>& args) {
 	string date = args[0];
 	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
 	{
-		cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
 		return -1;
 	}
 	int pageNo = stoi(args[1]);
@@ -3061,7 +3031,7 @@ int begin_handler(const vector<string>& args)
 	CHECK_ARGC(1, 2)
 	if (!pure_digit(args[1])) 
 	{
-		cout << "Illegal Argument: arg1 must be number" << endl;
+		std::cout << "Illegal Argument: arg1 must be number" << endl;
 		return -1;
 	}
 
