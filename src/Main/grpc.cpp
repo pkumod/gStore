@@ -207,14 +207,6 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		response->Error(StatusIPBlocked, ipCheckResult);
 		return false;
 	}
-	// check license
-	string msg;
-	if (check_license && apiUtil->check_license(msg) == false)
-	{
-		SLOG_INFO("License is invalid: " << msg);
-		response->Error(server::StatusCode::StatusLicenseInvalid, msg);
-		return false;
-	}
 	std::string ss;
 	ss += "\n==================== http-api ====================";
 	ss += "\n  Content-Type: " + ContentType::to_str(request->contentType());
@@ -250,6 +242,17 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		operation = JsonUtil::jsonParam(json_data, "operation");
 	}
 	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
+	// check license
+	if (operation != "login" && operation != "check" && operation != "testConnect" )
+	{
+		string msg;
+		if (check_license && apiUtil->check_license(msg) == false)
+		{
+			SLOG_INFO("License is invalid: " << msg);
+			response->Error(server::StatusCode::StatusLicenseInvalid, msg);
+			return false;
+		}
+	}
 	// add remote_ip param
 	json_data["remote_ip"] = ip_addr;
 	if (operation.empty()) 
