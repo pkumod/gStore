@@ -384,6 +384,8 @@ int main(int argc, char **argv)
 		cout << "Please check your remember list for your usrname and password." << endl;
 		return 0;
 	}
+	if (usrname == root_username)
+		root_password = stdpswd;
 	/* welcome and work */
 	cout << endl;
 	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
@@ -2078,7 +2080,9 @@ int setpriv_handler(const vector<string> &args)
 		return -1;
 	}
 
-	if (enter_pswd("Enter your password: "))
+	enter_pswd("Enter your password: ");
+	
+	if (stdpswd != root_password)
 	{
 		cout << "Fail to varify your id. Privilege set failed." << endl;
 		return -1;
@@ -2206,14 +2210,20 @@ int adddelusr_handler(int add, string usr)
 	// TODO
 	if (usrname != root_username)
 	{
-		cout << "Permission denied. Only root is allowed to add user." << endl;
+		cout << "Permission denied. Only root is allowed to manage user." << endl;
 		return -1;
 	}
-	if (enter_pswd("Enter your password: "))
+	enter_pswd("Enter your password: ");
+	
+	if (stdpswd != root_password)
 	{
-		cout << "Fail to varify your id. User add failed." << endl;
+		cout << "Fail to varify your id. User manage failed." << endl;
 		return -1;
 	}
+
+	if (add == 1)
+		enter_pswd("set password for new usr: ");
+	
 	server::MessageUserManageRequest adddeluser_request(add, usr, stdpswd);
 	adddeluser_request.username = root_username;
 	adddeluser_request.password = root_password;
@@ -2570,7 +2580,7 @@ int listreason_handler(const vector<string> &args)
 	// {
 	// 	cout << "LIST REASON FAILED!" << endl;
 	// }
-	cout << response.getStatusMsg() << endl;
+	cout << "list reasons successfully!" << endl;
 	return response.success();
 }
 
@@ -2595,7 +2605,7 @@ int compilereason_handler(const vector<string> &args)
 		vector<vector<string> > rows = {{response.insert_sparql, response.delete_sparql}};
 		Util::printConsole(headers, rows);
 	}
-	cout << response.getStatusMsg() << endl;
+	cout << "compile reason" + args[0] << "successfully!" << endl;
 	return response.success();
 }
 
@@ -2621,7 +2631,7 @@ int executereason_handler(const vector<string> &args)
 		vector<vector<string> > rows = {{response.insert_sparql}};
 		Util::printConsole(headers, rows);
 	}
-	cout << response.getStatusMsg() << endl;
+	cout << "execute reason" + args[0] + "successfully!" << endl;
 	return response.success();
 }
 
@@ -2646,7 +2656,7 @@ int disablereason_handler(const vector<string> &args)
 		vector<vector<string> > rows = {{response.delete_sparql}};
 		Util::printConsole(headers, rows);
 	}
-	cout << response.getStatusMsg() << endl;
+	cout << "disable reason" + args[0] + "successfully!" << endl;
 	return response.success();
 }
 
@@ -2697,7 +2707,7 @@ int showreason_handler(const vector<string> &args)
 	// {
 	// 	cout << "SHOW REASON FAILED!" << endl;
 	// }
-	cout << response.getStatusMsg() << endl;
+	cout << "show reason" + args[0] + "successfully!" << endl;
 	return response.success();
 }
 
@@ -2716,7 +2726,7 @@ int deletereason_handler(const vector<string> &args)
 	// {
 	// 	cout << "DELETE REASON FAILED!" << endl;
 	// }
-	cout << response.getStatusMsg() << endl;
+	cout << "delete reason" + args[0] + "successfully!" << endl;
 	return response.success();
 }
 
@@ -2802,6 +2812,7 @@ int funcreate_handler(const vector<string>& args)
 	if (ret == -1)
 	{
 		cout << "failed to create custom function" << endl;
+		return -1;
 	}
 	cout << "create custom function successfully!" << endl;
 	return 0;
@@ -2821,6 +2832,7 @@ int funupdate_handler(const vector<string>& args)
 	if (ret == -1)
 	{
 		cout << "failed to update custom function" << endl;
+		return -1;
 	}
 	cout << "update custom function successfully!" << endl;
 	return 0;
@@ -2834,6 +2846,7 @@ int fundelete_handler(const vector<string>& args)
 	if (ret == -1)
 	{
 		cout << "delete failed to custom function" << endl;
+		return -1;
 	}
 	cout << "delete custom function successfully!" << endl;	
 	return 0;
@@ -2847,6 +2860,7 @@ int funbuild_handler(const vector<string>& args)
 	if (ret == -1)
 	{
 		cout << "failed to build custom function" << endl;
+		return -1;
 	}
 	cout << "custom function build successfully!" << endl;
 	return 0;
@@ -3158,7 +3172,7 @@ int importlicense_handler(const vector<string>& args)
 									response.cpu, response.mac, response.startdate, response.enddate, 
 									response.company, response.type, response.desc}};
 	Util::printConsole(headers, rows);
-	cout << response.StatusMsg << endl;
+	cout << "import license successfully!" << endl;
 	return 0;
 }
 
@@ -3198,6 +3212,6 @@ int removelicense_handler(const vector<string>& args)
 		cout << "failed to remove license: " << response.StatusMsg << endl; 
 		return -1;
 	}
-	cout << response.StatusMsg << endl;
+	cout << "remove license successfully!" << endl;
 	return 0;
 }
