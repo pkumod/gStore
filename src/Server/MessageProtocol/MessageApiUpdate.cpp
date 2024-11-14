@@ -39,7 +39,7 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
+            {"username", this->username},
             {"password", ""},
             {"db_name", this->db_name},
             {"db_path", this->db_path},
@@ -108,7 +108,7 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
+            {"username", this->username},
             {"password", ""},
             {"db_name", this->db_name},
             {"is_backup", this->is_backup},
@@ -161,7 +161,7 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
+            {"username", this->username},
             {"password", ""},
             {"db_name", this->db_name},
             {"sparql", this->sparql},
@@ -279,8 +279,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"file", this->file},
             {"dir", this->dir},
@@ -360,8 +360,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"file", this->file},
             {"inner", "true"}};

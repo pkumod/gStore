@@ -55,8 +55,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"}};
+            {"username", this->username},
+            {"password", this->password}};
 
         json["funInfo"] = this->funInfo;
 
@@ -66,8 +66,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"inner", "true"}};
 
         json["funInfo"] = this->funInfo;
@@ -113,8 +113,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"type", this->type}};
         
         json["funInfo"] = this->funInfo;
@@ -126,8 +126,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"type", this->type},
             {"inner", "true"}};
         
@@ -151,8 +151,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"funInfo", this->funInfo}};
         
         json_str = json.dump();
@@ -162,8 +162,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"funInfo", this->funInfo},
             {"inner", "true"}};
         

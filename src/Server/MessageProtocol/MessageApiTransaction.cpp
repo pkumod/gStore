@@ -13,8 +13,8 @@ namespace server
     void MessageBeginRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"isolevel", this->isolevel}};
@@ -24,8 +24,8 @@ namespace server
     void MessageBeginRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"isolevel", this->isolevel},
@@ -61,8 +61,8 @@ namespace server
     void MessageTqueryRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid},
@@ -73,8 +73,8 @@ namespace server
     void MessageTqueryRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid},
@@ -113,8 +113,8 @@ namespace server
     void MessageCommitRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid}};
@@ -124,8 +124,8 @@ namespace server
     void MessageCommitRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid},
@@ -148,8 +148,8 @@ namespace server
     void MessageRollbackRequest::to_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid}};
@@ -159,8 +159,8 @@ namespace server
     void MessageRollbackRequest::to_inner_json(std::string& json_str)
     {
         nlohmann::json json = nlohmann::json{
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"operation", this->op},
             {"db_name", this->db_name},
             {"tid", this->tid},

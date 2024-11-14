@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 44
+#define TOTAL_COMMAND_NUM 45
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -118,6 +118,7 @@ int showdbs_handler(const vector<string> &);
 
 int setpswd_handler(const vector<string> &);
 int setpriv_handler(const vector<string> &);
+int clearpriv_handler(const vector<string> &);
 int addusr_handler(const vector<string> &);
 int delusr_handler(const vector<string> &);
 int showusrs_handler(const vector<string> &);
@@ -165,7 +166,7 @@ COMMAND commands[] =
 		{"showdbs", showdbs_handler, "Display all databases the current user has query privilege on.", "showdbs;", 0},
 		{"backup", backup_handler, "Backup current database.", "backup [<backup_path>];", BACKUP_PRIVILEGE_BIT},
 		{"restore", restore_handler, "Restore a database.", "restore <database_name> <backup_path>;", RESTORE_PRIVILEGE_BIT},
-		{"export", export_handler, "Export a database to .nt file.", "export <file_path>;", EXPORT_PRIVILEGE_BIT},
+		{"export", export_handler, "Export a database to .nt file.", "export [<file_path>];", EXPORT_PRIVILEGE_BIT},
 		{"pdb", pdb_handler, "Display current database name.", "pdb;", 0},
         {"unload", unload_handler, "Unload the current database.","unload;", UNLOAD_PRIVILEGE_BIT},
         {"batchinsert", batchinsert_handler, "Batch inserts data into the current database.","batchinsert <nt_file_path>;", UPDATE_PRIVILEGE_BIT},
@@ -182,6 +183,7 @@ COMMAND commands[] =
 		{"pusr", pusr_handler, "Display user's username and privilege.", "pusr; pusr <database_name>; pusr <database_name> <usr_name>;", 0},
 		{"setpswd", setpswd_handler, "Set your password. Be able to set other's password if you are root.", "setpswd; setpswd <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"setpriv", setpriv_handler, "Set user's privilege.", "setpriv <usrname> <database_name>;", ROOT_PRIVILEGE_BIT},
+		{"clearpriv", clearpriv_handler, "clear users's privilege.", "clearpriv <usrname>", ROOT_PRIVILEGE_BIT},
 		{"addusr", addusr_handler, "Add user.", "addusr <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"delusr", delusr_handler, "Del user.", "delusr <usrname>;", ROOT_PRIVILEGE_BIT},
 		{"showusrs", showusrs_handler, "Show all users and privilege for each.", "showusrs;", ROOT_PRIVILEGE_BIT},
@@ -396,7 +398,6 @@ int main(int argc, char **argv)
 		 << endl;
 	if (!isvalid) cout << "-----Warning: License Expired, please update your license in time------" << endl;
 	
-
 	// signal handler for ctrl+c
 	signal(SIGINT, ctrlc_handler);
 
@@ -935,7 +936,12 @@ bool login(const string& usrname, const string& password)
 		cout << "Could not connect to server. Please check server status" << endl;
 		exit(0);
 	}
-	return login_response.success();
+	if (!login_response.success())
+	{
+		std::cout << "login failed: " << login_response.StatusMsg << endl;
+		return 0;
+	}
+	return 1;
 }
 
 // print lowest sz bits of priv
@@ -1265,6 +1271,8 @@ int raw_sparql_handler(string sparql)
 		query_url = API_URL;
 	}
 	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
+	query_request.username = root_username;
+	query_request.password = root_password;
 	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
@@ -1538,7 +1546,7 @@ int show_handler(const vector<string> &args)
 	server::MessageMonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
 	if (!monitor_response.success())
 	{
-		cout << "Failed to monitor database: " << monitor_response.getStatusMsg() << endl;
+		cout << "Failed to monitor database: " << monitor_response.StatusMsg << endl;
 		return -1;
 	}
 	
@@ -1561,6 +1569,12 @@ int showdbs_handler(const vector<string> &args)
 	CHECK_ARGC(1, 0)
 	server::MessageShowRequest show_request;
 	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	if (!show_response.success())
+	{
+		std::cout << "show databases failed: " << show_response.StatusMsg << endl;
+		return -1;
+	}
+
 	vector<string> headers = {"database", "creater", "builtTime", "status"};
 	vector<vector<string>> rows;
 	for (auto &db : show_response.responseBody)
@@ -1642,20 +1656,23 @@ int drop_handler(const vector<string> &args)
 int export_handler(const vector<string> &args)
 {
 	// // TODO
-	CHECK_ARGC(1, 1)
+	CHECK_ARGC(2, 0, 1)
 	CHECK_CURRENT_DB_LOADED
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, EXPORT_PRIVILEGE_BIT);
 
-	string export_path = args[0];
-	cout << _current_database << '\n';
-	
+	string export_path = "./export";
+	if (args.size() == 1)
+		export_path = args[0];
 	if (export_path[export_path.length() - 1] != '/')
 		export_path = export_path + "/";
 	if (!Util::dir_exist(export_path))
 		Util::create_dirs(export_path);
+
 	
 	server::MessageExportRequest export_request(_current_database, export_path, false);
+	export_request.username = root_username;
+	export_request.password = root_password;
 	server::MessageResponse export_response = APIConnector::exportDb(API_URL, true, export_request);
 	if (!export_response.success())
 	{
@@ -1700,10 +1717,12 @@ int backup_handler(const vector<string> &args)
 	}
 
 	server::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
+	backup_request.username = root_username;
+	backup_request.password = root_password;
 	server::MessageBackupResponse backup_response = APIConnector::backup(API_URL, true, backup_request);
 	if (!backup_response.success())
 	{
-		cout << "Database " << _current_database << "backup failed: " << backup_response.StatusMsg << endl;
+		cout << "Database " << _current_database << " backup failed: " << backup_response.StatusMsg << endl;
 		return -1;
 	}
 	// cout << "Backup path: " << backup_path << endl;
@@ -1721,7 +1740,7 @@ int restore_handler(const vector<string> &args)
 	check_priv(db_name, RESTORE_PRIVILEGE_BIT);
 	if (db_name == _current_database)
 	{
-		cout << "Database game restore failed: Database alreay load, need unload it first through \"UNLOAD <database_name>;\" before you restore it" << endl;
+		cout << "Database " + _current_database + " restore failed: Database alreay load, need unload it first through \"UNLOAD <database_name>;\" before you restore it" << endl;
 		return -1;
 	}
 	if (backup_path[0] == '/')
@@ -1743,7 +1762,14 @@ int restore_handler(const vector<string> &args)
 
 	bool db_exist = false;
 	server::MessageShowRequest show_request;
+	show_request.username = root_username;
+	show_request.password = root_password;
 	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	if (!show_response.success())
+	{
+		cout << "failed to get database information: " << show_response.StatusMsg << endl;		
+	}
+
 	for (const auto& db : show_response.responseBody) 
 	{
 		if (db.database == db_name) db_exist = true;
@@ -1752,10 +1778,12 @@ int restore_handler(const vector<string> &args)
 	if (!db_exist) {
 		cout << "Database " << db_name << " not exist, Now Rebuild it!" << endl;
 		server::MessageBuildRequest build_request(db_name, "");
+		build_request.username = root_username;
+		build_request.password = root_password;
 		server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 		if (!build_response.success())
 		{
-			cout << "Rebuild Error, Restore Failed" << endl;
+			cout << "Rebuild Error, Restore Failed: " << build_response.StatusMsg << endl;
 			return -1; 
 		}
 		else
@@ -1766,6 +1794,8 @@ int restore_handler(const vector<string> &args)
 	}
 
 	server::MessageRestoreRequest restore_request(db_name, backup_path, false, "", false);
+	restore_request.username = root_username;
+	restore_request.password = root_password;
 	server::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, restore_request);
 	
 	if (!restore_response.success())
@@ -1816,6 +1846,7 @@ int use_handler(const vector<string> &args)
 
 int unload_handler(const vector<string> &args)
 {
+	CHECK_CURRENT_DB_LOADED
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, UNLOAD_PRIVILEGE_BIT);
 	if (_current_database.empty())
@@ -1823,6 +1854,7 @@ int unload_handler(const vector<string> &args)
 		cout << "Use no database!";
 		return -1;
 	}
+
 	server::MessageUnloadRequest unload_request(_current_database);
 	server::MessageResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
 	if (!unload_response.success())
@@ -1830,8 +1862,9 @@ int unload_handler(const vector<string> &args)
 		cout << "Unload database " << _current_database << " failed: " << unload_response.StatusMsg << endl;
 		return -1;
 	}
-	_current_database = "";
+
 	cout << "Unload database " << _current_database <<" successfully." << endl;
+	_current_database = "";
 	return 0;
 }
 
@@ -1956,12 +1989,14 @@ int setpswd_handler(const vector<string> &args)
 		prompt = "Enter old password: ";
 		tar_usr = usrname;
 	}
-
-	if (enter_pswd(prompt))
+	string old_stdpswd = stdpswd;
+	enter_pswd(prompt);
+	if (stdpswd != old_stdpswd)
 	{
 		cout << "Fail to varify your id. Password set failed." << endl;
 		return -1;
 	}
+	old_stdpswd = stdpswd;
 
 	HideStdinDisplay hide_ins; // hide stdin input and recover when out of scope
 
@@ -1974,14 +2009,17 @@ int setpswd_handler(const vector<string> &args)
 			cout << "Not Matched." << endl;
 		}
 		++not_match_cnt;
-		cout << "Enter new password: ";
-		cin >> new_pswd;
-		cout << endl;
-		cout << "Enter new password again: ";
-		cin >> confirm;
-		cout << endl;
-	} while (not_match_cnt < MAX_WRONG_PSWD_TIMES && confirm != new_pswd);
 
+		prompt = "Enter new password: ";
+		enter_pswd(prompt);
+		new_pswd = stdpswd;
+
+		prompt = "Enter new password again: ";
+		enter_pswd(prompt);
+		confirm = stdpswd;
+
+	} while (not_match_cnt < MAX_WRONG_PSWD_TIMES && confirm != new_pswd);
+	stdpswd = old_stdpswd;
 	if (not_match_cnt >= MAX_WRONG_PSWD_TIMES)
 	{
 		cout << "Too much not match. Password set failed." << endl;
@@ -2088,6 +2126,8 @@ int setpriv_handler(const vector<string> &args)
 	{
 		priv_string.pop_back();
 		server::MessageUserPrivilegeManageRequest deletepriv_request(2, usr, priv_string, db);
+		deletepriv_request.username = root_username;
+		deletepriv_request.password = root_password;
 		server::MessageUserPrivilegeManageResponse deletepriv_response = APIConnector::userPrivilegeManage(API_URL, true, deletepriv_request);
 		if (!deletepriv_response.success())
 		{
@@ -2112,6 +2152,8 @@ int setpriv_handler(const vector<string> &args)
 	{
 		addpriv_string.pop_back();
 		server::MessageUserPrivilegeManageRequest addpriv_request(1, usr, addpriv_string, db);
+		addpriv_request.username = root_username;
+		addpriv_request.password = root_password;
 		server::MessageUserPrivilegeManageResponse addpriv_response = APIConnector::userPrivilegeManage(API_URL, true, addpriv_request);
 		if (!addpriv_response.success())
 		{
@@ -2123,6 +2165,38 @@ int setpriv_handler(const vector<string> &args)
 	
 
 	cout << "Privilege set successfully." << endl;
+	return 0;
+}
+
+int clearpriv_handler(const vector<string> &args)
+{
+	CHECK_ARGC(1, 1)
+
+	if (usrname != root_username)
+	{
+		cout << "Permission denied. Only root is allowed to set other's privilege." << endl;
+		return -1;
+	}
+
+	string tar_usr = args[0];
+	if (tar_usr == root_username)
+	{
+		cout << "Forbidden Behavior: clear root priv." << endl;
+		return -1;
+	}
+
+	server::MessageUserPrivilegeManageRequest clearpriv_request(3, tar_usr, "", "");
+	clearpriv_request.username = root_username;
+	clearpriv_request.password = root_password;
+	server::MessageUserPrivilegeManageResponse clearpriv_response = APIConnector::userPrivilegeManage(API_URL, true, clearpriv_request);
+
+	if (!clearpriv_response.success())
+	{
+		cout << "Privilege clear failed " + clearpriv_response.StatusMsg << endl;
+		return -1;
+	}
+
+	cout << "clear " + tar_usr + " for all databases privilege successfully!" << endl;
 	return 0;
 }
 
@@ -2141,9 +2215,12 @@ int adddelusr_handler(int add, string usr)
 		return -1;
 	}
 	server::MessageUserManageRequest adddeluser_request(add, usr, stdpswd);
+	adddeluser_request.username = root_username;
+	adddeluser_request.password = root_password;
 	server::MessageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
 	if (!adddeluser_response.success())
 	{
+		cout << adddeluser_response.StatusMsg << endl;
 		return -1;
 	}
 	return 0;
@@ -2155,7 +2232,7 @@ int addusr_handler(const vector<string> &args)
 	string usr = args[0];
 	if (adddelusr_handler(1, usr))
 	{
-		cout << "Add usr " << usr << " failed." << endl;
+		cout << "Add usr " << usr << " failed" << endl;
 		return -1;
 	}
 	cout << "Add usr " << usr << " successfully." << endl;
@@ -2234,6 +2311,8 @@ int showusrs_handler(const vector<string> &args)
 	rows.push_back({root_username, "all", "all"});
 	
 	server::MessageShowUserRequest showuser_request;
+	showuser_request.username = root_username;
+	showuser_request.password = root_password;
 	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
 	if (!showuser_response.success())
 	{
@@ -2265,14 +2344,22 @@ int showusrs_handler(const vector<string> &args)
 		unordered_map<string, string> db_priv;
 		parse_priv(info.query_privilege, "query",db_priv);
 		parse_priv(info.load_privilege, "load", db_priv);
+		parse_priv(info.update_privilege, "update", db_priv);
 		parse_priv(info.unload_privilege, "unload", db_priv);
 		parse_priv(info.backup_privilege, "backup", db_priv);
 		parse_priv(info.restore_privilege, "restore", db_priv);
 		parse_priv(info.export_privilege, "export", db_priv);
 		for (auto &pair : db_priv) {
-			if (pair.second.empty()) continue;
+			if (pair.second.empty()) 
+				continue;
 			pair.second.pop_back();
+			if (count(pair.second.begin(), pair.second.end(), ',') == PRIVILEGE_NUM - 2) 
+				pair.second = "all";
 			rows.push_back({info.username, pair.first, pair.second});
+		}
+		if (db_priv.empty())
+		{
+			rows.push_back({info.username, "all", "no priv"});
 		}
 	}
 	//TO DO
@@ -2290,6 +2377,8 @@ int init_handler(const vector<string> &args)
 		return -1;
 	}
 	server::MessageInitRequest init_request(db_names);
+	init_request.username = root_username;
+	init_request.password = root_password;
 	server::MessageInitResponse init_response = APIConnector::init(API_URL, true, init_request);
 	if (!init_response.success())
 	{
@@ -2311,6 +2400,8 @@ int refreshconf_handler(const vector<string> &args)
 {
 	Util::configure();
 	server::MessageRefreshconfRequest refresh_request;
+	refresh_request.username = root_username;
+	refresh_request.password = root_password;
 	server::MessageResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
 	if (!refresh_response.success())
 	{
@@ -2345,6 +2436,8 @@ int batchinsert_handler(const vector<string> &args)
 		return -1;
 	}
 	server::MessageBatchInsertRequest insert_request(_current_database, file_path, dir_path);
+	insert_request.username = root_username;
+	insert_request.password = root_password;
 	long duration_time = Util::get_cur_time();
 	server::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
 	duration_time = Util::get_cur_time() - duration_time;
@@ -2370,6 +2463,8 @@ int batchremove_handler(const vector<string> &args)
 		return -1;
 	}
 	server::MessageBatchRemoveRequest remove_request(_current_database, file_path);
+	remove_request.username = root_username;
+	remove_request.password = root_password;
 	long duration_time = Util::get_cur_time();
 	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = Util::get_cur_time() - duration_time;
@@ -2400,16 +2495,22 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		file.close();
 
 		server::MessageAddReasonRequest request(_current_database, ruleinfo);
+		request.username = root_username;
+		request.password = root_password;
 		response = APIConnector::addReason(API_URL, true, request);
 	}
 	else if (type == 2)
 	{
 		server::MessageListReasonRequest request(_current_database);
+		request.username = root_username;
+		request.password = root_password;
 		response = APIConnector::listReason(API_URL, true, request);
 	} 
 	else
 	{
 		server::MessageCedsdReasonRequest request(_current_database, to_string(type), arg);
+		request.username = root_username;
+		request.password = root_password;
 		response = APIConnector::cedsdReason(API_URL, true, request);
 	}
 
@@ -2437,7 +2538,7 @@ int addreason_handler(const vector<string> &args)
 	// {
 	// 	cout << "ADD REASON FAILED!" << endl;
 	// }
-	cout << response.getStatusMsg() << endl;
+	cout << response.StatusMsg << endl;
 	return response.success();
 }
 
@@ -2628,10 +2729,12 @@ int funquery_handler(const vector<string>& args)
 	funInfo.to_json(json_str);
 	json = nlohmann::json::parse(json_str);
 	server::MessageFunQueryRequest funquery_request(json);
+	funquery_request.username = root_username;
+	funquery_request.password = root_password;
 	server::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
 	if (!funquery_response.success())
 	{
-		cout << "failed to query custom function: " << funquery_response.getStatusMsg() << endl;
+		cout << "failed to query custom function: " << funquery_response.StatusMsg << endl;
 		return -1;
 	}
 	
@@ -2673,6 +2776,8 @@ int funcudb_handler(int type, const string& arg)
 	}
 
 	server::MessageFunCudbRequest funcudb_request(to_string(type), json);
+	funcudb_request.username = root_username;
+	funcudb_request.password = root_password;
 	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
 	{
@@ -2798,6 +2903,8 @@ int txnlog_handler(const vector<string>& args)
 	int pageNo = stoi(args[0]);
 	int pageSize = stoi(args[1]);
 	server::MessageTxnLogRequest txnlog_request(pageNo, pageSize);
+	txnlog_request.username = root_username;
+	txnlog_request.password = root_password;
 	server::MessageTxnLogResponse txnlog_response = APIConnector::txnLog(API_URL, true, txnlog_request);
 	if (!txnlog_response.success())
 	{
@@ -2821,6 +2928,8 @@ int querylogdate_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 0)
 	server::MessageQueryLogDateRequest querylogdate_request;
+	querylogdate_request.username = root_username;
+	querylogdate_request.password = root_password;
 	server::MessageQueryLogDateResponse querylogdate_response = APIConnector::queryLogDate(API_URL, true, querylogdate_request);
 	if (!querylogdate_response.success())
 	{
@@ -2850,6 +2959,8 @@ int querylog_handler(const vector<string>& args)
 	int pageSize = stoi(args[2]);
 	
 	server::MessageQueryLogRequest querylog_request(date, pageNo, pageSize);
+	querylog_request.username = root_username;
+	querylog_request.password = root_password;
 	server::MessageQueryLogResponse querylog_response = APIConnector::queryLog(API_URL, true, querylog_request);
 	if (!querylog_response.success())
 	{
@@ -2872,6 +2983,8 @@ int querylog_handler(const vector<string>& args)
 int accesslogdate_handler(const vector<string>& args) {
 	CHECK_ARGC(1, 0)
 	server::MessageAccessLogDateRequest accesslogdate_request;
+	accesslogdate_request.username = root_username;
+	accesslogdate_request.password = root_password;
 	server::MessageAccessLogDateResponse accesslogdate_response = APIConnector::accessLogDate(API_URL, true, accesslogdate_request);
 	if (!accesslogdate_response.success())
 	{
@@ -2900,6 +3013,8 @@ int accesslog_handler(const vector<string>& args) {
 	int pageSize = stoi(args[2]);
 	
 	server::MessageAccessLogRequest accesslog_request(date, pageNo, pageSize);
+	accesslog_request.username = root_username;
+	accesslog_request.password = root_password;
 	server::MessageAccessLogResponse accesslog_response = APIConnector::accessLog(API_URL, true, accesslog_request);
 	if (!accesslog_response.success())
 	{
@@ -2931,10 +3046,12 @@ int begin_handler(const vector<string>& args)
 	string db_name = args[0];
 	string isolevel = args[1];
 	server::MessageBeginRequest begin_request(db_name, isolevel);
+	begin_request.username = root_username;
+	begin_request.password = root_password;
 	server::MessageBeginResponse begin_response = APIConnector::begin(API_URL, true, begin_request);
 	if (!begin_response.success())
 	{
-		cout << "begin operation failed: " << begin_response.getStatusMsg() << endl;
+		cout << "begin operation failed: " << begin_response.StatusMsg << endl;
 		return -1; 
 	}
 
@@ -2948,6 +3065,8 @@ int tquery_handler(const vector<string>& args)
 	string tid = args[1];
 	string sparql = args[2];
 	server::MessageTqueryRequest tquery_request(db_name, tid, sparql);
+	tquery_request.username = root_username;
+	tquery_request.password = root_password;
 	server::MessageTqueryResponse tquery_response = APIConnector::tquery(API_URL, true, tquery_request);
 	if (!tquery_response.success())
 	{
@@ -2965,6 +3084,8 @@ int commit_handler(const vector<string>& args)
 	string db_name = args[0];
 	string tid = args[1];
 	server::MessageCommitRequest commit_request(db_name, tid);
+	commit_request.username = root_username;
+	commit_request.password = root_password;
 	server::MessageCommitResponse commit_response = APIConnector::commit(API_URL, true, commit_request);
 	if (!commit_response.success())
 	{
@@ -2981,6 +3102,8 @@ int rollback_handler(const vector<string>& args)
 	string db_name = args[0];
 	string tid = args[1];
 	server::MessageRollbackRequest rollback_request(db_name, tid);
+	rollback_request.username = root_username;
+	rollback_request.password = root_password;
 	server::MessageRollbackResponse rollback_response = APIConnector::rollBack(API_URL, true, rollback_request);
 	if (!rollback_response.success())
 	{
@@ -2996,6 +3119,8 @@ int checkpoint_handler(const vector<string>& args)
 	CHECK_ARGC(1, 1)
 	string db_name = args[0];
 	server::MessageCheckPointRequest checkpoint_request(db_name);
+	checkpoint_request.username = root_username;
+	checkpoint_request.password = root_password;
 	server::MessageCheckPointResponse checkpoint_response = APIConnector::checkPoint(API_URL, true, checkpoint_request);
 	if (!checkpoint_response.success())
 	{
@@ -3018,11 +3143,13 @@ int importlicense_handler(const vector<string>& args)
 	}
 
 	server::MessageRequest request;
+	request.username = root_username;
+	request.password = root_password;
 	server::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
 	
 	if (!response.success())
 	{
-		cout << "failed to import license: " << response.getStatusMsg() << endl; 
+		cout << "failed to import license: " << response.StatusMsg << endl; 
 		return -1;
 	}
 	
@@ -3031,7 +3158,7 @@ int importlicense_handler(const vector<string>& args)
 									response.cpu, response.mac, response.startdate, response.enddate, 
 									response.company, response.type, response.desc}};
 	Util::printConsole(headers, rows);
-	cout << response.getStatusMsg() << endl;
+	cout << response.StatusMsg << endl;
 	return 0;
 }
 
@@ -3039,11 +3166,13 @@ int licenseinfo_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 0)
 	server::MessageRequest request;
+	request.username = root_username;
+	request.password = root_password;
 	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
 	
 	if (!response.success())
 	{
-		cout << "failed to fetch license information: " << response.getStatusMsg() << endl; 
+		cout << "failed to fetch license information: " << response.StatusMsg << endl; 
 		return -1;
 	}
 
@@ -3052,7 +3181,7 @@ int licenseinfo_handler(const vector<string>& args)
 									response.cpu, response.mac, response.startdate, response.enddate, 
 									response.company, response.type, response.desc}};
 	Util::printConsole(headers, rows);
-	cout << response.getStatusMsg() << endl;
+	cout << response.StatusMsg << endl;
 	return 0;
 }
 
@@ -3060,13 +3189,15 @@ int removelicense_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 0)
 	server::MessageRequest request;
+	request.username = root_username;
+	request.password = root_password;
 	server::MessageLicenseResponse response = APIConnector::removeLicense(BASE_URL, true, request);
 	
 	if (!response.success())
 	{
-		cout << "failed to remove license: " << response.getStatusMsg() << endl; 
+		cout << "failed to remove license: " << response.StatusMsg << endl; 
 		return -1;
 	}
-	cout << response.getStatusMsg() << endl;
+	cout << response.StatusMsg << endl;
 	return 0;
 }

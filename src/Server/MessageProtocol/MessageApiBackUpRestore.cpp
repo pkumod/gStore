@@ -25,8 +25,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"backup_path", this->backup_path},
             {"backup_zip", "false"},
@@ -39,7 +39,7 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
+            {"username", this->username},
             {"password", ""},
             {"db_name", this->db_name},
             {"backup_path", this->backup_path},
@@ -116,8 +116,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"backup_path", this->backup_path},
             {"backup_zip", "false"},
@@ -130,7 +130,7 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
+            {"username", this->username},
             {"password", ""},
             {"db_name", this->db_name},
             {"backup_path", this->backup_path},
@@ -182,8 +182,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"db_path", this->db_path},
             {"compress", "false"}};
@@ -194,8 +194,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"db_path", this->db_path},
             {"compress", "false"},
