@@ -219,6 +219,8 @@ namespace server
     bool ApiHandler::query_async(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, const std::string& opt_id)
     {
         MessageQueryResponse response;
+        response.opt_id = opt_id;
+        response.threadId = gutil::ThreadUtil::getThreadID();
         try
         {
             int32_t min_memory = Util::getConfigureIntValue("min_memory", 512); // MB
@@ -277,7 +279,6 @@ namespace server
                 query_result_notify(apiUtil, request, response);
                 return false;
             }
-            string thread_id = gutil::ThreadUtil::getThreadID();
             bool is_update = false;
             QueryTree::UpdateType update_type;
             bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
@@ -337,72 +338,12 @@ namespace server
                         rs_outputlimit = apiUtil->get_max_output_size();
                     }
                 }
-                if (format == "json")
-                {
-                    rs.to_JSON(response.query_json);
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else if (format == "file")
-                {
-                    
-                    file_name = db_name + "_" + thread_id + "_" + gutil::TimeUtil::now() + ".txt";
-                    string file_path = apiUtil->get_query_result_path() + file_name;
-                    nlohmann::json json_data;
-                    rs.to_JSON(json_data);
-                    ofstream outfile;
-                    outfile.open(file_path);
-                    outfile << json_data.dump();
-                    outfile.close();
-                    response.StatusMsg = "success";
-                    response.StatusCode = StatusOK;
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                    response.fileName = file_name;
-                }
-                else if (format == "n-triple")
-                {
-                    // headers
-                    nlohmann::json json_data;
-                    json_data["head"] = nlohmann::json::array();
-                    for(int i = 0; i < rs.true_select_var_num; i++)
-                    {
-                        json_data["head"].emplace_back(rs.var_name[i]);
-                    }
-                    // results
-                    json_data["results"] = nlohmann::json::array();
-                    for(int i = rs.output_offset; i < rs.ansNum; i++)
-                    {
-                        if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
-                        {
-                            break;
-                        }	
-                        if (i >= rs.output_offset)
-                        {
-                            std::vector<std::string> result_data;
-                            for(int j = 0; j < rs.true_select_var_num; j++)
-                            {
-                                result_data.emplace_back(rs.answer[i][j]);
-                            }
-                            json_data["results"].emplace_back(result_data);
-                        }
-                    }
-                    response.query_json = json_data;
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else
-                {
-                    response.StatusMsg = "Unknown result format.";
-                    response.StatusCode = StatusOperationFailed;
-                }
+                rs.to_JSON(response.query_json);
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "success";
+                response.ansNum = rs_ansNum;
+                response.outputLimit = rs_outputlimit;
+                response.queryTime = query_time_s;
             }
             else if (is_update)
             {
@@ -421,7 +362,6 @@ namespace server
                 response.StatusMsg = msg;
                 response.StatusCode = StatusOperationFailed;   
             }
-            response.threadId = thread_id;
             // add callback task for query log start
             struct DBQueryLogInfo query_log(query_start_time, request.remote_ip, sparql, 
                 rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);
@@ -443,17 +383,27 @@ namespace server
     void ApiHandler::query_result_notify(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response)
     {
         int state = response.StatusCode == StatusOK ? 1:-1;
-        apiUtil->update_access_log(response.StatusCode, response.StatusMsg, response.opt_id, state, response.ansNum, 0);
         std::string strPost;
         response.toJsonString(strPost);
-        if (!request.callback.empty()) {
+        // save result to file
+        string file_name = response.opt_id + ".json";
+        string file_path = apiUtil->get_query_result_path() + file_name;
+        ofstream outfile;
+        outfile.open(file_path);
+        outfile << strPost;
+        outfile.close();
+        // update access log
+        apiUtil->update_access_log(response.StatusCode, response.StatusMsg, response.opt_id, state, response.ansNum, 0, file_path);
+        // send result to callback
+        if (!request.callback.empty()) 
+        {
             std::string strResponse;
-            WFHttpUtil::Post(request.callback, strPost, strResponse);
+            HttpUtil::Post(request.callback, strPost, strResponse);
             SLOG_DEBUG("async query callback: " + request.callback + ", response: " + strResponse);
         }
         else
         {
-            SLOG_DEBUG("async query no callback, result: " << strPost);
+            SLOG_DEBUG("async query no callback");
         }
     }
 }

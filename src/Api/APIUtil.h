@@ -71,11 +71,14 @@ private:
 
     //license info
     struct LicenseInfo license_info;
+    //user privileges
+    std::vector<std::string> privileges;
 
     bool ip_check(const string& ip);
     bool ip_error_num_check(const string& ip);
     void init_params();
-    bool update_sys_db(const string& query);
+    bool update_sys_db(const string& sparql);
+    bool update_sys_db(const std::set<string>& sparqls);
     bool refresh_sys_db();
     bool mv_or_cp(const string& src, const string& dsc, bool is_mv);
     /**

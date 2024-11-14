@@ -20,11 +20,30 @@ namespace gutil
      */
     std::string TimeUtil::now(std::string format)
     {
-        char time_str[32];
-        time_t timep;
-        time(&timep);
-        strftime(time_str, sizeof(time_str), format.c_str(), localtime(&timep));
-        return string(time_str);
+        bool with_ms = false;
+        if (format == NORM_DATETIME_MS_PATTERN)
+        {
+            format = PURE_DATETIME_PATTERN;
+            with_ms = true;
+        } 
+        else if (format == PURE_DATETIME_MS_PATTERN)
+        {
+            format = PURE_DATETIME_PATTERN;
+            with_ms = true;
+        }
+        char time_str[64];
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::tm tm = *std::localtime(&t);
+        strftime(time_str, sizeof(time_str), format.c_str(), &tm);
+        std::stringstream ss;
+        ss << time_str;
+        if (with_ms)
+        {
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+            ss << "." << std::setw(3) << std::setfill('0') << ms.count();
+        }
+        return ss.str();
     }
 
     /**
@@ -44,9 +63,17 @@ namespace gutil
      */
     std::string TimeUtil::format(time_t timestamp, std::string format)
     {
-        struct tm *tm_now = std::localtime(&timestamp);
+        if (format == NORM_DATETIME_MS_PATTERN)
+        {
+            format = NORM_DATE_PATTERN;
+        }
+        if (format == PURE_DATETIME_MS_PATTERN)
+        {
+            format = PURE_DATETIME_PATTERN;
+        }
+        std::tm tm_now = *std::localtime(&timestamp);
         char time_str[32];
-        strftime(time_str, sizeof(time_str), format.c_str(), tm_now);
+        strftime(time_str, sizeof(time_str), format.c_str(), &tm_now);
         return string(time_str);
     }
 

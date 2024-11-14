@@ -52,7 +52,11 @@ namespace gutil
 
     std::string IdUtil::getConvertTimeById(const std::string& id)
 	{
-		time_t time = std::stoll(id);
+		if (id.empty())
+		{
+			return id;
+		}
+		time_t time = std::stoul(id);
 		time = ((time >> kTimestampShift) + kEpoch)/1000;
 		struct tm *timeinfo = nullptr;
 		char buffer[64];

@@ -1,15 +1,19 @@
 #pragma once
-
+#include <iostream>
+#include <iomanip>
+#include <chrono>
+#include <ctime>
 #include "GlobalTypedef.h"
+
 
 namespace gutil 
 {
     #define NORM_DATE_PATTERN "%Y-%m-%d"
     #define NORM_DATETIME_PATTERN "%Y-%m-%d %H:%M:%S"
-    #define NORM_DATETIME_MS_PATTERN "%Y-%m-%d %H:%M:%S.%f"
+    #define NORM_DATETIME_MS_PATTERN "%Y-%m-%d %H:%M:%S.%sss"
     #define PURE_DATE_PATTERN "%Y%m%d"
     #define PURE_DATETIME_PATTERN "%Y%m%d%H%M%S"
-    #define PURE_DATETIME_MS_PATTERN "%Y%m%d%H%M%S%f"
+    #define PURE_DATETIME_MS_PATTERN "%Y%m%d%H%M%S.%sss"
     class TimeUtil
     {
     public:

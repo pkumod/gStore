@@ -179,10 +179,12 @@ namespace server
 
     struct MessageCheckOperationStateResponse : public MessageResponse
     {
+        std::string operation;
         int state;
         int success_num;
         int failed_num;
         std::string backupfilepath;
+        std::string queryfilepath;
         void toJsonString(std::string& json_str) override;
 
         MessageCheckOperationStateResponse() { }

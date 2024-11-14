@@ -67,7 +67,7 @@ namespace server
         std::vector<std::string> head;
         std::vector<std::vector<std::string>> results;
         uint64_t ansNum = 0;
-        int outputLimit = 0;
+        int outputLimit = -1;
         std::string queryTime;
         std::string threadId;
         bool isUpdate;
@@ -79,6 +79,7 @@ namespace server
         MessageQueryResponse(std::string body);
         void toJson(nlohmann::json& json);
         void toJsonString(std::string& json_str);
+        void toAsyncJsonString(std::string& json_str);
     };
 
     // batch insert

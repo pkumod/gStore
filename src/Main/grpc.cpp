@@ -2137,7 +2137,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		response->set_header_pair("Pragma", "no-cache");
 		response->set_header_pair("Expires", "0");
 		std::string json_str;
-		response_data.toJsonString(json_str);
+		if (async)
+			response_data.toAsyncJsonString(json_str);
+		else
+			response_data.toJsonString(json_str);
 		response->Json(json_str);
 	}
 
@@ -2769,6 +2772,29 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
+	else if (response_data.operation == "query")
+	{
+		if (response_data.state == 0)
+		{
+			response->Success("The query task is not complete");
+		} 
+		else
+		{
+			ifstream file(response_data.queryfilepath);
+			if (!file.is_open())
+			{
+				SLOG_ERROR("open result file failed: " + response_data.queryfilepath);
+				response->Error(server::StatusFileReadError, "Read result file failed.");
+			}
+			else
+			{
+				nlohmann::json json_result;
+				file >> json_result;
+				file.close();
+				response->Json(json_result);
+			}
+		}
+	} 
 	else
 	{
 		std::string json_str;

@@ -178,7 +178,7 @@ namespace server
         try
         {
             std::string opt_id = resquest.opt_id;
-            if (apiUtil->check_param_value("opt_id", opt_id, msg))
+            if (apiUtil->check_param_value("opt_id", opt_id, msg) == false)
             {
                 response.Error(StatusOperationFailed, msg);
                 return;
@@ -190,16 +190,19 @@ namespace server
                 response.Error(StatusOperationFailed, msg);
                 return;
             }
-            std::string backupfilepath = log.backupfilepath;
             response.StatusCode = StatusOK;
             response.StatusMsg = log.msg;
             response.state = log.state;
-            std::string log_operation = log.operation;
-            if (log_operation == "backup")
+            response.operation = log.operation;
+            if (response.operation == "backup")
             {
-                response.backupfilepath = backupfilepath;
+                response.backupfilepath = log.backupfilepath;
             }
-            else if(log_operation != "restore")
+            else if (response.operation == "query")
+            {
+                response.queryfilepath = log.queryfilepath;
+            }
+            if(response.operation != "restore" && response.operation != "query")
             {
                 response.success_num = log.num;
                 response.failed_num = log.fail_num;
@@ -207,7 +210,7 @@ namespace server
         }
         catch (const std::exception &e)
         {
-            string error = "checkbatchInsertUid fail:" + string(e.what());
+            string error = "checkOperationState fail:" + string(e.what());
             response.Error(StatusOperationFailed, error);
         }
     }

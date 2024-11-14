@@ -22,6 +22,7 @@ APIUtil::APIUtil()
     ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
     license_info.product = GlobalTypedef::product_name;
     license_info.version = GlobalTypedef::product_version;
+    privileges = {"query", "update", "load", "unload", "restore", "backup", "export"};
 }
 
 APIUtil::~APIUtil()
@@ -86,6 +87,8 @@ APIUtil::~APIUtil()
     ipWhiteList = nullptr;
 
     ipBlackList = nullptr;
+
+    privileges.clear();
 }
 
 int APIUtil::initialize()
@@ -385,43 +388,20 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string msg)
         return false;
     } 
     // remove databse info from system.db
-    std::vector<std::string> privileges = {"query", "update", "load", "unload", "restore", "backup", "export"};
     bool update_result = true;
+    std::set<std::string> sparqls;
+    sparqls.insert("DELETE WHERE {<"+ db_name + "> <database_status> ?o.}");
+    sparqls.insert("DELETE WHERE {<"+ db_name + "> <built_by> ?o.}");
+    sparqls.insert("DELETE WHERE {<"+ db_name + "> <built_time> ?o.}");
     for (auto& iter : privileges) {
-        string update = "DELETE WHERE {<"+ db_name + "> <has_"+ iter + "_priv> ?o.}";
-        update_result = update_result && update_sys_db(update);
+        sparqls.insert("DELETE WHERE {?o <has_"+ iter +"_priv> <"+ db_name +">.}");
     }
+    update_result = update_sys_db(sparqls);
     if (!update_result) {
         unlock_databaseinfo(db_info);
         msg = "Remove db info from system failed.";
         return false;
     }
-
-    do
-    {
-       // remove databse info from system.db
-        string update = "DELETE WHERE {<" 
-            + db_name + "> <database_status> ?y1. <" 
-            + db_name + "> <built_by> ?y2. <" 
-            + db_name + "> <built_time> ?y3. }";
-		bool update_result = update_sys_db(update);
-        // remove all privileges of db_name
-        update = "DELETE WHERE {?s <has_query_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_load_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_unload_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_update_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_backup_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_restore_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-        update = "DELETE WHERE {?s <has_export_priv> <" + db_name + ">. }";
-        update_result = update_sys_db(update) || update_result;
-    } while (0);
-
     // system checkpoint
     refresh_sys_db();
     // clear all privileges 
@@ -1046,37 +1026,9 @@ bool APIUtil::add_privilege(const std::string& username, const vector<string>& t
 	if(it != users.end() && db_name != GlobalTypedef::system_db)
 	{
         string update = "INSERT DATA { ";
-        for (unsigned i = 0; i < types.size(); i++)
+        for (string type : types)
         {
-            string type = types[i];
-            if(type == "query")
-            {
-                update = update + "<" + username + "> <has_query_priv> <" + db_name + ">. ";
-            }
-            else if(type == "update")
-            {
-                update = update + "<" + username + "> <has_update_priv> <" + db_name + ">. ";
-            }
-            else if(type == "load")
-            {
-                update = update + "<" + username + "> <has_load_priv> <" + db_name + ">. ";
-            }
-            else if(type == "unload")
-            {
-                update = update + "<" + username + "> <has_unload_priv> <" + db_name + ">. ";
-            }
-            else if(type == "restore")
-            {
-                update = update + "<" + username + "> <has_restore_priv> <" + db_name + ">. ";
-            }
-            else if(type == "backup")
-            {
-                update = update + "<" + username + "> <has_backup_priv> <" + db_name + ">. ";
-            }
-            else if(type == "export")
-            {
-                update = update + "<" + username + "> <has_export_priv> <" + db_name + ">. ";
-            }
+            update = update + "<" + username + "> <has_" + type + "_priv> <" + db_name + ">. ";
         }
         update = update + "}";
         bool add_result = update_sys_db(update);
@@ -1106,56 +1058,26 @@ bool APIUtil::del_privilege(const std::string& username, const vector<string>& t
 	}
     pthread_rwlock_rdlock(&users_map_lock);
 	std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
-	if(it != users.end() && db_name != GlobalTypedef::system_db)
+	if (it != users.end() && db_name != GlobalTypedef::system_db)
 	{
-        string update = "";
-        bool del_result = false;
-        bool refresh_flag = false;
-        for (unsigned i = 0; i < types.size(); i++)
+        shared_ptr<struct DBUserInfo> user_info = it->second;
+        bool del_result = true;
+        std::set<string> sparqls;
+        for (string type : types)
         {
-            string type = types[i];
-            if(type == "query" && it->second->query_priv.find(db_name) != it->second->query_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_query_priv> <" + db_name + ">. }";
-            }
-            else if(type == "update" && it->second->update_priv.find(db_name) != it->second->update_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_update_priv> <" + db_name + ">. }";
-            }
-            else if(type == "load" && it->second->load_priv.find(db_name) != it->second->load_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_load_priv> <" + db_name + ">. }";
-            }
-            else if(type == "unload" && it->second->unload_priv.find(db_name) != it->second->unload_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_unload_priv> <" + db_name + ">. }";
-            }
-            else if(type == "backup" && it->second->backup_priv.find(db_name) != it->second->backup_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_backup_priv> <" + db_name + ">. }";
-            }
-            else if(type == "restore" && it->second->restore_priv.find(db_name) != it->second->restore_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_restore_priv> <" + db_name + ">. }";
-            }
-            else if(type == "export" && it->second->export_priv.find(db_name) != it->second->export_priv.end())
-            {
-                update = "DELETE DATA { <" + username + "> <has_export_priv> <" + db_name + ">. }";
-            } 
-            else 
-            {
-                continue;
-            }
-            // delete privilege
-            del_result = update_sys_db(update);
-            refresh_flag = refresh_flag || del_result;
-            // remove from privilege set
-            if (del_result) {
-                update_privilege(it->second, type, db_name, 0);
-            }
+            sparqls.insert("DELETE DATA { <" + username + "> <has_"+ type +"_priv> <" + db_name + ">. }");            
         }
-        if (refresh_flag)
+        // delete privilege
+        del_result = update_sys_db(sparqls);
+        // remove from privilege set
+        if (del_result) 
+        {
+            for (string type : types)
+            {
+                update_privilege(user_info, type, db_name, 0);
+            }
             refresh_sys_db();
+        }
         pthread_rwlock_unlock(&users_map_lock);
         return del_result;
 	} else {
@@ -1288,7 +1210,6 @@ bool APIUtil::init_privilege(const std::string& username, const std::string& db_
 
 bool APIUtil::copy_privilege(const std::string& src_db_name, const std::string& dst_db_name)
  {
-    std::vector<std::string> privileges = {"query", "update", "load", "unload", "restore", "backup", "export"};
     ResultSet rs;
     FILE *output = nullptr;
     std::string sparql;
@@ -1358,13 +1279,13 @@ bool APIUtil::clear_privilege(const string& username)
 	std::map<std::string,  shared_ptr<struct DBUserInfo>>::iterator it = users.find(username);
 	if(it != users.end())
 	{
-        std::vector<std::string> privileges = {"query", "update", "load", "unload", "restore", "backup", "export"};
         bool result = true;
+        std::set<std::string> sparqls;
 		for (std::string type : privileges)
 		{
-            std::string update = "DELETE WHERE{ <" + username + "> <has_" + type + "_priv> ?o.}";
-            result = result && update_sys_db(update);
+            sparqls.insert("DELETE WHERE{ <" + username + "> <has_" + type + "_priv> ?o.}");
 		}
+        result = update_sys_db(sparqls);
         if (result)
         {
             refresh_sys_db();
@@ -1538,6 +1459,59 @@ bool APIUtil::update_sys_db(const string& sparql)
     }
 }
 
+bool APIUtil::update_sys_db(const std::set<string>& sparqls)
+{
+    if (sparqls.empty())
+    {
+        return false;
+    }
+    pthread_rwlock_wrlock(&system_db_lock);
+    try
+    {
+        QueryTree::UpdateType update_type;
+        string _rs;
+        bool ret_bool = true;
+        int ret = 0;
+        shared_ptr<Txn_manager> txn_m = make_shared<Txn_manager>(system_database.get(), GlobalTypedef::system_db);
+        txn_id_t tid = txn_m->Begin(IsolationLevelType::SERIALIZABLE);
+        for (auto &sparql : sparqls)
+        {
+            if (system_database->isUpdate(sparql, update_type))
+            {
+                ret = txn_m->Query(tid, sparql, _rs);
+                if (ret < 0)
+                {
+                    SLOG_ERROR("update sparql error: " + sparql + ", error code: " + to_string(ret));
+                    ret_bool = false;
+                    break;
+                }
+                SLOG_CORE("update sparql: " + sparql + ", update num: " + to_string(ret));
+            }
+            else
+            {
+                SLOG_CORE("not a update query: " + sparql);
+            }
+        }
+        if (ret_bool)
+        {
+            txn_m->Commit(tid);
+        }
+        else
+        {
+            txn_m->Rollback(tid);
+        }
+        txn_m.reset();
+        pthread_rwlock_unlock(&system_db_lock);
+        return ret_bool;
+    }
+    catch(const std::exception& e)
+    {
+        SLOG_ERROR("batch execute update sparql error: " << e.what());
+        pthread_rwlock_unlock(&system_db_lock);
+        return false;
+    }
+}
+
 bool APIUtil::refresh_sys_db()
 {
     pthread_rwlock_wrlock(&system_db_lock);
@@ -1604,18 +1578,17 @@ bool APIUtil::user_delete(const string& username)
     bool result = false;
     if(users.find(username) != users.end())
     {
-        // clear privileges
-        string update = "DELETE WHERE { \
-            <" + username + "> <has_password> ?o1. \
-            <" + username + "> <has_query_priv> ?o2. \
-            <" + username + "> <has_load_priv> ?o3. \
-            <" + username + "> <has_unload_priv> ?o4. \
-            <" + username + "> <has_update_priv> ?o5. \
-            <" + username + "> <has_backup_priv> ?o6. \
-            <" + username + "> <has_restore_priv> ?o7. \
-            <" + username + "> <has_export_priv> ?o8. \
-        }";
-        result = update_sys_db(update);
+        std::set<string> sparqls = {
+            "DELETE WHERE {<" + username + "> <has_password> ?o1. }",
+            "DELETE WHERE {<" + username + "> <has_query_priv> ?o2.}",
+            "DELETE WHERE {<" + username + "> <has_load_priv> ?o3.}",
+            "DELETE WHERE {<" + username + "> <has_unload_priv> ?o4.}",
+            "DELETE WHERE {<" + username + "> <has_update_priv> ?o5.}",
+            "DELETE WHERE {<" + username + "> <has_backup_priv> ?o6.}",
+            "DELETE WHERE {<" + username + "> <has_restore_priv> ?o7.}",
+            "DELETE WHERE {<" + username + "> <has_export_priv> ?o8.}"
+        };
+        result = update_sys_db(sparqls);
         if (result) 
         {
             users.erase(username);
@@ -1632,28 +1605,16 @@ bool APIUtil::user_pwd_alert(const string& username, const string& password)
     bool result = false;
     std::map<std::string, shared_ptr<struct DBUserInfo>>::iterator iter;
     iter = users.find(username);
-    if(iter != users.end())
+    if (iter != users.end())
     {
-        // remove old password
-        string update = "DELETE WHERE {<" + username + "> <has_password> ?o.}";
-        result = update_sys_db(update);
+        std::set<std::string> sparqls;
+        sparqls.insert("DELETE WHERE {<" + username + "> <has_password> ?o.}");
+        sparqls.insert("INSERT DATA {<" + username + "> <has_password> \"" + password + "\".}");
+        result = update_sys_db(sparqls);
         if (result)
         {
-            // insert new password
-            update = "INSERT DATA {<" + username + "> <has_password>  \"" + password + "\".}";
-            result = update_sys_db(update);
-            if (result)
-            {
-                iter->second->setPassword(password);
-                refresh_sys_db();
-            }
-            else
-            {
-                // rollback
-                update = "INSERT DATA {<" + username + "> <has_password>  \"" + iter->second->getPassword() + "\".}";
-                update_sys_db(update);
-                refresh_sys_db();
-            }
+            iter->second->setPassword(password);
+            refresh_sys_db();
         }
     }
     pthread_rwlock_unlock(&users_map_lock);
@@ -1926,7 +1887,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
         {
             struct DBAccessLogInfo logInfo;
             if (DBAccessLogInfo::fromJSON(line, logInfo)) 
-            {         
+            {
                 if (logInfo.checkOperation())
                 {
                     logInfo.code = statusCode;
@@ -1935,7 +1896,10 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
                     logInfo.state = state;
                     logInfo.num = num;
                     logInfo.fail_num = failnum;
-                    logInfo.backupfilepath = backupfilepath;
+                    if (logInfo.operation == "backup")
+                        logInfo.backupfilepath = backupfilepath;
+                    else if(logInfo.operation == "query")
+                        logInfo.queryfilepath = backupfilepath;
                     nlohmann::json json_data;
                     logInfo.toJSON(json_data);
                     line = json_data.dump();
@@ -1951,9 +1915,8 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
                 SLOG_ERROR("update access log corrupted: parse from json fail (" + line + ")");
             }
             found = true;
-            fputs(line.c_str(), temp_file);
         }
-        fputs(readBuffer, temp_file);
+        fputs(line.c_str(), temp_file);
     }
     fclose(file);
     fclose(temp_file);
@@ -2233,10 +2196,10 @@ bool APIUtil::import_license(const string& license_file, std::string& msg)
 bool APIUtil::remove_license(std::string& msg)
 {
     bool update_rt;
-    std::string sparql = "DELETE WHERE {<system> <license_type> ?x}";
-    update_rt = update_sys_db(sparql);
-    sparql =  "DELETE WHERE {<system> <license_content> ?x}";
-    update_rt = update_rt && update_sys_db(sparql);
+    std::set<std::string> sparqls;
+    sparqls.insert("DELETE WHERE {<system> <license_type> ?x}");
+    sparqls.insert("DELETE WHERE {<system> <license_content> ?x}");
+    update_rt = update_sys_db(sparqls);
     if (update_rt)
     {
         msg = "License removed successfully";

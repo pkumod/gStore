@@ -267,10 +267,6 @@ namespace server
         json["AnsNum"] = this->ansNum;
         json["ThreadId"] = this->threadId;
         json["QueryTime"] = this->queryTime;
-        if (!this->opt_id.empty())
-        {
-            json["opt_id"] = this->opt_id;
-        }
     }
 
     void MessageQueryResponse::toJsonString(std::string& json_str)
@@ -278,6 +274,15 @@ namespace server
         nlohmann::json json_data;
         this->toJson(json_data);
         json_str = json_data.dump();
+    }
+
+    void MessageQueryResponse::toAsyncJsonString(std::string& json_str)
+    {
+        nlohmann::json j;
+        j["opt_id"] = this->opt_id;
+        j["StatusCode"] = this->StatusCode;
+        j["StatusMsg"] = this->StatusMsg;
+        json_str = j.dump();
     }
 
     // batch insert

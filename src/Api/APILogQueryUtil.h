@@ -82,16 +82,18 @@ public:
     std::string createtime;
     std::string opt_id;
     std::string endtime;
-    int state = 0;
+    int state = 1;
     int num = 0;
     int fail_num = 0;
     std::string backupfilepath;
+    std::string queryfilepath;
 public:
     DBAccessLogInfo() {}
     DBAccessLogInfo(const string &_ip, const string &_operation): ip(_ip), operation(_operation){}
     bool checkOperation()
     {
-        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove" || operation == "backup" || operation == "restore")
+        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove" 
+            || operation == "backup" || operation == "restore" || operation == "query")
             return true;
         return false;
     }
@@ -102,19 +104,24 @@ public:
         doc["code"] = code;
         doc["msg"] = msg;
         doc["createtime"] = createtime;
+        if (checkOperation())
+            doc["state"] = state;
         if (!opt_id.empty())
             doc["opt_id"] = opt_id;
         if (!endtime.empty())
             doc["endtime"] = endtime;
         if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
         {
-            doc["state"] = state;
             doc["num"] = num;
             doc["fail_num"] = fail_num;
         }
         if (operation == "backup")
         {
             doc["backupfilepath"] = backupfilepath;
+        }
+        if (operation == "query")
+        {
+            doc["queryfilepath"] = queryfilepath;
         }
     }
     static bool fromJSON(const string& json_str, DBAccessLogInfo& item)
@@ -133,14 +140,19 @@ public:
             doc["opt_id"].get_to(item.opt_id);
         if (doc.contains("endtime"))
             doc["endtime"].get_to(item.endtime);
-        if (doc.contains("state"))
-            doc["state"].get_to(item.state);
-        if (doc.contains("num"))
-            doc["num"].get_to(item.num);
-        if (doc.contains("fail_num"))
-            doc["fail_num"].get_to(item.fail_num);
-        if (doc.contains("backupfilepath"))
-            doc["backupfilepath"].get_to(item.backupfilepath);
+        if (item.checkOperation())
+        {
+            if (doc.contains("state"))
+                doc["state"].get_to(item.state);
+            if (doc.contains("num"))
+                doc["num"].get_to(item.num);
+            if (doc.contains("fail_num"))
+                doc["fail_num"].get_to(item.fail_num);
+            if (doc.contains("backupfilepath"))
+                doc["backupfilepath"].get_to(item.backupfilepath);
+            if (doc.contains("queryfilepath"))
+                doc["queryfilepath"].get_to(item.queryfilepath);
+        }
         return true;
     }
 };

@@ -370,6 +370,8 @@ namespace server
     {
         if(json_data.contains("operation"))
             json_data.at("operation").get_to(this->op);
+        if(json_data.contains("opt_id"))
+            json_data.at("opt_id").get_to(this->opt_id);
     }
 
     void MessageCheckOperationStateRequest::to_json(std::string& json_str)
@@ -409,16 +411,16 @@ namespace server
 
     void MessageCheckOperationStateResponse::toJsonString(std::string& json_str)
     {
-    nlohmann::json rJson;
-    toJson(rJson);
-    rJson["success_num"] = this->success_num;
-    rJson["failed_num"] = this->failed_num;
-    rJson["state"] = this->state;
-    if (this->backupfilepath.empty())
-    {
-        rJson["backupfilepath"] = this->backupfilepath;
-    }
+        nlohmann::json rJson;
+        toJson(rJson);
+        rJson["success_num"] = this->success_num;
+        rJson["failed_num"] = this->failed_num;
+        rJson["state"] = this->state;
+        if (this->backupfilepath.empty())
+        {
+            rJson["backupfilepath"] = this->backupfilepath;
+        }
 
-    json_str = rJson.dump();
+        json_str = rJson.dump();
     }
 }
