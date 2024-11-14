@@ -12,6 +12,7 @@ namespace server
         std::string username;
         std::string password;
         std::string remote_ip;
+        MessageRequest() {}
         MessageRequest(const MessageRequest &other);
         MessageRequest &operator=(const MessageRequest &other);
         MessageRequest(std::string op) : op(op) {}

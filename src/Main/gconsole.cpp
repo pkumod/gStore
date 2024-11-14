@@ -138,6 +138,10 @@ int commit_handler(const vector<string>&);
 int rollback_handler(const vector<string>&);
 int checkpoint_handler(const vector<string>&);
 
+int importlicense_handler(const vector<string>&);
+int licenseinfo_handler(const vector<string>&);
+int removelicense_handler(const vector<string>&);
+
 // int print_arg_handler(const vector<string> &);
 
 typedef struct
@@ -186,19 +190,18 @@ COMMAND commands[] =
 
 
 		// custom function
-		{"funquery", funquery_handler, "query custom function.", "funquery <func_name> <func_status>", 0},
-		{"funcreate", funcreate_handler, "create custom function.", "funcreate <json_file_path>", 0},
-		{"funupdate", funupdate_handler, "update custom function.", "funupdate <json_file_path>", 0},
-		{"fundelete", fundelete_handler, "delete custom function.", "fundelete <func_name>", 0},
-		{"funbuild", funbuild_handler, "build custom function.", "funbuild <func_name>", 0},
-		{"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
-		// other
-		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
-		{"help", help_handler, "Display help msg. Enter 'help;' see more about usage.", "help [edit/usage/<command>];", 0},
-		{"?", help_handler, "Synonym for \"help\".", "help [edit/usage/<command>];", 0},
-		// {"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
-		{"version", version_handler, "Display  core version.", "version;", 0},
+		{"showpfn", funquery_handler, "query custom function.", "showpfn", 0},
+		{"addpfn", funcreate_handler, "create custom function.", "addpfn <json_file_path>", 0},
+		{"mdfpfn", funupdate_handler, "update custom function.", "mdfpfn <json_file_path>", 0},
+		{"delpfn", fundelete_handler, "delete custom function.", "delpfn <func_name>", 0},
+		{"buildpfn", funbuild_handler, "build custom function.", "buildpfn <func_name>", 0},
+		// {"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
 
+		// license
+		{"importlicense", importlicense_handler, "import your license", "importlicense <license_file_path>", 0},
+		{"licenseinfo", licenseinfo_handler, "show your license information", "licenseinfo", 0},
+		{"removelicense", removelicense_handler, "remove your current license", "removelicense", 0},
+		
 		// linux shell cmd
 		{"pwd", pwd_handler, "Print name of current/working directory.", "pwd;", 0},
 		{"clear", clear_handler, "Clear screen.", "clear;", 0},
@@ -220,6 +223,8 @@ COMMAND commands[] =
 		// {"commit", commit_handler, "commit transaction", "commit <db_name> <tid>", 0},
 		// {"rollback", rollback_handler, "transaction rollback", "rollback <db_name> <tid>", 0},
 		// {"checkpoint", checkpoint_handler, "confirm the data modify", "checkpoint <db_name>", 0}
+
+
 };
 
 /* **************************************************************** */
@@ -286,7 +291,7 @@ int enter_pswd(string prompt);
 bool login(const string& usrname, const string& password);
 unsigned read_priv(string usr, string db_name);
 unsigned get_priv(string usr, string db_name);
-
+bool check_license();
 bool pure_digit(const string& s);
 
 /* **************************************************************** */
@@ -380,6 +385,7 @@ int main(int argc, char **argv)
 	cout << endl;
 	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
 	PRINT_VERSION
+	bool isvalid = check_license();
 	cout << "" << endl;
 	cout << "Welcome to the "<<product_name<<" Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
@@ -1014,6 +1020,21 @@ int check_priv(string db_name, unsigned request_priv)
 		return -1;
 	}
 	return 0;
+}
+
+bool check_license()
+{
+
+	server::MessageRequest request;
+	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
+
+	if (response.isvalid)
+	{
+		cout << "Licensed to " + response.company << endl
+			 << "Active Until " << response.enddate << endl;
+		return true;
+	}
+	return false;
 }
 
 bool pure_digit(const string& s) 
@@ -2450,7 +2471,6 @@ int batchremove_handler(const vector<string> &args)
 	server::MessageBatchRemoveRequest remove_request(_current_database, file_path);
 	remove_request.username = root_username;
 	remove_request.password = root_password;
-	long duration_time = Util::get_cur_time();
 	long duration_time = gutil::TimeUtil::timestamp();
 	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = gutil::TimeUtil::timestamp() - duration_time;
@@ -2708,22 +2728,20 @@ int deletereason_handler(const vector<string> &args)
 
 int funquery_handler(const vector<string>& args)
 {
-	CHECK_ARGC(1, 2);
-	string funName = args[0];
-	string funStatus = args[1];
+	CHECK_ARGC(1, 0);
 	PFNInfo funInfo;
-	funInfo.funName = funName;
-	funInfo.funStatus = funStatus;
 	server::MessageFunQueryRequest funquery_request;
 	funquery_request.funInfo = funInfo;
+	funquery_request.username = root_username;
+	funquery_request.password = root_password;
 	server::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
 	if (!funquery_response.success())
 	{
-		cout << "failed to query custom function named " << funName << endl;
+		cout << "failed to query custom function: " << funquery_response.StatusMsg << endl;
 		return -1;
 	}
 	
-	vector<string> headers = {"funName", "funDesc", "funArgs", "funBody", "funStatus", "lastTime"};
+	vector<string> headers = {"name", "desc", "returnType", "status", "lastBuildTime"};
 	vector<vector<string> > rows ={};
 
 	for (const PFNInfo &item : funquery_response.list)
@@ -2733,7 +2751,7 @@ int funquery_handler(const vector<string>& args)
 	}
 	
 	Util::printConsole(headers, rows);
-	std::cout << "query custom function successfully!" << endl;
+	cout << "query custom function successfully!" << endl;
 	return 0;
 }
 
