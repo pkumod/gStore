@@ -40,7 +40,7 @@ namespace server
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
             {"username", this->username},
-            {"password", ""},
+            {"password", this->password},
             {"db_name", this->db_name},
             {"backup_path", this->backup_path},
             {"backup_zip", "false"},

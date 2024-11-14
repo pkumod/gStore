@@ -15,8 +15,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"inner", "true"}};
         json_str = json.dump();
     }
@@ -99,8 +99,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"op_username", this->op_username},
             {"op_password", this->op_password},
             {"type", this->type},
@@ -154,8 +154,8 @@ namespace server
     {
         nlohmann::json json = nlohmann::json{
             {"operation", this->op},
-            {"username", "root"},
-            {"password", "123456"},
+            {"username", this->username},
+            {"password", this->password},
             {"op_username", this->op_username},
             {"db_name", this->db_name},
             {"privileges", this->privileges},
