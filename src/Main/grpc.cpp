@@ -977,6 +977,13 @@ void register_service(GRPCServer &svr)
 
 void shutdown(const GRPCReq *request, GRPCResp *response)
 {
+	if (!_is_server_running)
+	{
+		std::string msg = "server is stopping, please waitting !";
+		SLOG_DEBUG(msg);
+		response->Error(StatusIPBlocked, msg);
+		return;
+	}
 	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
@@ -1016,6 +1023,7 @@ void shutdown(const GRPCReq *request, GRPCResp *response)
 	// bool flag = apiUtil->db_checkpoint_all();
 	rpc_task->add_callback([](GRPCTask *grpcTask){
 		// free apiUtil
+		_is_server_running = false;
 		releaseGlobalPtr(false);
 		std::cout.flush();
 		_exit(EXIT_SUCCESS);
