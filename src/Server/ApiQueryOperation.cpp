@@ -50,303 +50,59 @@ namespace server
         return true;
     }
 
-    bool ApiHandler::query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb)
+    void ApiHandler::query_format_response_data(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, ResultSet& rs)
     {
-        try
+        response.fileName = "";
+        if (request.format == "json")
         {
-            if (!query_check(apiUtil, request, response))
-                return false;
-            std::string db_name = request.db_name;
-            std::string format = request.format;
-            std::string username = request.username;
-            std::string sparql = request.sparql;
-            // check db_name paramter
-            std::string msg;
-
-            shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            // check database read lock
-            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            rs.to_JSON(response.query_json);
+        }
+        else if (request.format == "file")
+        {
+            
+            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".txt";
+            string file_path = apiUtil->get_query_result_path() + file_name;
+            nlohmann::json json_data;
+            rs.to_JSON(json_data);
+            ofstream outfile;
+            outfile.open(file_path);
+            outfile << json_data.dump();
+            outfile.close();
+            response.fileName = file_name;
+        }
+        else if (request.format == "n-triple")
+        {
+            // headers
+            nlohmann::json json_data;
+            json_data["head"] = nlohmann::json::array();
+            for(int i = 0; i < rs.true_select_var_num; i++)
             {
-                response.StatusMsg = "get current database read lock fail.";
-                response.StatusCode = StatusLossOfLock;
-                return false;
+                json_data["head"].emplace_back(rs.var_name[i]);
             }
-            string thread_id = gutil::ThreadUtil::getThreadID();
-            bool is_update = false;
-            QueryTree::UpdateType update_type;
-            bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
-            // check update operation
-            try
+            // results
+            json_data["results"] = nlohmann::json::array();
+            for(int i = rs.output_offset; i < rs.ansNum; i++)
             {
-                is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
-            }
-            catch(const std::exception& e)
-            {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.StatusMsg = "Unknown query type:" + string(e.what());
-                response.StatusCode = StatusOperationFailed;
-                return false;
-            }
-            FILE *output = NULL;
-            ResultSet rs;
-            int ret_val;
-            int query_time = gutil::TimeUtil::timestamp();
-            std::string query_start_time;
-            try
-            {
-                SLOG_DEBUG("begin query...\n" + sparql);
-                rs.setUsername(username);
-                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
-                ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, nullptr);
-                query_time = gutil::TimeUtil::timestamp() - query_time;
-                // unlock rdlock
-                apiUtil->unlock_databaseinfo(db_info);
-            } catch (const std::exception &e) {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.StatusMsg = "Query fail: " + string(e.what());
-                response.StatusCode = StatusOperationFailed;
-                return false;
-            }
-            string query_time_s = to_string(query_time);
-            long rs_ansNum = 0;
-            string file_name = "";
-            if (!is_update && (ret_val == -100))
-            {
-                rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-                long rs_outputlimit = (long)rs.output_limit;
-                if (rs_outputlimit != -1)
+                if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
                 {
-                    rs_ansNum = min(rs_ansNum, rs_outputlimit);
+                    break;
                 }	
-
-                int StatusCode = 0;
-                // to void someone downloading all the data file by sparql query on purpose and to protect the data
-                // if the ansNum too large, for example, larger than 100000, we limit the return ans.
-                if (rs_ansNum > apiUtil->get_max_output_size())
+                if (i >= rs.output_offset)
                 {
-                    if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
+                    std::vector<std::string> result_data;
+                    for(int j = 0; j < rs.true_select_var_num; j++)
                     {
-                        rs_outputlimit = apiUtil->get_max_output_size();
+                        result_data.emplace_back(rs.answer[i][j]);
                     }
-                }
-                if (format == "json")
-                {
-                    rs.to_JSON(response.query_json);
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else if (format == "file")
-                {
-                    
-                    file_name = db_name + "_" + thread_id + "_" + gutil::TimeUtil::now() + ".txt";
-                    string file_path = apiUtil->get_query_result_path() + file_name;
-                    nlohmann::json json_data;
-                    rs.to_JSON(json_data);
-                    ofstream outfile;
-                    outfile.open(file_path);
-                    outfile << json_data.dump();
-                    outfile.close();
-                    response.StatusMsg = "success";
-                    response.StatusCode = StatusOK;
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                    response.fileName = file_name;
-                }
-                else if (format == "n-triple")
-                {
-                    // headers
-                    nlohmann::json json_data;
-                    json_data["head"] = nlohmann::json::array();
-                    for(int i = 0; i < rs.true_select_var_num; i++)
-                    {
-                        json_data["head"].emplace_back(rs.var_name[i]);
-                    }
-                    // results
-                    json_data["results"] = nlohmann::json::array();
-                    for(int i = rs.output_offset; i < rs.ansNum; i++)
-                    {
-                        if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
-                        {
-                            break;
-                        }	
-                        if (i >= rs.output_offset)
-                        {
-                            std::vector<std::string> result_data;
-                            for(int j = 0; j < rs.true_select_var_num; j++)
-                            {
-                                result_data.emplace_back(rs.answer[i][j]);
-                            }
-                            json_data["results"].emplace_back(result_data);
-                        }
-                    }
-                    response.query_json = json_data;
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else
-                {
-                    response.StatusMsg = "Unknown result format.";
-                    response.StatusCode = StatusOperationFailed;
+                    json_data["results"].emplace_back(result_data);
                 }
             }
-            else if (is_update)
-            {
-                rs_ansNum = ret_val;
-                SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
-                response.StatusCode = StatusOK;
-                response.StatusMsg = "update query returns true.";
-                response.ansNum = rs_ansNum;
-                response.queryTime = query_time_s;
-                response.isUpdate = true;
-            }
-            else
-            {
-                msg = "query returns false.";
-                SLOG_DEBUG(msg);
-                response.StatusMsg = msg;
-                response.StatusCode = StatusOperationFailed;   
-            }
-            response.threadId = thread_id;
-            // add callback task for query log start
-            struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);
-            cb(query_log_ptr);
-            // release ResultSet
-            rs.release();
-            return response.StatusCode == StatusOK;
+            response.query_json = json_data;
         }
-        catch (const std::exception &e)
+        else
         {
-            response.StatusMsg = "Query fail: " + string(e.what());
+            response.StatusMsg = "Unknown result format.";
             response.StatusCode = StatusOperationFailed;
-            return false;
-        }
-    }
-
-    bool ApiHandler::query_async(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const std::string& opt_id)
-    {
-        response.opt_id = opt_id;
-        response.threadId = gutil::ThreadUtil::getThreadID();
-        try
-        {
-            if (!query_check(apiUtil, request, response))
-                return false;
-            std::string db_name = request.db_name;
-            std::string format = request.format;
-            std::string username = request.username;
-            std::string sparql = request.sparql;
-            std::string msg;
-            shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            // check database read lock
-            if (apiUtil->rdlock_databaseinfo(db_info) == false)
-            {
-                response.StatusMsg = "get current database read lock fail.";
-                response.StatusCode = StatusLossOfLock;
-                return false;
-            }
-            bool is_update = false;
-            QueryTree::UpdateType update_type;
-            bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
-            // check update operation
-            try
-            {
-                is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
-            }
-            catch(const std::exception& e)
-            {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.StatusMsg = "Unknown query type:" + string(e.what());
-                response.StatusCode = StatusOperationFailed;
-                return false;
-            }
-            FILE *output = NULL;
-            ResultSet rs;
-            int ret_val;
-            int query_time = gutil::TimeUtil::timestamp();
-            std::string query_start_time;
-            try
-            {
-                SLOG_DEBUG("begin query...\n" + sparql);
-                rs.setUsername(username);
-                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
-                ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, nullptr);
-                query_time = gutil::TimeUtil::timestamp() - query_time;
-                // unlock rdlock
-                apiUtil->unlock_databaseinfo(db_info);
-            } catch (const std::exception &e) {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.StatusMsg = "Query fail: " + string(e.what());
-                response.StatusCode = StatusOperationFailed;
-                return false;
-            }
-            string query_time_s = to_string(query_time);
-            long rs_ansNum = 0;
-            string file_name = "";
-            if (!is_update && (ret_val == -100))
-            {
-                rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
-                long rs_outputlimit = (long)rs.output_limit;
-                if (rs_outputlimit != -1)
-                {
-                    rs_ansNum = min(rs_ansNum, rs_outputlimit);
-                }	
-
-                int StatusCode = 0;
-                // to void someone downloading all the data file by sparql query on purpose and to protect the data
-                // if the ansNum too large, for example, larger than 100000, we limit the return ans.
-                if (rs_ansNum > apiUtil->get_max_output_size())
-                {
-                    if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
-                    {
-                        rs_outputlimit = apiUtil->get_max_output_size();
-                    }
-                }
-                rs.to_JSON(response.query_json);
-                response.StatusCode = StatusOK;
-                response.StatusMsg = "success";
-                response.ansNum = rs_ansNum;
-                response.outputLimit = rs_outputlimit;
-                response.queryTime = query_time_s;
-            }
-            else if (is_update)
-            {
-                rs_ansNum = ret_val;
-                SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
-                response.StatusCode = StatusOK;
-                response.StatusMsg = "update query returns true.";
-                response.ansNum = rs_ansNum;
-                response.queryTime = query_time_s;
-                response.isUpdate = true;
-            }
-            else
-            {
-                msg = "query returns false.";
-                SLOG_DEBUG(msg);
-                response.StatusMsg = msg;
-                response.StatusCode = StatusOperationFailed;   
-            }
-            // add callback task for query log start
-            struct DBQueryLogInfo query_log(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);
-            apiUtil->write_query_log(&query_log);
-            // release ResultSet
-            rs.release();
-            return response.StatusCode == StatusOK;
-        }
-        catch (const std::exception &e)
-        {
-            response.StatusMsg = "Query fail: " + string(e.what());
-            response.StatusCode = StatusOperationFailed;
-            return false;
         }
     }
 
@@ -374,6 +130,133 @@ namespace server
         else
         {
             SLOG_DEBUG("async query no callback");
+        }
+    }
+
+    void ApiHandler::query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb, bool format_check)
+    {
+        try
+        {
+            if (!query_check(apiUtil, request, response))
+                return;
+            std::string db_name = request.db_name;
+            std::string format = request.format;
+            std::string username = request.username;
+            std::string sparql = request.sparql;
+            // check db_name paramter
+            std::string msg;
+
+            shared_ptr<DatabaseInfo> db_info;
+            apiUtil->get_databaseinfo(db_name, db_info);
+            // check database read lock
+            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            {
+                response.StatusMsg = "get current database read lock fail.";
+                response.StatusCode = StatusLossOfLock;
+                return;
+            }
+            bool is_update = false;
+            QueryTree::UpdateType update_type;
+            bool update_flag_bool = apiUtil->check_privilege(username, "update", db_name);
+            // check update operation
+            try
+            {
+                is_update = db_info->getDatabase()->isUpdate(sparql, update_type);
+            }
+            catch(const std::exception& e)
+            {
+                apiUtil->unlock_databaseinfo(db_info);
+                response.StatusMsg = "Unknown query type:" + string(e.what());
+                response.StatusCode = StatusOperationFailed;
+                return;
+            }
+            FILE *output = NULL;
+            ResultSet rs;
+            int ret_val;
+            int query_time = gutil::TimeUtil::timestamp();
+            std::string query_start_time;
+            try
+            {
+                SLOG_DEBUG("begin query...\n" + sparql);
+                rs.setUsername(username);
+                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
+                ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, nullptr);
+                query_time = gutil::TimeUtil::timestamp() - query_time;
+                // unlock rdlock
+                apiUtil->unlock_databaseinfo(db_info);
+            } catch (const std::exception &e) {
+                apiUtil->unlock_databaseinfo(db_info);
+                response.StatusMsg = "Query fail: " + string(e.what());
+                response.StatusCode = StatusOperationFailed;
+                return;
+            }
+            string query_time_s = to_string(query_time);
+            long rs_ansNum = 0;
+            response.threadId = gutil::ThreadUtil::getThreadID();
+
+            if (!is_update && (ret_val == -100))
+            {
+                rs_ansNum = max((long)rs.ansNum - rs.output_offset, 0L);
+                long rs_outputlimit = (long)rs.output_limit;
+                if (rs_outputlimit != -1)
+                {
+                    rs_ansNum = min(rs_ansNum, rs_outputlimit);
+                }	
+
+                int StatusCode = 0;
+                // to void someone downloading all the data file by sparql query on purpose and to protect the data
+                // if the ansNum too large, for example, larger than 100000, we limit the return ans.
+                if (rs_ansNum > apiUtil->get_max_output_size())
+                {
+                    if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
+                    {
+                        rs_outputlimit = apiUtil->get_max_output_size();
+                    }
+                }
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "success";
+                response.ansNum = rs_ansNum;
+                response.outputLimit = rs_outputlimit;
+                response.queryTime = query_time_s;
+                if (format_check)
+                {
+                    query_format_response_data(apiUtil, request, response, rs);
+                }
+                else
+                {
+                    rs.to_JSON(response.query_json);
+                }
+            }
+            else if (is_update)
+            {
+                rs_ansNum = ret_val;
+                SLOG_DEBUG("update query returns true. update num " + to_string(ret_val));
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "update query returns true.";
+                response.ansNum = rs_ansNum;
+                response.queryTime = query_time_s;
+                response.isUpdate = true;
+            }
+            else
+            {
+                msg = "query returns false.";
+                SLOG_DEBUG(msg);
+                response.StatusMsg = msg;
+                response.StatusCode = StatusOperationFailed;   
+            }
+            // add callback task for query log start
+            struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
+                rs_ansNum, format, response.fileName, response.StatusCode, query_time, db_name);
+            cb(query_log_ptr);
+            // release ResultSet
+            rs.release();
+            return;
+        }
+        catch (const std::exception &e)
+        {
+            response.StatusMsg = "Query fail: " + string(e.what());
+            response.StatusCode = StatusOperationFailed;
+            return;
         }
     }
 
@@ -476,7 +359,7 @@ namespace server
                     clusterlog->close();
                 return;
             }
-            string thread_id = gutil::ThreadUtil::getThreadID();
+            response.threadId = gutil::ThreadUtil::getThreadID();
             string query_time_s = to_string(query_time);
             long rs_ansNum = 0;
             string file_name = "";
@@ -499,72 +382,12 @@ namespace server
                     }
                 }
 
-                if (format == "json")
-                {
-                    rs.to_JSON(response.query_json);
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else if (format == "file")
-                {
-                    file_name = db_name + "_" + thread_id + "_" + gutil::TimeUtil::now() + ".txt";
-                    string file_path = apiUtil->get_query_result_path() + file_name;
-                    nlohmann::json json_data;
-                    rs.to_JSON(json_data);
-                    ofstream outfile;
-                    outfile.open(file_path);
-                    outfile << json_data.dump();
-                    outfile.close();
-                    response.StatusMsg = "success";
-                    response.StatusCode = StatusOK;
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                    response.fileName = file_name;
-                }
-                else if (format == "n-triple")
-                {
-                    // headers
-                    nlohmann::json json_data;
-                    json_data["head"] = nlohmann::json::array();
-                    for(int i = 0; i < rs.true_select_var_num; i++)
-                    {
-                        json_data["head"].emplace_back(rs.var_name[i]);
-                    }
-                    // results
-                    json_data["results"] = nlohmann::json::array();
-                    for(int i = rs.output_offset; i < rs.ansNum; i++)
-                    {
-                        if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
-                        {
-                            break;
-                        }	
-                        if (i >= rs.output_offset)
-                        {
-                            std::vector<std::string> result_data;
-                            for(int j = 0; j < rs.true_select_var_num; j++)
-                            {
-                                result_data.emplace_back(rs.answer[i][j]);
-                            }
-                            json_data["results"].emplace_back(result_data);
-                        }
-                    }
-                    rs.release();
-                    response.query_json = json_data;
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = "success";
-                    response.ansNum = rs_ansNum;
-                    response.outputLimit = rs_outputlimit;
-                    response.queryTime = query_time_s;
-                }
-                else
-                {
-                    response.StatusMsg = "Unknown result format.";
-                    response.StatusCode = StatusOperationFailed;
-                }
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "success";
+                response.ansNum = rs_ansNum;
+                response.outputLimit = rs_outputlimit;
+                response.queryTime = query_time_s;
+                query_format_response_data(apiUtil, request, response, rs);
             }
             else if (is_update)
             {
@@ -574,6 +397,7 @@ namespace server
                 response.ansNum = ret_val;
                 response.queryTime = query_time_s;
                 response.isUpdate = true;
+
                 std::string json_str;
                 response.toJsonString(json_str);
                 // add log appendEntities task
@@ -633,7 +457,6 @@ namespace server
                 response.StatusMsg = msg;
                 response.StatusCode = StatusOperationFailed;
             }
-            response.threadId = thread_id;
             // add callback task for query log start
             struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
                 rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);

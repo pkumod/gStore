@@ -2180,8 +2180,13 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
 			server::MessageQueryResponse response;
+			response.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
-			server::ApiHandler::query_async(apiUtil, request_data, response, opt_id);
+			server::ApiHandler::query(apiUtil, request_data, response, [](struct DBQueryLogInfo* query_log_ptr)
+			{
+				apiUtil->write_query_log(query_log_ptr);
+				delete query_log_ptr;
+			});
 			server::ApiHandler::query_result_notify(apiUtil, request_data, response);
 		});
 	}
@@ -2194,7 +2199,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 				apiUtil->write_query_log(query_log_ptr);
 				delete query_log_ptr;
 			});
-		});
+		}, true);
 	}
 	
 	if (response_data.StatusCode != server::StatusOK)
