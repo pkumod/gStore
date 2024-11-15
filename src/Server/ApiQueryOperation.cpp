@@ -140,7 +140,6 @@ namespace server
             if (!query_check(apiUtil, request, response))
                 return;
             std::string db_name = request.db_name;
-            std::string format = request.format;
             std::string username = request.username;
             std::string sparql = request.sparql;
             // check db_name paramter
@@ -173,7 +172,7 @@ namespace server
             FILE *output = NULL;
             ResultSet rs;
             int ret_val;
-            int query_time = gutil::TimeUtil::timestamp();
+            long query_time = gutil::TimeUtil::timestamp();
             std::string query_start_time;
             try
             {
@@ -246,7 +245,7 @@ namespace server
             }
             // add callback task for query log start
             struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, format, response.fileName, response.StatusCode, query_time, db_name);
+                rs_ansNum, request.format, response.fileName, response.StatusCode, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet
             rs.release();
@@ -267,7 +266,6 @@ namespace server
             if (!query_check(apiUtil, request, response))
                 return;
             std::string db_name = request.db_name;
-            std::string format = request.format;
             std::string username = request.username;
             std::string sparql = request.sparql;
             // check db_name paramter
@@ -305,7 +303,7 @@ namespace server
             FILE *output = NULL;
             ResultSet rs;
             int ret_val;
-            int query_time = gutil::TimeUtil::timestamp();
+            long query_time = gutil::TimeUtil::timestamp();
             shared_ptr<ofstream> clusterlog = nullptr;
             std::string cluster_db_path;
             std::string logpath;
@@ -459,7 +457,7 @@ namespace server
             }
             // add callback task for query log start
             struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, format, file_name, response.StatusCode, query_time, db_name);
+                rs_ansNum, request.format, file_name, response.StatusCode, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet
             rs.release();

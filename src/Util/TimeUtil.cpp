@@ -4,9 +4,9 @@ namespace gutil
 {
     time_t TimeUtil::timestamp()
     {
-        std::time_t now = std::time(0);
-        struct tm *tm_now = std::localtime(&now);
-        return mktime(tm_now);
+        timeval tv;
+        gettimeofday(&tv, NULL);
+        return (tv.tv_sec*1000 + tv.tv_usec/1000);
     }
 
     std::string TimeUtil::timestamp_str()
