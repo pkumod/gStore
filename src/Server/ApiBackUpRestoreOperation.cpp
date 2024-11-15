@@ -2,70 +2,58 @@
 
 namespace server
 {
-    void ApiHandler::backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& resquest, server::MessageBackupResponse& response, const backup_call& async_cb)
+    bool ApiHandler::backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path)
+    {
+        std::string _db_home = GlobalTypedef::db_home();
+        std::string db_name = request.db_name;
+        std::string msg;
+        if (apiUtil->check_param_value("db_name", db_name, msg) == false)
+        {
+            response.Error(StatusParamIsIllegal, msg);
+            return false;
+        }
+        if (apiUtil->check_db_built(db_name) == false)
+        {
+            msg = "the database [" + db_name + "] not built yet.";
+            response.Error(StatusOperationConditionsAreNotSatisfied, msg);
+            return false;
+        }
+        // check backup path
+        if (backup_path.empty())
+        {
+            backup_path = GlobalTypedef::backup_path();
+            SLOG_DEBUG("backup_path is empty, set to default path: " + backup_path);
+        }
+        if (backup_path == "." || backup_path == "./" || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
+        {
+            msg = "Backup path can not be root or \"" + _db_home + "\" .";
+            response.Error(StatusParamIsIllegal, msg);
+            return false;
+        }
+
+        return true;
+    }
+
+    void ApiHandler::backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
-            std::string backup_path = resquest.backup_path;
-            bool compress = resquest.backup_zip;
+            std::string backup_path = request.backup_path;
+            if (!backup_check(apiUtil, request, response, backup_path))
+                return;
+
             std::string msg;
-            std::string _db_home = GlobalTypedef::db_home();
-            // std::string _db_suffix = GlobalTypedef::db_suffix();
-            if (apiUtil->check_param_value("db_name", db_name, msg) == false)
+            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.backup_zip, backup_path, msg);
+            if (backup_rt)
             {
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "the database [" + db_name + "] not built yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            // check backup path
-            if (backup_path.empty())
-            {
-                backup_path = GlobalTypedef::backup_path();
-                SLOG_DEBUG("backup_path is empty, set to default path: " + backup_path);
-            }
-            if (backup_path == "." || backup_path == "./" || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
-            {
-                msg = "Backup path can not be root or \"" + _db_home + "\" .";
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
-            string remote_ip = resquest.remote_ip;
-            bool async = resquest.async;
-            std::string callback = resquest.callback;
-            std::string operation = "backup";
-            std::string opt_id;
-            gutil::IdUtil::nextUID(opt_id);
-            response.opt_id = opt_id;
-            if (async)
-            {
-                async_cb(opt_id);
-                msg = "Operation success";
-                apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
+                msg = "Database backup successfully.";
                 response.StatusCode = StatusOK;
                 response.StatusMsg = msg;
+                response.backupfilepath = backup_path;
             }
             else
             {
-                bool backup_rt = apiUtil->backup_databaseinfo(db_name, compress, backup_path, msg);
-                if (backup_rt)
-                {
-                    msg = "Database backup successfully.";
-                    apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-                    response.StatusCode = StatusOK;
-                    response.StatusMsg = msg;
-                    response.backupfilepath = backup_path;
-                }
-                else
-                {
-                    apiUtil->write_access_log(operation, remote_ip, StatusOperationFailed, msg, opt_id);
-                    response.Error(StatusOperationFailed, msg);
-                }
+                response.Error(StatusOperationFailed, msg);
             }
         }
         catch (const std::exception &e)
@@ -75,37 +63,55 @@ namespace server
         }
     }
 
-    void ApiHandler::backup(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, std::string& backup_path, bool compress, const std::string& callback)
-    {
-        std::string msg;
-        bool backup_rt = apiUtil->backup_databaseinfo(db_name, compress, backup_path, msg);
-        nlohmann::json j = {
-            {"opt_id", opt_id}
-        };
-        if (backup_rt)
-        {
-            j["StatusCode"] = 0;
-            j["StatusMsg"] = "Backup success";
-            j["backupfilepath"] = backup_path;
-            apiUtil->update_access_log(StatusOK, msg, opt_id, 0, 0, 0, backup_path);
-        }
-        else
-        {
-            j["StatusCode"] = StatusOperationFailed;
-            j["StatusMsg"] = msg;
-            apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
-        }
-        if (!callback.empty())
-        {
-            HttpUtil::Post(callback, j.dump(), msg);
-        }
-    }
-
-    void ApiHandler::backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& resquest, server::MessageBackupPathResponse& response)
+    void ApiHandler::backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string opt_id = response.opt_id;
+            std::string backup_path = request.backup_path;
+            if (!backup_check(apiUtil, request, response, backup_path))
+            {
+                apiUtil->update_access_log(StatusOK, response.StatusMsg, opt_id, 1, 0, 0, backup_path);
+                return;
+            }
+
+            std::string msg;
+            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.backup_zip, backup_path, msg);
+            nlohmann::json j = {
+                {"opt_id", opt_id}
+            };
+            if (backup_rt)
+            {
+                msg = "Backup success";
+                j["StatusCode"] = 0;
+                j["StatusMsg"] = msg;
+                j["backupfilepath"] = backup_path;
+                apiUtil->update_access_log(StatusOK, msg, opt_id, 1, 0, 0, backup_path);
+            }
+            else
+            {
+                j["StatusCode"] = StatusOperationFailed;
+                j["StatusMsg"] = msg;
+                apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
+            }
+            std::string callback = request.callback;
+            if (!callback.empty())
+            {
+                HttpUtil::Post(callback, j.dump(), msg);
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::string error = "Backup fail: " + string(e.what());
+            response.Error(StatusOperationFailed, error);
+        }
+    }
+
+    void ApiHandler::backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response)
+    {
+        try
+        {
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -129,73 +135,67 @@ namespace server
         }
     }
 
-    void ApiHandler::restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& resquest, server::MessageRestoreResponse& response, const restore_call& cb)
+    bool ApiHandler::restore_check(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
+    {
+        std::string msg;
+        std::string backup_path = request.backup_path;
+        if (apiUtil->check_param_value("db_name", request.db_name, msg) == false)
+        {
+            response.Error(StatusParamIsIllegal, msg);
+            return false;
+        }
+        if (apiUtil->check_param_value("backup_path", backup_path, msg) == false)
+        {
+            response.Error(StatusParamIsIllegal, msg);
+            return false;
+        }
+        if (Util::is_file(backup_path))
+        {
+            if (Util::fileSuffix(backup_path) != "zip")
+            {
+                response.Error(StatusParamIsIllegal, "Backup file is not zip file.");
+                return false;
+            }
+            else if (Util::file_exist(backup_path) == false)
+            {
+                response.Error(StatusParamIsIllegal, "Backup file not exist.");
+                return false;
+            }
+        }
+        else if (Util::is_dir(backup_path))
+        {
+            if (Util::dir_exist(backup_path) == false)
+            {
+                response.Error(StatusParamIsIllegal, "Backup path not exist.");
+                return false;
+            }
+        }
+        else
+        {
+            response.Error(StatusParamIsIllegal, "Backup path not exist.");
+            return false;
+        }
+        return true;
+    }
+
+    void ApiHandler::restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
-            std::string backup_path = resquest.backup_path;
-            std::string username = resquest.username;
+            if (!restore_check(apiUtil, request, response))
+                return;
+            
+            std::string backup_path = request.backup_path;
             std::string msg;
-            if (apiUtil->check_param_value("db_name", db_name, msg) == false)
+            bool backup_rt = apiUtil->restore_databaseinfo(request.username, request.db_name, backup_path, msg);
+            if (backup_rt)
             {
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
-            if (apiUtil->check_param_value("backup_path", backup_path, msg) == false)
-            {
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
-            if (Util::is_file(backup_path)) {
-                if (Util::fileSuffix(backup_path) != "zip") {
-                    response.Error(StatusParamIsIllegal, "Backup file is not zip file.");
-                    return;
-                } else if (Util::file_exist(backup_path) == false) {
-                    response.Error(StatusParamIsIllegal, "Backup file not exist.");
-                    return;
-                }
-            } else if (Util::is_dir(backup_path)) {
-                if (Util::dir_exist(backup_path) == false) {
-                    response.Error(StatusParamIsIllegal, "Backup path not exist.");
-                    return;
-                }
-            } else {
-                response.Error(StatusParamIsIllegal, "Backup path not exist.");
-                return;
-            }
-            
-            std::string opt_id;
-            gutil::IdUtil::nextUID(opt_id);
-            string remote_ip = resquest.remote_ip;
-            string operation = "restore";
-            bool async = resquest.async;
-            std::string callback = resquest.callback;
-            
-            response.opt_id = opt_id;
-            if (async)
-            {
-                cb(opt_id);
-                msg = "Operation success";
-                apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
                 response.StatusCode = 0;
-                response.StatusMsg = msg;
+                response.StatusMsg = "Database restore successfully.";
             }
             else
             {
-                bool backup_rt = apiUtil->restore_databaseinfo(username, db_name, backup_path, msg);
-                if (backup_rt)
-                {
-                    msg = "Database restore successfully.";
-                    apiUtil->write_access_log(operation, remote_ip, 0, msg, opt_id);
-                    response.StatusCode = 0;
-                    response.StatusMsg = msg;
-                }
-                else
-                {
-                    apiUtil->write_access_log(operation, remote_ip, StatusOperationFailed, msg, opt_id);
-                    response.Error(StatusOperationFailed, msg);
-                }
+                response.Error(StatusOperationFailed, msg);
             }
         }
         catch (const std::exception &e)
@@ -204,11 +204,18 @@ namespace server
             response.Error(StatusOperationFailed, error);
         }
     }
-
-    void ApiHandler::restore(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, const std::string& username, std::string& backup_path, const std::string& callback)
+    void ApiHandler::restore_async(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
     {
+        std::string opt_id = response.opt_id;
+        if (!restore_check(apiUtil, request, response))
+        {
+            apiUtil->update_access_log(response.StatusCode, response.StatusMsg, opt_id, -1, 0, 0);
+            return;
+        }
+
+        std::string backup_path = request.backup_path;
         std::string msg;
-        bool restore_rt = apiUtil->restore_databaseinfo(username, db_name, backup_path, msg);
+        bool restore_rt = apiUtil->restore_databaseinfo(request.username, request.db_name, backup_path, msg);
         nlohmann::json j = {
             {"opt_id", opt_id}
         };
@@ -226,24 +233,25 @@ namespace server
             j["StatusMsg"] = msg;
             apiUtil->update_access_log(StatusOperationFailed, msg, opt_id, -1, 0, 0);
         }
+        std::string callback = request.callback;
         if (!callback.empty())
         {
             HttpUtil::Post(callback, j.dump(), msg);
         }
     }
 
-    void ApiHandler::export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& resquest, server::MessageExportResponse& response)
+    void ApiHandler::export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& request, server::MessageExportResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string db_path = resquest.db_path;
+            std::string db_path = request.db_path;
             if (apiUtil->check_param_value("db_path", db_path, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -276,7 +284,7 @@ namespace server
                 Util::create_dirs(db_path);
             }
             std::string export_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".nt";
-            bool compress = resquest.compress;
+            bool compress = request.compress;
             SLOG_DEBUG("export_path: " << export_path << " ,compress:" << compress);
             FILE *ofp = fopen(export_path.c_str(), "w");
             db_info->getDatabase()->export_db(ofp);

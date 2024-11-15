@@ -281,7 +281,7 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		struct DBAccessLogInfo *access_log_info_ptr = new DBAccessLogInfo(ip_addr, operation);
 		rpc_task->add_callback([access_log_info_ptr](GRPCTask *task) {
 			GRPCResp *resp = task->get_resp();
-			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg);
+			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg, "", resp->success_num, resp->failed_num);
 			delete access_log_info_ptr;
 		});
 	}
@@ -1938,8 +1938,45 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 
 	server::MessageBuildRequest request_data(json_data);
 	server::MessageBuildResponse response_data; 
-	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
-	server::ApiHandler::build(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
+	if (request_data.async)
+	{
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			server::MessageBuildResponse response_data;
+			response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			if (clusterManagerPtr->isEnable())
+				server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			else
+				server::ApiHandler::build(apiUtil, request_data, response_data);
+
+			if (response_data.StatusCode == StatusOK)
+				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failed_num);
+			else
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+			std::string callback = request_data.callback;
+            if (!callback.empty())
+            {
+                std::string json_str;
+                response_data.toJsonString(json_str);
+                string res;
+                HttpUtil::Post(callback, json_str, res);
+            }
+		});
+	}
+	else
+	{
+		if (clusterManagerPtr->isEnable())
+			server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+		else
+			server::ApiHandler::build(apiUtil, request_data, response_data);
+	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -1992,15 +2029,26 @@ void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 {
 	server::MessageBackupRequest request_data(json_data);
 	server::MessageBackupResponse response_data;
-	grpc::GRPCServerTask* sub_task = task_of(response);
-	server::ApiHandler::backup(apiUtil, request_data, response_data, [request_data,sub_task](std::string opt_id)
+	if (request_data.async)
 	{
-		sub_task->add_callback([opt_id, request_data](GRPCTask *task)
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			std::string path = request_data.backup_path;
-			server::ApiHandler::backup(apiUtil, opt_id, request_data.db_name, path, request_data.backup_zip, request_data.callback);
+			server::MessageBackupResponse response_data;
+			response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			server::ApiHandler::backup_async(apiUtil, request_data, response_data);
 		});
-	});
+	}
+	else
+	{
+		server::ApiHandler::backup(apiUtil, request_data, response_data);
+	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2049,15 +2097,27 @@ void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
 {
 	server::MessageRestoreRequest request_data(json_data);
 	server::MessageRestoreResponse response_data;
-	grpc::GRPCServerTask* sub_task = task_of(response);
-	server::ApiHandler::restore(apiUtil, request_data, response_data, [request_data,sub_task](std::string opt_id)
+
+	if (request_data.async)
 	{
-		sub_task->add_callback([opt_id, request_data](GRPCTask *task)
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			std::string path = request_data.backup_path;
-			server::ApiHandler::restore(apiUtil, opt_id, request_data.db_name, request_data.username, path, request_data.callback);
+			server::MessageRestoreResponse response_data;
+			response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			server::ApiHandler::restore_async(apiUtil, request_data, response_data);
 		});
-	});
+	}
+	else
+	{
+		server::ApiHandler::restore(apiUtil, request_data, response_data);
+	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2111,8 +2171,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
+			server::MessageQueryResponse response;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
-			server::ApiHandler::query_async(apiUtil, request_data, opt_id);
+			server::ApiHandler::query_async(apiUtil, request_data, response, opt_id);
+			server::ApiHandler::query_result_notify(apiUtil, request_data, response);
 		});
 	}
 	else
@@ -2313,8 +2375,46 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchInsertRequest request_data(json_data);
 	server::MessageBatchInsertResponse response_data; 
-	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
-	server::ApiHandler::batch_insert(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
+	if (request_data.async)
+	{
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+		gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			server::MessageBatchInsertResponse response_data;
+			response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			if (clusterManagerPtr->isEnable())
+				server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			else
+				server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+
+			if (response_data.StatusCode == StatusOK)
+				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
+			else
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+			std::string callback = request_data.callback;
+			if (!callback.empty())
+			{
+				std::string json_str;
+				response_data.toJsonString(json_str);
+				string res;
+				HttpUtil::Post(callback, json_str, res);
+			}
+		});
+	}
+	else
+	{
+		if (clusterManagerPtr->isEnable())
+			server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+		else
+			server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+	}
+	
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2345,8 +2445,45 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 
 	server::MessageBatchRemoveRequest request_data(json_data);
 	server::MessageBatchRemoveResponse response_data; 
-	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
-	server::ApiHandler::batch_remove(apiUtil, clusterManagerPtr, request_data, response_data, remote_ip);
+	if (request_data.async)
+	{
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gutil::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			server::MessageBatchRemoveResponse response_data;
+			response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			if (clusterManagerPtr->isEnable())
+				server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			else
+				server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+
+			if (response_data.StatusCode == StatusOK)
+				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
+			else
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+			std::string callback = request_data.callback;
+            if (!callback.empty())
+            {
+                std::string json_str;
+                response_data.toJsonString(json_str);
+                string res;
+                HttpUtil::Post(callback, json_str, res);
+            }
+		});
+	}
+	else
+	{
+		if (clusterManagerPtr->isEnable())
+			server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+		else
+			server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);

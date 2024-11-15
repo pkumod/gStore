@@ -398,6 +398,10 @@ void GRPCResp::Json(const nlohmann::json &json)
         json.at("StatusCode").get_to(this->resp_code);
     if (json.contains("StatusMsg"))
         json.at("StatusMsg").get_to(this->resp_msg);
+    if (json.contains("success_num"))
+        json.at("success_num").get_to(this->success_num);
+    if (json.contains("failed_num"))
+        json.at("failed_num").get_to(this->failed_num);
     this->String(json.dump());
 }
 
@@ -410,6 +414,10 @@ void GRPCResp::Json(const std::string &json_str)
             json.at("StatusCode").get_to(this->resp_code);
         if (json.contains("StatusMsg"))
             json.at("StatusMsg").get_to(this->resp_msg);
+        if (json.contains("success_num"))
+            json.at("success_num").get_to(this->success_num);
+        if (json.contains("failed_num"))
+            json.at("failed_num").get_to(this->failed_num);
         this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
     }
     catch (const nlohmann::json::parse_error &e)
@@ -563,6 +571,8 @@ GRPCResp::GRPCResp(GRPCResp&& other)
     user_data = other.user_data;
     resp_code = other.resp_code;
     resp_msg = other.resp_msg;
+    success_num = other.success_num;
+    failed_num = other.failed_num;
     other.user_data = nullptr;
 }
 
@@ -573,6 +583,8 @@ GRPCResp &GRPCResp::operator=(GRPCResp&& other)
     user_data = other.user_data;
     resp_code = other.resp_code;
     resp_msg = other.resp_msg;
+    success_num = other.success_num;
+    failed_num = other.failed_num;
     other.user_data = nullptr;
     return *this;
 }

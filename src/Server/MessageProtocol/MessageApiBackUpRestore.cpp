@@ -71,8 +71,10 @@ namespace server
     {
         nlohmann::json rJson;
         toJson(rJson);
-        rJson["backupfilepath"] = this->backupfilepath;
-        rJson["opt_id"] = this->opt_id;
+        if (!this->opt_id.empty())
+            rJson["opt_id"] = this->opt_id;
+        else
+            rJson["backupfilepath"] = this->backupfilepath;
         json_str = rJson.dump();
     }
 
@@ -159,7 +161,8 @@ namespace server
     {
         nlohmann::json rJson;
         toJson(rJson);
-        rJson["opt_id"] = this->opt_id;
+        if (!this->opt_id.empty())
+            rJson["opt_id"] = this->opt_id;
         json_str = rJson.dump();
     }
 

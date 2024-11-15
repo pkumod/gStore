@@ -20,6 +20,7 @@ namespace server
     struct MessageBuildResponse : public MessageResponse
     {
         uint64_t failed_num;
+        uint32_t successNum;
         std::string opt_id;
         MessageBuildResponse();
         MessageBuildResponse(int code, std::string msg) : MessageResponse(code, msg) {}

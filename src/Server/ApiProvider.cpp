@@ -15,6 +15,71 @@ namespace server
         return false;
     }
 
+    bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response)
+    {
+        auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
+        {
+            if( apiUtil->check_upload_allow_extensions(Util::fileSuffix(filename)) == false )
+                return false;
+            return true;
+        });
+        if( code != CompressUtil::UnZipOK )
+        {
+            response.StatusMsg = "uncompress is failed error.";
+            response.StatusCode = code;
+            return false;
+        }
+        std::string file_name = Util::fileName(file);
+        size_t pos = file_name.size() - Util::fileSuffix(file).size() - 1;
+        unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+        Util::create_dirs(unz_dir_path);
+        CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+        code = upfile.unCompress();
+        if (code != CompressUtil::UnZipOK)
+        {
+            Util::remove_path(unz_dir_path);
+            response.StatusMsg = "uncompress is failed error.";
+            response.StatusCode = code;
+            return false;
+        }
+        upfile.getFileList(nt_files, "");
+
+        return true;
+    }
+
+    bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response, std::string& max_file)
+    {
+        auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
+        {
+            if( apiUtil->check_upload_allow_extensions(Util::fileSuffix(filename)) == false )
+                return false;
+            return true;
+        });
+        if( code != CompressUtil::UnZipOK )
+        {
+            response.StatusMsg = "uncompress is failed error.";
+            response.StatusCode = code;
+            return false;
+        }
+        std::string file_name = Util::fileName(file);
+        size_t pos = file_name.size() - Util::fileSuffix(file).size() - 1;
+        unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+        Util::create_dirs(unz_dir_path);
+        CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+        code = upfile.unCompress();
+        if (code != CompressUtil::UnZipOK)
+        {
+            Util::remove_path(unz_dir_path);
+            response.StatusMsg = "uncompress is failed error.";
+            response.StatusCode = code;
+            return false;
+        }
+        max_file = upfile.getMaxFilePath();
+        upfile.getFileList(nt_files, max_file);
+        
+        return true;
+    }
+
     void ApiHandler::load(shared_ptr<APIUtil>& apiUtil, const MessageLoadRequest& resquest, MessageLoadResponse& response)
     {
         try

@@ -1828,7 +1828,7 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     logPtr->setTotalPage(total_page);
 }
 
-void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, const string &optId)
+void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, const string &optId, unsigned num, unsigned fail_num)
 {
     if (access_log_mode == "0")
     {
@@ -1851,6 +1851,8 @@ void APIUtil::write_access_log(const string &operation, const string &remoteIP, 
     dbAccessLogInfo.code = statusCode;
     dbAccessLogInfo.msg = status_msg;
     dbAccessLogInfo.createtime = createTime;
+    dbAccessLogInfo.num = num;
+    dbAccessLogInfo.fail_num = fail_num;
     if (!optId.empty())
     {
         dbAccessLogInfo.opt_id = optId;

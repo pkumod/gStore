@@ -28,15 +28,15 @@ using namespace cluster;
 namespace server
 {
     typedef std::function<void(struct DBQueryLogInfo*)> query_call;
-    typedef std::function<void(std::string)> backup_call;
-    typedef std::function<void(std::string)> restore_call;
     class ApiHandler
     {
         private:
-        static void query_result_notify(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response);
+        static bool uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response);
+        static bool uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response, std::string& max_file);
         public:
         ApiHandler(){};
         ~ApiHandler(){};
+        
 
         static bool stringIsTrue(std::string value);
 
@@ -44,14 +44,15 @@ namespace server
         static void monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response);
         
         // update api
-        static void build(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBuildRequest& request, MessageBuildResponse& response, const string& remote_ip);
-        static void batch_insert(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, const string& remote_ip);
-        static void batch_remove(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response, const string& remote_ip);
         static void drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response);
-        static void query_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageQueryRequest& request, MessageQueryResponse& response, bool &is_update, const query_call& cb);
-        static bool query_async(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, const std::string& opt_id);
-        static bool query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb);
         static void checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& request, server::MessageResponse& response);
+
+        // query
+        static bool query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& resquest, MessageQueryResponse& response);
+        static void query_result_notify(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response);
+        static void query_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageQueryRequest& request, MessageQueryResponse& response, bool &is_update, const query_call& cb);
+        static bool query_async(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const std::string& opt_id);
+        static bool query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb);
 
         // user manger api
         static void show_users(shared_ptr<APIUtil>& apiUtil, server::MessageShowUserResponse& response);
@@ -81,13 +82,35 @@ namespace server
         static void access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& request, server::MessageAccessLogDateResponse& response);
         static void checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& request, server::MessageCheckOperationStateResponse& response);
 
-        // backup restore export
-        static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, const backup_call& cb);
-        static void backup(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, std::string& backup_path, bool compress, const std::string& callback);
-        static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response);
-        static void restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response, const restore_call& cb);
-        static void restore(shared_ptr<APIUtil>& apiUtil, const std::string& opt_id, const std::string& db_name, const std::string& username, std::string& backup_path, const std::string& callback);
+        // export
         static void export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& request, server::MessageExportResponse& response);
+
+        // backup
+        static bool backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path);
+        static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
+        static void backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
+        static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response);
+
+        // restore
+        static bool restore_check(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
+        static void restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
+        static void restore_async(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
+
+        // build
+        static bool build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response);
+        static void build(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response);
+        static void build_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBuildRequest& request, MessageBuildResponse& response);
+        // static void build(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBuildRequest& request, MessageBuildResponse& response, const string& remote_ip);
+
+        // batchInsert
+        static bool batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, bool& is_file);
+        static void batch_insert(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response);
+        static void batch_insert_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response);
+
+        // batchRemove
+        static bool batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);
+        static void batch_remove(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);
+        static void batch_remove_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);
 
         // cluster api
         static void cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request);

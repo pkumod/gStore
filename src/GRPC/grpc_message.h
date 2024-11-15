@@ -201,6 +201,8 @@ public:
     void *user_data;
     int resp_code;
     std::string resp_msg;
+    unsigned success_num;
+    unsigned failed_num;
 };
 
 class GRPCUtil

@@ -49,6 +49,7 @@ namespace server
 
     MessageBuildResponse::MessageBuildResponse()
     {
+        this->successNum = 0;
         this->failed_num = 0;
         this->opt_id = "";
     }
@@ -69,8 +70,13 @@ namespace server
     {
         nlohmann::json json;
         toJson(json);
-        json["failed_num"] = this->failed_num;
-        json["opt_id"] = this->opt_id;
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
+        else
+        {
+            json["failed_num"] = this->failed_num;
+            json["success_num"] = this->successNum;
+        }
         json_str = json.dump();
     }
 
@@ -353,9 +359,13 @@ namespace server
     {
         nlohmann::json json;
         toJson(json);
-        json["success_num"] = this->successNum;
-        json["failed_num"] = this->failedNum;
-        json["opt_id"] = this->opt_id;
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
+        else
+        {
+            json["success_num"] = this->successNum;
+            json["failed_num"] = this->failedNum;
+        }
         json_str = json.dump();
     }
 
@@ -424,9 +434,13 @@ namespace server
     {
         nlohmann::json json;
         toJson(json);
-        json["success_num"] = this->successNum;
-        json["failed_num"] = this->failedNum;
-        json["opt_id"] = this->opt_id;
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
+        else
+        {
+            json["success_num"] = this->successNum;
+            json["failed_num"] = this->failedNum;
+        }
         json_str = json.dump();
     }
 
