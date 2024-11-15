@@ -19,7 +19,7 @@ namespace server
         std::vector<PFNInfo> list;
         MessageFunQueryResponse() {}
         MessageFunQueryResponse(int code, std::string msg) : MessageResponse(code, msg) {}
-        MessageFunQueryResponse(const std::string & body): MessageResponse(body){}
+        MessageFunQueryResponse(const std::string & body);
         void toJsonString(std::string& json_str) override;
     };
 
