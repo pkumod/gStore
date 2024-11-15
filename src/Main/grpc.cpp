@@ -243,16 +243,16 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	}
 	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
 	// check license
-	if (operation != "login" && operation != "check" && operation != "testConnect" )
-	{
-		string msg;
-		if (check_license && apiUtil->check_license(msg) == false)
-		{
-			SLOG_INFO("License is invalid: " << msg);
-			response->Error(server::StatusCode::StatusLicenseInvalid, msg);
-			return false;
-		}
-	}
+	// if (operation != "login" && operation != "check" && operation != "testConnect" )
+	// {
+	// 	string msg;
+	// 	if (check_license && apiUtil->check_license(msg) == false)
+	// 	{
+	// 		SLOG_INFO("License is invalid: " << msg);
+	// 		response->Error(server::StatusCode::StatusLicenseInvalid, msg);
+	// 		return false;
+	// 	}
+	// }
 	// add remote_ip param
 	json_data["remote_ip"] = ip_addr;
 	if (operation.empty()) 
