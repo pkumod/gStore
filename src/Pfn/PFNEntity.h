@@ -110,7 +110,7 @@ public:
 
     bool empty()
     {
-        return funName.empty() || funArgs.empty() || funBody.empty() || funReturn.empty();
+        return funName.empty() && funArgs.empty() && funBody.empty() && funReturn.empty();
     }
 };
 

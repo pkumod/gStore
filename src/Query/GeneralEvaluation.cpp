@@ -2186,7 +2186,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						ss << str;
 					}
 					ss << "\"";
-					ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+					new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = ss.str();
 				}
 			}
 			// Exclusive with the if branch above
@@ -2853,7 +2853,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								break;
 						}
 						ss << "]\"";
-						ss >> new_result0.result.back().str[proj2new[0] - new_result0_id_cols];
+						new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = ss.str();
 					}
 					else	// Path query
 					{
@@ -4142,7 +4142,7 @@ std::map<std::string, std::string> GeneralEvaluation::dynamicFunction(const std:
 				if (doc.contains("funArgs"))
 					doc.at("funArgs").get_to(fun_args);
 				if (doc.contains("funReturn"))
-					doc.at("contains").get_to(fun_return);
+					doc.at("funReturn").get_to(fun_return);
 				if (doc.contains("lastTime"))
 				{
 					doc.at("lastTime").get_to(last_time);

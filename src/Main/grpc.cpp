@@ -2797,6 +2797,7 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &
 {
 	server::MessageFunQueryRequest request_data;
 	server::MessageFunQueryResponse response_data;
+	request_data.username = json_data["username"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
 	server::ApiHandler::funquery(apiUtil, pfnUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
@@ -2833,6 +2834,7 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &j
 {
 	server::MessageFunCudbRequest request_data;
 	server::MessageFunCudbResponse response_data;
+	request_data.username = json_data["username"];
 	request_data.type = json_data["type"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
 	server::ApiHandler::funcudb(apiUtil, pfnUtil, request_data, response_data);
@@ -2869,6 +2871,7 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json 
 {
 	server::MessageFunReviewRequest request_data;
 	server::MessageFunReviewResponse response_data; 
+	request_data.username = json_data["username"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
 	server::ApiHandler::funreview(apiUtil, pfnUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
