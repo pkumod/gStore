@@ -72,8 +72,10 @@ namespace server
             try
             {
                 json = nlohmann::json::parse(body.c_str());
-                json.at("StatusCode").get_to(this->StatusCode);
-                json.at("StatusMsg").get_to(this->StatusMsg);
+                if (json.contains("StatusCode"))
+                    json.at("StatusCode").get_to(this->StatusCode);
+                if (json.contains("StatusMsg"))
+                    json.at("StatusMsg").get_to(this->StatusMsg);
             }
             catch(const nlohmann::json::exception& e)
             {

@@ -541,11 +541,12 @@ server::MessageLicenseResponse APIConnector::importLicense(const std::string& ur
 	std::string body_str;
 	std::map<std::string, std::string> params;
 	params["operation"] = request.op;
-	params["username"] = "root";
+	params["username"] = GlobalTypedef::root_uname();
 	params["remote_ip"] = request.remote_ip;
-	params["password"] = "123456";
+	params["password"] = "";
 	params["inner"] = inner ? "true" : "false";
 	int status = WFHttpUtil::PostFile(url + "/lic/import", {}, -1, filepath, params, body_str);
+	std::cout << body_str << endl;
 	return response_parser<server::MessageLicenseResponse>(status, body_str);
 }
 

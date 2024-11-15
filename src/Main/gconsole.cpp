@@ -202,6 +202,14 @@ COMMAND commands[] =
 		{"licenseinfo", licenseinfo_handler, "show your license information", "licenseinfo", 0},
 		{"removelicense", removelicense_handler, "remove your current license", "removelicense", 0},
 		
+
+		// other
+		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
+		{"help", help_handler, "Display help msg. Enter 'help;' see more about usage.", "help [edit/usage/<command>];", 0},
+		{"?", help_handler, "Synonym for \"help\".", "help [edit/usage/<command>];", 0},
+		// {"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
+		{"version", version_handler, "Display  core version.", "version;", 0},
+
 		// linux shell cmd
 		{"pwd", pwd_handler, "Print name of current/working directory.", "pwd;", 0},
 		{"clear", clear_handler, "Clear screen.", "clear;", 0},
@@ -1609,7 +1617,9 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
-	server::MessageBuildRequest build_request(db_name, db_path);	
+	server::MessageBuildRequest build_request(db_name, db_path);
+	build_request.username = root_username;
+	build_request.password = root_password;	
 	server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 	if (!build_response.success())
 	{
@@ -1641,6 +1651,8 @@ int drop_handler(const vector<string> &args)
 		return -1;
 	}
 	server::MessageDropRequest drop_request(db_name, "0");
+	drop_request.username = root_username;
+	drop_request.password = root_password;
 	server::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
 	if (!drop_response.success())
 	{
@@ -2703,7 +2715,7 @@ int showreason_handler(const vector<string> &args)
 	// {
 	// 	cout << "SHOW REASON FAILED!" << endl;
 	// }
-	cout << "show reason" + args[0] + "successfully!" << endl;
+	cout << "show reason " + args[0] + " successfully!" << endl;
 	return response.success();
 }
 
@@ -2772,7 +2784,7 @@ int funcudb_handler(int type, const std::string& arg)
 		file.close();
 		funInfo = PFNInfo(json);
 	}
-	else if(type == 3)
+	else if(type == 3 || type == 4)
 	{
 		funInfo.funName = arg;
 	}
@@ -2782,6 +2794,8 @@ int funcudb_handler(int type, const std::string& arg)
 		return -1;
 	}
 	server::MessageFunCudbRequest funcudb_request(to_string(type));
+	funcudb_request.username = root_username;
+	funcudb_request.password = root_password;
 	funcudb_request.funInfo = funInfo;
 	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
@@ -2840,7 +2854,7 @@ int fundelete_handler(const vector<string>& args)
 	int ret = funcudb_handler(3, args[0]);
 	if (ret == -1)
 	{
-		cout << "delete failed to custom function" << endl;
+		cout << "failed to delete custom function" << endl;
 		return -1;
 	}
 	std::cout << "delete custom function successfully!" << endl;	
@@ -3191,7 +3205,7 @@ int licenseinfo_handler(const vector<string>& args)
 									response.cpu, response.mac, response.startdate, response.enddate, 
 									response.company, response.type, response.desc}};
 	Util::printConsole(headers, rows);
-	cout << response.StatusMsg << endl;
+	cout << "show license successfully!" << endl;
 	return 0;
 }
 

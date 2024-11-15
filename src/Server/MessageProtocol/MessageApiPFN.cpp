@@ -23,6 +23,17 @@ namespace server
         json_data["funInfo"] = funInfo;
         json_str = json_data.dump();  
     }
+    MessageFunQueryResponse::MessageFunQueryResponse(const std::string & body): MessageResponse(body)
+    {
+        if (json.contains("list"))
+        {            
+            for (const nlohmann::json& pfn_json : json["list"])
+            {
+                PFNInfo pfnInfo(pfn_json);
+                list.push_back(std::move(pfnInfo));
+            }
+        }
+    }
 
     void MessageFunQueryResponse::toJsonString(std::string& json_str)
     {
