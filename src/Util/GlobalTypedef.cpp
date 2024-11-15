@@ -1,11 +1,11 @@
 #include "GlobalTypedef.h"
 
-string GlobalTypedef::product_name = "TopGraph图数据库";
-string GlobalTypedef::product_version = "1.0";
-string GlobalTypedef::product_website = "https://www.topgraph.cn";
+string GlobalTypedef::product_name = "gStore";
+string GlobalTypedef::product_version = "1.4";
+string GlobalTypedef::product_website = "https://www.gstore.cn";
 string GlobalTypedef::tmp_path = ".tmp/";
 string GlobalTypedef::debug_path = ".tmp/";
-string GlobalTypedef::pid_path = "./conf/topgraph.pid";
+string GlobalTypedef::pid_path = "./conf/gstore.pid";
 string GlobalTypedef::profile = "./conf/conf.ini";
 string GlobalTypedef::initfile = "./conf/init.lock";
 string GlobalTypedef::system_db = "system";
