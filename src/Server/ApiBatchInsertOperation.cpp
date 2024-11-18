@@ -104,7 +104,12 @@ namespace server
             // exclude Info line
             parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
             // save data and unlock
-            db_info->getDatabase()->save();
+            if (!db_info->getDatabase()->save())
+            {
+                apiUtil->unlock_databaseinfo(db_info);
+                response.Error(StatusOperationFailed, "disk or memory not enough");
+                return;
+            }
             apiUtil->unlock_databaseinfo(db_info);
 
             response.StatusCode = StatusOK;
@@ -195,7 +200,12 @@ namespace server
             // exclude Info line
             parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
             // save data and unlock
-            db_info->getDatabase()->save();
+            if (!db_info->getDatabase()->save())
+            {
+                apiUtil->unlock_databaseinfo(db_info);
+                response.Error(StatusOperationFailed, "disk or memory not enough");
+                return;
+            }
             apiUtil->unlock_databaseinfo(db_info);
             clusterlog->close();
 

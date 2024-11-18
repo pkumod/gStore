@@ -121,7 +121,9 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "system_username", "system");
     Util::setGlobalConfig(ini_parser, "system", "pfn_base_path", "./pfn/");
     Util::setGlobalConfig(ini_parser, "system", "licensetype", "opensource");
-    Util::setGlobalConfig(ini_parser, "system", "min_memory", "1");
+    Util::setGlobalConfig(ini_parser, "system", "min_memory", "512");
+    Util::setGlobalConfig(ini_parser, "system", "min_million_disk", "50");
+    Util::setGlobalConfig(ini_parser, "system", "min_million_memory", "20");
     // server
     Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
     Util::setGlobalConfig(ini_parser, "server", "port", "9000");

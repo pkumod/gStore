@@ -192,4 +192,44 @@ namespace gutil {
         // cnvert VmRSS from KB to MB
         return vmrss >> 10;
     }
+
+    bool ResourceUtil::IsEnoughMemory(unsigned triple_num)
+    {
+        // uint mb
+        unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
+        unsigned million_need_memory = atoi(Util::getConfigureValue("min_million_memory").c_str());
+        int memory_free = memoryLeft();
+        if (memory_free <= need_count*million_need_memory)
+        {
+            SLOG_WARN("Memory is not enough, need at least memory:" << need_count*million_need_memory << "mb" << " ,current:" << memory_free << "mb");
+            return false;
+        }
+        return true;
+    }
+
+    bool ResourceUtil::IsEnoughMemoryMb(const size_t& bytes)
+    {
+        int memory_free = memoryLeft();
+        int need_memory = bytes >> 20;
+        if (memory_free <= need_memory) {
+            SLOG_WARN("Memory is not enough, need at least memory:" << need_memory << "mb" << " ,current:" << memory_free << "mb");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    bool ResourceUtil::IsEnoughDisk(unsigned triple_num)
+    {
+        // uint mb
+        unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
+        unsigned million_need_disk = atoi(Util::getConfigureValue("min_million_disk").c_str());
+        int disk_free = get_disk_free();
+        if (disk_free <= need_count*million_need_disk)
+        {
+            SLOG_WARN("Disk is not enough, need at least disk:" << need_count*million_need_disk << "mb" << " ,disk:" << disk_free << "db");
+            return false;
+        }
+        return true;
+    }
 }

@@ -109,7 +109,11 @@ namespace server
                         current_database->batch_insert(rdf_zip, false, nullptr);
                     }
                     nt_file_num += nt_files.size();
-                    current_database->save();
+                    if (!current_database->save())
+					{
+                        response.Error(StatusOperationFailed, "disk or memory is not enough");
+                        return;
+                    }
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }
@@ -259,6 +263,11 @@ namespace server
                     }
                     nt_file_num += nt_files.size();
                     current_database->save();
+                    if (!current_database->save())
+					{
+                        response.Error(StatusOperationFailed, "disk or memory is not enough");
+                        return;
+                    }
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }

@@ -99,7 +99,13 @@ namespace server
                 return;
             }
             txn_m->Checkpoint();
-            db_info->getDatabase()->save();
+            bool is_save = db_info->getDatabase()->save();
+            if (!is_save)
+            {
+                apiUtil->unlock_databaseinfo(db_info);
+                response.Error(StatusOperationFailed, "disk or memory not enough.");
+                return;
+            }
             apiUtil->unlock_databaseinfo(db_info);
             response.StatusMsg = "Database saved successfully.";
         }

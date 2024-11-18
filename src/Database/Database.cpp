@@ -57,6 +57,7 @@ Database::Database()
 	this->query_cache = new QueryCache();
 
 	this->if_loaded = false;
+	this->triple_update_num = 0;
 
 	// this->trie = NULL;
 
@@ -101,6 +102,7 @@ Database::Database(string _name)
 	this->triples_num = 0;
 
 	this->if_loaded = false;
+	this->triple_update_num = 0;
 
 	this->join = NULL;
 	this->pre2num = NULL;
@@ -1434,6 +1436,8 @@ bool Database::unload()
 {
 	// TODO: do we need to update the pre2num if update queries exist??
 	// or we just neglect this, that is ok because pre2num is just used to count
+	if (!gutil::ResourceUtil::IsEnoughDisk(this->triple_update_num))
+		return false;
 	delete[] this->pre2num;
 	this->pre2num = NULL;
 	delete[] this->pre2sub;
@@ -1465,6 +1469,7 @@ bool Database::unload()
 
 	this->if_loaded = false;
 	this->clear_update_log();
+	this->triple_update_num = 0;
 
 	return true;
 }
@@ -1509,12 +1514,15 @@ bool Database::save()
 {
 	if (if_loaded)
 	{
+		if (!gutil::ResourceUtil::IsEnoughDisk(this->triple_update_num))
+			return false;
 		this->kvstore->flush();
 		this->saveDBInfoFile();
 		this->saveIDinfo();
 
 		this->stringindex->flush();
 		this->clear_update_log();
+		this->triple_update_num = 0;
 	}
 
 	return true;
@@ -1766,6 +1774,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		success_num = 0;
 		TripleWithObjType *update_triple = NULL;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
+		unsigned update_success_triple_num = 0;
 		/*if (trie == NULL)
 		{
 			trie = new Trie;
@@ -1782,6 +1791,15 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			GroupPattern &update_pattern = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? general_evaluation.getQueryTree().getInsertPatterns() : general_evaluation.getQueryTree().getDeletePatterns();
 
 			update_triple_num = update_pattern.sub_group_pattern.size();
+			TYPE_TRIPLE_NUM check_triple_num = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? update_triple_num : (update_triple_num / 10);
+			if (!gutil::ResourceUtil::IsEnoughMemory(check_triple_num))
+			{
+				throw runtime_error("Not enough memory for batch operation");
+			}
+			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data && !gutil::ResourceUtil::IsEnoughDisk(check_triple_num)) 
+			{
+				throw runtime_error("Not enough disk space for batch insertion");
+			}
 			update_triple = new TripleWithObjType[update_triple_num];
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
@@ -1812,16 +1830,16 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data)
 			{
 				if (txn)
-					success_num = insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
+					update_success_triple_num = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 			else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Data)
 			{
 				if (txn)
-					success_num = remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
+					update_success_triple_num = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 		}
 		else if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Delete_Where || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause ||
@@ -1838,9 +1856,9 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
 				if (txn)
-					success_num = remove(update_triple, update_triple_num, false, txn);
+					update_success_triple_num  = remove(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
+					update_success_triple_num  = batch_remove(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Clause || general_evaluation.getQueryTree().getUpdateType() == QueryTree::Modify_Clause)
 			{
@@ -1850,12 +1868,22 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 				// update_triple[i] = trie->Compress(update_triple[i], Trie::QUERYMODE);
 				//}
 				if (txn)
-					success_num = insert(update_triple, update_triple_num, false, txn);
+					update_success_triple_num  = insert(update_triple, update_triple_num, false, txn);
 				else
-					success_num = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
+					update_success_triple_num  = batch_insert(update_triple, update_triple_num, false, txn, cluster_log);
 			}
 		}
 
+		if (update_success_triple_num == UINT32_MAX)
+		{
+			if (txn == nullptr)
+				pthread_rwlock_unlock(&(this->update_lock));
+			general_evaluation.releaseResult();
+			delete[] update_triple;
+			throw runtime_error("batch insert failed.");
+		}
+
+		success_num = update_success_triple_num;
 		general_evaluation.releaseResult();
 		delete[] update_triple;
 
@@ -2057,6 +2085,7 @@ bool Database::build(const string &_rdf_file, shared_ptr<ofstream> cluster_log)
 	this->saveDBInfoFile();
 	this->writeIDinfo();
 	this->initIDinfo();
+	addTripleUpdateNum(this->triples_num);
 	return true;
 }
 
@@ -3150,8 +3179,8 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		_is_new_sub = true;
 		_sub_id = this->allocEntityID();
 		this->sub_num++;
-		(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
-		(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
+		if(!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+			return false;
 
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
@@ -3165,8 +3194,10 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 	{
 		_is_new_pre = true;
 		_pre_id = this->allocPredicateID();
-		(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id);
-		(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate);
+		if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id))
+			return false;
+		if (!(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+			return false;
 
 		if (_predicates != NULL)
 			_predicates->push_back(_pre_id);
@@ -3186,8 +3217,10 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		{
 			_is_new_obj = true;
 			_obj_id = this->allocEntityID();
-			(this->kvstore)->setIDByEntity(_triple.object, _obj_id);
-			(this->kvstore)->setEntityByID(_obj_id, _triple.object);
+			if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id))
+				return false;
+			if (!(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+				return false;
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -3217,8 +3250,10 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		{
 			_is_new_obj = true;
 			_obj_id = this->allocLiteralID();
-			(this->kvstore)->setIDByLiteral(_triple.object, _obj_id);
-			(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
+			if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id))
+				return false;
+			if (!(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+				return false;
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -3695,9 +3730,23 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	bool flag = _is_restore || this->load();
 	if (!flag)
 	{
-		return -1;
+		throw runtime_error("Unable to load database");
 	}
 	SLOG_CORE("finish loading");
+
+	int triple_num = Util::count_lines(_rdf_file);
+	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
+	{
+		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
+	}
+	else
+	{
+		triple_num = triple_num * 3;
+	}
+	if (!gutil::ResourceUtil::IsEnoughMemory(triple_num*3))
+	{
+		throw runtime_error("Not enough memory for batch insertion");
+	}
 
 	long tv_load = gutil::TimeUtil::timestamp();
 
@@ -3708,7 +3757,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		SLOG_ERROR("fail to open : " << _rdf_file << ".@insert_test");
 		// exit(0);
-		return -1;
+		throw runtime_error("fail to open " + _rdf_file);
 	}
 
 	// NOTICE+WARN:we can not load all triples into memory all at once!!!
@@ -3727,6 +3776,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
 	// TYPE_TRIPLE_NUM triple_num = 0;
+	unsigned insert_num = 0;
 	while (true)
 	{
 		int parse_triple_num = 0;
@@ -3736,7 +3786,14 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 			break;
 		}
 		long tv_begin = gutil::TimeUtil::timestamp();
-		success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
+		insert_num = this->batch_insert(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
+		if (insert_num == UINT32_MAX)
+		{
+			delete[] triple_array;
+			triple_array = NULL;
+			throw runtime_error("batch insert failed: probably out of memory");
+		}
+		success_num += insert_num;
 		long tv_end = gutil::TimeUtil::timestamp();
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
@@ -3761,6 +3818,20 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		return -1;
 	}
 	SLOG_CORE("finish loading");
+
+	int triple_num = Util::count_lines(_rdf_file);
+	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
+	{
+		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
+	}
+	else
+	{
+		triple_num = triple_num * 3;
+	}
+	if (!gutil::ResourceUtil::IsEnoughMemory(triple_num*3))
+	{
+		throw runtime_error("Not enough memory for batch deletion");
+	}
 
 	long tv_load = gutil::TimeUtil::timestamp();
 	unsigned success_num = 0;
@@ -3842,8 +3913,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		{
 			_sub_id = this->allocEntityID();
 			update_num_subject = update_num_subject + 1;
-			(this->kvstore)->setIDByEntity(_triple.subject, _sub_id);
-			(this->kvstore)->setEntityByID(_sub_id, _triple.subject);
+			if (!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+				return UINT32_MAX;
 			vertices.push_back(_sub_id);
 			sub_lists.insert(_sub_id);
 		}
@@ -3857,8 +3928,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		if (_pre_id == INVALID_PREDICATE_ID)
 		{
 			_pre_id = this->allocPredicateID();
-			(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id);
-			(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate);
+			if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id) || !(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+				return UINT32_MAX;
 			predicates.push_back(_pre_id);
 		}
 
@@ -3870,8 +3941,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocEntityID();
-				(this->kvstore)->setIDByEntity(_triple.object, _obj_id);
-				(this->kvstore)->setEntityByID(_obj_id, _triple.object);
+				if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id) || !(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+					return UINT32_MAX;
 				vertices.push_back(_obj_id);
 				obj_lists.insert(_obj_id);
 			}
@@ -3882,8 +3953,8 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocLiteralID();
-				(this->kvstore)->setIDByLiteral(_triple.object, _obj_id);
-				(this->kvstore)->setLiteralByID(_obj_id, _triple.object);
+				if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id) || !(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+					return UINT32_MAX;
 				vertices.push_back(_obj_id);
 			}
 		}
@@ -3965,6 +4036,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 	this->stringindex->change(predicates, *this->kvstore, false);
 	
 	this->kvstore->setCSRUpdate(true);
+	this->addTripleUpdateNum(update_num_s);
 
 	return update_num_s;
 }

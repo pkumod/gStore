@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GlobalTypedef.h"
+#include "../Util/Util.h"
 
 namespace gutil
 {
@@ -19,5 +20,9 @@ namespace gutil
         static uint64_t get_disk_free();
         static float get_app_cpu_usage(int pid);
         static float get_app_mem_usage(int pid);
+        // alloctate memory
+        static bool IsEnoughMemory(unsigned triple_num);
+        static bool IsEnoughMemoryMb(const size_t& bytes);
+        static bool IsEnoughDisk(unsigned triple_num);
     };
 }
