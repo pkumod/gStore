@@ -77,7 +77,7 @@ void VarDescriptor::update_select_status(bool selected) {
 	this->selected_ = selected;
 }
 
-void VarDescriptor::print(KVstore *kvstore) {
+void VarDescriptor::print(std::shared_ptr<KVstore> kvstore) {
 
 	cout << "var: " << var_name_ << " , id is " << id_ << ", var type: " << (var_type_ == VarType::Entity ? "Entity" : "Predicate") << endl;
 	cout << "degree = " << degree_ << ", selected: " << (selected_ ? "true" : "false") << endl;
@@ -308,7 +308,7 @@ void BGPQuery::ScanAllVar(const vector<string>& _query_var) {
 
 }
 
-bool BGPQuery::build_edge_info(KVstore *_kvstore) {
+bool BGPQuery::build_edge_info(std::shared_ptr<KVstore> _kvstore) {
 
 	bool legal_bgp = true;
 
@@ -396,7 +396,7 @@ void BGPQuery::count_statistics_num() {
  * @param _query_var the
  * @return
  */
-bool BGPQuery::EncodeBGPQuery(KVstore *_kvstore, const vector<string> &_query_var, bool distinct) {
+bool BGPQuery::EncodeBGPQuery(std::shared_ptr<KVstore> _kvstore, const vector<string> &_query_var, bool distinct) {
 
 
 	this->distinct_query = distinct;
@@ -524,7 +524,7 @@ void BGPQuery::ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>
 
 
 // this function is invoked after adding all triples of small BGP
-bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
+bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, std::shared_ptr<KVstore> _kvstore,
 								   const vector<string> &_query_var, bool distinct) {
 
 	this->distinct_query = distinct;
@@ -543,7 +543,7 @@ bool BGPQuery::EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore *_kvstore,
 
 
 
-bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *_kvstore) {
+bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, std::shared_ptr<KVstore> _kvstore) {
 	for(unsigned i = 0; i < triple_vt.size(); ++i) {
 		string s_string = triple_vt[i].subject;
 		string p_string = triple_vt[i].predicate;
@@ -692,7 +692,7 @@ bool BGPQuery::is_var_satellite_by_id(unsigned int id) {
  * Use VarDescriptor::print
  * @param kvstore kvstore's pointer
  */
-void BGPQuery::print(KVstore *kvstore) {
+void BGPQuery::print(std::shared_ptr<KVstore> kvstore) {
 	cout << (this->distinct_query ? "DISTINCT BGP" : "NOT DISTINCT BGP") << endl;
 	cout << "this BGP has " << var_vector.size() << " vars, ie. total_var_num = " << this->total_var_num << ", "
 			<< "triples num = " << triple_vt.size() << endl;

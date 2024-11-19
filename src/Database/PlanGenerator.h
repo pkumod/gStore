@@ -27,7 +27,7 @@ enum class BGPQueryStrategy{
 class PlanGenerator {
 
 private:
-	KVstore *kvstore;
+	std::shared_ptr<KVstore> kvstore;
 	BGPQuery *bgpquery;
 	IDCachesSharePtr & id_caches;
 	TYPE_TRIPLE_NUM triples_num;
@@ -75,7 +75,7 @@ private:
   static const unsigned HEURISTIC_CANDIDATE_MAX;
 
 public:
-	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
+	PlanGenerator(std::shared_ptr<KVstore> kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
 
@@ -140,7 +140,7 @@ public:
 	PlanTree* GetSpecialOneTriplePlan();
 
 
-	static double EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID  pre_id, bool pre_constant, KVstore *kvstore,
+	static double EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID  pre_id, bool pre_constant, std::shared_ptr<KVstore> kvstore,
 											 shared_ptr<IDList> &s_cache, shared_ptr<IDList> &o_cache);
 
 	static void GetIdCacheSample(shared_ptr<IDList> &so_cache, vector<unsigned> &so_sample_cache);

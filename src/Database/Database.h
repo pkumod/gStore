@@ -39,7 +39,6 @@ public:
 	unsigned triple_update_num;
 	Database();
 	Database(std::string _name);
-	void release(FILE *fp0);
 	~Database();
 
 	bool save();
@@ -99,7 +98,7 @@ public:
 	// id tuples file
 	string getIDTuplesFile();
 
-	KVstore *getKVstore();
+	std::shared_ptr<KVstore> getKVstore();
 	StringIndex *getStringIndex();
 	QueryCache *getQueryCache();
 	TYPE_TRIPLE_NUM *getpre2num();
@@ -152,7 +151,7 @@ private:
 	//for umap
 	mutex umap_lock;
 
-	KVstore *kvstore;
+	std::shared_ptr<KVstore> kvstore;
 	StringIndex *stringindex;
 	Join *join;
 

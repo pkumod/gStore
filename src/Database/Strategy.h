@@ -26,18 +26,18 @@ public:
 	Strategy();
 	    	// if there exists a variable with limited matches in the query, then skip the filter of other
 	    	// variables as soon as possible
-	Strategy(KVstore*, TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
+	Strategy(std::shared_ptr<KVstore> , TYPE_TRIPLE_NUM*, TYPE_TRIPLE_NUM*,TYPE_TRIPLE_NUM*, TYPE_PREDICATE_ID, 
 		TYPE_ENTITY_LITERAL_ID,TYPE_ENTITY_LITERAL_ID,bool, shared_ptr<Transaction> _txn = nullptr);
 	~Strategy();
 	//select efficient strategy to do the sparql query
 	bool handle(SPARQLquery&);
-	bool pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num,
+	bool pre_handler(BasicQuery * basic_query, std::shared_ptr<KVstore>  kvstore, TYPE_TRIPLE_NUM* pre2num,
 		TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool* dealed_triple);
 
 private:
 	int method;
 	bool isDistinct;
-	KVstore* kvstore;
+	std::shared_ptr<KVstore>  kvstore;
 	TYPE_TRIPLE_NUM* pre2num;
 	TYPE_TRIPLE_NUM* pre2sub;
 	TYPE_TRIPLE_NUM* pre2obj;

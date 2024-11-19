@@ -376,7 +376,7 @@ BasicQuery::updateObjSig(int _obj_var_id, TYPE_PREDICATE_ID _pre_id, int _line_i
  * @return
  */
 bool
-BasicQuery::encodeBasicQuery(KVstore* _p_kvstore, const vector<string>& _query_var)
+BasicQuery::encodeBasicQuery(std::shared_ptr<KVstore>  _p_kvstore, const vector<string>& _query_var)
 {
 	//WARN:?p is ok to exist in both s/o or p position
 	//TODO:return only the entity ID, not the predicate ID?

@@ -248,7 +248,7 @@ std::string EdgeConstantInfo::toString() {
   return ss.str();
 }
 
-string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info)
+string EdgeToString(std::shared_ptr<KVstore> kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info)
 {
   stringstream ss;
   ss<< edge_constant_info.toString() << "\n\t \t ";

@@ -32,7 +32,7 @@ const unsigned PlanGenerator::PARAM_SIZE = 1000000;
 const unsigned PlanGenerator::PARAM_PRE = 10000;
 const unsigned PlanGenerator::HEURISTIC_CANDIDATE_MAX = 100;
 
-PlanGenerator::PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr &id_caches_,
+PlanGenerator::PlanGenerator(std::shared_ptr<KVstore> kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr &id_caches_,
 							 TYPE_TRIPLE_NUM triples_num_, TYPE_PREDICATE_ID limitID_predicate_,
 							 TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 							 TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_):
@@ -1401,7 +1401,7 @@ void PlanGenerator::GetIdCacheSample(shared_ptr<IDList> &so_cache, vector<unsign
 	}
 }
 
-double PlanGenerator::EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID pre_id, bool pre_constant, KVstore *kvstore,
+double PlanGenerator::EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID pre_id, bool pre_constant, std::shared_ptr<KVstore> kvstore,
 												 shared_ptr<IDList> &s_cache, shared_ptr<IDList> &o_cache) {
 	vector<unsigned> s_sample_cache;
 	vector<unsigned> o_sample_cache;

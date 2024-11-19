@@ -714,7 +714,7 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 }
 
 EvalMultitypeValue
-TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVstore *kvstore, Varset &this_varset, bool isel)
+TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel)
 {
 	// Arithmetic and logical operations
 	// if (root->lchild == NULL && root->rchild == NULL)	// leaf node
@@ -1254,7 +1254,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, KVsto
 	return ret_femv;
 }
 
-void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_number) {
+void TempResult::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_number) {
     unsigned original_size = this->result.size();
     unsigned delete_num = 0, save_num = 0;
 
@@ -1288,7 +1288,7 @@ void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &
     this->result.erase(this->result.begin()+(save_num), this->result.end());
     this->result.shrink_to_fit();
 }
-void TempResult::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset)
+void TempResult::doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset)
 {
 	Varset this_varset = this->getAllVarset();
 	int this_id_cols = this->id_varset.getVarsetSize();
@@ -1533,7 +1533,7 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *str
 	SLOG_CORE("after doMinus, used " << (tv_end - tv_begin) << " ms.");
 }
 
-void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &entity_literal_varset, unsigned limit_num) {
+void TempResultSet::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num) {
     unsigned before_size = results[0].result.size();
     long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1547,7 +1547,7 @@ void TempResultSet::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varse
 	SLOG_CORE("before filter size " << before_size << ", after filter size " << after_size << ".");
 }
 
-void TempResultSet::doBind(const GroupPattern::Bind &bind, KVstore *kvstore, Varset &entity_literal_varset)
+void TempResultSet::doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 

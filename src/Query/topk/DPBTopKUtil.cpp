@@ -356,7 +356,7 @@ DPBUtil::GenerateFRs(int parent_var, int child_var, std::shared_ptr<TopKPlanUtil
 }
 
 shared_ptr<IDList>
-DPBUtil::GetAllSubObjId(KVstore *kv_store_,
+DPBUtil::GetAllSubObjId(std::shared_ptr<KVstore> kv_store_,
                         unsigned int limitID_entity_,
                         unsigned int limitID_literal_,
                         bool need_literal)

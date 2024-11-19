@@ -38,7 +38,7 @@ class GeneralEvaluation
 		shared_ptr<QueryParser> query_parser;
 		QueryTree query_tree;
 		int well_designed;
-		KVstore *kvstore;
+		std::shared_ptr<KVstore> kvstore;
 		StringIndex *stringindex;
 		shared_ptr<Optimizer> optimizer_;
 		QueryCache *query_cache;
@@ -90,7 +90,7 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(KVstore *_kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
+		GeneralEvaluation(std::shared_ptr<KVstore> _kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
 						  TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 						  TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,

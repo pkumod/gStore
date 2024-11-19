@@ -28,7 +28,7 @@ Database::Database()
 	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
-	this->kvstore = new KVstore(kv_store_path);
+	this->kvstore = std::make_shared<KVstore>(kv_store_path);
 
 	// string vstree_store_path = store_path + "/vs_store";
 	// this->vstree = new VSTree(vstree_store_path);
@@ -88,7 +88,7 @@ Database::Database(string _name)
 	// this->csr = new CSR[2];
 	this->type_predicate_name = "type@@TYPE@@类型";
 	string kv_store_path = store_path + "/kv_store";
-	this->kvstore = new KVstore(kv_store_path);
+	this->kvstore = std::make_shared<KVstore>(kv_store_path);
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = new StringIndex(stringindex_store_path);
 	this->stringindex->SetTrie(this->kvstore->getTrie());
@@ -481,7 +481,7 @@ void Database::freePredicateID(TYPE_PREDICATE_ID _id)
 	allocPredicateID_lock.lock();
 	if (_id == this->limitID_predicate - 1)
 	{
-		this->limitID_predicate--;
+	this->limitID_predicate--;
 	}
 	else
 	{
@@ -491,18 +491,6 @@ void Database::freePredicateID(TYPE_PREDICATE_ID _id)
 
 	this->pre_num--;
 	allocPredicateID_lock.unlock();
-}
-
-void Database::release(FILE *fp0)
-{
-	fprintf(fp0, "begin to delete DB!\n");
-	fflush(fp0);
-	fflush(fp0);
-	delete this->kvstore;
-	fprintf(fp0, "ok to delete kvstore!\n");
-	fflush(fp0);
-	fprintf(fp0, "ok to delete DB!\n");
-	fflush(fp0);
 }
 
 Database::~Database()
@@ -1449,8 +1437,7 @@ bool Database::unload()
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
-	delete this->kvstore;
-	this->kvstore = NULL;
+	this->kvstore.reset();
 	delete this->stringindex;
 	this->stringindex = NULL;
 
@@ -1541,7 +1528,7 @@ void Database::clear()
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
-	delete this->kvstore;
+	this->kvstore.reset();
 	this->kvstore = NULL;
 	delete this->stringindex;
 	this->stringindex = NULL;
@@ -1578,7 +1565,7 @@ TYPE_PREDICATE_ID Database::getPreNum()
 	return this->pre_num;
 }
 
-KVstore *Database::getKVstore()
+std::shared_ptr<KVstore> Database::getKVstore()
 {
 	return this->kvstore;
 }
@@ -2012,8 +1999,7 @@ bool Database::BuildEmptyDB() {
 	ofstream _six_tuples_fout(_six_tuples_file.c_str());
     _six_tuples_fout.close();
     this->stringindex->save(*this->kvstore);
-    delete this->kvstore;
-	this->kvstore = NULL;
+    this->kvstore.reset();
 
 	SLOG_CORE("Finish sub2id pre2id obj2id");
 	SLOG_CORE("TripleNum is " << this->triples_num);
@@ -2065,11 +2051,7 @@ bool Database::build(const string &_rdf_file, shared_ptr<ofstream> cluster_log)
 	}
 	SLOG_CORE("finish encode.");
 
-	// this->kvstore->flush();
-	delete this->kvstore;
-	this->kvstore = NULL;
-	// sync();
-	// this->kvstore->release();
+	this->kvstore.reset();
 
 	SLOG_CORE("Finish sub2id pre2id obj2id");
 	SLOG_CORE("TripleNum is " << this->triples_num);

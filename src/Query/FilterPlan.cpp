@@ -13,7 +13,7 @@
  * @return the filtering plan
  */
 shared_ptr<AffectOneNode> FilterPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQuery> bgp_query,
-                                                               KVstore *kv_store,
+                                                               std::shared_ptr<KVstore> kv_store,
                                                                TYPE_ENTITY_LITERAL_ID target_node) {
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
@@ -94,7 +94,7 @@ shared_ptr<AffectOneNode> FilterPlan::FilterNodeOnConstantEdge(shared_ptr<BGPQue
  * @return the filtering plan
  */
 shared_ptr<AffectOneNode> FilterPlan::FilterNodeOnConstantPredicate(shared_ptr<BGPQuery> bgp_query,
-                                                                    KVstore *kv_store,
+                                                                    std::shared_ptr<KVstore> kv_store,
                                                                     TYPE_ENTITY_LITERAL_ID target_node){
   auto check_edge_info = make_shared<vector<EdgeInfo>>();
   auto check_edge_constant_info = make_shared<vector<EdgeConstantInfo>>();
@@ -164,7 +164,7 @@ shared_ptr<AffectOneNode> FilterPlan::FilterNodeOnConstantPredicate(shared_ptr<B
 
 std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>>
 FilterPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
-                            KVstore *kv_store) {
+                            std::shared_ptr<KVstore> kv_store) {
   if (bgp_query->get_triple_num() == 1) return make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto result = make_shared<FilterPlan>();
   auto constant_generating_lists = make_shared<vector<shared_ptr<AffectOneNode>>>();
@@ -188,7 +188,7 @@ FilterPlan::OnlyConstFilter(std::shared_ptr<BGPQuery> bgp_query,
 
 std::shared_ptr<std::vector<std::shared_ptr<AffectOneNode>>>
 FilterPlan::PredicateFilter(std::shared_ptr<BGPQuery> bgp_query,
-                            KVstore *kv_store) {
+                            std::shared_ptr<KVstore> kv_store) {
   auto result = make_shared<FilterPlan>();
   auto constant_predicate_generating_lists = make_shared<vector<shared_ptr<AffectOneNode>>>();
   auto total_var_num = bgp_query->get_total_var_num();

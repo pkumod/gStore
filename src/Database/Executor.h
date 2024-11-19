@@ -42,7 +42,7 @@ struct container_hash{
  */
 class Executor {
  private:
-  KVstore *kv_store_;
+  std::shared_ptr<KVstore> kv_store_;
   std::shared_ptr<Transaction> txn_;
   TYPE_PREDICATE_ID limitID_predicate_;
   TYPE_ENTITY_LITERAL_ID limitID_literal_;
@@ -87,7 +87,7 @@ class Executor {
  public:
   static constexpr auto NO_LIMIT_OUTPUT = static_cast<size_t>(-1);
 
-  Executor(KVstore *kv_store,std::shared_ptr<Transaction> txn,TYPE_PREDICATE_ID limitID_predicate,
+  Executor(std::shared_ptr<KVstore> kv_store,std::shared_ptr<Transaction> txn,TYPE_PREDICATE_ID limitID_predicate,
            TYPE_ENTITY_LITERAL_ID limitID_literal,TYPE_ENTITY_LITERAL_ID limitID_entity):
            kv_store_(kv_store),txn_(txn),limitID_predicate_(limitID_predicate),limitID_literal_(limitID_literal),
            limitID_entity_(limitID_entity){};

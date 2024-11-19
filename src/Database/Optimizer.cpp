@@ -8,7 +8,7 @@
 
 // #define FEED_PLAN
 
-Optimizer::Optimizer(KVstore *kv_store,
+Optimizer::Optimizer(std::shared_ptr<KVstore> kv_store,
                      TYPE_TRIPLE_NUM *pre2num,
                      __attribute__((unused)) TYPE_TRIPLE_NUM *pre2sub,
                      TYPE_TRIPLE_NUM *pre2obj,

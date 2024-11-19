@@ -163,7 +163,7 @@ class EdgeConstantInfo{
   std::string toString();
 };
 
-std::string EdgeToString(KVstore *kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info);
+std::string EdgeToString(std::shared_ptr<KVstore> kv_store,EdgeInfo edge_info,EdgeConstantInfo edge_constant_info);
 
 /* Extend One Table, add a new Node.
  * The Node can have a candidate list

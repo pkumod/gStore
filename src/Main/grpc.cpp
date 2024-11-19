@@ -286,11 +286,10 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	if (async == false)
 	{
-		struct DBAccessLogInfo *access_log_info_ptr = new DBAccessLogInfo(ip_addr, operation);
+		std::shared_ptr<DBAccessLogInfo> access_log_info_ptr = std::make_shared<DBAccessLogInfo>(ip_addr, operation);
 		rpc_task->add_callback([access_log_info_ptr](GRPCTask *task) {
 			GRPCResp *resp = task->get_resp();
 			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg, "", resp->success_num, resp->failed_num);
-			delete access_log_info_ptr;
 		});
 	}
 	// add callback task for access log end

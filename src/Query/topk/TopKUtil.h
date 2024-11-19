@@ -10,7 +10,7 @@
 namespace TopKUtil {
 
 struct Env{
-  KVstore *kv_store;
+  std::shared_ptr<KVstore> kv_store;
   unsigned int limitID_entity;
   unsigned int limitID_literal;
   shared_ptr<BGPQuery> bgp_query;

@@ -61,13 +61,13 @@ class TopKSearchPlan {
   bool walk(set<unsigned> &possible_vars, set<unsigned> &walk_pass_vars, vector<unsigned> &result_cycle);
 
   void DeleteEdge(TYPE_ENTITY_LITERAL_ID a,TYPE_ENTITY_LITERAL_ID b);
-  bool CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
+  bool CutCycle(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store,
                 shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
 
  public:
-  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
+  explicit TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store,
                           const Order&,shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
-  void GetPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store, const Order& expression,
+  void GetPlan(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store, const Order& expression,
                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches);
   // The first tree to search
   TopKTreeNode* tree_root_;
@@ -76,7 +76,7 @@ class TopKSearchPlan {
   StepOperation& GetNonTreeEdges(){return this->non_tree_edges_;};
   std::vector<unsigned> FindCycle();
   bool SuggestTopK();
-  void DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store);
+  void DebugInfo(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store);
   bool HasCycle() {return this->is_cycle_graph_;};
 };
 

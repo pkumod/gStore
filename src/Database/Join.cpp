@@ -17,7 +17,7 @@ Join::Join()
 	this->txn = nullptr;
 }
 
-Join::Join(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
+Join::Join(std::shared_ptr<KVstore>  _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
 	TYPE_ENTITY_LITERAL_ID _limitID_entity, shared_ptr<Transaction> _txn)
 {
 	this->kvstore = _kvstore;

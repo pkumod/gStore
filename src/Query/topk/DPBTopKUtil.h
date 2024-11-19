@@ -32,7 +32,7 @@ std::map<TYPE_ENTITY_LITERAL_ID,std::shared_ptr<FRIterator>>  GenerateFRs(int pa
 
 FRIterator* BuildIteratorTree(const shared_ptr<TopKSearchPlan> tree_search_plan, TopKUtil::Env *env);
 
-shared_ptr<IDList> GetAllSubObjId(KVstore *kv_store_,
+shared_ptr<IDList> GetAllSubObjId(std::shared_ptr<KVstore> kv_store_,
                                   unsigned int limitID_entity_,
                                   unsigned int limitID_literal_,
                                   bool need_literal);

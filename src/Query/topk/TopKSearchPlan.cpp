@@ -47,7 +47,7 @@ std::size_t TopKSearchPlan::CountDepth(map<TYPE_ENTITY_LITERAL_ID, vector<TYPE_E
   return max_depth;
 }
 
-TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
+TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store,
                                const Order& expression,
                                shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches):
                                tree_root_(nullptr)
@@ -124,7 +124,7 @@ TopKSearchPlan::TopKSearchPlan(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store
 }
 
 void TopKSearchPlan::GetPlan(shared_ptr<BGPQuery> bgp_query,
-                             KVstore *kv_store,
+                             std::shared_ptr<KVstore> kv_store,
                              const Order& expression,
                              shared_ptr<map<TYPE_ENTITY_LITERAL_ID, shared_ptr<IDList>>> id_caches) {
 
@@ -230,7 +230,7 @@ TopKSearchPlan::~TopKSearchPlan() {
   }
 }
 
-void TopKSearchPlan::DebugInfo(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store) {
+void TopKSearchPlan::DebugInfo(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store) {
 
   std::stack<decltype(this->tree_root_)> h;
   h.push(this->tree_root_);
@@ -478,7 +478,7 @@ bool TopKSearchPlan::walk(set<unsigned> &possible_vars,set<unsigned> &walk_pass_
  * result, we will check if the edge exist
  * @return if we cut an edge
  */
-bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, KVstore *kv_store,
+bool TopKSearchPlan::CutCycle(shared_ptr<BGPQuery> bgp_query, std::shared_ptr<KVstore> kv_store,
                               shared_ptr<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>> id_caches) {
   auto cycle = this->FindCycle();
   if(cycle.empty())

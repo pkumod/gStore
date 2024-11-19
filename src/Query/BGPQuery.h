@@ -119,7 +119,7 @@ public:
 	//TODO, default appoint a var selected_ = false to true
 	void update_select_status(bool selected);
 
-	void print(KVstore *kvstore);
+	void print(std::shared_ptr<KVstore> kvstore);
 
 };
 
@@ -214,18 +214,18 @@ public:
 	// void update_so_var_edge_info(uns);
 
 	void ScanAllVar(const vector<string>& _query_var);
-	bool build_edge_info(KVstore *_kvstore);
+	bool build_edge_info(std::shared_ptr<KVstore> _kvstore);
 	void count_statistics_num();
 
-	bool EncodeBGPQuery(KVstore* _kvstore, const vector<string>& _query_var, bool distinct = false);
+	bool EncodeBGPQuery(std::shared_ptr<KVstore>  _kvstore, const vector<string>& _query_var, bool distinct = false);
 
 
 
 	void ScanAllVarByBigBGPID(BGPQuery *big_bgpquery, const vector<string>& _query_var);
-	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, KVstore* _kvstore,
+	bool EncodeSmallBGPQuery(BGPQuery *big_bgpquery_, std::shared_ptr<KVstore>  _kvstore,
 							 const vector<string>& _query_var, bool distinct = false);
 
-	static bool CheckConstBGPExist(const vector<Triple> &triple_vt, KVstore *kvstore);
+	static bool CheckConstBGPExist(const vector<Triple> &triple_vt, std::shared_ptr<KVstore> kvstore);
 
 	unsigned get_triple_num();
 	unsigned get_total_var_num();
@@ -262,7 +262,7 @@ public:
 	bool is_var_satellite_by_index(unsigned index);
 	bool is_var_satellite_by_id(unsigned id);
 
-	void print(KVstore * kvstore);
+	void print(std::shared_ptr<KVstore>  kvstore);
 
 	void set_var_candidate_cache(unsigned var_id, shared_ptr<IDList> candidate_cache);
 

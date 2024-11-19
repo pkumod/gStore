@@ -53,8 +53,8 @@ class SPARQLquery
 
   const string& getQueryVar(int _id);
 
-  void encodeQuery(KVstore* _p_kv_store);
-  void encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset);
+  void encodeQuery(std::shared_ptr<KVstore>  _p_kv_store);
+  void encodeQuery(std::shared_ptr<KVstore>  _p_kv_store, vector< vector<string> > sparql_query_varset);
 
   int GetLimit() const;
   void SetLimit(int limit);

@@ -21,7 +21,7 @@ Strategy::Strategy()
 	//this->prepare_handler();
 }
 
-Strategy::Strategy(KVstore* _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
+Strategy::Strategy(std::shared_ptr<KVstore>  _kvstore, TYPE_TRIPLE_NUM* _pre2num, TYPE_TRIPLE_NUM* _pre2sub,
  	TYPE_TRIPLE_NUM* _pre2obj, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal,
 	TYPE_ENTITY_LITERAL_ID _limitID_entity,bool _is_distinct, shared_ptr<Transaction> _txn)
 {
@@ -186,7 +186,7 @@ Strategy::handle(SPARQLquery& _query)
 
 
 bool 
-Strategy::pre_handler(BasicQuery * basic_query, KVstore * kvstore, TYPE_TRIPLE_NUM* pre2num, 
+Strategy::pre_handler(BasicQuery * basic_query, std::shared_ptr<KVstore>  kvstore, TYPE_TRIPLE_NUM* pre2num, 
 	TYPE_TRIPLE_NUM* pre2sub, TYPE_TRIPLE_NUM* pre2obj, bool * dealed_triple)
 {
 	// int triple_num = basic_query->getTripleNum();

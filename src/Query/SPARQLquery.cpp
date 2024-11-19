@@ -70,7 +70,7 @@ SPARQLquery::getBasicQueryNum()
 }
 
 void 
-SPARQLquery::encodeQuery(KVstore* _p_kv_store)
+SPARQLquery::encodeQuery(std::shared_ptr<KVstore>  _p_kv_store)
 {
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
@@ -79,7 +79,7 @@ SPARQLquery::encodeQuery(KVstore* _p_kv_store)
 }
 
 void 
-SPARQLquery::encodeQuery(KVstore* _p_kv_store, vector< vector<string> > sparql_query_varset)
+SPARQLquery::encodeQuery(std::shared_ptr<KVstore>  _p_kv_store, vector< vector<string> > sparql_query_varset)
 {
 	for(unsigned i = 0; i < this->query_union.size(); i ++)
 	{
