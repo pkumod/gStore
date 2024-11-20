@@ -130,9 +130,9 @@ class StringIndex
 {
 	private:
 		StringIndexFile entity, literal, predicate;
-		Buffer* entity_buffer;
+		std::shared_ptr<Buffer> entity_buffer;
 		unsigned entity_buffer_size;
-		Buffer* literal_buffer;
+		std::shared_ptr<Buffer> literal_buffer;
 		unsigned literal_buffer_size;
 		
 		//mutex AccessLock;
@@ -167,7 +167,7 @@ class StringIndex
 		// 	predicate.emptyBuffer();
 		// }
 
-		void setBuffer(Buffer* _ebuf, Buffer* _lbuf)
+		void setBuffer(std::shared_ptr<Buffer>& _ebuf, std::shared_ptr<Buffer> _lbuf)
 		{
 			this->entity_buffer = _ebuf;
 			this->entity_buffer_size = _ebuf->size;

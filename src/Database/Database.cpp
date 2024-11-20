@@ -46,12 +46,12 @@ Database::Database()
 	this->triples_num = 0;
 
 	// this->join = NULL;
-	this->pre2num = nullptr;
-	this->pre2sub = nullptr;
-	this->pre2obj = nullptr;
-	this->entity_buffer = NULL;
+	// this->pre2num = nullptr;
+	// this->pre2sub = nullptr;
+	// this->pre2obj = nullptr;
+	// this->entity_buffer = nullptr;
 	this->entity_buffer_size = 0;
-	this->literal_buffer = NULL;
+	// this->literal_buffer = nullptr;
 	this->literal_buffer_size = 0;
 
 	this->query_cache = std::make_shared<QueryCache>();
@@ -105,12 +105,12 @@ Database::Database(string _name)
 	this->triple_update_num = 0;
 
 	// this->join = NULL;
-	this->pre2num = nullptr;
-	this->pre2sub = nullptr;
-	this->pre2obj = nullptr;
-	this->entity_buffer = NULL;
+	// this->pre2num = nullptr;
+	// this->pre2sub = nullptr;
+	// this->pre2obj = nullptr;
+	// this->entity_buffer = nullptr;
 	this->entity_buffer_size = 0;
-	this->literal_buffer = NULL;
+	// this->literal_buffer = nullptr;
 	this->literal_buffer_size = 0;
 	this->query_cache = std::make_shared<QueryCache>();
 
@@ -593,8 +593,8 @@ void Database::setStringBuffer()
 	// BETTER?maybe different size for entity and literal, maybe different offset should be used
 	this->entity_buffer_size = (this->limitID_entity < 50000000) ? this->limitID_entity : 50000000;
 	this->literal_buffer_size = (this->limitID_literal < 50000000) ? this->limitID_literal : 50000000;
-	this->entity_buffer = new Buffer(this->entity_buffer_size);
-	this->literal_buffer = new Buffer(this->literal_buffer_size);
+	this->entity_buffer = std::make_shared<Buffer>(this->entity_buffer_size);
+	this->literal_buffer = std::make_shared<Buffer>(this->literal_buffer_size);
 
 	// DEBUG: insert/delete we should update the size of buffer if adding new string
 	// WARN: after delete and insert, IDs may be not continuous, then the string buffer will cause errors!
@@ -1432,10 +1432,8 @@ bool Database::unload()
 	this->pre2num.reset();
 	this->pre2sub.reset();
 	this->pre2obj.reset();
-	delete this->entity_buffer;
-	this->entity_buffer = NULL;
-	delete this->literal_buffer;
-	this->literal_buffer = NULL;
+	this->entity_buffer.reset();
+	this->literal_buffer.reset();
 
 	this->kvstore.reset();
 	this->stringindex.reset();
@@ -1519,10 +1517,8 @@ void Database::clear()
 	this->pre2num.reset();
 	this->pre2sub.reset();
 	this->pre2obj.reset();
-	delete this->entity_buffer;
-	this->entity_buffer = NULL;
-	delete this->literal_buffer;
-	this->literal_buffer = NULL;
+	this->entity_buffer.reset();
+	this->literal_buffer.reset();
 
 	this->kvstore.reset();
 	this->kvstore = NULL;

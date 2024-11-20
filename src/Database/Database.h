@@ -199,10 +199,10 @@ private:
 
 	// TODO: set the buffer capacity as dynamic according to the current memory usage
 	// string buffer
-	Buffer *entity_buffer;
+	std::shared_ptr<Buffer> entity_buffer;
 	// unsigned offset; //maybe let id start from an offset
 	unsigned entity_buffer_size;
-	Buffer *literal_buffer;
+	std::shared_ptr<Buffer> literal_buffer;
 	unsigned literal_buffer_size;
 
 	std::shared_ptr<QueryCache> query_cache;
