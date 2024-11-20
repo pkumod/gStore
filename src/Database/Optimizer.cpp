@@ -8,10 +8,10 @@
 
 // #define FEED_PLAN
 
-Optimizer::Optimizer(std::shared_ptr<KVstore> kv_store,
-                     TYPE_TRIPLE_NUM *pre2num,
-                     __attribute__((unused)) TYPE_TRIPLE_NUM *pre2sub,
-                     TYPE_TRIPLE_NUM *pre2obj,
+Optimizer::Optimizer(std::shared_ptr<KVstore>& kv_store,
+                     std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2num,
+                     __attribute__((unused)) std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2sub,
+                     std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2obj,
                      TYPE_TRIPLE_NUM triples_num,
                      TYPE_PREDICATE_ID limitID_predicate,
                      TYPE_ENTITY_LITERAL_ID limitID_literal,

@@ -34,9 +34,9 @@ private:
 	TYPE_PREDICATE_ID limitID_predicate;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
 	TYPE_ENTITY_LITERAL_ID limitID_entity;
-	TYPE_TRIPLE_NUM* pre2num;
-	TYPE_TRIPLE_NUM* pre2sub;
-	TYPE_TRIPLE_NUM* pre2obj;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj;
 	shared_ptr<Transaction> txn;
 
 	// only contain plans joining not-satellite nodes
@@ -75,9 +75,9 @@ private:
   static const unsigned HEURISTIC_CANDIDATE_MAX;
 
 public:
-	PlanGenerator(std::shared_ptr<KVstore> kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
+	PlanGenerator(std::shared_ptr<KVstore>& kvstore_, BGPQuery *bgpquery_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
-				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
+				  std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2num_, std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2sub_, std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2obj_, shared_ptr<Transaction> txn_);
 
 	~PlanGenerator();
 

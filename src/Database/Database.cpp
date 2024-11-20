@@ -46,9 +46,9 @@ Database::Database()
 	this->triples_num = 0;
 
 	this->join = NULL;
-	this->pre2num = NULL;
-	this->pre2sub = NULL;
-	this->pre2obj = NULL;
+	this->pre2num = nullptr;
+	this->pre2sub = nullptr;
+	this->pre2obj = nullptr;
 	this->entity_buffer = NULL;
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
@@ -505,9 +505,12 @@ void Database::setPreMap()
 	this->maxNumPID = this->minNumPID = INVALID_PREDICATE_ID;
 	TYPE_TRIPLE_NUM max = 0, min = this->triples_num + 1;
 
-	this->pre2num = new TYPE_TRIPLE_NUM[this->limitID_predicate];
-	this->pre2sub = new TYPE_TRIPLE_NUM[this->limitID_predicate];
-	this->pre2obj = new TYPE_TRIPLE_NUM[this->limitID_predicate];
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
+	this->pre2num = pre2num_sptr;
+	this->pre2sub = pre2sub_sptr;
+	this->pre2obj = pre2obj_sptr;
 	TYPE_PREDICATE_ID valid = 0, i, t;
 
 	indicators::ProgressBar bar{
@@ -1426,12 +1429,9 @@ bool Database::unload()
 	// or we just neglect this, that is ok because pre2num is just used to count
 	if (!gutil::ResourceUtil::IsEnoughDisk(this->triple_update_num))
 		return false;
-	delete[] this->pre2num;
-	this->pre2num = NULL;
-	delete[] this->pre2sub;
-	this->pre2sub = NULL;
-	delete[] this->pre2obj;
-	this->pre2obj = NULL;
+	this->pre2num.reset();
+	this->pre2sub.reset();
+	this->pre2obj.reset();
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
 	delete this->literal_buffer;
@@ -1516,12 +1516,9 @@ bool Database::save()
 
 void Database::clear()
 {
-	delete[] this->pre2num;
-	this->pre2num = NULL;
-	delete[] this->pre2sub;
-	this->pre2sub = NULL;
-	delete[] this->pre2obj;
-	this->pre2obj = NULL;
+	this->pre2num.reset();
+	this->pre2sub.reset();
+	this->pre2obj.reset();
 	delete this->entity_buffer;
 	this->entity_buffer = NULL;
 	delete this->literal_buffer;
@@ -1579,17 +1576,17 @@ std::shared_ptr<QueryCache> Database::getQueryCache()
 	return this->query_cache;
 }
 
-TYPE_TRIPLE_NUM *Database::getpre2num()
+std::shared_ptr<TYPE_TRIPLE_NUM[]> Database::getpre2num()
 {
 	return this->pre2num;
 }
 
-TYPE_TRIPLE_NUM *Database::getpre2sub()
+std::shared_ptr<TYPE_TRIPLE_NUM[]> Database::getpre2sub()
 {
 	return this->pre2sub;
 }
 
-TYPE_TRIPLE_NUM *Database::getpre2obj()
+std::shared_ptr<TYPE_TRIPLE_NUM[]> Database::getpre2obj()
 {
 	return this->pre2obj;
 }

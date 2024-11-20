@@ -41,8 +41,8 @@ class Optimizer
 {
  public:
 
-  Optimizer(std::shared_ptr<KVstore> kv_store, TYPE_TRIPLE_NUM* pre2num, __attribute__((unused)) __attribute__((unused)) TYPE_TRIPLE_NUM* pre2sub,
-			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
+  Optimizer(std::shared_ptr<KVstore>& kv_store, std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2num, __attribute__((unused)) __attribute__((unused)) std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2sub,
+			std::shared_ptr<TYPE_TRIPLE_NUM[]>& pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
 			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
 
@@ -85,9 +85,9 @@ class Optimizer
                                                       IDCachesSharePtr id_caches);
  private:
   std::shared_ptr<KVstore> kv_store_;
-  TYPE_TRIPLE_NUM* pre2num_;
-  TYPE_TRIPLE_NUM* pre2sub_;
-  TYPE_TRIPLE_NUM* pre2obj_;
+  std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num_;
+  std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub_;
+  std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj_;
   TYPE_TRIPLE_NUM triples_num_;
   TYPE_PREDICATE_ID limitID_predicate_;
   TYPE_ENTITY_LITERAL_ID limitID_literal_;

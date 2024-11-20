@@ -46,9 +46,9 @@ class GeneralEvaluation
 		CSR *csr;
 		bool ranked;
 
-		TYPE_TRIPLE_NUM *pre2num;
-		TYPE_TRIPLE_NUM *pre2sub;
-		TYPE_TRIPLE_NUM *pre2obj;
+		std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num;
+		std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub;
+		std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj;
 		TYPE_TRIPLE_NUM triples_num;
 		TYPE_PREDICATE_ID limitID_predicate;
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
@@ -90,9 +90,9 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(std::shared_ptr<KVstore> _kvstore, std::shared_ptr<StringIndex> _stringindex,  std::shared_ptr<QueryCache> _query_cache, CSR *_csr,
-						  TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
-						  TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
+		GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, CSR *_csr,
+						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
+						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
 						  shared_ptr<Transaction> txn = nullptr, const BlockInfo *const freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0);
 		// Note that query_tree, well_designed, ranked, bgp_query_total not copied

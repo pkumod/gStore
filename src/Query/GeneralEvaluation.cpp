@@ -115,9 +115,9 @@ GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
 // }
 
 
-GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore> _kvstore, std::shared_ptr<StringIndex> _stringindex,  std::shared_ptr<QueryCache> _query_cache, CSR *_csr,
-									 TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
-									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
+GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, CSR *_csr,
+									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
+									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
 									 shared_ptr<Transaction> _txn, const BlockInfo *const freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):
 	temp_result(NULL), query_parser(make_shared<QueryParser>()), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),

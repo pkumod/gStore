@@ -101,9 +101,9 @@ public:
 	std::shared_ptr<KVstore> getKVstore();
 	std::shared_ptr<StringIndex> getStringIndex();
 	std::shared_ptr<QueryCache> getQueryCache();
-	TYPE_TRIPLE_NUM *getpre2num();
-	TYPE_TRIPLE_NUM *getpre2sub();
-	TYPE_TRIPLE_NUM *getpre2obj();
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> getpre2num();
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> getpre2sub();
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> getpre2obj();
 	TYPE_ENTITY_LITERAL_ID &getlimitID_literal();
 	TYPE_ENTITY_LITERAL_ID &getlimitID_entity();
 	TYPE_PREDICATE_ID &getlimitID_predicate();
@@ -187,11 +187,12 @@ private:
 	string update_log_since_backup;
 
 	// pre2num mapping
-	TYPE_TRIPLE_NUM *pre2num;
+	// TYPE_TRIPLE_NUM *pre2num;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num;
 	// pre2subnum mapping
-	TYPE_TRIPLE_NUM *pre2sub;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub;
 	// pre2objnum mapping
-	TYPE_TRIPLE_NUM *pre2obj;
+	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj;
 	// valid: check from minNumPID to maxNumPID
 	TYPE_PREDICATE_ID maxNumPID, minNumPID;
 	void setPreMap();
