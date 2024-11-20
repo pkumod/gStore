@@ -240,7 +240,7 @@ int TempResult::findRightBounder(const vector<int> &this_pos, const ResultPair &
 		return -1;
 }
 
-void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
 	int this_id_cols = this->id_varset.getVarsetSize();
 
@@ -1349,7 +1349,7 @@ int TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 	return (int)this->results.size() - 1;
 }
 
-void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1421,7 +1421,7 @@ void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 	SLOG_CORE("after doUnion, used " << (tv_end - tv_begin) <<" ms.");
 }
 
-void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1472,7 +1472,7 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, StringIndex *
 	SLOG_CORE("after doOptional, used " << (tv_end - tv_begin) <<" ms.");
 }
 
-void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1564,7 +1564,7 @@ void TempResultSet::doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVsto
 	SLOG_CORE("after doBind, used " << (tv_end - tv_begin) << " ms.");
 }
 
-void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doProjection1(Varset &proj, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 

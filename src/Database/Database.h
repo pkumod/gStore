@@ -99,7 +99,7 @@ public:
 	string getIDTuplesFile();
 
 	std::shared_ptr<KVstore> getKVstore();
-	StringIndex *getStringIndex();
+	std::shared_ptr<StringIndex> getStringIndex();
 	QueryCache *getQueryCache();
 	TYPE_TRIPLE_NUM *getpre2num();
 	TYPE_TRIPLE_NUM *getpre2sub();
@@ -152,7 +152,7 @@ private:
 	mutex umap_lock;
 
 	std::shared_ptr<KVstore> kvstore;
-	StringIndex *stringindex;
+	std::shared_ptr<StringIndex> stringindex;
 	Join *join;
 
 	enum class UPDATE_TYPE

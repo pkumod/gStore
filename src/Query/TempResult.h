@@ -49,7 +49,7 @@ class TempResult
 		int findLeftBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 		int findRightBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 
-		void convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset);
+		void convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
 		void doJoin(TempResult &x, TempResult &r);
 		void doUnion(TempResult &r);
 		void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
@@ -82,14 +82,14 @@ class TempResultSet
 
 		int findCompatibleResult(Varset &_id_varset, Varset &_str_varset);
 
-		void doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
 		void doUnion(TempResultSet &x, TempResultSet &r);
-		void doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
-		void doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doOptional(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
+		void doMinus(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
         void doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max());
 		void doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset);
 
-		void doProjection1(Varset &proj, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doProjection1(Varset &proj, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
 		void doDistinct1(TempResultSet &r);
 
 		void print();

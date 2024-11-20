@@ -34,7 +34,7 @@ Database::Database()
 	// this->vstree = new VSTree(vstree_store_path);
 
 	string stringindex_store_path = store_path + "/stringindex_store";
-	this->stringindex = new StringIndex(stringindex_store_path);
+	this->stringindex = std::make_shared<StringIndex>(stringindex_store_path);
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	// this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
@@ -90,7 +90,7 @@ Database::Database(string _name)
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
 	string stringindex_store_path = store_path + "/stringindex_store";
-	this->stringindex = new StringIndex(stringindex_store_path);
+	this->stringindex = std::make_shared<StringIndex>(stringindex_store_path);
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	// this->encode_mode = Database::STRING_MODE;
 	this->encode_mode = Database::ID_MODE;
@@ -1438,8 +1438,7 @@ bool Database::unload()
 	this->literal_buffer = NULL;
 
 	this->kvstore.reset();
-	delete this->stringindex;
-	this->stringindex = NULL;
+	this->stringindex.reset();
 
 	if (if_loaded)
 	{
@@ -1530,7 +1529,7 @@ void Database::clear()
 
 	this->kvstore.reset();
 	this->kvstore = NULL;
-	delete this->stringindex;
+	this->stringindex.reset();
 	this->stringindex = NULL;
 }
 
@@ -1570,7 +1569,7 @@ std::shared_ptr<KVstore> Database::getKVstore()
 	return this->kvstore;
 }
 
-StringIndex *Database::getStringIndex()
+std::shared_ptr<StringIndex> Database::getStringIndex()
 {
 	return this->stringindex;
 }

@@ -115,7 +115,7 @@ GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
 // }
 
 
-GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore> _kvstore, StringIndex *_stringindex,  QueryCache *_query_cache, CSR *_csr,
+GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore> _kvstore, std::shared_ptr<StringIndex> _stringindex,  QueryCache *_query_cache, CSR *_csr,
 									 TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
 									 TYPE_TRIPLE_NUM *_pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
@@ -266,7 +266,7 @@ GeneralEvaluation::prepPathQuery()
 }
 
 void
-GeneralEvaluation::setStringIndexPointer(StringIndex* _tmpsi)
+GeneralEvaluation::setStringIndexPointer(std::shared_ptr<StringIndex> _tmpsi)
 {
 	this->stringindex = _tmpsi;
 }
