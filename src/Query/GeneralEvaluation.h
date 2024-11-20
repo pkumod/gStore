@@ -60,11 +60,11 @@ class GeneralEvaluation
 		// freelist_entity+entity_num: used for getting all entity id as sources in kleeneClosure evaluation
 		class AllEntityId
 		{
-			const BlockInfo *const freelist_entity,*head; // deleted entity id
+			std::shared_ptr<BlockInfo> freelist_entity, head; // deleted entity id
 			const TYPE_ENTITY_LITERAL_ID entity_num;
 			TYPE_ENTITY_LITERAL_ID next_id, iter_cnt; 
 		public:
-			AllEntityId(const BlockInfo *const freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):freelist_entity(freelist_entity),head(freelist_entity),entity_num(entity_num),next_id(0),iter_cnt(0){}
+			AllEntityId(const std::shared_ptr<BlockInfo>& freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):freelist_entity(freelist_entity),head(freelist_entity),entity_num(entity_num),next_id(0),iter_cnt(0){}
 			// return next entity_id, or INVALID_ENTITY_LITERAL_ID if there's no such 
 			TYPE_ENTITY_LITERAL_ID next(){
 				if(iter_cnt>=entity_num)
@@ -83,7 +83,7 @@ class GeneralEvaluation
 				head=freelist_entity;
 				return next();
 			}
-		} all_entity_id;
+	} all_entity_id;
 		
     public:
     	FILE* fp;
@@ -94,7 +94,7 @@ class GeneralEvaluation
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
-						  shared_ptr<Transaction> txn = nullptr, const BlockInfo *const freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0);
+						  shared_ptr<Transaction> txn = nullptr, const std::shared_ptr<BlockInfo>& freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0);
 		// Note that query_tree, well_designed, ranked, bgp_query_total not copied
 		GeneralEvaluation(const GeneralEvaluation& _ge): query_parser(_ge.query_parser), well_designed(-1), \
 			kvstore(_ge.kvstore), stringindex(_ge.stringindex), optimizer_(_ge.optimizer_), \

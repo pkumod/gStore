@@ -61,7 +61,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 		}
 	this->max_buffer_size = _buffer_size;
 	this->freemem = this->max_buffer_size;
-	this->freelist = new BlockInfo;	//null-head
+	this->freelist = std::make_shared<BlockInfo>();	//null-head
 
 	//TODO: read/write by char is too slow, how about read all and deal , then clear?
 	//
@@ -70,7 +70,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 	//QUETY: can free id list consume very large memory??
 
 	unsigned i = 0, j = 0, k = 0;	//j = (SuperNum-1)*BLOCK_SIZE
-	BlockInfo* bp;
+	std::shared_ptr<BlockInfo> bp;
 	if (_mode == "build")
 	{	//write basic information
 		fwrite(&cur_block_num, sizeof(unsigned), 1, this->valfp);	//current block num
@@ -83,7 +83,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 			fputc(0, this->valfp);
 			for (k = 0; k < 8; ++k)
 			{
-				bp->next = new BlockInfo(i * 8 + k + 1, NULL);
+				bp->next = std::make_shared<BlockInfo>(i * 8 + k + 1, std::shared_ptr<BlockInfo>());
 				bp = bp->next;
 			}
 		}
@@ -103,7 +103,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 			{
 				if ((c & (1 << k)) == 0)
 				{
-					bp->next = new BlockInfo(i * 8 + 7 - k + 1, NULL);
+					bp->next = std::make_shared<BlockInfo>(i * 8 + 7 - k + 1, std::shared_ptr<BlockInfo>());
 					bp = bp->next;
 				}
 			}
@@ -136,8 +136,8 @@ VList::Blocknum(long address) const
 unsigned
 VList::AllocBlock()
 {
-	BlockInfo* p = this->freelist->next;
-	if (p == NULL)
+	std::shared_ptr<BlockInfo> p = this->freelist->next;
+	if (p == nullptr)
 	{
 		for (unsigned i = 0; i < SET_BLOCK_INC; ++i)
 		{
@@ -148,15 +148,15 @@ VList::AllocBlock()
 	}
 	unsigned t = p->num;
 	this->freelist->next = p->next;
-	delete p;
-	p = NULL;
+	p.reset();
+	p = nullptr;
 	return t;
 }
 
 void
 VList::FreeBlock(unsigned _blocknum)
 {			//QUERY: head-sub and tail-add will be better?
-	BlockInfo* bp = new BlockInfo(_blocknum, this->freelist->next);
+	std::shared_ptr<BlockInfo> bp = std::make_shared<BlockInfo>(_blocknum, this->freelist->next);
 	this->freelist->next = bp;
 }
 
@@ -437,8 +437,8 @@ VList::~VList()
 		fputc(0xff, valfp);
 	}
 	char c;
-	BlockInfo* bp = this->freelist->next;
-	while (bp != NULL)
+	std::shared_ptr<BlockInfo> bp = this->freelist->next;
+	while (bp != nullptr)
 	{
 		//if not-use then set 0, aligned to byte!
 #ifdef DEBUG_KVSTORE
@@ -459,11 +459,11 @@ VList::~VList()
 	}
 
 	bp = this->freelist;
-	BlockInfo* next;
-	while (bp != NULL)
+	std::shared_ptr<BlockInfo> next;
+	while (bp != nullptr)
 	{
 		next = bp->next;
-		delete bp;
+		bp.reset();
 		bp = next;
 	}
 	fclose(this->valfp);

@@ -68,7 +68,7 @@ private:
 	unsigned long long max_buffer_size;
 	unsigned cur_block_num;
 	std::string filepath;
-	BlockInfo* freelist;
+	std::shared_ptr<BlockInfo> freelist;
 	//very long value list are stored in a separate file(with large block)
 	//
 	//NOTICE: according to the summary result, 90% value lists are just below 100 bytes

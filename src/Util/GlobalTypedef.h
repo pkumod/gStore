@@ -347,16 +347,16 @@ class BlockInfo
 public:
     // starts from 1
 	unsigned num;
-	BlockInfo* next;
+	std::shared_ptr<BlockInfo> next;
 	BlockInfo()
 	{
       num = 0;
-		next = NULL;
+		// next = NULL;
 	}
 	BlockInfo(unsigned _num)
 	{
       num = _num;
-		next = NULL;
+		// next = NULL;
 	}
 
 	/**
@@ -364,9 +364,9 @@ public:
 	 * @param _num the number
 	 * @param _bp the 'next' pointer
 	 */
-	BlockInfo(unsigned _num, BlockInfo* _bp)
+	BlockInfo(unsigned _num, std::shared_ptr<BlockInfo> _bp)
 	{
-      num = _num;
+    	num = _num;
 		next = _bp;
 	}
 };

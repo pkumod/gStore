@@ -119,7 +119,7 @@ GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::sh
 									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
 									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
-									 shared_ptr<Transaction> _txn, const BlockInfo *const freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):
+									 shared_ptr<Transaction> _txn, const std::shared_ptr<BlockInfo>& freelist_entity, TYPE_ENTITY_LITERAL_ID entity_num):
 	temp_result(NULL), query_parser(make_shared<QueryParser>()), kvstore(_kvstore), stringindex(_stringindex), query_cache(_query_cache), csr(_csr), ranked(false),
 	pre2num(_pre2num), pre2sub(_pre2sub), pre2obj(_pre2obj), triples_num(_triples_num), limitID_predicate(_limitID_predicate),
 	limitID_literal(_limitID_literal), limitID_entity(_limitID_entity), txn(_txn), all_entity_id(freelist_entity,entity_num), fp(NULL), export_flag(false)

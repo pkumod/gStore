@@ -36,7 +36,7 @@ private:
 	unsigned cur_block_num;
 	std::string filepath;
 	unsigned* treeheight;
-	BlockInfo* freelist;
+	std::shared_ptr<BlockInfo> freelist;
 	FILE* treefp;						//file: tree nodes
 	ISHeap* minheap;					//heap of Nodes's pointer, sorted in NF_RK
 	//NOTICE: freemem's type is long long here, due to large memory in server.

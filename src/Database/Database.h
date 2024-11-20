@@ -115,7 +115,7 @@ public:
 	void VersionClean(vector<unsigned> &sub_ids, vector<unsigned> &obj_ids, vector<unsigned> &obj_literal_ids, vector<unsigned> &pre_ids);
 
 	// all entity id
-	const BlockInfo* getfreelist_entity()const {return freelist_entity;}
+	const std::shared_ptr<BlockInfo> getfreelist_entity()const {return freelist_entity;}
 	TYPE_ENTITY_LITERAL_ID getentity_num() const {return entity_num;}
 
 private:
@@ -258,21 +258,21 @@ private:
 	// NOTICE:error if >= LITERAL_FIRST_ID
 	string free_id_file_entity;			   // the first is limitID, then free id list
 	TYPE_ENTITY_LITERAL_ID limitID_entity; // the current maxium ID num(maybe not used so much)
-	BlockInfo *freelist_entity;			   // free id list, reuse BlockInfo for Storage class
+	std::shared_ptr<BlockInfo> freelist_entity;			   // free id list, reuse BlockInfo for Storage class
 	TYPE_ENTITY_LITERAL_ID allocEntityID();
 	void freeEntityID(TYPE_ENTITY_LITERAL_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////
 	// NOTICE:error if >= 2*LITERAL_FIRST_ID
 	string free_id_file_literal;
 	TYPE_ENTITY_LITERAL_ID limitID_literal;
-	BlockInfo *freelist_literal;
+	std::shared_ptr<BlockInfo> freelist_literal;
 	TYPE_ENTITY_LITERAL_ID allocLiteralID();
 	void freeLiteralID(TYPE_ENTITY_LITERAL_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////
 	// NOTICE:error if >= 2*LITERAL_FIRST_ID
 	string free_id_file_predicate;
 	TYPE_PREDICATE_ID limitID_predicate;
-	BlockInfo *freelist_predicate;
+	std::shared_ptr<BlockInfo> freelist_predicate;
 	TYPE_PREDICATE_ID allocPredicateID();
 	void freePredicateID(TYPE_PREDICATE_ID _id);
 	/////////////////////////////////////////////////////////////////////////////////

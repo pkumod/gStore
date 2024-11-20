@@ -21,7 +21,7 @@ IVBlockManager::IVBlockManager()
 	FreeBlockList = NULL;
 	ValueFile = NULL;
 
-	BlockToWrite = NULL;
+	// BlockToWrite = nullptr;
 }
 
 IVBlockManager::IVBlockManager(string& _filename, string& _mode, unsigned _keynum )
@@ -212,12 +212,12 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 		if (BlockToWrite != NULL)
 		{
 			// delete BlockToWrite;
-			BlockInfo *p=BlockToWrite;
-			BlockInfo *nextp=p->next;
-			while(p!=NULL)
+			std::shared_ptr<BlockInfo>p=BlockToWrite;
+			std::shared_ptr<BlockInfo>nextp=p->next;
+			while(p!=nullptr)
 			{
 				nextp=p->next;
-				delete p;
+				p.reset();
 				p=nextp;
 			}
 			BlockToWrite = NULL;
@@ -227,7 +227,7 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 
 		for(unsigned i = AllocNum; i > 0; i--)
 		{
-			BlockInfo *p = new BlockInfo(BaseIndex + i - 1, BlockToWrite);
+			std::shared_ptr<BlockInfo>p = std::make_shared<BlockInfo>(BaseIndex + i - 1, BlockToWrite);
 			BlockToWrite = p;
 		}
 
@@ -266,13 +266,13 @@ IVBlockManager::WriteValue(const char *_str, const unsigned long _len)
 	
 	// write _str
 	int fd = fileno(ValueFile);
-	BlockInfo *p = BlockToWrite;
+	std::shared_ptr<BlockInfo>p = BlockToWrite;
 	char *pstr = (char *)_str; // pointer to buffer of where to write next
 	unsigned long len_left = _len; // how many bytes left to write
 
 	while (p != NULL)
 	{
-		BlockInfo *nextp = p->next;
+		std::shared_ptr<BlockInfo>nextp = p->next;
 		unsigned long Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
 		off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
 		unsigned NextIndex = 0;
@@ -379,14 +379,14 @@ IVBlockManager::~IVBlockManager()
 //		delete BlockToWrite;
 //		BlockToWrite = NULL;
 //	}
-	BlockInfo* p = BlockToWrite;
-	while (p != NULL)
+	std::shared_ptr<BlockInfo> p = BlockToWrite;
+	while (p != nullptr)
 	{
-		BlockInfo *np = p->next;
-		delete p;
+		std::shared_ptr<BlockInfo>np = p->next;
+		p.reset();
 		p = np;
 	}
-	BlockToWrite = NULL;
+	BlockToWrite = nullptr;
 	fclose(FreeBlockList);
 	fclose(ValueFile);
 }

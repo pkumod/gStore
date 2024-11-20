@@ -51,7 +51,7 @@ private:
 	// File record value lists
 	FILE* ValueFile;
 
-	BlockInfo* BlockToWrite;
+	std::shared_ptr<BlockInfo> BlockToWrite;
 
 	unsigned cur_block_num;
 

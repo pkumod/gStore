@@ -46,9 +46,9 @@ IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	this->max_buffer_size = _buffer_size;
 	this->heap_size = this->max_buffer_size / IVNode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
-	this->freelist = new BlockInfo;	//null-head
+	this->freelist = std::make_shared<BlockInfo>();	//null-head
 	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
-	BlockInfo* bp;
+	std::shared_ptr<BlockInfo> bp;
 	if (_mode == "build")
 	{	//write basic information
 		i = 0;
@@ -63,7 +63,7 @@ IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 			fputc(0, this->treefp);
 			for (k = 0; k < 8; ++k)
 			{
-				bp->next = new BlockInfo(i * 8 + k + 1, NULL);
+				bp->next = std::make_shared<BlockInfo>(i * 8 + k + 1, nullptr);
 				bp = bp->next;
 			}
 		}
@@ -86,7 +86,7 @@ IVStorage::IVStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 			{
 				if ((c & (1 << k)) == 0)
 				{
-					bp->next = new BlockInfo(i * 8 + 7 - k + 1, NULL);
+					bp->next = std::make_shared<BlockInfo>(i * 8 + 7 - k + 1, nullptr);
 					bp = bp->next;
 				}
 			}
@@ -275,8 +275,8 @@ IVStorage::Blocknum(long address) const
 unsigned
 IVStorage::AllocBlock()
 {
-	BlockInfo* p = this->freelist->next;
-	if (p == NULL)
+	std::shared_ptr<BlockInfo> p = this->freelist->next;
+	if (p == nullptr)
 	{
 		for (unsigned i = 0; i < SET_BLOCK_INC; ++i)
 		{
@@ -287,14 +287,14 @@ IVStorage::AllocBlock()
 	}
 	unsigned t = p->num;
 	this->freelist->next = p->next;
-	delete p;
+	p.reset();
 	return t;
 }
 
 void
 IVStorage::FreeBlock(unsigned _blocknum)
 {			//QUERY: head-sub and tail-add will be better?
-	BlockInfo* bp = new BlockInfo(_blocknum, this->freelist->next);
+	std::shared_ptr<BlockInfo> bp = std::make_shared<BlockInfo>(_blocknum, this->freelist->next);
 	this->freelist->next = bp;
 }
 
@@ -665,7 +665,7 @@ IVStorage::writeTree(IVNode* _root)	//write the whole tree back and close treefp
 		fputc(0xff, treefp);
 	}
 	char c;
-	BlockInfo* bp = this->freelist->next;
+	std::shared_ptr<BlockInfo> bp = this->freelist->next;
 	while (bp != NULL)
 	{
 		//if not-use then set 0, aligned to byte!
@@ -782,12 +782,12 @@ IVStorage::~IVStorage()
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");
 #endif
-	BlockInfo* bp = this->freelist;
-	BlockInfo* next;
-	while (bp != NULL)
+	std::shared_ptr<BlockInfo> bp = this->freelist;
+	std::shared_ptr<BlockInfo> next;
+	while (bp != nullptr)
 	{
 		next = bp->next;
-		delete bp;
+		bp.reset();
 		bp = next;
 	}
 #ifdef DEBUG_KVSTORE

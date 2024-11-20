@@ -135,15 +135,15 @@ void Database::initIDinfo()
 	// NOTICE:keep that limit-1 the maxium using ID
 	this->free_id_file_entity = this->getStorePath() + "/freeEntityID.dat";
 	this->limitID_entity = 0;
-	this->freelist_entity = NULL;
+	// this->freelist_entity = nullptr;
 
 	this->free_id_file_literal = this->getStorePath() + "/freeLiteralID.dat";
 	this->limitID_literal = 0;
-	this->freelist_literal = NULL;
+	// this->freelist_literal = nullptr;
 
 	this->free_id_file_predicate = this->getStorePath() + "/freePredicateID.dat";
 	this->limitID_predicate = 0;
-	this->freelist_predicate = NULL;
+	// this->freelist_predicate = nullptr;
 }
 
 void Database::resetIDinfo()
@@ -160,7 +160,7 @@ void Database::readIDinfo()
 	FILE *fp = NULL;
 	// int t = -1;
 	TYPE_ENTITY_LITERAL_ID t = INVALID_ENTITY_LITERAL_ID;
-	BlockInfo *bp = NULL;
+	std::shared_ptr<BlockInfo> bp;
 
 	fp = fopen(this->free_id_file_entity.c_str(), "r");
 	if (fp == NULL)
@@ -171,13 +171,13 @@ void Database::readIDinfo()
 	// QUERY:this will reverse the original order, if change?
 	// Notice that if we cannot ensure that IDs are uporder and continuous, we can
 	// not keep an array for IDs like _entity_bitset
-	BlockInfo *tmp = NULL, *cur = NULL;
+	std::shared_ptr<BlockInfo> tmp, cur;
 	fread(&(this->limitID_entity), sizeof(int), 1, fp);
 	fread(&t, sizeof(int), 1, fp);
 	while (!feof(fp))
 	{
-		tmp = new BlockInfo(t);
-		if (cur == NULL)
+		tmp = std::make_shared<BlockInfo>(t);
+		if (cur == nullptr)
 		{
 			this->freelist_entity = cur = tmp;
 		}
@@ -202,7 +202,7 @@ void Database::readIDinfo()
 	fread(&t, sizeof(int), 1, fp);
 	while (!feof(fp))
 	{
-		bp = new BlockInfo(t, this->freelist_literal);
+		bp = std::make_shared<BlockInfo>(t, this->freelist_literal);
 		this->freelist_literal = bp;
 		fread(&t, sizeof(int), 1, fp);
 	}
@@ -219,7 +219,7 @@ void Database::readIDinfo()
 	fread(&t, sizeof(int), 1, fp);
 	while (!feof(fp))
 	{
-		bp = new BlockInfo(t, this->freelist_predicate);
+		bp = std::make_shared<BlockInfo>(t, this->freelist_literal);
 		this->freelist_predicate = bp;
 		fread(&t, sizeof(int), 1, fp);
 	}
@@ -230,7 +230,7 @@ void Database::readIDinfo()
 void Database::writeIDinfo()
 {
 	FILE *fp = NULL;
-	BlockInfo *bp = NULL, *tp = NULL;
+	std::shared_ptr<BlockInfo> bp, tp;
 
 	fp = fopen(this->free_id_file_entity.c_str(), "w+");
 	if (fp == NULL)
@@ -240,11 +240,11 @@ void Database::writeIDinfo()
 	}
 	fwrite(&(this->limitID_entity), sizeof(int), 1, fp);
 	bp = this->freelist_entity;
-	while (bp != NULL)
+	while (bp != nullptr)
 	{
 		fwrite(&(bp->num), sizeof(int), 1, fp);
 		tp = bp->next;
-		delete bp;
+		bp.reset();
 		bp = tp;
 	}
 	fclose(fp);
@@ -258,11 +258,11 @@ void Database::writeIDinfo()
 	}
 	fwrite(&(this->limitID_literal), sizeof(int), 1, fp);
 	bp = this->freelist_literal;
-	while (bp != NULL)
+	while (bp != nullptr)
 	{
 		fwrite(&(bp->num), sizeof(int), 1, fp);
 		tp = bp->next;
-		delete bp;
+		bp.reset();
 		bp = tp;
 	}
 	fclose(fp);
@@ -280,7 +280,7 @@ void Database::writeIDinfo()
 	{
 		fwrite(&(bp->num), sizeof(int), 1, fp);
 		tp = bp->next;
-		delete bp;
+		bp.reset();
 		bp = tp;
 	}
 	fclose(fp);
@@ -290,7 +290,7 @@ void Database::writeIDinfo()
 void Database::saveIDinfo()
 {
 	FILE *fp = NULL;
-	BlockInfo *bp = NULL, *tp = NULL;
+	std::shared_ptr<BlockInfo> bp, tp;
 
 	fp = fopen(this->free_id_file_entity.c_str(), "w+");
 	if (fp == NULL)
@@ -369,9 +369,9 @@ Database::allocEntityID()
 	else
 	{
 		t = this->freelist_entity->num;
-		BlockInfo *op = this->freelist_entity;
+		std::shared_ptr<BlockInfo> op = this->freelist_entity;
 		this->freelist_entity = this->freelist_entity->next;
-		delete op;
+		op.reset();
 	}
 
 	this->entity_num++;
@@ -388,7 +388,7 @@ void Database::freeEntityID(TYPE_ENTITY_LITERAL_ID _id)
 	}
 	else
 	{
-		BlockInfo *p = new BlockInfo(_id, this->freelist_entity);
+		std::shared_ptr<BlockInfo> p = std::make_shared<BlockInfo>(_id, this->freelist_entity);
 		this->freelist_entity = p;
 	}
 
@@ -416,9 +416,9 @@ Database::allocLiteralID()
 	else
 	{
 		t = this->freelist_literal->num;
-		BlockInfo *op = this->freelist_literal;
+		std::shared_ptr<BlockInfo> op = this->freelist_literal;
 		this->freelist_literal = this->freelist_literal->next;
-		delete op;
+		op.reset();
 	}
 
 	this->literal_num++;
@@ -437,7 +437,7 @@ void Database::freeLiteralID(TYPE_ENTITY_LITERAL_ID _id)
 	}
 	else
 	{
-		BlockInfo *p = new BlockInfo(_id, this->freelist_literal);
+		std::shared_ptr<BlockInfo> p = std::make_shared<BlockInfo>(_id, this->freelist_literal);
 		this->freelist_literal = p;
 	}
 
@@ -466,9 +466,9 @@ Database::allocPredicateID()
 	else
 	{
 		t = this->freelist_predicate->num;
-		BlockInfo *op = this->freelist_predicate;
+		std::shared_ptr<BlockInfo> op = this->freelist_predicate;
 		this->freelist_predicate = this->freelist_predicate->next;
-		delete op;
+		op.reset();
 	}
 
 	this->pre_num++;
@@ -485,7 +485,7 @@ void Database::freePredicateID(TYPE_PREDICATE_ID _id)
 	}
 	else
 	{
-		BlockInfo *p = new BlockInfo(_id, this->freelist_predicate);
+		std::shared_ptr<BlockInfo> p = std::make_shared<BlockInfo>(_id, this->freelist_predicate);
 		this->freelist_predicate = p;
 	}
 
@@ -1462,31 +1462,31 @@ void Database::releaseIDBlock()
 {
 	if (this->freelist_entity != nullptr)
 	{
-		BlockInfo* p = this->freelist_entity;
+		std::shared_ptr<BlockInfo> p = this->freelist_entity;
 		while (p != nullptr)
 		{
-			BlockInfo *np = p->next;
-			delete p;
+			std::shared_ptr<BlockInfo> np = p->next;
+			p.reset();
 			p = np;
 		}
 	}
 	if (this->freelist_literal != nullptr)
 	{
-		BlockInfo* p = this->freelist_literal;
+		std::shared_ptr<BlockInfo> p = this->freelist_literal;
 		while (p != nullptr)
 		{
-			BlockInfo *np = p->next;
-			delete p;
+			std::shared_ptr<BlockInfo> np = p->next;
+			p.reset();
 			p = np;
 		}
 	}
 	if (this->freelist_predicate != nullptr)
 	{
-		BlockInfo* p = this->freelist_predicate;
+		std::shared_ptr<BlockInfo> p = this->freelist_predicate;
 		while (p != nullptr)
 		{
-			BlockInfo *np = p->next;
-			delete p;
+			std::shared_ptr<BlockInfo> np = p->next;
+			p.reset();
 			p = np;
 		}
 	}

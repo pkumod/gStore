@@ -14,7 +14,7 @@ ISStorage::ISStorage()
 {							//not use ../logs/, notice the location of program
 	cur_block_num = SET_BLOCK_NUM;
 	filepath = "";
-	freelist = NULL;
+	// freelist = nullptr;
 	treefp = NULL;
 	minheap = NULL;
 	max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;
@@ -44,9 +44,9 @@ ISStorage::ISStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 	this->max_buffer_size = _buffer_size;
 	this->heap_size = this->max_buffer_size / ISNode::INTL_SIZE;
 	this->freemem = this->max_buffer_size;
-	this->freelist = new BlockInfo;	//null-head
+	this->freelist = std::make_shared<BlockInfo>();	//null-head
 	unsigned i, j, k;	//j = (SuperNum-1)*BLOCK_SIZE
-	BlockInfo* bp;
+	std::shared_ptr<BlockInfo> bp;
 	if (_mode == "build")
 	{	//write basic information
 		i = 0;
@@ -61,7 +61,7 @@ ISStorage::ISStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 			fputc(0, this->treefp);
 			for (k = 0; k < 8; ++k)
 			{
-				bp->next = new BlockInfo(i * 8 + k + 1, NULL);
+				bp->next = std::make_shared<BlockInfo>(i * 8 + k + 1, std::shared_ptr<BlockInfo>());
 				bp = bp->next;
 			}
 		}
@@ -84,7 +84,7 @@ ISStorage::ISStorage(string& _filepath, string& _mode, unsigned* _height, unsign
 			{
 				if ((c & (1 << k)) == 0)
 				{
-					bp->next = new BlockInfo(i * 8 + 7 - k + 1, NULL);
+					bp->next = std::make_shared<BlockInfo>(i * 8 + 7 - k + 1, std::shared_ptr<BlockInfo>());
 					bp = bp->next;
 				}
 			}
@@ -230,7 +230,7 @@ ISStorage::Blocknum(long address) const
 unsigned
 ISStorage::AllocBlock()
 {
-	BlockInfo* p = this->freelist->next;
+	std::shared_ptr<BlockInfo> p = this->freelist->next;
 	if (p == NULL)
 	{
 		for (unsigned i = 0; i < SET_BLOCK_INC; ++i)
@@ -242,14 +242,14 @@ ISStorage::AllocBlock()
 	}
 	unsigned t = p->num;
 	this->freelist->next = p->next;
-	delete p;
+	p.reset();
 	return t;
 }
 
 void
 ISStorage::FreeBlock(unsigned _blocknum)
 {			//QUERY: head-sub and tail-add will be better?
-	BlockInfo* bp = new BlockInfo(_blocknum, this->freelist->next);
+	std::shared_ptr<BlockInfo> bp = std::make_shared<BlockInfo>(_blocknum, this->freelist->next);
 	this->freelist->next = bp;
 }
 
@@ -573,8 +573,8 @@ ISStorage::writeTree(ISNode* _root)	//write the whole tree back and close treefp
 		fputc(0xff, treefp);
 	}
 	char c;
-	BlockInfo* bp = this->freelist->next;
-	while (bp != NULL)
+	std::shared_ptr<BlockInfo> bp = this->freelist->next;
+	while (bp != nullptr)
 	{
 		//if not-use then set 0, aligned to byte!
 #ifdef DEBUG_KVSTORE
@@ -686,12 +686,12 @@ ISStorage::~ISStorage()
 #ifdef DEBUG_KVSTORE
 	printf("now to release the kvstore!\n");
 #endif
-	BlockInfo* bp = this->freelist;
-	BlockInfo* next;
-	while (bp != NULL)
+	std::shared_ptr<BlockInfo> bp = this->freelist;
+	std::shared_ptr<BlockInfo> next;
+	while (bp != nullptr)
 	{
 		next = bp->next;
-		delete bp;
+		bp.reset();
 		bp = next;
 	}
 #ifdef DEBUG_KVSTORE

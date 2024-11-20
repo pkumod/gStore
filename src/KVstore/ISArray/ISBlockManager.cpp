@@ -21,7 +21,7 @@ ISBlockManager::ISBlockManager()
 	FreeBlockList = NULL;
 	ValueFile = NULL;
 
-	BlockToWrite = NULL;
+	// BlockToWrite = nullptr;
 }
 
 ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynum )
@@ -54,7 +54,7 @@ ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynu
 
 	index_len_map.clear();
 	len_index_map.clear();
-	BlockToWrite = NULL;
+	// BlockToWrite = nullptr;
 
 	if (_mode == "build")
 	{
@@ -205,25 +205,25 @@ ISBlockManager::getWhereToWrite(unsigned _len)
 	if (it != len_index_map.end())
 	{
 		// prepare BLockToWrite
-		if (BlockToWrite != NULL)
+		if (BlockToWrite != nullptr)
 		{
 			// delete BlockToWrite;
-			BlockInfo *p=BlockToWrite;
-			BlockInfo *nextp=p->next;
-			while(p!=NULL)
+			std::shared_ptr<BlockInfo> p=BlockToWrite;
+			std::shared_ptr<BlockInfo> nextp=p->next;
+			while(p!=nullptr)
 			{
 				nextp=p->next;
-				delete p;
+				p.reset();
 				p=nextp;
 			}
-			BlockToWrite = NULL;
+			BlockToWrite = nullptr;
 		}
 
 		unsigned BaseIndex = it->second;
 
 		for(unsigned i = AllocNum; i > 0; i--)
 		{
-			BlockInfo *p = new BlockInfo(BaseIndex + i - 1, BlockToWrite);
+			std::shared_ptr<BlockInfo> p = std::make_shared<BlockInfo>(BaseIndex + i - 1, BlockToWrite);
 			BlockToWrite = p;
 		}
 
@@ -259,17 +259,17 @@ ISBlockManager::WriteValue(const char *_str, const unsigned _len)
 	
 	// write _str
 	int fd = fileno(ValueFile);
-	BlockInfo *p = BlockToWrite;
+	std::shared_ptr<BlockInfo> p = BlockToWrite;
 	char *pstr = (char *)_str; // pointer to buffer of where to write next
 	unsigned len_left = _len; // how many bytes left to write
 
-	while (p != NULL)
+	while (p != nullptr)
 	{
-		BlockInfo *nextp = p->next;
+		std::shared_ptr<BlockInfo> nextp = p->next;
 		unsigned Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
 		off_t offset = (off_t)(BLOCK_SIZE) * (p->num - 1);
 		unsigned NextIndex = 0;
-		if (nextp != NULL)
+		if (nextp != nullptr)
 		{
 			NextIndex = nextp->num;
 		}
@@ -365,11 +365,11 @@ ISBlockManager::FreeBlocks(const unsigned index)
 
 ISBlockManager::~ISBlockManager()
 {
-	BlockInfo* p = BlockToWrite;
-	while (p != NULL)
+	std::shared_ptr<BlockInfo> p = BlockToWrite;
+	while (p != nullptr)
 	{
-		BlockInfo *np = p->next;
-		delete p;
+		std::shared_ptr<BlockInfo> np = p->next;
+		p.reset();
 		p = np;
 	}
 	BlockToWrite = NULL;

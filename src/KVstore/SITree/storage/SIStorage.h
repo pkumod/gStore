@@ -75,7 +75,7 @@ public:
 	unsigned cur_block_num;
 	std::string filepath;
 	unsigned* tree_height_;
-	BlockInfo* freelist;
+	std::shared_ptr<BlockInfo> freelist;
 	FILE* tree_fp_;						//file: tree nodes
 
 	SIHeap* min_heap_;					//heap of Nodes's pointer, sorted in NF_RK
