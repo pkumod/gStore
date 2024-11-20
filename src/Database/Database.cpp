@@ -54,7 +54,7 @@ Database::Database()
 	this->literal_buffer = NULL;
 	this->literal_buffer_size = 0;
 
-	this->query_cache = new QueryCache();
+	this->query_cache = std::make_shared<QueryCache>();
 
 	this->if_loaded = false;
 	this->triple_update_num = 0;
@@ -112,7 +112,7 @@ Database::Database(string _name)
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
 	this->literal_buffer_size = 0;
-	this->query_cache = new QueryCache();
+	this->query_cache = std::make_shared<QueryCache>();
 
 	this->initIDinfo();
 
@@ -1448,7 +1448,7 @@ bool Database::unload()
 		this->initIDinfo();
 	}
 
-	delete this->query_cache;
+	this->query_cache.reset();
 
 	delete [] this->csr;
 	this->csr = NULL;
@@ -1574,7 +1574,7 @@ std::shared_ptr<StringIndex> Database::getStringIndex()
 	return this->stringindex;
 }
 
-QueryCache *Database::getQueryCache()
+std::shared_ptr<QueryCache> Database::getQueryCache()
 {
 	return this->query_cache;
 }

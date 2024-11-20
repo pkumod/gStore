@@ -100,7 +100,7 @@ public:
 
 	std::shared_ptr<KVstore> getKVstore();
 	std::shared_ptr<StringIndex> getStringIndex();
-	QueryCache *getQueryCache();
+	std::shared_ptr<QueryCache> getQueryCache();
 	TYPE_TRIPLE_NUM *getpre2num();
 	TYPE_TRIPLE_NUM *getpre2sub();
 	TYPE_TRIPLE_NUM *getpre2obj();
@@ -204,7 +204,7 @@ private:
 	Buffer *literal_buffer;
 	unsigned literal_buffer_size;
 
-	QueryCache *query_cache;
+	std::shared_ptr<QueryCache> query_cache;
 
 	// the unordered_map for store the statistic data of entitys
 	unordered_map<string, unsigned long long> umap;
