@@ -153,7 +153,7 @@ private:
 
 	std::shared_ptr<KVstore> kvstore;
 	std::shared_ptr<StringIndex> stringindex;
-	Join *join;
+	// std::shared_ptr<Join> join;
 
 	enum class UPDATE_TYPE
 	{
@@ -328,12 +328,12 @@ private:
 	bool insertTriple(const TripleWithObjType &_triple, vector<unsigned> *_vertices = NULL, vector<unsigned> *_predicates = NULL, shared_ptr<Transaction> txn = nullptr);
 	bool removeTriple(const TripleWithObjType &_triple, vector<unsigned> *_vertices = NULL, vector<unsigned> *_predicates = NULL, shared_ptr<Transaction> txn = nullptr);
 	// NOTICE:one by one is too costly, sort and insert/delete at a time will be better
-	unsigned insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 	// bool insert(const vector<TripleWithObjType>& _triples, vector<int>& _vertices, vector<int>& _predicates);
-	unsigned remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
+	unsigned remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr);
 
-	unsigned batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
-	unsigned batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
+	unsigned batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
+	unsigned batch_remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
@@ -357,7 +357,7 @@ private:
 	static int read_update_log(const string _path, multiset<string> &_i, multiset<string> &_r);
 	bool restore_update(multiset<string> &_i, multiset<string> &_r);
 	void clear_update_log();
-	bool write_update_log(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
+	bool write_update_log(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
 	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id);
 	void addTripleUpdateNum(unsigned num){ triple_update_num += num; }
 };

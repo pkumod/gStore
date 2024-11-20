@@ -3684,14 +3684,13 @@ void GeneralEvaluation::releaseResult()
 	this->temp_result = NULL;
 }
 
-void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num)
+void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, std::shared_ptr<TripleWithObjType[]>& update_triple, TYPE_TRIPLE_NUM &update_triple_num)
 {
 	update_pattern.getVarset();
 
 	if (update_triple != NULL)
 	{
-		delete[] update_triple;
-		update_triple = NULL;
+		update_triple.reset();
 	}
 
 	if (this->temp_result == NULL)
@@ -3707,7 +3706,9 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, Triple
 					update_triple_num += this->temp_result->results[j].result.size();
 		}
 
-	update_triple = new TripleWithObjType[update_triple_num];
+	std::shared_ptr<TripleWithObjType[]> update_triple_sptr(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
+	update_triple = update_triple_sptr;
+	
 
 	int update_triple_count = 0;
 	

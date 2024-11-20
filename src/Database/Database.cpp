@@ -45,7 +45,7 @@ Database::Database()
 	this->entity_num = 0;
 	this->triples_num = 0;
 
-	this->join = NULL;
+	// this->join = NULL;
 	this->pre2num = nullptr;
 	this->pre2sub = nullptr;
 	this->pre2obj = nullptr;
@@ -104,10 +104,10 @@ Database::Database(string _name)
 	this->if_loaded = false;
 	this->triple_update_num = 0;
 
-	this->join = NULL;
-	this->pre2num = NULL;
-	this->pre2sub = NULL;
-	this->pre2obj = NULL;
+	// this->join = NULL;
+	this->pre2num = nullptr;
+	this->pre2sub = nullptr;
+	this->pre2obj = nullptr;
 	this->entity_buffer = NULL;
 	this->entity_buffer_size = 0;
 	this->literal_buffer = NULL;
@@ -1755,7 +1755,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			SLOG_CORE("write priviledge of update lock acquired");
 
 		success_num = 0;
-		TripleWithObjType *update_triple = NULL;
+		std::shared_ptr<TripleWithObjType[]> update_triple;
 		TYPE_TRIPLE_NUM update_triple_num = 0;
 		unsigned update_success_triple_num = 0;
 		/*if (trie == NULL)
@@ -1783,7 +1783,8 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			{
 				throw runtime_error("Not enough disk space for batch insertion");
 			}
-			update_triple = new TripleWithObjType[update_triple_num];
+			std::shared_ptr<TripleWithObjType[]> update_triple_sptr(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
+			update_triple = update_triple_sptr;
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
 				if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
@@ -1862,13 +1863,13 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			if (txn == nullptr)
 				pthread_rwlock_unlock(&(this->update_lock));
 			general_evaluation.releaseResult();
-			delete[] update_triple;
+			update_triple.reset();
 			throw runtime_error("batch insert failed.");
 		}
 
 		success_num = update_success_triple_num;
 		general_evaluation.releaseResult();
-		delete[] update_triple;
+		update_triple.reset();
 
 		// NOTICE: maybe no updates are really done!
 		if (success_num > 0 && query_cache != nullptr)
@@ -2582,7 +2583,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 		return false;
 	}
 
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 
 	// don't know the number of entity
 	// pre allocate entitybitset_max EntityBitSet for storing signature, double the space until the _entity_bitset is used up.
@@ -2811,8 +2812,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	}
 	this->kvstore->set_if_single_thread(false);
 
-	delete[] triple_array;
-	triple_array = NULL;
+	triple_array.reset();
 	_fin.close();
 	_six_tuples_fout.close();
 	fclose(fp);
@@ -2883,7 +2883,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 		return false;
 	}
 
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 
 	SLOG_CORE("Begin to build Trie ......");
 	int num_lines = 0;
@@ -3128,8 +3128,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	this->kvstore->set_if_single_thread(false);
 
-	delete[] triple_array;
-	triple_array = NULL;
+	triple_array.reset();
 	_fin.close();
 	_six_tuples_fout.close();
 	fclose(fp);
@@ -3470,7 +3469,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	// the parameter in build and insert must be the same, because RDF parser also use this
 	// for build process, this one can be big enough if memory permits
 	// for insert/delete process, this can not be too large, otherwise too costly
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	// parse a file
 	RDFParser _parser(_fin);
 
@@ -3504,7 +3503,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		// triple_num += parse_triple_num;
 	}
 
-	delete[] triple_array;
+	triple_array.reset();
 	triple_array = NULL;
 	long tv_insert = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after insert, used " << (tv_insert - tv_load) << "ms.");
@@ -3548,7 +3547,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	}
 
 	// NOTICE+WARN:we can not load all triples into memory all at once!!!
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	// parse a file
 	RDFParser _parser(_fin);
 
@@ -3583,7 +3582,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	// BETTER: free this just after id_tuples are ok
 	//(only when using group insertion/deletion)
 	// or reduce the array size
-	delete[] triple_array;
+	triple_array.reset();
 	triple_array = NULL;
 	long tv_remove = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after remove, used " << (tv_remove - tv_load) << "ms.");
@@ -3612,7 +3611,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 }
 
 unsigned
-Database::insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
+Database::insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
@@ -3667,7 +3666,7 @@ Database::insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num,
 }
 
 unsigned
-Database::remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
+Database::remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn)
 {
 	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
 	TYPE_TRIPLE_NUM valid_num = 0;
@@ -3770,7 +3769,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	// the parameter in build and insert must be the same, because RDF parser also use this
 	// for build process, this one can be big enough if memory permits
 	// for insert/delete process, this can not be too large, otherwise too costly
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	// parse a file
 	RDFParser _parser(_fin);
 	//parse error log
@@ -3795,8 +3794,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		insert_num = this->batch_insert(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
 		if (insert_num == UINT32_MAX)
 		{
-			delete[] triple_array;
-			triple_array = NULL;
+			triple_array.reset();
 			throw runtime_error("batch insert failed: probably out of memory");
 		}
 		success_num += insert_num;
@@ -3804,7 +3802,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
 
-	delete[] triple_array;
+	triple_array.reset();
 	triple_array = NULL;
 	this->saveStatisticsInfoFile();
 	long tv_insert = gutil::TimeUtil::timestamp();
@@ -3850,7 +3848,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	}
 
 	// NOTICE+WARN:we can not load all triples into memory all at once!!!
-	TripleWithObjType *triple_array = new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP];
+	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	RDFParser _parser(_fin);
 	//parse error log
 	string error_log = this->store_path + "/parse_error.log";
@@ -3875,8 +3873,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 	}
 
-	delete[] triple_array;
-	triple_array = NULL;
+	triple_array.reset();
 	this->saveStatisticsInfoFile();
 	long tv_remove = gutil::TimeUtil::timestamp();
 	SLOG_CORE("after batch remove, used " << (tv_remove - tv_load) << "ms.");
@@ -3892,7 +3889,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 
 // WARNING: TRANSACTIONAL batch insert is not completed yet!
 unsigned
-Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
+Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;
@@ -4082,7 +4079,7 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 
 // WARNING: TRANSACTIONAL batch remove is not completed yet!
 unsigned
-Database::batch_remove(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
+Database::batch_remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore, shared_ptr<Transaction> txn, shared_ptr<ofstream> cluster_log)
 {
 	if (_triple_num == 0)
 		return 0;
@@ -4585,7 +4582,7 @@ void Database::clear_update_log()
 	out.close();
 }
 
-bool Database::write_update_log(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn)
+bool Database::write_update_log(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn)
 {
 	log_lock.lock();
 	string path = this->getStorePath() + '/' + this->update_log;

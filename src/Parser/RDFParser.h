@@ -29,7 +29,7 @@ public:
 
     RDFParser();
     RDFParser(ifstream& _fin);
-    int parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log="", int init_line=0);
-    void parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num);
+    int parseFile(std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num, string _error_log="", int init_line=0);
+    void parseString(string _str, std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num);
 };
 #endif

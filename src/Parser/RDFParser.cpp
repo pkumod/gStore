@@ -43,7 +43,7 @@ RDFParser::RDFParser(ifstream& _fin):_TurtleParser(_fin)
  * blank, output will be redirected to stdout. Each line of output is in the
  * format of: Line x (subject predicate object): error message.
  */
-int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, string _error_log, int init_line)
+int RDFParser::parseFile(std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num, string _error_log, int init_line)
 {
 	string rawSubject, rawPredicate, rawObject;
 	string _subject, _predicate, _object, _objectSubType;
@@ -396,7 +396,7 @@ int RDFParser::parseFile(TripleWithObjType* _triple_array, int& _triple_num, str
  */
 /*	
 */
-void RDFParser::parseString(string _str, TripleWithObjType* _triple_array, int& _triple_num)
+void RDFParser::parseString(string _str, std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num)
 {
 	//clear in each time invoking
 	// The same thing: just a string stream instead of a file stream.

@@ -135,7 +135,7 @@ class GeneralEvaluation
 		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
 
-		void prepareUpdateTriple(GroupPattern &update_pattern, TripleWithObjType *&update_triple, TYPE_TRIPLE_NUM &update_triple_num);
+		void prepareUpdateTriple(GroupPattern &update_pattern, std::shared_ptr<TripleWithObjType[]>& update_triple, TYPE_TRIPLE_NUM &update_triple_num);
 
 	private:
 		void loadCSR();
