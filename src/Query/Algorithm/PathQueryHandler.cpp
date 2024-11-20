@@ -2,12 +2,15 @@
 
 using namespace std;
 
-PathQueryHandler::PathQueryHandler(CSR *_csr)
+PathQueryHandler::PathQueryHandler(std::shared_ptr<CSR[]>& _csr)
 {
 	if (_csr)
 		csr = _csr;
 	else
-		csr = new CSR[2];
+    {
+        std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
+        csr = csr_sptr;
+    }
 	cacheMaxSize = 10000;
 	n = -1;
 	m = -1;

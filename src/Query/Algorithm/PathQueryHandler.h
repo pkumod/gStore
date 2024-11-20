@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <assert.h>
 #include <unordered_set>
+#include <memory>
+#include <functional>
 
 #ifndef _QUERY_PATH_H
 #define _QUERY_PATH_H
@@ -321,13 +323,13 @@ struct iMap
 class PathQueryHandler
 {
 private:
-	CSR *csr;
+	std::shared_ptr<CSR[]> csr;
 	std::unordered_map<int, std::set<int> > distinctInEdges;
 	std::unordered_map<int, std::set<int> > distinctOutEdges;
 	int cacheMaxSize;
 	int n, m;	// #vertices, #edges
 public:
-	PathQueryHandler(CSR *_csr);
+	PathQueryHandler(std::shared_ptr<CSR[]>& _csr);
 	
 	~PathQueryHandler();
 

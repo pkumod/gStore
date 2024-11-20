@@ -43,7 +43,7 @@ class GeneralEvaluation
 		shared_ptr<Optimizer> optimizer_;
 		std::shared_ptr<QueryCache> query_cache;
 		shared_ptr<PathQueryHandler> pqHandler;
-		CSR *csr;
+		std::shared_ptr<CSR[]> csr;
 		bool ranked;
 
 		std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num;
@@ -90,7 +90,7 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, CSR *_csr,
+		GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, std::shared_ptr<CSR[]>& _csr,
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,

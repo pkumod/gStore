@@ -35,7 +35,7 @@ public:
 	// depending on this->encode_mode
 	static const int STRING_MODE = 1;
 	static const int ID_MODE = 2;
-	CSR *csr;
+	std::shared_ptr<CSR[]> csr;
 	unsigned triple_update_num;
 	Database();
 	Database(std::string _name);

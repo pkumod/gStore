@@ -22,7 +22,7 @@ Database::Database()
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
-	this->csr = NULL;
+	// this->csr = nullptr;
 
 	this->type_predicate_name = "type@@TYPE@@类型";
 	// this->csr = new CSR[2];
@@ -84,7 +84,7 @@ Database::Database(string _name)
 	this->id_tuples_file = "id_tuples";
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
-	this->csr = NULL;
+	// this->csr = nullptr;
 	// this->csr = new CSR[2];
 	this->type_predicate_name = "type@@TYPE@@类型";
 	string kv_store_path = store_path + "/kv_store";
@@ -784,7 +784,8 @@ bool Database::load(bool loadCSR)
 
 	if (loadCSR)
 	{
-		this->csr = new CSR[2];
+		std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
+		this->csr = csr_sptr;
 		unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
 		this->csr[0].init(pre_num);
 		this->csr[1].init(pre_num);
@@ -1448,8 +1449,7 @@ bool Database::unload()
 
 	this->query_cache.reset();
 
-	delete [] this->csr;
-	this->csr = NULL;
+	this->csr.reset();
 
 	this->if_loaded = false;
 	this->clear_update_log();

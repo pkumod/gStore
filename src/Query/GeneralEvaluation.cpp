@@ -115,7 +115,7 @@ GeneralEvaluation::EvaluationStackStruct::~EvaluationStackStruct()
 // }
 
 
-GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, CSR *_csr,
+GeneralEvaluation::GeneralEvaluation(std::shared_ptr<KVstore>& _kvstore, std::shared_ptr<StringIndex>& _stringindex,  std::shared_ptr<QueryCache>& _query_cache, std::shared_ptr<CSR[]>& _csr,
 									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
 									 std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 									 TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
@@ -140,8 +140,9 @@ GeneralEvaluation::loadCSR()
 	SLOG_CORE("GeneralEvaluation::loadCSR");
 
 	if (csr)
-		delete [] csr;
-	csr = new CSR[2];
+		this->csr.reset();
+	std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
+	csr = csr_sptr;
 
 	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 	csr[0].init(pre_num);
