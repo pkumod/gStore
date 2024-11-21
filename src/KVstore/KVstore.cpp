@@ -2827,7 +2827,7 @@ KVstore::close_subID2values()
 //p1-list(in offset1) p2-list(in offset2) ... pn-list(in offsetn)
 //(the final whole list is a unsorted olist)
 bool 
-KVstore::build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num) 
+KVstore::build_subID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num) 
 {
 	// cout << "Begin building subID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_spo_cmp);
@@ -3508,7 +3508,7 @@ KVstore::close_objID2values()
 //p1-list(in offset1) p2-list(in offset2) ... pn-list(in offsetn)
 //(the final whole list is a unsorted slist)
 bool 
-KVstore::build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num) 
+KVstore::build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num) 
 {
 	// cout << "Begin building objID2values..." << endl;
 	//qsort(_p_id_tuples, _triples_num, sizeof(int*), Util::_ops_cmp);
@@ -4139,7 +4139,7 @@ KVstore::close_preID2values()
 }
 
 bool 
-KVstore::build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num) 
+KVstore::build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num) 
 //NOTICE: if we sort sidlist, then oidlist is not sorted; otherwise if we sort oidlist, then sidlist is not sorted
 //STRUCT of p2xx: triple_number sidlist oidlist(not sorted, linked with sidlist one by one)
 {

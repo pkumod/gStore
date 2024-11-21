@@ -2215,7 +2215,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 #endif
 
 	// TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
-	ID_TUPLE *_p_id_tuples = NULL;
+	// std::shared_ptr<ID_TUPLE[]>& _p_id_tuples = NULL;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	long t1 = gutil::TimeUtil::timestamp();
@@ -2271,6 +2271,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
 	//(if copy the 6 id2string trees, no need to parse each time)
+	std::shared_ptr<ID_TUPLE[]> _p_id_tuples(new ID_TUPLE[this->triples_num], std::default_delete<ID_TUPLE[]>());
 	this->readIDTuples(_p_id_tuples);
 
 	// NOTICE: we can also build the signature when we are reading triples, and
@@ -2301,7 +2302,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 	SLOG_CORE("after p2xx, used " << (t8 - t7) << "ms.");
 
 	// WARN:we must free the memory for id_tuples array
-	delete[] _p_id_tuples;
+	_p_id_tuples.reset();
 
 	// for (TYPE_TRIPLE_NUM i = 0; i < this->triples_num; ++i)
 	//{
@@ -2332,7 +2333,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 #endif
 
 	// TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
-	ID_TUPLE *_p_id_tuples = NULL;
+	// std::shared_ptr<ID_TUPLE[]>& _p_id_tuples = NULL;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
 	// long t1 = gutil::TimeUtil::timestamp();
@@ -2387,6 +2388,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
 	//(if copy the 6 id2string trees, no need to parse each time)
+	std::shared_ptr<ID_TUPLE[]> _p_id_tuples(new ID_TUPLE[this->triples_num], std::default_delete<ID_TUPLE[]>());
 	this->readIDTuples(_p_id_tuples);
 
 	// NOTICE: we can also build the signature when we are reading triples, and
@@ -2414,7 +2416,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	SLOG_CORE("Finish building p2values, used " << (t8 - t7) << "ms.");
 
 	// WARN:we must free the memory for id_tuples array
-	delete[] _p_id_tuples;
+	_p_id_tuples.reset();
 
 	bool flag = this->saveDBInfoFile();
 	if (!flag)
@@ -2433,9 +2435,9 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	return true;
 }
 
-void Database::readIDTuples(ID_TUPLE *&_p_id_tuples)
+void Database::readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples)
 {
-	_p_id_tuples = NULL;
+	// _p_id_tuples = NULL;
 	string fname = this->getIDTuplesFile();
 	FILE *fp = fopen(fname.c_str(), "rb");
 	if (fp == NULL)
@@ -2448,8 +2450,8 @@ void Database::readIDTuples(ID_TUPLE *&_p_id_tuples)
 	// size_t means long unsigned int in 64-bit machine
 	// unsigned long total_num = this->triples_num * 3;
 	//_p_id_tuples = new TYPE_ENTITY_LITERAL_ID[total_num];
-	_p_id_tuples = new ID_TUPLE[this->triples_num];
-	fread(_p_id_tuples, sizeof(ID_TUPLE), this->triples_num, fp);
+	// _p_id_tuples = new ID_TUPLE[this->triples_num];
+	fread(_p_id_tuples.get(), sizeof(ID_TUPLE), this->triples_num, fp);
 
 	fclose(fp);
 	// NOTICE: choose to empty the file or not
@@ -2458,15 +2460,15 @@ void Database::readIDTuples(ID_TUPLE *&_p_id_tuples)
 	// return NULL;
 }
 
-void Database::build_s2xx(ID_TUPLE *_p_id_tuples)
+void Database::build_s2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 	// NOTICE: STL sort() is generally fatser than C qsort, especially when qsort is very slow
 	// STL sort() not only use qsort algorithm, it can also choose heap-sort method
 #ifndef PARALLEL_SORT
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::spo_cmp_idtuple);
 #else
 	omp_set_num_threads(thread_num);
-	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::spo_cmp_idtuple);
+	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::spo_cmp_idtuple);
 #endif
 	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
 
@@ -2487,25 +2489,25 @@ void Database::build_s2xx(ID_TUPLE *_p_id_tuples)
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
 }
 
-void Database::build_o2xx(ID_TUPLE *_p_id_tuples)
+void Database::build_o2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 #ifndef PARALLEL_SORT
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
 #else
 	omp_set_num_threads(thread_num);
-	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::ops_cmp_idtuple);
+	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
 #endif
 	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
 }
 
-void Database::build_p2xx(ID_TUPLE *_p_id_tuples)
+void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 #ifndef PARALLEL_SORT
-	sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
 #else
 	omp_set_num_threads(thread_num);
-	__gnu_parallel::sort(_p_id_tuples, _p_id_tuples + this->triples_num, Util::pso_cmp_idtuple);
+	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
 #endif
 	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);

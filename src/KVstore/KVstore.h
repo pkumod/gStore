@@ -191,7 +191,7 @@ public:
 	//for subID2values
 	bool open_subID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entity_num = 0);
 	bool close_subID2values();
-	bool build_subID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num);
+	bool build_subID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num);
 	bool getpreIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getobjIDlistBysubID(TYPE_ENTITY_LITERAL_ID _subid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getobjIDlistBysubIDpreID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
@@ -200,7 +200,7 @@ public:
 	//for objID2values
 	bool open_objID2values(int _mode, TYPE_ENTITY_LITERAL_ID _entitynum = 0, TYPE_ENTITY_LITERAL_ID _literal_num = 0);
 	bool close_objID2values();
-	bool build_objID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num);
+	bool build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_ENTITY_LITERAL_ID total_entity_num, TYPE_ENTITY_LITERAL_ID total_literal_num);
 	bool getpreIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _preidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getsubIDlistByobjID(TYPE_ENTITY_LITERAL_ID _objid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getsubIDlistByobjIDpreID(TYPE_ENTITY_LITERAL_ID _objid, TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
@@ -208,7 +208,7 @@ public:
 	//for preID2values
 	bool open_preID2values(int _mode, TYPE_PREDICATE_ID _pre_num = 0);
 	bool close_preID2values();
-	bool build_preID2values(ID_TUPLE* _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num);
+	bool build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID total_pre_num);
 	bool getsubIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;
 	bool getsubIDobjIDlistBypreID(TYPE_PREDICATE_ID _preid, unsigned*& _subid_objidlist, unsigned& _list_len, bool _no_duplicate = false, shared_ptr<Transaction> txn = nullptr) const;

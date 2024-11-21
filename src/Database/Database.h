@@ -318,10 +318,10 @@ private:
 	bool encodeRDF_new(const string _rdf_file);
 	// add param to store the parse error tuple
 	bool encodeRDF_new(const string _rdf_file, const string _error_log, shared_ptr<ofstream> cluster_log = nullptr);
-	void readIDTuples(ID_TUPLE *&_p_id_tuples);
-	void build_s2xx(ID_TUPLE *);
-	void build_o2xx(ID_TUPLE *);
-	void build_p2xx(ID_TUPLE *);
+	void readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples);
+	void build_s2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples );
+	void build_o2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples );
+	void build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples );
 
 	// insert and delete, notice that modify is not needed here
 	// we can read from file or use sparql syntax
