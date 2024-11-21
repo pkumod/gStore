@@ -44,7 +44,7 @@ namespace server
         }
         if (apiUtil->check_db_loaded(db_name) == false)
         {
-            msg = "Database not load yet.";
+            response.StatusMsg = "Database not load yet.";
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }
