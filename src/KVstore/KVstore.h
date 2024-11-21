@@ -262,10 +262,10 @@ private:
 //	IVTree* objID2values;
 //	IVTree* preID2values;
 
-	IVArray* subID2values;
-	IVArray* objID2values;
-	IVArray* objID2values_literal;
-	IVArray* preID2values;
+	std::shared_ptr<IVArray> subID2values;
+	std::shared_ptr<IVArray> objID2values;
+	std::shared_ptr<IVArray> objID2values_literal;
+	std::shared_ptr<IVArray> preID2values;
 	static std::string s_sID2values;
 	static std::string s_oID2values;
 	static std::string s_pID2values;
@@ -285,31 +285,31 @@ private:
 	//bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(ISArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 	//bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	bool open(IVArray* & _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
+	bool open(std::shared_ptr<IVArray>& _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 
 	void flush(SITree* _p_btree);
 	//void flush(ISTree* _p_btree);
 	void flush(ISArray* _array);
 	//void flush(IVTree* _p_btree);
-	void flush(IVArray* _array);
+	void flush(std::shared_ptr<IVArray>& _array);
 
 	bool addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
 	//bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 	//bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool addValueByKey(IVArray* _array, unsigned _key, char *_val, unsigned long _vlen);
+	bool addValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char *_val, unsigned long _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
 	//bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen);
 //	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
-	bool setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long _vlen);
+	bool setValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
 	//bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const;
 //	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
-	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen) const;
+	bool getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char*& _val, unsigned long & _vlen) const;
 
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
@@ -318,7 +318,7 @@ private:
 	//bool removeKey(ISTree* _p_btree, unsigned _key);
 	bool removeKey(ISArray* _array, unsigned _key);
 //	bool removeKey(IVTree* _p_btree, unsigned _key);
-	bool removeKey(IVArray* _array, unsigned _key);
+	bool removeKey(std::shared_ptr<IVArray>& _array, unsigned _key);
 
 	static std::vector<unsigned> intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len1, unsigned _len2);
 	static unsigned binarySearch(unsigned key, const unsigned* _list, unsigned _list_len, int step = 1);
@@ -331,25 +331,25 @@ private:
 	*/
 
 	//read (overload getValueByKey here)
-	bool getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched,  bool FirstRead = false) const;
+	bool getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched,  bool FirstRead = false) const;
 
 	//write
-	bool insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn);
-	bool remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn);
+	bool insert_values(std::shared_ptr<IVArray>& _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn);
+	bool remove_values(std::shared_ptr<IVArray>& _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn);
 
 	//abort
-	bool invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read);
+	bool invalid_values(std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read);
 
 	//locks and latches operation
 	bool try_exclusive_lock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID _pre_id, TYPE_ENTITY_LITERAL_ID _obj_id, shared_ptr<Transaction> txn);
 	bool try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_ENTITY_LITERAL_ID>& oids, vector<TYPE_PREDICATE_ID>& pids, shared_ptr<Transaction> txn);
 
-	int get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const;
-	bool release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
-	bool release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	int get_exclusive_latch(std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const;
+	bool release_exclusive_latch(const std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn) const;
+	bool release_shared_latch(const std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn) const;
 
 	//Garbage Collection
-	bool clean_dirty_key(IVArray* _array, unsigned _key) ;
+	bool clean_dirty_key(std::shared_ptr<IVArray>& _array, unsigned _key) ;
 	void s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn) ;
 	void o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn) ;
 	void o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<Transaction> txn) ;

@@ -28,10 +28,10 @@ KVstore::KVstore(string _store_path)
 	this->literal2id = NULL;
 	this->id2literal = NULL;
 
-	this->subID2values = NULL;
-	this->preID2values = NULL;
-	this->objID2values = NULL;
-	this->objID2values_literal = NULL;
+	this->subID2values = nullptr;
+	this->preID2values = nullptr;
+	this->objID2values = nullptr;
+	this->objID2values_literal = nullptr;
 	this->csr_update = false;
 }
 
@@ -79,15 +79,14 @@ KVstore::release()
 	delete this->id2predicate;
 	this->id2predicate = NULL;
 
-	delete this->subID2values;
-	this->subID2values = NULL;
-	delete this->preID2values;
-	this->preID2values = NULL;
-	delete this->objID2values;
-	this->objID2values = NULL;
-
-	delete this->objID2values_literal;
-	this->objID2values_literal = NULL;
+	this->subID2values.reset();
+	this->subID2values = nullptr;
+	this->preID2values.reset();
+	this->preID2values = nullptr;
+	this->objID2values.reset();
+	this->objID2values = nullptr;
+	this->objID2values_literal.reset();
+	this->objID2values_literal = nullptr;
 
 	if (trie != NULL)
 	{
@@ -2817,8 +2816,8 @@ KVstore::close_subID2values()
 	}
 
 	this->subID2values->save();
-	delete this->subID2values;
-	this->subID2values = NULL;
+	this->subID2values.reset();
+	this->subID2values = nullptr;
 
 	return true;
 }
@@ -3490,14 +3489,14 @@ KVstore::close_objID2values()
 	if (this->objID2values != NULL)
 	{
 		this->objID2values->save();
-		delete this->objID2values;
-		this->objID2values = NULL;
+		this->objID2values.reset();
+		this->objID2values = nullptr;
 	}
 	if (this->objID2values_literal != NULL)
 	{
 		this->objID2values_literal->save();
-		delete this->objID2values_literal;
-		this->objID2values_literal = NULL;
+		this->objID2values_literal.reset();
+		this->objID2values_literal = nullptr;
 	}
 
 	return true;
@@ -4132,8 +4131,8 @@ KVstore::close_preID2values()
 	}
 
 	this->preID2values->save();
-	delete this->preID2values;
-	this->preID2values = NULL;
+	this->preID2values.reset();
+	this->preID2values = nullptr;
 
 	return true;
 }
@@ -4879,7 +4878,7 @@ KVstore::open(IVTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 }*/
 
 bool
-KVstore::open(IVArray*& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num)
+KVstore::open(std::shared_ptr<IVArray>& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num)
 {
 	if (_array != NULL)
 	{
@@ -4899,7 +4898,7 @@ KVstore::open(IVArray*& _array, string _name, int _mode, unsigned long long _buf
 		SLOG_ERROR("Invalid open mode of: " << _name << " mode = " << _mode);
 		return false;
 	}
-	_array = new IVArray(this->store_path, _name, smode, _buffer_size, _key_num);
+	_array = std::make_shared<IVArray>(this->store_path, _name, smode, _buffer_size, _key_num);
 
 	return true;
 }
@@ -4943,7 +4942,7 @@ KVstore::flush(IVTree* _p_btree)
 }*/
 
 void
-KVstore::flush(IVArray* _array)
+KVstore::flush(std::shared_ptr<IVArray>& _array)
 {
 	if (_array != NULL)
 	{
@@ -4981,7 +4980,7 @@ KVstore::addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::addValueByKey(IVArray *_array, unsigned _key, char* _val, unsigned long _vlen)
+KVstore::addValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5021,7 +5020,7 @@ KVstore::setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::setValueByKey(IVArray* _array, unsigned _key, char* _val, unsigned long _vlen)
+KVstore::setValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5062,7 +5061,7 @@ KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _
 }*/
 
 bool
-KVstore::getValueByKey(IVArray* _array, unsigned _key, char* &_val, unsigned long & _vlen) const
+KVstore::getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char* &_val, unsigned long & _vlen) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5117,7 +5116,7 @@ KVstore::removeKey(IVTree* _p_btree, unsigned _key)
 }*/
 
 bool
-KVstore::removeKey(IVArray* _array, unsigned _key)
+KVstore::removeKey(std::shared_ptr<IVArray>& _array, unsigned _key)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5294,7 +5293,7 @@ unsigned short KVstore::buffer_pID2values_query = 8;
 //MVCC
 
 bool
-KVstore::getValueByKey(IVArray* _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched, bool FirstRead) const
+KVstore::getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char*& _val, unsigned long & _vlen, VDataSet& AddSet, VDataSet& DelSet, shared_ptr<Transaction> txn, bool &latched, bool FirstRead) const
 {
 	//cout << "getValueByKey                  " << _key << FirstRead << endl;
 	//cout << "this is transaction getValueByKey ..................." << endl;
@@ -5352,7 +5351,7 @@ KVstore::updateRemove_p2values(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID
 }
 	
 bool
-KVstore::insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
+KVstore::insert_values(std::shared_ptr<IVArray>& _array, unsigned _key, VDataSet &addset, shared_ptr<Transaction> txn)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5363,7 +5362,7 @@ KVstore::insert_values(IVArray* _array, unsigned _key, VDataSet &addset, shared_
 }
 
 bool 
-KVstore::remove_values(IVArray* _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
+KVstore::remove_values(std::shared_ptr<IVArray>& _array, unsigned _key, VDataSet &delset, shared_ptr<Transaction> txn)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5596,7 +5595,7 @@ KVstore::try_exclusive_locks(vector<TYPE_ENTITY_LITERAL_ID>& sids, vector<TYPE_E
 }
 
 int 
-KVstore::get_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
+KVstore::get_exclusive_latch(std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5634,7 +5633,7 @@ KVstore::ReleaseExclusiveLock(TYPE_ENTITY_LITERAL_ID _sub_id, TYPE_PREDICATE_ID 
 }
 
 bool 
-KVstore::invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
+KVstore::invalid_values(std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn, bool has_read)
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5646,7 +5645,7 @@ KVstore::invalid_values(IVArray* _array, unsigned _key, shared_ptr<Transaction> 
 
 
 bool 
-KVstore::release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_exclusive_latch(const std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -5657,7 +5656,7 @@ KVstore::release_exclusive_latch(IVArray* _array, unsigned _key, shared_ptr<Tran
 }
 
 bool 
-KVstore::release_shared_latch(IVArray* _array, unsigned _key, shared_ptr<Transaction> txn) const
+KVstore::release_shared_latch(const std::shared_ptr<IVArray>& _array, unsigned _key, shared_ptr<Transaction> txn) const
 {
 	if (Util::is_literal_ele(_key) && _array == objID2values)
 	{
@@ -6126,7 +6125,7 @@ KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 
 
 bool 
-KVstore::clean_dirty_key(IVArray* _array, unsigned _key)
+KVstore::clean_dirty_key(std::shared_ptr<IVArray>& _array, unsigned _key)
 {
 	return _array->CleanDirtyKey(_key);
 }
