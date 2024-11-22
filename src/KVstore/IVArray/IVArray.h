@@ -31,7 +31,7 @@ private:
 
 private:
 	EntryBlockList<IVEntry> array_;
-	IVEntry *cache_head;
+	std::shared_ptr<IVEntry> cache_head;
 	int cache_tail_id;
 	FILE* IVfile; // file that records index-store
 	string IVfile_name;

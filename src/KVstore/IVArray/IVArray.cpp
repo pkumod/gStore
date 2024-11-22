@@ -21,7 +21,7 @@ IVArray::IVArray()
 	//index_time_map.clear();
 	//time_index_map.clear();
 	MAX_CACHE_SIZE = 0;
-	cache_head = new IVEntry;
+	cache_head = std::make_shared<IVEntry>();
 	cache_tail_id = -1;
 }
 
@@ -29,7 +29,8 @@ IVArray::~IVArray()
 {
 	fclose(IVfile);
 	delete BM;
-	delete cache_head;
+	cache_head.reset();
+	cache_head = nullptr;
 	//index_time_map.clear();
 	//time_index_map.clear();
 }
@@ -45,7 +46,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	//time_index_map.clear();
 	MAX_CACHE_SIZE = buffer_size;
 //	MAX_CACHE_SIZE = 10 * (1 << 30);
-	cache_head = new IVEntry;
+	cache_head = std::make_shared<IVEntry>();
 	cache_tail_id = -1;
 
 	unsigned SETKEYNUM = 1 << 10;
