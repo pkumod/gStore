@@ -24,6 +24,8 @@ elseif (CMAKE_BUILD_TYPE STREQUAL Cpack)
     message( STATUS "start build ----------------cpack-----------------------" )
     set( CMAKE_EXE_LINKER_FLAGS "-O2 -pthread -std=c++11 -Werror=return-type -static" )
 else ()
+    SET( CMAKE_C_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -c -Wall -O2 -pthread -std=c++11 -Werror=return-type" )
+    SET( CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type" )
     message( STATUS "start build ------------, default!!!" ${CMAKE_BUILD_TYPE} )
 endif()
 
