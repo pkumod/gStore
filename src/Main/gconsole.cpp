@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 	cout << endl;
 	cout << product_name<<" Console , an interactive shell based utility to communicate with "<< product_name_lower <<" repositories." << endl;
 	PRINT_VERSION
-	bool isvalid = check_license();
+	// bool isvalid = check_license();
 	cout << "" << endl;
 	cout << "Welcome to the "<<product_name<<" Console." << endl;
 	cout << "Commands end with ;. Cross line input is allowed." << endl;
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
 	cout << "CTRL+C to quit current command. CTRL+D to exit this console." << endl;
 	cout << "Type 'help;' for help. " << endl
 		 << endl;
-	if (!isvalid) cout << "-----Warning: License Expired, please update your license in time------" << endl;
+	// if (!isvalid) cout << "-----Warning: License Expired, please update your license in time------" << endl;
 	
 	// signal handler for ctrl+c
 	signal(SIGINT, ctrlc_handler);

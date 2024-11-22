@@ -230,7 +230,7 @@ int APIUtil::initialize()
         ofp.flush();
         ofp.close();
         // init license
-        init_license();
+        // init_license();
         SLOG_DEBUG("initialization end");
         return 1;
     }
