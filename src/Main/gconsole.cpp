@@ -67,7 +67,7 @@ const unordered_map<string, unsigned> privstr2bitset = {
 // LSH offset of priv in bitset, to its name
 const char *priv_offset2name[PRIVILEGE_NUM] = {"root", "query", "load", "unload", "update", "backup", "restore", "export"};
 
-#define TOTAL_COMMAND_NUM 45
+#define TOTAL_COMMAND_NUM 42
 #define RAW_QUERY_CMD_OFFSET (TOTAL_COMMAND_NUM - 1) // rsw_query cmd offset in array commands, for fetching raw_query needed privilege_bitset for raw_query
 #define QUIT_CMD_OFFSET 0
 
@@ -138,9 +138,9 @@ int commit_handler(const vector<string>&);
 int rollback_handler(const vector<string>&);
 int checkpoint_handler(const vector<string>&);
 
-int importlicense_handler(const vector<string>&);
-int licenseinfo_handler(const vector<string>&);
-int removelicense_handler(const vector<string>&);
+// int importlicense_handler(const vector<string>&);
+// int licenseinfo_handler(const vector<string>&);
+// int removelicense_handler(const vector<string>&);
 
 // int print_arg_handler(const vector<string> &);
 
@@ -198,9 +198,9 @@ COMMAND commands[] =
 		// {"funreview", funreview_handler, "review custom function", "funreview <json_file_path>", 0},
 
 		// license
-		{"importlicense", importlicense_handler, "import your license", "importlicense <license_file_path>", 0},
-		{"licenseinfo", licenseinfo_handler, "show your license information", "licenseinfo", 0},
-		{"removelicense", removelicense_handler, "remove your current license", "removelicense", 0},
+		// {"importlicense", importlicense_handler, "import your license", "importlicense <license_file_path>", 0},
+		// {"licenseinfo", licenseinfo_handler, "show your license information", "licenseinfo", 0},
+		// {"removelicense", removelicense_handler, "remove your current license", "removelicense", 0},
 		
 
 		// other
@@ -3155,73 +3155,73 @@ int checkpoint_handler(const vector<string>& args)
 	return 0;
 }
 
-int importlicense_handler(const vector<string>& args)
-{
-	CHECK_ARGC(1, 1)
+// int importlicense_handler(const vector<string>& args)
+// {
+// 	CHECK_ARGC(1, 1)
 
-	string filepath = args[0];
-	if (!Util::file_exist(filepath))
-	{
-		cout << "failed to import license: file " + filepath + "does not exist" << endl;
-		return -1;
-	}
+// 	string filepath = args[0];
+// 	if (!Util::file_exist(filepath))
+// 	{
+// 		cout << "failed to import license: file " + filepath + "does not exist" << endl;
+// 		return -1;
+// 	}
 
-	server::MessageRequest request;
-	request.username = root_username;
-	request.password = root_password;
-	server::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
+// 	server::MessageRequest request;
+// 	request.username = root_username;
+// 	request.password = root_password;
+// 	server::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
 	
-	if (!response.success())
-	{
-		cout << "failed to import license: " << response.StatusMsg << endl; 
-		return -1;
-	}
+// 	if (!response.success())
+// 	{
+// 		cout << "failed to import license: " << response.StatusMsg << endl; 
+// 		return -1;
+// 	}
 	
-	vector<string> headers = {"isvalid", "product", "version", "cpu", "mac", "startdate", "enddate", "company", "type", "desc"};
-	vector<vector<string> > rows = {{to_string(response.isvalid), response.product, response.version,
-									response.cpu, response.mac, response.startdate, response.enddate, 
-									response.company, response.type, response.desc}};
-	Util::printConsole(headers, rows);
-	cout << "import license successfully!" << endl;
-	return 0;
-}
+// 	vector<string> headers = {"isvalid", "product", "version", "cpu", "mac", "startdate", "enddate", "company", "type", "desc"};
+// 	vector<vector<string> > rows = {{to_string(response.isvalid), response.product, response.version,
+// 									response.cpu, response.mac, response.startdate, response.enddate, 
+// 									response.company, response.type, response.desc}};
+// 	Util::printConsole(headers, rows);
+// 	cout << "import license successfully!" << endl;
+// 	return 0;
+// }
 
-int licenseinfo_handler(const vector<string>& args)
-{
-	CHECK_ARGC(1, 0)
-	server::MessageRequest request;
-	request.username = root_username;
-	request.password = root_password;
-	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
+// int licenseinfo_handler(const vector<string>& args)
+// {
+// 	CHECK_ARGC(1, 0)
+// 	server::MessageRequest request;
+// 	request.username = root_username;
+// 	request.password = root_password;
+// 	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
 	
-	if (!response.success())
-	{
-		cout << "failed to fetch license information: " << response.StatusMsg << endl; 
-		return -1;
-	}
+// 	if (!response.success())
+// 	{
+// 		cout << "failed to fetch license information: " << response.StatusMsg << endl; 
+// 		return -1;
+// 	}
 
-	vector<string> headers = {"isvalid", "product", "version", "cpu", "mac", "startdate", "enddate", "company", "type", "desc"};
-	vector<vector<string> > rows = {{to_string(response.isvalid), response.product, response.version,
-									response.cpu, response.mac, response.startdate, response.enddate, 
-									response.company, response.type, response.desc}};
-	Util::printConsole(headers, rows);
-	cout << "show license successfully!" << endl;
-	return 0;
-}
+// 	vector<string> headers = {"isvalid", "product", "version", "cpu", "mac", "startdate", "enddate", "company", "type", "desc"};
+// 	vector<vector<string> > rows = {{to_string(response.isvalid), response.product, response.version,
+// 									response.cpu, response.mac, response.startdate, response.enddate, 
+// 									response.company, response.type, response.desc}};
+// 	Util::printConsole(headers, rows);
+// 	cout << "show license successfully!" << endl;
+// 	return 0;
+// }
 
-int removelicense_handler(const vector<string>& args)
-{
-	CHECK_ARGC(1, 0)
-	server::MessageRequest request;
-	request.username = root_username;
-	request.password = root_password;
-	server::MessageLicenseResponse response = APIConnector::removeLicense(BASE_URL, true, request);
+// int removelicense_handler(const vector<string>& args)
+// {
+// 	CHECK_ARGC(1, 0)
+// 	server::MessageRequest request;
+// 	request.username = root_username;
+// 	request.password = root_password;
+// 	server::MessageLicenseResponse response = APIConnector::removeLicense(BASE_URL, true, request);
 	
-	if (!response.success())
-	{
-		cout << "failed to remove license: " << response.StatusMsg << endl; 
-		return -1;
-	}
-	cout << "remove license successfully!" << endl;
-	return 0;
-}
+// 	if (!response.success())
+// 	{
+// 		cout << "failed to remove license: " << response.StatusMsg << endl; 
+// 		return -1;
+// 	}
+// 	cout << "remove license successfully!" << endl;
+// 	return 0;
+// }

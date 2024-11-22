@@ -761,16 +761,16 @@ void initialServer(uint16_t port, bool background)
 		SLOG_ERROR("Server start failed.");
 		exit(EXIT_FAILURE);
 	}
-	std::string lic_msg;
-	if (apiUtil->check_license(lic_msg))
-	{
-		apiUtil->print_license();
-	}
-	else
-	{
-		SLOG_DEBUG("check license result: " + lic_msg);
-		SLOG_WARN("The license is invalid. Please import a new license in time");
-	}
+	// std::string lic_msg;
+	// if (apiUtil->check_license(lic_msg))
+	// {
+	// 	apiUtil->print_license();
+	// }
+	// else
+	// {
+	// 	SLOG_DEBUG("check license result: " + lic_msg);
+	// 	SLOG_WARN("The license is invalid. Please import a new license in time");
+	// }
 	SLOG_INFO("Server started at port " + _server_port);
 	_is_server_running = true;
 	// handle the Ctrl+C signal
