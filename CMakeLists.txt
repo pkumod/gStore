@@ -20,6 +20,8 @@ elseif ( CMAKE_BUILD_TYPE STREQUAL Release )
     message( STATUS "start build ------------, build type is release!" )
     SET( CMAKE_CXX_FLAGS_RELEASE "-D_GLIBCXX_USE_CXX11_ABI=1 -DTHREADED -O2 -rdynamic -pthread -std=c++11 -fPIC -Wall -Werror=return-type -ggdb" )
 else ()
+    SET( CMAKE_C_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -c -Wall -O2 -pthread -std=c++11 -Werror=return-type" )
+    SET( CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1 $ENV{CXXFLAGS} -O2 -pthread -std=c++11 -Werror=return-type" )
     message( STATUS "start build ------------, default!!!" ${CMAKE_BUILD_TYPE} )
 endif()
 
