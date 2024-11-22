@@ -218,7 +218,7 @@ public:
 
 	bool load_trie(int _mode);
 
-	Trie *getTrie();
+	std::shared_ptr<Trie> getTrie();
 
 	void set_if_single_thread(bool _single);
 private:
@@ -226,7 +226,7 @@ private:
 
 	std::string dictionary_store_path;
 
-	Trie *trie;
+	std::shared_ptr<Trie> trie;
 
 	SITree* entity2id;
 	//ISTree* id2entity;

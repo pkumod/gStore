@@ -20,7 +20,7 @@ unsigned StringIndexFile::getNum()
         return this->num;
 }
 
-void StringIndexFile::SetTrie(Trie *trie0)
+void StringIndexFile::SetTrie(std::shared_ptr<Trie> trie0)
 {
 	this->trie = trie0;
 }
@@ -444,7 +444,7 @@ void StringIndex::trySequenceAccess(std::vector<StringIndexFile::AccessRequest>*
     latch.unlock();
 }
 
-void StringIndex::SetTrie(Trie* trie) {
+void StringIndex::SetTrie(std::shared_ptr<Trie> trie) {
     return;
 }
 

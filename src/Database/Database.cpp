@@ -2893,7 +2893,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 		// Initialize trie
 
-		Trie *trie = kvstore->getTrie();
+		std::shared_ptr<Trie> trie = kvstore->getTrie();
 		int batch_count = 0;
 		while (true)
 		{

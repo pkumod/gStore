@@ -20,7 +20,7 @@ class StringIndexFile
 		//static const long MAX_BLOCK_SIZE = 10000000;
 		static const long MAX_BLOCK_SIZE = 2097152;
 		enum StringIndexFileType {Entity, Literal, Predicate};
-		void SetTrie(Trie *trie);
+		void SetTrie(std::shared_ptr<Trie> trie);
 	private:
 		StringIndexFileType type;
 		std::string loc;
@@ -28,7 +28,7 @@ class StringIndexFile
 		long empty_offset;
 		FILE *index_file, *value_file;
 		//never delete this->trie ,because this trie is the trie KVSTORE owns
-		Trie *trie;
+		std::shared_ptr<Trie> trie;
 		class IndexInfo
 		{
 			public:
@@ -141,7 +141,7 @@ class StringIndex
 		//atomic_flag spinlock = ATOMIC_FLAG_INIT ;
 	public:
 //		Trie *trie;
-		void SetTrie(Trie* trie);
+		void SetTrie(std::shared_ptr<Trie> trie);
 		StringIndex(std::string _dir, unsigned _entity_num = 0, unsigned _literal_num = 0, unsigned _predicate_num = 0):
 			entity(StringIndexFile::Entity, _dir, _entity_num), literal(StringIndexFile::Literal, _dir, _literal_num), predicate(StringIndexFile::Predicate, _dir, _predicate_num)
 		{

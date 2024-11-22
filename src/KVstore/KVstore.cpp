@@ -17,7 +17,7 @@ KVstore::KVstore(string _store_path)
 	this->store_path = _store_path;
 
 	this->dictionary_store_path = _store_path + "/StringPrefix.dc";
-	this->trie = NULL;
+	this->trie = nullptr;
 
 	this->entity2id = nullptr;
 	this->id2entity = nullptr;
@@ -88,12 +88,12 @@ KVstore::release()
 	this->objID2values_literal.reset();
 	this->objID2values_literal = nullptr;
 
-	if (trie != NULL)
+	if (trie != nullptr)
 	{
 		trie->SetStorePath(dictionary_store_path);
-		delete this->trie;
+		this->trie.reset();
 	}
-	this->trie = NULL;
+	this->trie = nullptr;
 }
 
 void 
@@ -114,8 +114,8 @@ KVstore::open()
 	this->open_objID2values(KVstore::READ_WRITE_MODE);
 	this->open_preID2values(KVstore::READ_WRITE_MODE);
 
-	if(trie==NULL)
-		this->trie = new Trie;
+	if(trie==nullptr)
+		this->trie = std::make_shared<Trie>();
 
 	trie->SetStorePath(dictionary_store_path);
 	trie->loadStringPrefix();
@@ -126,23 +126,22 @@ KVstore::load_trie(int _mode)
 {
 	if (_mode == KVstore::CREATE_MODE)
 	{
-		trie = new Trie;
+		this->trie = std::make_shared<Trie>();
 	}
 	else if(_mode == KVstore::READ_WRITE_MODE)
 	{
-		trie = new Trie;
-		trie->SetStorePath(dictionary_store_path);
-		trie->loadStringPrefix();
+		this->trie = std::make_shared<Trie>();
+		this->trie->SetStorePath(dictionary_store_path);
+		this->trie->loadStringPrefix();
 	}
 
-	if (trie != NULL)
+	if (this->trie != nullptr)
 		return true;
 	else
 		return false;
 }
 
-Trie*
-KVstore::getTrie()
+std::shared_ptr<Trie> KVstore::getTrie()
 {
 	return this->trie;
 }
