@@ -141,6 +141,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "512");
     Util::setGlobalConfig(ini_parser, "system", "min_million_disk", "50");
     Util::setGlobalConfig(ini_parser, "system", "min_million_memory", "20");
+    Util::setGlobalConfig(ini_parser, "system", "resource_check", "off");
     Util::system_path = Util::getConfigureValue("system_path");
     // server
     Util::setGlobalConfig(ini_parser, "server", "default_port");
@@ -352,6 +353,8 @@ int Util::getAllocteMemoryEntryNum(unsigned need_num, unsigned old_num)
 
 bool Util::IsEnoughMemory(unsigned triple_num)
 {
+    if (Util::getConfigureValue("resource_check") != "on")
+        return true;
     // uint mb
 	unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
 	unsigned million_need_memory = atoi(Util::getConfigureValue("min_million_memory").c_str());
@@ -366,6 +369,8 @@ bool Util::IsEnoughMemory(unsigned triple_num)
 
 bool Util::IsEnoughMemoryMb(const size_t& bytes)
 {
+    if (Util::getConfigureValue("resource_check") != "on")
+        return true;
     int memory_free = Util::memoryLeft();
     int need_memory = bytes >> 20;
     if (memory_free <= need_memory) {
@@ -378,6 +383,8 @@ bool Util::IsEnoughMemoryMb(const size_t& bytes)
 
 bool Util::IsEnoughDisk(unsigned triple_num)
 {
+    if (Util::getConfigureValue("resource_check") != "on")
+        return true;
     // uint mb
 	unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
 	unsigned million_need_disk = atoi(Util::getConfigureValue("min_million_disk").c_str());
