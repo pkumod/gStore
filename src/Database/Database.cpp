@@ -3179,8 +3179,18 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		_is_new_sub = true;
 		_sub_id = this->allocEntityID();
 		this->sub_num++;
-		if(!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+		if(!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id))
+		{
+			SLOG_ERROR("insertTriple setIDByEntity fail:" << _triple.toString() << " ,id:" << _sub_id);
 			return false;
+		}
+
+		if (!(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+		{
+			SLOG_ERROR("insertTriple setEntityByID fail:" << _triple.toString() << " ,id:" << _sub_id);
+			return false;
+		}
+
 
 		if (_vertices != NULL)
 			_vertices->push_back(_sub_id);
@@ -3195,9 +3205,15 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 		_is_new_pre = true;
 		_pre_id = this->allocPredicateID();
 		if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id))
+		{
+			SLOG_ERROR("insertTriple setIDByPredicate fail:" << _triple.toString() << " ,id:" << _pre_id);
 			return false;
+		}
 		if (!(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+		{
+			SLOG_ERROR("insertTriple setPredicateByID fail:" << _triple.toString() << " ,id:" << _pre_id);
 			return false;
+		}
 
 		if (_predicates != NULL)
 			_predicates->push_back(_pre_id);
@@ -3218,9 +3234,15 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 			_is_new_obj = true;
 			_obj_id = this->allocEntityID();
 			if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id))
+			{
+				SLOG_ERROR("insertTriple setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
 				return false;
+			}
 			if (!(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+			{
+				SLOG_ERROR("insertTriple setEntityByID fail:" << _triple.toString() << " ,id:" << _obj_id);
 				return false;
+			}
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -3251,9 +3273,15 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 			_is_new_obj = true;
 			_obj_id = this->allocLiteralID();
 			if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id))
+			{
+				SLOG_ERROR("insertTriple setIDByLiteral fail:" << _triple.toString() << " ,id:" << _obj_id);
 				return false;
+			}
 			if (!(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+			{
+				SLOG_ERROR("insertTriple setLiteralByID fail:" << _triple.toString() << " ,id:" << _obj_id);
 				return false;
+			}
 
 			if (_vertices != NULL)
 				_vertices->push_back(_obj_id);
@@ -3913,8 +3941,16 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		{
 			_sub_id = this->allocEntityID();
 			update_num_subject = update_num_subject + 1;
-			if (!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id) || !(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+			if (!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id))
+			{
+				SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _sub_id);
 				return UINT32_MAX;
+			}
+			if (!(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+			{
+				SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _sub_id);
+				return UINT32_MAX;
+			}
 			vertices.push_back(_sub_id);
 			sub_lists.insert(_sub_id);
 		}
@@ -3928,8 +3964,17 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 		if (_pre_id == INVALID_PREDICATE_ID)
 		{
 			_pre_id = this->allocPredicateID();
-			if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id) || !(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+			if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id))
+			{
+				SLOG_ERROR("batch_insert setIDByPredicate fail:" << _triple.toString() << " ,id:" << _pre_id);
 				return UINT32_MAX;
+			}
+			if (!(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+			{
+				SLOG_ERROR("batch_insert setPredicateByID fail:" << _triple.toString() << " ,id:" << _pre_id);
+				return UINT32_MAX;
+			}
+				
 			predicates.push_back(_pre_id);
 		}
 
@@ -3941,8 +3986,16 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocEntityID();
-				if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id) || !(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+				if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id))
+				{
+					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
 					return UINT32_MAX;
+				}
+				if (!(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+				{
+					SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _obj_id);
+					return UINT32_MAX;
+				}
 				vertices.push_back(_obj_id);
 				obj_lists.insert(_obj_id);
 			}
@@ -3953,8 +4006,16 @@ Database::batch_insert(const TripleWithObjType *_triples, TYPE_TRIPLE_NUM _tripl
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
 				_obj_id = this->allocLiteralID();
-				if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id) || !(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+				if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id))
+				{
+					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
 					return UINT32_MAX;
+				}
+				if (!(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+				{
+					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
+					return UINT32_MAX;
+				}
 				vertices.push_back(_obj_id);
 			}
 		}

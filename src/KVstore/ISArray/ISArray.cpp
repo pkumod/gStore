@@ -318,6 +318,7 @@ ISArray::insert(unsigned _key, char *_str, unsigned _len)
 	this->AccessLock.lock();
 	if (_key < CurEntryNum && array_[_key]->isUsed())
 	{
+		SLOG_ERROR("_key is exist:please not add repeadted");
 		this->AccessLock.unlock();
 		return false;
 	}
