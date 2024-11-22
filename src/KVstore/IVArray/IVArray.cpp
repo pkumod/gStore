@@ -14,7 +14,7 @@ IVArray::IVArray()
 	IVfile = NULL;
 	dir_path = "";
 	IVfile_name = "";
-	BM = NULL;
+	// BM = NULL;
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
@@ -28,7 +28,8 @@ IVArray::IVArray()
 IVArray::~IVArray()
 {
 	fclose(IVfile);
-	delete BM;
+	BM.reset();
+	BM = nullptr;
 	cache_head.reset();
 	cache_head = nullptr;
 	//index_time_map.clear();
@@ -60,7 +61,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurEntryNum = array_.getEntryNum();
 		CurEntryNumChange = true;
 
-		BM = new IVBlockManager(filename, mode, CurEntryNum);
+		BM = std::make_shared<IVBlockManager>(filename, mode, CurEntryNum);
 
 		IVfile = fopen(IVfile_name.c_str(), "w+b");
 	
@@ -90,7 +91,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		else
 			array_.allocBlock(CurEntryNum);
 
-		BM = new IVBlockManager(filename, mode, CurEntryNum);
+		BM = std::make_shared<IVBlockManager>(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
 			SLOG_ERROR(_filename << ": Fail to initialize IVBlockManager");

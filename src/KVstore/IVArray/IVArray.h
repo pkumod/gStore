@@ -37,7 +37,7 @@ private:
 	string IVfile_name;
 	string filename;
 	string dir_path;
-	IVBlockManager *BM;
+	std::shared_ptr<IVBlockManager> BM;
 	unsigned CurEntryNum; // how many entries are available
 	bool CurEntryNumChange;
 

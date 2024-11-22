@@ -14,7 +14,7 @@ ISArray::ISArray()
 	ISfile = NULL;
 	dir_path = "";
 	ISfile_name = "";
-	BM = NULL;
+	// BM = NULL;
 	CurEntryNum = 0;
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
