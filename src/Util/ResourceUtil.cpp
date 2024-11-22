@@ -195,6 +195,8 @@ namespace gutil {
 
     bool ResourceUtil::IsEnoughMemory(unsigned triple_num)
     {
+        if (Util::getConfigureValue("resource_check") != "on")
+            return true;
         // uint mb
         unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
         unsigned million_need_memory = atoi(Util::getConfigureValue("min_million_memory").c_str());
@@ -209,6 +211,8 @@ namespace gutil {
 
     bool ResourceUtil::IsEnoughMemoryMb(const size_t& bytes)
     {
+        if (Util::getConfigureValue("resource_check") != "on")
+            return true;
         int memory_free = memoryLeft();
         int need_memory = bytes >> 20;
         if (memory_free <= need_memory) {
@@ -221,6 +225,8 @@ namespace gutil {
 
     bool ResourceUtil::IsEnoughDisk(unsigned triple_num)
     {
+        if (Util::getConfigureValue("resource_check") != "on")
+            return true;
         // uint mb
         unsigned need_count = (triple_num/1000000) > 0 ? (triple_num/1000000) : 1;
         unsigned million_need_disk = atoi(Util::getConfigureValue("min_million_disk").c_str());

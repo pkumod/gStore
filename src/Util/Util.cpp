@@ -124,6 +124,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "min_memory", "512");
     Util::setGlobalConfig(ini_parser, "system", "min_million_disk", "50");
     Util::setGlobalConfig(ini_parser, "system", "min_million_memory", "20");
+    Util::setGlobalConfig(ini_parser, "system", "resource_check", "off");
     // server
     Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
     Util::setGlobalConfig(ini_parser, "server", "port", "9000");
