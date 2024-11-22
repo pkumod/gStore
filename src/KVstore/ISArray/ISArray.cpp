@@ -19,7 +19,7 @@ ISArray::ISArray()
 	CurCacheSize = 0;
 	CurEntryNumChange = false;
 	MAX_CACHE_SIZE = 0;
-	cache_head = new ISEntry;
+	cache_head = std::make_shared<ISEntry>();
 	cache_tail_id = -1;
 }
 
@@ -27,7 +27,8 @@ ISArray::~ISArray()
 {
 	fclose(ISfile);
 	delete BM;
-	delete cache_head;
+	cache_head.reset();
+	cache_head = nullptr;
 }
 
 ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
@@ -37,7 +38,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 	ISfile_name = filename + "_ISfile";
 	CurEntryNumChange = false;
 	MAX_CACHE_SIZE = buffer_size;
-	cache_head = new ISEntry;
+	cache_head = std::make_shared<ISEntry>();
 	cache_tail_id = -1;
 
 	unsigned SETKEYNUM = 1 << 10;

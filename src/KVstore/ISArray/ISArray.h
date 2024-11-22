@@ -30,7 +30,7 @@ private:
 
 private:
 	EntryBlockList<ISEntry> array_;
-	ISEntry *cache_head;
+	std::shared_ptr<ISEntry> cache_head;
 	int cache_tail_id;
 	FILE* ISfile; // file that records index-store
 	string ISfile_name;
