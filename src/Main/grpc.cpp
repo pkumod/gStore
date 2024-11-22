@@ -119,71 +119,79 @@ void license_remove(const GRPCReq *request, GRPCResp *response);
 
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 {
-	if (request->contentType() == APPLICATION_JSON) //for application/json
+	try
 	{
-		json_data = request->json();
-	}
-	else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
-	{
-		std::map<std::string, std::string> &form_data = request->formData();
-		std::map<std::string, std::string>::iterator iter = form_data.begin();
-		std::string v;
-		while (iter != form_data.end())
+		if (request->contentType() == APPLICATION_JSON) //for application/json
 		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
-			{
-				v = gutil::StringUtil::url_decode(iter->second);
-			}
-			json_data[iter->first] = v;
-			iter++;
+			json_data = request->json();
 		}
-	}
-	else if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
-	{
-		Form &form = request->form();
-		if (form.empty())
+		else if (request->contentType() == APPLICATION_URLENCODED) //for applicaiton/x-www-form-urlencoded
 		{
-			return;
-		}
-		for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
-		{
-			if (iter->first == "file")
+			std::map<std::string, std::string> &form_data = request->formData();
+			std::map<std::string, std::string>::iterator iter = form_data.begin();
+			std::string v;
+			while (iter != form_data.end())
 			{
-				json_data["filename"] = form.at(iter->first).first;
-				string hex_v = form.at(iter->first).second;
-				size_t hex_size = hex_v.size();
-				std::vector<uint8_t> file_data;
-				file_data.resize(hex_size);
-				std::copy(hex_v.begin(), hex_v.end(), file_data.begin());
-				json_data["file"] = nlohmann::json::binary(file_data, hex_size);
-			}
-			else
-			{
-				string v = form.at(iter->first).second;
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					v = gutil::StringUtil::url_decode(iter->second);
+				}
 				json_data[iter->first] = v;
+				iter++;
 			}
 		}
-	}
-	else // for get
-	{
-		std::map<std::string, std::string> params = request->queryList();
-		if (params.empty())
+		else if (request->contentType() == MULTIPART_FORM_DATA) //for multipart/form-data
 		{
-			return;
-		}
-		std::map<std::string, std::string>::iterator iter = params.begin();
-		std::string v;
-		while (iter != params.end())
-		{
-			v = iter->second;
-			if (UrlEncode::is_url_encode(v))
+			Form &form = request->form();
+			if (form.empty())
 			{
-				v = gutil::StringUtil::url_decode(iter->second);
+				return;
 			}
-			json_data[iter->first] = v;
-			iter++;
+			for (Form::iterator iter = form.begin(); iter != form.end(); iter++)
+			{
+				if (iter->first == "file")
+				{
+					json_data["filename"] = form.at(iter->first).first;
+					string hex_v = form.at(iter->first).second;
+					size_t hex_size = hex_v.size();
+					std::vector<uint8_t> file_data;
+					file_data.resize(hex_size);
+					std::copy(hex_v.begin(), hex_v.end(), file_data.begin());
+					json_data["file"] = nlohmann::json::binary(file_data, hex_size);
+				}
+				else
+				{
+					string v = form.at(iter->first).second;
+					json_data[iter->first] = v;
+				}
+			}
 		}
+		else // for get
+		{
+			std::map<std::string, std::string> params = request->queryList();
+			if (params.empty())
+			{
+				return;
+			}
+			std::map<std::string, std::string>::iterator iter = params.begin();
+			std::string v;
+			while (iter != params.end())
+			{
+				v = iter->second;
+				if (UrlEncode::is_url_encode(v))
+				{
+					v = gutil::StringUtil::url_decode(iter->second);
+				}
+				json_data[iter->first] = v;
+				iter++;
+			}
+		}	
+	}
+	catch(const std::exception& e)
+	{
+		json_data = nlohmann::json{{"operation", ""}};
+		SLOG_ERROR("parseRequest error:please check param");
 	}
 }
 
@@ -254,11 +262,16 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	// 	}
 	// }
 	// add remote_ip param
-	json_data["remote_ip"] = ip_addr;
 	if (operation.empty()) 
 	{
 		operation = JsonUtil::jsonParam(json_data, "operation", "unknown");
 	}
+	if (operation == "unknown")
+	{
+		response->Error(StatusOperationUndefined);
+		return false;
+	}
+	json_data["remote_ip"] = ip_addr;
 	op_type = OperationType::to_enum(operation);
 	if (op_type != OP_LOGIN && op_type != OP_TEST_CONNECT)
 	{
@@ -268,11 +281,6 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 			response->Error(StatusIPBlocked, ipCheckResult);
 			return false;
 		}
-	}
-	if (operation == "unknown")
-	{
-		response->Error(StatusOperationUndefined);
-		return false;
 	}
 	// add callback task for access log start
 	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
