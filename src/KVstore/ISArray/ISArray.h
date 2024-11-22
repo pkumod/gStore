@@ -36,7 +36,7 @@ private:
 	string ISfile_name;
 	string filename;
 	string dir_path;
-	ISBlockManager *BM;
+	std::shared_ptr<ISBlockManager> BM;
 	unsigned CurEntryNum; // how many entries are available
 	bool CurEntryNumChange;
 

@@ -26,7 +26,8 @@ ISArray::ISArray()
 ISArray::~ISArray()
 {
 	fclose(ISfile);
-	delete BM;
+	BM.reset();
+	BM = nullptr;
 	cache_head.reset();
 	cache_head = nullptr;
 }
@@ -51,7 +52,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		CurEntryNum = array_.getEntryNum();
 		CurEntryNumChange = true;
 
-		BM = new ISBlockManager(filename, mode, CurEntryNum);
+		BM = std::make_shared<ISBlockManager>(filename, mode, CurEntryNum);
 
 		ISfile = fopen(ISfile_name.c_str(), "w+b");
 	
@@ -75,7 +76,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		else
 			array_.allocBlock(CurEntryNum);
 		
-		BM = new ISBlockManager(filename, mode, CurEntryNum);
+		BM = std::make_shared<ISBlockManager>(filename, mode, CurEntryNum);
 		if (BM == NULL)
 		{
 			SLOG_ERROR(_filename << ": Fail to initialize ISBlockManager");
