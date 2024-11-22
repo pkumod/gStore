@@ -19,14 +19,14 @@ KVstore::KVstore(string _store_path)
 	this->dictionary_store_path = _store_path + "/StringPrefix.dc";
 	this->trie = NULL;
 
-	this->entity2id = NULL;
-	this->id2entity = NULL;
+	this->entity2id = nullptr;
+	this->id2entity = nullptr;
 
-	this->predicate2id = NULL;
-	this->id2predicate = NULL;
+	this->predicate2id = nullptr;
+	this->id2predicate = nullptr;
 
-	this->literal2id = NULL;
-	this->id2literal = NULL;
+	this->literal2id = nullptr;
+	this->id2literal = nullptr;
 
 	this->subID2values = nullptr;
 	this->preID2values = nullptr;
@@ -66,18 +66,18 @@ void
 KVstore::release() 
 {
 	delete this->entity2id;
-	this->entity2id = NULL;
-	delete this->id2entity;
-	this->id2entity = NULL;
+	this->entity2id = nullptr;
+	this->id2entity.reset();
+	this->id2entity = nullptr;
 	delete this->literal2id;
-	this->literal2id = NULL;
-	delete this->id2literal;
-	this->id2literal = NULL;
+	this->literal2id = nullptr;
+	this->id2literal.reset();
+	this->id2literal = nullptr;
 
 	delete this->predicate2id;
-	this->predicate2id = NULL;
-	delete this->id2predicate;
-	this->id2predicate = NULL;
+	this->predicate2id = nullptr;
+	this->id2predicate.reset();
+	this->id2predicate = nullptr;
 
 	this->subID2values.reset();
 	this->subID2values = nullptr;
@@ -2385,8 +2385,8 @@ KVstore::close_id2entity()
 	}
 
 	this->id2entity->save();
-	delete this->id2entity;
-	this->id2entity = NULL;
+	this->id2entity.reset();
+	this->id2entity = nullptr;
 
 	return true;
 }
@@ -2563,8 +2563,8 @@ KVstore::close_id2predicate()
 	}
 
 	this->id2predicate->save();
-	delete this->id2predicate;
-	this->id2predicate = NULL;
+	this->id2predicate.reset();
+	this->id2predicate = nullptr;
 
 	return true;
 }
@@ -2732,8 +2732,8 @@ KVstore::close_id2literal()
 	}
 
 	this->id2literal->save();
-	delete this->id2literal;
-	this->id2literal = NULL;
+	this->id2literal.reset();
+	this->id2literal = nullptr;
 
 	return true;
 }
@@ -4835,7 +4835,7 @@ KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 }*/
 
 bool 
-KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num) 
+KVstore::open(std::shared_ptr<ISArray>& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num) 
 {
 	if (_array != NULL) {
 		return false;
@@ -4851,7 +4851,7 @@ KVstore::open(ISArray*& _array, string _name, int _mode, unsigned long long _buf
 		SLOG_ERROR("Invalid open mode of: " << _name << " mode = " << _mode);
 		return false;
 	}
-	_array = new ISArray(this->store_path, _name, smode, _buffer_size, _key_num);
+	_array = std::make_shared<ISArray>(this->store_path, _name, smode, _buffer_size, _key_num);
 	return true;
 }
 
@@ -4923,7 +4923,7 @@ KVstore::flush(ISTree* _p_btree)
 
 
 void 
-KVstore::flush(ISArray* _array)
+KVstore::flush(std::shared_ptr<ISArray>& _array)
 {
 	if (_array != NULL)
 	{
@@ -4963,7 +4963,7 @@ KVstore::addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::addValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
+KVstore::addValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen)
 {
 	if (_array == this->id2literal)
 	{
@@ -5003,7 +5003,7 @@ KVstore::setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vl
 }*/
 
 bool
-KVstore::setValueByKey(ISArray* _array, unsigned _key, char* _val, unsigned _vlen)
+KVstore::setValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen)
 {
 	if (_array == this->id2literal)
 	{
@@ -5043,7 +5043,7 @@ KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _
 }*/
 
 bool
-KVstore::getValueByKey(ISArray* _array, unsigned _key, char*& _val, unsigned& _vlen) const
+KVstore::getValueByKey(const std::shared_ptr<ISArray>& _array, unsigned _key, char*& _val, unsigned& _vlen) const
 {
 	if (_array == this->id2literal)
 	{
@@ -5099,7 +5099,7 @@ KVstore::removeKey(ISTree* _p_btree, unsigned _key)
 }*/
 
 bool
-KVstore::removeKey(ISArray* _array, unsigned _key)
+KVstore::removeKey(std::shared_ptr<ISArray>& _array, unsigned _key)
 {
 	if (_array == this->id2literal)
 	{
