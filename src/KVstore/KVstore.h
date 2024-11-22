@@ -229,7 +229,6 @@ private:
 	std::shared_ptr<Trie> trie;
 
 	SITree* entity2id;
-	//ISTree* id2entity;
 	std::shared_ptr<ISArray> id2entity;
 	static std::string s_entity2id;
 	static std::string s_id2entity;
@@ -239,7 +238,6 @@ private:
 	static unsigned short buffer_id2entity_query;
 
 	SITree* predicate2id;
-	//ISTree* id2predicate;
 	std::shared_ptr<ISArray> id2predicate;
 	static std::string s_predicate2id;
 	static std::string s_id2predicate;
@@ -249,7 +247,6 @@ private:
 	static unsigned short buffer_id2predicate_query;
 
 	SITree* literal2id;
-	//ISTree* id2literal;
 	std::shared_ptr<ISArray> id2literal;
 	static std::string s_literal2id;
 	static std::string s_id2literal;
@@ -257,10 +254,6 @@ private:
 	static unsigned short buffer_id2literal_build;
 	static unsigned short buffer_literal2id_query;
 	static unsigned short buffer_id2literal_query;
-
-//	IVTree* subID2values;
-//	IVTree* objID2values;
-//	IVTree* preID2values;
 
 	std::shared_ptr<IVArray> subID2values;
 	std::shared_ptr<IVArray> objID2values;
@@ -282,42 +275,30 @@ private:
 	//===============================================================================
 
 	bool open(SITree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
-	//bool open(ISTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(std::shared_ptr<ISArray>& _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
-	//bool open(IVTree* & _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
 	bool open(std::shared_ptr<IVArray>& _array, std::string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num = 0);
 
 	void flush(SITree* _p_btree);
-	//void flush(ISTree* _p_btree);
 	void flush(std::shared_ptr<ISArray>& _array);
-	//void flush(IVTree* _p_btree);
 	void flush(std::shared_ptr<IVArray>& _array);
 
 	bool addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	//bool addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool addValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen);
-	//bool addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool addValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char *_val, unsigned long _vlen);
 
 	bool setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val);
-	//bool setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool setValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen);
-//	bool setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen);
 	bool setValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen);
 
 	bool getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const;
-	//bool getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(const std::shared_ptr<ISArray>& _array, unsigned _key, char*& _val, unsigned& _vlen) const;
-//	bool getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const;
 	bool getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char*& _val, unsigned long & _vlen) const;
 
 
 	TYPE_ENTITY_LITERAL_ID getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const;
 
 	bool removeKey(SITree* _p_btree, const char* _key, unsigned _klen);
-	//bool removeKey(ISTree* _p_btree, unsigned _key);
 	bool removeKey(std::shared_ptr<ISArray>& _array, unsigned _key);
-//	bool removeKey(IVTree* _p_btree, unsigned _key);
 	bool removeKey(std::shared_ptr<IVArray>& _array, unsigned _key);
 
 	static std::vector<unsigned> intersect(const unsigned* _list1, const unsigned* _list2, unsigned _len1, unsigned _len2);

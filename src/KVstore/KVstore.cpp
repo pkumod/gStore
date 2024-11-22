@@ -4812,27 +4812,6 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 	return true;
 }
 
-/*bool 
-KVstore::open(ISTree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
-{
-	if (_p_btree != NULL) {
-		return false;
-	}
-	string smode;
-	if (_mode == KVstore::CREATE_MODE) {
-		smode = "build";
-	}
-	else if (_mode == KVstore::READ_WRITE_MODE) {
-		smode = "open";
-	}
-	else {
-		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
-		return false;
-	}
-	_p_btree = new ISTree(this->store_path, _tree_name, smode, _buffer_size);
-	return true;
-}*/
-
 bool 
 KVstore::open(std::shared_ptr<ISArray>& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num) 
 {
@@ -4853,28 +4832,6 @@ KVstore::open(std::shared_ptr<ISArray>& _array, string _name, int _mode, unsigne
 	_array = std::make_shared<ISArray>(this->store_path, _name, smode, _buffer_size, _key_num);
 	return true;
 }
-
-/*bool 
-KVstore::open(IVTree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
-{
-	if (_p_btree != NULL) {
-		return false;
-	}
-	string smode;
-	if (_mode == KVstore::CREATE_MODE) {
-		smode = "build";
-	}
-	else if (_mode == KVstore::READ_WRITE_MODE) {
-		smode = "open";
-	}
-	else {
-		cerr << "Invalid open mode of: " << _tree_name << " mode = " << _mode << endl;
-		return false;
-	}
-	_p_btree = new IVTree(this->store_path, _tree_name, smode, _buffer_size);
-
-	return true;
-}*/
 
 bool
 KVstore::open(std::shared_ptr<IVArray>& _array, string _name, int _mode, unsigned long long _buffer_size, unsigned _key_num)
@@ -4911,15 +4868,6 @@ KVstore::flush(SITree* _p_btree)
 	}
 }
 
-/*void 
-KVstore::flush(ISTree* _p_btree) 
-{
-	if (_p_btree != NULL) 
-	{
-		_p_btree->Save();
-	}
-}*/
-
 
 void 
 KVstore::flush(std::shared_ptr<ISArray>& _array)
@@ -4930,15 +4878,6 @@ KVstore::flush(std::shared_ptr<ISArray>& _array)
 	}
 }
 
-
-/*void 
-KVstore::flush(IVTree* _p_btree) 
-{
-	if (_p_btree != NULL) 
-	{
-		_p_btree->Save();
-	}
-}*/
 
 void
 KVstore::flush(std::shared_ptr<IVArray>& _array)
@@ -4955,12 +4894,6 @@ KVstore::addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _v
 	return _p_btree->Insert(_key, _klen, _val);
 }
 
-/*bool 
-KVstore::addValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
-{
-	return _p_btree->insert(_key, _val, _vlen);
-}*/
-
 bool
 KVstore::addValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen)
 {
@@ -4971,12 +4904,6 @@ KVstore::addValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _v
 	}
 	return _array->insert(_key, _val, _vlen);
 }
-
-/*bool 
-KVstore::addValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
-{
-	return _p_btree->insert(_key, _val, _vlen);
-}*/
 
 bool
 KVstore::addValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen)
@@ -4995,12 +4922,6 @@ KVstore::setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _v
 	return _p_btree->Modify(_key, _klen, _val);
 }
 
-/*bool 
-KVstore::setValueByKey(ISTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
-{
-	return _p_btree->modify(_key, _val, _vlen);
-}*/
-
 bool
 KVstore::setValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _val, unsigned _vlen)
 {
@@ -5011,12 +4932,6 @@ KVstore::setValueByKey(std::shared_ptr<ISArray>& _array, unsigned _key, char* _v
 	}
 	return _array->modify(_key, _val, _vlen);
 }
-
-/*bool
-KVstore::setValueByKey(IVTree* _p_btree, unsigned _key, char* _val, unsigned _vlen) 
-{
-	return _p_btree->modify(_key, _val, _vlen);
-}*/
 
 bool
 KVstore::setValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _val, unsigned long _vlen)
@@ -5035,12 +4950,6 @@ KVstore::getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsig
 	return _p_btree->Search(_key, _klen, _val);
 }
 
-/*bool 
-KVstore::getValueByKey(ISTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
-{
-	return _p_btree->Search(_key, _val, _vlen);
-}*/
-
 bool
 KVstore::getValueByKey(const std::shared_ptr<ISArray>& _array, unsigned _key, char*& _val, unsigned& _vlen) const
 {
@@ -5052,12 +4961,6 @@ KVstore::getValueByKey(const std::shared_ptr<ISArray>& _array, unsigned _key, ch
 
 	return _array->search(_key, _val, _vlen);
 }
-
-/*bool 
-KVstore::getValueByKey(IVTree* _p_btree, unsigned _key, char*& _val, unsigned& _vlen) const 
-{
-	return _p_btree->Search(_key, _val, _vlen);
-}*/
 
 bool
 KVstore::getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, char* &_val, unsigned long & _vlen) const
@@ -5090,13 +4993,6 @@ KVstore::removeKey(SITree* _p_btree, const char* _key, unsigned _klen)
 	return _p_btree->Remove(_key, _klen);
 }
 
-/*
-bool 
-KVstore::removeKey(ISTree* _p_btree, unsigned _key) 
-{
-	return _p_btree->remove(_key);
-}*/
-
 bool
 KVstore::removeKey(std::shared_ptr<ISArray>& _array, unsigned _key)
 {
@@ -5107,12 +5003,6 @@ KVstore::removeKey(std::shared_ptr<ISArray>& _array, unsigned _key)
 	}
 	return _array->remove(_key);
 }
-
-/*bool 
-KVstore::removeKey(IVTree* _p_btree, unsigned _key) 
-{
-	return _p_btree->remove(_key);
-}*/
 
 bool
 KVstore::removeKey(std::shared_ptr<IVArray>& _array, unsigned _key)
