@@ -145,12 +145,12 @@ SIIntlNode::Split(SINode* _parent, int _index)
   int i, k;
   for (i = MIN_CHILD_NUM, k = 0; i < num; ++i, ++k)
   {
-    p->addKey(this->keys + i, k);
+    p->addKey(this->keys.get() + i, k);
     p->AddChild(this->childs[i], k);
     p->AddKeyNum();
   }
   p->AddChild(this->childs[i], k);
-  const Bstr* tp = this->keys + MIN_KEY_NUM;
+  const Bstr* tp = this->keys.get() + MIN_KEY_NUM;
   this->SetKeyNum(MIN_KEY_NUM);
   _parent->addKey(tp, _index);
   _parent->AddChild(p, _index + 1);
@@ -287,7 +287,7 @@ SIIntlNode::Release()
 	unsigned num = this->GetKeyNum();
 	for (unsigned i = num; i < MAX_KEY_NUM; ++i)
 		keys[i].clear();
-	delete[] keys;
+	keys.reset();
 	keys = nullptr;
 }
 

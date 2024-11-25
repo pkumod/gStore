@@ -27,7 +27,7 @@ private:
 	int prevID;
 	int nextID;
 	
-	Bstr* value;
+	std::shared_ptr<Bstr> value;
 	
 	GLatch glatch;
 	//MVCC
@@ -40,7 +40,7 @@ private:
 public:
 	IVEntry();
 	enum class LatchType { SHARED, EXCLUSIVE};
-	void setBstr(const Bstr* _value);
+	void setBstr(std::shared_ptr<Bstr>& _value);
 	bool getBstr(char *& _str, unsigned long& _len, bool if_copy = true) const;
 	unsigned long getBstrLen()const;
 	void setBstr(char *_str, unsigned long _len);

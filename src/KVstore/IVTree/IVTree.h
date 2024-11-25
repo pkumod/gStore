@@ -84,7 +84,7 @@ public:
 	bool modify(unsigned _key, char* _str, unsigned _len);
 	IVNode* find(unsigned _key, int* store, bool ifmodify);
 	bool remove(unsigned _key);
-	const Bstr* getRangeValue();
+	const std::shared_ptr<Bstr[]>& getRangeValue();
 	void resetStream();
 	bool range_query(unsigned _key1, unsigned _key2);
 	bool save();

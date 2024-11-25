@@ -22,19 +22,21 @@ ISEntry::ISEntry()
 }
 
 void
-ISEntry::setBstr(const Bstr* _value)
+ISEntry::setBstr(std::shared_ptr<Bstr>& _value)
 {
-	if (value != NULL)
-		delete value;
-	value = new Bstr(*_value);
+	if (value != nullptr)
+	{
+		_value.reset();
+	}
+	value = std::make_shared<Bstr>(*_value);
 }
 
 void
 ISEntry::setBstr(const char *_str, unsigned _len)
 {
-	if (value != NULL)
-		delete value;
-	value = new Bstr();
+	if (value != nullptr)
+		value.reset();
+	value = std::make_shared<Bstr>();
 	//value->copy(_str, _len);
 	value->setStr((char *)_str);
 	value->setLen(_len);
@@ -116,11 +118,11 @@ ISEntry::inCache() const
 void
 ISEntry::release()
 {
-	if (value != NULL)
+	if (value != nullptr)
 	{
-		delete value;
+		value.reset();
 	}
-	value = NULL;
+	value = nullptr;
 	prevID = nextID = -1;
 }
 
@@ -135,7 +137,7 @@ ISEntry::Copy(const ISEntry& _entry)
 	this->nextID = _entry.nextID;
 	if (_entry.value != NULL)
 	{
-		this->value = new Bstr();
+		this->value = std::make_shared<Bstr>();
 		value->copy(_entry.value);
 	}
 }
@@ -166,9 +168,9 @@ ISEntry::getNext() const
 
 ISEntry::~ISEntry()
 {
-	if (value != NULL)
+	if (value != nullptr)
 	{
-		delete value;
+		value.reset();
 	}
-	value = NULL;
+	value = nullptr;
 }

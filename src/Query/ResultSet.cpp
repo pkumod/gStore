@@ -144,7 +144,7 @@ ResultSet::to_str()
 	if (this->useStream)
 		this->resetStream();
 
-	const Bstr* bp = NULL;
+	std::shared_ptr<Bstr []> bp;
 	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
@@ -414,7 +414,7 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 		if (this->useStream)
 			this->resetStream();
 
-		const Bstr* bp = NULL;
+		std::shared_ptr<Bstr []> bp;
 		// match ^^<*> string
 		regex dataTypePattern("\\^\\^<(\\S*?)[^>]*>.*?|<.*? />");
 		smatch matchResult;
@@ -596,7 +596,7 @@ ResultSet::output(FILE* _fp)
 		}
 		fprintf(_fp, "\n");
 
-		const Bstr* bp;
+		std::shared_ptr<Bstr []> bp;
 		for(long long i = 0; i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
@@ -670,7 +670,7 @@ ResultSet::prettyPrint()
 	}
 	if (this->useStream)
 	{
-		const Bstr* bp;
+		std::shared_ptr<Bstr []> bp;
 		for(long long i = 0; i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
@@ -760,7 +760,7 @@ ResultSet::writeToStream(string& _s)
 	}
 }
 
-const Bstr*
+const std::shared_ptr<Bstr[]>&
 ResultSet::getOneRecord()
 {
 	if (this->useStream)
@@ -802,7 +802,7 @@ ResultSet::to_tempresult()
 	if (this->useStream)
 		this->resetStream();
 
-	const Bstr* bp = NULL;
+	std::shared_ptr<Bstr []> bp;
 	for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 	{
 		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)

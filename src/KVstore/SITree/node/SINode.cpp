@@ -16,7 +16,8 @@ using namespace std;
 void
 SINode::AllocKeys()
 {
-	keys = new Bstr[MAX_KEY_NUM];
+	std::shared_ptr<Bstr[]> keys_sptr(new Bstr[MAX_KEY_NUM], std::default_delete<Bstr[]>());
+	keys = keys_sptr;
 }
 
 /**
@@ -199,7 +200,7 @@ SINode::getKey(int _index) const
 		return NULL;
 	}
 	else
-		return this->keys + _index;
+		return this->keys.get() + _index;
 }
 
 bool

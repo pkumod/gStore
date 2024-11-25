@@ -22,12 +22,12 @@ class ISEntry
 	int nextID;
 
 	unsigned store;  //index of block where value is stored
-	Bstr* value;
+	std::shared_ptr<Bstr> value;
 
 public:
 	ISEntry();
 	
-	void setBstr(const Bstr* _value);
+	void setBstr(std::shared_ptr<Bstr>& _value);
 	bool getBstr(char *& _str, unsigned& _len, bool if_copy = true) const;
 	void setBstr(const char *_str, unsigned _len);
 	

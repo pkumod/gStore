@@ -82,7 +82,7 @@ public:
 	virtual IVNode* getPrev() const { return NULL; };
 	virtual IVNode* getNext() const { return NULL; };
 
-	virtual const Bstr* getValue(int _index) const { return NULL; };
+	virtual const Bstr* getValue(int _index) const { return nullptr; };
 	virtual bool setValue(const Bstr* _value, int _index, bool _ifcopy=false) { return true; };
 	virtual bool getValue(VList* _vlist, int _index, char*& _str, unsigned& _len) const { return true; };
 	virtual bool setValue(VList* _vlist, int _index, char* _str, unsigned _len, bool ifcopy = false) { return true; };

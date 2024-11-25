@@ -53,7 +53,7 @@ class SINode       				//abstract basic class
   //store address, the Block index
   unsigned store;
   unsigned node_flag_;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
-  Bstr* keys;
+  std::shared_ptr<Bstr[]> keys;
   void AllocKeys();
  public:
   SINode();

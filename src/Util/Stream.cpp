@@ -18,7 +18,7 @@ using namespace std;
 //The error is marked by DEBUG1 and DEBUG2, and I just use STL::stable_sort() here, because I cannot find
 //the reason of the null pointer error if using STL::sort()
 
-bool ResultCmp::operator() (Bstr* const& a, Bstr* const& b)
+bool ResultCmp::operator() (std::shared_ptr<Bstr[]> const& a, std::shared_ptr<Bstr[]> const& b)
 {
     //for(int i = 0; i < result_len; ++i)
     //{
@@ -83,7 +83,8 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     mycmp = ResultCmp(_keys, _desc);
     greaterElement = GreaterElement(mycmp);
 
-    this->record = new Bstr[this->colnum];
+    std::shared_ptr<Bstr[]> record_ptr(new Bstr[this->colnum], std::default_delete<Bstr[]>());
+    this->record = record_ptr;
     this->record_size = new unsigned[this->colnum];
     for(unsigned i = 0; i < this->colnum; ++i)
     {
@@ -130,10 +131,12 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
 
     if(this->inMem)
     {
-        this->ansMem = new Bstr*[this->rownum];
+        std::shared_ptr<std::shared_ptr<Bstr[]>[]> rownum_sptr(new std::shared_ptr<Bstr[]>[this->rownum], std::default_delete<std::shared_ptr<Bstr[]>[]>());
+        this->ansMem = rownum_sptr;
         for(unsigned i = 0; i < this->rownum; ++i)
         {
-            this->ansMem[i] = new Bstr[this->colnum];
+            std::shared_ptr<Bstr[]> colnum_sptr(new Bstr[this->colnum], std::default_delete<Bstr[]>());
+            this->ansMem[i] = colnum_sptr;
         }
         return;
     }
@@ -195,7 +198,7 @@ Stream::outputCache()
     unsigned size = this->tempst.size();
     for(unsigned i = 0; i < size; ++i)
     {
-        Bstr* p = this->tempst[i];
+        std::shared_ptr<Bstr[]> p = this->tempst[i];
         for(unsigned j = 0; j < this->colnum; ++j)
         {
             unsigned len = p[j].getLen();
@@ -203,14 +206,13 @@ Stream::outputCache()
             fwrite(&len, sizeof(unsigned), 1, this->tempfp);
             fwrite(str, sizeof(char), len, this->tempfp);
         }
-        delete[] p;
+        p.reset();
     }
     this->tempst.clear();
 
     //reset and add to heap, waiting for merge sort
     fseek(this->tempfp, 0, SEEK_SET);
-    Bstr* bp = new Bstr[this->colnum];
-
+    std::shared_ptr<Bstr[]> bp(new Bstr[this->colnum], std::default_delete<Bstr[]>());
     for(unsigned i = 0; i < this->colnum; ++i)
     {
         unsigned len;
@@ -240,7 +242,7 @@ Stream::write(const char* _str, unsigned _len)
 #ifdef DEBUG_PRECISE
         fprintf(stderr, "Stream::write(): now a record is ready, the current row is %u\n", this->xpos);
 #endif
-        return this->write(this->record);
+        return this->write(this->record.get());
     }
     return true;
 }
@@ -284,7 +286,7 @@ Stream::write(const Bstr* _bp)
             this->files.push_back(name);
         }
 
-        Bstr* p = new Bstr[this->colnum];
+        std::shared_ptr<Bstr[]> p(new Bstr[this->colnum], std::default_delete<Bstr[]>());
         for(unsigned i = 0; i < this->colnum; ++i)
         {
 			//p[i].release();
@@ -317,7 +319,7 @@ Stream::write(const Bstr* _bp)
     return true;
 }
 
-const Bstr*
+const std::shared_ptr<Bstr[]>&
 Stream::read()
 {
     if(this->isEnd())
@@ -328,8 +330,8 @@ Stream::read()
 
     if(this->inMem)
     {
-        //Bstr** bp = (Bstr**)(this->ans);
-        Bstr* ip = this->ansMem[this->xpos];
+        //std::shared_ptr<Bstr>&* bp = (std::shared_ptr<Bstr>&*)(this->ans);
+        std::shared_ptr<Bstr[]> ip = this->ansMem[this->xpos];
         for(unsigned i = 0; i < this->colnum; ++i)
         {
             this->copyToRecord(ip[i].getStr(), ip[i].getLen(), i);
@@ -411,7 +413,7 @@ Stream::mergeSort()
 		fprintf(stderr, "valid: %u\n", valid);
 #endif
         //write contents of the first element to result file
-        Bstr* bp = this->sortHeap[0].val;
+        std::shared_ptr<Bstr[]> bp = this->sortHeap[0].val;
         for(unsigned i = 0; i < this->colnum; ++i)
         {
             unsigned len = bp[i].getLen();
@@ -490,12 +492,12 @@ Stream::setEnd()
 
     if(this->inMem)
     {
-        //Bstr** p = (Bstr**)(this->ans);
+        //std::shared_ptr<Bstr>&* p = (std::shared_ptr<Bstr>&*)(this->ans);
 		if(this->needSort)
 		{
 			//DEBUG2
 #ifndef PARALLEL_SORT
-			stable_sort(this->ansMem, this->ansMem + this->rownum, mycmp);
+			stable_sort(this->ansMem.get(), this->ansMem.get() + this->rownum, mycmp);
 #else
 			omp_set_num_threads(thread_num);
 			__gnu_parallel::stable_sort(this->ansMem, this->ansMem + this->rownum, mycmp);
@@ -532,7 +534,8 @@ Stream::setEnd()
 
 Stream::~Stream()
 {
-    delete[] this->record;
+    this->record.reset();
+    this->record = nullptr;
     delete[] this->record_size;
 #ifdef DEBUG_STREAM
 	fprintf(stderr, "Stream::~Stream(): record deleted!\n");
@@ -540,13 +543,15 @@ Stream::~Stream()
 
     if(this->inMem)
     {
-        //Bstr** bp = (Bstr**)(this->ans);
+        //std::shared_ptr<Bstr>&* bp = (std::shared_ptr<Bstr>&*)(this->ans);
         for(unsigned i = 0; i < this->rownum; ++i)
         {
-            delete[] this->ansMem[i];
+            this->ansMem[i].reset();
+            this->ansMem[i] = nullptr;
             //bp[i] = NULL;
         }
-        delete[] this->ansMem;
+        this->ansMem.reset();
+        this->ansMem = nullptr;
 #ifdef DEBUG_STREAM
 		fprintf(stderr, "Stream::~Stream(): in memory, now table deleted!\n");
 #endif

@@ -16,7 +16,7 @@ class IVLeafNode : public IVNode
 protected:
 	IVNode* prev;	//LeafNode
 	IVNode* next;
-	Bstr* values;
+	std::shared_ptr<Bstr[]> values;
 	void AllocValues();
 	//void FreeValues();
 public:

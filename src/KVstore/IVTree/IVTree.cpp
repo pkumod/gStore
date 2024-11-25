@@ -462,7 +462,7 @@ IVTree::remove(unsigned _key)
 	return flag;		//i == j, not found		
 }
 
-const Bstr*
+const std::shared_ptr<Bstr[]>&
 IVTree::getRangeValue()
 {
 	if (this->stream == NULL)
@@ -585,7 +585,7 @@ IVTree::range_query(unsigned _key1, unsigned _key2)
 			r = p->getNum();
 		for (i = l; i < r; ++i)
 		{
-			//NOTICE:Bstr* in an array, used as Bstr[]
+			//NOTICE:std::shared_ptr<Bstr>& in an array, used as Bstr[]
 			//DEBUG+TODO: if long list?? clean
 			this->stream->write(p->getValue(i));
 		}

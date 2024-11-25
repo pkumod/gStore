@@ -48,7 +48,7 @@ struct ResultCmp
 		this->keys = std::vector<TYPE_ENTITY_LITERAL_ID>(_keys);
 		this->desc = std::vector<bool>(_desc);
 	}
-	bool operator() (Bstr* const& a, Bstr* const& b);
+	bool operator() (std::shared_ptr<Bstr[]> const& a, std::shared_ptr<Bstr[]> const& b);
 };
 
 //static ResultCmp mycmp;
@@ -56,15 +56,15 @@ struct ResultCmp
 typedef struct StreamElement
 {
 	FILE* fp;	
-	Bstr* val;
-	StreamElement(FILE* _fp, Bstr* _val)
+	std::shared_ptr<Bstr[]> val;
+	StreamElement(FILE* _fp, std::shared_ptr<Bstr[]>& _val)
 	{
 		this->fp = _fp;
 		this->val = _val;
 	}
 	void release()
 	{
-		delete[] this->val;
+		this->val.reset();
 		this->val = NULL;
 		fclose(this->fp);
 		this->fp = NULL;
@@ -96,14 +96,14 @@ private:
 	std::vector<Element> sortHeap;
 	std::vector<std::string> files;
 	FILE* tempfp;
-	std::vector<Bstr*> tempst;
+	std::vector<std::shared_ptr<Bstr[]>> tempst;
 	unsigned space;			//space used in disk for one file
 
 	ResultCmp mycmp;
 	GreaterElement greaterElement;
 
-	//void* ans;               //FILE* if in disk, Bstr** if in memory
-	Bstr** ansMem;
+	//void* ans;               //FILE* if in disk, std::shared_ptr<Bstr>&* if in memory
+	std::shared_ptr<std::shared_ptr<Bstr[]>[]> ansMem;
 	FILE* ansDisk;
 	std::string result;           //needed if stored in disk, to be removed later
 	unsigned rownum, colnum;
@@ -113,7 +113,7 @@ private:
 	bool inMem;
 	//below are for record position
 	unsigned xpos, ypos;
-	Bstr* record;            //one record for read, array of Bstrs
+	std::shared_ptr<Bstr[]> record;            //one record for read, array of Bstrs
 	unsigned* record_size;
 
 	void init();
@@ -135,7 +135,7 @@ public:
 	bool write(const Bstr* _bp);
 	bool write(const char* _str, unsigned _len);
 	//NOTICE:the memory should not be freed by user, and the latter will flush the former!
-	const Bstr* read();
+	const std::shared_ptr<Bstr[]>& read();
 	void setEnd();
 	bool isEnd();
 	~Stream();

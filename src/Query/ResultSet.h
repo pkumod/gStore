@@ -53,7 +53,7 @@ public:
 	void openStream(std::vector<unsigned> &_keys, std::vector<bool> &_desc);
 	void resetStream();
 	void writeToStream(std::string& _s);
-	const Bstr* getOneRecord();
+	const std::shared_ptr<Bstr[]>& getOneRecord();
 	void setUsername(const std::string& _username);
 	std::string getUsername();
 };

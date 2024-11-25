@@ -14,7 +14,7 @@ using namespace std;
 IVEntry::IVEntry()
 {
 	store = 0;
-	value = NULL;
+	value = nullptr;
 	usedFlag = false;
 	dirtyFlag = true;
 	cacheFlag = false;
@@ -27,19 +27,19 @@ IVEntry::IVEntry()
 }
 
 void
-IVEntry::setBstr(const Bstr* _value)
+IVEntry::setBstr(std::shared_ptr<Bstr>& _value)
 {
-	if (value != NULL)
-		delete value;
-	value = new Bstr(*_value);
+	if (value != nullptr)
+		value.reset();
+	value = std::make_shared<Bstr>(*_value);
 }
 
 void
 IVEntry::setBstr(char *_str, unsigned long _len)
 {
-	if (value != NULL)
-		delete value;
-	value = new Bstr();
+	if (value != nullptr)
+		value.reset();
+	value = std::make_shared<Bstr>();
 	//value->copy(_str, _len);
 	value->setStr(_str);
 	value->setLen(_len);
@@ -48,7 +48,7 @@ IVEntry::setBstr(char *_str, unsigned long _len)
 bool
 IVEntry::getBstr(char *& _str, unsigned long &_len, bool if_copy) const
 {
-	if (value == NULL)
+	if (value == nullptr)
 	{
 		_str = NULL;
 		_len = 0;
@@ -140,11 +140,11 @@ IVEntry::isPined()
 void
 IVEntry::release()
 {
-	if (value != NULL)
+	if (value != nullptr)
 	{
-		delete value;
+		value.reset();
 	}
-	value = NULL;
+	value = nullptr;
 	nextID = prevID = -1;
 	//if(is_versioned.load())
 	//{
@@ -161,7 +161,7 @@ IVEntry::Copy(const IVEntry& _entry)
 	this->usedFlag = _entry.usedFlag;
 	if (_entry.value != NULL)
 	{
-		this->value = new Bstr();
+		this->value = std::make_shared<Bstr>();
 		value->copy(_entry.value);
 	}
 	this->prevID = _entry.prevID;

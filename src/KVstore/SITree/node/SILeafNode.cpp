@@ -192,11 +192,11 @@ SILeafNode::Split(SINode* _parent, int _index)
   int i, k;
   for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
   {
-    p->addKey(this->keys + i, k);
+    p->addKey(this->keys.get() + i, k);
     p->AddValue(this->values[i], k);
     p->AddKeyNum();
   }
-  const Bstr* tp = this->keys + MIN_KEY_NUM;
+  const Bstr* tp = this->keys.get() + MIN_KEY_NUM;
   this->SetKeyNum(MIN_KEY_NUM);
   _parent->addKey(tp, _index, true);
   // from these code , we can assure k[i] is value[i+1]'s min-value
@@ -355,7 +355,7 @@ SILeafNode::Release()
   {
     keys[i].clear();
   }
-  delete[] keys;
+  keys.reset();
   delete[] values;
   keys = nullptr;
   values = nullptr;

@@ -167,6 +167,13 @@ Bstr::copy(const Bstr* _bp)
 	memcpy(this->str, _bp->getStr(), sizeof(char) * this->length);
 }
 
+void Bstr::copy(const std::shared_ptr<Bstr>& _bp)
+{
+	this->length = _bp->getLen();
+	this->str = new char[this->length];
+	memcpy(this->str, _bp->getStr(), sizeof(char) * this->length);
+}
+
 void Bstr::copy(const Bstr* _bp, bool del)
 {
 	if (del && this->str != nullptr)

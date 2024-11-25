@@ -13,7 +13,8 @@ using namespace std;
 void
 IVLeafNode::AllocValues()
 {
-	values = new Bstr[MAX_KEY_NUM];
+	std::shared_ptr<Bstr[]> values_sptr(new Bstr[MAX_KEY_NUM], std::default_delete<Bstr[]>());
+	values = values_sptr;
 }
 
 /*
@@ -86,7 +87,7 @@ IVLeafNode::getValue(int _index) const
 		return NULL;
 	}
 	else
-		return this->values + _index;
+		return this->values.get() + _index;
 }
 
 bool 
@@ -339,7 +340,7 @@ IVLeafNode::split(IVNode* _father, int _index)
 	for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
 	{
 		p->addKey(this->keys[i], k);
-		p->addValue(this->values + i, k);
+		p->addValue(this->values.get() + i, k);
 		p->addNum();
 	}
 	unsigned tp = this->keys[MIN_KEY_NUM];
@@ -359,7 +360,7 @@ IVLeafNode::coalesce(IVNode* _father, int _index)
 	int i, j = _father->getNum(), k;	//BETTER: unsigned?
 	IVNode* p = NULL;
 	int ccase = 0;
-	//const Bstr* bstr;
+	//const std::shared_ptr<Bstr>& bstr;
 	if (_index < j)	//the right neighbor
 	{
 		p = _father->getChild(_index + 1);
@@ -474,7 +475,7 @@ IVLeafNode::release()
 		values[i].clear();
 	}
 	delete[] keys;
-	delete[] values;
+	values.reset();
 }
 
 IVLeafNode::~IVLeafNode()
