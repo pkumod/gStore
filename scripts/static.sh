@@ -7,8 +7,8 @@ if [ -f /etc/os-release ]; then
     os=$ID
 fi
 architecture=`uname -m`
-version=$(awk -F '=' '/version/ {print$2}' "conf/conf.ini")
-product_name=$(awk -F '=' '/product_name/ {print$2}' "conf/conf.ini")
+version=1.4
+product_name=gStore
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
 static_pkg_name="$product_name_lower-$version-static-$os-$architecture"
 
@@ -22,36 +22,26 @@ echo "start build static package-------"
 
 # clear build
 echo "start clean build-------"
-cd build/ 
+rm -rf ${static_pkg_name}.tar.gz
+rm -rf ${product_name_lower}
+rm -rf build
+mkdir -p build
+cd build/
+cmake .. -DCMAKE_BUILD_TYPE=Static
+make pre
 if [ $? -eq 0 ]; then
-    make clean
-    rm -rf *
-    cmake .. -DCMAKE_BUILD_TYPE=Static
-else
-    echo "build dir not exist"
-    mkdir -p build
-    cd build/
-    make clean
-    rm -rf *
-    cmake .. -DCMAKE_BUILD_TYPE=Static
-    make pre 
-fi
-if [ $? -eq 0 ]; then
-    make -j4
+    make -j$(nproc)
     if [ $? -eq 0 ]; then
         cd ..
         echo "begin build package-------"
-        rm -rf ${static_pkg_name}.tar.gz
-        rm -rf ${product_name_lower}
-        mkdir -p ${product_name_lower}/logs
         mkdir -p ${product_name_lower}/.tmp
-        mkdir -p ${product_name_lower}/scripts
         mkdir -p ${product_name_lower}/conf
-        cp -r conf backups bin docs data LICENSE README.md ${product_name_lower}/
+        mkdir -p ${product_name_lower}/scripts
+        cp -r conf bin data LICENSE README.md ${product_name_lower}/
         cp -f conf/* ${product_name_lower}/conf/
-        cp -rf scripts/test ${product_name_lower}/scripts/
+        cp -f scripts/test/api_test.sh ${product_name_lower}/scripts/api_test.sh
         rm -f ${product_name_lower}/bin/.gitignore
-        rm -f ${product_name_lower}/backups/.gitkeep
+        rm -rf ${product_name_lower}/bin/.gconsole_history
         tar -czvf ${static_pkg_name}.tar.gz ${product_name_lower}
         echo "build static package successfully!!!"
     else
