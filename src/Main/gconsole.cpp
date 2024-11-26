@@ -938,7 +938,7 @@ bool login(const string& usrname, const string& password)
 {
 	server::MessageLoginRequest login_request(usrname, password);
 	server::MessageResponse login_response = APIConnector::login(API_URL, login_request);
-	if(login_response.StatusCode == WFT_STATE_DNS_ERROR)
+	if(login_response.StatusCode == WFT_STATE_SYS_ERROR)
 	{
 		cout << "Could not connect to server. Please check server status" << endl;
 		exit(0);

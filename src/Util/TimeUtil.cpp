@@ -2,11 +2,11 @@
 
 namespace gutil 
 {
-    time_t TimeUtil::timestamp()
+    int64_t TimeUtil::timestamp()
     {
-        timeval tv;
-        gettimeofday(&tv, NULL);
-        return (tv.tv_sec*1000 + tv.tv_usec/1000);
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+        return ms.count();
     }
 
     std::string TimeUtil::timestamp_str()
@@ -23,7 +23,7 @@ namespace gutil
         bool with_ms = false;
         if (format == NORM_DATETIME_MS_PATTERN)
         {
-            format = PURE_DATETIME_PATTERN;
+            format = NORM_DATETIME_PATTERN;
             with_ms = true;
         } 
         else if (format == PURE_DATETIME_MS_PATTERN)

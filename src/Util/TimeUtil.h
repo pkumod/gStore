@@ -17,7 +17,7 @@ namespace gutil
     class TimeUtil
     {
     public:
-        static time_t timestamp();
+        static int64_t timestamp();
         static std::string timestamp_str();
         static std::string now(std::string format=PURE_DATETIME_PATTERN);
         static std::string today(std::string format=PURE_DATE_PATTERN);

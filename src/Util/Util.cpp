@@ -202,10 +202,13 @@ Util::configure()
     Util::create_dirs(temp_str);
     
     // create cluster path
-    temp_str = GlobalTypedef::global_config["cluster_data_path"];
-    gutil::StringUtil::append(temp_str, '/');
-    GlobalTypedef::global_config["cluster_data_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    if (GlobalTypedef::global_config["cluster_on"] == "on")
+    {        
+        temp_str = GlobalTypedef::global_config["cluster_data_path"];
+        gutil::StringUtil::append(temp_str, '/');
+        GlobalTypedef::global_config["cluster_data_path"] = temp_str;
+        Util::create_dirs(temp_str);
+    }
 
     // init slog
     string log_mode = Util::getConfigureValue("log_mode");
