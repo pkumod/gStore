@@ -103,7 +103,7 @@ int showreason_handler(const vector<string>&);
 int deletereason_handler(const vector<string>&);
 
 int funquery_handler(const vector<string>&);
-int funcudb_handler(int, const std::string&);
+int funcudb_handler(int, const string&);
 int funcreate_handler(const vector<string>&);
 int funupdate_handler(const vector<string>&);
 int fundelete_handler(const vector<string>&);
@@ -207,6 +207,8 @@ COMMAND commands[] =
 		// {"cancel", 0, "Quit current input command.", "enter \"cancel;\" whenever you need to quit current input, remember the ;", 0}, // execute_line, check whether the line ends with cancel
 		{"help", help_handler, "Display help msg. Enter 'help;' see more about usage.", "help [edit/usage/<command>];", 0},
 		{"?", help_handler, "Synonym for \"help\".", "help [edit/usage/<command>];", 0},
+		{"usage", help_handler, "Display all the commands and their usage", 0},
+		
 		// {"settings", settings_handler, "Display settings.", "settings [<conf_name>];", 0},
 		{"version", version_handler, "Display  core version.", "version;", 0},
 
@@ -943,7 +945,7 @@ bool login(const string& usrname, const string& password)
 	}
 	if (!login_response.success())
 	{
-		std::cout << "login failed: " << login_response.StatusMsg << endl;
+		cout << "login failed: " << login_response.StatusMsg << endl;
 		return 0;
 	}
 	return 1;
@@ -1503,52 +1505,20 @@ int quit_handler(const vector<string> &args)
 
 int show_handler(const vector<string> &args)
 {
-	CHECK_ARGC(4, 0, 1, 2, 3)
+	CHECK_ARGC(2, 0, 1)
 	int argc = args.size();
-
-	string db_name;
-	string lines = "10";
-	// show
-	// show db
+	string db_name = _current_database;
 	if (argc == 1)
 	{
 		db_name = args[0];
 	}
-	// show db -n num
-	else if (argc == 3)
+	else
 	{
-		if (args[0] == "-n")
-		{
-			lines = args[1];
-			db_name = args[2];
-		}
-		else if (args[1] == "-n")
-		{
-			lines = args[2];
-			db_name = args[0];
-		}
-		else
-		{
-			PRINT_WRONG_USG
-			cout << commands[current_cmd_offset].usage << endl;
-		}
+		CHECK_CURRENT_DB_LOADED
 	}
-	// show -n num
-	else if (argc == 2)
-	{
-		if (args[0] == "-n")
-		{
-			lines = args[1];
-		}
-		else
-		{
-			PRINT_WRONG_USG
-			cout << commands[current_cmd_offset].usage << endl;
-		}
-	}
-	CHECK_CURRENT_DB_LOADED
+
 	// monitor
-	server::MessageMonitorRequest monitor_request(_current_database);
+	server::MessageMonitorRequest monitor_request(db_name);
 	server::MessageMonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
 	if (!monitor_response.success())
 	{
@@ -1561,7 +1531,6 @@ int show_handler(const vector<string> &args)
 	rows.push_back({"database", monitor_response.database});
 	rows.push_back({"creator", monitor_response.creator});
 	rows.push_back({"builtTime", monitor_response.builtTime});  
-	std::cout << monitor_response.builtTime << endl;
 	rows.push_back({"triple_num", monitor_response.tripleNum});
 	rows.push_back({"literalNum", to_string(monitor_response.literalNum)});
 	rows.push_back({"subjectNum", to_string(monitor_response.subjectNum)});
@@ -1577,7 +1546,7 @@ int showdbs_handler(const vector<string> &args)
 	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
 	if (!show_response.success())
 	{
-		std::cout << "show databases failed: " << show_response.StatusMsg << endl;
+		cout << "show databases failed: " << show_response.StatusMsg << endl;
 		return -1;
 	}
 
@@ -2505,7 +2474,7 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		ifstream file(arg);
 		if (!file.is_open())
 		{
-			std::cout << "failed to open file: " << arg << endl;
+			cout << "failed to open file: " << arg << endl;
 		}
 
 		nlohmann::json ruleinfo;
@@ -2532,7 +2501,7 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		response = APIConnector::cedsdReason(API_URL, true, request);
 	}
 
-	return std::move(response);
+	return move(response);
 }
 
 int addreason_handler(const vector<string> &args)
@@ -2728,11 +2697,11 @@ int deletereason_handler(const vector<string> &args)
 	server::MessageReasonManageResponse response = reason_manage_handler(7, args[0]);
 	// if (!ret)
 	// {
-	// 	std::cout << "DELETE REASON SUCCESSFULLY!" << endl; 
+	// 	cout << "DELETE REASON SUCCESSFULLY!" << endl; 
 	// }
 	// else
 	// {
-	// 	std::cout << "DELETE REASON FAILED!" << endl;
+	// 	cout << "DELETE REASON FAILED!" << endl;
 	// }
 	cout << "delete reason" + args[0] + "successfully!" << endl;
 	return response.success();
@@ -2767,7 +2736,7 @@ int funquery_handler(const vector<string>& args)
 	return 0;
 }
 
-int funcudb_handler(int type, const std::string& arg)
+int funcudb_handler(int type, const string& arg)
 {
 	
 	PFNInfo funInfo;
@@ -2776,7 +2745,7 @@ int funcudb_handler(int type, const std::string& arg)
 		ifstream file(arg);
 		if (!file.is_open())
 		{
-			std::cout << "failed to open file: " << arg << endl;
+			cout << "failed to open file: " << arg << endl;
 			return -1;
 		}
 		nlohmann::json json;
@@ -2790,7 +2759,7 @@ int funcudb_handler(int type, const std::string& arg)
 	}
 	else 
 	{
-		std::cout << "invalid type" << endl;
+		cout << "invalid type" << endl;
 		return -1;
 	}
 	server::MessageFunCudbRequest funcudb_request(to_string(type));
@@ -2800,7 +2769,7 @@ int funcudb_handler(int type, const std::string& arg)
 	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
 	{
-		std::cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
+		cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
 		return -1;
 	}
 
@@ -2823,7 +2792,7 @@ int funcreate_handler(const vector<string>& args)
 		cout << "failed to create custom function" << endl;
 		return -1;
 	}
-	std::cout << "create custom function successfully!" << endl;
+	cout << "create custom function successfully!" << endl;
 	return 0;
 }
 
@@ -2843,7 +2812,7 @@ int funupdate_handler(const vector<string>& args)
 		cout << "failed to update custom function" << endl;
 		return -1;
 	}
-	std::cout << "update custom function successfully!" << endl;
+	cout << "update custom function successfully!" << endl;
 	return 0;
 }
 
@@ -2857,7 +2826,7 @@ int fundelete_handler(const vector<string>& args)
 		cout << "failed to delete custom function" << endl;
 		return -1;
 	}
-	std::cout << "delete custom function successfully!" << endl;	
+	cout << "delete custom function successfully!" << endl;	
 	return 0;
 }
 
@@ -2871,7 +2840,7 @@ int funbuild_handler(const vector<string>& args)
 		cout << "failed to build custom function" << endl;
 		return -1;
 	}
-	std::cout << "custom function build successfully!" << endl;
+	cout << "custom function build successfully!" << endl;
 	return 0;
 }
 
@@ -2887,7 +2856,7 @@ int funreview_handler(const vector<string>& args)
 	ifstream file(args[0]);
 	if (!file.is_open())
 	{
-		std::cout << "failed to open file: " << args[0] << endl;
+		cout << "failed to open file: " << args[0] << endl;
 		return -1;
 	}
 
@@ -2898,7 +2867,7 @@ int funreview_handler(const vector<string>& args)
 	server::MessageFunReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
 	if (!review_response.success())
 	{
-		std::cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
+		cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
 	}
 
 	vector<string> headers = {"result"};
@@ -2910,7 +2879,7 @@ int funreview_handler(const vector<string>& args)
 		Util::printConsole(headers, rows);
 	}
 		
-	std::cout << "review custom function successfully!" << endl;
+	cout << "review custom function successfully!" << endl;
 	return 0;
 }
 
@@ -2920,7 +2889,7 @@ int txnlog_handler(const vector<string>& args)
 	// check args if numeric
 	if (!pure_digit(args[0]) || !pure_digit(args[1])) 
 	{
-		std::cout << "Illegal Argument: arg0 && arg1 must be number" << endl;
+		cout << "Illegal Argument: arg0 && arg1 must be number" << endl;
 		return -1;
 	}
 
@@ -2976,7 +2945,7 @@ int querylog_handler(const vector<string>& args)
 	string date = args[0];
 	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
 	{
-		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
 		return -1;
 	}
 	int pageNo = stoi(args[1]);
@@ -3030,7 +2999,7 @@ int accesslog_handler(const vector<string>& args) {
 	string date = args[0];
 	if (!pure_digit(args[1]) || !pure_digit(args[2])) 
 	{
-		std::cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
+		cout << "Illegal Argument: arg1 && arg2 must be number" << endl;
 		return -1;
 	}
 	int pageNo = stoi(args[1]);
@@ -3063,7 +3032,7 @@ int begin_handler(const vector<string>& args)
 	CHECK_ARGC(1, 2)
 	if (!pure_digit(args[1])) 
 	{
-		std::cout << "Illegal Argument: arg1 must be number" << endl;
+		cout << "Illegal Argument: arg1 must be number" << endl;
 		return -1;
 	}
 
