@@ -115,7 +115,7 @@ public:
             doc["num"] = num;
             doc["fail_num"] = fail_num;
         }
-        if (operation == "backup")
+        if (operation == "backup" && !backupfilepath.empty())
         {
             doc["backupfilepath"] = backupfilepath;
         }

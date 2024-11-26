@@ -5891,7 +5891,7 @@ KVstore::s2values_vacuum(vector<unsigned>& sub_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0 ) {
 			if(base_empty == false){
-				SLOG_ERROR("delete keys");
+				// SLOG_ERROR("delete keys");
 				this->removeKey(this->subID2values, _subid);
 			}
 			continue;
@@ -5960,7 +5960,7 @@ KVstore::o2values_vacuum(vector<unsigned>& obj_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0) {
 			if(base_empty == false){
-				SLOG_ERROR("delete keys");
+				// SLOG_ERROR("delete keys");
 				this->removeKey(this->objID2values, _obj_id);
 			}
 			continue;
@@ -6032,7 +6032,7 @@ KVstore::o2values_literal_vacuum(vector<unsigned>& obj_literal_ids, shared_ptr<T
 		if(_len == 0) {
 			if(base_empty == false)
 			{
-				SLOG_ERROR("delete keys");
+				// SLOG_ERROR("delete keys");
 				// assert(false);
 				this->removeKey(this->objID2values, _obj_id);
 			}
@@ -6105,7 +6105,7 @@ KVstore::p2values_vacuum(vector<unsigned>& pre_ids, shared_ptr<Transaction> txn)
 
 		if(_len == 0) {
 			if(base_empty == false){
-				SLOG_ERROR("delete keys");
+				// SLOG_ERROR("delete keys");
 				this->removeKey(this->preID2values, _pre_id);
 			}
 			continue;

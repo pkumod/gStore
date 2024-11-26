@@ -4814,7 +4814,7 @@ void Database::VersionClean(vector<unsigned> &sub_ids, vector<unsigned> &obj_ids
 		if (obj_degree == 0)
 		{
 			string obj_str = this->kvstore->getLiteralByID(_obj_id);
-			SLOG_ERROR("obj_str" << obj_str << "     _obj_id" << _obj_id);
+			SLOG_CORE("obj_str=" << obj_str << ",_obj_id=" << _obj_id);
 			if (obj_str == "")
 				continue;
 

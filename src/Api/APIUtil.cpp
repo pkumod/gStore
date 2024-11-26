@@ -2091,12 +2091,12 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
             }
             found = true;
         }
-        fputs(readBuffer, tmp_file);
+        fputs(rec.c_str(), tmp_file);
     }
     fclose(file);
     fclose(tmp_file);
     Util::remove_path(file_path);
-    string cmd = "mv " + file_tmp_path + ' ' + file_tmp_path;
+    string cmd = "mv " + file_tmp_path + ' ' + file_path;
     system(cmd.c_str());
     pthread_rwlock_unlock(&transactionlog_lock);
     return found;
