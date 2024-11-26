@@ -95,7 +95,7 @@ add_custom_target( "dist" DEPENDS CLEAN DIST )
 #make tarball
 add_custom_command( OUTPUT TARBALL
     COMMAND tar -czvf gstore.tar.gz api conf 3rdparty scripts data 
-    src docs CMakeLists.txt README.md README_ZH.md LICENSE
+    src docs CMakeLists.txt README.md README_ZH.md LICENSE include/nlohmann/json.hpp
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}
 )
 add_custom_target( "tarball" DEPENDS TARBALL )
