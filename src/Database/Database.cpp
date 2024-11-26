@@ -135,15 +135,15 @@ void Database::initIDinfo()
 	// NOTICE:keep that limit-1 the maxium using ID
 	this->free_id_file_entity = this->getStorePath() + "/freeEntityID.dat";
 	this->limitID_entity = 0;
-	// this->freelist_entity = nullptr;
+	this->freelist_entity = nullptr;
 
 	this->free_id_file_literal = this->getStorePath() + "/freeLiteralID.dat";
 	this->limitID_literal = 0;
-	// this->freelist_literal = nullptr;
+	this->freelist_literal = nullptr;
 
 	this->free_id_file_predicate = this->getStorePath() + "/freePredicateID.dat";
 	this->limitID_predicate = 0;
-	// this->freelist_predicate = nullptr;
+	this->freelist_predicate = nullptr;
 }
 
 void Database::resetIDinfo()

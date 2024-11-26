@@ -83,7 +83,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 			fputc(0, this->valfp);
 			for (k = 0; k < 8; ++k)
 			{
-				bp->next = std::make_shared<BlockInfo>(i * 8 + k + 1, std::shared_ptr<BlockInfo>());
+				bp->next = std::make_shared<BlockInfo>(i * 8 + k + 1, nullptr);
 				bp = bp->next;
 			}
 		}
@@ -103,7 +103,7 @@ VList::VList(string& _filepath, string& _mode, unsigned long long _buffer_size)
 			{
 				if ((c & (1 << k)) == 0)
 				{
-					bp->next = std::make_shared<BlockInfo>(i * 8 + 7 - k + 1, std::shared_ptr<BlockInfo>());
+					bp->next = std::make_shared<BlockInfo>(i * 8 + 7 - k + 1, nullptr);
 					bp = bp->next;
 				}
 			}
