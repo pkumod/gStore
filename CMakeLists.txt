@@ -183,8 +183,8 @@ add_custom_target( cpack
 if (CMAKE_BUILD_TYPE STREQUAL Cpack)
 
     # version
-    set( CPACK_PACKAGE_VERSION "1.0" )
-    set(CPACK_PACKAGE_CONTACT "service@topgraph.cn")
+    set( CPACK_PACKAGE_VERSION "1.4.2" )
+    set(CPACK_PACKAGE_CONTACT "gsore@pku.edu.cn")
     set(CPACK_PACKAGE_DIRECTORY ${GSTORE_ROOT_DIR}/cpack_package)
     # architecture
     set( SYSTEM_ARCHITECTURE  ${CMAKE_HOST_SYSTEM_PROCESSOR} )
