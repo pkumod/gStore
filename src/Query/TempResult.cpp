@@ -1260,20 +1260,44 @@ void TempResult::doFilter(const CompTreeNode &filter, KVstore *kvstore, Varset &
 
     Varset this_varset = this->getAllVarset();
     int this_id_cols = this->id_varset.getVarsetSize();
+	unsigned need_thread_num = original_size/5000000 + 1;
+	std::thread threads[need_thread_num];
+	std::vector<std::vector<int>> save_result(need_thread_num);
+	auto filter_helper = [&filter, &entity_literal_varset, this_id_cols, kvstore, &this_varset, limit_number, original_size, &save_result, this] (unsigned id)
+	{
+		int cur_id = 0;
+		if (id > 0)
+			cur_id = id * 5000000 - 1;
+		int max_id = (id + 1) * 5000000 - 1;
+		max_id = max_id > original_size ? original_size : max_id;
+		for ( int i = cur_id; save_result[id].size() < limit_number && i < max_id; ++i)
+		{
+			bool isel = true;
+			if (!filter.varset.vars.empty())
+				isel = entity_literal_varset.findVar(filter.varset.vars[0]);
+			EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, kvstore, this_varset, isel);
+			if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+				save_result[id].push_back(i);
+		}
+	};
 
-    for (unsigned i = 0; save_num < limit_number && i < original_size-delete_num;) {
-		bool isel = true;
-		if (!filter.varset.vars.empty())
-			isel = entity_literal_varset.findVar(filter.varset.vars[0]);
-        EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, kvstore, this_varset, isel);
-        if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
-            ++i;
-            ++save_num;
-        } else {
-			this->result[i].swap(this->result[original_size - 1 - delete_num]);
-            ++delete_num;
-        }
-    }
+	for (int i = 0; i < need_thread_num; ++i)
+        threads[i] = std::thread(filter_helper, i);
+	for (int i = 0; i < need_thread_num; ++i)
+        threads[i].join();
+
+	for (auto& m : save_result)
+	{
+		for (auto &n : m)
+		{
+			if (save_num >= limit_number)
+				break;
+			this->result[save_num].swap(this->result[n]);
+			save_num++;
+		}
+	}
+
+	SLOG_CORE("doFilter size:" << original_size << " ,need thread num:" << need_thread_num);
 
 	unsigned size = this->result.size();
 	for (unsigned i = save_num; i < size; i++)
