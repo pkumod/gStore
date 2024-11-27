@@ -50,6 +50,7 @@ class TempResult
 		int findRightBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 
 		void convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset);
+		void convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset, KVstore *kvstore);
 		void doJoin(TempResult &x, TempResult &r);
 		void doUnion(TempResult &r);
 		void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
@@ -82,7 +83,7 @@ class TempResultSet
 
 		int findCompatibleResult(Varset &_id_varset, Varset &_str_varset);
 
-		void doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
+		void doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset, KVstore *kvstore);
 		void doUnion(TempResultSet &x, TempResultSet &r);
 		void doOptional(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);
 		void doMinus(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset);

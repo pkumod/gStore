@@ -468,7 +468,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			else
 			{
 				TempResultSet *new_result = new TempResultSet();
-				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 				temp->release();
 				result->release();
@@ -679,7 +679,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						else
 						{
 							TempResultSet *new_result = new TempResultSet();
-							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 							temp->release();
 							sub_result->release();
@@ -701,7 +701,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					else
 					{
 						TempResultSet *new_result = new TempResultSet();
-						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 						sub_result->release();
 						result->release();
@@ -748,7 +748,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				else
 				{
 					TempResultSet *new_result = new TempResultSet();
-					result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 					sub_result->release();
 					result->release();
@@ -986,7 +986,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 						else
 						{
 							TempResultSet *new_result = new TempResultSet();
-							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 							temp->release();
 							sub_result->release();
@@ -1030,7 +1030,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							else
 							{
 								TempResultSet *new_result = new TempResultSet();
-								sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+								sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 								temp->release();
 								sub_result->release();
@@ -1156,7 +1156,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			else
 			{
 				TempResultSet *new_result = new TempResultSet();
-				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 				sub_result_outer->release();
 				result->release();
@@ -1237,7 +1237,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	    		else
 		    	{
 		    		TempResultSet *new_result = new TempResultSet();
-	    			result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+	    			result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 		    		temp->release();
 	    			result->release();
@@ -1270,7 +1270,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				else
 				{
 					TempResultSet *new_result = new TempResultSet();
-					result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 					temp_trs->release();
 					result->release();
 					delete temp_trs;
@@ -3889,7 +3889,7 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 			SLOG_CORE("Final result size: "<<temp->results[0].result.size());
 
 			TempResultSet *new_result = new TempResultSet();
-			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 			sub_result->release();
 			delete sub_result;
@@ -4061,7 +4061,7 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 		{
 			// TempResultSet *new_result = new TempResultSet();
 			new_result = new TempResultSet();
-			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset, kvstore);
 
 			temp->release();
 			sub_result->release();

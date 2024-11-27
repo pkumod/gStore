@@ -280,6 +280,56 @@ void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, 
 	this->str_varset = new_str_varset;
 }
 
+void TempResult::convertId2Str(Varset convert_varset, StringIndex *stringindex, Varset &entity_literal_varset, KVstore *kvstore)
+{
+	int this_id_cols = this->id_varset.getVarsetSize();
+
+	Varset new_id_varset = this->id_varset - convert_varset;
+	Varset new_str_varset = this->str_varset + convert_varset;
+	int new_id_cols = new_id_varset.getVarsetSize();
+
+	vector<int> this2new_id_pos = this->id_varset.mapTo(new_id_varset);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
+	{
+		unsigned *v = new unsigned [new_id_cols];
+
+		for (int k = 0; k < this_id_cols; k++)
+			if (this2new_id_pos[k] != -1)
+			{
+				v[this2new_id_pos[k]] = this->result[i].id[k];
+			}
+			else
+			{
+				string str;
+				unsigned id = this->result[i].id[k];
+				if (id >= 0)
+				{
+					if (entity_literal_varset.findVar(this->id_varset.vars[k]))
+					{
+						if (id < Util::LITERAL_FIRST_ID)
+							str = kvstore->getEntityByID(id);
+						else
+							str = kvstore->getLiteralByID(id);
+					}
+					else
+					{
+						str = kvstore->getPredicateByID(id);
+					}
+				}
+
+				this->result[i].str.push_back(str);
+			}
+
+		delete[] this->result[i].id;
+		this->result[i].id = v;
+        this->result[i].sz = new_id_cols;
+	}
+
+	this->id_varset = new_id_varset;
+	this->str_varset = new_str_varset;
+}
+
 void TempResult::doJoin(TempResult &x, TempResult &r)
 {
 	// long large_begin, large_end;
@@ -1373,7 +1423,7 @@ int TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 	return (int)this->results.size() - 1;
 }
 
-void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset)
+void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stringindex, Varset &entity_literal_varset, KVstore *kvstore)
 {
 	long tv_begin = Util::get_cur_time();
 
@@ -1394,10 +1444,10 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, StringIndex *stri
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
-			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset, kvstore);
 	for (int i = 0; i < (int)x.results.size(); i++)
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
-			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset, kvstore);
 
 	// long totalFindCompTime = 0, totalInnerJoinTime = 0;
 	for (int i = 0; i < (int)this->results.size(); i++)
