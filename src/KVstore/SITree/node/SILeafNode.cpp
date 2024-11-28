@@ -13,7 +13,9 @@ using namespace std;
 void
 SILeafNode::AllocValues()
 {
-  values = new unsigned[MAX_KEY_NUM];
+  std::shared_ptr<unsigned[]> values_sptr(new unsigned[MAX_KEY_NUM], std::default_delete<unsigned[]>());
+  values = values_sptr;
+
 }
 
 SILeafNode::SILeafNode():SINode()
@@ -356,7 +358,7 @@ SILeafNode::Release()
     keys[i].clear();
   }
   keys.reset();
-  delete[] values;
+  values.reset();
   keys = nullptr;
   values = nullptr;
 }

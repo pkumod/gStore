@@ -20,7 +20,7 @@ class SILeafNode : public SINode
  protected:
   std::shared_ptr<SINode> prev;	//LeafNode
   std::shared_ptr<SINode> next;
-  unsigned* values;
+  std::shared_ptr<unsigned[]> values;
   void AllocValues();
  public:
   SILeafNode();
