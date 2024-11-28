@@ -95,16 +95,16 @@ public:
 public:
 	SIStorage();
 	SIStorage(std::string& _filepath, std::string& _mode, unsigned* _height, unsigned long long _buffer_size);//create a fixed-size file or open an existence
-	bool PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail);		//read and build all nodes, only root in memory
-	bool fullLoad(SINode*& _root); //puts all nodes of IVTree in memory
-	bool ReadNode(SINode* _np, long long* _request);	//read, if virtual
-	bool CreateNode(SINode*& _np);		//use fp to create a new node
+	bool PreRead(std::shared_ptr<SINode>& _root, std::shared_ptr<SINode>& _leaves_head, std::shared_ptr<SINode>& _leaves_tail);		//read and build all nodes, only root in memory
+	bool fullLoad(std::shared_ptr<SINode>& _root); //puts all nodes of IVTree in memory
+	bool ReadNode(std::shared_ptr<SINode>_np, long long* _request);	//read, if virtual
+	bool CreateNode(std::shared_ptr<SINode>& _np);		//use fp to create a new node
 										//NOTICE(if children and child not exist, build children's Nodes)
-	bool WriteNode(SINode* _np);
+	bool WriteNode(std::shared_ptr<SINode> _np);
 	bool ReadBstr(Bstr* _bp, unsigned* _next);
 	bool writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock);
-	bool WriteTree(SINode* _np);
-	void updateHeap(SINode* _np, unsigned _rank, bool _inheap) const;
+	bool WriteTree(std::shared_ptr<SINode> _np);
+	void updateHeap(std::shared_ptr<SINode> _np, unsigned _rank, bool _inheap) const;
 	bool request(long long needed_mem);			//deal with memory request
 	bool handler(unsigned long long needed_mem);	//swap some nodes out
 	//bool update();				//update InMem Node's rank, with clock

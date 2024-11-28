@@ -47,13 +47,13 @@ SILeafNode::Normal()
   this->SetInMem();
 }
 
-SINode*
+std::shared_ptr<SINode>
 SILeafNode::GetPrev() const
 {
   return prev;
 }
 
-SINode*
+std::shared_ptr<SINode>
 SILeafNode::GetNext() const
 {
   return next;
@@ -142,13 +142,13 @@ SILeafNode::SubValue(int _index)
 }
 
 void
-SILeafNode::setPrev(SINode* _prev)
+SILeafNode::setPrev(std::shared_ptr<SINode> _prev)
 {
   this->prev = _prev;
 }
 
 void
-SILeafNode::SetNext(SINode* _next)
+SILeafNode::SetNext(std::shared_ptr<SINode> _next)
 {
   this->next = _next;
 }
@@ -172,11 +172,11 @@ SILeafNode::GetSize() const
  * @param _index this node's position in parent node
  * @return the new created node
  */
-SINode*
-SILeafNode::Split(SINode* _parent, int _index)
+std::shared_ptr<SINode>
+SILeafNode::Split(std::shared_ptr<SINode> _parent, int _index)
 {
   int num = this->GetKeyNum();
-  SINode* p = new SILeafNode;		//right child
+  std::shared_ptr<SINode> p = std::make_shared<SILeafNode>();		//right child
 
   // NOTICE: assign height for new node
   p->setHeight(this->getHeight());
@@ -187,7 +187,7 @@ SILeafNode::Split(SINode* _parent, int _index)
     p->SetNext(this->next);
   }
   this->SetNext(p);
-  p->setPrev(this);
+  p->setPrev(shared_from_this());
 
   int i, k;
   for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
@@ -221,12 +221,12 @@ SILeafNode::Split(SINode* _parent, int _index)
  * @param _index which position this node is in parent's child
  * @return  neighbour SINode in case 1/3, NULL case 2/4.
  */
-SINode*
-SILeafNode::Coalesce(SINode* _parent, int _index)
+std::shared_ptr<SINode>
+SILeafNode::Coalesce(std::shared_ptr<SINode> _parent, int _index)
 {
   int i, parent_key_num = _parent->GetKeyNum();
   unsigned int neighbour_key_num;
-  SINode* neighbour = nullptr;
+  std::shared_ptr<SINode> neighbour;
 
   // 1:union right to this
   // 2:move one from right
@@ -249,7 +249,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
   //it has a left neighbor
   if (_index > 0)
   {
-    SINode* left_neighbour = _parent->GetChild(_index - 1);
+    std::shared_ptr<SINode> left_neighbour = _parent->GetChild(_index - 1);
     unsigned tk = left_neighbour->GetKeyNum();
     if (coalesce_method < 2)
     {
@@ -286,7 +286,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
       _parent->SubKeyNum();
       this->next = neighbour->GetNext();
       if (this->next != nullptr)
-        this->next->setPrev(this);
+        this->next->setPrev(shared_from_this());
       neighbour->SetKeyNum(0);
       break;
 
@@ -317,7 +317,7 @@ SILeafNode::Coalesce(SINode* _parent, int _index)
       _parent->SubKeyNum();
       this->prev = neighbour->GetPrev();
       if (this->prev != nullptr)
-        this->prev->SetNext(this);
+        this->prev->SetNext(shared_from_this());
       neighbour->SetKeyNum(0);
       break;
 

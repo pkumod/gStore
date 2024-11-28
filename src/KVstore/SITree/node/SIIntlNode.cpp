@@ -13,12 +13,12 @@ using namespace std;
 
 SIIntlNode::SIIntlNode():SINode()
 {
-	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
+	memset(childs, 0, sizeof(std::shared_ptr<SINode>) * (MAX_CHILD_NUM+1));
 }
 
 SIIntlNode::SIIntlNode(bool isVirtual):SINode(isVirtual)	//The constructor of father's class must be called explicitly
 {
-	memset(childs, 0, sizeof(SINode*) * (MAX_CHILD_NUM+1));
+	memset(childs, 0, sizeof(std::shared_ptr<SINode>) * (MAX_CHILD_NUM+1));
 }
 
 
@@ -41,7 +41,7 @@ SIIntlNode::Normal()
  * @param _index
  * @return _index-th child
  */
-SINode*
+std::shared_ptr<SINode>
 SIIntlNode::GetChild(int _index) const
 {
 	int num = this->GetKeyNum();
@@ -61,7 +61,7 @@ SIIntlNode::GetChild(int _index) const
  * @param _index the position
  */
 bool
-SIIntlNode::setChild(SINode* _child, int _index)
+SIIntlNode::setChild(std::shared_ptr<SINode> _child, int _index)
 {
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num)
@@ -77,11 +77,11 @@ SIIntlNode::setChild(SINode* _child, int _index)
 /**
  * move values[>= _index] one position rightward and
  * add SINode to _i_th, and
- * @param _child SINode*
+ * @param _child std::shared_ptr<SINode>&
  * @param _index the inserted position
  */
 bool
-SIIntlNode::AddChild(SINode* _child, int _index)
+SIIntlNode::AddChild(std::shared_ptr<SINode> _child, int _index)
 {
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index > num + 1)
@@ -136,11 +136,11 @@ SIIntlNode::GetSize() const
  * @param _index this node's position in parent node
  * @return the new created node
  */
-SINode*
-SIIntlNode::Split(SINode* _parent, int _index)
+std::shared_ptr<SINode>
+SIIntlNode::Split(std::shared_ptr<SINode> _parent, int _index)
 {
   int num = this->GetKeyNum();
-  SINode* p = new SIIntlNode;		//right child
+  std::shared_ptr<SINode> p = std::make_shared<SIIntlNode>(); //right child
   p->setHeight(this->getHeight());
   int i, k;
   for (i = MIN_CHILD_NUM, k = 0; i < num; ++i, ++k)
@@ -173,11 +173,11 @@ SIIntlNode::Split(SINode* _parent, int _index)
  * @param _index which position this node is in parent's child
  * @return  neighbour SINode in case 1/3, NULL case 2/4.
  */
-SINode*
-SIIntlNode::Coalesce(SINode* _father, int _index)
+std::shared_ptr<SINode>
+SIIntlNode::Coalesce(std::shared_ptr<SINode> _father, int _index)
 {
 	int i, j = _father->GetKeyNum(), k;	//BETTER: unsigned?
-	SINode* p = nullptr;
+	std::shared_ptr<SINode> p;
 
   // 1:union right to this
   // 2:move one from right
@@ -196,7 +196,7 @@ SIIntlNode::Coalesce(SINode* _father, int _index)
 	}
 	if (_index > 0)	//the left neighbor
 	{
-		SINode* tp = _father->GetChild(_index - 1);
+		std::shared_ptr<SINode> tp = _father->GetChild(_index - 1);
 		unsigned tk = tp->GetKeyNum();
 		if (ccase < 2)
 		{
@@ -219,8 +219,8 @@ SIIntlNode::Coalesce(SINode* _father, int _index)
 		for (i = 0; i < k; ++i)
 		{
 			this->addKey(p->getKey(i), this->GetKeyNum());
-          this->AddChild(p->GetChild(i), this->GetKeyNum());
-          this->AddKeyNum();
+          	this->AddChild(p->GetChild(i), this->GetKeyNum());
+          	this->AddKeyNum();
 		}
 		this->setChild(p->GetChild(i), this->GetKeyNum());
 		_father->subKey(_index);
@@ -276,7 +276,7 @@ SIIntlNode::Coalesce(SINode* _father, int _index)
 	if (ccase == 1 || ccase == 3)
 		return p;
 	else
-		return NULL;
+		return nullptr;
 }
 
 void

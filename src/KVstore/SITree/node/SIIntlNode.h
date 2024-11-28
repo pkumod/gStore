@@ -14,20 +14,20 @@
 class SIIntlNode : public SINode
 {
 protected:
-	SINode* childs[MAX_CHILD_NUM + 1];
+	std::shared_ptr<SINode> childs[MAX_CHILD_NUM + 1];
 public:
 	SIIntlNode();
 	SIIntlNode(bool isVirtual);
 	//IntlNode(Storage* tsm_);
 	void Virtual();
 	void Normal();
-	SINode* GetChild(int _index) const;
-	bool setChild(SINode* _child, int _index);
-	bool AddChild(SINode* _child, int _index);
+	std::shared_ptr<SINode> GetChild(int _index) const;
+	bool setChild(std::shared_ptr<SINode> _child, int _index);
+	bool AddChild(std::shared_ptr<SINode> _child, int _index);
 	bool subChild(int _index);
 	unsigned GetSize() const;
-	SINode* Split(SINode* _parent, int _index);
-	SINode* Coalesce(SINode* _father, int _index);
+	std::shared_ptr<SINode> Split(std::shared_ptr<SINode> _parent, int _index);
+	std::shared_ptr<SINode> Coalesce(std::shared_ptr<SINode> _father, int _index);
 	void Release();
 	~SIIntlNode();
 	void print(std::string s);	//DEBUG

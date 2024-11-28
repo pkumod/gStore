@@ -69,14 +69,14 @@ SITree::SetHeight(unsigned _h)
   this->height_ = _h;
 }
 
-SINode*
+std::shared_ptr<SINode>
 SITree::GetRoot() const
 {
   return this->root_;
 }
 
 void
-SITree::Prepare(SINode* _np)
+SITree::Prepare(std::shared_ptr<SINode> _np)
 {
   bool flag = _np->inMem();
   if (!flag)
@@ -105,8 +105,8 @@ SITree::Search(const char* _str, unsigned _len, unsigned* _val)
 
   request_ = 0;
   int store;
-  SINode* ret = this->Find(_str, _len, &store, false);
-  if (ret == NULL || store == -1)	//tree is empty or not found
+  std::shared_ptr<SINode> ret = this->Find(_str, _len, &store, false);
+  if (ret == nullptr || store == -1)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -145,10 +145,10 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   }
 
   this->request_ = 0;
-  SINode* ret;
-  if (this->root_ == NULL)	//tree is empty
+  std::shared_ptr<SINode> ret;
+  if (!this->root_)	//tree is empty
   {
-    leaves_tail_ = leaves_head_ = root_ = new SILeafNode;
+    leaves_tail_ = leaves_head_ = root_ = std::make_shared<SILeafNode>();
     request_ += SINode::LEAF_SIZE;
     this->height_ = 1;
     root_->setHeight(1);	//add to heap later
@@ -158,11 +158,11 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   //  split the root SINode
   if (root_->GetKeyNum() == SINode::MAX_KEY_NUM)
   {
-    SINode* father = new SIIntlNode;
+    std::shared_ptr<SINode> father = std::make_shared<SIIntlNode>();
     request_ += SINode::INTL_SIZE;
     father->AddChild(root_, 0);
     ret = root_->Split(father, 0);
-    if (ret->isLeaf() && ret->GetNext() == NULL)
+    if (ret->isLeaf() && ret->GetNext() == nullptr)
       this->leaves_tail_ = ret;
     if (ret->isLeaf())
       request_ += SINode::LEAF_SIZE;
@@ -177,8 +177,8 @@ SITree::Insert(char* str, unsigned len, unsigned val)
       root_->heapId = 0;
   }
 
-  SINode* p = this->root_;
-  SINode* q;
+  std::shared_ptr<SINode> p = this->root_;
+  std::shared_ptr<SINode> q;
   int i = 0;
   while (!p->isLeaf())
   {
@@ -265,8 +265,8 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
   }
   this->request_ = 0;
   int store;
-  SINode* ret = this->Find(_str, _len, &store, true);
-  if (ret == NULL || store == -1)	//tree is empty or not found
+  std::shared_ptr<SINode> ret = this->Find(_str, _len, &store, true);
+  if (!ret || store == -1)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -294,13 +294,13 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
  * changed, set if_modify = true
  * @return the leaf node
  */
-SINode*
+std::shared_ptr<SINode>
 SITree::Find(const char* _str, unsigned _len, int* _store, bool if_modify)
 {											//to assign value for this->bstr, function shouldn't be const!
   if (this->root_ == NULL)
     return NULL;						//SITree Is Empty
 
-  SINode* p = root_;
+  std::shared_ptr<SINode> p = root_;
   int i, j;//local Bstr: multiple delete
 
   while (!p->isLeaf())
@@ -342,14 +342,14 @@ SITree::Remove(const char* _str, unsigned _len)
     return false;
   }
   request_ = 0;
-  SINode* ret;
+  std::shared_ptr<SINode> ret;
   if (this->root_ == NULL)	//tree is empty
   {
     this->access_lock_.unlock();
     return false;
   }
-  SINode* p = this->root_;
-  SINode* q;
+  std::shared_ptr<SINode> p = this->root_;
+  std::shared_ptr<SINode> q;
   int i, j;
   while (!p->isLeaf())
   {
@@ -366,11 +366,11 @@ SITree::Remove(const char* _str, unsigned _len)
         this->Prepare(p->GetChild(i - 1));
       if (i < j)
         this->Prepare(p->GetChild(i + 1));
-      if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
-      {
-        SLOG_ERROR("error remove str:" << _str << " key num:" << j << " query node pos:" << i);
-        break;
-      }
+      // if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
+      // {
+      //   SLOG_ERROR("error remove str:" << _str << " key num:" << j << " query node pos:" << i);
+      //   break;
+      // }
       ret = q->Coalesce(p, i);
       if (ret != NULL)
       {
@@ -461,19 +461,19 @@ SITree::Save()
  * @param _np
  */
 void
-SITree::Release(SINode* _np) const
+SITree::Release(std::shared_ptr<SINode> _np) const
 {
-  if (_np == NULL)	return;
+  if (!_np)	return;
   if (_np->isLeaf())
   {
-    delete _np;
+    _np.reset();
     _np = nullptr;
     return;
   }
   int cnt = _np->GetKeyNum();
   for (; cnt >= 0; --cnt)
     Release(_np->GetChild(cnt));
-  delete _np;
+  _np.reset();
   _np = nullptr;
 }
 
@@ -490,7 +490,7 @@ SITree::~SITree()
   //cout << "~SITree done" << endl;
 }
 
-void SITree::PrintTree(SINode* _np)
+void SITree::PrintTree(std::shared_ptr<SINode> _np)
 {
   //foreach all keys
   if (_np == NULL)	return;
@@ -513,7 +513,7 @@ void SITree::PrintTree(SINode* _np)
 	for (unsigned i = 0; i < num; ++i)
     SLOG_CORE("debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen());
 
-  // SINode* np = nullptr;
+  // std::shared_ptr<SINode>np = nullptr;
   // for (np = this->leaves_head_; np != NULL; np = np->GetNext())
   // {
   //   unsigned num = np->GetKeyNum();
@@ -540,9 +540,9 @@ SITree::Print(string s)
 	// 		fputs("Null SITree\n", Util::debug_kvstore);
 	// 		return;
 	// 	}
-	// 	SINode** ns = new SINode*[this->height];
+	// 	std::shared_ptr<SINode>* ns = new std::shared_ptr<SINode>[this->height];
 	// 	int* ni = new int[this->height];
-	// 	SINode* np;
+	// 	std::shared_ptr<SINode>np;
 	// 	int i, pos = 0;
 	// 	ns[pos] = this->root;
 	// 	ni[pos] = this->root->getNum();
@@ -574,7 +574,7 @@ SITree::Print(string s)
 	// }
 	// else if (s == "LEAVES" || s == "leaves")
 	// {
-	// 	SINode* np;
+	// 	std::shared_ptr<SINode>np;
 	// 	for (np = this->leaves_head_; np != NULL; np = np->getNext())
 	// 	{
 	// 		this->prepare(np);

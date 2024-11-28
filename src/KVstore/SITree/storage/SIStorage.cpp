@@ -104,7 +104,7 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
  * @return whether PreRead success
  */
 bool
-SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
+SIStorage::PreRead(std::shared_ptr<SINode>& _root, std::shared_ptr<SINode>& _leaves_head, std::shared_ptr<SINode>& _leaves_tail)
 {
   //set root(in memory) and leaves_head_
   _leaves_tail = _leaves_head = _root = NULL;
@@ -113,7 +113,7 @@ SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
 
   unsigned next, store, pos = 0;
   unsigned h = *this->tree_height_;
-  SINode* p;
+  std::shared_ptr<SINode> p;
 
   //read root node, and read 4 bytes from this->tree_fp_
   this->CreateNode(p);
@@ -128,14 +128,14 @@ SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
   unsigned total[h];	//total child num
   unsigned block[h];	//next block num
 
-  SINode* nodes[h];
+  std::shared_ptr<SINode> nodes[h];
   address[pos] = ftell(tree_fp_);
   used[pos] = 0;
   total[pos] = p->GetKeyNum() + 1;
   block[pos] = next;
   nodes[pos] = p;
   pos++;
-  SINode* prev = NULL;
+  std::shared_ptr<SINode> prev = nullptr;
 
   // read tree from the disk, and build a linked list among the leaf nodes
   // because we have already read block 0 ,so pos starts from 1
@@ -212,17 +212,17 @@ SIStorage::PreRead(SINode*& _root, SINode*& _leaves_head, SINode*& _leaves_tail)
  * @param _root root node
  */
 bool
-SIStorage::fullLoad(SINode*& _root)
+SIStorage::fullLoad(std::shared_ptr<SINode>& _root)
 {
-  if(_root == NULL)
+  if(!_root)
   {
     return false;
   }
-  std::queue <SINode*> node_q;
-  SINode* p = _root;
+  std::queue <std::shared_ptr<SINode>> node_q;
+  std::shared_ptr<SINode>p = _root;
   while (!p->isLeaf())
   {
-    SINode* tmp;
+    std::shared_ptr<SINode> tmp;
     unsigned KN = p->GetKeyNum();
     for(unsigned i = 0; i <= KN; ++i)
     {
@@ -362,9 +362,9 @@ SIStorage::WriteAlign(unsigned* _curnum, bool& _SpecialBlock)
  * @return whether the operation has successfully operated
  */
 bool
-SIStorage::ReadNode(SINode* _np, long long* _request)
+SIStorage::ReadNode(std::shared_ptr<SINode> _np, long long* _request)
 {
-  if (_np == NULL || _np->inMem())
+  if (!_np || _np->inMem())
   {
     SLOG_ERROR("error ReadNode: can't read or needn't");
     return false;
@@ -418,7 +418,7 @@ SIStorage::ReadNode(SINode* _np, long long* _request)
  * @return if success
  */
 bool
-SIStorage::CreateNode(SINode*& _np)
+SIStorage::CreateNode(std::shared_ptr<SINode>& _np)
 {
   unsigned t;		//QUERY: maybe next-node_flag_... will be better-storage?
   bool flag = false;			//IntlNode
@@ -427,11 +427,11 @@ SIStorage::CreateNode(SINode*& _np)
     flag = true;			//LeafNode
   if (flag)
   {
-    _np = new SILeafNode(true);
+    _np = std::make_shared<SILeafNode>(true);
   }
   else
   {
-    _np = new SIIntlNode(true);
+    _np = std::make_shared<SIIntlNode>(true);
   }
   _np->setFlag(t);
   _np->delDirty();
@@ -447,9 +447,9 @@ SIStorage::CreateNode(SINode*& _np)
  * @param _np the written node
  */
 bool
-SIStorage::WriteNode(SINode* _np)
+SIStorage::WriteNode(std::shared_ptr<SINode> _np)
 {
-  if (_np == NULL || !_np->inMem() || (_np->getRank() > 0 && !_np->isDirty()))
+  if (!_np || !_np->inMem() || (_np->getRank() > 0 && !_np->isDirty()))
     return false;	//not need to write back
 
   unsigned num = _np->GetKeyNum(), i;
@@ -595,24 +595,25 @@ SIStorage::writeBstr(const Bstr* _bp, unsigned* _curnum, bool& _SpecialBlock)
  * @param _np the root pointer
  */
 bool
-SIStorage::WriteTree(SINode* _np)	//
+SIStorage::WriteTree(std::shared_ptr<SINode>_np)	//
 {
   fseek(this->tree_fp_, 0, SEEK_SET);
   fwrite(this->tree_height_, sizeof(unsigned), 1, tree_fp_);
 
   //delete all nonsense-node in heap, otherwise will waste storage permanently
-  SINode* p;
+  std::shared_ptr<SINode> p;
   while (1)
   {
     //all non-sense nodes will be in-head-area, due to minimal rank
     p = min_heap_->getTop();
-    if (p == NULL)	//heap is empty, only when root==NULL
+    if (p == nullptr)	//heap is empty, only when root==NULL
       break;
     if (p->getRank() == 0)	//indicate non-sense node
     {
       this->min_heap_->RemoveTop();
       this->WriteNode(p);
-      delete p;
+      p.reset();
+      p = nullptr;
     }
     else
       break;
@@ -623,11 +624,11 @@ SIStorage::WriteTree(SINode* _np)	//
   //but this method will cause no node in heap any more, while operations may be
   //after tree-saving.	Which method is better?
   //The codes below write nodes recursively using stack, including root-num
-  if (_np != NULL)
+  if (_np != nullptr)
   {
-    SINode* p = _np;
+    std::shared_ptr<SINode> p = _np;
     unsigned h = *this->tree_height_, pos = 0;
-    SINode* ns[h];
+    std::shared_ptr<SINode> ns[h];
     int ni[h];
     ns[pos] = p;
     ni[pos] = p->GetKeyNum();
@@ -697,7 +698,7 @@ SIStorage::WriteTree(SINode* _np)	//
  * @param _inheap if the node has already been in heap
  */
 void
-SIStorage::updateHeap(SINode* _np, unsigned _rank, bool _inheap) const
+SIStorage::updateHeap(std::shared_ptr<SINode> _np, unsigned _rank, bool _inheap) const
 {
   if (_inheap)	//already in heap, to modify
   {
@@ -743,12 +744,12 @@ SIStorage::request(long long needed_mem)	//aligned to byte
 bool
 SIStorage::handler(unsigned long long needed_mem)	//>0
 {
-  SINode* p = nullptr;
+  std::shared_ptr<SINode> p = nullptr;
   unsigned long long size;
   while (1)
   {
     p = this->min_heap_->getTop();
-    if (p == NULL)
+    if (p == nullptr)
       return false;	//can't satisfy or can't recover to SET_BUFFER_SIZE
     this->min_heap_->RemoveTop();
     size = p->GetSize();
@@ -757,7 +758,10 @@ SIStorage::handler(unsigned long long needed_mem)	//>0
     if (p->GetKeyNum() > 0)
       p->Virtual();
     else
-      delete p;	//non-sense node
+    {
+      p.reset();	//non-sense node
+      p = nullptr;
+    }
     if (needed_mem > size)
       needed_mem -= size;
     else
