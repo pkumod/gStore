@@ -11,6 +11,8 @@
 #include <queue>
 #include <stack>
 #include <cmath>
+#include <memory>
+#include <functional>
 
 #ifndef _DATABASE_CSR_H
 #define _DATABASE_CSR_H 
@@ -23,11 +25,10 @@ public:
 	unsigned n,m;
 
 	// One for each predicate
-	std::vector<unsigned> *id2vid;	// Index to subject/object ID
-    std::map<unsigned, unsigned> *vid2id;	// Subject/object ID to index
-	std::vector<unsigned> *offset_list;	// Offset in adjacency list
-	std::vector<unsigned> *adjacency_list;
-	// bool *valid;
+	std::shared_ptr<std::vector<unsigned>[]> id2vid;	// Index to subject/object ID
+    std::shared_ptr<std::map<unsigned, unsigned>[]> vid2id;	// Subject/object ID to index
+	std::shared_ptr<std::vector<unsigned>[]> offset_list;	// Offset in adjacency list
+	std::shared_ptr<std::vector<unsigned>[]> adjacency_list;
 	CSR();
 	CSR(unsigned pnum);
 	~CSR();
