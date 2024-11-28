@@ -792,7 +792,6 @@ class APIUtil
 private:
     Util util;
     GenerateUidManager uid_mgr_;
-    string default_port = "9000";
     int thread_pool_num = 30;
     
     int max_output_size = 10000000;

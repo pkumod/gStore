@@ -119,7 +119,6 @@ int APIUtil::initialize(const std::string server_type, const std::string port, c
         // #if defined(DEBUG)
         SLOG_CORE("initialization start");
         // #endif
-        default_port = get_configure_value("default_port", default_port);
         thread_pool_num = get_configure_value("thread_num", thread_pool_num);
         system_username = get_configure_value("system_username", system_username);
         max_database_num = get_configure_value("max_database_num", max_database_num);
@@ -2423,7 +2422,7 @@ string APIUtil::get_query_result_path()
 
 string APIUtil::get_default_port()
 {
-    return default_port;
+    return util.getConfigureValue("default_port");
 }
 
 int APIUtil::get_thread_pool_num() 
