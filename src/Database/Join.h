@@ -125,7 +125,7 @@ private:
 
 	//BETTER?:change these params to members in class
 	//void acquire_all_id_lists(IdLists& _id_lists, IdListsLen& _id_lists_len, IDList& _can_list, vector<int>& _edges, int _id, unsigned _can_list_size);
-	void update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_literal);
+	void update_answer_list(std::shared_ptr<IDList>& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_literal);
 	bool join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_list_size, int _id, bool _is_ready);
 
 	bool multi_join();

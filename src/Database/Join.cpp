@@ -1008,7 +1008,7 @@ Join::add_new_to_results(TableIterator it, unsigned id)
 
 //after remove VSTREE, modify here
 void
-Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_ready)
+Join::update_answer_list(std::shared_ptr<IDList>& valid_ans_list, IDList& _can_list, unsigned* id_list, unsigned id_list_len, bool _is_ready)
 {
 	if (valid_ans_list == NULL)
 	{
@@ -1016,7 +1016,7 @@ Join::update_answer_list(IDList*& valid_ans_list, IDList& _can_list, unsigned* i
 			valid_ans_list = IDList::intersect(_can_list, id_list, id_list_len);
 		else
 		{
-			valid_ans_list = new IDList();
+			valid_ans_list = std::make_shared<IDList>();
 			for(unsigned i = 0; i < id_list_len; i++)
 				valid_ans_list->addID(id_list[i]);
 		}
@@ -1082,7 +1082,7 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 		//update the valid id num according to restrictions by multi vars
 		//also ordered while id_list and can_list are ordered
 		//IDList valid_ans_list;
-		IDList* valid_ans_list = NULL;
+		std::shared_ptr<IDList> valid_ans_list = nullptr;
 		//list<int> valid_ans_list;
 		bool matched = true;
 		//NOTICE:we can generate cans from either direction, but this way is convenient and better
@@ -1252,8 +1252,8 @@ Join::join_two(vector< vector<int> >& _edges, IDList& _can_list, unsigned _can_l
 			SLOG_CORE("this record is not matched!");
 #endif
 		}
-		delete valid_ans_list;
-		valid_ans_list = NULL;
+		valid_ans_list.reset();
+		valid_ans_list = nullptr;
 	}
 	return found;
 }

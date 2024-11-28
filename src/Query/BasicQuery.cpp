@@ -54,8 +54,8 @@ BasicQuery::clear()
     this->edge_pre_id = NULL;
     this->edge_type = NULL;
 
-    delete[] this->candidate_list;
-    this->candidate_list = NULL;
+    this->candidate_list.reset();
+    this->candidate_list = nullptr;
     //delete[] this->is_literal_candidate_added;
     //this->is_literal_candidate_added = NULL;
 	delete[] this->ready;
@@ -467,7 +467,8 @@ BasicQuery::encodeBasicQuery(std::shared_ptr<KVstore>  _p_kvstore, const vector<
     }
     cout << endl;
 
-    this->candidate_list = new IDList[this->graph_var_num];
+    std::shared_ptr<IDList[]> candidate_list_sptr(new IDList[this->graph_var_num], std::default_delete<IDList[]>());
+    this->candidate_list = candidate_list_sptr;
 
     for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {

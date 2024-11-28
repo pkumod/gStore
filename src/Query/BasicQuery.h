@@ -117,7 +117,7 @@ private:
 	int total_var_num;
 	int retrieve_var_num;
 	string* var_name;
-	IDList* candidate_list;
+	std::shared_ptr<IDList[]> candidate_list;
 	vector<unsigned*> result_list;
 	int* var_degree;
 

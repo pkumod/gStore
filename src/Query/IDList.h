@@ -40,7 +40,7 @@ public:
 	int sort();
 	void clear();
 	void copy(const std::vector<unsigned>& _new_idlist);
-	void copy(const IDList* _new_idlist);
+	// void copy(const IDList* _new_idlist);
     void reserve(size_t size);
     void resize(size_t size);
 	// intersect/union _id_list to this IDList, note that the two list must be ordered before using these two functions.
@@ -49,7 +49,7 @@ public:
 	unsigned unionList(const unsigned* _id_list, unsigned _list_len, bool only_literal=false);
 	unsigned unionList(const IDList&, bool only_literal=false);
 	unsigned bsearch_uporder(unsigned _key);
-	static IDList* intersect(const IDList&, const unsigned*, unsigned);
+	static std::shared_ptr<IDList> intersect(const IDList&, const unsigned*, unsigned);
 	std::vector<unsigned>::iterator eraseAt(std::vector<unsigned>::iterator  it);
 	std::vector<unsigned>::iterator begin(){	return id_list.begin();}
 	std::vector<unsigned>::iterator end(){	return id_list.end();}

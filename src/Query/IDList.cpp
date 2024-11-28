@@ -116,11 +116,11 @@ IDList::copy(const vector<unsigned>& _new_idlist)
 	this->id_list = _new_idlist;
 }
 
-void
-IDList::copy(const IDList* _new_idlist)
-{
-	this->id_list = *(_new_idlist->getList());
-}
+// void
+// IDList::copy(const IDList* _new_idlist)
+// {
+// 	this->id_list = *(_new_idlist->getList());
+// }
 
 /**
  * Intersect With other List and change this IDList.
@@ -400,10 +400,10 @@ IDList::unionList(const IDList& _id_list, bool only_literal)
 	return ret;
 }
 
-IDList*
+std::shared_ptr<IDList>
 IDList::intersect(const IDList& _id_list, const unsigned* _list, unsigned _len)
 {
-	IDList* p = new IDList;
+	std::shared_ptr<IDList> p = std::make_shared<IDList>();
 	//if (_list == NULL || _len == 0)  //just copy _id_list
 	//{
 		//int size = _id_list.size();
