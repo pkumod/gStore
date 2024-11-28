@@ -16,7 +16,7 @@ SIStorage::SIStorage()
   filepath = "";
   // freelist = nullptr;
   tree_fp_ = NULL;
-  min_heap_ = NULL;
+  min_heap_ = nullptr;
   max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;
   heap_size = max_buffer_size / SINode::INTL_SIZE;
   freemem = max_buffer_size;
@@ -93,7 +93,7 @@ SIStorage::SIStorage(string& _filepath, string& _mode, unsigned* _height, unsign
     fseek(tree_fp_, Address(rootnum), SEEK_SET);
     //tree_fp_ is now ahead of root-block
   }
-  this->min_heap_ = new SIHeap(this->heap_size);
+  this->min_heap_ = std::make_shared<SIHeap>(this->heap_size);
 }
 
 /**
@@ -107,7 +107,7 @@ bool
 SIStorage::PreRead(std::shared_ptr<SINode>& _root, std::shared_ptr<SINode>& _leaves_head, std::shared_ptr<SINode>& _leaves_tail)
 {
   //set root(in memory) and leaves_head_
-  _leaves_tail = _leaves_head = _root = NULL;
+  _leaves_tail = _leaves_head = _root = nullptr;
   if (ftell(this->tree_fp_) == 0)	//root is null
     return true;
 
@@ -784,8 +784,8 @@ SIStorage::~SIStorage()
     bp = next;
   }
   SLOG_CORE("already empty the freelist!");
-  delete this->min_heap_;
-  min_heap_ = NULL;
+  this->min_heap_.reset();
+  min_heap_ = nullptr;
   SLOG_CORE("already empty the buffer heap!");
   fclose(this->tree_fp_);
 }

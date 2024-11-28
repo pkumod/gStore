@@ -78,7 +78,7 @@ public:
 	std::shared_ptr<BlockInfo> freelist;
 	FILE* tree_fp_;						//file: tree nodes
 
-	SIHeap* min_heap_;					//heap of Nodes's pointer, sorted in NF_RK
+	std::shared_ptr<SIHeap> min_heap_;					//heap of Nodes's pointer, sorted in NF_RK
 
 	//NOTICE: freemem's type is long long here, due to large memory in server.
 	//However, needmem in handler() and request() is ok to be int/unsigned.
