@@ -14,10 +14,10 @@ SITree::SITree()
 {
   height_ = 0;
   mode_ = "";
-  root_ = NULL;
-  leaves_head_ = NULL;
-  leaves_tail_ = NULL;
-  tsm_ = NULL;
+  root_ = nullptr;
+  leaves_head_ = nullptr;
+  leaves_tail_ = nullptr;
+  tsm_ = nullptr;
   store_path_ = "";
   filename_ = "";
   this->request_ = 0;
@@ -41,7 +41,7 @@ SITree::SITree(string store_path, string _filename, string _mode, unsigned long 
   this->height_ = 0;
   this->mode_ = string(_mode);
   string filepath = this->GetFilePath();
-  tsm_ = new SIStorage(filepath, this->mode_, &this->height_, _buffer_size);
+  tsm_ = std::make_shared<SIStorage>(filepath, this->mode_, &this->height_, _buffer_size);
   if (this->mode_ == "open") {
     // load the entire SITree
     this->tsm_->PreRead(this->root_, this->leaves_head_, this->leaves_tail_);
@@ -188,7 +188,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
     if (q->GetKeyNum() == SINode::MAX_KEY_NUM)
     {
       ret = q->Split(p, i);
-      if (ret->isLeaf() && ret->GetNext() == NULL)
+      if (ret->isLeaf() && ret->GetNext() == nullptr)
         this->leaves_tail_ = ret;
       if (ret->isLeaf())
         request_ += SINode::LEAF_SIZE;
@@ -297,8 +297,8 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
 std::shared_ptr<SINode>
 SITree::Find(const char* _str, unsigned _len, int* _store, bool if_modify)
 {											//to assign value for this->bstr, function shouldn't be const!
-  if (this->root_ == NULL)
-    return NULL;						//SITree Is Empty
+  if (this->root_ == nullptr)
+    return nullptr;						//SITree Is Empty
 
   std::shared_ptr<SINode> p = root_;
   int i, j;//local Bstr: multiple delete
@@ -372,7 +372,7 @@ SITree::Remove(const char* _str, unsigned _len)
       //   break;
       // }
       ret = q->Coalesce(p, i);
-      if (ret != NULL)
+      if (ret != nullptr)
       {
         this->tsm_->updateHeap(ret, 0, true);//non-sense node
         ret->setPrev(nullptr);
@@ -415,9 +415,9 @@ SITree::Remove(const char* _str, unsigned _len)
     p->setDirty();
     if (p->GetKeyNum() == 0)	//root leaf 0 key
     {
-      this->root_ = NULL;
-      this->leaves_head_ = NULL;
-      this->leaves_tail_ = NULL;
+      this->root_ = nullptr;
+      this->leaves_head_ = nullptr;
+      this->leaves_tail_ = nullptr;
       this->height_ = 0;
       this->tsm_->updateHeap(p, 0, true);	//instead of delete p
       p->setPrev(nullptr);
@@ -479,7 +479,7 @@ SITree::Release(std::shared_ptr<SINode> _np) const
 
 SITree::~SITree()
 {
-  delete tsm_;
+  tsm_.reset();
   tsm_ = nullptr;
 #ifdef DEBUG_KVSTORE
   //printf("already empty the buffer, now to delete all nodes in tree!\n");
@@ -493,7 +493,7 @@ SITree::~SITree()
 void SITree::PrintTree(std::shared_ptr<SINode> _np)
 {
   //foreach all keys
-  if (_np == NULL)	return;
+  if (_np == nullptr)	return;
 
   if (_np->isLeaf())
   {

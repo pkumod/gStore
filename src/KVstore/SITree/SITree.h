@@ -46,7 +46,7 @@ private:
 	std::shared_ptr<SINode> leaves_head_;			//the head of LeafNode-list
 	std::shared_ptr<SINode> leaves_tail_;			//the tail of LeafNode-list
 	std::string mode_;           //BETTER(to use enum)
-	SIStorage* tsm_;           	//Tree-Storage-Manage
+	std::shared_ptr<SIStorage> tsm_;           	//Tree-Storage-Manage
 	bool if_single_thread; 
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
