@@ -25,13 +25,9 @@ Database::Database()
 	// this->csr = nullptr;
 
 	this->type_predicate_name = "type@@TYPE@@类型";
-	// this->csr = new CSR[2];
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
-
-	// string vstree_store_path = store_path + "/vs_store";
-	// this->vstree = new VSTree(vstree_store_path);
 
 	string stringindex_store_path = store_path + "/stringindex_store";
 	this->stringindex = std::make_shared<StringIndex>(stringindex_store_path);
@@ -85,7 +81,6 @@ Database::Database(string _name)
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
 	// this->csr = nullptr;
-	// this->csr = new CSR[2];
 	this->type_predicate_name = "type@@TYPE@@类型";
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
@@ -4630,104 +4625,104 @@ bool Database::objIDIsEntityID(TYPE_ENTITY_LITERAL_ID _id)
 	return _id < GlobalTypedef::LITERAL_FIRST_ID;
 }
 
-bool Database::getFinalResult(SPARQLquery &_sparql_q, ResultSet &_result_set)
-{
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:begins\n");
-#endif
-	// this is only selected var num
-	int _var_num = _sparql_q.getQueryVarNum();
-	_result_set.setVar(_sparql_q.getQueryVar());
-	vector<BasicQuery *> &query_vec = _sparql_q.getBasicQueryVec();
+// bool Database::getFinalResult(SPARQLquery &_sparql_q, ResultSet &_result_set)
+// {
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:begins\n");
+// #endif
+// 	// this is only selected var num
+// 	int _var_num = _sparql_q.getQueryVarNum();
+// 	_result_set.setVar(_sparql_q.getQueryVar());
+// 	vector<BasicQuery *> &query_vec = _sparql_q.getBasicQueryVec();
 
-	// sum the answer number
-	unsigned _ans_num = 0;
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:before ansnum loop\n");
-#endif
-	for (unsigned i = 0; i < query_vec.size(); i++)
-	{
-		_ans_num += query_vec[i]->getResultList().size();
-	}
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:after ansnum loop\n");
-#endif
+// 	// sum the answer number
+// 	unsigned _ans_num = 0;
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:before ansnum loop\n");
+// #endif
+// 	for (unsigned i = 0; i < query_vec.size(); i++)
+// 	{
+// 		_ans_num += query_vec[i]->getResultList().size();
+// 	}
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:after ansnum loop\n");
+// #endif
 
-	_result_set.ansNum = _ans_num;
-#ifndef STREAM_ON
-	_result_set.answer = new string *[_ans_num];
-	for (unsigned i = 0; i < _result_set.ansNum; i++)
-	{
-		_result_set.answer[i] = NULL;
-	}
-#else
-	vector<unsigned> keys;
-	vector<bool> desc;
-	_result_set.openStream(keys, desc);
-	//_result_set.openStream(keys, desc, 0, -1);
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:after open stream\n");
-#endif
-#endif
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:before main loop\n");
-#endif
-	unsigned tmp_ans_count = 0;
-	// map int ans into string ans
-	// union every basic result into total result
-	for (unsigned i = 0; i < query_vec.size(); i++)
-	{
-		vector<unsigned *> &tmp_vec = query_vec[i]->getResultList();
-		// ensure the spo order is right, but the triple order is still reversed
-		// for every result group in resultlist
-		// for(vector<int*>::reverse_iterator itr = tmp_vec.rbegin(); itr != tmp_vec.rend(); ++itr)
-		for (vector<unsigned *>::iterator itr = tmp_vec.begin(); itr != tmp_vec.end(); ++itr)
-		{
-			// to ensure the order so do reversely in two nested loops
-#ifndef STREAM_ON
-			_result_set.answer[tmp_ans_count] = new string[_var_num];
-#endif
-#ifdef DEBUG_PRECISE
-			printf("getFinalResult:before map loop\n");
-#endif
-			// NOTICE: in new join method only selec_var_num columns,
-			// but before in shenxuchuan's join method, not like this.
-			// though there is all graph_var_num columns in result_list,
-			// we only consider the former selected vars
-			// map every ans_id into ans_str
-			for (int v = 0; v < _var_num; ++v)
-			{
-				unsigned ans_id = (*itr)[v];
-				string ans_str;
-				if (this->objIDIsEntityID(ans_id))
-				{
-					ans_str = (this->kvstore)->getEntityByID(ans_id);
-				}
-				else
-				{
-					ans_str = (this->kvstore)->getLiteralByID(ans_id);
-				}
-#ifndef STREAM_ON
-				_result_set.answer[tmp_ans_count][v] = ans_str;
-#else
-				_result_set.writeToStream(ans_str);
-#endif
-#ifdef DEBUG_PRECISE
-				printf("getFinalResult:after copy/write\n");
-#endif
-			}
-			tmp_ans_count++;
-		}
-	}
-#ifdef STREAM_ON
-	_result_set.resetStream();
-#endif
-#ifdef DEBUG_PRECISE
-	printf("getFinalResult:ends\n");
-#endif
+// 	_result_set.ansNum = _ans_num;
+// #ifndef STREAM_ON
+// 	_result_set.answer = new string *[_ans_num];
+// 	for (unsigned i = 0; i < _result_set.ansNum; i++)
+// 	{
+// 		_result_set.answer[i] = NULL;
+// 	}
+// #else
+// 	vector<unsigned> keys;
+// 	vector<bool> desc;
+// 	_result_set.openStream(keys, desc);
+// 	//_result_set.openStream(keys, desc, 0, -1);
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:after open stream\n");
+// #endif
+// #endif
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:before main loop\n");
+// #endif
+// 	unsigned tmp_ans_count = 0;
+// 	// map int ans into string ans
+// 	// union every basic result into total result
+// 	for (unsigned i = 0; i < query_vec.size(); i++)
+// 	{
+// 		vector<unsigned *> &tmp_vec = query_vec[i]->getResultList();
+// 		// ensure the spo order is right, but the triple order is still reversed
+// 		// for every result group in resultlist
+// 		// for(vector<int*>::reverse_iterator itr = tmp_vec.rbegin(); itr != tmp_vec.rend(); ++itr)
+// 		for (vector<unsigned *>::iterator itr = tmp_vec.begin(); itr != tmp_vec.end(); ++itr)
+// 		{
+// 			// to ensure the order so do reversely in two nested loops
+// #ifndef STREAM_ON
+// 			_result_set.answer[tmp_ans_count] = new string[_var_num];
+// #endif
+// #ifdef DEBUG_PRECISE
+// 			printf("getFinalResult:before map loop\n");
+// #endif
+// 			// NOTICE: in new join method only selec_var_num columns,
+// 			// but before in shenxuchuan's join method, not like this.
+// 			// though there is all graph_var_num columns in result_list,
+// 			// we only consider the former selected vars
+// 			// map every ans_id into ans_str
+// 			for (int v = 0; v < _var_num; ++v)
+// 			{
+// 				unsigned ans_id = (*itr)[v];
+// 				string ans_str;
+// 				if (this->objIDIsEntityID(ans_id))
+// 				{
+// 					ans_str = (this->kvstore)->getEntityByID(ans_id);
+// 				}
+// 				else
+// 				{
+// 					ans_str = (this->kvstore)->getLiteralByID(ans_id);
+// 				}
+// #ifndef STREAM_ON
+// 				_result_set.answer[tmp_ans_count][v] = ans_str;
+// #else
+// 				_result_set.writeToStream(ans_str);
+// #endif
+// #ifdef DEBUG_PRECISE
+// 				printf("getFinalResult:after copy/write\n");
+// #endif
+// 			}
+// 			tmp_ans_count++;
+// 		}
+// 	}
+// #ifdef STREAM_ON
+// 	_result_set.resetStream();
+// #endif
+// #ifdef DEBUG_PRECISE
+// 	printf("getFinalResult:ends\n");
+// #endif
 
-	return true;
-}
+// 	return true;
+// }
 
 // garbage clean
 void Database::VersionClean(vector<unsigned> &sub_ids, vector<unsigned> &obj_ids, vector<unsigned> &obj_literal_ids, vector<unsigned> &pre_ids)

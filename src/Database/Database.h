@@ -139,7 +139,7 @@ private:
 	// just for debug a block of code
 	mutex debug_lock;
 	// for getFinalResult
-	mutex getFinalResult_lock;
+	// mutex getFinalResult_lock;
 	// for allocEntityID
 	mutex allocEntityID_lock;
 	// for allocLiteralID
@@ -352,7 +352,7 @@ private:
 	// bool select(vector<int*>& _result_list, int _var_id, int _pre_id, int _var_id2, const char _edge_type, int _var_num);
 
 	// get the final string result_set from SPARQLquery
-	bool getFinalResult(SPARQLquery &_sparql_q, ResultSet &_result_set);
+	// bool getFinalResult(SPARQLquery &_sparql_q, ResultSet &_result_set);
 
 	static int read_update_log(const string _path, multiset<string> &_i, multiset<string> &_r);
 	bool restore_update(multiset<string> &_i, multiset<string> &_r);
