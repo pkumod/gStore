@@ -244,7 +244,7 @@ namespace server
                 response.StatusCode = StatusOperationFailed;   
             }
             // add callback task for query log start
-            struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
+            std::shared_ptr<DBQueryLogInfo> query_log_ptr = std::make_shared<DBQueryLogInfo>(query_start_time, request.remote_ip, sparql, 
                 rs_ansNum, request.format, response.fileName, response.StatusCode, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet
@@ -456,7 +456,7 @@ namespace server
                 response.StatusCode = StatusOperationFailed;
             }
             // add callback task for query log start
-            struct DBQueryLogInfo* query_log_ptr = new DBQueryLogInfo(query_start_time, request.remote_ip, sparql, 
+            std::shared_ptr<DBQueryLogInfo> query_log_ptr = std::make_shared<DBQueryLogInfo>(query_start_time, request.remote_ip, sparql, 
                 rs_ansNum, request.format, file_name, response.StatusCode, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet

@@ -2006,7 +2006,7 @@ void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, sh
     logPtr->setTotalPage(total_page);
 }
 
-void APIUtil::write_query_log(DBQueryLogInfo* log)
+void APIUtil::write_query_log(std::shared_ptr<DBQueryLogInfo> log)
 {
     if (query_log_mode == "0")
     {

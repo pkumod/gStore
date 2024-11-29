@@ -165,7 +165,7 @@ public:
     // for query log
     void get_query_log_files(std::vector<std::string> &file_list);
     void get_query_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBQueryLogs> logPtr);
-    void write_query_log(DBQueryLogInfo* log);
+    void write_query_log(std::shared_ptr<DBQueryLogInfo> log);
 
     // for transaction log
     void init_transactionlog();

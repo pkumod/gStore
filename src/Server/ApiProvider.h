@@ -27,7 +27,7 @@ using namespace cluster;
 
 namespace server
 {
-    typedef std::function<void(struct DBQueryLogInfo*)> query_call;
+    typedef std::function<void(std::shared_ptr<DBQueryLogInfo>)> query_call;
     class ApiHandler
     {
         private:

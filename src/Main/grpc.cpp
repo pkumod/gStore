@@ -2163,12 +2163,11 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	bool is_update = false;
 	if (clusterManagerPtr->isEnable())
 	{
-		server::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](struct DBQueryLogInfo* query_log_ptr)
+		server::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 		{
 			sub_task->add_callback([query_log_ptr](GRPCTask *t)
 			{	
 				apiUtil->write_query_log(query_log_ptr);
-				delete query_log_ptr;
 			});
 		});
 		if (response_data.StatusCode == StatusOK && clusterManagerPtr->isFollower() && is_update)
@@ -2189,22 +2188,20 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			server::MessageQueryResponse response;
 			response.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
-			server::ApiHandler::query(apiUtil, request_data, response, [](struct DBQueryLogInfo* query_log_ptr)
+			server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 			{
 				apiUtil->write_query_log(query_log_ptr);
-				delete query_log_ptr;
 			});
 			server::ApiHandler::query_result_notify(apiUtil, request_data, response);
 		});
 	}
 	else
 	{
-		server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](struct DBQueryLogInfo* query_log_ptr)
+		server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 		{
 			sub_task->add_callback([query_log_ptr](GRPCTask *)
 			{
 				apiUtil->write_query_log(query_log_ptr);
-				delete query_log_ptr;
 			});
 		}, true);
 	}
