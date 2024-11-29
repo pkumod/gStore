@@ -65,16 +65,16 @@ KVstore::flush()
 void 
 KVstore::release() 
 {
-	delete this->entity2id;
+	this->entity2id.reset();
 	this->entity2id = nullptr;
 	this->id2entity.reset();
 	this->id2entity = nullptr;
-	delete this->literal2id;
+	this->literal2id.reset();
 	this->literal2id = nullptr;
 	this->id2literal.reset();
 	this->id2literal = nullptr;
 
-	delete this->predicate2id;
+	this->predicate2id.reset();
 	this->predicate2id = nullptr;
 	this->id2predicate.reset();
 	this->id2predicate = nullptr;
@@ -2301,9 +2301,9 @@ KVstore::close_entity2id()
 		return true;
 	}
 
-  this->entity2id->Save();
-	delete this->entity2id;
-	this->entity2id = NULL;
+  	this->entity2id->Save();
+	this->entity2id.reset();
+	this->entity2id = nullptr;
 
 	return true;
 }
@@ -2486,9 +2486,9 @@ KVstore::close_predicate2id()
 		return true;
 	}
 
-  this->predicate2id->Save();
-	delete this->predicate2id;
-	this->predicate2id = NULL;
+  	this->predicate2id->Save();
+	this->predicate2id.reset();
+	this->predicate2id = nullptr;
 
 	return true;
 }
@@ -2647,9 +2647,9 @@ KVstore::close_literal2id()
 		return true;
 	}
 
-  this->literal2id->Save();
-	delete this->literal2id;
-	this->literal2id = NULL;
+  	this->literal2id->Save();
+	this->literal2id.reset();
+	this->literal2id = nullptr;
 
 	return true;
 }
@@ -4792,7 +4792,7 @@ KVstore::getpreIDlistBysubIDobjID(TYPE_ENTITY_LITERAL_ID _subid, TYPE_ENTITY_LIT
 
 
 bool 
-KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
+KVstore::open(std::shared_ptr<SITree>& _p_btree, string _tree_name, int _mode, unsigned long long _buffer_size) 
 {
 	if (_p_btree != NULL) {
 		return false;
@@ -4808,7 +4808,7 @@ KVstore::open(SITree*& _p_btree, string _tree_name, int _mode, unsigned long lon
 		SLOG_ERROR("Invalid open mode of: " << _tree_name << " mode = " << _mode);
 		return false;
 	}
-	_p_btree = new SITree(this->store_path, _tree_name, smode, _buffer_size);
+	_p_btree = std::make_shared<SITree>(this->store_path, _tree_name, smode, _buffer_size);
 	return true;
 }
 
@@ -4860,7 +4860,7 @@ KVstore::open(std::shared_ptr<IVArray>& _array, string _name, int _mode, unsigne
 }
 
 void 
-KVstore::flush(SITree* _p_btree) 
+KVstore::flush(std::shared_ptr<SITree>& _p_btree) 
 {
 	if (_p_btree != NULL) 
 	{
@@ -4889,7 +4889,7 @@ KVstore::flush(std::shared_ptr<IVArray>& _array)
 }
 
 bool 
-KVstore::addValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
+KVstore::addValueByKey(std::shared_ptr<SITree>& _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
 	return _p_btree->Insert(_key, _klen, _val);
 }
@@ -4917,7 +4917,7 @@ KVstore::addValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _v
 }
 
 bool 
-KVstore::setValueByKey(SITree* _p_btree, char* _key, unsigned _klen, unsigned _val) 
+KVstore::setValueByKey(std::shared_ptr<SITree>& _p_btree, char* _key, unsigned _klen, unsigned _val) 
 {
 	return _p_btree->Modify(_key, _klen, _val);
 }
@@ -4945,7 +4945,7 @@ KVstore::setValueByKey(std::shared_ptr<IVArray>& _array, unsigned _key, char* _v
 }
 
 bool 
-KVstore::getValueByKey(SITree* _p_btree, const char* _key, unsigned _klen, unsigned* _val) const 
+KVstore::getValueByKey(std::shared_ptr<SITree>& _p_btree, const char* _key, unsigned _klen, unsigned* _val) const 
 {
 	return _p_btree->Search(_key, _klen, _val);
 }
@@ -4974,7 +4974,7 @@ KVstore::getValueByKey(const std::shared_ptr<IVArray>& _array, unsigned _key, ch
 }
 
 TYPE_ENTITY_LITERAL_ID
-KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const 
+KVstore::getIDByStr(std::shared_ptr<SITree> _p_btree, const char* _key, unsigned _klen) const 
 {
 	unsigned val = 0;
 	bool ret = _p_btree->Search(_key, _klen, &val);
@@ -4988,7 +4988,7 @@ KVstore::getIDByStr(SITree* _p_btree, const char* _key, unsigned _klen) const
 }
 
 bool 
-KVstore::removeKey(SITree* _p_btree, const char* _key, unsigned _klen)
+KVstore::removeKey(std::shared_ptr<SITree>& _p_btree, const char* _key, unsigned _klen)
 {
 	return _p_btree->Remove(_key, _klen);
 }

@@ -336,7 +336,7 @@ private:
 	unsigned batch_remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, bool _is_restore = false, shared_ptr<Transaction> txn = nullptr, shared_ptr<ofstream> cluster_log = nullptr);
 
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
-	static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
+	// static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file);
 	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, shared_ptr<ofstream> cluster_log = nullptr);
