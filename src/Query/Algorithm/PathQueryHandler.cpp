@@ -8,8 +8,7 @@ PathQueryHandler::PathQueryHandler(std::shared_ptr<CSR[]>& _csr)
 		csr = _csr;
 	else
     {
-        std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
-        csr = csr_sptr;
+        csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
     }
 	cacheMaxSize = 10000;
 	n = -1;

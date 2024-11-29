@@ -141,8 +141,7 @@ GeneralEvaluation::loadCSR()
 
 	if (csr)
 		this->csr.reset();
-	std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
-	csr = csr_sptr;
+	csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
 
 	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
 	csr[0].init(pre_num);
@@ -3707,8 +3706,7 @@ void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, std::s
 					update_triple_num += this->temp_result->results[j].result.size();
 		}
 
-	std::shared_ptr<TripleWithObjType[]> update_triple_sptr(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
-	update_triple = update_triple_sptr;
+	update_triple = std::shared_ptr<TripleWithObjType[]>(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
 	
 
 	int update_triple_count = 0;

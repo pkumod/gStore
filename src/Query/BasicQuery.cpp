@@ -467,8 +467,7 @@ BasicQuery::encodeBasicQuery(std::shared_ptr<KVstore>  _p_kvstore, const vector<
     }
     cout << endl;
 
-    std::shared_ptr<IDList[]> candidate_list_sptr(new IDList[this->graph_var_num], std::default_delete<IDList[]>());
-    this->candidate_list = candidate_list_sptr;
+    this->candidate_list = std::shared_ptr<IDList[]>(new IDList[this->graph_var_num], std::default_delete<IDList[]>());
 
     for(unsigned i = 0; i < this->triple_vt.size(); i ++)
     {

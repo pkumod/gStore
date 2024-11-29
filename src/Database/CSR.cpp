@@ -11,14 +11,10 @@ CSR::CSR(unsigned pnum)
 {
 	this->w = 4;
 	this->pre_num = pnum;
-	std::shared_ptr<std::vector<unsigned>[]> id2vid_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	std::shared_ptr<std::map<unsigned, unsigned>[]> vid2id_sptr(new map<unsigned, unsigned>[this->pre_num], std::default_delete<map<unsigned, unsigned>[]>());
-	std::shared_ptr<std::vector<unsigned>[]> offset_list_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	std::shared_ptr<std::vector<unsigned>[]> adjacency_list_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	this->id2vid = id2vid_sptr;
-	this->vid2id = vid2id_sptr;
-	this->offset_list = offset_list_sptr;
-	this->adjacency_list = adjacency_list_sptr;
+	this->id2vid = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
+	this->vid2id = std::shared_ptr<std::map<unsigned, unsigned>[]>(new map<unsigned, unsigned>[this->pre_num], std::default_delete<map<unsigned, unsigned>[]>());
+	this->offset_list = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
+	this->adjacency_list = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
 }
 
 CSR::~CSR()
@@ -29,14 +25,10 @@ void CSR::init(unsigned pnum)
 {
 	this->w = 4;
 	this->pre_num = pnum;
-	std::shared_ptr<std::vector<unsigned>[]> id2vid_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	std::shared_ptr<std::map<unsigned, unsigned>[]> vid2id_sptr(new map<unsigned, unsigned>[this->pre_num], std::default_delete<map<unsigned, unsigned>[]>());
-	std::shared_ptr<std::vector<unsigned>[]> offset_list_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	std::shared_ptr<std::vector<unsigned>[]> adjacency_list_sptr(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
-	this->id2vid = id2vid_sptr;
-	this->vid2id = vid2id_sptr;
-	this->offset_list = offset_list_sptr;
-	this->adjacency_list = adjacency_list_sptr;
+	this->id2vid = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
+	this->vid2id = std::shared_ptr<std::map<unsigned, unsigned>[]>(new map<unsigned, unsigned>[this->pre_num], std::default_delete<map<unsigned, unsigned>[]>());
+	this->offset_list = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
+	this->adjacency_list = std::shared_ptr<std::vector<unsigned>[]>(new std::vector<unsigned>[this->pre_num], std::default_delete<std::vector<unsigned>[]>());
 	this->n = 0;
 	this->m = 0;
 	// this->valid = new bool[this->pre_num];

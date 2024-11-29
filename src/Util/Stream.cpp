@@ -131,12 +131,10 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
 
     if(this->inMem)
     {
-        std::shared_ptr<std::shared_ptr<Bstr[]>[]> rownum_sptr(new std::shared_ptr<Bstr[]>[this->rownum], std::default_delete<std::shared_ptr<Bstr[]>[]>());
-        this->ansMem = rownum_sptr;
+        this->ansMem = std::shared_ptr<std::shared_ptr<Bstr[]>[]>(new std::shared_ptr<Bstr[]>[this->rownum], std::default_delete<std::shared_ptr<Bstr[]>[]>());
         for(unsigned i = 0; i < this->rownum; ++i)
         {
-            std::shared_ptr<Bstr[]> colnum_sptr(new Bstr[this->colnum], std::default_delete<Bstr[]>());
-            this->ansMem[i] = colnum_sptr;
+            this->ansMem[i] = std::shared_ptr<Bstr[]>(new Bstr[this->colnum], std::default_delete<Bstr[]>());
         }
         return;
     }

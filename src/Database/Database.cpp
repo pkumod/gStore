@@ -500,12 +500,9 @@ void Database::setPreMap()
 	this->maxNumPID = this->minNumPID = INVALID_PREDICATE_ID;
 	TYPE_TRIPLE_NUM max = 0, min = this->triples_num + 1;
 
-	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2num_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
-	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2sub_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
-	std::shared_ptr<TYPE_TRIPLE_NUM[]> pre2obj_sptr(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
-	this->pre2num = pre2num_sptr;
-	this->pre2sub = pre2sub_sptr;
-	this->pre2obj = pre2obj_sptr;
+	this->pre2num = std::shared_ptr<TYPE_TRIPLE_NUM[]>(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
+	this->pre2sub = std::shared_ptr<TYPE_TRIPLE_NUM[]>(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
+	this->pre2obj = std::shared_ptr<TYPE_TRIPLE_NUM[]>(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
 	TYPE_PREDICATE_ID valid = 0, i, t;
 
 	indicators::ProgressBar bar{
@@ -779,8 +776,7 @@ bool Database::load(bool loadCSR)
 
 	if (loadCSR)
 	{
-		std::shared_ptr<CSR[]> csr_sptr(new CSR[2], std::default_delete<CSR[]>());
-		this->csr = csr_sptr;
+		this->csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
 		unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
 		this->csr[0].init(pre_num);
 		this->csr[1].init(pre_num);
@@ -1774,8 +1770,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			{
 				throw runtime_error("Not enough disk space for batch insertion");
 			}
-			std::shared_ptr<TripleWithObjType[]> update_triple_sptr(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
-			update_triple = update_triple_sptr;
+			update_triple = std::shared_ptr<TripleWithObjType[]>(new TripleWithObjType[update_triple_num], std::default_delete<TripleWithObjType[]>());
 
 			for (TYPE_TRIPLE_NUM i = 0; i < update_triple_num; i++)
 				if (update_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Pattern_type)
