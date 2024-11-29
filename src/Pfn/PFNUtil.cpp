@@ -48,7 +48,7 @@ std::string PFNUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
     return report_detail;
 }
 
-void PFNUtil::fun_query(const string &fun_name, const string &fun_status, const string &username, struct PFNInfos *pfn_infos)
+void PFNUtil::fun_query(const string &fun_name, const string &fun_status, const string &username, std::shared_ptr<PFNInfos> pfn_infos)
 {
     string cpp_path = pfn_base_path + "cpp/" + username;
     string json_file_path = cpp_path + "/data.json";

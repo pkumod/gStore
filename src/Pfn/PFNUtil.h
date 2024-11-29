@@ -24,7 +24,7 @@ private:
 public:
     PFNUtil();
     ~PFNUtil();
-    void fun_query(const std::string &fun_name, const string &fun_status, const string &username, struct PFNInfos *pfn_infos);
+    void fun_query(const std::string &fun_name, const string &fun_status, const string &username, std::shared_ptr<PFNInfos> pfn_infos);
     void fun_create(const std::string &username, struct PFNInfo *pfn_info);
     void fun_update(const std::string &username, struct PFNInfo *pfn_info);
     void fun_delete(const std::string &username, struct PFNInfo *pfn_info);

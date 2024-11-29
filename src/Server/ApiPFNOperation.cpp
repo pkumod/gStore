@@ -8,7 +8,7 @@ namespace server
         {
             PFNInfo funInfo = request.funInfo;
             std::string username = request.username;
-            struct PFNInfos *pfn_infos = new PFNInfos();
+            std::shared_ptr<PFNInfos> pfn_infos = std::make_shared<PFNInfos>();
             pfnUtil->fun_query(funInfo.funName, funInfo.funStatus, username, pfn_infos);
             response.list = pfn_infos->getPFNInfoList();
             response.StatusMsg = "success";
