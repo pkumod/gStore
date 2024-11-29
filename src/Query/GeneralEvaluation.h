@@ -34,8 +34,8 @@ struct hashFunction
 class GeneralEvaluation
 {
 	private:
-		TempResultSet *temp_result;
-		shared_ptr<QueryParser> query_parser;
+		std::shared_ptr<TempResultSet> temp_result;
+		std::shared_ptr<QueryParser> query_parser;
 		QueryTree query_tree;
 		int well_designed;
 		std::shared_ptr<KVstore> kvstore;
@@ -119,7 +119,7 @@ class GeneralEvaluation
 		struct EvaluationStackStruct
 		{
 			GroupPattern group_pattern;
-			TempResultSet *result;
+			std::shared_ptr<TempResultSet> result;
 			EvaluationStackStruct();
 			EvaluationStackStruct(const EvaluationStackStruct& that);
 			EvaluationStackStruct& operator=(const EvaluationStackStruct& that);
@@ -130,7 +130,7 @@ class GeneralEvaluation
 	public:
 		bool expanseFirstOuterUnionGroupPattern(GroupPattern &group_pattern, std::deque<GroupPattern> &queue);
 
-		TempResultSet* queryEvaluation(int dep);
+		std::shared_ptr<TempResultSet> queryEvaluation(int dep);
 
 		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
@@ -145,17 +145,17 @@ class GeneralEvaluation
 
 		int constructTriplePattern(GroupPattern& triple_pattern, int dep);
 		void getUsefulVarset(Varset& useful, int dep);
-		bool checkBasicQueryCache(vector<GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
+		bool checkBasicQueryCache(vector<GroupPattern::Pattern>& basic_query, std::shared_ptr<TempResultSet> sub_result, Varset& useful);
 		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
-		void fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset, TempResultSet *fill_result=nullptr);
-		void joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
+		void fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset, std::shared_ptr<TempResultSet> fill_result=nullptr);
+		void joinBasicQueryResult(SPARQLquery& sparql_query, std::shared_ptr<TempResultSet> new_result, std::shared_ptr<TempResultSet> sub_result, vector<vector<string> >& encode_varset, \
 			vector<vector<GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 		void getAllPattern(const GroupPattern &group_pattern, vector<GroupPattern::Pattern> &vp);
 		void copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_query, int varnum, TempResult &tr);
 		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 
-		void kleeneClosure(TempResultSet *temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
-		void BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol=2);
+		void kleeneClosure(std::shared_ptr<TempResultSet> temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
+		void BFS(std::shared_ptr<TempResultSet> temp, int sid, int pred, bool forward, int numCol=2);
 
 		//Algorithm evaluation high level function
 		void diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set);

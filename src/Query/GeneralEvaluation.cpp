@@ -14,13 +14,13 @@ using namespace std;
 
 GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct()
 {
-	// result = new TempResultSet();
+	// result = std::make_shared<TempResultSet>();
 	result = nullptr;
 }
 
 GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct(const EvaluationStackStruct& that)
 {
-	// result = new TempResultSet();
+	// result = std::make_shared<TempResultSet>();
 	// if (that.result)
 	// 	*result = *(that.result);
 	
@@ -30,11 +30,11 @@ GeneralEvaluation::EvaluationStackStruct::EvaluationStackStruct(const Evaluation
 
 GeneralEvaluation::EvaluationStackStruct& GeneralEvaluation::EvaluationStackStruct::operator=(const EvaluationStackStruct& that)
 {
-	TempResultSet *local_result = new TempResultSet();
+	std::shared_ptr<TempResultSet> local_result = std::make_shared<TempResultSet>();
 	if (that.result)
-		*local_result = *(that.result);
+		*(local_result) = *(that.result);
 	if (result)
-		delete result;
+		result.reset();
 	result = local_result;
 	group_pattern = that.group_pattern;
 
@@ -363,7 +363,7 @@ void GeneralEvaluation::getAllPattern(const GroupPattern &group_pattern, vector<
 	}
 }
 
-TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
+std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 {
 	// If ASK query, and only one BGP, check if every triple consists of all constants
 	// If so, set a special result so that getFinalResult will know
@@ -397,7 +397,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			// Check if these constant triples exist in database
 			bool exist = BGPQuery::CheckConstBGPExist(triple_vt, kvstore);
 			// Set a special result (indicates true/false) 
-			TempResultSet *result = new TempResultSet();
+			std::shared_ptr<TempResultSet> result = std::make_shared<TempResultSet>();
 			(*result).results.push_back(TempResult());
 			(*result).results[0].result.emplace_back();
 			if (exist)
@@ -448,7 +448,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	}
 	group_pattern.initPatternBlockid();
 
-	TempResultSet *result = new TempResultSet();
+	std::shared_ptr<TempResultSet> result = std::make_shared<TempResultSet>();
 	// Iterate across all sub-group-patterns, process according to type
 	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
 	{
@@ -459,22 +459,22 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].group_pattern;
 			this->rewriting_evaluation_stack.back().result = NULL;
 			this->rewriting_evaluation_stack[dep].result = result;
-			TempResultSet *temp = queryEvaluation(dep + 1);
+			std::shared_ptr<TempResultSet> temp = queryEvaluation(dep + 1);
 
 			if (result->results.empty())
 			{
-				delete result;
+				result.reset();
 				result = temp;
 			}
 			else
 			{
-				TempResultSet *new_result = new TempResultSet();
+				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				temp->release();
 				result->release();
-				delete temp;
-				delete result;
+				temp.reset();
+				result.reset();
 
 				result = new_result;
 				result->initial = false;
@@ -484,7 +484,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		{
 			if (!group_pattern.sub_group_pattern[i].pattern.kleene)
 			{
-				TempResultSet *sub_result = new TempResultSet();
+				std::shared_ptr<TempResultSet> sub_result = std::make_shared<TempResultSet>();
 				
 				QueryInfo query_info;
 				query_info.limit_ = false;
@@ -645,7 +645,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
 					for (size_t j = 0; j < bgp_query_vec.size(); j++)
 					{
-						TempResultSet *temp = new TempResultSet();
+						std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>();
 						
 						temp->results.push_back(TempResult());
 
@@ -674,18 +674,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 						if (sub_result->results.empty())
 						{
-							delete sub_result;
+							sub_result.reset();
 							sub_result = temp;
 						}
 						else
 						{
-							TempResultSet *new_result = new TempResultSet();
+							std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 							temp->release();
 							sub_result->release();
-							delete temp;
-							delete sub_result;
+							temp.reset();
+							sub_result.reset();
 
 							sub_result = new_result;
 						}
@@ -696,32 +696,32 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 					if (result->results.empty())
 					{
-						delete result;
+						result.reset();
 						result = sub_result;
 					}
 					else
 					{
-						TempResultSet *new_result = new TempResultSet();
+						std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 						sub_result->release();
 						result->release();
-						delete sub_result;
-						delete result;
+						sub_result.reset();
+						result.reset();
 
 						result = new_result;
 					}
 				}
 				else
 				{
-					delete sub_result;
+					sub_result.reset();
 				}
 			}
 			else
 			{
 				// PathQueryHandler function arguments are vertex IDs
 				// Use `tr` to store BFS starting vertices
-				TempResultSet *sub_result = new TempResultSet();
+				std::shared_ptr<TempResultSet> sub_result = std::make_shared<TempResultSet>();
 				TempResult *tr = NULL;
 				if (result->results.size() > 0)
 				{
@@ -743,18 +743,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				// TODO: cache result
 				if (result->results.empty())
 				{
-					delete result;
+					result.reset();
 					result = sub_result;
 				}
 				else
 				{
-					TempResultSet *new_result = new TempResultSet();
+					std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 					result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
 					result->release();
-					delete sub_result;
-					delete result;
+					sub_result.reset();
+					result.reset();
 
 					result = new_result;
 				}
@@ -762,11 +762,11 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		}
 		else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Union_type)
 		{
-			TempResultSet *sub_result_outer = new TempResultSet();
+			std::shared_ptr<TempResultSet> sub_result_outer = std::make_shared<TempResultSet>();
 
 			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
 			{
-				TempResultSet *sub_result = nullptr;
+				std::shared_ptr<TempResultSet> sub_result = nullptr;
 				if (well_designed == 0)
 				{
 					this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
@@ -787,7 +787,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// for (int k = 0; k < 80; k++)			printf("=");
 					SLOG_CORE(code_print);
 
-					sub_result = new TempResultSet();
+					sub_result = std::make_shared<TempResultSet>();
 
 					// Construct triple_pattern //
 					GroupPattern triple_pattern;
@@ -951,7 +951,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					// NOTE: only one BGP so get rid of the loop
 					for (size_t l = 0; l < bgp_query_vec.size(); l++)
 					{
-						TempResultSet *temp = new TempResultSet();
+						std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>();
 						temp->results.push_back(TempResult());
 
 						temp->results[0].id_varset = Varset(encode_varset[l]);
@@ -981,18 +981,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 						if (sub_result->results.empty())
 						{
-							delete sub_result;
+							sub_result.reset();
 							sub_result = temp;
 						}
 						else
 						{
-							TempResultSet *new_result = new TempResultSet();
+							std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 							temp->release();
 							sub_result->release();
-							delete temp;
-							delete sub_result;
+							temp.reset();
+							sub_result.reset();
 
 							sub_result = new_result;
 						}
@@ -1002,7 +1002,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 					{
 						if (triple_pattern.sub_group_pattern[l].pattern.kleene)
 						{
-							TempResultSet *temp = new TempResultSet();
+							std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>();
 
 							TempResult *tr = NULL;
 							if (sub_result->results.size() > 0)
@@ -1025,18 +1025,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 							// TODO: cache result
 							if (sub_result->results.empty())
 							{
-								delete sub_result;
+								sub_result.reset();
 								sub_result = temp;
 							}
 							else
 							{
-								TempResultSet *new_result = new TempResultSet();
+								std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 								sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 								temp->release();
 								sub_result->release();
-								delete temp;
-								delete sub_result;
+								temp.reset();
+								sub_result.reset();
 
 								sub_result = new_result;
 							}
@@ -1092,16 +1092,16 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 									this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[l].optional;
 								// this->rewriting_evaluation_stack[dep + 1].group_pattern.print(0);
 
-								// TempResultSet *temp = rewritingBasedQueryEvaluation(dep + 1);
-								TempResultSet *temp = queryEvaluation(dep + 1);
+								// std::shared_ptr<TempResultSet> temp = rewritingBasedQueryEvaluation(dep + 1);
+								std::shared_ptr<TempResultSet> temp = queryEvaluation(dep + 1);
 
-								TempResultSet *new_result = new TempResultSet();
+								std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 								sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 								temp->release();
 								sub_result->release();
-								delete temp;
-								delete sub_result;
+								temp.reset();
+								sub_result.reset();
 
 								sub_result = new_result;
 							}
@@ -1132,18 +1132,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 				if (sub_result_outer->results.empty())
 				{
-					delete sub_result_outer;
+					sub_result_outer.reset();
 					sub_result_outer = sub_result;
 				}
 				else
 				{
-					TempResultSet *new_result = new TempResultSet();
+					std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 					sub_result_outer->doUnion(*sub_result, *new_result);
 
 					sub_result->release();
 					sub_result_outer->release();
-					delete sub_result;
-					delete sub_result_outer;
+					sub_result.reset();
+					sub_result_outer.reset();
 
 					sub_result_outer = new_result;
 				}
@@ -1151,18 +1151,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 			if (result->results.empty())
 			{
-				delete result;
+				result.reset();
 				result = sub_result_outer;
 			}
 			else
 			{
-				TempResultSet *new_result = new TempResultSet();
+				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				sub_result_outer->release();
 				result->release();
-				delete sub_result_outer;
-				delete result;
+				sub_result_outer.reset();
+				result.reset();
 
 				result = new_result;
 			}
@@ -1173,9 +1173,9 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
 			this->rewriting_evaluation_stack[dep].result = result;
-			TempResultSet *temp = queryEvaluation(dep + 1);
+			std::shared_ptr<TempResultSet> temp = queryEvaluation(dep + 1);
 			{
-				TempResultSet *new_result = new TempResultSet();
+				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 
 				if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type)
 					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
@@ -1184,8 +1184,8 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 
 				temp->release();
 				result->release();
-				delete temp;
-				delete result;
+				temp.reset();
+				result.reset();
 
 				result = new_result;
 				result->initial = false;
@@ -1219,7 +1219,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				this->rewriting_evaluation_stack.back().group_pattern = sub_query.getGroupPattern();
 				this->rewriting_evaluation_stack.back().result = NULL;
 				this->rewriting_evaluation_stack[dep].result = result;
-				TempResultSet *temp = queryEvaluation(dep + 1); //TODO: IF parent IS NOT NULL, IT SHOULD BE JOINED
+				std::shared_ptr<TempResultSet> temp = queryEvaluation(dep + 1); //TODO: IF parent IS NOT NULL, IT SHOULD BE JOINED
                 std::string debug_print;
 				debug_print = "<SIMP> number of results: ";
                 for(std::vector<TempResult>::iterator it=temp->results.begin();it!=temp->results.end(); it++) {
@@ -1232,18 +1232,18 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 				SLOG_CORE(debug_print);
 		    	if (result->results.empty())
 		    	{
-		    		delete result;
+		    		result.reset();
 		    		result = temp;
 		    	}
 	    		else
 		    	{
-		    		TempResultSet *new_result = new TempResultSet();
+		    		std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 	    			result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 		    		temp->release();
 	    			result->release();
-		    		delete temp;
-		    		delete result;
+		    		temp.reset();
+		    		result.reset();
 
 	    			result = new_result;
 	    		}
@@ -1259,23 +1259,23 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 		    	ResultSet* temp_rs = new ResultSet();
                 tmp_GeneralEvaluation.getFinalResult(*temp_rs);
 				SLOG_CORE("<NONSIMP> number of results: "<<temp_rs->ansNum);
-                TempResultSet *temp_trs = new TempResultSet();
+                std::shared_ptr<TempResultSet> temp_trs = std::make_shared<TempResultSet>();
                 temp_trs->results.push_back(temp_rs->to_tempresult());
 				// release
 				delete temp_rs;
 				if (result->results.empty())
 		    	{
-		    		delete result;
+		    		result.reset();
 		    		result = temp_trs;
 		    	}
 				else
 				{
-					TempResultSet *new_result = new TempResultSet();
+					std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 					result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 					temp_trs->release();
 					result->release();
-					delete temp_trs;
-					delete result;
+					temp_trs.reset();
+					result.reset();
 
 					result = new_result;
 				}
@@ -1291,7 +1291,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	// 	{
 	// 		// PathQueryHandler function arguments are vertex IDs
 	// 		// Use `tr` to store BFS starting vertices
-	// 		TempResultSet *sub_result = new TempResultSet();
+	// 		std::shared_ptr<TempResultSet> sub_result = std::make_shared<TempResultSet>();
 	// 		TempResult *tr = NULL;
 	// 		if (result->results.size() > 0 && result->results[0].result.size() > 0)
 	// 			tr = &(result->results[0]);
@@ -1308,7 +1308,7 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 	// 		}
 	// 		else
 	// 		{
-	// 			TempResultSet *new_result = new TempResultSet();
+	// 			std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 	// 			result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 	// 			sub_result->release();
@@ -1400,12 +1400,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if ((int)this->temp_result->results.size() > 1 || this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 		{
-			TempResultSet *new_temp_result = new TempResultSet();
+			std::shared_ptr<TempResultSet> new_temp_result = std::make_shared<TempResultSet>();
 
 			this->temp_result->doProjection1(useful, *new_temp_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 			this->temp_result->release();
-			delete this->temp_result;
+			this->temp_result.reset();
 
 			this->temp_result = new_temp_result;
 		}
@@ -1436,7 +1436,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj.push_back(proj_var);
 			}
 
-			TempResultSet *new_temp_result = new TempResultSet();
+			std::shared_ptr<TempResultSet> new_temp_result = std::make_shared<TempResultSet>();
 			new_temp_result->results.push_back(TempResult());
 
 			TempResult &result0 = this->temp_result->results[0];
@@ -1475,13 +1475,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				result0.sort(0, result0_size - 1, group2temp);
 			}
 
-			TempResultSet *temp_result_distinct = NULL;
+			std::shared_ptr<TempResultSet> temp_result_distinct = NULL;
 			vector<int> group2distinct;
 
 			for (int i = 0; i < (int)proj.size(); i++)
 				if (proj[i].aggregate_type == ProjectionVar::Count_type && proj[i].distinct && proj[i].aggregate_var == "*")
 				{
-					temp_result_distinct = new TempResultSet();
+					temp_result_distinct = std::make_shared<TempResultSet>();
 
 					this->temp_result->doDistinct1(*temp_result_distinct);
 					group2distinct = this->query_tree.getGroupByVarset().mapTo(temp_result_distinct->results[0].getAllVarset());
@@ -3495,11 +3495,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			if (temp_result_distinct != NULL)
 			{
 				temp_result_distinct->release();
-				delete temp_result_distinct;
+				temp_result_distinct.reset();
 			}
 
 			this->temp_result->release();
-			delete this->temp_result;
+			this->temp_result.reset();
 
 			this->temp_result = new_temp_result;
 		}
@@ -3508,12 +3508,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 		if (this->query_tree.getProjectionModifier() == QueryTree::Modifier_Distinct)
 		{
-			TempResultSet *new_temp_result = new TempResultSet();
+			std::shared_ptr<TempResultSet> new_temp_result = std::make_shared<TempResultSet>();
 
 			this->temp_result->doDistinct1(*new_temp_result);
 
 			this->temp_result->release();
-			delete this->temp_result;
+			this->temp_result.reset();
 
 			this->temp_result = new_temp_result;
 		}
@@ -3681,8 +3681,8 @@ void GeneralEvaluation::releaseResult()
 		return;
 
 	this->temp_result->release();
-	delete this->temp_result;
-	this->temp_result = NULL;
+	this->temp_result.reset();
+	this->temp_result = nullptr;
 }
 
 void GeneralEvaluation::prepareUpdateTriple(GroupPattern &update_pattern, std::shared_ptr<TripleWithObjType[]>& update_triple, TYPE_TRIPLE_NUM &update_triple_num)
@@ -3885,12 +3885,12 @@ void GeneralEvaluation::getUsefulVarset(Varset& useful, int dep)
 	}
 }
 
-bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful)
+bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basic_query, std::shared_ptr<TempResultSet> sub_result, Varset& useful)
 {
 	bool success = false;
 	if (this->query_cache != NULL)
 	{
-		TempResultSet *temp = new TempResultSet();
+		std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>();
 		temp->results.push_back(TempResult());
 		long tv_bfcheck = gutil::TimeUtil::timestamp();
 		success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
@@ -3904,11 +3904,11 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 			SLOG_CORE("QueryCache hit");
 			SLOG_CORE("Final result size: "<<temp->results[0].result.size());
 
-			TempResultSet *new_result = new TempResultSet();
+			std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
 			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 			sub_result->release();
-			delete sub_result;
+			sub_result.reset();
 
 			sub_result = new_result;
 		}
@@ -3916,14 +3916,14 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 			SLOG_CORE("QueryCache miss");
 
 		temp->release();
-		delete temp;
+		temp.reset();
 	}
 	return success;
 }
 
-void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset, TempResultSet *fill_result)
+void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset, std::shared_ptr<TempResultSet> fill_result)
 {
-	TempResultSet *last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
+	std::shared_ptr<TempResultSet> last_result = this->rewriting_evaluation_stack[(dep > 0 ? dep - 1 : 0)].result;
 	if (dep == 0 && fill_result)
 		last_result = fill_result;
 	if (!last_result || last_result->results.empty() || (dep == 0 && last_result->results.size() > 1000000)) return;
@@ -3983,7 +3983,7 @@ void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec
 
 void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset)
 {
-	TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
+	std::shared_ptr<TempResultSet> &last_result = this->rewriting_evaluation_stack[dep - 1].result;
 
 	for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
 	{
@@ -4029,13 +4029,13 @@ void GeneralEvaluation::fillCandList(SPARQLquery& sparql_query, int dep, vector<
 	}
 }
 
-void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResultSet *new_result, TempResultSet *sub_result, vector<vector<string> >& encode_varset, \
+void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, std::shared_ptr<TempResultSet> new_result, std::shared_ptr<TempResultSet> sub_result, vector<vector<string> >& encode_varset, \
 	vector<vector<GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep)
 {
 	// Each BGP's results are copied out to temp, and then joined with sub_result //
 	for (int j = 0; j < sparql_query.getBasicQueryNum(); j++)
 	{
-		TempResultSet *temp = new TempResultSet();
+		std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>();
 		temp->results.push_back(TempResult());
 
 		temp->results[0].id_varset = Varset(encode_varset[j]);
@@ -4070,19 +4070,19 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 
 		if (sub_result->results.empty())
 		{
-			delete sub_result;
+			sub_result.reset();
 			sub_result = temp;
 		}
 		else
 		{
-			// TempResultSet *new_result = new TempResultSet();
-			new_result = new TempResultSet();
+			// std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>();
+			new_result = std::make_shared<TempResultSet>();
 			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 			temp->release();
 			sub_result->release();
-			delete temp;
-			delete sub_result;
+			temp.reset();
+			sub_result.reset();
 
 			sub_result = new_result;
 		}
@@ -4285,7 +4285,7 @@ void GeneralEvaluation::addAllTriples(const GroupPattern &group_pattern)
 // Therefore, ?s <p>* ?o should never be the first to execute (unconstrained materialization)
 // Assume it is not the first in the following (does not handle the case where ?s <p>* ?o 
 // is the only triple pattern in the WHERE clause)
-void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr, \
+void GeneralEvaluation::kleeneClosure(std::shared_ptr<TempResultSet> temp, TempResult * const tr, \
 	const string &subject, const string &predicate, const string &object, int dep)
 {
 	SLOG_CORE("kleeneClosure, subject = " << subject << ", predicate = " << predicate << ", object = " << object);
@@ -4470,7 +4470,7 @@ void GeneralEvaluation::kleeneClosure(TempResultSet *temp, TempResult * const tr
 	}
 }
 
-void GeneralEvaluation::BFS(TempResultSet *temp, int sid, int pred, bool forward, int numCol)
+void GeneralEvaluation::BFS(std::shared_ptr<TempResultSet> temp, int sid, int pred, bool forward, int numCol)
 {
 	queue<unsigned> ret;
 	unordered_set<int> ret_set;
