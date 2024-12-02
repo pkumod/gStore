@@ -103,6 +103,7 @@ public:
     {
         return db_ptr;
     }
+    void setDatabase(shared_ptr<Database> db){ db_ptr = db; }
     void initDatabase()
     {
         if (db_ptr == nullptr) {

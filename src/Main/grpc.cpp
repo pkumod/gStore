@@ -1965,7 +1965,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		{
 			server::MessageBuildResponse response_data;
 			response_data.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
 				server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else

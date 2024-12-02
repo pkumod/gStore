@@ -1445,6 +1445,7 @@ bool Database::unload()
 	this->if_loaded = false;
 	this->clear_update_log();
 	this->triple_update_num = 0;
+	this->setProgress(Progress_None);
 
 	return true;
 }
@@ -2117,6 +2118,24 @@ bool Database::saveDBInfoFile()
 	return true;
 }
 
+void Database::setProgress(DatabaseProgressStatus status)
+{
+	progress_status_ = status;
+}
+
+std::string Database::getProgressStatusStr()
+{
+	auto it = DatabseProgressMap.find(this->progress_status_);
+	if (it != DatabseProgressMap.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		return "";
+	}
+}
+
 bool Database::loadDBInfoFile()
 {
 	FILE *filePtr = fopen(this->getDBInfoFile().c_str(), "rb");
@@ -2335,6 +2354,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	//(one way is to add a more structure to tell us which is entity, but this is costly)
 
 	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
+	setProgress(Progress_RDFParse);
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, cluster_log))
 	{
 		return false;
@@ -2356,6 +2376,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
 	this->stringindex->setNum(StringIndexFile::Literal, this->literal_num);
 	this->stringindex->setNum(StringIndexFile::Predicate, this->pre_num);
+	setProgress(Progress_SavingStringIndex);
 	this->stringindex->save(*this->kvstore);
 	// NOTICE: the string index can be parallized with readIDTuples and others
 	// However, we should read and build otehr indices only after the 6 trees and string index closed
@@ -2363,6 +2384,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 
 	long t3 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Saving StringIndex, used " << (t3 - t2) << "ms.");
+	setProgress(Progress_SaveId2string);
 
 	// NOTICE:close these trees now to save memory
 	SLOG_CORE("Begin to save id2string and string2id ......");
@@ -2390,6 +2412,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 
 	// TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
 
+	setProgress(Progress_build_spo2values);
 	SLOG_CORE("Begin to build s2values ......");
 	this->build_s2xx(_p_id_tuples);
 	long t6 = gutil::TimeUtil::timestamp();

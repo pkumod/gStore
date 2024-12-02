@@ -1828,7 +1828,8 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     logPtr->setTotalPage(total_page);
 }
 
-void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, const string &optId, unsigned num, unsigned fail_num)
+void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, 
+const string &optId, unsigned num, unsigned fail_num, std::string dbname)
 {
     if (access_log_mode == "0")
     {
@@ -1853,9 +1854,11 @@ void APIUtil::write_access_log(const string &operation, const string &remoteIP, 
     dbAccessLogInfo.createtime = createTime;
     dbAccessLogInfo.num = num;
     dbAccessLogInfo.fail_num = fail_num;
+    dbAccessLogInfo.dbname = dbname;
     if (!optId.empty())
     {
         dbAccessLogInfo.opt_id = optId;
+        dbAccessLogInfo.state = 0;
     }
     nlohmann::json json_data;
     dbAccessLogInfo.toJSON(json_data);

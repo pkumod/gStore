@@ -87,6 +87,7 @@ public:
     int fail_num = 0;
     std::string backupfilepath;
     std::string queryfilepath;
+    std::string dbname;
 public:
     DBAccessLogInfo() {}
     DBAccessLogInfo(const string &_ip, const string &_operation): ip(_ip), operation(_operation){}
@@ -110,6 +111,8 @@ public:
             doc["opt_id"] = opt_id;
         if (!endtime.empty())
             doc["endtime"] = endtime;
+        if (!dbname.empty())
+            doc["dbname"] = dbname;
         if (operation == "build" || operation == "batchInsert" || operation == "batchRemove")
         {
             doc["num"] = num;
@@ -140,6 +143,8 @@ public:
             doc["opt_id"].get_to(item.opt_id);
         if (doc.contains("endtime"))
             doc["endtime"].get_to(item.endtime);
+        if (doc.contains("dbname"))
+            doc["dbname"].get_to(item.dbname);
         if (item.checkOperation())
         {
             if (doc.contains("state"))

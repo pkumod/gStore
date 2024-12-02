@@ -207,6 +207,14 @@ namespace server
                 response.success_num = log.num;
                 response.failed_num = log.fail_num;
             }
+            if (response.operation == "build" && log.state == 0)
+            {
+                shared_ptr<DatabaseInfo> db_info;
+                apiUtil->get_databaseinfo(log.dbname, db_info);
+                std::shared_ptr<Database> current_databse = db_info->getDatabase();
+                if (current_databse)
+                    response.StatusMsg = current_databse->getProgressStatusStr();
+            }
         }
         catch (const std::exception &e)
         {

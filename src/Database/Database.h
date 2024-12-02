@@ -19,6 +19,24 @@
 #include "../Util/NodeUtil.h"
 #include "CSR.h"
 
+enum DatabaseProgressStatus
+{
+    Progress_None = 0,
+    Progress_RDFParse = 1,
+    Progress_SavingStringIndex = 2,
+    Progress_SaveId2string = 3,
+    Progress_build_spo2values = 4
+};
+
+const std::map<DatabaseProgressStatus, std::string> DatabseProgressMap
+{
+    {Progress_None,              "unknown"},
+    {Progress_RDFParse,          "Begin to parse RDF"},
+    {Progress_SavingStringIndex, "Begin to build StringIndex"},
+    {Progress_SaveId2string,     "Begin to build id2string"},
+    {Progress_build_spo2values,  "Begin to build spo2values"},
+};
+
 class Database
 {
 public:
@@ -117,6 +135,7 @@ public:
 	// all entity id
 	const std::shared_ptr<BlockInfo> getfreelist_entity()const {return freelist_entity;}
 	TYPE_ENTITY_LITERAL_ID getentity_num() const {return entity_num;}
+	std::string getProgressStatusStr();
 
 private:
 	string name;
@@ -285,6 +304,9 @@ private:
 	bool saveDBInfoFile();
 
 	bool saveStatisticsInfoFile();
+	// get database progress, todo ...
+	DatabaseProgressStatus progress_status_;
+	void setProgress(DatabaseProgressStatus status);
 
 	string getStorePath();
 

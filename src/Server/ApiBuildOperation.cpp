@@ -72,6 +72,9 @@ namespace server
             SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
             string result;
             shared_ptr<Database> current_database = make_shared<Database>(database);
+            shared_ptr<DatabaseInfo> current_db_info;
+            apiUtil->get_databaseinfo(db_name, current_db_info);
+            current_db_info->setDatabase(current_database);
             // build empty database
             bool flag = true;
             int nt_file_num = 0;
@@ -83,6 +86,7 @@ namespace server
             else
                 flag = current_database->BuildEmptyDB();
             int success_num = current_database->getTripleNum();
+            current_db_info->setDatabase(nullptr);
             current_database.reset();
             if (flag)
             {
