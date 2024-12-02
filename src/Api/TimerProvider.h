@@ -33,7 +33,8 @@ class TimerProvider
         expired_ = false;
         std::thread([this, interval, task]()
         {
-            while (!try_to_expire_){
+            while (!try_to_expire_)
+            {
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
                 task();
             }
@@ -62,7 +63,8 @@ class TimerProvider
         {
             std::unique_lock<std::mutex> locker(mutex_);
             expired_cond_.wait(locker, [this]{return expired_ == true; });
-            if (expired_ == true){
+            if (expired_ == true)
+            {
                 // std::cout << "timer expired!" << std::endl;
                 try_to_expire_ = false;
             }

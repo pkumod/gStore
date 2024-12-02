@@ -301,7 +301,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
     long t4 = gutil::TimeUtil::timestamp();
-    PlanTree* best_plan_tree = plan_generator.GetPlan(true);
+    std::shared_ptr<PlanTree> best_plan_tree = plan_generator.GetPlan(true);
     long t5 = gutil::TimeUtil::timestamp();
     SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());
@@ -380,7 +380,7 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
     long t4 = gutil::TimeUtil::timestamp();
-    PlanTree* best_plan_tree = plan_generator.GetPlan(false);
+    std::shared_ptr<PlanTree> best_plan_tree = plan_generator.GetPlan(false);
     long t5 = gutil::TimeUtil::timestamp();
     SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());

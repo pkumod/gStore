@@ -6,7 +6,7 @@
 
 #include "DFSPlan.h"
 
-DFSPlan::DFSPlan(PlanTree *plan_tree) {
+DFSPlan::DFSPlan(std::shared_ptr<PlanTree> plan_tree) {
   // Do A depth first search
   auto root = plan_tree->root_node;
   stack<decltype(root)> q;

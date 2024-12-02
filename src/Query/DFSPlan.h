@@ -15,7 +15,7 @@ class DFSPlan
   std::shared_ptr<std::vector<std::shared_ptr<StepOperation>>> join_order_; //join order
   DFSPlan(Tree_node* root_node);
 
-  DFSPlan(PlanTree* plan_tree);
+  DFSPlan(std::shared_ptr<PlanTree> plan_tree);
   DFSPlan()=default;
   void PreTravel(Tree_node *node);
 

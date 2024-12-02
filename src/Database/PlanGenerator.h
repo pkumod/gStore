@@ -42,7 +42,7 @@ private:
 	// only contain plans joining not-satellite nodes
 	// plan_cache[0] contains only one node scan plan
 	// plan_cache[n] contains n-1 nodes join plan, and this n-1 nodes are connected
-	vector<map<vector<unsigned>, list<PlanTree*>>> plan_cache;
+	vector<map<vector<unsigned>, list<std::shared_ptr<PlanTree>>>> plan_cache;
 
 	vector<map<vector<unsigned>, long long>> card_cache;
 	vector<map<vector<unsigned>, vector<vector<unsigned>> >> sample_cache;
@@ -100,15 +100,15 @@ public:
 										 long long card_estimation, vector<vector<unsigned>> &result_sample);
 
 	long long CostModelForp2soOptimization(unsigned node_1_id, unsigned node_2_id);
-	long long CostModelForWCOJoin(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
+	long long CostModelForWCOJoin(std::shared_ptr<PlanTree> last_plan, const vector<unsigned> &last_plan_node,
 												 unsigned next_node, const vector<unsigned> &now_plan_node);
 
 	long long CostModelForBinaryJoin(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
-										PlanTree* plan_a, PlanTree* plan_b);
+										std::shared_ptr<PlanTree> plan_a, std::shared_ptr<PlanTree> plan_b);
 
-	void InsertThisPlanToCache(PlanTree *new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
-	PlanTree* GetBestPlanByNodes(const vector<unsigned> &nodes);
-	PlanTree* GetBestPlanByNum(int total_var_num);
+	void InsertThisPlanToCache(std::shared_ptr<PlanTree> new_plan, const vector<unsigned> &new_node_vec, unsigned var_num);
+	std::shared_ptr<PlanTree> GetBestPlanByNodes(const vector<unsigned> &nodes);
+	std::shared_ptr<PlanTree> GetBestPlanByNum(int total_var_num);
 
 	void GetJoinNodes(const vector<unsigned> &plan_a_nodes, vector<unsigned> &other_nodes, set<unsigned> &join_nodes_set) const;
 
@@ -117,13 +117,13 @@ public:
 	void GetNeighborBySubPlanNodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
 	void ConsiderWCOJoin(unsigned var_num);
 	void ConsiderBinaryJoin(unsigned var_num);
-	void AddSatelliteNode(PlanTree* best_plan);
+	void AddSatelliteNode(std::shared_ptr<PlanTree> best_plan);
 
 
 	BGPQueryStrategy PlanStrategy(bool use_binary_join = true);
 
 	double NodeScore(unsigned var_id);
-	void InsertVarScanToCache(unsigned var_id, PlanTree* var_scan_plan);
+	void InsertVarScanToCache(unsigned var_id, std::shared_ptr<PlanTree> var_scan_plan);
 	void InsertVarNumToCache(unsigned var_id);
 	void InsertVarNumAndSampleToCache(unsigned var_id);
 	void ConsiderVarScan(BGPQueryStrategy strategy);
@@ -132,12 +132,12 @@ public:
     unsigned HeuristicNextNodeFromVec(const std::set<unsigned> &neighbor_nodes);
     void RemoveNodeAddNeighbor(unsigned node_id, std::set<unsigned> &neighbor_nodes);
 
-	PlanTree* HeuristicPlan(bool use_binary_join = true);
-	PlanTree* DPPlan(bool use_binary_join = true);
-	PlanTree* GetPlan(bool use_binary_join);
+	std::shared_ptr<PlanTree> HeuristicPlan(bool use_binary_join = true);
+	std::shared_ptr<PlanTree> DPPlan(bool use_binary_join = true);
+	std::shared_ptr<PlanTree> GetPlan(bool use_binary_join);
 
 
-	PlanTree* GetSpecialOneTriplePlan();
+	std::shared_ptr<PlanTree> GetSpecialOneTriplePlan();
 
 
 	static double EstimateOneEdgeSelectivity(TYPE_PREDICATE_ID  pre_id, bool pre_constant, std::shared_ptr<KVstore> kvstore,

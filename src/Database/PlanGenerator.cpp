@@ -47,7 +47,7 @@ PlanGenerator::~PlanGenerator() {
 			while(plan_ != nodes_plan_list_pair.second.end()){
 				auto temp = *plan_;
 				plan_ = nodes_plan_list_pair.second.erase(plan_);
-				delete temp;
+				temp.reset();
 			}
 		}
 	}
@@ -621,13 +621,13 @@ long long PlanGenerator::GetCard(const vector<unsigned int> &nodes) {
 	return card_cache[nodes.size()-2][nodes];
 }
 
-long long PlanGenerator::CostModelForWCOJoin(PlanTree *last_plan, const vector<unsigned int> &last_plan_node,
+long long PlanGenerator::CostModelForWCOJoin(std::shared_ptr<PlanTree> last_plan, const vector<unsigned int> &last_plan_node,
 											 unsigned int next_node, const vector<unsigned int> &now_plan_node) {
 	return last_plan->plan_cost + CardEstimator(last_plan_node, next_node, now_plan_node);
 }
 
 long long PlanGenerator::CostModelForBinaryJoin(const vector<unsigned int> &plan_a_nodes, const vector<unsigned int> &plan_b_nodes,
-												PlanTree *plan_a, PlanTree *plan_b) {
+												std::shared_ptr<PlanTree> plan_a, std::shared_ptr<PlanTree> plan_b) {
 	long long plan_a_card = GetCard(plan_a_nodes);
 	long long plan_b_card = GetCard(plan_b_nodes);
 	long long min_card = min(plan_a_card, plan_b_card);
@@ -636,8 +636,8 @@ long long PlanGenerator::CostModelForBinaryJoin(const vector<unsigned int> &plan
 	return min_card + 2*max_card + plan_a->plan_cost + plan_b->plan_cost;
 }
 
-PlanTree* PlanGenerator::GetBestPlanByNodes(const vector<unsigned int> &nodes) {
-	PlanTree* best_plan = nullptr;
+std::shared_ptr<PlanTree> PlanGenerator::GetBestPlanByNodes(const vector<unsigned int> &nodes) {
+	std::shared_ptr<PlanTree> best_plan = nullptr;
 	long long min_cost = LLONG_MAX;
 
 	for(const auto &plan : plan_cache[nodes.size()-1][nodes]){
@@ -651,8 +651,8 @@ PlanTree* PlanGenerator::GetBestPlanByNodes(const vector<unsigned int> &nodes) {
 }
 
 // only used when get best plan for all nodes in basicquery
-PlanTree* PlanGenerator::GetBestPlanByNum(int total_var_num) {
-	PlanTree* best_plan = nullptr;
+std::shared_ptr<PlanTree> PlanGenerator::GetBestPlanByNum(int total_var_num) {
+	std::shared_ptr<PlanTree> best_plan = nullptr;
 	long long min_cost = LLONG_MAX	;
 	int count = 0;
 
@@ -681,16 +681,16 @@ void PlanGenerator::GetJoinNodes(const vector<unsigned int> &plan_a_nodes, vecto
 	}
 }
 
-void PlanGenerator::InsertThisPlanToCache(PlanTree *new_plan, const vector<unsigned int> &new_node_vec, unsigned int var_num) {
+void PlanGenerator::InsertThisPlanToCache(std::shared_ptr<PlanTree> new_plan, const vector<unsigned int> &new_node_vec, unsigned int var_num) {
 	if(plan_cache.size() < var_num){
-		map<vector<unsigned>, list<PlanTree*>> this_num_node_plan;
-		list<PlanTree*> this_nodes_plan;
+		map<vector<unsigned>, list<std::shared_ptr<PlanTree>>> this_num_node_plan;
+		list<std::shared_ptr<PlanTree>> this_nodes_plan;
 		this_nodes_plan.push_back(new_plan);
 		this_num_node_plan.insert(make_pair(new_node_vec, this_nodes_plan));
 		plan_cache.push_back(this_num_node_plan);
 	} else{
 		if(plan_cache[var_num-1].find(new_node_vec) == plan_cache[var_num-1].end()){
-			list<PlanTree*> this_nodes_plan;
+			list<std::shared_ptr<PlanTree>> this_nodes_plan;
 			this_nodes_plan.push_back(new_plan);
 			plan_cache[var_num-1].insert(make_pair(new_node_vec, this_nodes_plan));
 		}else{
@@ -874,22 +874,22 @@ void PlanGenerator::ConsiderWCOJoin(unsigned int var_num) {
 		set<unsigned> nei_node;
 		GetNeighborBySubPlanNodes(last_node_plan.first, nei_node);
 
-		PlanTree* last_best_plan = GetBestPlanByNodes(last_node_plan.first);
+		std::shared_ptr<PlanTree> last_best_plan = GetBestPlanByNodes(last_node_plan.first);
 
 		for(unsigned next_node : nei_node) {
 			vector<unsigned> new_node_vec(last_node_plan.first);
 			new_node_vec.push_back(next_node);
 			sort(new_node_vec.begin(), new_node_vec.end());
 
-			PlanTree* new_plan = new PlanTree(last_best_plan, bgpquery, next_node);
+			std::shared_ptr<PlanTree> new_plan = std::make_shared<PlanTree>(last_best_plan, bgpquery, next_node);
 			long long cost = CostModelForWCOJoin(last_best_plan, last_node_plan.first, next_node, new_node_vec);
 			new_plan->plan_cost = cost;
 
 			if(var_num == 2){
 				long long this_cost = CostModelForp2soOptimization(last_node_plan.first[0], next_node);
 				if(this_cost < cost){
-					delete new_plan;
-					new_plan = new PlanTree(last_node_plan.first[0], next_node, bgpquery);
+					new_plan.reset();
+					new_plan = std::make_shared<PlanTree>(last_node_plan.first[0], next_node, bgpquery);
 					new_plan->plan_cost = this_cost;
 				}
 			}
@@ -922,15 +922,15 @@ void PlanGenerator::ConsiderBinaryJoin(unsigned int var_num)  {
 						if (plan_cache[other_nodes.size() - 1].find(other_nodes) !=
 								plan_cache[other_nodes.size() - 1].end()) {
 
-							PlanTree *small_best_plan = GetBestPlanByNodes(small_nodes_plan.first);
-							PlanTree *another_small_best_plan = GetBestPlanByNodes(other_nodes);
+							std::shared_ptr<PlanTree> small_best_plan = GetBestPlanByNodes(small_nodes_plan.first);
+							std::shared_ptr<PlanTree> another_small_best_plan = GetBestPlanByNodes(other_nodes);
 
 							long long now_cost = CostModelForBinaryJoin(small_nodes_plan.first,
 																		other_nodes, small_best_plan,
 																		another_small_best_plan);
 
 							if (now_cost < last_plan_smallest_cost) {
-								auto *new_plan = new PlanTree(small_best_plan, another_small_best_plan, bgpquery, join_nodes_set);
+								std::shared_ptr<PlanTree> new_plan = std::make_shared<PlanTree>(small_best_plan, another_small_best_plan, bgpquery, join_nodes_set);
 								new_plan->plan_cost = now_cost;
 
 								InsertThisPlanToCache(new_plan, need_considerbinaryjoin_nodes_plan.first, var_num);
@@ -950,7 +950,7 @@ bool compare_pair_vector(pair<double, unsigned> a, pair<double, unsigned> b) {
 
 // satellite_nodes must be so_type?
 // yes! If s ?p o. ... then we only need to treat this one triple. Because it has not linked with other GP by var.
-void PlanGenerator::AddSatelliteNode(PlanTree* best_plan) {
+void PlanGenerator::AddSatelliteNode(std::shared_ptr<PlanTree> best_plan) {
 	vector<pair<double, unsigned >> satellitenode_score;
 	vector<unsigned> already_node = best_plan->already_so_var;
 
@@ -1030,10 +1030,10 @@ double PlanGenerator::NodeScore(unsigned int var_id) {
 	return node_score;
 }
 
-void PlanGenerator::InsertVarScanToCache(unsigned var_id, PlanTree* var_scan_plan) {
-	list<PlanTree *> this_node_plan{var_scan_plan};
+void PlanGenerator::InsertVarScanToCache(unsigned var_id, std::shared_ptr<PlanTree> var_scan_plan) {
+	list<std::shared_ptr<PlanTree> > this_node_plan{var_scan_plan};
 	if (plan_cache.empty()) {
-		map<vector<unsigned>, list<PlanTree *>> one_node_plan_map;
+		map<vector<unsigned>, list<std::shared_ptr<PlanTree> >> one_node_plan_map;
 		one_node_plan_map.insert(make_pair(vector<unsigned>{var_id}, this_node_plan));
 		plan_cache.push_back(one_node_plan_map);
 	} else {
@@ -1083,7 +1083,7 @@ void PlanGenerator::ConsiderVarScan(BGPQueryStrategy strategy) {
 				break;
 			}
 			case BGPQueryStrategy::DP: {
-				auto* new_scan = new PlanTree(var_id, bgpquery);
+				std::shared_ptr<PlanTree> new_scan = std::make_shared<PlanTree>(var_id, bgpquery);
 				InsertVarScanToCache(var_id, new_scan);
 				InsertVarNumAndSampleToCache(var_id);
 				new_scan->plan_cost = max((unsigned)1, var_to_num_map[var_id]/2);
@@ -1160,7 +1160,7 @@ void PlanGenerator::RemoveNodeAddNeighbor(unsigned node_id, set<unsigned> &neigh
 // 2. Choose first node.
 // 3. While there are remaining join nodes, add one node.
 // 4. Add satellite nodes.
-PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
+std::shared_ptr<PlanTree> PlanGenerator::HeuristicPlan(bool use_binary_join) {
 	ConsiderVarScan(BGPQueryStrategy::Heuristic);
 
 	unsigned first_node_id = HeuristicFirstNode();
@@ -1168,21 +1168,21 @@ PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
 	plan_var_degree.emplace_back(0);
 
     set<unsigned> neighbor_nodes{first_node_id};
-    PlanTree *plan = nullptr;
-    PlanTree *temp_plan = nullptr;
+    std::shared_ptr<PlanTree> plan = nullptr;
+    std::shared_ptr<PlanTree> temp_plan = nullptr;
 
     while (!neighbor_nodes.empty()) {
         unsigned this_node_id = HeuristicNextNodeFromVec(neighbor_nodes);
         if (plan == nullptr)
-            plan = new PlanTree(this_node_id, bgpquery);
+            plan = std::make_shared<PlanTree>(this_node_id, bgpquery);
         else {
-            temp_plan = new PlanTree(plan, bgpquery, this_node_id, false);
+            temp_plan = std::make_shared<PlanTree>(plan, bgpquery, this_node_id, false);
             swap(temp_plan, plan);
             plan_var_vec.emplace_back(this_node_id);
             plan_var_degree.emplace_back(1);
 			if (temp_plan != nullptr)
 			{
-				delete temp_plan;
+				temp_plan.reset();
 				temp_plan = nullptr;
 			}
         }
@@ -1191,14 +1191,14 @@ PlanTree *PlanGenerator::HeuristicPlan(bool use_binary_join) {
 
 	AddSatelliteNode(plan);
 
-	list<PlanTree *> this_query_plan{plan};
-	map<vector<unsigned>, list<PlanTree *>> plan_map = {{vector<unsigned>{0}, this_query_plan}};
+	list<std::shared_ptr<PlanTree> > this_query_plan{plan};
+	map<vector<unsigned>, list<std::shared_ptr<PlanTree> >> plan_map = {{vector<unsigned>{0}, this_query_plan}};
 	plan_cache.emplace_back(plan_map);
 
 	return plan;
 }
 
-PlanTree *PlanGenerator::DPPlan(bool use_binary_join) {
+std::shared_ptr<PlanTree> PlanGenerator::DPPlan(bool use_binary_join) {
 	ConsiderVarScan(BGPQueryStrategy::DP);
 
 	// should be var num not include satellite node
@@ -1209,7 +1209,7 @@ PlanTree *PlanGenerator::DPPlan(bool use_binary_join) {
 			if(var_num >= 5)
 				ConsiderBinaryJoin(var_num);
 	}
-	PlanTree* best_plan = GetBestPlanByNum(join_nodes.size());
+	std::shared_ptr<PlanTree> best_plan = GetBestPlanByNum(join_nodes.size());
 
 	// todo: 这个卫星点应该也有卫星谓词变量
 	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
@@ -1217,7 +1217,7 @@ PlanTree *PlanGenerator::DPPlan(bool use_binary_join) {
 	return best_plan;
 }
 
-PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
+std::shared_ptr<PlanTree> PlanGenerator::GetPlan(bool use_binary_join) {
 	if (bgpquery->get_triple_num() == 1) return GetSpecialOneTriplePlan();
 	switch (PlanStrategy(use_binary_join)) {
 		case BGPQueryStrategy::Heuristic:
@@ -1230,13 +1230,13 @@ PlanTree *PlanGenerator::GetPlan(bool use_binary_join) {
 	}
 }
 
-PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
+std::shared_ptr<PlanTree> PlanGenerator::GetSpecialOneTriplePlan() {
 	bool s_is_var = !(bgpquery->s_is_constant_[0]);
 	bool p_is_var = !(bgpquery->p_is_constant_[0]);
 	bool o_is_var = !(bgpquery->o_is_constant_[0]);
 	unsigned var_num = bgpquery->get_total_var_num();
 
-	PlanTree* return_plan_tree = nullptr;
+	std::shared_ptr<PlanTree> return_plan_tree = nullptr;
 	if(var_num == 3){
 		auto edge_info = make_shared<vector<EdgeInfo>>();
 		edge_info->emplace_back(bgpquery->s_id_[0], bgpquery->p_id_[0], bgpquery->o_id_[0], JoinMethod::p2so);
@@ -1247,7 +1247,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 		auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::GetAllTriples,
 													make_shared<AffectOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
 													nullptr, nullptr, bgpquery->distinct_query);
-		return_plan_tree = new PlanTree(plan_node);
+		return_plan_tree = std::make_shared<PlanTree>(plan_node);
 	} else{
 		JoinMethod join_method = GetJoinStrategy(s_is_var, p_is_var, o_is_var, var_num);
 
@@ -1264,7 +1264,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(first_var->id_, edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::s2po: {
@@ -1273,7 +1273,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode, nullptr,
 															make_shared<AffectTwoNode>(bgpquery->p_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
 															nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::p2so: {
@@ -1282,7 +1282,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode, nullptr,
 															make_shared<AffectTwoNode>(bgpquery->s_id_[0], bgpquery->o_id_[0], *edge_info, *edge_constant_info),
 															nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::o2ps: {
@@ -1291,7 +1291,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::TwoNode, nullptr,
 															make_shared<AffectTwoNode>(bgpquery->p_id_[0], bgpquery->s_id_[0], *edge_info, *edge_constant_info),
 															nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::p2s: {
@@ -1302,7 +1302,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::p2o: {
@@ -1313,7 +1313,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::s2p: {
@@ -1324,7 +1324,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::s2o: {
@@ -1335,7 +1335,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->o_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::o2s: {
@@ -1346,7 +1346,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->s_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			case JoinMethod::o2p: {
@@ -1357,7 +1357,7 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 				auto plan_node = make_shared<StepOperation>(StepOperation::StepOpType::Extend, StepOperation::OpRangeType::OneNode,
 															make_shared<AffectOneNode>(bgpquery->p_id_[0], edge_info, edge_constant_info),
 															nullptr, nullptr, bgpquery->distinct_query);
-				return_plan_tree = new PlanTree(plan_node);
+				return_plan_tree = std::make_shared<PlanTree>(plan_node);
 				break;
 			}
 			default: {
@@ -1366,8 +1366,8 @@ PlanTree *PlanGenerator::GetSpecialOneTriplePlan() {
 			}
 		}
 	}
-	list<PlanTree *> this_query_plan{return_plan_tree};
-	map<vector<unsigned>, list<PlanTree *>> plan_map = {{vector<unsigned>{0}, this_query_plan}};
+	list<std::shared_ptr<PlanTree> > this_query_plan{return_plan_tree};
+	map<vector<unsigned>, list<std::shared_ptr<PlanTree> >> plan_map = {{vector<unsigned>{0}, this_query_plan}};
 	plan_cache.emplace_back(plan_map);
 
 	return return_plan_tree;

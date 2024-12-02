@@ -73,14 +73,14 @@ class PlanTree {
     PlanTree(unsigned first_node, BGPQuery *bgpquery);
 
 	// WCO Join One Node
-    PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan = false);
+    PlanTree(std::shared_ptr<PlanTree> last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan = false);
 
 	// Functions for p2so optimization
 	void add_prevar_neicon(unsigned node_id, BGPQuery *bgpquery, bool is_first_node);
     PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery);
 
 	// Binary Join
-    PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);
+    PlanTree(std::shared_ptr<PlanTree> left_plan, std::shared_ptr<PlanTree> right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes);
 
 	// Function for satellite node
     void AddSatelliteNode(BGPQuery* bgpquery, unsigned satellitenode_id, bool save);

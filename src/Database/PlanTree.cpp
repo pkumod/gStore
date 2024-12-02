@@ -121,7 +121,7 @@ PlanTree::PlanTree(unsigned first_node, BGPQuery *bgpquery) {
 // case4 ?s ?p ?o. ?p is degree_one pre_var(only exists in this triple), then we only need s2o on s.
 // 	      If ?p is not degree one, then join two_node(?p not already) by s2po, or join one_node(?p already) by sp2o.
 // First sp2o, then join other pre_var by join_a_node
-PlanTree::PlanTree(PlanTree *last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan) {
+PlanTree::PlanTree(std::shared_ptr<PlanTree> last_plantree, BGPQuery *bgpquery, unsigned next_node, bool used_in_heuristic_plan) {
 	auto var_descrip = bgpquery->get_vardescrip_by_id(next_node);
 	if (used_in_heuristic_plan)
 		root_node = last_plantree->root_node;
@@ -460,7 +460,7 @@ PlanTree::PlanTree(unsigned node_1_id, unsigned node_2_id, BGPQuery *bgpquery){
 // case2 ?s ?p ?o, join ?p(not appear in left and right) or edgecheck(?p ready)
 // case3 ?s1 ?p ?o1 in left, ?s2 ?p ?o2 in right, this can be done in JoinTwoTable
 // todo: 用Plangenerator的参数，直接算出哪些是不被join的
-PlanTree::PlanTree(PlanTree *left_plan, PlanTree *right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes) {
+PlanTree::PlanTree(std::shared_ptr<PlanTree> left_plan, std::shared_ptr<PlanTree> right_plan, BGPQuery *bgpquery, set<unsigned> &join_nodes) {
 	shared_ptr<vector<unsigned>> public_variables = make_shared<vector<unsigned>>(join_nodes.begin(), join_nodes.end());
 
 	already_so_var = left_plan->already_so_var;
