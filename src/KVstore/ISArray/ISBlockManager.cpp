@@ -21,7 +21,7 @@ ISBlockManager::ISBlockManager()
 	FreeBlockList = NULL;
 	ValueFile = NULL;
 
-	// BlockToWrite = nullptr;
+	BlockToWrite = nullptr;
 }
 
 ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynum )
@@ -54,7 +54,7 @@ ISBlockManager::ISBlockManager(string& _filename, string& _mode, unsigned _keynu
 
 	index_len_map.clear();
 	len_index_map.clear();
-	// BlockToWrite = nullptr;
+	BlockToWrite = nullptr;
 
 	if (_mode == "build")
 	{
@@ -209,14 +209,14 @@ ISBlockManager::getWhereToWrite(unsigned _len)
 		{
 			// delete BlockToWrite;
 			std::shared_ptr<BlockInfo> p=BlockToWrite;
-			std::shared_ptr<BlockInfo> nextp=p->next;
+			BlockToWrite = nullptr;
 			while(p!=nullptr)
 			{
-				nextp=p->next;
+				std::shared_ptr<BlockInfo> nextp=p->next;
 				p.reset();
 				p=nextp;
 			}
-			BlockToWrite = nullptr;
+			
 		}
 
 		unsigned BaseIndex = it->second;
@@ -366,13 +366,13 @@ ISBlockManager::FreeBlocks(const unsigned index)
 ISBlockManager::~ISBlockManager()
 {
 	std::shared_ptr<BlockInfo> p = BlockToWrite;
+	BlockToWrite = nullptr;
 	while (p != nullptr)
 	{
 		std::shared_ptr<BlockInfo> np = p->next;
 		p.reset();
 		p = np;
 	}
-	BlockToWrite = NULL;
 	fclose(FreeBlockList);
 	fclose(ValueFile);
 }

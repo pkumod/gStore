@@ -21,7 +21,7 @@ IVBlockManager::IVBlockManager()
 	FreeBlockList = NULL;
 	ValueFile = NULL;
 
-	// BlockToWrite = nullptr;
+	BlockToWrite = nullptr;
 }
 
 IVBlockManager::IVBlockManager(string& _filename, string& _mode, unsigned _keynum )
@@ -54,7 +54,7 @@ IVBlockManager::IVBlockManager(string& _filename, string& _mode, unsigned _keynu
 
 	index_len_map.clear();
 	len_index_map.clear();
-	BlockToWrite = NULL;
+	BlockToWrite = nullptr;
 
 	if (_mode == "build")
 	{
@@ -209,18 +209,17 @@ IVBlockManager::getWhereToWrite(unsigned long _len)
 	if (it != len_index_map.end())
 	{
 		// prepare BLockToWrite
-		if (BlockToWrite != NULL)
+		if (BlockToWrite != nullptr)
 		{
 			// delete BlockToWrite;
-			std::shared_ptr<BlockInfo>p=BlockToWrite;
-			std::shared_ptr<BlockInfo>nextp=p->next;
+			std::shared_ptr<BlockInfo> p=BlockToWrite;
+			BlockToWrite = nullptr;
 			while(p!=nullptr)
 			{
-				nextp=p->next;
+				std::shared_ptr<BlockInfo> nextp = p->next;
 				p.reset();
 				p=nextp;
 			}
-			BlockToWrite = NULL;
 		}
 
 		unsigned BaseIndex = it->second;
@@ -266,11 +265,11 @@ IVBlockManager::WriteValue(const char *_str, const unsigned long _len)
 	
 	// write _str
 	int fd = fileno(ValueFile);
-	std::shared_ptr<BlockInfo>p = BlockToWrite;
+	std::shared_ptr<BlockInfo> p = BlockToWrite;
 	char *pstr = (char *)_str; // pointer to buffer of where to write next
 	unsigned long len_left = _len; // how many bytes left to write
 
-	while (p != NULL)
+	while (p != nullptr)
 	{
 		std::shared_ptr<BlockInfo>nextp = p->next;
 		unsigned long Bits2Write = BLOCK_DATA_SIZE < len_left ? BLOCK_DATA_SIZE:len_left;
@@ -374,19 +373,14 @@ IVBlockManager::FreeBlocks(const unsigned index)
 
 IVBlockManager::~IVBlockManager()
 {
-//	if (BlockToWrite != NULL)
-//	{
-//		delete BlockToWrite;
-//		BlockToWrite = NULL;
-//	}
 	std::shared_ptr<BlockInfo> p = BlockToWrite;
+	BlockToWrite = nullptr;
 	while (p != nullptr)
 	{
-		std::shared_ptr<BlockInfo>np = p->next;
+		std::shared_ptr<BlockInfo> np = p->next;
 		p.reset();
 		p = np;
 	}
-	BlockToWrite = nullptr;
 	fclose(FreeBlockList);
 	fclose(ValueFile);
 }

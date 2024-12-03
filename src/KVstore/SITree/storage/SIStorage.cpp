@@ -14,7 +14,7 @@ SIStorage::SIStorage()
 {							//not use ../logs/, notice the location of program
   cur_block_num = SET_BLOCK_NUM;
   filepath = "";
-  // freelist = nullptr;
+  freelist = nullptr;
   tree_fp_ = NULL;
   min_heap_ = nullptr;
   max_buffer_size = GlobalTypedef::MAX_BUFFER_SIZE;

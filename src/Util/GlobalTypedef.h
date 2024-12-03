@@ -345,13 +345,13 @@ public:
 	std::shared_ptr<BlockInfo> next;
 	BlockInfo()
 	{
-      num = 0;
-		// next = NULL;
+        num = 0;
+		next = nullptr;
 	}
 	BlockInfo(unsigned _num)
 	{
-      num = _num;
-		// next = NULL;
+        num = _num;
+		next = nullptr;
 	}
 
 	/**
@@ -363,6 +363,11 @@ public:
 	{
     	num = _num;
 		next = _bp;
+	}
+	~BlockInfo()
+	{
+		num = 0;
+		next = nullptr;
 	}
 };
 
