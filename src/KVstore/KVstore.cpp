@@ -2843,7 +2843,7 @@ KVstore::build_subID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 	bool _pre_change = true;
 
 	this->open_subID2values(KVstore::CREATE_MODE, total_entity_num);
-
+	#ifdef SHOW_PROGRESS
 	indicators::ProgressBar bar{
 		indicators::option::BarWidth{50},
 		indicators::option::Start{"["},
@@ -2855,19 +2855,22 @@ KVstore::build_subID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 		indicators::option::ForegroundColor{indicators::Color::green},
 		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
+	#endif
 
-	int bar_tmp = 0;
-	int one_percent_num = _triples_num/100;
+	// int bar_tmp = 0;
+	// int one_percent_num = _triples_num/100;
 
 	//NOTICE: i*3 + j maybe break the unsigned limit
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		#ifdef SHOW_PROGRESS
 		++bar_tmp;
 		if(bar_tmp == one_percent_num) {
 			bar.tick();
 			bar_tmp = 0;
 		}
+		#endif
 
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) 
@@ -2929,10 +2932,10 @@ KVstore::build_subID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 			}
 		}
 	}
-
+	#ifdef SHOW_PROGRESS
 	if (!bar.is_completed())
 		bar.set_progress(100);
-
+	#endif
 	this->close_subID2values();
 	// cout << "Finished building subID2values" << endl;
 
@@ -3521,7 +3524,7 @@ KVstore::build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 	bool _pre_change = true;
 
 	this->open_objID2values(KVstore::CREATE_MODE, total_entity_num, total_literal_num);
-
+	#ifdef SHOW_PROGRESS
 	indicators::ProgressBar bar{
 		indicators::option::BarWidth{50},
 		indicators::option::Start{"["},
@@ -3533,6 +3536,7 @@ KVstore::build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 		indicators::option::ForegroundColor{indicators::Color::green},
 		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
+	#endif
 
 	int bar_tmp = 0;
 	int one_percent_num = _triples_num/100;
@@ -3540,11 +3544,13 @@ KVstore::build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		#ifdef SHOW_PROGRESS
 		++bar_tmp;
 		if(bar_tmp == one_percent_num) {
 			bar.tick();
 			bar_tmp = 0;
 		}
+		#endif
 
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
@@ -3593,9 +3599,10 @@ KVstore::build_objID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 			}
 		}
 	}
-
+	#ifdef SHOW_PROGRESS
 	if (!bar.is_completed())
 		bar.set_progress(100);
+	#endif
 
 	this->close_objID2values();
 	// cout << "Finished building objID2values" << endl;
@@ -4150,7 +4157,7 @@ KVstore::build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 	bool _pre_change = true;
 
 	this->open_preID2values(KVstore::CREATE_MODE, total_pre_num);
-
+	#ifdef SHOW_PROGRESS
 	indicators::ProgressBar bar{
 		indicators::option::BarWidth{50},
 		indicators::option::Start{"["},
@@ -4162,6 +4169,7 @@ KVstore::build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 		indicators::option::ForegroundColor{indicators::Color::green},
 		indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
 	};
+	#endif
 
 	int bar_tmp = 0;
 	int one_percent_num = _triples_num/100;
@@ -4169,11 +4177,13 @@ KVstore::build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 	//for (unsigned long i = 0; i < _triples_num; i++) 
 	for (TYPE_TRIPLE_NUM i = 0; i < _triples_num; i++) 
 	{
+		#ifdef SHOW_PROGRESS
 		++bar_tmp;
 		if(bar_tmp == one_percent_num) {
 			bar.tick();
 			bar_tmp = 0;
 		}
+		#endif
 
 		if (i + 1 == _triples_num || _p_id_tuples[i].subid != _p_id_tuples[i+1].subid
 			|| _p_id_tuples[i].preid != _p_id_tuples[i+1].preid || _p_id_tuples[i].objid != _p_id_tuples[i+1].objid) {
@@ -4209,10 +4219,10 @@ KVstore::build_preID2values(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples, TYPE_TRIP
 			}
 		}
 	}
-
+	#ifdef SHOW_PROGRESS
 	if (!bar.is_completed())
 		bar.set_progress(100);
-
+	#endif
 	this->close_preID2values();
 	// cout << "Finished building preID2values" << endl;
 	return true;

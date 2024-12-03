@@ -1589,7 +1589,9 @@ int create_handler(const vector<string> &args)
 	server::MessageBuildRequest build_request(db_name, db_path);
 	build_request.username = root_username;
 	build_request.password = root_password;	
+	int64_t t1 = gutil::TimeUtil::timestamp();
 	server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
+	int64_t t2 = gutil::TimeUtil::timestamp();
 	if (!build_response.success())
 	{
 		cout << "Build RDF database " << db_name << " failed: " << build_response.StatusMsg << endl;
@@ -1600,7 +1602,7 @@ int create_handler(const vector<string> &args)
 		cout<< "RDF parse error num " << build_response.failed_num << endl;
 		cout<< "See log file for details "<< endl;
 	}
-	cout << "Build RDF database " << db_name << " successfully!" << endl;
+	cout << "Build RDF database " << db_name << " successfully! use " << (t2-t1) << "ms" << endl;
 	return 0;
 }
 

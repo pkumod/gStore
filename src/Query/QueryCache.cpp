@@ -70,12 +70,12 @@ bool QueryCache::getMinimalRepresentation(const Patterns &triple_pattern, Patter
 			}
 		}
 
-#ifndef PARALLEL_SORT
-		sort(temp_repre.begin(), temp_repre.end());
-#else
+		#ifndef PARALLEL_SORT
+		std::sort(temp_repre.begin(), temp_repre.end());
+		#else
 		omp_set_num_threads(thread_num);
 		__gnu_parallel::sort(temp_repre.begin(), temp_repre.end());
-#endif
+		#endif
 		if (i == 0)
 		{
 			minimal_repre = temp_repre;
@@ -136,12 +136,12 @@ bool QueryCache::tryCaching(const Patterns &triple_pattern, const TempResult &te
 		unordered_varset.addVar(minimal_mapping[temp_result.id_varset.vars[i]]);
 
 	Varset ordered_varset = unordered_varset;
-#ifndef PARALLEL_SORT
-	sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
-#else
+	#ifndef PARALLEL_SORT
+	std::sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
+	#else
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
-#endif
+	#endif
 	vector<int> unordered2ordered = unordered_varset.mapTo(ordered_varset);
 
 	if (cache.count(minimal_repre) == 0)
@@ -197,12 +197,12 @@ bool QueryCache::checkCached(const Patterns &triple_pattern, const Varset &varse
 		unordered_varset.addVar(minimal_mapping[varset.vars[i]]);
 
 	Varset ordered_varset = unordered_varset;
-#ifndef PARALLEL_SORT
-	sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
-#else
+	#ifndef PARALLEL_SORT
+	std::sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
+	#else
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(ordered_varset.vars.begin(), ordered_varset.vars.end());
-#endif
+	#endif
 	vector<int> unordered2ordered = unordered_varset.mapTo(ordered_varset);
 
 	if (cache.count(minimal_repre) != 0)

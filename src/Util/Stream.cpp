@@ -187,12 +187,12 @@ Stream::outputCache()
 {
 	//DEBUG1
     //sort and output to file
-#ifndef PARALLEL_SORT
-	stable_sort(this->tempst.begin(), this->tempst.end(), mycmp);
-#else
+    #ifndef PARALLEL_SORT
+	std::stable_sort(this->tempst.begin(), this->tempst.end(), mycmp);
+    #else
     omp_set_num_threads(thread_num);
     __gnu_parallel::stable_sort(this->tempst.begin(), this->tempst.end(), mycmp);
-#endif
+    #endif
     unsigned size = this->tempst.size();
     for(unsigned i = 0; i < size; ++i)
     {
@@ -494,12 +494,12 @@ Stream::setEnd()
 		if(this->needSort)
 		{
 			//DEBUG2
-#ifndef PARALLEL_SORT
-			stable_sort(this->ansMem.get(), this->ansMem.get() + this->rownum, mycmp);
-#else
+            #ifndef PARALLEL_SORT
+			std::stable_sort(this->ansMem.get(), this->ansMem.get() + this->rownum, mycmp);
+            #else
 			omp_set_num_threads(thread_num);
-			__gnu_parallel::stable_sort(this->ansMem, this->ansMem + this->rownum, mycmp);
-#endif
+			__gnu_parallel::stable_sort(this->ansMem.get(), this->ansMem.get() + this->rownum, mycmp);
+            #endif
 		}
 		return;
     }

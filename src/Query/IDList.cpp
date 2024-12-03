@@ -95,12 +95,12 @@ IDList::to_str()
 int
 IDList::sort()
 {
-#ifndef PARALLEL_SORT
+	#ifndef PARALLEL_SORT
 	std::sort(id_list.begin(), id_list.end());
-#else
+	#else
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(id_list.begin(), id_list.end());
-#endif
+	#endif
 	return 0;
 }
 

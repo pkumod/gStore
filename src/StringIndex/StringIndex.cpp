@@ -165,12 +165,12 @@ void StringIndexFile::trySequenceAccess(std::vector<StringIndexFile::AccessReque
 	{
 		SLOG_CORE(code_print << "sequence access.");
 
-#ifndef PARALLEL_SORT
-		sort(request.begin(), request.end());
-#else
+		#ifndef PARALLEL_SORT
+		std::sort(request.begin(), request.end());
+		#else
 		omp_set_num_threads(thread_num);
-		__gnu_parallel::sort(this->request.begin(), this->request.end());
-#endif
+		__gnu_parallel::sort(request.begin(), request.end());
+		#endif
 		int pos = 0;
 		char *block = new char[MAX_BLOCK_SIZE];
 
@@ -349,9 +349,16 @@ unsigned StringIndex::getNum(StringIndexFile::StringIndexFileType _type)
 
 void StringIndex::save(KVstore &kv_store)
 {
-	this->entity.save(kv_store);
-	this->literal.save(kv_store);
-	this->predicate.save(kv_store);
+	std::thread entity_thread(&StringIndexFile::save, &this->entity, std::ref(kv_store));
+	std::thread literal_thread(&StringIndexFile::save, &this->literal, std::ref(kv_store));
+	std::thread predicate_thread(&StringIndexFile::save, &this->predicate, std::ref(kv_store));
+
+	entity_thread.join();
+	literal_thread.join();
+	predicate_thread.join();
+	// this->entity.save(kv_store);
+	// this->literal.save(kv_store);
+	// this->predicate.save(kv_store);
 }
 
 void StringIndex::load()

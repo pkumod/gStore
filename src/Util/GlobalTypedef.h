@@ -80,9 +80,9 @@
 #include "Slog.h"
 
 #define TOPK_SUPPORT
-#define thread_num 1
+// #define thread_num 4
 //below is used to control if using the parallelable sort()
-//#define PARALLEL_SORT 1
+// #define PARALLEL_SORT 1
 
 //NOTICE: hpp is different from static library(*.a) or dynamic library(*.so)
 //It places the implementations totally in header file, hpp = *.h + *.cpp
@@ -126,14 +126,12 @@
 //indicate that in debug mode
 //#define DEBUG_JOIN      
 //#define DEBUG_STREAM
-//#define DEBUG_PRECISE 1		//all information
-//#define DEBUG_KVSTORE 1		//in KVstore
+//#define DEBUG_PRECISE 1	//all information
+//#define DEBUG_KVSTORE 1	//in KVstore
 //#define DEBUG_VSTREE 1	//in Database 
 //#define DEBUG_LRUCACHE 1
 //#define DEBUG_DATABASE 1	//in Database
 //#define DEBUG_VLIST 1
-//
-//
 
 #ifdef DEBUG_PRECISE
 #ifndef DEBUG
@@ -181,13 +179,10 @@
 #define VMRSS_LINE 22
 #define PROCESS_ITEM 14
 
+// for the progress bar
+// #define SHOW_PROGRESS 1
 //===================================================================================================================
 
-//NOTICE:include Util.h and below in each main function
-//(the beginning position)
-//#ifdef DEBUG
-//	Util util;
-//#endif
 
 typedef unsigned(*HashFunction)(const char*);
 //NOTICE:hash functions for int are not so many, so we represent int by a 4-byte stringinstead

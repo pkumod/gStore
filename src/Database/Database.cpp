@@ -24,7 +24,7 @@ Database::Database()
 	this->update_log_since_backup = "update_since_backup.log";
 	// this->csr = nullptr;
 
-	this->type_predicate_name = "type@@TYPE@@类型";
+	this->type_predicate_name = {"type","TYPE","类型"};
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
@@ -81,7 +81,7 @@ Database::Database(string _name)
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
 	// this->csr = nullptr;
-	this->type_predicate_name = "type@@TYPE@@类型";
+	this->type_predicate_name = {"type","TYPE","类型"};
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
 	string stringindex_store_path = store_path + "/stringindex_store";
@@ -504,7 +504,7 @@ void Database::setPreMap()
 	this->pre2sub = std::shared_ptr<TYPE_TRIPLE_NUM[]>(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
 	this->pre2obj = std::shared_ptr<TYPE_TRIPLE_NUM[]>(new TYPE_TRIPLE_NUM[this->limitID_predicate], std::default_delete<TYPE_TRIPLE_NUM[]>());
 	TYPE_PREDICATE_ID valid = 0, i, t;
-
+	#ifdef SHOW_PROGRESS
 	indicators::ProgressBar bar{
 		indicators::option::BarWidth{50},
 		indicators::option::Start{"["},
@@ -518,15 +518,17 @@ void Database::setPreMap()
 
 	int bar_tmp = 0;
 	int one_percent_num = limitID_predicate / 100;
-
+	#endif
 	for (i = 0; i < this->limitID_predicate; ++i)
 	{
+		#ifdef SHOW_PROGRESS
 		++bar_tmp;
 		if (bar_tmp == one_percent_num)
 		{
 			bar.tick();
 			bar_tmp = 0;
 		}
+		#endif
 
 		if (valid == this->pre_num)
 		{
@@ -566,9 +568,10 @@ void Database::setPreMap()
 			this->pre2obj[i] = 0;
 		}
 	}
-
+	#ifdef SHOW_PROGRESS
 	if (!bar.is_completed())
 		bar.set_progress(100);
+	#endif
 	/*
 	for(int i = 0;i < this->pre_num;i++)
 	{
@@ -1971,9 +1974,10 @@ void Database::BuildEmptyKVstore() {
     this->kvstore->close_id2literal();
     this->kvstore->close_predicate2id();
     this->kvstore->close_id2predicate();
-    build_s2xx(nullptr);
-    build_o2xx(nullptr);
-    build_p2xx(nullptr);
+	std::shared_ptr<ID_TUPLE[]> _p_id_tuples(new ID_TUPLE[this->triples_num], std::default_delete<ID_TUPLE[]>());
+	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
+	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
+	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);
 }
 
 bool Database::BuildEmptyDB() {
@@ -2069,18 +2073,16 @@ Database::getDBInfoFile()
 	return this->getStorePath() + "/" + this->db_info_file;
 }
 
-void Database::setTypePredicateName(string &names)
+void Database::setTypePredicateName(vector<string> &names)
 {
 	this->type_predicate_name = names;
 }
 
 bool Database::checkIsTypePredicate(string &predicate)
 {
-	vector<string> names;
-	Util::split(this->type_predicate_name, "@@", names);
-	for (size_t i = 0; i < names.size(); i++)
+	for (size_t i = 0; i < this->type_predicate_name.size(); i++)
 	{
-		if (gutil::StringUtil::contains(predicate, names[i]))
+		if (gutil::StringUtil::contains(predicate, this->type_predicate_name[i]))
 		{
 			return true;
 		}
@@ -2222,6 +2224,7 @@ bool Database::encodeRDF_new(const string _rdf_file)
 #ifdef DEBUG
 	Util::logging("In encodeRDF_new");
 #endif
+	SLOG_DEBUG("In encodeRDF_new");
 
 	// TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
 	// std::shared_ptr<ID_TUPLE[]>& _p_id_tuples = NULL;
@@ -2337,16 +2340,13 @@ bool Database::encodeRDF_new(const string _rdf_file)
 
 bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, shared_ptr<ofstream> cluster_log)
 {
-#ifdef DEBUG
-	Util::logging("In encodeRDF_new");
-#endif
 
 	// TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
-	// std::shared_ptr<ID_TUPLE[]>& _p_id_tuples = NULL;
+	// std::shared_ptr<ID_TUPLE[]> _p_id_tuples = nullptr;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
-	// long t1 = gutil::TimeUtil::timestamp();
-
+	int64_t t1 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Begin to parse triples ......");
 	// NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system
 	// while literal is another system
 	// The reason is that if we divide entity and literal, then in triple_array and final_result we can not decide a given
@@ -2359,7 +2359,8 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	{
 		return false;
 	}
-
+	int64_t t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	// TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset
 	// based on the current available memory(need a memory manager globally)
 	// If unbale to run, should exit and give a prompt
@@ -2368,8 +2369,6 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	//
 	// TODO+BETTER: a global ID manager module, should be based on type template
 	// this can be used in vstree, storage and Database
-
-	long t2 = gutil::TimeUtil::timestamp();
 
 	SLOG_CORE("Begin to save StringIndex ......");
 	// build stringindex before this->kvstore->id2* trees are closed
@@ -2382,20 +2381,26 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	// However, we should read and build otehr indices only after the 6 trees and string index closed
 	//(to save memory)
 
-	long t3 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Saving StringIndex, used " << (t3 - t2) << "ms.");
-	setProgress(Progress_SaveId2string);
+	t1 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Saving StringIndex, used " + to_string(t1 - t2) + "ms.");
 
 	// NOTICE:close these trees now to save memory
 	SLOG_CORE("Begin to save id2string and string2id ......");
-	this->kvstore->close_entity2id();
-	this->kvstore->close_id2entity();
-	this->kvstore->close_literal2id();
-	this->kvstore->close_id2literal();
-	this->kvstore->close_predicate2id();
-	this->kvstore->close_id2predicate();
-	long t4 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish saving id2string and string2id, used " << (t4 - t3) << "ms.");
+	thread close_entity2id_thread([this](){ this->kvstore->close_entity2id(); });
+	thread close_id2entity_thread([this](){ this->kvstore->close_id2entity(); });
+	thread close_literal2id_thread([this](){ this->kvstore->close_literal2id(); });
+	thread close_id2literal_thread([this](){ this->kvstore->close_id2literal(); });
+	thread close_predicate2id_thread([this](){ this->kvstore->close_predicate2id(); });
+	thread close_id2predicate_thread([this](){ this->kvstore->close_id2predicate(); });
+	close_entity2id_thread.join();
+	close_id2entity_thread.join();
+	close_literal2id_thread.join();
+	close_id2literal_thread.join();
+	close_predicate2id_thread.join();
+	close_id2predicate_thread.join();
+	
+	t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish saving id2string and string2id, used " + to_string(t2 - t1) + "ms.");
 
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
@@ -2407,37 +2412,66 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log, sh
 	// update to the corresponding position in the signature file
 	// However, this may be costly due to frequent read/write
 
-	long t5 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("id tuples read, used " << (t5 - t4) << "ms.");
+	t1 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("id tuples read, used " + to_string(t1 - t2) + "ms.");
 
 	// TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
+	SLOG_CORE("Begin to build spo2values ......");
 
-	setProgress(Progress_build_spo2values);
-	SLOG_CORE("Begin to build s2values ......");
-	this->build_s2xx(_p_id_tuples);
-	long t6 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish building s2values, used " << (t6 - t5) << "ms.");
+	// remove duplicates from the id tables
+	#ifndef PARALLEL_SORT
+	std::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::spo_cmp_idtuple);
+	#else
+	omp_set_num_threads(thread_num);
+	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
+	#endif
+	t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish sorting id tuples, used " + to_string(t2 - t1) + "ms.");
+	TYPE_TRIPLE_NUM j = 1;
+	// TODO: should output triples_num without removing duplicates for reference, or keep a unique_triples_num separately?
+	for (TYPE_TRIPLE_NUM i = 1; i < this->triples_num; ++i)
+	{
+		if (!Util::equal(_p_id_tuples[i], _p_id_tuples[i - 1]))
+		{
+			_p_id_tuples[j] = _p_id_tuples[i];
+			++j;
+		}
+	}
+	if (j < this->triples_num)
+		this->triples_num = j;
+	t1 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish removing duplicate tuples, used " + to_string(t1 - t2) + "ms.");
+	// copy the id tuples to the other two arrays
+	ID_TUPLE* tmp_array_1 = new ID_TUPLE[this->triples_num];
+	ID_TUPLE* tmp_array_2 = new ID_TUPLE[this->triples_num];
+	std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_1);
+	std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_2);
+	std::shared_ptr<ID_TUPLE[]> _p_id_tuples_1(tmp_array_1, std::default_delete<ID_TUPLE[]>());
+	std::shared_ptr<ID_TUPLE[]> _p_id_tuples_2(tmp_array_2, std::default_delete<ID_TUPLE[]>());
+	t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish copying id tuples, used " + to_string(t2 - t1) + "ms.");
 
-	SLOG_CORE("Begin to build o2values ......");
-	this->build_o2xx(_p_id_tuples);
-	long t7 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish building o2values, used " << (t7 - t6) << "ms.");
-
-	SLOG_CORE("Begin to build p2values ......");
-	this->build_p2xx(_p_id_tuples);
-	long t8 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish building p2values, used " << (t8 - t7) << "ms.");
+	thread build_s2value_thread(&Database::build_s2xx, this, _p_id_tuples);
+	thread build_o2value_thread(&Database::build_o2xx, this, _p_id_tuples_1);
+	thread build_p2value_thread(&Database::build_p2xx, this, _p_id_tuples_2);
+	build_s2value_thread.join();
+	build_o2value_thread.join();
+	build_p2value_thread.join();
+	t1 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
 
 	// WARN:we must free the memory for id_tuples array
 	_p_id_tuples.reset();
+	_p_id_tuples_1.reset();
+	_p_id_tuples_2.reset();
 
 	bool flag = this->saveDBInfoFile();
 	if (!flag)
 	{
 		return false;
 	}
-	long t9 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("db info saved, used " << (t9 - t8) << "ms.");
+	t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("db info saved, used " + to_string(t2 - t1) + "ms.");
 
 	flag = this->saveStatisticsInfoFile();
 	if (!flag)
@@ -2475,55 +2509,42 @@ void Database::readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples)
 
 void Database::build_s2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
-	// NOTICE: STL sort() is generally fatser than C qsort, especially when qsort is very slow
-	// STL sort() not only use qsort algorithm, it can also choose heap-sort method
-#ifndef PARALLEL_SORT
-	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::spo_cmp_idtuple);
-#else
-	omp_set_num_threads(thread_num);
-	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::spo_cmp_idtuple);
-#endif
-	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_spo_cmp);
-
-	// remove duplicates from the id tables
-	TYPE_TRIPLE_NUM j = 1;
-	// TODO: should output triples_num without removing duplicates for reference, or keep a unique_triples_num separately?
-	for (TYPE_TRIPLE_NUM i = 1; i < this->triples_num; ++i)
-	{
-		if (!Util::equal(_p_id_tuples[i], _p_id_tuples[i - 1]))
-		{
-			_p_id_tuples[j] = _p_id_tuples[i];
-			++j;
-		}
-	}
-	if (j < this->triples_num)
-		this->triples_num = j;
-
+	SLOG_CORE("Begin to build s2values ......");
+	int64_t t1 = gutil::TimeUtil::timestamp();
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
+	int64_t t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish building s2values, used " << (t2 - t1) << "ms.");
 }
 
 void Database::build_o2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
-#ifndef PARALLEL_SORT
-	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
-#else
+	SLOG_CORE("Begin to build o2values ......");
+	int64_t t1 = gutil::TimeUtil::timestamp();
+	#ifndef PARALLEL_SORT
+	std::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
+	#else
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
-#endif
-	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_ops_cmp);
+	#endif
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
+	int64_t t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish building o2values, used " << (t2 - t1) << "ms.");
 }
 
 void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
-#ifndef PARALLEL_SORT
-	sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
-#else
+	SLOG_CORE("Begin to build p2values ......");
+	int64_t t1 = gutil::TimeUtil::timestamp();
+	#ifndef PARALLEL_SORT
+	std::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
+	#else
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
-#endif
+	#endif
 	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);
+	int64_t t2 = gutil::TimeUtil::timestamp();
+	SLOG_CORE("Finish building p2values, used " << (t2 - t1) << "ms.");
 }
 
 // NOTICE:in here and there in the insert/delete, we may get the maxium tuples num first
@@ -2898,100 +2919,101 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	SLOG_CORE("Begin to build Trie ......");
 	int num_lines = 0;
-	{
-		long begin = gutil::TimeUtil::timestamp();
-		ifstream _fin0(_rdf_file.c_str());
-		// parse a file
-		RDFParser _parser0(_fin0);
+	// NOTICE: The following code block has no practical effect,
+	// and the parsing error log can be placed in the following loop
+	// annotating code start
 
-		// Initialize trie
+	// {
+	// 	long begin = gutil::TimeUtil::timestamp();
+	// 	ifstream _fin0(_rdf_file.c_str());
+	// 	// parse a file
+	// 	RDFParser _parser0(_fin0);
 
-		std::shared_ptr<Trie> trie = kvstore->getTrie();
-		int batch_count = 0;
-		while (true)
-		{
-			++batch_count;
-			int parse_triple_num = 0;
-			// TODO: make the line numbers reported inside parseFile global
-			int curr_lines = _parser0.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
-			num_lines = curr_lines;
-			if (parse_triple_num == 0)
-			{
-				break;
-			}
+	// 	// Initialize trie
 
-			indicators::ProgressBar bar{
-				indicators::option::BarWidth{50},
-				indicators::option::Start{"["},
-				indicators::option::Fill{"="},
-				indicators::option::Lead{">"},
-				indicators::option::Remainder{" "},
-				indicators::option::End{"]"},
-				indicators::option::PostfixText{"Build Trie for batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
-				indicators::option::ForegroundColor{indicators::Color::green},
-				indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
+	// 	std::shared_ptr<Trie> trie = kvstore->getTrie();
+	// 	int batch_count = 0;
+	// 	while (true)
+	// 	{
+	// 		++batch_count;
+	// 		int parse_triple_num = 0;
+	// 		// TODO: make the line numbers reported inside parseFile global
+	// 		int curr_lines = _parser0.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
+	// 		num_lines = curr_lines;
+	// 		if (parse_triple_num == 0)
+	// 		{
+	// 			break;
+	// 		}
 
-			int bar_tmp = 0;
-			int one_percent_num = parse_triple_num / 100;
+	// 		indicators::ProgressBar bar{
+	// 			indicators::option::BarWidth{50},
+	// 			indicators::option::Start{"["},
+	// 			indicators::option::Fill{"="},
+	// 			indicators::option::Lead{">"},
+	// 			indicators::option::Remainder{" "},
+	// 			indicators::option::End{"]"},
+	// 			indicators::option::PostfixText{"Build Trie for batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
+	// 			indicators::option::ForegroundColor{indicators::Color::green},
+	// 			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
 
-			// Process the Triple one by one
-			for (int i = 0; i < parse_triple_num; i++)
-			{
-				++bar_tmp;
-				if (bar_tmp == one_percent_num)
-				{
-					bar.tick();
-					bar_tmp = 0;
-				}
+	// 		int bar_tmp = 0;
+	// 		int one_percent_num = parse_triple_num / 100;
 
-				string t = triple_array[i].getSubject();
-				trie->Addstring(t);
-				t = triple_array[i].getPredicate();
-				trie->Addstring(t);
-				t = triple_array[i].getObject();
-				trie->Addstring(t);
-			}
-			if (!bar.is_completed())
-				bar.set_progress(100);
-		}
-		SLOG_CORE("Add triples to Trie, begin to build Prefix ......");
-		trie->BuildPrefix();
-		SLOG_CORE("Build Prefix and Trie done. used " << gutil::TimeUtil::timestamp() - begin << "ms.");
-	}
+	// 		// Process the Triple one by one
+	// 		for (int i = 0; i < parse_triple_num; i++)
+	// 		{
+	// 			++bar_tmp;
+	// 			if (bar_tmp == one_percent_num)
+	// 			{
+	// 				bar.tick();
+	// 				bar_tmp = 0;
+	// 			}
+
+	// 			string t = triple_array[i].getSubject();
+	// 			trie->Addstring(t);
+	// 			t = triple_array[i].getPredicate();
+	// 			trie->Addstring(t);
+	// 			t = triple_array[i].getObject();
+	// 			trie->Addstring(t);
+	// 		}
+	// 		if (!bar.is_completed())
+	// 			bar.set_progress(100);
+	// 	}
+	// 	SLOG_CORE("Add triples to Trie, begin to build Prefix ......");
+	// 	trie->BuildPrefix();
+	// 	SLOG_CORE("Build Prefix and Trie done. used " << gutil::TimeUtil::timestamp() - begin << "ms.");
+	// }
+
+	// annotating code end
 
 	RDFParser _parser(_fin); // RDFParser is actually invoked twice, see above
-	// Util::logging("==> while(true)");
 
 	num_lines = 0;
-	SLOG_CORE( "this type predicate name is " << this->type_predicate_name );
+	SLOG_CORE("this type predicate name is " << StringUtil::join(this->type_predicate_name, "@@"));
 	// string type="rdf:type";
 	// this->checkIsTypePredicate(type);
 	this->umap.clear();
 
 	int batch_count = 0;
-	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
+	unordered_set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 	std::map<int, vector<ID_TUPLE>> id_tuples;
+	std::shared_ptr<ID_TUPLE[]> tmp_id_tuples(new ID_TUPLE[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<ID_TUPLE[]>());
 	std::string split_str = cluster::TripleInfo::getSplitStr();
 	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
 	while (true)
 	{
 		++batch_count;
 		int parse_triple_num = 0;
-
-		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "NULL", num_lines);
+		int64_t t1 = gutil::TimeUtil::timestamp();
+		// BETTER: support multiple threads to parse triples
+		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
 		num_lines = curr_lines;
-
-		// {
-		// 	stringstream _ss;
-		// 	_ss << "finish rdfparser" << this->triples_num + parse_triple_num << endl;
-		// 	//Util::logging(_ss.str());
-		// 	cout << _ss.str() << endl;
-		// }
 
 		if (parse_triple_num == 0)
 		{
 			break;
 		}
+		#ifdef SHOW_PROGRESS
 		indicators::ProgressBar bar{
 			indicators::option::BarWidth{50},
 			indicators::option::Start{"["},
@@ -3002,104 +3024,42 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			indicators::option::PostfixText{"Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
 			indicators::option::ForegroundColor{indicators::Color::green},
 			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
-
 		int bar_tmp = 0;
 		int one_percent_num = parse_triple_num / 100;
+		#endif
 		// Process the Triple one by one
-		//  triples_num will eventually be set to the sum of all parse_triple_num (which seems legit)
+		// triples_num will eventually be set to the sum of all parse_triple_num (which seems legit)
 		for (int i = 0; i < parse_triple_num; i++)
 		{
+			#ifdef SHOW_PROGRESS
 			++bar_tmp;
 			if (bar_tmp == one_percent_num)
 			{
 				bar.tick();
 				bar_tmp = 0;
 			}
-
+			#endif
 			// BETTER: assume that no duplicate triples in RDF for building
 			// should judge first? using exist_triple()
 			// or sub triples_num in build_subID2values(judge if two neighbor triples are same)
 			this->triples_num++; // NOTE: triples_num set here
-
-			// if the _id_tuples exceeds, double the space
-			// if (_id_tuples_size == _id_tuples_max)
-			//{
-			// TYPE_TRIPLE_NUM _new_tuples_len = _id_tuples_max * 2;
-			// TYPE_ENTITY_LITERAL_ID** _new_id_tuples = new TYPE_ENTITY_LITERAL_ID*[_new_tuples_len];
-			// memcpy(_new_id_tuples, _p_id_tuples, sizeof(TYPE_ENTITY_LITERAL_ID*) * _id_tuples_max);
-			// delete[] _p_id_tuples;
-			//_p_id_tuples = _new_id_tuples;
-			//_id_tuples_max = _new_tuples_len;
-			//}
-
-			// BETTER: use 3 threads to deal with sub, obj, pre separately
-			// However, the cost of new /delete threads may be high
-			// We need a thread pool!
-
+			TripleWithObjType triple_for_spo = triple_array[i];
 			// For subject
-			// (all subject is entity, some object is entity, the other is literal)
-			string _sub = triple_array[i].getSubject();
-			TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_sub);
-			if (_sub_id == INVALID_ENTITY_LITERAL_ID)
-			{
-				_sub_id = this->allocEntityID();
-				this->sub_num++;
-				(this->kvstore)->setIDByEntity(_sub, _sub_id);
-				(this->kvstore)->setEntityByID(_sub_id, _sub);
-				sub_lists.insert(_sub_id);
-			}
-			else if (sub_lists.find(_sub_id) == sub_lists.end())
-			{
-				this->sub_num++;
-				sub_lists.insert(_sub_id);
-			}
+			string _sub = triple_for_spo.getSubject();
+			TYPE_ENTITY_LITERAL_ID _sub_id = INVALID_ENTITY_LITERAL_ID;
+			subject2id_RDFintoSignature(_sub, _sub_id, sub_lists);
 			//  For predicate
-			string _pre = triple_array[i].getPredicate();
-			TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_pre);
-			if (_pre_id == INVALID_PREDICATE_ID)
-			{
-				_pre_id = this->allocPredicateID();
-				(this->kvstore)->setIDByPredicate(_pre, _pre_id);
-				(this->kvstore)->setPredicateByID(_pre_id, _pre);
-			}
-
+			string _pre = triple_for_spo.getPredicate();
+			TYPE_PREDICATE_ID _pre_id = INVALID_PREDICATE_ID;
+			predicate2id_RDFintoSignature(_pre, _pre_id);
 			//  For object
-			string _obj = triple_array[i].getObject();
-			// int _obj_id = -1;
+			string _obj = triple_for_spo.getObject();
 			TYPE_ENTITY_LITERAL_ID _obj_id = INVALID_ENTITY_LITERAL_ID;
-			// obj is entity
-			if (triple_array[i].isObjEntity())
-			{
-				_obj_id = (this->kvstore)->getIDByEntity(_obj);
-				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
-				{
-					_obj_id = this->allocEntityID();
-					(this->kvstore)->setIDByEntity(_obj, _obj_id);
-					(this->kvstore)->setEntityByID(_obj_id, _obj);
-				}
-			}
-			// obj is literal
-			if (triple_array[i].isObjLiteral())
-			{
-				_obj_id = (this->kvstore)->getIDByLiteral(_obj);
-				if (_obj_id == INVALID_ENTITY_LITERAL_ID)
-				{
-					_obj_id = this->allocLiteralID();
-					(this->kvstore)->setIDByLiteral(_obj, _obj_id);
-					(this->kvstore)->setLiteralByID(_obj_id, _obj);
-				}
-			}
+			literal2id_RDFintoSignature(_obj, _obj_id, triple_for_spo);
 
 			// NOTICE: we assume that there is no duplicates in the dataset
 			// if not, this->triple_num will be not right, and _p_id_tuples will save useless triples
 			// However, we can not use exist_triple to detect duplicates here, because it is too time-costly
-
-			//  For id_tuples
-			//_p_id_tuples[_id_tuples_size] = new TYPE_ENTITY_LITERAL_ID[3];
-			//_p_id_tuples[_id_tuples_size][0] = _sub_id;
-			//_p_id_tuples[_id_tuples_size][1] = _pre_id;
-			//_p_id_tuples[_id_tuples_size][2] = _obj_id;
-			//_id_tuples_size++;
 			tmp_id_tuple.subid = _sub_id;
 			tmp_id_tuple.preid = _pre_id;
 			tmp_id_tuple.objid = _obj_id;
@@ -3107,21 +3067,18 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 				*cluster_log << _sub << split_str << _pre << split_str << _obj << split_str << operation << std::endl;
 			// when the predicat is type
 			if (triple_array[i].isObjEntity() && this->checkIsTypePredicate(_pre))
+			{
 				id_tuples[_obj_id].push_back(tmp_id_tuple);
-			fwrite(&tmp_id_tuple, sizeof(ID_TUPLE), 1, fp);
-
-#ifdef DEBUG_PRECISE
-			////  save six tuples
-			//_six_tuples_fout << _sub_id << '\t'
-			//<< _pre_id << '\t'
-			//<< _obj_id << '\t'
-			//<< _sub << '\t'
-			//<< _pre << '\t'
-			//<< _obj << endl;
-#endif
+			}
+			tmp_id_tuples[i] = tmp_id_tuple;
 		}
+		fwrite(tmp_id_tuples.get(), sizeof(ID_TUPLE), parse_triple_num, fp);
+		int64_t t2 = gutil::TimeUtil::timestamp();
+		SLOG_CORE("Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num) + ", use " + to_string(t2-t1) + "ms");
+		#ifdef SHOW_PROGRESS
 		if (!bar.is_completed())
 			bar.set_progress(100);
+		#endif
 	}
 	for (const auto& m: id_tuples)
 	{
@@ -3140,11 +3097,69 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	this->kvstore->set_if_single_thread(false);
 
 	triple_array.reset();
+	tmp_id_tuples.reset();
 	_fin.close();
 	_six_tuples_fout.close();
 	fclose(fp);
 
 	return true;
+}
+
+// process for subject
+void Database::subject2id_RDFintoSignature(const string& _sub, TYPE_ENTITY_LITERAL_ID& _sub_id, unordered_set<TYPE_ENTITY_LITERAL_ID>& sub_lists) {
+	_sub_id = (this->kvstore)->getIDByEntity(_sub);
+	if (_sub_id == INVALID_ENTITY_LITERAL_ID) {
+		_sub_id = this->allocEntityID();
+		this->sub_num++;
+		this->kvstore->setIDByEntity(_sub, _sub_id);
+		this->kvstore->setEntityByID(_sub_id, _sub);
+		//std::unique_lock<std::shared_mutex> guard(sublist_lock);
+		sub_lists.insert(_sub_id);
+	} else {
+		//td::unique_lock<std::shared_mutex> guard(sublist_lock);
+		if (sub_lists.find(_sub_id) == sub_lists.end())
+		{
+			this->sub_num++;
+			sub_lists.insert(_sub_id);
+		}
+	}
+}
+
+// process for predicate
+void Database::predicate2id_RDFintoSignature(const string& _pre, TYPE_PREDICATE_ID& _pre_id) {
+	_pre_id = (this->kvstore)->getIDByPredicate(_pre);
+	if (_pre_id == INVALID_PREDICATE_ID)
+	{
+		_pre_id = this->allocPredicateID();
+		(this->kvstore)->setIDByPredicate(_pre, _pre_id);
+		(this->kvstore)->setPredicateByID(_pre_id, _pre);
+	}
+}
+
+// process for object
+void Database::literal2id_RDFintoSignature(const string& _obj, TYPE_ENTITY_LITERAL_ID& _obj_id, TripleWithObjType& triple) {
+	if (triple.isObjEntity())
+	{
+		// obj is entity
+		_obj_id = (this->kvstore)->getIDByEntity(_obj);
+		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+		{
+			_obj_id = this->allocEntityID();
+			(this->kvstore)->setIDByEntity(_obj, _obj_id);
+			(this->kvstore)->setEntityByID(_obj_id, _obj);
+		}
+	}
+	else if (triple.isObjLiteral())
+	{
+		// obj is literal
+		_obj_id = (this->kvstore)->getIDByLiteral(_obj);
+		if (_obj_id == INVALID_ENTITY_LITERAL_ID)
+		{
+			_obj_id = this->allocLiteralID();
+			(this->kvstore)->setIDByLiteral(_obj, _obj_id);
+			(this->kvstore)->setLiteralByID(_obj_id, _obj);
+		}
+	}
 }
 
 bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *_vertices, vector<unsigned> *_predicates, shared_ptr<Transaction> txn)

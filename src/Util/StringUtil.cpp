@@ -205,4 +205,15 @@ namespace gutil
      {
         std::transform(str.begin(), str.end(), str.begin(), ::toupper);
      }
+
+     std::string StringUtil::join(const std::vector<std::string>& vec, const std::string& delimiter)
+     {
+        std::string result;
+        for (auto it = vec.begin(); it != vec.end(); ++it) {
+            result += *it;
+            if (it + 1 != vec.end())
+                result += delimiter;
+        }
+        return result;
+     }
 }
