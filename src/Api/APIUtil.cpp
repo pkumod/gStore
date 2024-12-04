@@ -1325,7 +1325,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->query_priv.clear();
         pthread_rwlock_unlock(&(userinfo->query_priv_set_lock));
     }
-    else if((type == "update" || type == "all"))
+    if((type == "update" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->update_priv_set_lock));
         if (op == 1)
@@ -1336,7 +1336,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->update_priv.clear();
         pthread_rwlock_unlock(&(userinfo->update_priv_set_lock));
     }
-    else if((type == "load" || type == "all"))
+    if((type == "load" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->load_priv_set_lock));
         if (op == 1)
@@ -1347,7 +1347,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->load_priv.clear();
         pthread_rwlock_unlock(&(userinfo->load_priv_set_lock));
     }
-    else if((type == "unload" || type == "all"))
+    if((type == "unload" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->unload_priv_set_lock));
         if (op == 1)
@@ -1358,7 +1358,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->unload_priv.clear();
         pthread_rwlock_unlock(&(userinfo->unload_priv_set_lock));
     }
-    else if((type == "restore" || type == "all"))
+    if((type == "restore" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->restore_priv_set_lock));
         if (op == 1)
@@ -1369,7 +1369,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->restore_priv.clear();
         pthread_rwlock_unlock(&(userinfo->restore_priv_set_lock));
     }
-    else if((type == "backup" || type == "all"))
+    if((type == "backup" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->backup_priv_set_lock));
         if (op == 1)
@@ -1380,7 +1380,7 @@ bool APIUtil::update_privilege(std::shared_ptr<DBUserInfo>& userinfo, const stri
             userinfo->backup_priv.clear();
         pthread_rwlock_unlock(&(userinfo->backup_priv_set_lock));
     }
-    else if((type == "export" || type == "all"))
+    if((type == "export" || type == "all"))
     {
         pthread_rwlock_wrlock(&(userinfo->export_priv_set_lock));
         if (op == 1)
