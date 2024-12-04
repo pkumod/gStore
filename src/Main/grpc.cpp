@@ -244,11 +244,13 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	}
 	// parse request
 	parseRequest(request, json_data);
-	SLOG_DEBUG("Parse request params: \n" << json_data.dump(4));
 	if (operation.empty() && json_data.contains("operation"))
 	{
 		operation = JsonUtil::jsonParam(json_data, "operation");
 	}
+	// uploadfile file data too big
+	if (operation != "uploadfile")
+		SLOG_DEBUG("Parse request params: \n" << json_data.dump(4));
 	SLOG_INFO("receive [" << operation << "] request from " << ip_addr);
 	// check license
 	// if (operation != "login" && operation != "check" && operation != "testConnect" )
@@ -1050,6 +1052,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	{
 		return;
 	}
+	SLOG_DEBUG("Parse request params: \n{\"operation\":uploadfile,\n\"filename\":" << JsonUtil::jsonParam(json_data, "filename") << "}");
 	// filename : filecontent
 	std::string filename = JsonUtil::jsonParam(json_data, "filename");
 	string msg;
@@ -1089,8 +1092,10 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";
-	nlohmann::byte_container_with_subtype<std::vector<uint8_t>> file_binary =  json_data["file"].get_binary();
-	response->Save(file_dst, static_cast<const void *>(file_binary.data()), file_binary.size(), notify_msg);
+
+	std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> file_binary = std::make_shared<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>>();
+	*file_binary = std::move(json_data["file"].get_binary());
+	response->Save(file_dst, file_binary, notify_msg);
 }
 
 void download_file(const GRPCReq *request, GRPCResp *response)

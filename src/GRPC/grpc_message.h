@@ -146,7 +146,7 @@ public:
     void File(const std::string &path);
 
     // save file
-    void Save(const std::string &file_dst, const void *buf, size_t size, const std::string &notify_msg);
+    void Save(const std::string &file_dst, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, const std::string &notify_msg);
 
     // send json string
     void Json(const nlohmann::json &json);
@@ -224,7 +224,7 @@ public:
 public:
     static int send_file(const std::string &path, size_t start, size_t end, GRPCResp *resp);
 
-    static void saveFile(const std::string &dst_path, const void *buf, size_t size, GRPCResp *resp, const std::string &notify_msg);
+    static void saveFile(const std::string &dst_path, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, GRPCResp *resp, const std::string &notify_msg);
 };
 using GRPCTask = WFNetworkTask<GRPCReq, GRPCResp>;
 

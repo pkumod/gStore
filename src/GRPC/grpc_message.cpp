@@ -391,6 +391,11 @@ void GRPCResp::Save(const std::string &file_dst, const void *buf, size_t size, c
     GRPCUtil::saveFile(file_dst, buf, size, this, notify_msg);
 }
 
+void GRPCResp::Save(const std::string &file_dst, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, const std::string &notify_msg)
+{
+    GRPCUtil::saveFile(file_dst, content, this, notify_msg);
+}
+
 void GRPCResp::Json(const nlohmann::json &json)
 {
     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
@@ -738,7 +743,7 @@ int GRPCUtil::send_file(const std::string &path, size_t file_start, size_t file_
     return StatusOK;
 }
 
-void GRPCUtil::saveFile(const std::string &dst_path, const void *buf, size_t size, GRPCResp *resp, const std::string &notify_msg) 
+void GRPCUtil::saveFile(const std::string &dst_path, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, GRPCResp *resp, const std::string &notify_msg)
 {
     GRPCServerTask *server_task = task_of(resp);
 
@@ -746,12 +751,12 @@ void GRPCUtil::saveFile(const std::string &dst_path, const void *buf, size_t siz
     save_context->notify_msg = notify_msg;  // copy
 
     WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(dst_path,
-                                                                  buf,
-                                                                  size,
+                                                                  static_cast<const void *>(content->data()),
+                                                                  content->size(),
                                                                   0,
                                                                   pwrite_callback);
     **server_task << pwrite_task;
-    server_task->add_callback([save_context](GRPCTask *) {
+    server_task->add_callback([content, save_context](GRPCTask *) {
         delete save_context;
     });
     pwrite_task->user_data = save_context;

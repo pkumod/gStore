@@ -57,7 +57,7 @@ namespace server
         });
         if( code != CompressUtil::UnZipOK )
         {
-            response.StatusMsg = "uncompress is failed error.";
+            response.StatusMsg = "zip format or data is error.";
             response.StatusCode = code;
             return false;
         }
