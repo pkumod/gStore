@@ -385,12 +385,6 @@ void GRPCResp::File(const std::string &path)
     }
 }
 
-
-void GRPCResp::Save(const std::string &file_dst, const void *buf, size_t size, const std::string &notify_msg)
-{
-    GRPCUtil::saveFile(file_dst, buf, size, this, notify_msg);
-}
-
 void GRPCResp::Save(const std::string &file_dst, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, const std::string &notify_msg)
 {
     GRPCUtil::saveFile(file_dst, content, this, notify_msg);
