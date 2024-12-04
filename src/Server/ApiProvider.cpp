@@ -99,6 +99,12 @@ namespace server
             }
             shared_ptr<DatabaseInfo> current_database;
             apiUtil->get_databaseinfo(resquest.db_name, current_database);
+            if (current_database->getStatus() == DatabaseStatus::BUILDING)
+            {
+                response.StatusCode = StatusOperationConditionsAreNotSatisfied;
+                response.StatusMsg = "Please waiting, The database is building ...";
+                return;
+            }
             if (current_database->getStatus() != DatabaseStatus::LOADED)
             {
                 if (!apiUtil->trywrlock_databaseinfo(current_database))
