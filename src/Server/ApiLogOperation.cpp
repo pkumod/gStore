@@ -194,19 +194,10 @@ namespace server
             response.StatusMsg = log.msg;
             response.state = log.state;
             response.operation = log.operation;
-            if (response.operation == "backup")
-            {
-                response.backupfilepath = log.backupfilepath;
-            }
-            else if (response.operation == "query")
-            {
-                response.queryfilepath = log.queryfilepath;
-            }
-            if(response.operation != "restore" && response.operation != "query")
-            {
-                response.success_num = log.num;
-                response.failed_num = log.fail_num;
-            }
+            response.backupfilepath = log.backupfilepath;
+            response.queryfilepath = log.queryfilepath;
+            response.success_num = log.num;
+            response.failed_num = log.fail_num;
             if (response.operation == "build" && log.state == 0)
             {
                 shared_ptr<DatabaseInfo> db_info;

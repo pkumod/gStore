@@ -325,7 +325,7 @@ namespace server
         {
             json["insert_sparql"] = this->insert_sparql;
             json["delete_sparql"] = this->delete_sparql;
-            json["delete_sparql"] = this->check_sparql;
+            json["check_sparql"] = this->check_sparql;
         }
         else if (type == "4")
         {

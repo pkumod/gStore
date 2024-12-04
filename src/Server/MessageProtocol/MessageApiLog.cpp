@@ -413,14 +413,21 @@ namespace server
     {
         nlohmann::json rJson;
         toJson(rJson);
-        rJson["success_num"] = this->success_num;
-        rJson["failed_num"] = this->failed_num;
-        rJson["state"] = this->state;
-        if (this->backupfilepath.empty())
+        if (this->operation == "backup")
         {
             rJson["backupfilepath"] = this->backupfilepath;
         }
-
+        if (this->operation == "query")
+        {
+            rJson["queryfilepath"] = this->queryfilepath;
+        }
+        if (this->operation == "build" || this->operation == "batchInsert" || this->operation == "batchRemove")
+        {
+            rJson["success_num"] = this->success_num;
+            rJson["failed_num"] = this->failed_num;
+        }
+        
+        rJson["state"] = this->state;
         json_str = rJson.dump();
     }
 }

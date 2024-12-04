@@ -71,7 +71,7 @@ namespace server
             std::string backup_path = request.backup_path;
             if (!backup_check(apiUtil, request, response, backup_path))
             {
-                apiUtil->update_access_log(StatusOK, response.StatusMsg, opt_id, 1, 0, 0, backup_path);
+                apiUtil->update_access_log(StatusOK, response.StatusMsg, opt_id, -1, 0, 0, backup_path);
                 return;
             }
 
@@ -225,7 +225,7 @@ namespace server
             j["StatusCode"] = 0;
             j["StatusMsg"] = msg;
             j["backupfilepath"] = backup_path;
-            apiUtil->update_access_log(StatusOK, msg, opt_id, 0, 0, 0, backup_path);
+            apiUtil->update_access_log(StatusOK, msg, opt_id, 1, 0, 0, backup_path);
         }
         else
         {
