@@ -986,7 +986,18 @@ bool APIUtil::check_param_value(const string& paramname, const string& value, st
 			msg = "you can not operate the system database";
 			return false;
 		}
-		string db_suffix = GlobalTypedef::db_suffix();
+        string db_suffix = GlobalTypedef::db_suffix();
+        if (value.size() <= 2)
+        {
+            msg = "the database name length at least need 3";
+            return false;
+        }
+        if (value == db_suffix)
+        {
+            msg = "Your db name to be built should not end with \"" + db_suffix + "\".";
+            return false;
+        }
+
         size_t len_suffix = db_suffix.length();
         string _tmp = value.substr(value.length() - len_suffix, len_suffix);
 		if (value.length() > len_suffix && _tmp == db_suffix)

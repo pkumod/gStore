@@ -2525,7 +2525,7 @@ void rename_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 			return;
 		}
 		std::string new_name = JsonUtil::jsonParam(json_data, "new_name");
-		if (apiUtil->check_param_value("new_name", new_name, msg) == false)
+		if (apiUtil->check_param_value("db_name", new_name, msg) == false)
 		{
 			response->Error(StatusParamIsIllegal, msg);
 			return;
