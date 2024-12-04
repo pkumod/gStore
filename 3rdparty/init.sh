@@ -19,10 +19,10 @@ tar -xzvf indicators.tar.gz;
 tar -xzvf workflow-0.10.3.tar.gz;
 tar -xzvf log4cplus-2.0.8.tar.gz;
 tar -xzvf zlib-1.3.tar.gz;
-cd ./antlr4-cpp-runtime-4/; cmake .; make; cp dist/libantlr4-runtime.a ../../lib/;
-cd ../workflow; make; cp _lib/libworkflow.a ../../lib/;
-cd ../log4cplus; ./configure --enable-static; make; cp .libs/liblog4cplus.a ../../lib/;
-cd ../zlib-1.3; ./configure; make; cp *.h ./include/; cd contrib/minizip; make; cp *.h ../../include/; cp libminizip.a ../../../../lib/;
+cd ./antlr4-cpp-runtime-4/; cmake .; make -j$(nproc); cp dist/libantlr4-runtime.a ../../lib/;
+cd ../workflow; make -j$(nproc); cp _lib/libworkflow.a ../../lib/;
+cd ../log4cplus; ./configure --enable-static; make -j$(nproc); cp .libs/liblog4cplus.a ../../lib/;
+cd ../zlib-1.3; ./configure; make -j$(nproc); cp *.h ./include/; cd contrib/minizip; make -j$(nproc); cp *.h ../../include/; cp libminizip.a ../../../../lib/;
 # mv to include
 cd ../../../../include
 mkdir -p antlr4 workflow log4cplus indicators minizip
