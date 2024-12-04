@@ -79,7 +79,7 @@ namespace server
                 // is dirctory
                 std::string dir = request.dir;
                 gutil::StringUtil::append(dir, '/');
-                Util::dir_files(dir, "", nt_files);
+                Util::dir_files(dir, "", nt_files, true);
             }
             std::string db_name = request.db_name;
             shared_ptr<DatabaseInfo> db_info;
@@ -176,7 +176,7 @@ namespace server
                 // is dirctory
                 std::string dir = request.dir;
                 gutil::StringUtil::append(dir, '/');
-                Util::dir_files(dir, "", nt_files);
+                Util::dir_files(dir, "", nt_files, true);
             }
 
             shared_ptr<DatabaseInfo> db_info;
