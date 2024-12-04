@@ -384,7 +384,7 @@ public:
 	// static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
-    static void dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list);
+    static void dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list, bool need_dir_name = false);
 	static void dir_filepaths(const string _dir, std::vector<std::string> &file_list);
 	static bool dir_exist(const std::string _dir);
     static bool is_file(const string _file);

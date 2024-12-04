@@ -3249,7 +3249,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, Json &json_da
 		else
 		{
 			Util::string_suffix(dir, '/');
-			Util::dir_files(dir, "", insert_files);
+			Util::dir_files(dir, "", insert_files, true);
 		}
 		std::string opt_id = apiUtil->generateUid();
 		std::string async = jsonParam(json_data, "async");

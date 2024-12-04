@@ -904,7 +904,7 @@ Util::result_id_str(vector<unsigned*>& _v, int _var_num)
 }
 
 void
-Util::dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list)
+Util::dir_files(const string _dir, const string _extend_name, std::vector<std::string> &file_list, bool need_dir_name)
 {
 
     DIR *dirp = opendir(_dir.c_str());
@@ -933,12 +933,18 @@ Util::dir_files(const string _dir, const string _extend_name, std::vector<std::s
         {
             if (file_name.find(_extend_name.c_str()) != string::npos)
             {
-                file_list.push_back(dir_entry->d_name);
+                if (need_dir_name)
+                    file_list.push_back(_dir + dir_entry->d_name);
+                else
+                    file_list.push_back(dir_entry->d_name);
             }
         }
         else
         {
-            file_list.push_back(dir_entry->d_name);
+            if (need_dir_name)
+                file_list.push_back(_dir + dir_entry->d_name);
+            else
+                file_list.push_back(dir_entry->d_name);
         }
     }
     closedir(dirp);
