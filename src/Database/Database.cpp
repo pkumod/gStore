@@ -3790,8 +3790,12 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	unsigned insert_num = 0;
 	while (true)
 	{
+		SLOG_TRACE("-----------------------------------------------------------------");
 		int parse_triple_num = 0;
+		int64_t t1 = gutil::TimeUtil::timestamp();
 		_parser.parseFile(triple_array, parse_triple_num, error_log);
+		int64_t t2 = gutil::TimeUtil::timestamp();
+		SLOG_TRACE("------------------------------ parse file:" << t2 -t1 << " ,parse triple num:" << parse_triple_num);
 		if (parse_triple_num == 0)
 		{
 			break;
@@ -3900,7 +3904,7 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	if (_triple_num == 0)
 		return 0;
 	TYPE_TRIPLE_NUM valid_num = 0;
-	vector<TYPE_ENTITY_LITERAL_ID> vertices, predicates;
+	vector<TYPE_ENTITY_LITERAL_ID> entitys, predicates, literals;
 	unsigned update_num_s = 0;
 	unsigned update_num_p = 0;
 	unsigned update_num_o = 0;
@@ -3908,10 +3912,13 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 	set<TYPE_ENTITY_LITERAL_ID> obj_lists;
 
+	int64_t tl1 = gutil::TimeUtil::timestamp();
 	if (!_is_restore)
 	{
-		write_update_log(_triples, _triple_num, 1, txn);
+		// write_update_log(_triples, _triple_num, 1, txn);
 	}
+	int64_t tl2 = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------ write update log:" << tl2 - tl1);
 	// bool is_obj_entity;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
@@ -3932,7 +3939,7 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 				SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _sub_id);
 				return UINT32_MAX;
 			}
-			vertices.push_back(_sub_id);
+			entitys.push_back(_sub_id);
 			sub_lists.insert(_sub_id);
 		}
 		else if (obj_lists.find(_sub_id) != obj_lists.end() && sub_lists.find(_sub_id) == sub_lists.end())
@@ -3977,7 +3984,7 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 					SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _obj_id);
 					return UINT32_MAX;
 				}
-				vertices.push_back(_obj_id);
+				entitys.push_back(_obj_id);
 				obj_lists.insert(_obj_id);
 			}
 		}
@@ -3997,7 +4004,7 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
 					return UINT32_MAX;
 				}
-				vertices.push_back(_obj_id);
+				literals.push_back(_obj_id);
 			}
 		}
 
@@ -4006,10 +4013,15 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 		id_tuples[i].objid = _obj_id;
 	}
 
+	int64_t tl3 = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------ alloc id2str and str2id:" << tl3 - tl2);
+
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);
 	auto new_end = unique(id_tuples.begin(), id_tuples.end(), Util::equal);
 	id_tuples.erase(new_end, id_tuples.end());
 	valid_num = id_tuples.size();
+	int64_t tl_e = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------ alloc id2str and str2id remove repeated data:" << tl_e - tl3);
 	if (txn != nullptr)
 	{
 		unordered_set<TYPE_ENTITY_LITERAL_ID> sids, oids;
@@ -4044,6 +4056,8 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getLiteralByID(tuple.objid) << split_str << operation << std::endl;
 		}
 	}
+	int64_t tl4 = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------  txn insert time:" << tl4 - tl3);
 	// po inserts
 	// sub_batch_update(id_tuples, valid_num, update_num_s, UPDATE_TYPE::SUBJECT_INSERT, txn);
 	thread sub_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_s), UPDATE_TYPE::SUBJECT_INSERT, txn);
@@ -4059,6 +4073,8 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	sub_t.join();
 	pre_t.join();
 	obj_t.join();
+	int64_t tl5 = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------  batch insert update index value:" << tl5 - tl4);
 
 	unsigned update_num_triple = update_num_s;
 	if (update_num_triple < update_num_p)
@@ -4072,10 +4088,14 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 
 	this->triples_num = this->triples_num + update_num_triple;
 	this->sub_num = this->sub_num + update_num_subject;
-	this->stringindex->SetTrie(kvstore->getTrie());
+	int64_t t1 = gutil::TimeUtil::timestamp();
+	// this->stringindex->SetTrie(kvstore->getTrie());
 	// update string index
-	this->stringindex->change(vertices, *this->kvstore, true);
-	this->stringindex->change(predicates, *this->kvstore, false);
+	// this->stringindex->change(vertices, *this->kvstore, true);
+	// this->stringindex->change(predicates, *this->kvstore, false);
+	this->stringindex->change(entitys, literals, predicates, *this->kvstore);
+	int64_t t2 = gutil::TimeUtil::timestamp();
+	SLOG_TRACE("------------------------ stringindex write data:" << t2 - t1);
 	
 	this->kvstore->setCSRUpdate(true);
 	this->addTripleUpdateNum(update_num_s);
@@ -4903,7 +4923,6 @@ bool Database::loadDBInfoFile()
 
 bool Database::loadStatisticsInfoFile()
 {
-
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
 	if (Util::file_exist(filepath) == false)
 	{

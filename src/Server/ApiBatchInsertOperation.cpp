@@ -55,6 +55,7 @@ namespace server
     { 
         try
         {
+            int64_t t = gutil::TimeUtil::timestamp();
             bool is_file = true;
             if (!batch_insert_check(apiUtil, request, response, is_file))
                 return;
@@ -104,18 +105,22 @@ namespace server
             // exclude Info line
             parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
             // save data and unlock
-            if (!db_info->getDatabase()->save())
-            {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.Error(StatusOperationFailed, "disk or memory not enough");
-                return;
-            }
+            int64_t t1 = gutil::TimeUtil::timestamp();
+            // if (!db_info->getDatabase()->save())
+            // {
+            //     apiUtil->unlock_databaseinfo(db_info);
+            //     response.Error(StatusOperationFailed, "disk or memory not enough");
+            //     return;
+            // }
+            int64_t t2 = gutil::TimeUtil::timestamp();
+            SLOG_TRACE("------------------------ database save data .................:" << t2 - t1);
             apiUtil->unlock_databaseinfo(db_info);
 
             response.StatusCode = StatusOK;
             response.StatusMsg = "Batch insert data successfully.";
             response.successNum = success_num;
             response.failedNum = parse_error_num;
+            SLOG_TRACE("------------------------ database insert data tatol:" << t2 - t);
         }
         catch (const std::exception &e)
         {

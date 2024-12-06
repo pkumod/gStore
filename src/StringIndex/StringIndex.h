@@ -186,7 +186,11 @@ class StringIndex
         void addRequest(std::vector<StringIndexFile::AccessRequest> *requestVectors, unsigned id, std::string *str, bool is_entity_or_literal = true);
         void trySequenceAccess(std::vector<StringIndexFile::AccessRequest>* requestVectors, char* &buffer, unsigned &buffer_size, bool real = true);
 
-		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal = true);
+		void change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_entity_or_literal);
+		void changeEntiy(std::vector<unsigned> &ids, KVstore &kv_store);
+		void changeLiteral(std::vector<unsigned> &ids, KVstore &kv_store);
+		void changePrivates(std::vector<unsigned> &ids, KVstore &kv_store);
+		void change(std::vector<unsigned> &entiys, std::vector<unsigned> &literals, std::vector<unsigned> &pricates,  KVstore &kv_store);
 		void disable(std::vector<unsigned> &ids, bool is_entity_or_literal = true);
 };
 
