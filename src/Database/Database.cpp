@@ -1458,6 +1458,7 @@ void Database::releaseIDBlock()
 	if (this->freelist_entity != nullptr)
 	{
 		std::shared_ptr<BlockInfo> p = this->freelist_entity;
+		this->freelist_entity = nullptr;
 		while (p != nullptr)
 		{
 			std::shared_ptr<BlockInfo> np = p->next;
@@ -1468,6 +1469,7 @@ void Database::releaseIDBlock()
 	if (this->freelist_literal != nullptr)
 	{
 		std::shared_ptr<BlockInfo> p = this->freelist_literal;
+		this->freelist_literal = nullptr;
 		while (p != nullptr)
 		{
 			std::shared_ptr<BlockInfo> np = p->next;
@@ -1478,6 +1480,7 @@ void Database::releaseIDBlock()
 	if (this->freelist_predicate != nullptr)
 	{
 		std::shared_ptr<BlockInfo> p = this->freelist_predicate;
+		freelist_predicate = nullptr;
 		while (p != nullptr)
 		{
 			std::shared_ptr<BlockInfo> np = p->next;
