@@ -108,6 +108,8 @@ public:
 	bool loadStatisticsInfoFile();
 
 	unordered_map<string, unsigned long long> getStatisticsInfo();
+	void getDBMonitorInfo(TYPE_TRIPLE_NUM& _triple_num, TYPE_ENTITY_LITERAL_ID& _entity_num, TYPE_ENTITY_LITERAL_ID& _sub_num, 
+		TYPE_PREDICATE_ID& _pre_num, TYPE_ENTITY_LITERAL_ID& literal_num);
 
 	void setTypePredicateName(vector<string> &names);
 

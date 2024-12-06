@@ -191,12 +191,27 @@ namespace server
                 return;
             }
             shared_ptr<Database> current_database = database_info->getDatabase();
-            current_database->loadDBInfoFile();
-            current_database->loadStatisticsInfoFile();
             apiUtil->unlock_databaseinfo(database_info);
-            std::string creator = database_info->getCreator();
-            std::string time = database_info->getTime();
-            unordered_map<string, unsigned long long> umap = current_database->getStatisticsInfo();
+            response.StatusCode = StatusOK;
+            response.StatusMsg = "success";
+            response.database = db_name;
+            response.creator = database_info->getCreator();
+            response.builtTime = database_info->getTime();
+            response.connectionNum = apiUtil->get_connection_num();
+            response.subjectList = current_database->getStatisticsInfo();
+
+            unsigned long long triple_num = 0;
+            unsigned int entityNum = 0;
+            unsigned int subjectNum = 0;
+            int predicateNum = 0;  
+            unsigned int literalNum = 0;
+            current_database->getDBMonitorInfo(triple_num, entityNum, subjectNum, predicateNum, literalNum);
+            response.tripleNum = std::to_string(triple_num);
+            response.entityNum = entityNum;
+            response.subjectNum = subjectNum;
+            response.predicateNum = predicateNum;
+            response.literalNum = literalNum;
+            
             unsigned diskUsed = 0;
             if (disk != "0") 
             {
@@ -208,19 +223,7 @@ namespace server
                     diskUsed = count_size_byte>>20;
                 }
             }
-            response.StatusCode = StatusOK;
-            response.StatusMsg = "success";
-            response.database = db_name;
-            response.creator = creator;
-            response.builtTime = time;
-            response.tripleNum = std::to_string(current_database->getTripleNum());
-            response.entityNum = current_database->getEntityNum();
-            response.literalNum = current_database->getLiteralNum();
-            response.subjectNum = current_database->getSubNum();
-            response.predicateNum = current_database->getPreNum();
-            response.connectionNum = apiUtil->get_connection_num();
             response.diskUsed = diskUsed;
-            response.subjectList = umap;
         }
         catch (const std::exception &e)
         {

@@ -2138,29 +2138,6 @@ std::string Database::getProgressStatusStr()
 	}
 }
 
-bool Database::loadDBInfoFile()
-{
-	FILE *filePtr = fopen(this->getDBInfoFile().c_str(), "rb");
-
-	if (filePtr == NULL)
-	{
-		SLOG_ERROR("error, can not open db info file. @Database::loadDBInfoFile");
-		return false;
-	}
-
-	fseek(filePtr, 0, SEEK_SET);
-
-	fread(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
-	fread(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
-	fread(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
-	fread(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
-	fread(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
-	fread(&this->encode_mode, sizeof(int), 1, filePtr);
-	fclose(filePtr);
-
-	return true;
-}
-
 string
 Database::getStorePath()
 {
@@ -4898,6 +4875,29 @@ bool Database::saveStatisticsInfoFile()
 	return true;
 }
 
+bool Database::loadDBInfoFile()
+{
+	FILE *filePtr = fopen(this->getDBInfoFile().c_str(), "rb");
+
+	if (filePtr == NULL)
+	{
+		SLOG_ERROR("error, can not open db info file. @Database::loadDBInfoFile");
+		return false;
+	}
+
+	fseek(filePtr, 0, SEEK_SET);
+
+	fread(&this->triples_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fread(&this->entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fread(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&this->encode_mode, sizeof(int), 1, filePtr);
+	fclose(filePtr);
+
+	return true;
+}
+
 bool Database::loadStatisticsInfoFile()
 {
 
@@ -4932,9 +4932,64 @@ bool Database::loadStatisticsInfoFile()
 		return false;
 }
 
+void Database::getDBMonitorInfo(TYPE_TRIPLE_NUM& _triple_num, TYPE_ENTITY_LITERAL_ID& _entity_num, TYPE_ENTITY_LITERAL_ID& _sub_num, 
+	TYPE_PREDICATE_ID& _pre_num, TYPE_ENTITY_LITERAL_ID& literal_num)
+{
+	if (if_loaded)
+	{
+		_triple_num = this->triples_num;
+		_entity_num = this->entity_num;
+		_sub_num = this->sub_num;
+		_pre_num = this->pre_num;
+		literal_num = this->literal_num;
+		return;
+	}
+	FILE *filePtr = fopen(this->getDBInfoFile().c_str(), "rb");
+	if (filePtr == NULL)
+	{
+		SLOG_ERROR("error, can not open db info file. @Database::loadDBInfoFile");
+		return;
+	}
+
+	fseek(filePtr, 0, SEEK_SET);
+	fread(&_triple_num, sizeof(TYPE_TRIPLE_NUM), 1, filePtr);
+	fread(&_entity_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&_sub_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fread(&_pre_num, sizeof(TYPE_PREDICATE_ID), 1, filePtr);
+	fread(&literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
+	fclose(filePtr);
+	return;
+}
+
 unordered_map<string, unsigned long long> Database::getStatisticsInfo()
 {
-	return this->umap;
+	if (if_loaded)
+		return this->umap;
+	unordered_map<string, unsigned long long> subList;
+	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
+	if (Util::file_exist(filepath) == false)
+	{
+		SLOG_ERROR("The statistics file is not exist.");
+		return subList;
+	}
+	ifstream file(filepath, ios::in);
+	string line;
+	vector<string> lines;
+	unsigned long long value;
+	if (file)
+	{
+		while (getline(file, line))
+		{
+			lines.clear();
+			Util::split(line, "@@", lines);
+			if (lines.size() == 2)
+			{
+				value = stoull(lines[1].c_str(), nullptr, 0);
+				subList.insert(pair<string, unsigned long long>(lines[0], value));
+			}
+		}
+	}
+	return subList;
 }
 
 void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id)
