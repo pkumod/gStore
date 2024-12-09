@@ -6028,3 +6028,57 @@ KVstore::clean_dirty_key(std::shared_ptr<IVArray>& _array, unsigned _key)
 {
 	return _array->CleanDirtyKey(_key);
 }
+
+void KVstore::batchSetIDByEntity(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setIDByEntity(m.first, m.second);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetID ByEntity time:" << t2 - t1 << " , size:" << triples.size());
+}
+
+void KVstore::batchSetEntityByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setEntityByID(m.second, m.first);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetEntity ByID time:" << t2 - t1 << " , size:" << triples.size());
+}
+
+void KVstore::batchSetIDByPredicate(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setIDByPredicate(m.first, m.second);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetID ByPredicate time:" << t2 - t1 << " , size:" << triples.size());
+}
+
+void KVstore::batchSetPredicateByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setPredicateByID(m.second, m.first);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetPredicate ByID time:" << t2 - t1 << " , size:" << triples.size());
+}
+
+void KVstore::batchSetIDByLiteral(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setIDByLiteral(m.first, m.second);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetID ByLiteral time:" << t2 - t1 << " , size:" << triples.size());
+}
+
+void KVstore::batchSetLiteralByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples)
+{
+	// int64_t t1 = gutil::TimeUtil::timestamp();
+	for (const auto& m: triples)
+		setLiteralByID(m.second, m.first);
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ batch SetLiteral ByID time:" << t2 - t1 << " , size:" << triples.size());
+}

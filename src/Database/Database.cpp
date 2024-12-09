@@ -3790,12 +3790,12 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	unsigned insert_num = 0;
 	while (true)
 	{
-		SLOG_TRACE("-----------------------------------------------------------------");
+		// SLOG_TRACE("-----------------------------------------------------------------");
 		int parse_triple_num = 0;
-		int64_t t1 = gutil::TimeUtil::timestamp();
+		// int64_t t1 = gutil::TimeUtil::timestamp();
 		_parser.parseFile(triple_array, parse_triple_num, error_log);
-		int64_t t2 = gutil::TimeUtil::timestamp();
-		SLOG_TRACE("------------------------------ parse file:" << t2 -t1 << " ,parse triple num:" << parse_triple_num);
+		// int64_t t2 = gutil::TimeUtil::timestamp();
+		// SLOG_TRACE("------------------------------ parse file:" << t2 -t1 << " ,parse triple num:" << parse_triple_num);
 		if (parse_triple_num == 0)
 		{
 			break;
@@ -3912,14 +3912,16 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	set<TYPE_ENTITY_LITERAL_ID> sub_lists;
 	set<TYPE_ENTITY_LITERAL_ID> obj_lists;
 
-	int64_t tl1 = gutil::TimeUtil::timestamp();
+	// int64_t tl1 = gutil::TimeUtil::timestamp();
 	if (!_is_restore)
 	{
 		// write_update_log(_triples, _triple_num, 1, txn);
 	}
-	int64_t tl2 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ write update log:" << tl2 - tl1);
-	// bool is_obj_entity;
+	// int64_t tl2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("write update log:" << tl2 - tl1);
+	std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID> entity_map;
+	std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID> predicate_map;
+	std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID> literal_map;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
 	{
@@ -3927,45 +3929,46 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 		TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 		if (_sub_id == INVALID_ENTITY_LITERAL_ID)
 		{
-			_sub_id = this->allocEntityID();
-			update_num_subject = update_num_subject + 1;
-			if (!(this->kvstore)->setIDByEntity(_triple.subject, _sub_id))
+			auto it = entity_map.find(_triple.subject);
+			if (it == entity_map.end())
 			{
-				SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _sub_id);
-				return UINT32_MAX;
+				update_num_subject = update_num_subject + 1;
+				_sub_id = this->allocEntityID();
+				entity_map[_triple.subject] = _sub_id;
+				
+				entitys.push_back(_sub_id);
+				sub_lists.insert(_sub_id);
 			}
-			if (!(this->kvstore)->setEntityByID(_sub_id, _triple.subject))
+			else
 			{
-				SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _sub_id);
-				return UINT32_MAX;
+				_sub_id = it->second;
+				if (obj_lists.find(_sub_id) != obj_lists.end() && sub_lists.find(_sub_id) == sub_lists.end())
+				{
+					update_num_subject = update_num_subject + 1;
+					sub_lists.insert(_sub_id);
+				}
 			}
-			entitys.push_back(_sub_id);
-			sub_lists.insert(_sub_id);
 		}
 		else if (obj_lists.find(_sub_id) != obj_lists.end() && sub_lists.find(_sub_id) == sub_lists.end())
 		{
 			update_num_subject = update_num_subject + 1;
 			sub_lists.insert(_sub_id);
 		}
-
 		TYPE_PREDICATE_ID _pre_id = (this->kvstore)->getIDByPredicate(_triple.predicate);
 		if (_pre_id == INVALID_PREDICATE_ID)
 		{
-			_pre_id = this->allocPredicateID();
-			if (!(this->kvstore)->setIDByPredicate(_triple.predicate, _pre_id))
+			auto it = predicate_map.find(_triple.predicate);
+			if (it == predicate_map.end())
 			{
-				SLOG_ERROR("batch_insert setIDByPredicate fail:" << _triple.toString() << " ,id:" << _pre_id);
-				return UINT32_MAX;
+				_pre_id = this->allocPredicateID();
+				predicate_map[_triple.predicate] = _pre_id;
+				predicates.push_back(_pre_id);
 			}
-			if (!(this->kvstore)->setPredicateByID(_pre_id, _triple.predicate))
+			else
 			{
-				SLOG_ERROR("batch_insert setPredicateByID fail:" << _triple.toString() << " ,id:" << _pre_id);
-				return UINT32_MAX;
+				_pre_id = it->second;
 			}
-				
-			predicates.push_back(_pre_id);
 		}
-
 		TYPE_ENTITY_LITERAL_ID _obj_id = INVALID_ENTITY_LITERAL_ID;
 		bool is_obj_entity = _triple.isObjEntity();
 		if (is_obj_entity)
@@ -3973,19 +3976,18 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 			_obj_id = (this->kvstore)->getIDByEntity(_triple.object);
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
-				_obj_id = this->allocEntityID();
-				if (!(this->kvstore)->setIDByEntity(_triple.object, _obj_id))
+				auto it = entity_map.find(_triple.object);
+				if (it == entity_map.end())
 				{
-					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
-					return UINT32_MAX;
+					_obj_id = this->allocEntityID();
+					entity_map[_triple.object] = _obj_id;
+					entitys.push_back(_obj_id);
+					obj_lists.insert(_obj_id);
 				}
-				if (!(this->kvstore)->setEntityByID(_obj_id, _triple.object))
+				else
 				{
-					SLOG_ERROR("batch_insert setEntityByID fail:" << _triple.toString() << " ,id:" << _obj_id);
-					return UINT32_MAX;
+					_obj_id = it->second;
 				}
-				entitys.push_back(_obj_id);
-				obj_lists.insert(_obj_id);
 			}
 		}
 		else
@@ -3993,35 +3995,51 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 			_obj_id = (this->kvstore)->getIDByLiteral(_triple.object);
 			if (_obj_id == INVALID_ENTITY_LITERAL_ID)
 			{
-				_obj_id = this->allocLiteralID();
-				if (!(this->kvstore)->setIDByLiteral(_triple.object, _obj_id))
+				auto it = literal_map.find(_triple.object);
+				if (it == literal_map.end())
 				{
-					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
-					return UINT32_MAX;
+					_obj_id = this->allocLiteralID();
+					literal_map[_triple.object] = _obj_id;
+					literals.push_back(_obj_id);
 				}
-				if (!(this->kvstore)->setLiteralByID(_obj_id, _triple.object))
+				else
 				{
-					SLOG_ERROR("batch_insert setIDByEntity fail:" << _triple.toString() << " ,id:" << _obj_id);
-					return UINT32_MAX;
+					_obj_id = it->second;
 				}
-				literals.push_back(_obj_id);
 			}
 		}
-
 		id_tuples[i].subid = _sub_id;
 		id_tuples[i].preid = _pre_id;
 		id_tuples[i].objid = _obj_id;
 	}
 
-	int64_t tl3 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ alloc id2str and str2id:" << tl3 - tl2);
+	// SLOG_TRACE("alloc id2str and str2id:" << gutil::TimeUtil::timestamp() - tl2);
+	std::thread id2entity([this, &entity_map](){ this->kvstore->batchSetIDByEntity(entity_map); });
+	std::thread entity2id([this, &entity_map](){ this->kvstore->batchSetEntityByID(entity_map); });
+	std::thread id2predicate([this, &predicate_map](){ this->kvstore->batchSetIDByPredicate(predicate_map); });
+	std::thread predicate2id([this, &predicate_map](){ this->kvstore->batchSetPredicateByID(predicate_map); });
+	std::thread id2literal([this, &literal_map](){ this->kvstore->batchSetIDByLiteral(literal_map); });
+	std::thread literal2id([this, &literal_map](){ this->kvstore->batchSetLiteralByID(literal_map); });
+
+	id2entity.join();
+	entity2id.join();
+	id2predicate.join();
+	predicate2id.join();
+	id2literal.join();
+	literal2id.join();
+	entity_map.clear();
+	predicate_map.clear();
+	literal_map.clear();
+
+	// int64_t tl3 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("alloc id2str and str2id:" << tl3 - tl2);
 
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);
 	auto new_end = unique(id_tuples.begin(), id_tuples.end(), Util::equal);
 	id_tuples.erase(new_end, id_tuples.end());
 	valid_num = id_tuples.size();
-	int64_t tl_e = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ alloc id2str and str2id remove repeated data:" << tl_e - tl3);
+	// int64_t tl_e = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("alloc id2str and str2id remove repeated data:" << tl_e - tl3);
 	if (txn != nullptr)
 	{
 		unordered_set<TYPE_ENTITY_LITERAL_ID> sids, oids;
@@ -4056,8 +4074,8 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getLiteralByID(tuple.objid) << split_str << operation << std::endl;
 		}
 	}
-	int64_t tl4 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------  txn insert time:" << tl4 - tl3);
+	// int64_t tl4 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------  txn insert time:" << tl4 - tl3);
 	// po inserts
 	// sub_batch_update(id_tuples, valid_num, update_num_s, UPDATE_TYPE::SUBJECT_INSERT, txn);
 	thread sub_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_s), UPDATE_TYPE::SUBJECT_INSERT, txn);
@@ -4073,8 +4091,8 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	sub_t.join();
 	pre_t.join();
 	obj_t.join();
-	int64_t tl5 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------  batch insert update index value:" << tl5 - tl4);
+	// int64_t tl5 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------  batch insert update index value:" << tl5 - tl4);
 
 	unsigned update_num_triple = update_num_s;
 	if (update_num_triple < update_num_p)
@@ -4083,19 +4101,13 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 		update_num_triple = update_num_o;
 
 	SLOG_CORE("update_num_triple:" << update_num_triple << ",update_num_s:" << update_num_s << ",update_num_p:" << update_num_p << ",update_num_o:" << update_num_o);
-	// assert(update_num_o == update_num_p);
-	// assert(update_num_s == update_num_o);
 
 	this->triples_num = this->triples_num + update_num_triple;
 	this->sub_num = this->sub_num + update_num_subject;
-	int64_t t1 = gutil::TimeUtil::timestamp();
-	// this->stringindex->SetTrie(kvstore->getTrie());
-	// update string index
-	// this->stringindex->change(vertices, *this->kvstore, true);
-	// this->stringindex->change(predicates, *this->kvstore, false);
+	// int64_t t1 = gutil::TimeUtil::timestamp();
 	this->stringindex->change(entitys, literals, predicates, *this->kvstore);
 	int64_t t2 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ stringindex write data:" << t2 - t1);
+	// SLOG_TRACE("stringindex write data:" << t2 - t1);
 	
 	this->kvstore->setCSRUpdate(true);
 	this->addTripleUpdateNum(update_num_s);

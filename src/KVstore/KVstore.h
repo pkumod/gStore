@@ -338,6 +338,15 @@ private:
 public:
 	void setCSRUpdate(bool update) { this->csr_update = update; }
 	bool isCSRUpdate(){return this->csr_update; }
+	
+	void batchSetIDByEntity(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+	void batchSetEntityByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+
+	void batchSetIDByPredicate(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+	void batchSetPredicateByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+
+	void batchSetIDByLiteral(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+	void batchSetLiteralByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
 };
 
 #endif //_KVSTORE_KVSTORE_H

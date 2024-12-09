@@ -478,29 +478,29 @@ void StringIndex::change(std::vector<unsigned> &ids, KVstore &kv_store, bool is_
 
 void StringIndex::changeEntiy(std::vector<unsigned> &ids, KVstore &kv_store)
 {
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	// int64_t t1 = gutil::TimeUtil::timestamp();
 	for (unsigned i = 0; i < ids.size(); i++)
 		this->entity.change(ids[i], kv_store);
-	int64_t t2 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ change Entiy write data:" << t2 - t1 << " , size:" << ids.size());
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ change Entiy write data time:" << t2 - t1 << " , size:" << ids.size());
 }
 
 void StringIndex::changeLiteral(std::vector<unsigned> &ids, KVstore &kv_store)
 {
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	// int64_t t1 = gutil::TimeUtil::timestamp();
 	for (unsigned i = 0; i < ids.size(); i++)
 		this->literal.change(ids[i] - GlobalTypedef::LITERAL_FIRST_ID, kv_store);
-	int64_t t2 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ change Literal write data:" << t2 - t1 << " , size:" << ids.size());
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ change Literal write data time:" << t2 - t1 << " , size:" << ids.size());
 }
 
 void StringIndex::changePrivates(std::vector<unsigned> &ids, KVstore &kv_store)
 {
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	// int64_t t1 = gutil::TimeUtil::timestamp();
 	for (unsigned i = 0; i < ids.size(); i++)
 		this->predicate.change(ids[i], kv_store);
-	int64_t t2 = gutil::TimeUtil::timestamp();
-	SLOG_TRACE("------------------------ change Privates write data:" << t2 - t1 << " , size:" << ids.size());
+	// int64_t t2 = gutil::TimeUtil::timestamp();
+	// SLOG_TRACE("------------------------ change Privates write data time:" << t2 - t1 << " , size:" << ids.size());
 }
 
 void StringIndex::change(std::vector<unsigned> &entiys, std::vector<unsigned> &literals, std::vector<unsigned> &pricates,  KVstore &kv_store)
