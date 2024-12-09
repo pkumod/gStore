@@ -106,12 +106,15 @@ namespace server
             parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
             // save data and unlock
             int64_t t1 = gutil::TimeUtil::timestamp();
-            // if (!db_info->getDatabase()->save())
-            // {
-            //     apiUtil->unlock_databaseinfo(db_info);
-            //     response.Error(StatusOperationFailed, "disk or memory not enough");
-            //     return;
-            // }
+            if (Util::getConfigureValue("check_point") == "on")
+            {
+                if (!db_info->getDatabase()->save())
+                {
+                    apiUtil->unlock_databaseinfo(db_info);
+                    response.Error(StatusOperationFailed, "disk or memory not enough");
+                    return;
+                }
+            }
             int64_t t2 = gutil::TimeUtil::timestamp();
             SLOG_TRACE("------------------------ database save data .................:" << t2 - t1);
             apiUtil->unlock_databaseinfo(db_info);
@@ -205,11 +208,14 @@ namespace server
             // exclude Info line
             parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
             // save data and unlock
-            if (!db_info->getDatabase()->save())
+            if (Util::getConfigureValue("check_point") == "on")
             {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.Error(StatusOperationFailed, "disk or memory not enough");
-                return;
+                if (!db_info->getDatabase()->save())
+                {
+                    apiUtil->unlock_databaseinfo(db_info);
+                    response.Error(StatusOperationFailed, "disk or memory not enough");
+                    return;
+                }
             }
             apiUtil->unlock_databaseinfo(db_info);
             clusterlog->close();
