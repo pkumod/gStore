@@ -52,12 +52,6 @@ namespace cluster
         bool tryRecover(const std::vector<std::string>& dbs);
 
         //主从互通模块
-        // 启动心跳超时检测(比对)
-        void startHeartBeat();
-        // 启动更新通知, 返回应答数量
-        bool startNotify(std::string db_name);
-        // 启动同步通知, 返回应答数量
-        bool startSync(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
         // IP是否来自Leader节点
         bool fromLeader(const std::string& ip);
         // IP是否来自Follower节点
@@ -144,6 +138,7 @@ namespace cluster
         std::string getFollowPort();
         void addRestoreDb(const std::string& db_name);
         void removeRestoreDb(const std::string& db_name);
+        // 从节点是否正在恢复数据
         bool isFollowerRestoring(const std::string& db_name);
 
         // nt数据存储模块
@@ -160,6 +155,14 @@ namespace cluster
         std::string getNtFilePath(const std::string& db_name, const std::string& file_name);
         // 微妙
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
+
+        // 测试
+        // 启动心跳超时检测(比对)
+        void startHeartBeatTest();
+        // 启动更新通知, 返回应答数量
+        bool startNotifyTest(std::string db_name);
+        // 启动同步通知, 返回应答数量
+        bool startSyncTest(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
     };
 
     // task

@@ -207,63 +207,11 @@ namespace cluster
         return follower->isFollowerRestoring(db_name);
     }
 
-    void ClusterManager::startHeartBeat()
-    {
-        if (!isEnable() || !role_)
-            return;
-        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-        if (!leader)
-        {
-            SLOG_TRACE("please check conf.ini, not set leader");
-            return;
-        }
-        leader->startCompare();
-    }
-
-    bool ClusterManager::startNotify(std::string db_name)
-    {
-        if (!isEnable() || !role_)
-            return false;
-        role_->addClusterDb(db_name);
-        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-        if (!leader)
-        {
-            SLOG_TRACE("please check conf.ini, not set leader");
-            return false;
-        }
-        ClusterTaskInfo info(db_name, ClusterOperation_Prepare);
-        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
-        info.setIndex(db_log.getIndex());
-        info.setNextIndex(db_log.getNextIndex());
-        info.setUid(db_log.getUid());
-        return leader->runTask(info);
-    }
-
     void ClusterManager::addClusterDb(const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return;
         role_->addClusterDb(db_name);
-    }
-
-    bool ClusterManager::startSync(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
-    {
-        if (!isEnable() || !role_)
-            return false;
-        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-        if (!leader)
-        {
-            SLOG_TRACE("please check conf.ini, not set leader");
-            return false;
-        }
-
-        ClusterTaskInfo info(db_name, ClusterOperation_Append, update_type, file_name);
-        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
-        info.setIndex(db_log.getIndex());
-        info.setNextIndex(db_log.getNextIndex());
-        info.setUid(db_log.getUid());
-
-        return leader->runAppendTask(info);
     }
 
     bool ClusterManager::fromLeader(const std::string& ip)
@@ -745,4 +693,57 @@ namespace cluster
             task_queueL.pop()->runEvent();
         }
     }
+
+    ////////////////////////////// test ///////////////////////////////////
+    // void ClusterManager::startHeartBeatTest()
+    // {
+    //     if (!isEnable() || !role_)
+    //         return;
+    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+    //     if (!leader)
+    //     {
+    //         SLOG_TRACE("please check conf.ini, not set leader");
+    //         return;
+    //     }
+    //     leader->startCompare();
+    // }
+
+    // bool ClusterManager::startNotifyTest(std::string db_name)
+    // {
+    //     if (!isEnable() || !role_)
+    //         return false;
+    //     role_->addClusterDb(db_name);
+    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+    //     if (!leader)
+    //     {
+    //         SLOG_TRACE("please check conf.ini, not set leader");
+    //         return false;
+    //     }
+    //     ClusterTaskInfo info(db_name, ClusterOperation_Prepare);
+    //     TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+    //     info.setIndex(db_log.getIndex());
+    //     info.setNextIndex(db_log.getNextIndex());
+    //     info.setUid(db_log.getUid());
+    //     return leader->runTask(info);
+    // }
+
+    // bool ClusterManager::startSyncTest(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
+    // {
+    //     if (!isEnable() || !role_)
+    //         return false;
+    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+    //     if (!leader)
+    //     {
+    //         SLOG_TRACE("please check conf.ini, not set leader");
+    //         return false;
+    //     }
+
+    //     ClusterTaskInfo info(db_name, ClusterOperation_Append, update_type, file_name);
+    //     TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+    //     info.setIndex(db_log.getIndex());
+    //     info.setNextIndex(db_log.getNextIndex());
+    //     info.setUid(db_log.getUid());
+
+    //     return leader->runAppendTask(info);
+    // }
 }
