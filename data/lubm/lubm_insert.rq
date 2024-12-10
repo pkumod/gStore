@@ -1,0 +1,17 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+INSERT DATA
+{
+	<http://www.Department0.University0.edu/AssociateProfessor100> rdf:type ub:AssociateProfessor;
+		ub:name "AssociateProfessor100" ;
+		ub:teacherOf <http://www.Department0.University0.edu/Course10> ;
+		ub:teacherOf <http://www.Department0.University0.edu/GraduateCourse10> ;
+		ub:teacherOf <http://www.Department0.University0.edu/GraduateCourse11> ;
+		ub:undergraduateDegreeFrom <http://www.University84.edu> ;
+		ub:mastersDegreeFrom <http://www.University875.edu> ;
+		ub:doctoralDegreeFrom <http://www.University241.edu> ;
+		ub:worksFor <http://www.Department0.University0.edu> ;
+		ub:emailAddress "AssociateProfessor100@Department0.University0.edu" ;
+		ub:telephone "xxx-xxx-xxxx" ;
+		ub:researchInterest "Research100" .
+}
