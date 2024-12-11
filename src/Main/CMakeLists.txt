@@ -98,8 +98,7 @@ link_directories(
         ${GSTORE_3RDLIB_DIR}
         ${GSTORE_PFNLIB_DIR}
 )
-aux_source_directory( ../KVstore KVSTORE_LIST )
-add_library( gcsr SHARED ../Database/CSR.cpp ${KVSTORE_LIST} )
+add_library( gcsr SHARED ../Database/CSR.cpp )
 aux_source_directory( ../Query/Algorithm ALGORITHM_LIST )
 add_library( gpathqueryhandler SHARED ${ALGORITHM_LIST} )
 target_link_libraries( gpathqueryhandler gcsr )
