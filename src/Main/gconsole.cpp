@@ -1171,7 +1171,7 @@ int gconsole_bind_cr(int count, int key)
 	{
 		rl_insert_text("\n"); // Insert text into the line at the current cursor position.
 		rl_insert_text(CROSS_LINE_PROMPT);
-		rl_redisplay(); // Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
+		rl_redisplay(); // Change what's displayed on the screen to reflect the current contents of rl_line_buffer.
 						// so this would show the inserted \n to console
 	}
 	return 0;
@@ -1367,44 +1367,53 @@ int sparql_handler(const vector<string> &args)
 		cout << "File open failed: " << args[0] << endl;
 		return -1;
 	}
-	string line;
-	while (getline(fin, line, ';'))
-	{
-		/*parse one sparql*/
-		line.push_back('#');
-		// deal with #: look for #, the content after it and before the nearest \n is comments
-		string sparql;
-		int i = 0, sz = line.size();
-		int seg_start_pos = 0;
-		while (i < sz)
-		{
-			// met a new comment: [seg_start_pos,i) -> sparql
-			// if seg_start_pos<0, it means we have met a # but haven't met a \n, so it's inside a comment
-			if (line[i] == '#' && seg_start_pos >= 0)
-			{
-				sparql += line.substr(seg_start_pos, i - seg_start_pos);
-				seg_start_pos = -1; // mark as meeting #
-			}
-			// have met a # before, now meet \n
-			else if (line[i] == '\n' && seg_start_pos == -1)
-			{
-				seg_start_pos = i + 1;
-				sparql.push_back('\n');
-			}
-			++i;
-		}
+	// string line;
+	// while (getline(fin, line, ';'))
+	// {
+	// 	/*parse one sparql*/
+	// 	line.push_back('#');
+	// 	// deal with #: look for #, the content after it and before the nearest \n is comments
+	// 	string sparql;
+	// 	int i = 0, sz = line.size();
+	// 	int seg_start_pos = 0;
+	// 	while (i < sz)
+	// 	{
+	// 		// met a new comment: [seg_start_pos,i) -> sparql
+	// 		// if seg_start_pos<0, it means we have met a # but haven't met a \n, so it's inside a comment
+	// 		if (line[i] == '#' && seg_start_pos >= 0)
+	// 		{
+	// 			sparql += line.substr(seg_start_pos, i - seg_start_pos);
+	// 			seg_start_pos = -1; // mark as meeting #
+	// 		}
+	// 		// have met a # before, now meet \n
+	// 		else if (line[i] == '\n' && seg_start_pos == -1)
+	// 		{
+	// 			seg_start_pos = i + 1;
+	// 			sparql.push_back('\n');
+	// 		}
+	// 		++i;
+	// 	}
 
-		/*query sparql*/
-		sparql = stripwhite(sparql);
+	// 	/*query sparql*/
+	// 	sparql = stripwhite(sparql);
 
-		if (sparql.empty() == 0 && raw_sparql_handler(sparql))
-		{
-			cout << "Query failed: " << sparql << endl;
-		}
-		cout << endl
-			 << endl;
-	}
+	// 	if (sparql.empty() == 0 && raw_sparql_handler(sparql))
+	// 	{
+	// 		cout << "Query failed: " << sparql << endl;
+	// 	}
+	// 	cout << endl
+	// 		 << endl;
+	// }
+	std::string sparql((std::istreambuf_iterator<char>(fin)),  
+                 std::istreambuf_iterator<char>()); 
 	fin.close();
+
+	if (raw_sparql_handler(sparql))
+	{
+		cout << "Query failed: " << sparql << endl;
+	}
+	cout << endl
+		 << endl;
 	return 0;
 }
 
