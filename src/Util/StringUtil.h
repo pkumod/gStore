@@ -21,7 +21,8 @@ namespace gutil {
         static std::string url_encode(const std::string& str);
         static std::string url_decode(const std::string& str);
         static std::string clear_linebreak(const std::string& str);
-        static std::string replace_all(const std::string& str, const std::string oldtext, const std::string newtext);
+        static std::string replace_all(const std::string& str, const std::string& oldtext, const std::string& newtext);
+        static std::string replace_all_ignore_case(const std::string& str, const std::string& oldtext, const std::string& newtext);
         static void lower_case(std::string& str);
         static void upper_case(std::string& str);
         static std::string join(const std::vector<std::string>& vec, const std::string& delimiter);

@@ -77,7 +77,11 @@
 #include <random>
 #include <type_traits>
 
-#include "Slog.h"
+#include "log4cplus/logger.h"
+#include "log4cplus/fileappender.h"
+#include "log4cplus/configurator.h"
+#include "log4cplus/loggingmacros.h"
+#include "log4cplus/layout.h"
 
 #define TOPK_SUPPORT
 // #define thread_num 4
@@ -266,7 +270,7 @@ inline std::string g_format(const std::string& format, Args ... args){
   // unique_ptr<char[]> buf(new char[size]);
   char bytes[size];
   snprintf(bytes, size, format.c_str(), args ...);
-  return string(bytes);
+  return std::string(bytes);
 }
 
 inline std::string g_GetLineDescription(const char* file_name, const char* function, int line){
@@ -274,6 +278,15 @@ inline std::string g_GetLineDescription(const char* file_name, const char* funct
 }
 
 #define GetLineDescription() g_GetLineDescription(__FILE__,__FUNCTION__,__LINE__)
+
+// log4cplus defined
+#define SLOG_CORE(logEvent)      LOG4CPLUS_MACRO_BODY(GlobalTypedef::_logger, logEvent, TRACE_LOG_LEVEL)
+#define SLOG_TRACE(logEvent)     LOG4CPLUS_TRACE(GlobalTypedef::_logger, logEvent)
+#define SLOG_DEBUG(logEvent)     LOG4CPLUS_DEBUG(GlobalTypedef::_logger, logEvent)
+#define SLOG_INFO(logEvent)      LOG4CPLUS_INFO(GlobalTypedef::_logger, logEvent)
+#define SLOG_WARN(logEvent)      LOG4CPLUS_WARN(GlobalTypedef::_logger, logEvent)
+#define SLOG_ERROR(logEvent)     LOG4CPLUS_ERROR(GlobalTypedef::_logger, logEvent)
+#define SLOG_FATAL(logEvent)     LOG4CPLUS_FATAL(GlobalTypedef::_logger, logEvent)
 
 class GlobalTypedef {
 public:
@@ -311,6 +324,9 @@ public:
 	static const int II_TREE = 2;
 	static const int IS_TREE = 3;
 
+	// log4cpus
+	static log4cplus::Logger _logger;
+	
 	static std::string product_name;
 	static std::string product_version;
 	static std::string product_website;
@@ -322,16 +338,19 @@ public:
 	static std::string initfile;
 	static std::string transaction_log_path;
 	static std::string backup_log_path;
+	static std::string export_path;
 	//static bool gStore_mode;
 	static std::map<std::string, std::string> global_config;
 	static std::string db_home();
 	static std::string db_suffix();
-	static std::string db_path(const string& db_name);
+	static std::string db_path(const std::string& db_name);
 	static std::string backup_path();
 	static std::string upload_path();
 	static std::string root_uname();	
 	static std::string sys_uname();
 	static int32_t backup_interval();
+	static int32_t backup_max();
+	static bool isEnabledFor(log4cplus::LogLevel ll);
 };
 
 /**

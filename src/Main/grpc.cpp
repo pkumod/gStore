@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
 		cout << "The service will be forcibly stopped!" << endl;
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
 		// remove pid file
-		Util::remove_path(GlobalTypedef::pid_path);
+		FileUtil::removePath(GlobalTypedef::pid_path);
 		return 0;
 	}
 	else if (command == "-S" || command == "--status")
@@ -820,7 +820,7 @@ bool stopServer()
 {
 	string pid_path = GlobalTypedef::pid_path;
 	SLOG_DEBUG("pid path: " + pid_path);
-	if (!Util::file_exist(pid_path))
+	if (!FileUtil::fileExists(pid_path))
 	{
 		return false;
 	}
@@ -840,7 +840,7 @@ bool stopServer()
 	if (shutdown_response.success())
 	{
 		SLOG_INFO("the Server [" + pid + "] stop successfully.");
-		Util::remove_file(pid_path);
+		FileUtil::removePath(pid_path);
 		return true;
 	}
 	else
@@ -1116,11 +1116,11 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusParamIsIllegal, error);
 		return;
 	}
-	if (Util::is_file(filepath))
+	if (FileUtil::is_file(filepath))
 	{
 		// the file must in the gstore home dir
 		std::string exact_path = Util::getExactPath(filepath.c_str());
-		std::string cur_path = Util::get_cur_path();
+		std::string cur_path = Util::currentPath();
 		SLOG_DEBUG("download file path: " + filepath);
 		SLOG_DEBUG("file exact path: " + exact_path);
 		if (gutil::StringUtil::start_with(exact_path, cur_path) == false)
@@ -1136,7 +1136,7 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 			CompressUtil::CompressZip compress_util;
 			if (compress_util.compressDirExportZip(exact_path, *zip_file_path)) {
 				task_of(response)->add_callback([zip_file_path](GRPCTask *_task){
-					Util::remove_path(*zip_file_path);
+					FileUtil::removePath(*zip_file_path);
 					delete zip_file_path;
 				});
 				response->File(*zip_file_path);
@@ -1558,7 +1558,7 @@ void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
 		}
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
-		resp_data["RootPath"] = Util::get_cur_path();
+		resp_data["RootPath"] = Util::currentPath();
 		resp_data["type"] = HTTP_TYPE;
 		string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 		apiUtil->reset_access_ip_error_num(remote_ip);
@@ -1774,8 +1774,8 @@ void init_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 			response_data["data"].push_back(db_info);
 			continue;
 		} 
-		std::string db_path = GlobalTypedef::db_home() + db_name + GlobalTypedef::db_suffix();
-		if(!Util::dir_exist(db_path))
+		std::string db_path = GlobalTypedef::db_path(db_name);
+		if(!FileUtil::dirExists(db_path))
 		{
 			db_info["status"] = "1";
 			db_info["msg"] = db_name + GlobalTypedef::db_suffix() + " is not exist.";
@@ -3115,7 +3115,7 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				}
 				else 
 				{
-					Util::remove_path(file_save_path);
+					FileUtil::removePath(file_save_path);
 					resp->Error(server::StatusCode::StatusLicenseInvalid, msg);
 				}
 			}

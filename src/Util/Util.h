@@ -20,15 +20,15 @@ in the sparql query can point to the same node in data graph)
 #include "NodeUtil.h"
 #include "StringUtil.h"
 #include "IdUtil.h"
+#include "FileUtil.h"
 
 //basic macros and types are defined here, including common headers 
 #include "INIParser.h"
-#include "indicators/progress_bar.hpp"
 
 #include "Latch.h"
 #include "MD5.h"
 #include "PrettyPrint.h"
-
+using namespace gutil;
 
 
 //===================================================================================================================
@@ -51,7 +51,6 @@ public:
 	static const long gserver_backup_interval = 120;
 	static const long gserver_backup_time = 72000; // Default backup time (UTC)
 
-	static std::string string_replace(std::string rec, const std::string src, const std::string des);
 	static bool is_number(std::string s);
 	static char* itoa(int num, char* str, int radix);
 	//string2str: s.c_str()
@@ -66,36 +65,12 @@ public:
 	// static bool bsearch_preid_uporder(TYPE_PREDICATE_ID _preid, unsigned* _pair_idlist, unsigned _list_len);
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
-    static void dir_files(const string _dir, const string _contains, std::vector<std::string> &file_list, bool need_dir_name = false);
-	static void dir_filepaths(const string _dir, std::vector<std::string> &file_list);
-	static bool dir_exist(const std::string _dir);
-    static bool is_file(const string _file);
-	static bool is_dir(const string& _path);
-    static bool file_exist(const std::string _file);
-	static bool create_dir(const std:: string _dir);
-	static bool create_dirs(const std:: string _dirs);
-	static bool create_file(const std::string _file);
-    static size_t count_lines(const std::string _file, unsigned int _mode=0);
-	static unsigned long long count_dir_size(const char* _dir_path);
-	// byte
-	static unsigned long long getFileSize(const std::string& file_path);
-	static bool remove_dir(const std::string dir_path);
-	static bool remove_file(const std::string file_path);
-	static bool remove_path(const std::string path);
-	static std::string fileSuffix(const std::string &filepath);
-	static std::string fileName(const std::string &filepath);
-	static std::string get_parent_path(const std::string& file_path);
 
-	static std::string getTimeName();
-	static std::string get_folder_name(const std::string path, const std::string db_name);
 	static std::string get_backup_time(const std::string path, const std::string db_name);
-	static bool save_to_file(const char*, const std::string _content);
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
 	static long read_backup_time();
 
-    static std::string replace_all(std::string _content,const std::string oldtext,const std::string newtext);
-	static std::string replace_all_ignore_case(const std::string& input, const std::string& oldtext, const std::string& newtext);
     static std::string clear_angle_brackets(std::string _str);
 
 	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
@@ -108,9 +83,7 @@ public:
 	static std::string getQueryFromFile(const char* _file_path); 
 	static std::string getSystemOutput(std::string cmd);
 	static std::string getExactPath(const char* path);
-	static bool checkProcessExist(const std::string& processPath, const std::string& currPid);
 	static std::string getItemsFromDir(std::string path);
-	static void empty_file(const char* _fname);
 
 	// Below are some useful hash functions for string
 	static unsigned simpleHash(const char *_str);
@@ -186,15 +159,12 @@ public:
 	static bool has_record_backuplog(std::string db_name);
 
 	static long int get_timestamp(std::string& line);
-	static std::string stamp2time(int timestamp);
-	static std::vector<std::string> GetFiles(const char *src_dir, const char *ext);
 	static std::pair<bool, double> checkGetNumericLiteral(std::string&);
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
-    static bool checkPort(int port, std::string p_name = "");
     static std::string md5(const string& text);
     static void printConsole(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows);
     static void printFile(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows);
-    static std::string get_cur_path();
+    static std::string currentPath();
 private:
 	static bool isValidIPV4(std::string);
 	static bool isValidIPV6(std::string);

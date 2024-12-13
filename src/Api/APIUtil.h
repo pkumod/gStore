@@ -11,7 +11,6 @@
 #include "../Database/Database.h"
 #include "../Database/Txn_manager.h"
 #include "../Util/Util.h"
-#include "../Util/FileUtil.h"
 #include "../Util/ResourceUtil.h"
 #include "../Util/ThreadUtil.h"
 #include "../Util/IPWhiteList.h"

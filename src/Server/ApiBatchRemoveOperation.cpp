@@ -17,7 +17,7 @@ namespace server
             response.StatusCode = StatusParamIsIllegal;
             return false;
         }
-        if (Util::file_exist(request.file) == false)
+        if (FileUtil::fileExists(request.file) == false)
         {
             response.StatusMsg = "The data file is not exist";
             response.StatusCode = StatusParamIsIllegal;
@@ -48,7 +48,7 @@ namespace server
             std::string file = request.file;
             std::vector<std::string> nt_files;
             std::string unz_dir_path;
-            std::string file_suffix = Util::fileSuffix(file);
+            std::string file_suffix = FileUtil::fileSuffix(file);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
             {
@@ -74,14 +74,14 @@ namespace server
             unsigned total_num = 0;
             size_t parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
-            total_num = Util::count_lines(error_log);
+            total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : nt_files)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr);
             }
             // exclude Info line
-            parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
@@ -141,7 +141,7 @@ namespace server
             std::string file = request.file;
             std::vector<std::string> nt_files;
             std::string unz_dir_path;
-            std::string file_suffix = Util::fileSuffix(file);
+            std::string file_suffix = FileUtil::fileSuffix(file);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
             {
@@ -166,14 +166,14 @@ namespace server
             unsigned total_num = 0;
             size_t parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
-            total_num = Util::count_lines(error_log);
+            total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : nt_files)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr, clusterlog);
             }
             // exclude Info line
-            parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
@@ -211,7 +211,7 @@ namespace server
                     response = resp_data;
                     if (!tmp_dir_path.empty())
                     {
-                        Util::remove_path(tmp_dir_path);
+                        FileUtil::removePath(tmp_dir_path);
                     }
                 }
                 else
@@ -234,7 +234,7 @@ namespace server
                     }
                     if (!tmp_dir_path.empty())
                     {
-                        Util::remove_path(tmp_dir_path);
+                        FileUtil::removePath(tmp_dir_path);
                     }
                     msg = "Less than half of the cluster nodes reply.";
                     SLOG_ERROR(msg);
@@ -249,11 +249,11 @@ namespace server
             {
                 SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
+                FileUtil::removePath(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
                 // remove unzip files
                 if (!unz_dir_path.empty())
                 {
-                    Util::remove_path(unz_dir_path);
+                    FileUtil::removePath(unz_dir_path);
                 }
                 response = resp_data;
             }

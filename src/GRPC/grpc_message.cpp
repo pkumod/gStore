@@ -342,7 +342,10 @@ void GRPCResp::String(const std::string &str)
     int ret = this->compress(buf, buf_size, compress_data, compress_size);
     if(ret != StatusOK)   
     {
-        SLOG_CORE("response compress failed(error code:"+to_string(ret)+"), origin data size " + to_string(buf_size) + "Byte");
+        if (ret == StatusNoComrpess)
+            SLOG_CORE("response compress no need, origin data size " + to_string(buf_size) + "Byte");
+        else
+            SLOG_CORE("response compress failed(error_code="+to_string(ret)+")");
         this->append_output_body(buf, buf_size);
     } 
     else 

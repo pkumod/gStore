@@ -2108,7 +2108,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								pred_id_set.push_back(j);
 					}
 					string fun_name = proj[0].path_args.fun_name;
-					fun_name = Util::replace_all(fun_name, "\"", "");
+					fun_name = StringUtil::replace_all(fun_name, "\"", "");
 					// #if defined(DEBUG)
 					stringstream _ss;
 					_ss << "PFN arguments" << endl;
@@ -2764,7 +2764,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								int hopConstraint = proj[i].path_args.k;
 								bool directed = proj[i].path_args.directed;
 								string fun_name = proj[i].path_args.fun_name;
-								fun_name = Util::replace_all(fun_name, "\"", "");
+								fun_name = StringUtil::replace_all(fun_name, "\"", "");
 								// #if defined(DEBUG)
 								stringstream _ss;
 								_ss << "PFN arguments" << endl;

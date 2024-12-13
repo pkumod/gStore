@@ -6,7 +6,7 @@ namespace server
     {
         std::string db_name = request.db_name;
         std::string msg;
-        if (!request.db_path.empty() && Util::file_exist(request.db_path) == false)
+        if (!request.db_path.empty() && FileUtil::fileExists(request.db_path) == false)
         {
             response.StatusMsg = "RDF file not exist.";
             response.StatusCode = StatusParamIsIllegal;
@@ -55,7 +55,7 @@ namespace server
             apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             std::vector<std::string> nt_files;
             std::string unz_dir_path;
-            std::string file_suffix = Util::fileSuffix(db_path);
+            std::string file_suffix = FileUtil::fileSuffix(db_path);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
             {
@@ -98,10 +98,10 @@ namespace server
                     if (!rt)
                     {
                         result = "Import RDF file to database failed: load error.";
-                        Util::remove_path(_db_path);
+                        FileUtil::removePath(_db_path);
                         if (!unz_dir_path.empty())
                         {
-                            Util::remove_path(unz_dir_path);
+                            FileUtil::removePath(unz_dir_path);
                         }
                         response.StatusMsg = result;
                         response.StatusCode = StatusOperationFailed;
@@ -125,10 +125,10 @@ namespace server
             else
             {
                 result = "Import RDF file to database failed.";
-                Util::remove_path(_db_path);
+                FileUtil::removePath(_db_path);
                 if (!unz_dir_path.empty())
                 {
-                    Util::remove_path(unz_dir_path);
+                    FileUtil::removePath(unz_dir_path);
                 }
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
@@ -149,7 +149,7 @@ namespace server
             // build response result
             result = "Import RDF file to database done.";
             string error_log = _db_path + "/parse_error.log";
-            size_t parse_error_num = Util::count_lines(error_log);
+            size_t parse_error_num = FileUtil::fileLines(error_log);
             // exclude Info line
             if (parse_error_num > 0)
                 parse_error_num = parse_error_num - nt_file_num;
@@ -161,7 +161,7 @@ namespace server
             // remove unzip dir
             if (!unz_dir_path.empty())
             {
-                Util::remove_path(unz_dir_path);
+                FileUtil::removePath(unz_dir_path);
             }
 
             // Util::add_backuplog(db_name);
@@ -190,7 +190,7 @@ namespace server
             apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             std::vector<std::string> nt_files;
             std::string unz_dir_path;
-            std::string file_suffix = Util::fileSuffix(db_path);
+            std::string file_suffix = FileUtil::fileSuffix(db_path);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
             {
@@ -233,10 +233,10 @@ namespace server
                     if (!rt)
                     {
                         result = "Import RDF file to database failed: load error.";
-                        Util::remove_path(_db_path);
+                        FileUtil::removePath(_db_path);
                         if (!unz_dir_path.empty())
                         {
-                            Util::remove_path(unz_dir_path);
+                            FileUtil::removePath(unz_dir_path);
                         }
                         response.StatusMsg = result;
                         response.StatusCode = StatusOperationFailed;
@@ -260,10 +260,10 @@ namespace server
             else
             {
                 result = "Import RDF file to database failed.";
-                Util::remove_path(_db_path);
+                FileUtil::removePath(_db_path);
                 if (!unz_dir_path.empty())
                 {
-                    Util::remove_path(unz_dir_path);
+                    FileUtil::removePath(unz_dir_path);
                 }
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
@@ -284,7 +284,7 @@ namespace server
             // build response result
             result = "Import RDF file to database done.";
             string error_log = _db_path + "/parse_error.log";
-            size_t parse_error_num = Util::count_lines(error_log);
+            size_t parse_error_num = FileUtil::fileLines(error_log);
             // exclude Info line
             if (parse_error_num > 0)
                 parse_error_num = parse_error_num - nt_file_num;
@@ -296,7 +296,7 @@ namespace server
             // remove unzip dir
             if (!unz_dir_path.empty())
             {
-                Util::remove_path(unz_dir_path);
+                FileUtil::removePath(unz_dir_path);
             }
 
             // Util::add_backuplog(db_name);

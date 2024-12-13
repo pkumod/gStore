@@ -1,5 +1,5 @@
 #!/bin/bash
-
+param=$1
 # API基础URL
 PORT=$(grep -m 1 'port=' ./conf/conf.ini)
 BASE_URL=http://127.0.0.1:"${PORT:5:${#PORT}-5}"/api
@@ -7,6 +7,10 @@ BASE_URL=http://127.0.0.1:"${PORT:5:${#PORT}-5}"/api
 BACKUP_PATH=""
 # 数据库
 DB_NAME=lubm
+if [ -n "$param" ]; then
+    DB_NAME=$param
+fi
+RDF_FILE="data/$DB_NAME/$DB_NAME.nt"
 
 # 心跳检测
 check() {
@@ -32,9 +36,9 @@ get_core_version() {
 # 数据库构建
 build() {
     echo "数据库构建"
-    db_path="data/$DB_NAME/$DB_NAME.nt"
-    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"build","username":"root","password":"123456","db_name":"$DB_NAME","db_path":"$db_path"}' $BASE_URL"
-    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"build","username":"root","password":"123456","db_name":"'"$DB_NAME"'","db_path":"'"$db_path"'"}' "$BASE_URL"
+    
+    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"build","username":"root","password":"123456","db_name":"$DB_NAME","db_path":"$RDF_FILE"}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"build","username":"root","password":"123456","db_name":"'"$DB_NAME"'","db_path":"'"$RDF_FILE"'"}' "$BASE_URL"
 }
 
 # 数据库列表
@@ -61,8 +65,8 @@ load() {
 # 数据库查询
 query() {
     echo "数据库查询"
-    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"query","username":"root","password":"123456","db_name":"$DB_NAME","sparql":"select ?x ?p where {?x ?p \<FullProfessor0\>".}' $BASE_URL"
-    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"query","username":"root","password":"123456","db_name":"'"$DB_NAME"'","sparql":"select ?x ?p where {?x ?p <FullProfessor0>.}"}' "$BASE_URL"
+    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"query","username":"root","password":"123456","db_name":"$DB_NAME","sparql":"select ?s ?p ?o where {?s ?p ?o.} limit 10".}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"query","username":"root","password":"123456","db_name":"'"$DB_NAME"'","sparql":"select ?s ?p ?o where {?s ?p ?o.} limit 10"}' "$BASE_URL"
 }
 
 # 数据库导出
@@ -80,6 +84,20 @@ backup() {
     BACKUP_PATH=$(awk -F '"' '/backupfilepath/ {print$10}' "rt.txt")
     rm "rt.txt"
     echo "backupfilepath：$BACKUP_PATH"
+}
+
+# 批量删除
+batchRemove() {
+    echo "批量删除"
+    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"batchRemove","username":"root","password":"123456","db_name":"$DB_NAME","file":"$RDF_FILE"}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"batchRemove","username":"root","password":"123456","db_name":"'"$DB_NAME"'","file":"'"$RDF_FILE"'"}' "$BASE_URL"
+}
+
+# 批量新增
+batchInsert() {
+    echo "批量新增"
+    echo "curl -X POST -H 'Content-Type: application/json' -d '{"operation":"batchInsert","username":"root","password":"123456","db_name":"$DB_NAME","file":"$RDF_FILE"}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d '{"operation":"batchInsert","username":"root","password":"123456","db_name":"'"$DB_NAME"'","file":"'"$RDF_FILE"'"}' "$BASE_URL"
 }
 
 # 卸载数据库
@@ -199,9 +217,10 @@ drop() {
 }
 
 # 操作数组
-operations=("check" "test_connection" "get_core_version" "build" "show" "monitor" "load" "query" "export" "backup" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
+operations=("check" "test_connection" "get_core_version" "build" "show" "monitor" "load" "query" "export" "backup" "batchRemove" "batchInsert" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
 
 # 执行所有操作
+echo "测试数据集为: $DB_NAME"
 for operation in "${operations[@]}"; do
     eval "$operation"
     echo ""

@@ -24,16 +24,10 @@ namespace cluster
 
     void ClusterDb::init()
     {
-        if (!Util::dir_exist(getDbDirPath(db_name_)))
+        if (!FileUtil::dirExists(getDbDirPath(db_name_)))
         {
             SLOG_TRACE("init db dir, db name:" << db_name_);
-            Util::create_dir(getDbDirPath(db_name_));
-        }
-
-        if (!Util::dir_exist(getDbInitDir(db_name_)))
-        {
-            SLOG_TRACE("init db dir, db name:" << db_name_);
-            Util::create_dir(getDbInitDir(db_name_));
+            FileUtil::createDirs(getDbDirPath(db_name_));
         }
     }
 
@@ -151,7 +145,7 @@ namespace cluster
     {
         ClusterDbNameLogInfo log;
         std::string file_path = getUpdatePath(db_name_);
-        if (!Util::file_exist(file_path))
+        if (!FileUtil::fileExists(file_path))
         {
             log.addLog(index, operation, update_type, 0, file_name);
             SLOG_TRACE("init update log file, db name:" << db_name_ << ", index:" << index << ", operation:" << operation << " ,update_type:" << update_type);
@@ -362,7 +356,7 @@ namespace cluster
             return std::string();
         }
         std::string nt_path = getDbDirPath(db_name_) + file_name.substr(0, pos) + ".nt";
-        if (Util::file_exist(nt_path))
+        if (FileUtil::fileExists(nt_path))
         {
             return nt_path;
         }

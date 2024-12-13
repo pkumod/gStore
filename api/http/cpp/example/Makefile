@@ -1,4 +1,4 @@
-CC=g++ -std=c++11
+CC=g++ -std=c++17
 #CC=ccache g++
 
 src_dir=../src/

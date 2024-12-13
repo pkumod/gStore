@@ -34,9 +34,9 @@ namespace cluster
                 SLOG_ERROR("cluster_role config is error");
                 return;
             }
-            if (!Util::dir_exist(ClusterDb::getClusterDir()))
+            if (!FileUtil::dirExists(ClusterDb::getClusterDir()))
             {
-                Util::create_dir(ClusterDb::getClusterDir());
+                FileUtil::createDirs(ClusterDb::getClusterDir());
             }
             role_->init();
             run_task = std::thread(&ClusterManager::runTask, this);
@@ -82,9 +82,9 @@ namespace cluster
                 SLOG_ERROR("cluster_role config is error");
                 return;
             }
-            if (!Util::dir_exist(ClusterDb::getClusterDir()))
+            if (!FileUtil::dirExists(ClusterDb::getClusterDir()))
             {
-                Util::create_dir(ClusterDb::getClusterDir());
+                FileUtil::createDirs(ClusterDb::getClusterDir());
             }
             role_->init();
             std::thread run_task = std::thread(&ClusterManager::runTask, this);
@@ -687,36 +687,34 @@ namespace cluster
         std::string init_dir = ClusterDb::getDbInitDir(info.db_name);
         std::string post_dir = init_dir + file_name;
         std::string post_dir_zip = post_dir + ".zip";
-        if (Util::file_exist(post_dir_zip))
+        if (FileUtil::fileExists(post_dir_zip))
         {
             SLOG_TRACE("cluster recover zip is exist, not data update:" << post_dir_zip);
             return post_dir_zip;
         }
 
         SLOG_TRACE("cluster recover zip is not exist, compress begin .....:" << post_dir_zip);
-        Util::create_dirs(post_dir);
+        FileUtil::createDirs(post_dir);
         std::string cluster_db_dir = ClusterDb::getDbDirPath(info.db_name);
-        std::string sys_cmd = "cp -r " + cluster_db_dir + ' ' + post_dir;
-        system(sys_cmd.c_str());
+        FileUtil::copyDir(cluster_db_dir, post_dir);
         std::string db_dir = GlobalTypedef::db_path(info.db_name);
-        sys_cmd = "cp -r " + db_dir + ' ' + post_dir;
-        system(sys_cmd.c_str());
+        FileUtil::copyDir(db_dir, post_dir);
 
         CompressUtil::CompressZip compress_util;
         if (!compress_util.compressDirExportZip(post_dir, post_dir_zip))
         {
             SLOG_ERROR("compress dir fail:" << post_dir_zip);
-            Util::remove_path(post_dir);
-            Util::remove_path(post_dir_zip);
+            FileUtil::removePath(post_dir);
+            FileUtil::removePath(post_dir_zip);
             return "";
         }
         SLOG_TRACE("cluster recover zip, compress success end.....:" << post_dir_zip);
-        Util::remove_path(post_dir);
+        FileUtil::removePath(post_dir);
         // delete oldest zip files
         vector<std::string> zip_files;
         std::string db_name_suffix = ".zip";
-        Util::dir_files(init_dir, db_name_suffix, zip_files);
-        int16_t max_backups = Util::getConfigureIntValue("max_backups", 3);
+        FileUtil::dir_filenames(init_dir, zip_files, db_name_suffix);
+        int16_t max_backups = GlobalTypedef::backup_max();
         int16_t cur_backups = zip_files.size();
         if (cur_backups > max_backups)
         {
@@ -724,7 +722,7 @@ namespace cluster
             vector<uint64> index_files;
             for (const auto& m : zip_files)
             {
-                std::string file_suffix = Util::fileSuffix(m);
+                std::string file_suffix = FileUtil::fileSuffix(m);
                 if (file_suffix != "zip")
                     continue;
                 index_files.push_back(std::stoll(m.substr(0, m.size()-4)));
@@ -733,12 +731,12 @@ namespace cluster
             std::sort(index_files.begin(), index_files.end(), [](uint64 a, uint64 b) {return a < b;});
             for (auto file : index_files)
             {
-                if (cur_backups <= max_backups)
+                if (cur_backups < max_backups)
                     break;
                 std::string remove_file_path = init_dir + std::to_string(file) + ".zip";
                 if (remove_file_path == post_dir_zip)
                     continue;
-                Util::remove_path(remove_file_path);
+                FileUtil::removePath(remove_file_path);
                 cur_backups--;
                 SLOG_TRACE("remove old cluster init zip:" << remove_file_path);
             }

@@ -2,24 +2,11 @@
 
 namespace server
 {
-    bool ApiHandler::stringIsTrue(std::string value)
-    {
-        if (value.empty())
-            return false;
-        else if (value == "1")
-            return true;
-        else if (value == "true")
-            return true;
-        else if (value == "bool")
-            return true;
-        return false;
-    }
-
     bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response)
     {
         auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
         {
-            if( apiUtil->check_upload_allow_extensions(Util::fileSuffix(filename)) == false )
+            if( apiUtil->check_upload_allow_extensions(FileUtil::fileSuffix(filename)) == false )
                 return false;
             return true;
         });
@@ -29,15 +16,15 @@ namespace server
             response.StatusCode = code;
             return false;
         }
-        std::string file_name = Util::fileName(file);
-        size_t pos = file_name.size() - Util::fileSuffix(file).size() - 1;
+        std::string file_name = FileUtil::fileName(file);
+        size_t pos = file_name.size() - FileUtil::fileSuffix(file).size() - 1;
         unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
-        Util::create_dirs(unz_dir_path);
+        FileUtil::createDirs(unz_dir_path);
         CompressUtil::UnCompressZip upfile(file, unz_dir_path);
         code = upfile.unCompress();
         if (code != CompressUtil::UnZipOK)
         {
-            Util::remove_path(unz_dir_path);
+            FileUtil::removePath(unz_dir_path);
             response.StatusMsg = "uncompress is failed error.";
             response.StatusCode = code;
             return false;
@@ -51,7 +38,7 @@ namespace server
     {
         auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
         {
-            if( apiUtil->check_upload_allow_extensions(Util::fileSuffix(filename)) == false )
+            if( apiUtil->check_upload_allow_extensions(FileUtil::fileSuffix(filename)) == false )
                 return false;
             return true;
         });
@@ -61,15 +48,15 @@ namespace server
             response.StatusCode = code;
             return false;
         }
-        std::string file_name = Util::fileName(file);
-        size_t pos = file_name.size() - Util::fileSuffix(file).size() - 1;
+        std::string file_name = FileUtil::fileName(file);
+        size_t pos = file_name.size() - FileUtil::fileSuffix(file).size() - 1;
         unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
-        Util::create_dirs(unz_dir_path);
+        FileUtil::createDirs(unz_dir_path);
         CompressUtil::UnCompressZip upfile(file, unz_dir_path);
         code = upfile.unCompress();
         if (code != CompressUtil::UnZipOK)
         {
-            Util::remove_path(unz_dir_path);
+            FileUtil::removePath(unz_dir_path);
             response.StatusMsg = "uncompress is failed error.";
             response.StatusCode = code;
             return false;
@@ -218,7 +205,7 @@ namespace server
                 string db_path = _db_home + db_name + _db_suffix;
                 string real_path = Util::getExactPath(db_path.c_str());
                 if (!real_path.empty()) {
-                    long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+                    uint64_t count_size_byte = FileUtil::dirSize(real_path.c_str());
                     // byte to MB
                     diskUsed = count_size_byte>>20;
                 }

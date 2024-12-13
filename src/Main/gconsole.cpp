@@ -889,9 +889,9 @@ int save_history()
 	}
 
 	// TODO: check this return value
-	if (!Util::dir_exist("bin/.gconsole_history"))
+	if (!FileUtil::dirExists("bin/.gconsole_history"))
 	{
-		if (!Util::create_dirs("bin/.gconsole_history")) 
+		if (!FileUtil::createDirs("bin/.gconsole_history")) 
 		{
 			cout << "Failed to create history directory" << endl;
 			return -1;
@@ -1651,14 +1651,7 @@ int export_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, EXPORT_PRIVILEGE_BIT);
 
-	string export_path = "./export";
-	if (args.size() == 1)
-		export_path = args[0];
-	if (export_path[export_path.length() - 1] != '/')
-		export_path = export_path + "/";
-	if (!Util::dir_exist(export_path))
-		Util::create_dirs(export_path);
-
+	string export_path = GlobalTypedef::export_path;
 	
 	server::MessageExportRequest export_request(_current_database, export_path, false);
 	export_request.username = root_username;
@@ -1684,28 +1677,11 @@ int backup_handler(const vector<string> &args)
 	if (!args.empty()) 
 	{
 		backup_path = args[0];
-	}
-	if (backup_path.empty())
+	} 
+	else 
 	{
 		backup_path = default_backup_path;
 	}
-	if (backup_path == "." || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
-	{
-		cout << "Backup path cannot be root or \"" + _db_home + "\", Backup Failed!" << endl;
-		return -1;
-	}
-
-	gutil::StringUtil::append(backup_path, '/');
-	if (!Util::dir_exist(backup_path))
-	{
-		cout << "Backup path " + backup_path + "is not exist, create it now..." << endl;
-		if (!Util::create_dirs(backup_path))
-		{
-			cout << "create Backup path Failed, Backup Failed!" << endl;
-			return -1;
-		}
-	}
-
 	server::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
 	backup_request.username = root_username;
 	backup_request.password = root_password;
@@ -1744,7 +1720,7 @@ int restore_handler(const vector<string> &args)
 		return -1;
 	}
 
-	if (!Util::dir_exist(backup_path))
+	if (!FileUtil::dirExists(backup_path))
 	{
 		cout << "backup file path is not exist, restore Failed" << endl;
 		return -1;
@@ -2418,17 +2394,17 @@ int batchinsert_handler(const vector<string> &args)
 
 	string file_path = args[0];
 	string dir_path;
-	if (Util::is_dir(file_path)) 
+	if (FileUtil::is_dir(file_path)) 
 	{
 		dir_path = file_path;
 		file_path = "";
 	}
-	if (!file_path.empty() && !Util::file_exist(file_path))
+	if (!file_path.empty() && !FileUtil::fileExists(file_path))
 	{
 		cout << "File " << file_path << " does not exist." << endl;
 		return -1;
 	}
-	if (!dir_path.empty() && !Util::dir_exist(dir_path))
+	if (!dir_path.empty() && !FileUtil::dirExists(dir_path))
 	{
 		cout << "Dir " << dir_path << " does not exist." << endl;
 		return -1;
@@ -2455,7 +2431,7 @@ int batchremove_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 	string file_path = args[0];
-	if (!Util::file_exist(file_path))
+	if (!FileUtil::fileExists(file_path))
 	{
 		cout << "File " << file_path << " does not exist." << endl;
 		return -1;
@@ -2521,7 +2497,7 @@ int addreason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 1)
 
-	if (!Util::file_exist(args[0]))
+	if (!FileUtil::fileExists(args[0]))
 	{
 		cout << "File " << args[0] << " does not exist." << endl;
 		return -1;
@@ -2791,7 +2767,7 @@ int funcreate_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 1);
 
-	if (!Util::file_exist(args[0]))
+	if (!FileUtil::fileExists(args[0]))
 	{
 		cout << "File " << args[0] << " does not exist." << endl;
 		return -1;
@@ -2811,7 +2787,7 @@ int funupdate_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 1);
 
-	if (!Util::file_exist(args[0]))
+	if (!FileUtil::fileExists(args[0]))
 	{
 		cout << "File " << args[0] << " does not exist." << endl;
 		return -1;
@@ -2858,7 +2834,7 @@ int funbuild_handler(const vector<string>& args)
 int funreview_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 1);
-	if (!Util::file_exist(args[0]))
+	if (!FileUtil::fileExists(args[0]))
 	{
 		cout << "File " << args[0] << " does not exist." << endl;
 		return -1;
@@ -3140,7 +3116,7 @@ int checkpoint_handler(const vector<string>& args)
 // 	CHECK_ARGC(1, 1)
 
 // 	string filepath = args[0];
-// 	if (!Util::file_exist(filepath))
+// 	if (!FileUtil::fileExists(filepath))
 // 	{
 // 		cout << "failed to import license: file " + filepath + "does not exist" << endl;
 // 		return -1;

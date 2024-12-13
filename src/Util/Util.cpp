@@ -165,42 +165,42 @@ Util::configure()
     string temp_str = GlobalTypedef::global_config["db_home"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["db_home"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
     
     // create backup_path
     temp_str = Util::getConfigureValue("backup_path");
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["backup_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
 
     // create pfn_base_path
     temp_str = GlobalTypedef::global_config["pfn_base_path"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["pfn_base_path"] = temp_str;
-    Util::create_dirs(temp_str + "cpp");
-    Util::create_dirs(temp_str + "lib");
+    FileUtil::createDirs(temp_str + "cpp");
+    FileUtil::createDirs(temp_str + "lib");
 
     // create upload_path
     temp_str = GlobalTypedef::global_config["upload_path"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["upload_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
 
     // create logs path
     temp_str = GlobalTypedef::global_config["querylog_path"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["querylog_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
 
     temp_str = GlobalTypedef::global_config["accesslog_path"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["accesslog_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
 
     temp_str = GlobalTypedef::global_config["queryresult_path"];
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["queryresult_path"] = temp_str;
-    Util::create_dirs(temp_str);
+    FileUtil::createDirs(temp_str);
     
     // create cluster path
     if (GlobalTypedef::global_config["cluster_on"] == "on")
@@ -208,14 +208,21 @@ Util::configure()
         temp_str = GlobalTypedef::global_config["cluster_data_path"];
         gutil::StringUtil::append(temp_str, '/');
         GlobalTypedef::global_config["cluster_data_path"] = temp_str;
-        Util::create_dirs(temp_str);
+        FileUtil::createDirs(temp_str);
     }
 
     // init slog
     string log_mode = Util::getConfigureValue("log_mode");
-    Slog &slog = Slog::getInstance();
-    slog.init(log_mode.c_str());
-    if (slog._logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
+	if (gutil::FileUtil::fileExists(log_mode))
+	{
+		log4cplus::PropertyConfigurator::doConfigure(LOG4CPLUS_TEXT(log_mode));
+	}
+	else
+	{
+		log4cplus::BasicConfigurator::doConfigure();
+		SLOG_INFO("log config file not exist, use default config");
+	}
+    if (GlobalTypedef::isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
     {
         vector<std::string> headers = {"name", "value"};
         PrettyPrint pp(headers);
@@ -236,7 +243,7 @@ bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname, s
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
-        GlobalTypedef::global_config[keyname] = replace_all(value,"\"","");
+        GlobalTypedef::global_config[keyname] = StringUtil::replace_all(value,"\"","");
     else
         GlobalTypedef::global_config[keyname] = default_value;
     return true;
@@ -313,6 +320,7 @@ Util::~Util()
     fclose(this->debug_database);	//NULL is ok, just like free(NULL)
     this->debug_database = NULL;
 #endif
+GlobalTypedef::_logger.shutdown();
 }
 
 bool
@@ -588,427 +596,7 @@ Util::result_id_str(vector<unsigned*>& _v, int _var_num)
     return _ss.str();
 }
 
-void
-Util::dir_files(const string _dir, const string _contains, std::vector<std::string> &file_list, bool need_dir_name)
-{
 
-    DIR *dirp = opendir(_dir.c_str());
-    if (dirp == NULL)
-    {
-        if(Slog::_logger.getAllAppenders().size() > 0)
-        {
-            SLOG_WARN("dir is not exist.");
-        }
-        else
-        {
-            SLOG_CORE("dir is not exist.");
-        }
-        return;
-    }
-    struct dirent *dir_entry = NULL;
-    string file_name;
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        file_name = dir_entry->d_name;
-        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
-        {
-            continue;
-        }
-        if (!_contains.empty())
-        {
-            if (file_name.find(_contains.c_str()) != string::npos)
-            {
-                if (need_dir_name)
-                    file_list.push_back(_dir + dir_entry->d_name);
-                else
-                    file_list.push_back(dir_entry->d_name);
-            }
-        }
-        else
-        {
-            if (need_dir_name)
-                file_list.push_back(_dir + dir_entry->d_name);
-            else
-                file_list.push_back(dir_entry->d_name);
-        }
-    }
-    closedir(dirp);
-}
-
-void Util::dir_filepaths(const string _dir, std::vector<std::string> &file_list)
-{
-    DIR *dirp = opendir(_dir.c_str());
-    if (dirp == NULL)
-    {
-        if(Slog::_logger.getAllAppenders().size() > 0)
-        {
-            SLOG_WARN("dir is not exist.");
-        }
-        else
-        {
-            SLOG_CORE("dir is not exist.");
-        }
-        return;
-    }
-    struct dirent *dir_entry = NULL;
-    string file_name;
-    struct stat st; 
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        file_name = dir_entry->d_name;
-        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
-        {
-            continue;
-        }
-        std::string path;
-        if (_dir.back() != '/')
-            path = _dir + '/' + file_name;
-        else
-            path = _dir + file_name;
-        stat(path.c_str(), &st);
-        file_list.push_back(path);
-        if (S_ISDIR(st.st_mode))
-            dir_filepaths(path, file_list);
-    }
-    closedir(dirp);
-}
-
-bool
-Util::dir_exist(const string _dir)
-{
-	DIR* dirptr = opendir(_dir.c_str());
-	if(dirptr != NULL)
-	{
-		closedir(dirptr);
-		return true;
-	}
-
-	return false;
-}
-
-bool Util::file_exist(const string _file)
-{
-	struct stat buffer;
-	return (stat(_file.c_str(), &buffer) == 0);
-}
-
-bool Util::is_file(const string _file)
-{
-	struct stat st;
-    return stat(_file.c_str(), &st) >= 0 && S_ISREG(st.st_mode);
-}
-
-bool Util::is_dir(const string& _path)
-{
-	struct stat st;
-    return stat(_path.c_str(), &st) >= 0 && S_ISDIR(st.st_mode);
-}
-
-bool
-Util::create_dir(const string _dir)
-{
-    if(! Util::dir_exist(_dir))
-    {
-        mkdir(_dir.c_str(), 0755);
-        return true;
-    }
-
-    return false;
-}
-
-bool
-Util::create_dirs(const string _dirs)
-{
-    if (! Util::dir_exist(_dirs))
-    {
-        char tmpDirPath[255] = {0};
-        size_t len = _dirs.length();
-        for (size_t i = 0; i < len; i++)
-        {
-            tmpDirPath[i] = _dirs[i];
-            if (tmpDirPath[i] == '/')
-            {
-                if (access(tmpDirPath, 0) != 0)
-                {
-                    mkdir(tmpDirPath, 0755);
-                }
-            }
-        }
-        if (access(tmpDirPath, 0) != 0)
-        {
-            mkdir(tmpDirPath, 0755);
-        }
-        return true;
-    }
-    return false;
-}
-
-bool
-Util::create_file(const string _file) {
-	if (creat(_file.c_str(), 0755) > 0) {
-		return true;
-	}
-	return false;
-}
-
-size_t
-Util::count_lines(const std::string _file, unsigned int _mode)
-{
-    size_t count = 0;
-    if (_mode == 0)
-    {
-        std::string cmd = "wc -l " + _file + " | awk '{print $1}'";
-        // cout << "count by cmd: " << cmd << endl;
-        char _cmd[1024] = {0};
-        strcpy(_cmd, cmd.c_str());
-        FILE *ptr;
-        if ((ptr = popen(_cmd, "r")) != NULL)
-        {
-            char buf[64];
-            char *rt = new char[128]{0};
-            while (fgets(buf, 64, ptr) != NULL)
-            {
-                strcat(rt, buf);
-                if (strlen(rt) > 64)
-                {
-                    break;
-                }
-            }
-            pclose(ptr);
-            ptr = NULL;
-            count = atol(rt);
-            delete [] rt;
-        }
-    }
-    else
-    {
-        // cout << "count by reader: " << _file << endl;
-        ifstream reader;
-        std::string line;
-        reader.open(_file.c_str(),ios::in);
-        if (reader.fail())
-        {
-            return 0;
-        }
-        while (getline(reader, line))
-        {
-            count++;
-        }
-        reader.close();
-    }
-    
-    return count;
-}
-
-unsigned long long Util::count_dir_size(const char *_dir_path)
-{
-    DIR *dirp = opendir(_dir_path);
-    unsigned long long total_size = 0;
-    if (dirp == NULL)
-    {
-        if (Slog::_logger.getAllAppenders().size() > 0)
-        {
-            SLOG_WARN("dir is not exist.");
-        }
-        else
-        {
-            SLOG_CORE("dir is not exist.");
-        }
-        return total_size;
-    }
-    // calc dir self size
-    struct stat statbuf;
-    lstat(_dir_path, &statbuf);
-    total_size += statbuf.st_size;
-
-    struct dirent *dir_entry = NULL;
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        char subdir[256];
-        snprintf(subdir, sizeof(subdir)-1, "%s/%s", _dir_path, dir_entry->d_name);
-        lstat(subdir, &statbuf);
-
-        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0)
-        {
-            continue;
-        }
-        if (S_ISDIR(statbuf.st_mode))
-        {
-            total_size += count_dir_size(subdir);
-        }
-        else
-        {
-            total_size += statbuf.st_size;
-        }
-    }
-    closedir(dirp);
-    return total_size;
-}
-
-unsigned long long Util::getFileSize(const std::string& file_path)
-{
-    if (file_path.empty())
-		return 0;
-
-    struct stat st;
-    memset(&st, 0, sizeof st);
-    int ret = stat(file_path.c_str(), &st);
-    unsigned long long size = 0;
-    if (ret != -1)
-        size = st.st_size;
-    return size;
-}
-
-bool Util::remove_dir(const std::string dir_path)
-{
-    DIR* dirp = opendir(dir_path.c_str());    
-    if (!dirp)
-    {
-        return false;
-    }
-    struct dirent *dir;
-    struct stat st;
-    while ((dir = readdir(dirp)) != NULL)
-    {
-        if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
-        {
-            continue;
-        }    
-        std::string sub_path = dir_path + '/' + dir->d_name;
-        if (lstat(sub_path.c_str(),&st) == -1)
-        {
-            SLOG_ERROR("rm_dir lstat sub_path:"+sub_path);
-            continue;
-        }    
-        if (S_ISDIR(st.st_mode))
-        {
-            if (!remove_dir(sub_path))
-            {
-                closedir(dirp);
-                return false;
-            }
-            rmdir(sub_path.c_str());
-        }
-        else if (S_ISREG(st.st_mode))
-        {
-            unlink(sub_path.c_str());
-        }
-        else
-        {
-            SLOG_ERROR("rm_dir st_mode sub_path:"+sub_path);
-            continue;
-        }
-    }
-    if (rmdir(dir_path.c_str()) == -1)
-    {
-        closedir(dirp);
-        return false;
-    }
-    closedir(dirp);
-    return true;
-}
-
-bool Util::remove_file(const std::string file_path)
-{
-    struct stat st;    
-    if (lstat(file_path.c_str(), &st) == -1 || !S_ISREG(st.st_mode))
-    {
-        return false;
-    }
-    if (unlink(file_path.c_str()) == -1)
-    {
-        return false;
-    }    
-    return true;
-}
-
-bool Util::remove_path(const std::string path)
-{
-    std::string file_path = path;
-    struct stat st;    
-    if (lstat(file_path.c_str(), &st) == -1)
-    {
-        return false;
-    }
-    if (S_ISREG(st.st_mode))
-    {
-        if(unlink(file_path.c_str()) == -1)
-        {
-            return false;
-        }    
-    }
-    else if (S_ISDIR(st.st_mode))
-    {
-        if (path == "." || path == "..")
-        {
-            return false;
-        }    
-        if (!remove_dir(file_path))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        SLOG_ERROR("rm_path st_mode error:"+path);
-    }
-    return true;
-}
-
-std::string Util::fileSuffix(const std::string &filepath)
-{
-    std::string::size_type pos1 = filepath.find_last_of("/");
-    if (pos1 == std::string::npos)
-    {
-        pos1 = 0;
-    }
-    else
-    {
-        pos1++;
-    }
-    std::string file = filepath.substr(pos1, -1);
-
-    std::string::size_type pos2 = file.find_last_of(".");
-    if (pos2 == std::string::npos)
-    {
-        return "";
-    }
-    return file.substr(pos2 + 1, -1);
-}
-
-std::string Util::fileName(const std::string &filepath)
-{
-    std::string::size_type pos1 = filepath.find_last_not_of("/");
-    if (pos1 == std::string::npos)
-    {
-        return "/";
-    }
-    std::string::size_type pos2 = filepath.find_last_of("/", pos1);
-    if (pos2 == std::string::npos)
-    {
-        pos2 = 0;
-    } else
-    {
-        pos2++;
-    }
-
-    return filepath.substr(pos2, pos1 - pos2 + 1);
-}
-
- std::string Util::get_parent_path(const std::string& file_path)
- {
-    std::string directory;
-    std::stringstream ss(file_path);
-    std::getline(ss, directory, '/');
-    std::string token;
-    while (std::getline(ss, token, '/')) {
-        if (token.empty()) 
-            continue;
-        directory += "/";
-        directory += token;
-    }
-    return directory;
-}
 
 string
 Util::get_backup_time(const string path, const string db_name)
@@ -1030,44 +618,6 @@ Util::get_backup_time(const string path, const string db_name)
     second = timestamp.substr(10, 2);
     string time = year + '-' + month + '-' + day + ' ' + hour + ":" + minute + ":" + second;
     return time;
-}
-
-string
-Util::get_folder_name(const string path, const string db_name){
-    string _db_name = db_name + ".db";
-    string::size_type position;
-    position = path.find(_db_name);
-
-    string db_folder = path.substr(position, path.length());
-    return db_folder;
-}
-
-bool
-Util::save_to_file(const char* _dir, const string _content)
-{
-    ofstream fout(_dir);
-
-    if (fout.is_open())
-    {
-        fout << _content;
-        fout.close();
-    }
-
-    return false;
-}
-
-string
-Util::string_replace(string rec, const string src, const string des)
-{
-    string::size_type pos = 0;
-    string::size_type a = src.size();
-    string::size_type b = des.size();
-    while ((pos = rec.find(src, pos)) != string::npos)
-    {
-        rec.replace(pos, a, des);
-        pos += b;
-    }
-    return rec;
 }
 
 bool
@@ -1223,7 +773,7 @@ Util::getSystemOutput(string cmd)
     {
         fprintf(stderr, "system call failed:%s\n", cmd.c_str());
         // system(cmd.c_str());
-        Util::remove_path(file);
+        FileUtil::removePath(file);
         return "";
     }
 
@@ -1261,7 +811,7 @@ Util::getSystemOutput(string cmd)
     //fclose(fp);
     //}
     // system(cmd.c_str());
-    Util::remove_path(file);
+    FileUtil::removePath(file);
 	//cerr<<"ans: "<<ans<<endl;
     return ans;
 }
@@ -1294,47 +844,6 @@ Util::getExactPath(const char *str)
         return "";
     }
     return real_path;
-}
-// chek process exist by proc file
-bool
-Util::checkProcessExist(const std::string& processPath, const std::string& currPid)
-{
-    std::string procPath = "/proc";
-    DIR *dirp = opendir(procPath.c_str());
-    if (dirp == NULL) {
-        #ifdef DEBUG
-        std::cerr << "Error opening /proc directory." << std::endl;
-        #endif
-        return false;
-    }
-     // read all files of /proc 
-    struct dirent *dir_entry = NULL;
-    string line;
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        if (dir_entry->d_type == DT_DIR)
-        {
-            line = dir_entry->d_name;
-            if (Util::is_number(line) && line != currPid) 
-            {
-                // concat full pid file path
-                std::string pidFilePath = procPath + "/" + line + "/exe";
-                std::ifstream pidFile(pidFilePath);
-                // check pid exe file
-                if (pidFile.is_open()) {
-                    // get pid exe linked file
-                    std::string pidExeLinkPath = Util::getExactPath(pidFilePath.c_str());
-                    if (pidExeLinkPath == processPath) {
-                        pidFile.close();
-                        return true;
-                    }
-                    pidFile.close();
-                }
-            }
-        }
-    }
-    closedir(dirp);
-    return false;
 }
 
 unsigned
@@ -1795,59 +1304,6 @@ Util::isValidIPV6(string str)
 	return false;
 }
 
-string 
-Util::getTimeName()
-{
-	//NOTICE: this is another method to get the concrete time
-	time_t rawtime;
-	struct tm* timeinfo;
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	string tempTime = asctime(timeinfo);
-	for(unsigned i = 0; i < tempTime.length(); i++)
-	{
-		if(tempTime[i] == ' ')
-			tempTime[i] = '_';
-	}
-	string myTime = tempTime.substr(0, tempTime.length()-1);
-	return myTime;
-}
-
-bool Util::checkPort(int port, std::string p_name)
-{
-    stringstream ss;
-	ss << port;
-	string str_port = ss.str();
-	string out_file = ".tmp/port_check";
-	string cmd = "netstat -ntlp |grep " + str_port + " > " + out_file;
-	system(cmd.c_str());
-	struct stat buffer;
-	bool file_exist = (stat(out_file.c_str(), &buffer) == 0);
-	if (!file_exist)
-	{
-		return true;
-	}
-	ifstream inputFile(out_file.c_str());
-	string line;
-	size_t idx;
-	str_port = ":" + str_port;
-	bool result = true;
-	while (getline(inputFile, line, '\n'))
-	{
-		idx = line.find(str_port);
-		if ((idx != string::npos) && line[idx + str_port.size()] == ' ')
-		{
-			if (p_name.empty())
-				result = false;
-			else if (line.find(p_name) == string::npos) // main process restart sub process
-				result = false;
-			break;
-		}
-	}
-    Util::remove_path(out_file);
-	return result;
-}
-
 //TODO: change these compare functions from int to unsigned, but take care of the returned values
 int 
 Util::_spo_cmp(const void* _a, const void* _b) 
@@ -2078,22 +1534,6 @@ Util::equal(const ID_TUPLE& a, const ID_TUPLE& b)
 	return false;
 }
 
-void
-Util::empty_file(const char* _fname)
-{
-	FILE * fp;
-	//NOTICE: if exist, then overwrite and create a empty file
-	fp = fopen(_fname, "w"); 
-	if(fp == NULL)
-	{
-		printf("do empty file %s failed\n", _fname);
-	}
-	else 
-	{
-		fclose(fp);
-	}
-}
-
 //require that _base>=1
 unsigned 
 ceiling(unsigned _val, unsigned _base)
@@ -2106,41 +1546,6 @@ long
 Util::read_backup_time() 
 {
 	return Util::gserver_backup_time;
-}
-
-std::string
-Util::replace_all(std::string _content, const std::string oldtext, const std::string newtext)
-{
-     while(true)   {
-            string::size_type  pos(0);
-            if(  (pos=_content.find(oldtext))!=string::npos  )
-                _content.replace(pos,oldtext.length(),newtext);
-            else   break;
-        }
-    return  _content;
-}
-
-std::string
-Util::replace_all_ignore_case(const std::string& input, const std::string& oldtext, const std::string& newtext)
-{
-    std::string _result = input;
-    std::string _lower_input = input; 
-    std::string _lower_oldtext = oldtext;
-    std::string _newtext = newtext;
-    std::string::size_type pos = 0;
-    std::transform(_lower_input.begin(), _lower_input.end(), _lower_input.begin(), ::tolower);
-    std::transform(_lower_oldtext.begin(), _lower_oldtext.end(), _lower_oldtext.begin(), ::tolower);
-    pos = _lower_input.find(_lower_oldtext, pos);
-    while(pos != std::string::npos)
-    {
-        // replace origin str
-        _result.replace(pos, _lower_oldtext.length(), _newtext);
-        // replace lower case str
-        _lower_input.replace(pos, _lower_oldtext.length(), _newtext);
-        pos += _newtext.length();
-        pos = _lower_input.find(_lower_oldtext, pos);
-    }
-    return _result;
 }
 
 std::string
@@ -2271,7 +1676,7 @@ Util::delete_backuplog(string db_name)
     // }
     // fclose(fp);
     // fclose(fp1);
-    // Util::remove_path(BACKUP_LOG_PATH);
+    // FileUtil::removePath(BACKUP_LOG_PATH);
     // string cmd = "mv ";
     // cmd += BACKUP_LOG_TMEP_PATH;
     // cmd += ' ';
@@ -2320,7 +1725,7 @@ Util::update_backuplog(string db_name, string parameter, string value)
     // }
     // fclose(fp);
     // fclose(fp1);
-    // Util::remove_path(BACKUP_LOG_PATH);
+    // FileUtil::removePath(BACKUP_LOG_PATH);
     // string cmd = "mv ";
     // cmd += BACKUP_LOG_TMEP_PATH;
     // cmd += ' ';
@@ -2416,48 +1821,6 @@ Util::get_timestamp(string& line)
     return timestamp;
 }
 
-//get all specific file type files in a directory
-vector<string> 
-Util::GetFiles(const char *src_dir, const char *ext)
-{
-    vector<string> result;
-    string directory(src_dir);
-    string m_ext(ext);
-
-    DIR *dir = opendir(src_dir);
-    if ( dir == NULL )
-    {
-        printf("[ERROR] %s is not a directory or not exist!", src_dir);
-        return result;
-    }
- 
-    struct dirent* d_ent = NULL;
- 
-    char dot[3] = ".";
-    char dotdot[6] = "..";
- 
-    while ( (d_ent = readdir(dir)) != NULL )
-    {
-        if ( (strcmp(d_ent->d_name, dot) != 0) && (strcmp(d_ent->d_name, dotdot) != 0) )
-        {
-            if ( d_ent->d_type != DT_DIR)
-            {
-                string d_name(d_ent->d_name);
-                if (strcmp(d_name.c_str () + d_name.length () - m_ext.length(), m_ext.c_str ()) == 0)
-                {
-                    result.push_back(string(d_ent->d_name));
-                }
-            }
-        }
-    }
- 
-    // sort the returned files
-    std::sort(result.begin(), result.end());
- 
-    closedir(dir);
-    return result;
-}
-
 /*!
  * @brief		get the param value from command
  * @param[in]	argc:the length of argc
@@ -2532,33 +1895,22 @@ void Util::printFile(std::vector<std::string> &headers, std::vector<std::vector<
     stringstream ss;
     ss << "\n";
     pp.print(ss);
-    if (Slog::_logger.getAllAppenders().size() == 0)
+    if (GlobalTypedef::_logger.getAllAppenders().size() == 0)
     {
         Util::configure();
     }
-    
-    if(Slog::_logger.isEnabledFor(log4cplus::INFO_LOG_LEVEL))
+    if(GlobalTypedef::isEnabledFor(log4cplus::INFO_LOG_LEVEL))
     {
         SLOG_INFO(ss.str());
     } 
-    else if (Slog::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
+    else if (GlobalTypedef::isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
         SLOG_DEBUG(ss.str());
     }
 }
 
-std::string Util::get_cur_path()
+std::string Util::currentPath()
 {
-    char *buffer;
-    if((buffer = getcwd(NULL, 0)) == NULL) 
-    {
-        SLOG_ERROR("get cur path error");
-        return "";
-    }
-    else
-    {
-        string cur_path = string(buffer);
-        SLOG_DEBUG("cur_path: " + cur_path);
-        return cur_path;
-    }
+    std::filesystem::path cur_path = std::filesystem::current_path();
+    return cur_path.string();
 }

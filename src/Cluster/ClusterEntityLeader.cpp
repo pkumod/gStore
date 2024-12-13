@@ -122,7 +122,7 @@ namespace cluster
         if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
         {
             SLOG_ERROR("compress fail");
-            Util::remove_path(zip_path);
+            FileUtil::removePath(zip_path);
             return false;
         }
 
@@ -143,7 +143,7 @@ namespace cluster
         if (!db)
             return false;
         std::string post_dir_zip = info.zip_path;
-        if (!Util::file_exist(post_dir_zip))
+        if (!FileUtil::fileExists(post_dir_zip))
         {
             SLOG_TRACE("cluster recover zip is not exist, not data update:" << post_dir_zip);
             return false;
@@ -215,12 +215,12 @@ namespace cluster
         addRestoringDb(info.ip, info.db_name);
         std::string current_path = ClusterDb::getDbDirPath(info.db_name) + file_name;
         std::string zip_path = current_path + ".zip";
-        if (!Util::file_exist(zip_path))
+        if (!FileUtil::fileExists(zip_path))
         {
             if (!CompressUtil::FileHelper::compressExportZip(current_path, zip_path, false))
             {
                 SLOG_ERROR("compress fail");
-                Util::remove_path(zip_path);
+                FileUtil::removePath(zip_path);
                 removeRestoringDb(info.ip, info.db_name);
                 return false;
             }
@@ -396,13 +396,13 @@ namespace cluster
         // triple_num 1000000 is 1 second
         // file size 100m is 1 second
         std::string file_path = ClusterDb::getDbDirPath(db_name) + file_name;
-        if (!Util::file_exist(file_path))
+        if (!FileUtil::fileExists(file_path))
         {
             SLOG_ERROR("file not exits:" << db_name << " ,file name:" << file_name);
             return 60000;
         }
-        size_t triple_num = Util::count_lines(file_path);
-        long long unsigned size_byte = Util::getFileSize(file_path);
+        std::uint64_t triple_num = FileUtil::fileLines(file_path);
+        std::uint64_t size_byte = FileUtil::fileSize(file_path);
         uint32 tripe_time = triple_num/1000000;
         uint32 disk_m = size_byte>>20;
         uint32 time_out = (triple_num/1000000 + disk_m/100) * 1000 * 1.5;

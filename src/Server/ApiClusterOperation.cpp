@@ -105,7 +105,7 @@ namespace server
             }
             // init cluster db path
             std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
-            Util::create_dirs(cluster_db_path);
+            FileUtil::createDirs(cluster_db_path);
             // add log
             clusterManagerPtr->addLog(db_name, leader_nextIndex, ClusterOperation::ClusterOperation_Prepare, update_type);
             
@@ -165,7 +165,7 @@ namespace server
                         SLOG_DEBUG("follower restore " + db_name + " data: batch_remove num " << num);
                     }
                     db_info->getDatabase()->save();
-                    Util::remove_path(nt_file_path);
+                    FileUtil::removePath(nt_file_path);
                     clusterManagerPtr->updateLogOperation(db_name, leader_nextIndex, cluster::ClusterOperation::ClusterOperation_Cancel);
                 }
                 else
@@ -225,7 +225,7 @@ namespace server
             }
             SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             string db_path = _db_home + db_name + _db_suffix;
-            Util::remove_path(db_path);				
+            FileUtil::removePath(db_path);				
             string success = "cluster Database " + db_name + " dropped.";
             clusterManagerPtr->dropDb(db_name);
         }
@@ -256,7 +256,7 @@ namespace server
             response.StatusMsg = "append file can not be empty!";
             return;
         }
-        std::string file_suffix = Util::fileSuffix(fileinfo.first);
+        std::string file_suffix = FileUtil::fileSuffix(fileinfo.first);
         if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
         {
             response.StatusMsg =  "The type of append file is not supported!";
@@ -302,7 +302,7 @@ namespace server
             {
                 SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 return;
             }
             std::vector<std::string> log_files;
@@ -311,7 +311,7 @@ namespace server
             {
                 SLOG_WARN("zip file is empty: " + zip_file_path);
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 return;
             }
             if (apiUtil->check_db_built(db_name) == false) 
@@ -331,10 +331,10 @@ namespace server
             if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
                 SLOG_WARN("unable to get write lock of " + db_name + ".");
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 return;
             }
-            std::string log_file_name = Util::fileName(log_files[0]);
+            std::string log_file_name = FileUtil::fileName(log_files[0]);
             std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
             ClusterUpdateType log_update_type = ClusterUpdateType_Defaut;
             if (update_type == "1") {
@@ -347,13 +347,13 @@ namespace server
                 log_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
             }
             db_info->getDatabase()->save();
-            Util::remove_path(zip_file_path);
-            Util::remove_path(nt_file_path);
+            FileUtil::removePath(zip_file_path);
+            FileUtil::removePath(nt_file_path);
             apiUtil->unlock_databaseinfo(db_info);
 
             // update local log trem and index
             clusterManagerPtr->updateTerm(leader_term);
-            clusterManagerPtr->updateLogInfo(db_name, db_log.getNextIndex(), ClusterOperation::ClusterOperation_Append, log_update_type, Util::fileName(log_file_name));
+            clusterManagerPtr->updateLogInfo(db_name, db_log.getNextIndex(), ClusterOperation::ClusterOperation_Append, log_update_type, FileUtil::fileName(log_file_name));
 
             // send appendEntrites ok response
             cluster::ClusterNode leader_node = clusterManagerPtr->getLearrNode();
@@ -454,7 +454,7 @@ namespace server
             task_info.ip = resquest.follow_ip;
             task_info.port = resquest.follow_port;
             task_info.zip_path = clusterManagerPtr->compressInitDb(task_info);
-            if (!Util::file_exist(task_info.zip_path))
+            if (!FileUtil::fileExists(task_info.zip_path))
             {
                 SLOG_TRACE("leader database dir compress not exist:" << db_name);
                 apiUtil->unlock_databaseinfo(db_info);
@@ -489,7 +489,7 @@ namespace server
             response.StatusCode = StatusParamIsIllegal;
             return;
         }
-        std::string file_suffix = Util::fileSuffix(request->file_name);
+        std::string file_suffix = FileUtil::fileSuffix(request->file_name);
         if (!apiUtil->check_upload_allow_compress_packages(file_suffix))
         {
             response.StatusMsg =  "The type of append file is not supported!";
@@ -546,8 +546,8 @@ namespace server
     {
         clusterManagerPtr->addRestoringDb(request->db_name);
         const std::string cluster_init_dir = cluster::ClusterDb::getDbInitDir(request->db_name);
-        if (!Util::dir_exist(cluster_init_dir))
-            Util::create_dir(cluster_init_dir);
+        if (!FileUtil::dirExists(cluster_init_dir))
+            FileUtil::createDirs(cluster_init_dir);
         const std::string zip_file_path = cluster_init_dir + request->file_name;
         WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(zip_file_path, static_cast<const void *>(request->file_content.c_str()), request->file_content.size(), 0, 
             [apiUtil, clusterManagerPtr, zip_file_path, cluster_init_dir, request](WFFileIOTask *pwrite_task)
@@ -558,14 +558,14 @@ namespace server
             {
                 SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
 
             std::string cluster_db_dir = cluster_init_dir + '/' + db_name;
-            std::string db_dir = cluster_db_dir + ".db";
-            if (!Util::dir_exist(cluster_db_dir) || !Util::dir_exist(cluster_db_dir))
+            std::string db_dir = cluster_db_dir + GlobalTypedef::db_suffix();
+            if (!FileUtil::dirExists(db_dir) || !FileUtil::dirExists(cluster_db_dir))
             {
                 SLOG_DEBUG("compress dir not datasase file" << db_name);
                 // Util::remove_path(cluster_init_dir);
@@ -590,22 +590,20 @@ namespace server
                 SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             }
 
-            Util::remove_path(db_path);
+            FileUtil::removePath(db_path);
             clusterManagerPtr->dropDb(db_name);
 
-            std::string sys_cmd = "mv " + db_dir + " " + GlobalTypedef::db_home();
-            system(sys_cmd.c_str());
+            FileUtil::movePath(db_dir, GlobalTypedef::db_home());
 
             std::string built_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
             if(!apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::AREADY_BUILT))
             {
                 SLOG_ERROR("cluster recover database " + db_name + " fail" << " ,zip name:" << zip_file_path);
-                Util::remove_path(db_path);
+                FileUtil::removePath(db_path);
             }
             else
             {
-                sys_cmd = "mv " + cluster_db_dir + ' ' + cluster::ClusterDb::getClusterDir();
-                system(sys_cmd.c_str());
+                FileUtil::movePath(cluster_db_dir, cluster::ClusterDb::getClusterDir());
                 TermDbLog db_log(db_name, request->uid, request->index, 0, request->recoverIndex);
                 clusterManagerPtr->initTermDbLog(db_log);
             }
@@ -641,7 +639,7 @@ namespace server
             {
                 SLOG_ERROR("uncompress zip file fail: " + zip_file_path);
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
@@ -651,7 +649,7 @@ namespace server
             {
                 SLOG_WARN("zip file is empty: " + zip_file_path);
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
@@ -673,11 +671,11 @@ namespace server
             if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
                 SLOG_WARN("unable to get write lock of " + db_name + ".");
                 // remove zip file
-                Util::remove_path(zip_file_path);
+                FileUtil::removePath(zip_file_path);
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
-            std::string log_file_name = Util::fileName(log_files[0]);
+            std::string log_file_name = FileUtil::fileName(log_files[0]);
             std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
             if (request->updateType == ClusterUpdateType::ClusterUpdateType_Insert)
             {
@@ -690,13 +688,13 @@ namespace server
                 db_info->getDatabase()->batch_remove(nt_file_path);
             }
             db_info->getDatabase()->save();
-            Util::remove_path(zip_file_path);
-            Util::remove_path(nt_file_path);
+            FileUtil::removePath(zip_file_path);
+            FileUtil::removePath(nt_file_path);
             apiUtil->unlock_databaseinfo(db_info);
 
             // update local log trem and index
             clusterManagerPtr->updateTerm(request->term);
-            clusterManagerPtr->addCommitLog(db_name, request->recoverIndex, request->updateType, Util::fileName(log_file_name));
+            clusterManagerPtr->addCommitLog(db_name, request->recoverIndex, request->updateType, FileUtil::fileName(log_file_name));
             clusterManagerPtr->removeRestoringDb(db_name);
         });
         std::thread([pwrite_task](){

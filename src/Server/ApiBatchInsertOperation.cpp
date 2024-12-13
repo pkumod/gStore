@@ -24,13 +24,13 @@ namespace server
                 return false;
             }
         }
-        if (is_file && Util::file_exist(file) == false)
+        if (is_file && FileUtil::fileExists(file) == false)
         {
             response.StatusMsg = "The data file is not exist";
             response.StatusCode = StatusParamIsIllegal;
             return false;
         }
-        if (!is_file && Util::file_exist(dir) == false)
+        if (!is_file && FileUtil::dirExists(dir) == false)
         {
             response.StatusMsg = "The data directory is not exist";
             response.StatusCode = StatusParamIsIllegal;
@@ -65,7 +65,7 @@ namespace server
             std::string unz_dir_path;
             if (is_file)
             {
-                std::string file_suffix = Util::fileSuffix(file);
+                std::string file_suffix = FileUtil::fileSuffix(file);
                 bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
                 if (is_zip)
                 {
@@ -78,9 +78,7 @@ namespace server
             else
             {
                 // is dirctory
-                std::string dir = request.dir;
-                gutil::StringUtil::append(dir, '/');
-                Util::dir_files(dir, "", nt_files, true);
+                FileUtil::dir_filenames(request.dir, nt_files, "", true);
             }
             std::string db_name = request.db_name;
             shared_ptr<DatabaseInfo> db_info;
@@ -96,14 +94,14 @@ namespace server
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
-            total_num = Util::count_lines(error_log);
+            total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : nt_files)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
             }
             // exclude Info line
-            parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
             int64_t t1 = gutil::TimeUtil::timestamp();
             if (Util::getConfigureValue("check_point") == "on")
@@ -169,7 +167,7 @@ namespace server
             std::string unz_dir_path;
             if (is_file)
             {
-                std::string file_suffix = Util::fileSuffix(file);
+                std::string file_suffix = FileUtil::fileSuffix(file);
                 bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
                 if (is_zip)
                 {
@@ -182,9 +180,7 @@ namespace server
             else
             {
                 // is dirctory
-                std::string dir = request.dir;
-                gutil::StringUtil::append(dir, '/');
-                Util::dir_files(dir, "", nt_files, true);
+                FileUtil::dir_filenames(request.dir, nt_files, "", true);
             }
 
             shared_ptr<DatabaseInfo> db_info;
@@ -199,14 +195,14 @@ namespace server
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
-            total_num = Util::count_lines(error_log);
+            total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : nt_files)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
             }
             // exclude Info line
-            parse_error_num = Util::count_lines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
@@ -241,7 +237,7 @@ namespace server
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
                     if (!tmp_dir_path.empty())
                     {
-                        Util::remove_path(tmp_dir_path);
+                        FileUtil::removePath(tmp_dir_path);
                     }
                 }
                 else
@@ -266,7 +262,7 @@ namespace server
                     }
                     if (!tmp_dir_path.empty())
                     {
-                        Util::remove_path(tmp_dir_path);
+                        FileUtil::removePath(tmp_dir_path);
                     }
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
                     response.StatusMsg = "Less than half of the cluster nodes reply.";
@@ -278,11 +274,11 @@ namespace server
             {
                 SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
+                FileUtil::removePath(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
                 // remove unzip files
                 if (!unz_dir_path.empty())
                 {
-                    Util::remove_path(unz_dir_path);
+                    FileUtil::removePath(unz_dir_path);
                 }
             }
             // cluster sync task end

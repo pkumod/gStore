@@ -428,7 +428,7 @@ namespace server
                                 SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
                             }
                             apiUtil->unlock_databaseinfo(db_info);
-                            Util::remove_path(nt_file_path);
+                            FileUtil::removePath(nt_file_path);
                         }
                         else
                         {
@@ -445,7 +445,7 @@ namespace server
                 {
                     SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                    Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
+                    FileUtil::removePath(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
                 }
             }
             else

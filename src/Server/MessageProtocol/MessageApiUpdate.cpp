@@ -81,13 +81,13 @@ namespace server
     }
 
     // drop db
-    MessageDropRequest::MessageDropRequest(std::string db_name, std::string is_backup):MessageRequest(std::string("drop"))
+    MessageDropRequest::MessageDropRequest(std::string db_name, bool is_backup):MessageRequest(std::string("drop"))
     {
         this->db_name = db_name;
         this->is_backup = is_backup;
     }
 
-    MessageDropRequest::MessageDropRequest(std::string username, std::string password, std::string db_name, std::string is_backup) : MessageRequest("drop", username, password)
+    MessageDropRequest::MessageDropRequest(std::string username, std::string password, std::string db_name, bool is_backup) : MessageRequest("drop", username, password)
     {
         this->db_name = db_name;
         this->is_backup = is_backup;

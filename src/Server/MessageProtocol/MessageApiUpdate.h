@@ -31,9 +31,9 @@ namespace server
     // drop db
     struct MessageDropRequest : public MessageRequest {
         std::string db_name;
-        std::string is_backup;
-        MessageDropRequest(std::string db_name, std::string is_backup);
-        MessageDropRequest(std::string username, std::string password, std::string db_name, std::string is_backup);
+        bool is_backup;
+        MessageDropRequest(std::string db_name, bool is_backup);
+        MessageDropRequest(std::string username, std::string password, std::string db_name, bool is_backup);
         MessageDropRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;

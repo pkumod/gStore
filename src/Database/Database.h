@@ -18,6 +18,7 @@
 #include "../Util/FileUtil.h"
 #include "../Util/NodeUtil.h"
 #include "CSR.h"
+#include "indicators/progress_bar.hpp"
 
 enum DatabaseProgressStatus
 {

@@ -1946,21 +1946,21 @@ bool Database::isUpdate(const string& _query, QueryTree::UpdateType& updateType)
 
 void Database::InitEmptyDB() {
     this->resetIDinfo();
-	Util::create_dir(this->store_path);
+	FileUtil::createDirs(this->store_path);
 
 	string kv_store_path = store_path + "/kv_store";
-	Util::create_dir(kv_store_path);
+	FileUtil::createDirs(kv_store_path);
 
 	string stringindex_store_path = store_path + "/stringindex_store";
-	Util::create_dir(stringindex_store_path);
+	FileUtil::createDirs(stringindex_store_path);
 
 	string update_log_path = this->store_path + '/' + this->update_log;
-	Util::create_file(update_log_path);
+	FileUtil::createFile(update_log_path);
 	update_log_since_backup = this->store_path + '/' + this->update_log_since_backup;
-	Util::create_file(update_log_since_backup);
+	FileUtil::createFile(update_log_since_backup);
 
 	string error_log = this->store_path + "/parse_error.log";
-	Util::create_file(error_log);
+	FileUtil::createFile(error_log);
 	SLOG_CORE("Error log file:" << error_log);
 }
 
@@ -2482,9 +2482,8 @@ void Database::readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples)
 
 	fclose(fp);
 	// NOTICE: choose to empty the file or not
-	Util::empty_file(fname.c_str());
-
-	// return NULL;
+	fp = fopen(fname.c_str(), "w");
+	fclose(fp);
 }
 
 void Database::build_s2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
@@ -3743,7 +3742,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	}
 	SLOG_CORE("finish loading");
 
-	int triple_num = Util::count_lines(_rdf_file);
+	uint64_t triple_num = FileUtil::fileLines(_rdf_file);
 	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
 	{
 		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
@@ -3827,7 +3826,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	}
 	SLOG_CORE("finish loading");
 
-	int triple_num = Util::count_lines(_rdf_file);
+	uint64_t triple_num = FileUtil::fileLines(_rdf_file);
 	if (triple_num > RDFParser::TRIPLE_NUM_PER_GROUP)
 	{
 		triple_num = RDFParser::TRIPLE_NUM_PER_GROUP*3;
@@ -4397,31 +4396,37 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 
 bool Database::backup(std::string &_backup_path)
 {
-	if (!Util::dir_exist(GlobalTypedef::backup_path()))
+	StringUtil::append(_backup_path, '/');
+	if (!FileUtil::dirExists(_backup_path))
 	{
-		Util::create_dirs(_backup_path);
+		FileUtil::createDirs(_backup_path);
 	}
-	gutil::StringUtil::append(_backup_path, '/');
-	_backup_path = _backup_path + this->name + GlobalTypedef::db_suffix() + "_" + gutil::TimeUtil::now();
+	_backup_path = _backup_path + this->name + GlobalTypedef::db_suffix() + "_" + TimeUtil::now();
 
 	SLOG_CORE("Beginning backup, path is: "<< _backup_path);
 
 	string sys_cmd;
-	if (Util::dir_exist(_backup_path))
+	if (FileUtil::dirExists(_backup_path))
 	{
-		Util::remove_path(_backup_path);
+		FileUtil::removePath(_backup_path);
 	}
-	sys_cmd = "cp -r " + this->store_path + ' ' + _backup_path;
-	system(sys_cmd.c_str());
-	Util::remove_path(_backup_path + '/' + this->update_log);
+	// sys_cmd = "cp -r " + this->store_path + ' ' + _backup_path;
+	// system(sys_cmd.c_str());
+	bool rt = FileUtil::copyDir(this->store_path, _backup_path);
+	if (!rt)
+	{
+		SLOG_ERROR("Failed to backup!");
+		return false;
+	}
+	FileUtil::removePath(_backup_path + '/' + this->update_log);
 
 	// this->vstree->saveTree();
 	this->kvstore->flush();
 
 	this->clear_update_log();
 	string update_log_path = this->store_path + '/' + this->update_log_since_backup;
-	Util::remove_path(update_log_path);
-	Util::create_file(update_log_path);
+	FileUtil::removePath(update_log_path);
+	FileUtil::createFile(update_log_path);
 
 	SLOG_CORE("Backup completed!");
 	return true;
@@ -4439,7 +4444,7 @@ bool Database::restore(const string &_backup_path)
 	if (!this->load())
 	{
 		this->clear();
-		if (!Util::dir_exist(_backup_path))
+		if (!FileUtil::dirExists(_backup_path))
 		{
 			SLOG_ERROR("Failed to restore!");
 			return false;
@@ -4450,12 +4455,10 @@ bool Database::restore(const string &_backup_path)
 		SLOG_CORE("Failed to restore from original db file, trying to restore from backup file.");
 		SLOG_CORE("Your old db file will be stored at " << this->store_path << ".bad");
 
-		Util::remove_path(this->store_path + ".bad");
-		sys_cmd = "mv -r " + this->store_path + ' ' + this->store_path + ".bad";
-		system(sys_cmd.c_str());
-		sys_cmd = "cp -r " + _backup_path + ' ' + this->store_path;
-		system(sys_cmd.c_str());
-		Util::create_file(this->store_path + '/' + this->update_log);
+		FileUtil::removePath(this->store_path + ".bad");
+		FileUtil::movePath(this->store_path, this->store_path + ".bad");
+		FileUtil::copyFile(_backup_path, this->store_path);
+		FileUtil::createFile(this->store_path + '/' + this->update_log);
 
 		if (!this->load())
 		{
@@ -4590,7 +4593,7 @@ bool Database::restore_update(multiset<string> &_i, multiset<string> &_r)
 		return false;
 	}
 
-	Util::remove_path(tmp_path);
+	FileUtil::removePath(tmp_path);
 	return true;
 }
 
@@ -4874,10 +4877,10 @@ bool Database::saveStatisticsInfoFile()
 {
 	ofstream file;
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
-	if (Util::file_exist(filepath) == false)
+	if (FileUtil::fileExists(filepath) == false)
 	{
 		SLOG_CORE("create statistics file.");
-		Util::create_file(filepath);
+		FileUtil::createFile(filepath);
 	}
 	file.open(filepath);
 	int i = 0;
@@ -4918,7 +4921,7 @@ bool Database::loadDBInfoFile()
 bool Database::loadStatisticsInfoFile()
 {
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
-	if (Util::file_exist(filepath) == false)
+	if (FileUtil::fileExists(filepath) == false)
 	{
 		SLOG_ERROR("The statistics file is not exist.");
 		SLOG_ERROR("Statistics file load failed!");
@@ -4983,7 +4986,7 @@ unordered_map<string, unsigned long long> Database::getStatisticsInfo()
 		return this->umap;
 	unordered_map<string, unsigned long long> subList;
 	string filepath = this->getStorePath() + "/" + this->statistics_info_file;
-	if (Util::file_exist(filepath) == false)
+	if (FileUtil::fileExists(filepath) == false)
 	{
 		SLOG_ERROR("The statistics file is not exist.");
 		return subList;

@@ -9,13 +9,14 @@
 #include <vector>
 #include "minizip/unzip.h"
 #include "minizip/zip.h"
-#include "Util.h"
+#include "FileUtil.h"
 
 #define WRITEBUFFERSIZE (8192)
 #define MAXFILENAME (512)
 #define MAXWBITS 15
 #define GZIPENCODING 16
 using namespace std;
+using namespace gutil;
 
 typedef std::function<bool(std::string)> foreach_cb;
 

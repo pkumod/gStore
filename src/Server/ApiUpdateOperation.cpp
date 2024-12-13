@@ -7,7 +7,7 @@ namespace server
         try
         {
             std::string db_name = resquest.db_name;
-            bool is_backup = stringIsTrue(resquest.is_backup);
+            bool is_backup = resquest.is_backup;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -34,17 +34,15 @@ namespace server
             }
             SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             string db_path = GlobalTypedef::db_path(db_name);
-            if (is_backup == false)
+            if (is_backup)
             {
-                Util::remove_path(db_path);
-                SLOG_DEBUG("remove_path: " + db_path);
+                FileUtil::movePath(db_path, db_path+".bak");
+                SLOG_DEBUG("bak_path: " + db_path + ".bak");
             }
             else
             {
-                std::string _db_home = GlobalTypedef::db_home();
-                std::string cmd = "mv " + db_path + " " + _db_home + db_name + ".bak";
-                SLOG_DEBUG(cmd);
-                system(cmd.c_str());
+                FileUtil::removePath(db_path);
+                SLOG_DEBUG("remove_path: " + db_path);
             }
             string success = "Database " + db_name + " dropped.";
             clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));

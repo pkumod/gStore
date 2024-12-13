@@ -202,7 +202,7 @@ int main(int argc, char * argv[])
 	{
 		string msg =  db_name + _db_suffix + " is built failed.";
 		cerr << msg << endl;
-		util.remove_path(_db_path);
+		FileUtil::removePath(_db_path);
 		delete db;
 		db = NULL;
 		return 0;
@@ -274,7 +274,7 @@ int main(int argc, char * argv[])
 				cerr << "Update triples exist errors." << endl;
 				delete db;
 				db = NULL;
-				util.remove_path(_db_path);
+				FileUtil::removePath(_db_path);
 				return 0;
 			}
 			std::set<triple>::iterator it1;
@@ -288,14 +288,14 @@ int main(int argc, char * argv[])
 					cerr << "Update triples exist errors." << endl;
 					delete db;
 					db = NULL;
-					util.remove_path(_db_path);
+					FileUtil::removePath(_db_path);
 					return 0;
 				}
 			}
 		}
 		delete db;
 		db = NULL;
-		util.remove_path(_db_path);
+		FileUtil::removePath(_db_path);
 	}
 	else
 	{
@@ -344,7 +344,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				util.remove_path(_db_path);
+				FileUtil::removePath(_db_path);
 				return 0;
 			}
 			TYPE_TRIPLE_NUM temp_num = triple_num - update_num;
@@ -362,7 +362,7 @@ int main(int argc, char * argv[])
 					update = NULL;
 					delete db;
 					db = NULL;
-					util.remove_path(_db_path);
+					FileUtil::removePath(_db_path);
 					return 0;
 				}
 			}
@@ -381,7 +381,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				util.remove_path(_db_path);
+				FileUtil::removePath(_db_path);
 				return 0;
 			}
 			query = "ASK WHERE{";
@@ -399,7 +399,7 @@ int main(int argc, char * argv[])
 				update = NULL;
 				delete db;
 				db = NULL;
-				util.remove_path(_db_path);
+				FileUtil::removePath(_db_path);
 				return 0;
 			}
 			delete[] update;
@@ -407,7 +407,7 @@ int main(int argc, char * argv[])
 		}
 		delete db;
 		db = NULL;
-		util.remove_path(_db_path);
+		FileUtil::removePath(_db_path);
 	}
 	cerr << "Test passed!" << endl;
 	return 0;

@@ -20,7 +20,7 @@ namespace cluster
     bool ClusterEntity::readFromTermFile(ClusterTermInfo &logInfo)
     {
         std::string file_path = ClusterDb::getClusterDir() + "term.json";
-        if (!Util::file_exist(file_path))
+        if (!FileUtil::fileExists(file_path))
         {
             SLOG_TRACE("init term log file");
             logInfo.setTerm(1);
@@ -79,7 +79,7 @@ namespace cluster
         auto it = databaseL_.find(db_name);
         if (it == databaseL_.end())
         {
-            if (!Util::dir_exist(GlobalTypedef::db_path(db_name)))
+            if (!FileUtil::dirExists(GlobalTypedef::db_path(db_name)))
             {
                 SLOG_ERROR("db is not exist, please check db name:" << db_name);
                 return nullptr;
@@ -414,7 +414,7 @@ namespace cluster
             return;
         }
         log.eraseDb(db_name);
-        Util::remove_dir(ClusterDb::getDbDirPath(db_name));
+        FileUtil::removePath(ClusterDb::getDbDirPath(db_name));
         databaseL_.erase(db_name);
         if (!writeToTermFile(log))
         {

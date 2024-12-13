@@ -108,7 +108,7 @@ main(int argc, char * argv[])
 		_db.load();
 		cout << "finish loading" << endl;
 		bool is_zip = false;
-		if (Util::fileSuffix(filename) == "zip")
+		if (FileUtil::fileSuffix(filename) == "zip")
 			is_zip = true;
 		long tv_begin = gutil::TimeUtil::timestamp();
 		if (is_zip)

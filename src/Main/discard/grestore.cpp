@@ -121,7 +121,7 @@ main(int argc, char * argv[])
 		if (backup_path[backup_path.length() - 1] == '/')
 			backup_path = backup_path.substr(0, backup_path.length() - 1);
 		string base_path = backup_path;
-		if (Util::fileSuffix(backup_path) == "zip")
+		if (FileUtil::fileSuffix(backup_path) == "zip")
 		{
 			is_zip = true;
 			if (Util::file_exist(backup_path) == false)

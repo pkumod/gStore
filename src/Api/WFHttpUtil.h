@@ -2,12 +2,7 @@
 
 #include <workflow/WFTaskFactory.h>
 #include <workflow/WFFacilities.h>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <string>
-#include <cstring>
-#include "../Util/Slog.h"
+#include "../Util/GlobalTypedef.h"
 
 constexpr int REDIRECT_MAX = 3, RETRY_MAX = 5;
 

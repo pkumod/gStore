@@ -103,7 +103,7 @@ namespace CompressUtil
         std::string new_file_name = dst_path;
         if (!contain_base)
         {
-            new_file_name = Util::fileName(dst_path);
+            new_file_name = FileUtil::fileName(dst_path);
         }
         if (zipOpenNewFileInZip64(zfile, new_file_name.c_str(), nullptr, nullptr, 0 , nullptr , 0, nullptr, Z_DEFLATED, Z_DEFLATED, zip64) != ZIP_OK)
         {
@@ -441,7 +441,7 @@ namespace CompressUtil
 
     bool CompressZip::compressDirExportZip(const std::string& sourcePath, const std::string& zipPath, bool contain_base)
     {
-        if (!Util::dir_exist(sourcePath))
+        if (!FileUtil::dirExists(sourcePath))
         {
             SLOG_ERROR("compressFile dir not exist");
             return false;
@@ -461,7 +461,7 @@ namespace CompressUtil
         if (contain_base)    
             AddDirToZip(zf, dir_name);
         vector<string> files;
-        Util::dir_filepaths(dir_path, files);
+        FileUtil::dir_filepaths(dir_path, files);
         for (string rdf_file : files)
         {
             std::string zip_path = rdf_file;
@@ -469,7 +469,7 @@ namespace CompressUtil
                 zip_path = rdf_file.substr(dir_path.size()+1);
             else if (pos2 != std::string::npos)
                 zip_path = rdf_file.substr(pos2+1);
-            if (Util::dir_exist(rdf_file))
+            if (FileUtil::dirExists(rdf_file))
             {
                 SLOG_ERROR("compress dir:" << rdf_file);
                 AddDirToZip(zf, zip_path);

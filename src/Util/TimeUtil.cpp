@@ -12,7 +12,7 @@ namespace gutil
     std::string TimeUtil::timestamp_str()
     {
         time_t ts = timestamp();
-        return to_string(ts);
+        return std::to_string(ts);
     }
 
     /**
@@ -55,7 +55,7 @@ namespace gutil
         time_t timep;
         time(&timep);
         strftime(time_str, sizeof(time_str), format.c_str(), localtime(&timep));
-        return string(time_str);
+        return std::string(time_str);
     }
 
     /**
@@ -74,7 +74,7 @@ namespace gutil
         std::tm tm_now = *std::localtime(&timestamp);
         char time_str[32];
         strftime(time_str, sizeof(time_str), format.c_str(), &tm_now);
-        return string(time_str);
+        return std::string(time_str);
     }
 
     /**

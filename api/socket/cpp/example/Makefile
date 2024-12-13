@@ -1,4 +1,4 @@
-CC=g++ -std=c++11
+CC=g++ -std=c++17
 
 src_dir=../src/
 inc_log=-I../../../../include/

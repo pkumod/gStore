@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 		string real_path = Util::getExactPath(db_path.c_str());
 		unsigned diskUsed = 0;
 		if (!real_path.empty()) {
-			long long unsigned count_size_byte = Util::count_dir_size(real_path.c_str());
+			uint64_t count_size_byte = FileUtil::dirSize(real_path.c_str());
 			// byte to MB
 			diskUsed = count_size_byte>>20;
 		}

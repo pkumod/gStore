@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		bool is_zip = false;
-		if (Util::fileSuffix(filename) == "zip")
+		if (FileUtil::fileSuffix(filename) == "zip")
 			is_zip = true;
 		std::string unz_dir_path;
 		std::vector<std::string> zip_files;

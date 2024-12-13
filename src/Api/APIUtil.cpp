@@ -100,12 +100,12 @@ int APIUtil::initialize()
         
         // load system db
         std::string _sys_db_path = GlobalTypedef::db_path(GlobalTypedef::system_db);
-        if(!Util::file_exist(GlobalTypedef::initfile) || !Util::dir_exist(_sys_db_path))
+        if(!FileUtil::fileExists(GlobalTypedef::initfile) || !FileUtil::dirExists(_sys_db_path))
         {
             SLOG_INFO("System has not been initialized. Now initialize it");
-            if (Util::dir_exist(_sys_db_path))
+            if (FileUtil::dirExists(_sys_db_path))
             {
-                Util::remove_path(_sys_db_path);
+                FileUtil::removePath(_sys_db_path);
             }
             system_database  = make_shared<Database>(GlobalTypedef::system_db);
             bool _sys_build_rt = system_database->BuildEmptyDB();
@@ -114,8 +114,7 @@ int APIUtil::initialize()
                 ofstream f;
                 f.open(_sys_db_path + "/success.txt");
                 f.close();
-                f.open(GlobalTypedef::initfile);
-                f.close();
+                
                 system_database.reset();
                 // Util::init_backuplog();
                 string version = GlobalTypedef::product_version;
@@ -126,6 +125,12 @@ int APIUtil::initialize()
                     <root> <has_password> \"" + root_pwd + "\" .}";
                 system_database = make_shared<Database>(GlobalTypedef::system_db);
                 system_database->load();
+                // write system info to init.lock file
+                FILE *fp = fopen(GlobalTypedef::initfile.c_str(), "wb");
+                DatabaseInfo sysInfo(GlobalTypedef::system_db, "root", TimeUtil::today(), DatabaseStatus::NORMAL);
+                fwrite(&sysInfo, sizeof(DatabaseInfo), 1, fp);
+                fclose(fp);
+
                 update_sys_db(update_sparql);
                 refresh_sys_db();
             }
@@ -205,7 +210,7 @@ int APIUtil::initialize()
                     }
                 }
                 users.insert(pair<std::string, shared_ptr<struct DBUserInfo>>(username, user));
-                if (Slog::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
+                if (GlobalTypedef::isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
                 {
                     nlohmann::json user_json;
                     user->toJSON(user_json);
@@ -436,22 +441,22 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
     // Delete the oldest backup file
     std::string db_name_suffix = db_name + GlobalTypedef::db_suffix();
     vector<std::string> backup_files;
-    Util::dir_files(backup_path, db_name_suffix, backup_files);
-    int16_t max_backups = Util::getConfigureIntValue("max_backups", 3);
-    int16_t cur_backups = backup_files.size();
-    if (cur_backups > max_backups)
+    FileUtil::dir_filenames(backup_path, backup_files, db_name_suffix);
+    size_t max_backups = GlobalTypedef::backup_max();
+    size_t cur_backups = backup_files.size();
+    if (cur_backups >= max_backups)
     {
         // sort asc
         std::sort(backup_files.begin(), backup_files.end(), [](const std::string& a, const std::string& b) {
             return a < b;
         });
         for (auto file_name : backup_files) {
-            if (cur_backups <= max_backups) {
+            std::string remove_file_path = backup_path + "/" + file_name;
+            FileUtil::removePath(remove_file_path);
+            cur_backups--;
+            if (cur_backups < max_backups) {
                 break;
             }
-            std::string remove_file_path = backup_path + "/" + file_name;
-            Util::remove_path(remove_file_path);
-            cur_backups--;
         }
     }
     // begin backup
@@ -462,7 +467,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
         CompressUtil::CompressZip compress_util;
         backup_rt = compress_util.compressDirExportZip(backup_path, zip_file_path);
         if (backup_rt) {
-            Util::remove_path(backup_path);
+            FileUtil::removePath(backup_path);
         }
         backup_path = zip_file_path;
     }
@@ -487,30 +492,33 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         msg = "Unable to restore due to loss of lock";
         return false;
     }
-    if (!Util::file_exist(backup_path) && !Util::dir_exist(backup_path)) {
+    if (!FileUtil::pathExists(backup_path)) {
         msg = "backup path is not exist";
         return false;
     }
     std::string db_home_path = GlobalTypedef::db_path(db_name);
     bool restore_bool = false;
     // mv db_home to db_home.bak
-    if (Util::dir_exist(db_home_path)) {
-        mv_or_cp(db_home_path, db_home_path + ".bak", true);
+    if (FileUtil::dirExists(db_home_path)) 
+    {
+        if(!FileUtil::movePath(db_home_path, db_home_path + ".bak"))
+        {
+            msg = "rename origin name to .bak fail";
+            return false;
+        }
     }
     // is zip file
-    if (Util::is_file(backup_path)) {
-        // unzip
-        std::string unzip_path = Util::get_parent_path(backup_path);
-        CompressUtil::UnCompressZip unzip(backup_path, unzip_path);
+    if (FileUtil::is_file(backup_path)) {
+        // unzip to db_home
+        CompressUtil::UnCompressZip unzip(backup_path, db_home_path);
         if (unzip.unCompress() != CompressUtil::UnZipOK) {
             msg = "backup compress fail";
             return false;
         }
-        // mv unzip file to db_home
-        restore_bool = mv_or_cp(unzip_path, db_home_path, true);
+        restore_bool = true;
     } else {
         // cp backup path to db_home
-        restore_bool = mv_or_cp(backup_path, db_home_path, false);
+        restore_bool = FileUtil::copyDir(backup_path, db_home_path);
     }
     if (restore_bool) {
         if (db_info->getStatus() == DatabaseStatus::BUILDING) {
@@ -519,11 +527,15 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             // Util::add_backuplog(db_name);
         }
         // remove old db_home
-        Util::remove_path(db_home_path + ".bak");
+        FileUtil::removePath(db_home_path + ".bak");
     } else {
         msg = "restore fail";
-        if (Util::dir_exist(db_home_path + ".bak")) {
-            mv_or_cp(db_home_path + ".bak", db_home_path, true);
+        if (FileUtil::dirExists(db_home_path + ".bak")) 
+        {
+            if(!FileUtil::movePath(db_home_path + ".bak", db_home_path))
+            {
+                msg = "restore fail, and recover origin db_home fail too!";
+            }
         }
     }
     unlock_databaseinfo(db_info);
@@ -550,7 +562,7 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
     }
     std::string db_new_path = GlobalTypedef::db_path(new_db_name);
     // check new_db_path
-    if (Util::dir_exist(db_new_path))
+    if (FileUtil::dirExists(db_new_path))
     {
         msg =  "Database path " + db_new_path + " already exists.";
         return false;
@@ -1537,26 +1549,21 @@ bool APIUtil::refresh_sys_db()
 
 bool APIUtil::mv_or_cp(const string& src, const string& dsc, bool is_mv)
 {
-    string sys_cmd;
-    string log_info;
-    if (Util::dir_exist(src) == false) {
+    if (FileUtil::dirExists(src) == false) {
         // check the source path
         SLOG_ERROR("source path not exist!");
         return false;
     }
     // check the destnation path
-    // if (!is_mv && Util::dir_exist(dsc) == false) {
+    // if (!is_mv && FileUtil::dirExists(dsc) == false) {
     //     SLOG_CORE("create desc path: " + dsc);
     //     Util::create_dirs(dsc);
     // }
     if (is_mv) {
-        sys_cmd = "mv " + src + ' ' + dsc;
+        return FileUtil::movePath(src, dsc);
     } else {
-        sys_cmd = "cp -r " + src + ' ' + dsc;
+        return FileUtil::copyDir(src, dsc);
     }
-    SLOG_CORE(sys_cmd);
-    int code = system(sys_cmd.c_str());
-    return code == 0;
 }
 
 bool APIUtil::user_add(const string& username, const string& password)
@@ -1936,9 +1943,8 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     }
     fclose(file);
     fclose(temp_file);
-    Util::remove_path(filename);
-    string cmd = "mv " + file_temp_name + ' ' + filename;
-    system(cmd.c_str());
+    FileUtil::removePath(filename);
+    FileUtil::movePath(file_temp_name, filename);
     pthread_rwlock_unlock(&access_log_lock);
 }
 
@@ -2109,9 +2115,8 @@ int APIUtil::update_transactionlog(std::string TID, std::string state, std::stri
     }
     fclose(file);
     fclose(tmp_file);
-    Util::remove_path(file_path);
-    string cmd = "mv " + file_tmp_path + ' ' + file_path;
-    system(cmd.c_str());
+    FileUtil::removePath(file_path);
+    FileUtil::movePath(file_tmp_path, file_path);
     pthread_rwlock_unlock(&transactionlog_lock);
     return found;
 }

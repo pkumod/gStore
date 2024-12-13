@@ -18,16 +18,16 @@ ReasonOperationResult ReasonHelper::saveReasonRuleInfo(nlohmann::json &ruleInfo,
   string filepath = db_path + "/reason_rule_files/";
   string rulefilepath = filepath + rulename + ".json";
   // cout<<"rulefilepath:"<<rulefilepath<<endl;
-  if (Util::file_exist(rulefilepath))
+  if (FileUtil::fileExists(rulefilepath))
   {
     result.issuccess = 0;
     result.error_message = "The rule file has been exist, please remove it before!";
     return result;
   }
 
-  if (Util::dir_exist(filepath) == false)
+  if (FileUtil::dirExists(filepath) == false)
   {
-    Util::create_dir(filepath);
+    FileUtil::createDirs(filepath);
   }
   std::ofstream file(rulefilepath);
   file << ruleInfo.dump();
@@ -44,12 +44,13 @@ vector<string> ReasonHelper::getReasonRuleList(const string &db_path)
   vector<string> resultlist;
 
   string filepath = db_path + "/reason_rule_files/";
-  if (Util::dir_exist(filepath) == false)
+  if (FileUtil::dirExists(filepath) == false)
   {
-    Util::create_dir(filepath);
+    FileUtil::createDirs(filepath);
   }
   // cout<<"filepath:"<<filepath<<endl;
-  vector<string> files = Util::GetFiles(filepath.c_str(), "json");
+  vector<string> files;
+  FileUtil::dir_filenames(filepath, files, ".json");
 
   int size = files.size();
 
@@ -59,7 +60,7 @@ vector<string> ReasonHelper::getReasonRuleList(const string &db_path)
     // cout<<"file:"<<rulename<<endl;
     string rulefilepath = filepath + rulename;
 
-    if (Util::file_exist(rulefilepath))
+    if (FileUtil::fileExists(rulefilepath))
     {
       // cout<<"file:"<<rulefilepath<<endl;
       std::ifstream ifs(rulefilepath);
@@ -89,7 +90,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
   string delete_sparql = "";
   string check_sparql = "";
 
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     results.error_message = "the reason file is not exist";
     results.issuccess = 0;
@@ -237,7 +238,7 @@ ReasonSparql ReasonHelper::executeReasonRule(const string &rulename, const strin
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
   SLOG_CORE("rulefilepath:" << rulefilepath);
 
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     results.error_message = "the reason file is not exist";
     results.issuccess = 0;
@@ -281,9 +282,9 @@ string ReasonHelper::updateReasonRuleInfo(nlohmann::json &ruleInfo, const string
   string filepath = db_path + "/reason_rule_files/";
   string rulefilepath = filepath + rulename + ".json";
 
-  if (Util::dir_exist(rulefilepath) == false)
+  if (FileUtil::dirExists(rulefilepath) == false)
   {
-    Util::create_dir(filepath);
+    FileUtil::createDirs(filepath);
   }
   std::ofstream file(rulefilepath);
   file << ruleInfo.dump();
@@ -296,12 +297,12 @@ string ReasonHelper::updateReasonRuleStatus(const string &rulename, const string
   string result = "";
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
 
-  if (Util::dir_exist(db_path) == false)
+  if (FileUtil::dirExists(db_path) == false)
   {
     result = "the database directory is not exists";
     return result;
   }
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     result = "the reason file is not exists";
     return result;
@@ -326,12 +327,12 @@ string ReasonHelper::updateReasonRuleEffectNum(const string &rulename, const str
   string result = "";
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
 
-  if (Util::dir_exist(db_path) == false)
+  if (FileUtil::dirExists(db_path) == false)
   {
     result = "the database directory is not exists";
     return result;
   }
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     result = "the reason file is not exists";
     return result;
@@ -358,7 +359,7 @@ ReasonSparql ReasonHelper::disableReasonRule(const string &rulename, const strin
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
   SLOG_CORE("rulefilepath:" << rulefilepath);
 
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     results.error_message = "the reason file is not exist";
     results.issuccess = 0;
@@ -399,13 +400,13 @@ ReasonOperationResult ReasonHelper::getReasonInfo(const string &rulename, const 
   ReasonOperationResult result;
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
 
-  if (Util::dir_exist(db_path) == false)
+  if (FileUtil::dirExists(db_path) == false)
   {
     result.error_message = "the database directory is not exists";
     result.issuccess = 0;
     return result;
   }
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     result.error_message = "the reason file is not exists";
     result.issuccess = 0;
@@ -424,19 +425,19 @@ ReasonOperationResult ReasonHelper::removeReasonRule(const string &rulename, con
 
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
 
-  if (Util::dir_exist(db_path) == false)
+  if (FileUtil::dirExists(db_path) == false)
   {
     result.error_message = "the database directory is not exists";
     result.issuccess = 0;
     return result;
   }
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     result.error_message = "the reason file is not exists";
     result.issuccess = 0;
     return result;
   }
-  Util::remove_file(rulefilepath);
+  FileUtil::removePath(rulefilepath);
   result.issuccess = 1;
   result.error_message = "the reason file has been remove successfully! file path:" + rulefilepath;
   return result;
@@ -448,7 +449,7 @@ ReasonSparql ReasonHelper::getCheckSparql(const string &rulename, const string &
   string rulefilepath = db_path + "/reason_rule_files/" + rulename + ".json";
   SLOG_CORE("rulefilepath:" << rulefilepath);
 
-  if (Util::file_exist(rulefilepath) == false)
+  if (FileUtil::fileExists(rulefilepath) == false)
   {
     results.error_message = "the reason file is not exist";
     results.issuccess = 0;

@@ -120,7 +120,7 @@ namespace server
             }
             std::vector<std::string> file_list;
             string backup_path = GlobalTypedef::backup_path();
-            Util::dir_files(backup_path, db_name, file_list);
+            FileUtil::dir_filenames(backup_path, file_list, db_name + GlobalTypedef::db_suffix());
             for (size_t i = 0; i < file_list.size(); i++)
             {
                 response.paths.push_back(backup_path + file_list[i]);
@@ -149,22 +149,22 @@ namespace server
             response.Error(StatusParamIsIllegal, msg);
             return false;
         }
-        if (Util::is_file(backup_path))
+        if (FileUtil::is_file(backup_path))
         {
-            if (Util::fileSuffix(backup_path) != "zip")
+            if (FileUtil::fileSuffix(backup_path) != "zip")
             {
                 response.Error(StatusParamIsIllegal, "Backup file is not zip file.");
                 return false;
             }
-            else if (Util::file_exist(backup_path) == false)
+            else if (FileUtil::fileExists(backup_path) == false)
             {
                 response.Error(StatusParamIsIllegal, "Backup file not exist.");
                 return false;
             }
         }
-        else if (Util::is_dir(backup_path))
+        else if (FileUtil::is_dir(backup_path))
         {
-            if (Util::dir_exist(backup_path) == false)
+            if (FileUtil::dirExists(backup_path) == false)
             {
                 response.Error(StatusParamIsIllegal, "Backup path not exist.");
                 return false;
@@ -279,9 +279,9 @@ namespace server
                 return;
             }
             gutil::StringUtil::append(db_path, '/');
-            if (Util::dir_exist(db_path) == false)
+            if (FileUtil::dirExists(db_path) == false)
             {
-                Util::create_dirs(db_path);
+                FileUtil::createDirs(db_path);
             }
             std::string export_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".nt";
             bool compress = request.compress;
@@ -298,13 +298,13 @@ namespace server
                 std::string zip_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".zip";
                 if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path))
                 {
-                    Util::remove_path(export_path);
-                    Util::remove_path(zip_path);
+                    FileUtil::removePath(export_path);
+                    FileUtil::removePath(zip_path);
                     msg = "export compress fail.";
                     response.Error(StatusCompressError, msg);
                     return;
                 }
-                Util::remove_path(export_path);
+                FileUtil::removePath(export_path);
                 export_path = zip_path;
             }
             msg = "Export the database successfully.";

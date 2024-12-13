@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include "nlohmann/json.hpp"
-#include "Slog.h"
+#include "GlobalTypedef.h"
 
 using namespace std;
 using namespace nlohmann;

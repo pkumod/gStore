@@ -109,7 +109,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -145,7 +145,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 	curl_easy_cleanup(curl);
 	fclose(fw);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -185,7 +185,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, st
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -219,7 +219,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, s
 	//curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -258,7 +258,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, c
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	fclose(fw);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -305,7 +305,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::map<std::string, s
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeOut);
 	res = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
 	return res;
 }
 
@@ -378,7 +378,7 @@ CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::strin
 	curl_formfree(formpost);
 	curl_easy_cleanup(curl);
 	curl_slist_free_all(headerlist);
-	SLOG_CORE("url: " + strUrl + ", code: " + to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
     return res;
 }
 

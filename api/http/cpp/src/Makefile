@@ -1,4 +1,4 @@
-CXX=g++ -std=c++11
+CXX=g++ -std=c++17
 
 lib_dir=../lib/
 inc_log=-I../../../../include/

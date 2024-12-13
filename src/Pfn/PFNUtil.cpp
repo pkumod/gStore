@@ -43,8 +43,8 @@ std::string PFNUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
         }
     }
     cppcheck_fin.close();
-    Util::remove_path(report_path);
-    Util::remove_path(check_file_path);
+    FileUtil::removePath(report_path);
+    FileUtil::removePath(check_file_path);
     return report_detail;
 }
 
@@ -52,7 +52,7 @@ void PFNUtil::fun_query(const string &fun_name, const string &fun_status, const 
 {
     string cpp_path = pfn_base_path + "cpp/" + username;
     string json_file_path = cpp_path + "/data.json";
-    if (Util::file_exist(json_file_path) == false)
+    if (FileUtil::fileExists(json_file_path) == false)
     {
         return;
     }
@@ -86,10 +86,10 @@ void PFNUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
     string file_name = pfn_info->funName;
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string cpp_path = pfn_cpp_path + username;
-    Util::create_dirs(cpp_path);
+    FileUtil::createDirs(cpp_path);
     string file_path = cpp_path + "/" + file_name + ".cpp";
     SLOG_CORE("file_path: " + file_path);
-    if (Util::file_exist(file_path))
+    if (FileUtil::fileExists(file_path))
     {
         throw std::invalid_argument("function name " + pfn_info->funName + " already exists");
     }
@@ -132,9 +132,9 @@ void PFNUtil::fun_update(const std::string &username, struct PFNInfo *pfn_info)
     std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
     string cpp_path = pfn_cpp_path + username;
     string file_path = cpp_path + "/" + file_name + ".cpp";
-    if (Util::file_exist(file_path) == false)
+    if (FileUtil::fileExists(file_path) == false)
     {
-        throw std::invalid_argument("function name " + pfn_info->funName + " not exists");
+        throw std::invalid_argument("function name " + pfn_info->funName + " does not exist");
     }
     // cpp check start
     string report_detail = "";
@@ -182,9 +182,9 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string cpp_path = pfn_cpp_path + username;
     string lib_path = pfn_lib_path + username;
     string sourceFile = cpp_path + "/" + file_name + ".cpp";
-    if (!Util::file_exist(sourceFile))
+    if (!FileUtil::fileExists(sourceFile))
     {
-        throw std::invalid_argument("function source file is not exist");
+        throw std::invalid_argument("Function source file dose not exist");
     }
     // get function info from json file
     PFNInfo *fun_info = new PFNInfo();
@@ -195,12 +195,12 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string last_time = gutil::TimeUtil::now();
     string md5str = Util::md5(last_time);
     string targetDir = lib_path + "/.tmp";
-    Util::create_dirs(targetDir);
+    FileUtil::createDirs(targetDir);
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = targetDir + "/lib" + file_name + md5str + ".out";
-    Util::remove_path(targetFile);
+    FileUtil::removePath(targetFile);
     string libaray = pfn_base_path + "lib/libgpathqueryhandler.so " + pfn_base_path + "lib/libgcsr.so";
-    string cmd = "g++ -std=c++11 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
+    string cmd = "g++ -std=c++17 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
     int status;
     status = system(cmd.c_str());
     string error_msg = "";
@@ -217,13 +217,12 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
             SLOG_DEBUG("delete old so file: " << oldLibFile);
             #endif
             std::string oldLibPath = lib_path + "/" + oldLibFile;
-            Util::remove_path(oldLibPath);
+            FileUtil::removePath(oldLibPath);
         }
-        //mv the new into using Path
-        string mvCmd = "mv " +  targetFile + " " + lib_path;
-        system(mvCmd.c_str());
+        // mv the new into using Path
+        FileUtil::movePath(targetFile, lib_path);
     }
-    else if (Util::file_exist(logFile))
+    else if (FileUtil::fileExists(logFile))
     {
         // update function status to 3
         fun_info->funStatus = "3";
@@ -249,7 +248,7 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     // delete
     delete fun_info;
     fun_info = NULL;
-    Util::remove_path(logFile);
+    FileUtil::removePath(logFile);
     // has error_msg
     if (error_msg.size() > 0)
     {
@@ -335,10 +334,10 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
     if (operation == "1") // create
     {
         pthread_rwlock_wrlock(&pfn_data_lock);
-        if (!Util::file_exist(json_file_path))
+        if (!FileUtil::fileExists(json_file_path))
         {
-            Util::create_dirs(cpp_path);
-            Util::create_file(json_file_path);
+            FileUtil::createDirs(cpp_path);
+            FileUtil::createFile(json_file_path);
         }
         FILE *fp = fopen(json_file_path.c_str(), "a");
         if (fp == NULL)
@@ -384,13 +383,13 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
                         std::transform(file_name.begin(), file_name.end(), file_name.begin(), ::tolower);
                         string cppPath = cpp_path + "/" + file_name + ".cpp";
                         SLOG_CORE("remove cpp file: " + cppPath);
-                        Util::remove_path(cppPath);
+                        FileUtil::removePath(cppPath);
                         if (fun_info_tmp.lastTime.empty() == false) 
                         {
                             string md5str = Util::md5(fun_info_tmp.lastTime);
                             string libPath = lib_path + "/lib" + file_name + md5str + ".so";
                             SLOG_CORE("remove lib file: " + libPath);
-                            Util::remove_path(libPath);
+                            FileUtil::removePath(libPath);
                         }
                     }
                 }
@@ -413,38 +412,26 @@ void PFNUtil::fun_write_json_file(const std::string& username, struct PFNInfo *f
         out << line;
         out.close();
         // mv pfn/cpp/{username}/data.json pfn/cpp/{username}/back.json
-        cmd = "mv -f " + json_file_path + " " + back_path;
-        int status;
-        status = system(cmd.c_str());
-        if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+        if (FileUtil::movePath(json_file_path, back_path))
         {
             // mv pfn/cpp/{username}/tmp.json pfn/cpp/{username}/data.json
-            cmd = "mv -f " + temp_path + " " + json_file_path;
-            status = system(cmd.c_str());
-            #if defined(DEBUG)
-            SLOG_DEBUG(cmd);
-            #endif
-            if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+            if (FileUtil::movePath(temp_path, json_file_path))
             {
                 // remove old json file
-                Util::remove_path(back_path);
+                FileUtil::removePath(back_path);
                 pthread_rwlock_unlock(&pfn_data_lock);
-                #if defined(DEBUG)
-                SLOG_DEBUG(cmd);
-                #endif
             }
             else // recover back.json to data.json
             {
-                cmd = "mv -f " + back_path + " " + json_file_path;
-                system(cmd.c_str());
+                FileUtil::movePath(back_path, json_file_path);
                 pthread_rwlock_unlock(&pfn_data_lock);
-                throw std::runtime_error("save function info to json file error, status code:" + status);
+                throw std::runtime_error("save function info to json file error");
             }
         }
         else
         {
             pthread_rwlock_unlock(&pfn_data_lock);
-            throw std::runtime_error("save function info to json file error, status code:" + status);
+            throw std::runtime_error("save function info to json file error");
         }
     }
     else

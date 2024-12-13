@@ -132,7 +132,7 @@ main(int argc, char * argv[])
 			cout << "the database path already exists. Please check database "<< db_name <<", or use bin/gdrop to remove it at first."<<endl;
 			return -1;
 		}
-		if (Util::fileSuffix(_rdf) == "zip")
+		if (FileUtil::fileSuffix(_rdf) == "zip")
 			is_zip = true;
 		if (is_zip)
 		{

@@ -7,7 +7,6 @@
 
 #include "grpc_noncopyable.h"
 #include "grpc_content.h"
-#include "../Util/Slog.h"
 
 namespace grpc
 {
