@@ -710,10 +710,7 @@ namespace cluster
             Util::remove_path(post_dir_zip);
             return "";
         }
-        else
-        {
-            SLOG_TRACE("cluster recover zip, compress success end.....:" << post_dir_zip);
-        }
+        SLOG_TRACE("cluster recover zip, compress success end.....:" << post_dir_zip);
         Util::remove_path(post_dir);
         // delete oldest zip files
         vector<std::string> zip_files;
@@ -739,6 +736,8 @@ namespace cluster
                 if (cur_backups <= max_backups)
                     break;
                 std::string remove_file_path = init_dir + std::to_string(file) + ".zip";
+                if (remove_file_path == post_dir_zip)
+                    continue;
                 Util::remove_path(remove_file_path);
                 cur_backups--;
                 SLOG_TRACE("remove old cluster init zip:" << remove_file_path);
