@@ -1,4 +1,5 @@
 #include "ClusterManager.h"
+#include "../Util/CompressFileUtil.h"
 
 namespace cluster
 {
@@ -38,7 +39,7 @@ namespace cluster
                 Util::create_dir(ClusterDb::getClusterDir());
             }
             role_->init();
-            std::thread run_task = std::thread(&ClusterManager::runTask, this);
+            run_task = std::thread(&ClusterManager::runTask, this);
             run_task.detach();
 
             SLOG_CORE("cluster success on");
@@ -165,7 +166,7 @@ namespace cluster
         return follower->getPort();
     }
 
-    void ClusterManager::addRestoreDb(const std::string& db_name)
+    void ClusterManager::addRestoringDb(const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return;
@@ -176,10 +177,10 @@ namespace cluster
             return;
         }
 
-        follower->addRestoreDb(db_name);
+        follower->addRestoringDb(db_name);
     }
 
-    void ClusterManager::removeRestoreDb(const std::string& db_name)
+    void ClusterManager::removeRestoringDb(const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return;
@@ -190,21 +191,24 @@ namespace cluster
             return;
         }
 
-        follower->removeRestoreDb(db_name);
+        follower->removeRestoringDb(db_name);
     }
 
     bool ClusterManager::isFollowerRestoring(const std::string& db_name)
     {
         if (!isEnable() || !role_)
             return false;
-        ClusterEntityFollowerPtr follower = std::dynamic_pointer_cast<ClusterEntityFollower>(role_);
-        if (!follower)
-        {
-            SLOG_TRACE("please check conf.ini, not set follower");
-            return false;
-        }
+            
+        return role_->isFollowerRestoring(db_name);
+    }
 
-        return follower->isFollowerRestoring(db_name);
+    void ClusterManager::initTermDbLog(const TermDbLog& log)
+    {
+        if (!isEnable() || !role_)
+            return;
+
+        role_->addClusterDb(log.dbName);
+        role_->initTermDbLog(log);
     }
 
     void ClusterManager::addClusterDb(const std::string& db_name)
@@ -296,14 +300,6 @@ namespace cluster
         role_->addCommitLog(db_name, index, update_type, file_name);
     }
 
-    void ClusterManager::buildDb(std::string db_name, uint64 uid)
-    {
-        if (!isEnable() || !role_)
-            return;
-
-        role_->buildDb(db_name, uid);
-    }
-
     void ClusterManager::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation)
     {
         if (!isEnable() || !role_)
@@ -360,49 +356,12 @@ namespace cluster
         return role_->getLogSyncNum(db_name, index);
     }
 
-    bool ClusterManager::enabelAttain(std::string db_name, uint64 index, ClusterOperation status)
-    {
-        if (!isEnable() || !role_)
-            return false;
-
-        uint32 num = 0;
-        if (status == ClusterOperation_Prepare)
-        {
-            num = role_->getLogReplyNum(db_name, index);
-        }
-        else if (status == ClusterOperation_Append)
-        {
-            num = role_->getLogSyncNum(db_name, index);
-        }
-        uint32 total = getFollowNodeL().size();
-        if (total == 0)
-        {
-            SLOG_TRACE("follow node is 0");
-            return false;
-        }
-        return num >= ((total + 1)/2) ? true : false;
-    }
-
     void ClusterManager::updateTerm(uint32 term)
     {
         if (!isEnable() || !role_)
             return;
         
         role_->updateTerm(term);
-    }
-
-    void ClusterManager::updateDbIndex(std::string db_name, uint64 index)
-    {
-        if (!isEnable() || !role_)
-            return;
-        role_->updateDbIndex(db_name, index);
-    }
-
-    void ClusterManager::updateDbNextIndex(std::string db_name, uint64 next_index)
-    {
-        if (!isEnable() || !role_)
-            return;
-        role_->updateDbNextIndex(db_name, next_index);
     }
 
     uint32 ClusterManager::getTerm()
@@ -594,6 +553,18 @@ namespace cluster
             leader->stopCompareTimer();
     }
 
+    void ClusterManager::stopServer()
+    {
+        if (!isEnable() || !role_)
+            return;
+        stopHeart();
+
+        task_queueL.clear();
+        ClusterEventPtr task = std::make_shared<ClusterEvent>();
+        task->stop_server_ = true;
+        task_queueL.push(task);
+    }
+
     bool ClusterManager::addTask(ClusterTaskInfo info, bool sync)
     {
         if (!isEnable() || !role_)
@@ -636,12 +607,12 @@ namespace cluster
         }
 
         if (!sync && IsSupportTask(info.operation))
-        {
+        {//async task, don't wait
             ClusterEventPtr task = std::make_shared<ClusterTaskEvent>(info, leader);
             task_queueL.push(task);
         }
         else if (sync && IsSupportSync(info.operation))
-        {
+        {//sync task, need wait
             ClusterEventPtr task = std::make_shared<ClusterTaskEvent>(info, leader);
             task_queueL.push(task);
             uint64 end_time = leader->getTimeOutEndTime(info.db_name, info.file_name);
@@ -688,62 +659,181 @@ namespace cluster
         if (!isEnable() || !role_)
             return;
         SLOG_TRACE("cluster task is run");
+        // 这是一个阻塞的队列, 只有当有新任务来时, 才会唤醒队列, 执行任务
         while(1)
         {
-            task_queueL.pop()->runEvent();
+            ClusterEventPtr event = task_queueL.pop();
+            if (event->stop_server_)
+            {
+                SLOG_TRACE("cluster task stop");
+                break;
+            }
+            event->runEvent();
         }
     }
 
-    ////////////////////////////// test ///////////////////////////////////
-    // void ClusterManager::startHeartBeatTest()
-    // {
-    //     if (!isEnable() || !role_)
-    //         return;
-    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-    //     if (!leader)
-    //     {
-    //         SLOG_TRACE("please check conf.ini, not set leader");
-    //         return;
-    //     }
-    //     leader->startCompare();
-    // }
+    std::string ClusterManager::compressInitDb(const ClusterRecoverInfo& info)
+    {
+        if (!isEnable() || !role_)
+            return "";
 
-    // bool ClusterManager::startNotifyTest(std::string db_name)
-    // {
-    //     if (!isEnable() || !role_)
-    //         return false;
-    //     role_->addClusterDb(db_name);
-    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-    //     if (!leader)
-    //     {
-    //         SLOG_TRACE("please check conf.ini, not set leader");
-    //         return false;
-    //     }
-    //     ClusterTaskInfo info(db_name, ClusterOperation_Prepare);
-    //     TermDbLog db_log = role_->getTermInfoDbLog(db_name);
-    //     info.setIndex(db_log.getIndex());
-    //     info.setNextIndex(db_log.getNextIndex());
-    //     info.setUid(db_log.getUid());
-    //     return leader->runTask(info);
-    // }
+        /* 恢复只有三种情况, 并不是频繁操作
+            1.从节点是完全新节点, 没有库的情况
+            2.从节点有重名库, 和主节点对不上
+            3.从节点停服期间, 主节点建了新库, 从节点没有库
+        */
+        TermDbLog term_db_log = role_->getTermInfoDbLog(info.db_name);
+        std::string file_name = std::to_string(term_db_log.index);
+        std::string init_dir = ClusterDb::getDbInitDir(info.db_name);
+        std::string post_dir = init_dir + file_name;
+        std::string post_dir_zip = post_dir + ".zip";
+        if (Util::file_exist(post_dir_zip))
+        {
+            SLOG_TRACE("cluster recover zip is exist, not data update:" << post_dir_zip);
+            return post_dir_zip;
+        }
 
-    // bool ClusterManager::startSyncTest(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
-    // {
-    //     if (!isEnable() || !role_)
-    //         return false;
-    //     ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
-    //     if (!leader)
-    //     {
-    //         SLOG_TRACE("please check conf.ini, not set leader");
-    //         return false;
-    //     }
+        SLOG_TRACE("cluster recover zip is not exist, compress begin .....:" << post_dir_zip);
+        Util::create_dirs(post_dir);
+        std::string cluster_db_dir = ClusterDb::getDbDirPath(info.db_name);
+        std::string sys_cmd = "cp -r " + cluster_db_dir + ' ' + post_dir;
+        system(sys_cmd.c_str());
+        std::string db_dir = GlobalTypedef::db_path(info.db_name);
+        sys_cmd = "cp -r " + db_dir + ' ' + post_dir;
+        system(sys_cmd.c_str());
 
-    //     ClusterTaskInfo info(db_name, ClusterOperation_Append, update_type, file_name);
-    //     TermDbLog db_log = role_->getTermInfoDbLog(db_name);
-    //     info.setIndex(db_log.getIndex());
-    //     info.setNextIndex(db_log.getNextIndex());
-    //     info.setUid(db_log.getUid());
+        CompressUtil::CompressZip compress_util;
+        if (!compress_util.compressDirExportZip(post_dir, post_dir_zip))
+        {
+            SLOG_ERROR("compress dir fail:" << post_dir_zip);
+            Util::remove_path(post_dir);
+            Util::remove_path(post_dir_zip);
+            return "";
+        }
+        else
+        {
+            SLOG_TRACE("cluster recover zip, compress success end.....:" << post_dir_zip);
+        }
+        Util::remove_path(post_dir);
+        // delete oldest zip files
+        vector<std::string> zip_files;
+        std::string db_name_suffix = ".zip";
+        Util::dir_files(init_dir, db_name_suffix, zip_files);
+        int16_t max_backups = Util::getConfigureIntValue("max_backups", 3);
+        int16_t cur_backups = zip_files.size();
+        if (cur_backups > max_backups)
+        {
+            // sort asc
+            vector<uint64> index_files;
+            for (const auto& m : zip_files)
+            {
+                std::string file_suffix = Util::fileSuffix(m);
+                if (file_suffix != "zip")
+                    continue;
+                index_files.push_back(std::stoll(m.substr(0, m.size()-4)));
+            }
+            cur_backups = index_files.size();
+            std::sort(index_files.begin(), index_files.end(), [](uint64 a, uint64 b) {return a < b;});
+            for (auto file : index_files)
+            {
+                if (cur_backups <= max_backups)
+                    break;
+                std::string remove_file_path = init_dir + std::to_string(file) + ".zip";
+                Util::remove_path(remove_file_path);
+                cur_backups--;
+                SLOG_TRACE("remove old cluster init zip:" << remove_file_path);
+            }
+        }
+        return post_dir_zip;
+    }
 
-    //     return leader->runAppendTask(info);
-    // }
+    ////////////////////////////// 测试使用, 调用时请注意 ///////////////////////////////////
+    void ClusterManager::startHeartBeatTest()
+    {
+        if (!isEnable() || !role_)
+            return;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return;
+        }
+        leader->startCompare();
+    }
+
+    bool ClusterManager::startNotifyTest(std::string db_name)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        role_->addClusterDb(db_name);
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return false;
+        }
+        ClusterTaskInfo info(db_name, ClusterOperation_Prepare);
+        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+        info.setIndex(db_log.getIndex());
+        info.setNextIndex(db_log.getNextIndex());
+        info.setUid(db_log.getUid());
+        return leader->runTask(info);
+    }
+
+    bool ClusterManager::startSyncTest(std::string db_name, ClusterUpdateType update_type, const std::string& file_name)
+    {
+        if (!isEnable() || !role_)
+            return false;
+        ClusterEntityLeaderPtr leader = std::dynamic_pointer_cast<ClusterEntityLeader>(role_);
+        if (!leader)
+        {
+            SLOG_TRACE("please check conf.ini, not set leader");
+            return false;
+        }
+
+        ClusterTaskInfo info(db_name, ClusterOperation_Append, update_type, file_name);
+        TermDbLog db_log = role_->getTermInfoDbLog(db_name);
+        info.setIndex(db_log.getIndex());
+        info.setNextIndex(db_log.getNextIndex());
+        info.setUid(db_log.getUid());
+
+        return leader->runAppendTask(info);
+    }
+
+    void ClusterManager::updateDbIndex(std::string db_name, uint64 index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->updateDbIndex(db_name, index);
+    }
+
+    void ClusterManager::updateDbNextIndex(std::string db_name, uint64 next_index)
+    {
+        if (!isEnable() || !role_)
+            return;
+        role_->updateDbNextIndex(db_name, next_index);
+    }
+
+    bool ClusterManager::enabelAttain(std::string db_name, uint64 index, ClusterOperation status)
+    {
+        if (!isEnable() || !role_)
+            return false;
+
+        uint32 num = 0;
+        if (status == ClusterOperation_Prepare)
+        {
+            num = role_->getLogReplyNum(db_name, index);
+        }
+        else if (status == ClusterOperation_Append)
+        {
+            num = role_->getLogSyncNum(db_name, index);
+        }
+        uint32 total = getFollowNodeL().size();
+        if (total == 0)
+        {
+            SLOG_TRACE("follow node is 0");
+            return false;
+        }
+        return num >= ((total + 1)/2) ? true : false;
+    }
 }

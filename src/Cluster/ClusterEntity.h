@@ -23,7 +23,6 @@ namespace cluster
         ClusterDbPtr addClusterDb(const std::string& db_name);
 
         // update.log
-        void buildDb(std::string db_name, uint64 uid);
         void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
         void addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name);
         void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type = ClusterUpdateType_Defaut, std::string file_name = "");
@@ -48,6 +47,7 @@ namespace cluster
         void updateTerm(uint32 term);
         void updateDbIndex(std::string db_name, uint64 index);
         void updateDbNextIndex(std::string db_name, uint64 next_index);
+        void initTermDbLog(const TermDbLog& db_log);
         uint32 getTerm();
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);
@@ -65,5 +65,6 @@ namespace cluster
         virtual ClusterNode getLearrNode()const{ return ClusterNode(); }
         virtual std::vector<std::string> getFollowrUrlArray()const{ return std::vector<std::string>(); }
         virtual std::vector<ClusterNode> getFollowNodeL()const{ return std::vector<ClusterNode>(); }
+        virtual bool isFollowerRestoring(const std::string& db_name)const = 0;
     };
 }

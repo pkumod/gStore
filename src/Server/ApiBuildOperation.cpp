@@ -185,26 +185,6 @@ namespace server
                 return;
             
             std::string db_name = request.db_name;
-            std::string cluster_db_path;
-            std::string logpath;
-            uint64 log_index;
-            ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
-            log_index = gutil::IdUtil::nextUID();
-            clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
-            bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
-            if (!prepare_result)
-            {
-                clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                response.StatusMsg =  "Less than half of the cluster nodes are confirmed.";
-                response.StatusCode = StatusOperationFailed;
-                SLOG_ERROR(response.StatusMsg);
-                return;
-            }
-            cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
-            logpath = cluster_db_path + to_string(log_index) + ".log";
-            shared_ptr<ofstream> clusterlog = make_shared<ofstream>();
-            clusterlog->open(logpath.c_str());
-
             std::string username = request.username;
             std::string db_path = request.db_path;
             apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
@@ -235,7 +215,7 @@ namespace server
             int nt_file_num = 0;
             if (!db_path.empty())
             {
-                flag = current_database->build(db_path, clusterlog);
+                flag = current_database->build(db_path);
                 nt_file_num = 1;
             }
             else
@@ -253,8 +233,6 @@ namespace server
                     if (!rt)
                     {
                         result = "Import RDF file to database failed: load error.";
-                        clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-                        clusterManagerPtr->dropDb(db_name);
                         Util::remove_path(_db_path);
                         if (!unz_dir_path.empty())
                         {
@@ -267,10 +245,9 @@ namespace server
                     }
                     for (std::string rdf_zip : nt_files)
                     {
-                        current_database->batch_insert(rdf_zip, false, nullptr, clusterlog);
+                        current_database->batch_insert(rdf_zip, false, nullptr);
                     }
                     nt_file_num += nt_files.size();
-                    current_database->save();
                     if (!current_database->save())
 					{
                         response.Error(StatusOperationFailed, "disk or memory is not enough");
@@ -283,8 +260,6 @@ namespace server
             else
             {
                 result = "Import RDF file to database failed.";
-                clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-                clusterManagerPtr->dropDb(db_name);
                 Util::remove_path(_db_path);
                 if (!unz_dir_path.empty())
                 {
@@ -329,42 +304,13 @@ namespace server
             response.StatusMsg = result;
             response.failed_num = parse_error_num;
             response.successNum = success_num;
-            std::string json_str;
-            response.toJsonString(json_str);
-            // cluster sync task begin
-            string log_file_name = to_string(log_index) + ".log";
-            if (success_num > 0)
-            {
-                SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-                string tmp_dir_path = unz_dir_path;
-                bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
-                if (append_result)
-                {
-                    SLOG_DEBUG("response result:\n" << json_str);
-                    clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-                    if (!tmp_dir_path.empty())
-                    {
-                        Util::remove_path(tmp_dir_path);
-                    }
-                }
-                else
-                {
-                    // follower recover by heartbeat compare
-                    SLOG_DEBUG("build db follower recover by heartbeat compare:" << db_name);
-                }
-            }
-            else
-            {
-                SLOG_DEBUG("No data needs to be synchronized, update log stauts to committed");
-                clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                Util::remove_path(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-                // remove unzip files
-                if (!unz_dir_path.empty())
-                {
-                    Util::remove_path(unz_dir_path);
-                }
-            }
-            // cluster sync task end
+
+            // build follower database
+            ClusterOperation cluster_operation = ClusterOperation_Build;
+            ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
+            uint64 log_index = gutil::IdUtil::nextUID();
+            clusterManagerPtr->addLog(db_name, log_index, cluster_operation, cluster_update_type);
+            clusterManagerPtr->addCommitLog(db_name, log_index, cluster_update_type, "");
         }
         catch (const std::exception &e)
         {

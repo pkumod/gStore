@@ -28,7 +28,10 @@ namespace cluster
     void ClusterEntityFollower::setIpPort(const std::string& ip, const std::string& port)
     {
         if(own_.empty())
-            own_.setIp(ip); own_.setPort(port);
+        {
+            own_.setIp(ip);
+            own_.setPort(port);
+        }
     }
 
     ClusterNode ClusterEntityFollower::getLearrNode()const
@@ -36,19 +39,21 @@ namespace cluster
         return leaderNode_;
     }
 
-    void ClusterEntityFollower::addRestoreDb(const std::string& db_name)
+    void ClusterEntityFollower::addRestoringDb(const std::string& db_name)
     {
+        std::lock_guard<std::mutex> lock(restore_mutex_);
         if (restoreDbL_.find(db_name) != restoreDbL_.end())
             return;
         restoreDbL_.insert(db_name);
     }
 
-    void ClusterEntityFollower::removeRestoreDb(const std::string& db_name)
+    void ClusterEntityFollower::removeRestoringDb(const std::string& db_name)
     {
+        std::lock_guard<std::mutex> lock(restore_mutex_);
         restoreDbL_.erase(db_name);
     }
 
-    bool ClusterEntityFollower::isFollowerRestoring(const std::string& db_name)
+    bool ClusterEntityFollower::isFollowerRestoring(const std::string& db_name)const
     {
         if (restoreDbL_.find(db_name) != restoreDbL_.end())
             return true;

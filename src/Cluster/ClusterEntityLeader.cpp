@@ -134,6 +134,55 @@ namespace cluster
         return true;
     }
 
+    // post database zip, follower init databse
+    bool ClusterEntityLeader::runRecoverTaskFromDb(const ClusterRecoverInfo& info)
+    {
+        uint32 term = getTerm();
+        std::string db_name = info.db_name;
+        ClusterDbPtr db = findDb(db_name);
+        if (!db)
+            return false;
+        std::string post_dir_zip = info.zip_path;
+        if (!Util::file_exist(post_dir_zip))
+        {
+            SLOG_TRACE("cluster recover zip is not exist, not data update:" << post_dir_zip);
+            return false;
+        }
+        if (isSendFollowerRestoring(info.ip, db_name))
+        {
+            SLOG_ERROR("follower data is sending, please waiting" << db_name);
+            return false;
+        }
+        
+        addRestoringDb(info.ip, info.db_name);
+        TermDbLog term_db_log = getTermInfoDbLog(db_name);
+        std::string update_type = cluster::ClusterUpdateTypeHandle::to_str(ClusterUpdateType_Init);
+        if (info.operation == ClusterOperation_Build)
+        {
+            for (auto& node : followNodeL_)
+            {
+                std::string file_path = Util::getExactPath(post_dir_zip.c_str());
+                httpentities::RecoverRequest request(term, info.db_name, term_db_log.index, 0, term_db_log.uid, update_type, file_path, term_db_log.firstIndex);
+                HttpUtil::recoverFollower(node.second.getRecoverlUrl(), request, node.second.getUsername(), node.second.getPassword());
+            }
+        }
+        else if (info.operation == ClusterOperation_Init)
+        {
+            ClusterNode node = FindFollower(info.ip, info.port);
+            if (node.empty())
+            {
+                SLOG_ERROR("follower ip or port not found ip:" << info.ip << " ,port:" << info.port);
+                removeRestoringDb(info.ip, info.db_name);
+                return false;
+            }
+            std::string file_path = Util::getExactPath(post_dir_zip.c_str());
+            httpentities::RecoverRequest request(term, info.db_name, term_db_log.index, 0, term_db_log.uid, update_type, file_path, term_db_log.firstIndex);
+            HttpUtil::recoverFollower(node.getRecoverlUrl(), request, node.getUsername(), node.getPassword());
+        }
+        removeRestoringDb(info.ip, info.db_name);
+        return true;
+    }
+
     bool ClusterEntityLeader::runRestoreTask(const ClusterRecoverInfo& info)
     {
         uint32 term = getTerm();
@@ -163,7 +212,7 @@ namespace cluster
             SLOG_TRACE("file is not exist index:" << info.index << " ,file name:" << info.index << ".log" << " ,db name:" << info.db_name);
             return false;
         }
-        addRestoreDb(info.ip, info.db_name);
+        addRestoringDb(info.ip, info.db_name);
         std::string current_path = ClusterDb::getDbDirPath(info.db_name) + file_name;
         std::string zip_path = current_path + ".zip";
         if (!Util::file_exist(zip_path))
@@ -172,7 +221,7 @@ namespace cluster
             {
                 SLOG_ERROR("compress fail");
                 Util::remove_path(zip_path);
-                removeRestoreDb(info.ip, info.db_name);
+                removeRestoringDb(info.ip, info.db_name);
                 return false;
             }
         }
@@ -180,7 +229,7 @@ namespace cluster
         std::string file_path = Util::getExactPath(zip_path.c_str());
         httpentities::RecoverRequest request(term, db_info.dbName, db_info.index, db_info.nextIndex, db_info.uid, update_type, file_path, info.index);
         HttpUtil::recoverFollower(node.getRecoverlUrl(), request, node.getUsername(), node.getPassword());
-        removeRestoreDb(info.ip, info.db_name);
+        removeRestoringDb(info.ip, info.db_name);
         return true;
     }
 
@@ -365,8 +414,9 @@ namespace cluster
         return time_out*1.5;
     }
 
-    void ClusterEntityLeader::addRestoreDb(const std::string& ip, const std::string& db_name)
+    void ClusterEntityLeader::addRestoringDb(const std::string& ip, const std::string& db_name)
     {
+        std::lock_guard<std::mutex> lock(restore_mutex_);
         auto it = restoreDbL_.find(ip);
         if (it == restoreDbL_.end())
         {
@@ -380,8 +430,9 @@ namespace cluster
         }
     }
 
-    void ClusterEntityLeader::removeRestoreDb(const std::string& ip, const std::string& db_name)
+    void ClusterEntityLeader::removeRestoringDb(const std::string& ip, const std::string& db_name)
     {
+        std::lock_guard<std::mutex> lock(restore_mutex_);
         auto it = restoreDbL_.find(ip);
         if (it == restoreDbL_.end())
         {
@@ -399,7 +450,17 @@ namespace cluster
         if (it != restoreDbL_.end())
         {
             if (it->second.find(db_name) != it->second.end())
-                return false;
+                return true;
+        }
+        return false;
+    }
+
+    bool ClusterEntityLeader::isFollowerRestoring(const std::string& db_name)const
+    {
+        for (auto m : restoreDbL_)
+        {
+            if (m.second.find(db_name) != m.second.end())
+                return true;
         }
         return false;
     }

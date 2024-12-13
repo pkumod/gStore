@@ -15,6 +15,7 @@ namespace cluster
         // std::map<std::string, TimerProvider> head_beat_timerL_; // db_name
         TimerProvider head_beat_timer_;
         std::map<std::string, std::set<std::string>> restoreDbL_; // follower ip:follower db name
+        std::mutex restore_mutex_; // lock restoreDbL_
         public:
         ClusterNode FindFollower(const std::string& ip, const std::string& port)const;
         bool IsFollowerIp(const std::string& ip)const;
@@ -30,9 +31,11 @@ namespace cluster
         uint32 getNeedNum(){ return (followNodeL_.size()/2)+1; }
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
         uint64 getTimeOutEndTime(const std::string& db_name = "", const std::string& file_name = "");
-        void addRestoreDb(const std::string& ip, const std::string& db_name);
-        void removeRestoreDb(const std::string& ip, const std::string& db_name);
+        void addRestoringDb(const std::string& ip, const std::string& db_name);
+        void removeRestoringDb(const std::string& ip, const std::string& db_name);
         bool isSendFollowerRestoring(const std::string& ip, const std::string& db_name);
+        // post follower init leader database
+        bool runRecoverTaskFromDb(const ClusterRecoverInfo& info);
 
         // virtual function in here
         public:
@@ -40,5 +43,6 @@ namespace cluster
         ClusterRoleType getCluterRoleType()const override { return cluster::ClusterRoleType_Leader; }
         std::vector<std::string> getFollowrUrlArray()const override;
         std::vector<ClusterNode> getFollowNodeL()const override;
+        bool isFollowerRestoring(const std::string& db_name)const override;
     };
 }

@@ -53,18 +53,27 @@ namespace cluster
         //     return res;
         // }
 
-        void push(DATATYPE & data) {
+        void push(DATATYPE & data)
+        {
             std::lock_guard<std::mutex> lg(m_mutex);
             m_data.push(data);
             m_cond.notify_one();
         }
         
-        DATATYPE pop() {  // 非阻塞
+        DATATYPE pop()
+        {  // 非阻塞
             std::unique_lock<std::mutex> lg(m_mutex);
             m_cond.wait(lg, [this] { return !m_data.empty(); });
             auto res = m_data.front();
             m_data.pop();
             return res;
+        }
+
+        void clear()
+        {
+            std::unique_lock<std::mutex> lg(m_mutex);
+            while (!m_data.empty())
+                m_data.pop();   
         }
         
     private:

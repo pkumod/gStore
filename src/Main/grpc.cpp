@@ -806,7 +806,7 @@ void releaseGlobalPtr(bool renew)
 	}
 	if (clusterManagerPtr)
 	{
-		clusterManagerPtr->stopHeart();
+		clusterManagerPtr->stopServer();
 		clusterManagerPtr.reset();
 		if(renew) {
 			clusterManagerPtr = make_shared<ClusterManager>();
@@ -1174,7 +1174,7 @@ void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *se
 			task->get_resp()->get_parsed_body(&body, &len);
 			char* null_terminated_string = new char[len + 1];
 			std::memcpy(null_terminated_string, body, len);
-			null_terminated_string[len] = '\0'; 
+			null_terminated_string[len] = '\0';
 			SLOG_DEBUG("leader response body: " << null_terminated_string);
 			response->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
 			response->String(null_terminated_string);
@@ -1993,9 +1993,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	else
 	{
 		if (clusterManagerPtr->isEnable())
+		{
 			server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+		}
 		else
+		{
 			server::ApiHandler::build(apiUtil, request_data, response_data);
+		}
 	}
 	if (response_data.StatusCode != server::StatusOK)
 	{

@@ -179,9 +179,10 @@ namespace cluster
         if (last_index != 0)
         {
             auto last_it = logs_.find(last_index);
-            if (last_it != logs_.end() && last_it->second.getOperation() == ClusterOperation_Commit)
+            if (last_it != logs_.end())
             {
-                last_it->second.setNextIndex(index);
+                if (last_it->second.getOperation() == ClusterOperation_Commit || last_it->second.getOperation() == ClusterOperation_Build)
+                    last_it->second.setNextIndex(index);
             }
         }
 
@@ -297,7 +298,7 @@ namespace cluster
             SLOG_ERROR("index is not exist, index:" << index);
             return 0;
         }
-        if (it->second.getOperation() != ClusterOperation_Commit)
+        if (it->second.getOperation() != ClusterOperation_Commit && it->second.getOperation() != ClusterOperation_Build)
         {
             SLOG_ERROR("status not support, index:" << index << ", status:" << it->second.getOperation());
             return 0;
@@ -456,8 +457,12 @@ namespace cluster
             db_logs_.insert(std::make_pair(db_name, log));
             return;
         }
+
         it->second.setIndex(index);
-        it->second.setFirstIndex(index);
+        if (it->second.getFirstIndex() == 0)
+        {
+            it->second.setFirstIndex(index);
+        }
     }
 
     void ClusterTermInfo::setDbNextIndex(const std::string& db_name, uint64 next_index)
@@ -472,15 +477,20 @@ namespace cluster
         it->second.setNextIndex(next_index);
     }
 
-    void ClusterTermInfo::initDbUid(const std::string& db_name, uint64 uid)
+    void ClusterTermInfo::initTermDbLog(const TermDbLog& db_log)
     {
-        auto it = db_logs_.find(db_name);
-        if (it != db_logs_.end())
+        auto it = db_logs_.find(db_log.dbName);
+        if (it == db_logs_.end())
         {
-            db_logs_.erase(it);
+            db_logs_.insert(std::make_pair(db_log.dbName, db_log));
+            return;
         }
-        TermDbLog log(db_name, uid, 0, 0, 0);
-        db_logs_.insert(std::make_pair(db_name, log));
+
+        it->second.setDbName(db_log.dbName);
+        it->second.setUid(db_log.uid);
+        it->second.setIndex(db_log.index);
+        it->second.setNextIndex(db_log.nextIndex);
+        it->second.setFirstIndex(db_log.firstIndex);
     }
 
     void ClusterTermInfo::eraseDb(const std::string& db_name)

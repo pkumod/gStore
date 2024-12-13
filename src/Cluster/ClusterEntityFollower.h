@@ -10,9 +10,11 @@ namespace cluster
         std::string ip_;
         std::string port_;
         ClusterNode own_;
-        std::set<std::string> restoreDbL_;
+        std::set<std::string> restoreDbL_; // 正在做数据恢复的从节点
+        std::mutex restore_mutex_; // lock restoreDbL_
         public:
-
+        void addRestoringDb(const std::string& db_name);
+        void removeRestoringDb(const std::string& db_name);
         // virtual function in here
         public:
         void init()override;
@@ -23,8 +25,6 @@ namespace cluster
         void setIpPort(const std::string& ip, const std::string& port);
         std::string getIp()const{ return own_.getIp(); }
         std::string getPort()const{ return own_.getPort(); }
-        void addRestoreDb(const std::string& db_name);
-        void removeRestoreDb(const std::string& db_name);
-        bool isFollowerRestoring(const std::string& db_name);
+        bool isFollowerRestoring(const std::string& db_name)const override;
     };
 }

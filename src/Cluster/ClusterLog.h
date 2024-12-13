@@ -135,15 +135,11 @@ namespace cluster
             nextIndex = nextIndex_;
             firstIndex = firstIndex_;
         }
+        void setUid(uint64 value){ uid = value; }
         void setDbName(const std::string& value){ dbName = value; }
         void setIndex(uint64 value){ index = value; }
         void setNextIndex(uint64 value){ nextIndex = value; }
-        void setFirstIndex(uint64 value)
-        {
-            if (firstIndex != 0)
-                return;
-            firstIndex = value;
-        }
+        void setFirstIndex(uint64 value){ firstIndex = value; }
         uint64 getIndex()const{ return index; }
         uint64 getNextIndex()const{ return nextIndex; }
         uint64 getFirstIndex()const{ return firstIndex; }
@@ -171,7 +167,7 @@ namespace cluster
         void setTerm(uint32 value){ term_ = value; }
         void setDbIndex(const std::string& db, uint64 index);
         void setDbNextIndex(const std::string& db_name, uint64 NextIndex);
-        void initDbUid(const std::string& db, uint64 uid);
+        void initTermDbLog(const TermDbLog& db_log);
         uint32 getTerm()const{ return term_; }
         uint64 getDbIndex(const std::string& db_name);
         uint64 getDbNextIndex(const std::string& db_name);

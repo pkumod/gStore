@@ -31,6 +31,7 @@ namespace cluster
         bool on_;
         ClusterEntityPtr role_;
         ConcurrenceQueue<ClusterEventPtr> task_queueL;
+        std::thread run_task;
 
         public:
         ClusterManager();
@@ -83,13 +84,12 @@ namespace cluster
         TermDbLog getTermInfoDbLog(const std::string& db_name);
         // 停掉心跳
         void stopHeart();
+        void stopServer();
 
         //日志模块
         //新增日志
         void addLog(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type);
         void addCommitLog(std::string db_name, uint64 index, ClusterUpdateType update_type, const std::string& file_name);
-        // 初始化建库, 生成集群日志
-        void buildDb(std::string db_name, uint64 uid);
         // 更新日志操作
         void updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation);
         void updateLogInfo(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type = ClusterUpdateType_Defaut, std::string file_name = "");
@@ -105,14 +105,8 @@ namespace cluster
         uint32 getLogReplyNum(std::string db_name, uint64 index);
         // 获取同步数量
         uint32 getLogSyncNum(std::string db_name, uint64 index);
-        //是否达到处理要求, 过半(k+1/2)
-        bool enabelAttain(std::string db_name, uint64 index, ClusterOperation status);
         // 更换主节点
         void updateTerm(uint32 term);
-        // 更新已完成节点索引
-        void updateDbIndex(std::string db_name, uint64 index);
-        // 更新需要处理的节点索引
-        void updateDbNextIndex(std::string db_name, uint64 next_index);
         // 获取任期
         uint32 getTerm();
         // 获取数据库成功提交的最新日志索引
@@ -136,10 +130,14 @@ namespace cluster
         // 获取从节点ip
         std::string getFollowIp();
         std::string getFollowPort();
-        void addRestoreDb(const std::string& db_name);
-        void removeRestoreDb(const std::string& db_name);
+        void addRestoringDb(const std::string& db_name);
+        void removeRestoringDb(const std::string& db_name);
         // 从节点是否正在恢复数据
         bool isFollowerRestoring(const std::string& db_name);
+        // 初始化新增或初始化term数据库的索引数据
+        void initTermDbLog(const TermDbLog& log);
+        // 压缩初始化数据库的zip包, 需要锁库, 不能异步处理逻辑
+        std::string compressInitDb(const ClusterRecoverInfo& info);
 
         // nt数据存储模块
         // 普通数据更新，每次操作，单独文件进行存储
@@ -156,13 +154,19 @@ namespace cluster
         // 微妙
         uint32 getAppendTimeout(const std::string& db_name, const std::string& file_name);
 
-        // 测试
+        // 测试辅助使用, 调用时请注意
         // 启动心跳超时检测(比对)
         void startHeartBeatTest();
         // 启动更新通知, 返回应答数量
         bool startNotifyTest(std::string db_name);
         // 启动同步通知, 返回应答数量
         bool startSyncTest(std::string db_name, ClusterUpdateType update_type, const std::string& file_name);
+        // 更新已完成节点索引
+        void updateDbIndex(std::string db_name, uint64 index);
+        // 更新需要处理的节点索引
+        void updateDbNextIndex(std::string db_name, uint64 next_index);
+        //是否达到处理要求, 过半(k+1/2)
+        bool enabelAttain(std::string db_name, uint64 index, ClusterOperation status);
     };
 
     // task
@@ -210,7 +214,10 @@ namespace cluster
                 return;
             }
 
-            per->runRestoreTask(info_);
+            if (info_.operation == ClusterOperation_Build || info_.operation  == ClusterOperation_Init)
+                per->runRecoverTaskFromDb(info_);
+            else
+                per->runRestoreTask(info_);
         }
     };
 }

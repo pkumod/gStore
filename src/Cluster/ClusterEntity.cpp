@@ -121,29 +121,8 @@ namespace cluster
             return;
         uint64 last_index = getDbIndex(db_name);
         updateDbIndex(db_name, index);
+        updateDbNextIndex(db_name, 0);
         db->addLog(index, ClusterOperation_Commit, update_type, last_index, file_name);
-    }
-
-    void ClusterEntity::buildDb(std::string db_name, uint64 uid)
-    {
-        auto it = databaseL_.find(db_name);
-        if (it != databaseL_.end())
-        {
-            dropDb(db_name);
-        }
-        addClusterDb(db_name);
-        ClusterTermInfo log;
-        if (!readFromTermFile(log))
-        {
-            SLOG_ERROR("term log status fail!" << db_name << " , uid:" << uid);
-            return;
-        }
-        log.initDbUid(db_name, uid);
-        if (!writeToTermFile(log))
-        {
-            SLOG_ERROR("term log status fail!" << db_name << " ,uid:" << uid);
-            return;
-        }
     }
 
     void ClusterEntity::updateLogOperation(std::string db_name, uint64 index, ClusterOperation operation, ClusterUpdateType update_type, std::string file_name)
@@ -264,6 +243,22 @@ namespace cluster
         if (!writeToTermFile(log))
         {
             SLOG_ERROR("term log status fail!" << db_name << " ,next_index:" << next_index);
+            return;
+        }
+    }
+
+    void ClusterEntity::initTermDbLog(const TermDbLog& db_log)
+    {
+        ClusterTermInfo log;
+        if (!readFromTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_log.dbName << " ,next_index:" << db_log.uid);
+            return;
+        }
+        log.initTermDbLog(db_log);
+        if (!writeToTermFile(log))
+        {
+            SLOG_ERROR("term log status fail!" << db_log.dbName << " ,next_index:" << db_log.uid);
             return;
         }
     }

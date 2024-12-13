@@ -25,36 +25,6 @@ namespace httpentities {
         }
     };
 
-    struct ClusterRequest {
-        uint32_t term;
-        uint64_t index;
-        uint64_t nextIndex;
-        std::string db_name;
-        uint64_t uid;
-        ClusterRequest() {}
-
-        ClusterRequest(uint32_t term) : term(term) {}
-        ClusterRequest(uint32_t term, std::string db_name, uint64_t index) : term(term), db_name(db_name), index(index) {}
-        ClusterRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid) : term(term), db_name(db_name), index(index), nextIndex(nextIndex), uid(uid) {}
-        void setDbName(std::string db_name)
-        {
-            this->db_name = db_name;
-        }
-        void setIndex(uint64_t index)
-        {
-            this->index = index;
-        }
-        virtual void to_json(std::string& json_str) = 0;
-        void toJson(nlohmann::json& json)
-        {
-            json["term"]    = term;
-            json["index"]   = index;
-            json["db_name"] = db_name;
-            json["nextIndex"] = nextIndex;
-            json["uid"] = uid;
-        }
-    };
-
     struct BaseResponse {
         int StatusCode;
         std::string StatusMsg;
@@ -79,11 +49,6 @@ namespace httpentities {
         int getStatusCode() { return StatusCode; }
         std::string getStatusMsg() { return StatusMsg; }
         bool success() { return StatusCode == 0; }
-    };
-
-    struct ClusterResponse : public BaseResponse {
-        ClusterResponse(int code, std::string msg) : BaseResponse(code, msg) {}
-        ClusterResponse(std::string body) : BaseResponse(body) {}
     };
 
     struct ShutdownRequest : public BaseRequest {
@@ -662,6 +627,43 @@ namespace httpentities {
         }
     };
 
+
+    // cluster operation
+    struct ClusterRequest {
+        uint32_t term;
+        uint64_t index;
+        uint64_t nextIndex;
+        std::string db_name;
+        uint64_t uid;
+        ClusterRequest() {}
+
+        ClusterRequest(uint32_t term) : term(term) {}
+        ClusterRequest(uint32_t term, std::string db_name, uint64_t index) : term(term), db_name(db_name), index(index) {}
+        ClusterRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid) : term(term), db_name(db_name), index(index), nextIndex(nextIndex), uid(uid) {}
+        void setDbName(std::string db_name)
+        {
+            this->db_name = db_name;
+        }
+        void setIndex(uint64_t index)
+        {
+            this->index = index;
+        }
+        virtual void to_json(std::string& json_str) = 0;
+        void toJson(nlohmann::json& json)
+        {
+            json["term"]    = term;
+            json["index"]   = index;
+            json["db_name"] = db_name;
+            json["nextIndex"] = nextIndex;
+            json["uid"] = uid;
+        }
+    };
+
+    struct ClusterResponse : public BaseResponse {
+        ClusterResponse(int code, std::string msg) : BaseResponse(code, msg) {}
+        ClusterResponse(std::string body) : BaseResponse(body) {}
+    };
+
     struct ReplyRequest: public ClusterRequest {
         std::string operation;
         // reply follower port
@@ -749,7 +751,7 @@ namespace httpentities {
     struct RecoverRequest: public ClusterRequest {
         std::string file_path;
         std::string updateType;
-        uint64_t recoverIndex;
+        uint64_t recoverIndex; // if updateType is init, recoverIndex = firstIndex
         RecoverRequest(uint32_t term, std::string db_name, uint64_t index, uint64_t nextIndex, uint64_t uid, std::string updateType, std::string file_path, uint64_t recoverIndex): ClusterRequest(term, db_name, index, nextIndex, uid) {
             this->updateType = updateType;
             this->recoverIndex = recoverIndex;

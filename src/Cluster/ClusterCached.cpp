@@ -17,12 +17,23 @@ namespace cluster
         return getDbDirPath(db_name) + "update.json";
     }
 
+    std::string ClusterDb::getDbInitDir(const std::string& db_name)
+    {
+        return getClusterDir() + db_name + "_init/";
+    }
+
     void ClusterDb::init()
     {
         if (!Util::dir_exist(getDbDirPath(db_name_)))
         {
             SLOG_TRACE("init db dir, db name:" << db_name_);
             Util::create_dir(getDbDirPath(db_name_));
+        }
+
+        if (!Util::dir_exist(getDbInitDir(db_name_)))
+        {
+            SLOG_TRACE("init db dir, db name:" << db_name_);
+            Util::create_dir(getDbInitDir(db_name_));
         }
     }
 

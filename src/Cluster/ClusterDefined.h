@@ -18,6 +18,7 @@ namespace cluster
         ClusterUpdateType_Insert = 1,
         ClusterUpdateType_Delete = 2,
         ClusterUpdateType_Build  = 3, //empty db
+        ClusterUpdateType_Init   = 4,
     };
 
     enum ClusterOperation
@@ -34,10 +35,12 @@ namespace cluster
         ClusterOperation_Build     = 9,
         ClusterOperation_Drop      = 10,
         ClusterOperation_Recover   = 11,
+        ClusterOperation_Init      = 12,
         // .......
         ClusterOperation_Check     = 50,
         ClusterOperation_Replly    = 51,
         ClusterOperation_Undefine  = 52,
+        ClusterOperation_StopServer = 53,
     };
 
     const std::map<ClusterUpdateType, std::string> ClusterUpdateType_str =
@@ -46,6 +49,7 @@ namespace cluster
         {ClusterUpdateType_Insert, "insert"},
         {ClusterUpdateType_Delete, "delete"},
         {ClusterUpdateType_Build,  "build"},
+        {ClusterUpdateType_Init,   "init"},
     };
 
     const std::map<ClusterOperation, std::string> ClusterOperation_str =
@@ -133,12 +137,16 @@ namespace cluster
         uint64 index;
         std::string ip;
         std::string port;
+        ClusterOperation operation;
+        std::string zip_path;
         ClusterRecoverInfo()
         {
             db_name = "";
             index = 0;
             ip = "";
             port = "";
+            operation = ClusterOperation_None;
+            zip_path = "";
         }
         ClusterRecoverInfo(const std::string& db_name_, uint64 index_, std::string ip_, std::string port_)
         {
@@ -146,6 +154,7 @@ namespace cluster
             index = index_;
             ip = ip_;
             port = port_;
+            zip_path = "";
         }
     };
 
@@ -209,6 +218,8 @@ namespace cluster
 
     struct ClusterEvent
     {
+        bool stop_server_;
+        ClusterEvent(){stop_server_ = false;}
         virtual void runEvent()const {}
     };
 }

@@ -22,6 +22,7 @@ namespace cluster
         static std::string getClusterDir();
         static std::string getDbDirPath(const std::string& db_name);
         static std::string getUpdatePath(const std::string& db_name);
+        static std::string getDbInitDir(const std::string& db_name);
         // nt file
         bool readFromNtFile(std::vector<TripleInfo>& triples, const std::string &file_name);
         bool writeToNtFile(const std::vector<TripleInfo>& triples, const std::string &file_name, bool append = false);
