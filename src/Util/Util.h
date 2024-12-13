@@ -66,7 +66,7 @@ public:
 	static unsigned bsearch_vec_uporder(unsigned _key, const std::vector<unsigned>* _vec);
 	static std::string result_id_str(std::vector<unsigned*>& _v, int _var_num);
 
-	static std::string get_backup_time(const std::string path, const std::string db_name);
+	static std::string get_backup_time(const std::string& path, const std::string& separator="_");
 	static bool isValidPort(std::string);
 	static bool isValidIP(std::string);
 	static long read_backup_time();

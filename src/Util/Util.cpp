@@ -599,25 +599,19 @@ Util::result_id_str(vector<unsigned*>& _v, int _var_num)
 
 
 string
-Util::get_backup_time(const string path, const string db_name)
+Util::get_backup_time(const std::string& path, const std::string& separator)
 {
-    string _db_name = db_name + GlobalTypedef::db_suffix();
     string::size_type position;
-    position = path.find(_db_name);
+    position = path.find(separator);
 
-    if(position == path.npos)
+    if(position == std::string::npos)
         return "";
-    string db_folder = path.substr(position, path.length());
-    string timestamp = db_folder.substr(_db_name.length() + 1, db_folder.length());
-    string year, month, day, hour, minute, second;
-    year = "20" + timestamp.substr(0, 2);
-    month = timestamp.substr(2, 2);
-    day = timestamp.substr(4, 2);
-    hour = timestamp.substr(6, 2);
-    minute = timestamp.substr(8, 2);
-    second = timestamp.substr(10, 2);
-    string time = year + '-' + month + '-' + day + ' ' + hour + ":" + minute + ":" + second;
-    return time;
+    // format: yyyyMMddHHmmss
+    string time_str = path.substr(position + 1);
+    if(time_str.size() != 14 && !is_number(time_str))
+        return "";
+    time_t timestamp = TimeUtil::parse(time_str, PURE_DATETIME_PATTERN);
+    return TimeUtil::format(timestamp);
 }
 
 bool

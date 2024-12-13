@@ -485,7 +485,11 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         }
     } else {
         // restore for null
-        std::string built_time = Util::get_backup_time(backup_path, db_name);
+        std::string built_time = Util::get_backup_time(backup_path);
+        if (built_time.empty()) 
+        {
+            built_time = TimeUtil::now(NORM_DATETIME_PATTERN);
+        }
         db_info = std::make_shared<DatabaseInfo>(db_name, username, built_time, DatabaseStatus::BUILDING);
     }
     if (trywrlock_databaseinfo(db_info) ==  false) {
@@ -496,12 +500,12 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         msg = "backup path is not exist";
         return false;
     }
-    std::string db_home_path = GlobalTypedef::db_path(db_name);
+    std::string db_name_path = GlobalTypedef::db_path(db_name);
     bool restore_bool = false;
     // mv db_home to db_home.bak
-    if (FileUtil::dirExists(db_home_path)) 
+    if (FileUtil::dirExists(db_name_path)) 
     {
-        if(!FileUtil::movePath(db_home_path, db_home_path + ".bak"))
+        if(!FileUtil::movePath(db_name_path, db_name_path + ".bak"))
         {
             msg = "rename origin name to .bak fail";
             return false;
@@ -510,7 +514,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
     // is zip file
     if (FileUtil::is_file(backup_path)) {
         // unzip to db_home
-        CompressUtil::UnCompressZip unzip(backup_path, db_home_path);
+        CompressUtil::UnCompressZip unzip(backup_path, GlobalTypedef::db_home());
         if (unzip.unCompress() != CompressUtil::UnZipOK) {
             msg = "backup compress fail";
             return false;
@@ -518,7 +522,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         restore_bool = true;
     } else {
         // cp backup path to db_home
-        restore_bool = FileUtil::copyDir(backup_path, db_home_path);
+        restore_bool = FileUtil::copyDir(backup_path, db_name_path);
     }
     if (restore_bool) {
         if (db_info->getStatus() == DatabaseStatus::BUILDING) {
@@ -527,12 +531,12 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             // Util::add_backuplog(db_name);
         }
         // remove old db_home
-        FileUtil::removePath(db_home_path + ".bak");
+        FileUtil::removePath(db_name_path + ".bak");
     } else {
         msg = "restore fail";
-        if (FileUtil::dirExists(db_home_path + ".bak")) 
+        if (FileUtil::dirExists(db_name_path + ".bak")) 
         {
-            if(!FileUtil::movePath(db_home_path + ".bak", db_home_path))
+            if(!FileUtil::movePath(db_name_path + ".bak", db_name_path))
             {
                 msg = "restore fail, and recover origin db_home fail too!";
             }

@@ -156,21 +156,8 @@ namespace server
                 response.Error(StatusParamIsIllegal, "Backup file is not zip file.");
                 return false;
             }
-            else if (FileUtil::fileExists(backup_path) == false)
-            {
-                response.Error(StatusParamIsIllegal, "Backup file not exist.");
-                return false;
-            }
         }
-        else if (FileUtil::is_dir(backup_path))
-        {
-            if (FileUtil::dirExists(backup_path) == false)
-            {
-                response.Error(StatusParamIsIllegal, "Backup path not exist.");
-                return false;
-            }
-        }
-        else
+        else if (!FileUtil::dirExists(backup_path))
         {
             response.Error(StatusParamIsIllegal, "Backup path not exist.");
             return false;

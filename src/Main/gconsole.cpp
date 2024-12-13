@@ -1714,17 +1714,17 @@ int restore_handler(const vector<string> &args)
 	if (backup_path[backup_path.length() - 1] == '/')
 		backup_path = backup_path.substr(0, backup_path.length() - 1);
 
-	if (Util::get_backup_time(backup_path, db_name).size() == 0) 
-	{
-		cout << "Backup Path Does not match the Database name, Restore Failed" << endl;
-		return -1;
-	}
+	// if (Util::get_backup_time(backup_path).size() == 0) 
+	// {
+	// 	cout << "Backup Path Does not match the Database name, Restore Failed" << endl;
+	// 	return -1;
+	// }
 
-	if (!FileUtil::dirExists(backup_path))
-	{
-		cout << "backup file path is not exist, restore Failed" << endl;
-		return -1;
-	}
+	// if (!FileUtil::dirExists(backup_path))
+	// {
+	// 	cout << "backup file path is not exist, restore Failed" << endl;
+	// 	return -1;
+	// }
 
 	bool db_exist = false;
 	server::MessageShowRequest show_request;
