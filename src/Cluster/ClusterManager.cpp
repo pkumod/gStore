@@ -696,9 +696,11 @@ namespace cluster
         SLOG_TRACE("cluster recover zip is not exist, compress begin .....:" << post_dir_zip);
         FileUtil::createDirs(post_dir);
         std::string cluster_db_dir = ClusterDb::getDbDirPath(info.db_name);
-        FileUtil::copyDir(cluster_db_dir, post_dir);
+        std::string post_cluster_db_path = post_dir + '/' + info.db_name;
+        FileUtil::copyDir(cluster_db_dir, post_cluster_db_path);
         std::string db_dir = GlobalTypedef::db_path(info.db_name);
-        FileUtil::copyDir(db_dir, post_dir);
+        std::string post_db_path = post_dir + '/' + info.db_name + GlobalTypedef::db_suffix();
+        FileUtil::copyDir(db_dir, post_db_path);
 
         CompressUtil::CompressZip compress_util;
         if (!compress_util.compressDirExportZip(post_dir, post_dir_zip))

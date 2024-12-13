@@ -593,9 +593,7 @@ namespace server
             FileUtil::removePath(db_path);
             clusterManagerPtr->dropDb(db_name);
 
-            FileUtil::movePath(db_dir, GlobalTypedef::db_home());
-
-            std::string built_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+            FileUtil::movePath(db_dir, db_path);
             if(!apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::AREADY_BUILT))
             {
                 SLOG_ERROR("cluster recover database " + db_name + " fail" << " ,zip name:" << zip_file_path);
@@ -603,7 +601,7 @@ namespace server
             }
             else
             {
-                FileUtil::movePath(cluster_db_dir, cluster::ClusterDb::getClusterDir());
+                FileUtil::movePath(cluster_db_dir, cluster::ClusterDb::getClusterDir()+db_name);
                 TermDbLog db_log(db_name, request->uid, request->index, 0, request->recoverIndex);
                 clusterManagerPtr->initTermDbLog(db_log);
             }
