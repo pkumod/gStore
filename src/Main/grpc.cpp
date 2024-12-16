@@ -387,6 +387,8 @@ void register_service(GRPCServer &svr)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
 			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->resp_code = 0;
+			response->resp_msg = "ok";
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
@@ -401,6 +403,8 @@ void register_service(GRPCServer &svr)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
 			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->resp_code = 0;
+			response->resp_msg = "ok";
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
@@ -1746,7 +1750,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, Json &json_data)
 				}
 				apiUtil->update_access_log(1005, msg, opt_id, -1, 0, 0);
 				if (response != nullptr)
-					response->Json(msg);
+					response->Error(1005, msg);
 				if (!callback.empty())
 				{
 					string postdata;

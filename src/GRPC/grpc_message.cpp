@@ -290,6 +290,14 @@ GRPCReq &GRPCReq::operator=(GRPCReq&& other)
 // GRPCResp
 void GRPCResp::String(const std::string &str)
 {
+    if (Slog::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
+    {
+        stringstream ss;
+        ss << "\n================== grpc-response =================\n";
+        ss << str << std::endl;
+        ss << "==================================================";
+        SLOG_CORE(ss.str());
+    }
     auto *compress_data = malloc(str.size());
     size_t compress_size = 0;
     int ret = this->compress(&str, compress_data, compress_size);
@@ -301,28 +309,26 @@ void GRPCResp::String(const std::string &str)
     {
         this->append_output_body_nocopy(compress_data, compress_size);
     }
-    this->resp_code = 0;
-    this->resp_msg = "Success";
     task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
 }
 
-void GRPCResp::String(std::string &&str)
-{
-    auto *compress_data = malloc(str.size());
-    size_t compress_size = 0;
-    int ret = this->compress(&str, compress_data, compress_size);
-    if(ret == StatusOK)
-    {   
-        this->append_output_body_nocopy(compress_data, compress_size);
-    }
-    else
-    {
-        this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
-    }
-    // this->resp_code = 0;
-    // this->resp_msg = "Success";
-    task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
-}
+// void GRPCResp::String(std::string &&str)
+// {
+//     auto *compress_data = malloc(str.size());
+//     size_t compress_size = 0;
+//     int ret = this->compress(&str, compress_data, compress_size);
+//     if(ret == StatusOK)
+//     {   
+//         this->append_output_body_nocopy(compress_data, compress_size);
+//     }
+//     else
+//     {
+//         this->append_output_body(static_cast<const void *>(str.c_str()), str.size());
+//     }
+//     // this->resp_code = 0;
+//     // this->resp_msg = "Success";
+//     task_of(this)->add_callback([compress_data](GRPCTask *) { free(compress_data); });
+// }
 
 void GRPCResp::File(const std::string &path)
 {
@@ -356,18 +362,18 @@ void GRPCResp::Json(const ::Json &json)
     this->String(resBuffer.GetString());
 }
 
-void GRPCResp::Json(const std::string &str)
-{
-    ::Json json_doc;
-    json_doc.Parse(str.c_str());
-    if (json_doc.HasParseError())
-    {
-        this->Error(StatusJsonInvalid);
-        return;
-    }
-    this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-    this->String(str);
-}
+// void GRPCResp::Json(const std::string &str)
+// {
+//     ::Json json_doc;
+//     json_doc.Parse(str.c_str());
+//     if (json_doc.HasParseError())
+//     {
+//         this->Error(StatusJsonInvalid);
+//         return;
+//     }
+//     this->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+//     this->String(str);
+// }
 
 // void GRPCResp::Gzip(const ::Json &json)
 // {

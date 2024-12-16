@@ -3023,9 +3023,33 @@ bool Util::iscontain(const string& _parent,const string& _child)
 
 void Util::printConsole(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows)
 {
+    if (rows.size() == 1 && rows[0].size() == 1)
+    {
+        string str = rows[0][0];
+        size_t str_size = str.size();
+        // start with "{ and end with }"
+        if (str.find("\"{") == 0 && str.find_last_of("}\"") == str_size-1 )
+        {
+            str = str.substr(1, str_size - 2);
+            str = replace_all(str, "\\\"", "\"");
+            rapidjson::Document doc;
+            doc.SetObject();
+            doc.Parse(str.c_str());
+            if (!doc.HasParseError())
+            {
+                rapidjson::StringBuffer prettyBuffer;
+                rapidjson::PrettyWriter<rapidjson::StringBuffer> prettyWriter(prettyBuffer);
+                doc.Accept(prettyWriter);
+                std::cout << prettyBuffer.GetString() << std::endl;
+                return;
+            }
+        }
+    }
     PrettyPrint pp(headers);
     for(auto row: rows)
+    {
         pp.addRow(row);
+    }    
     pp.print(std::cout);
 }
 

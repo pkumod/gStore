@@ -142,7 +142,7 @@ public:
     // send string
     void String(const std::string &str);
 
-    void String(std::string &&str);
+    // void String(std::string &&str);
 
     // send file 
     void File(const std::string &path);
@@ -153,7 +153,7 @@ public:
     // send json string
     void Json(const Json &json);
 
-    void Json(const std::string &str);
+    // void Json(const std::string &str);
 
     // TODO compress with gzip
     // void set_compress(const Compress &compress);
