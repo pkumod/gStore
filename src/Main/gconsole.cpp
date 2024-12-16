@@ -999,7 +999,7 @@ int read_pswd(string usr_name, string &pswd)
 		if (rs.ansNum)
 		{
 			pswd = rs.answer[0][0];
-			cout<<"get system password:"<<pswd<<endl;
+			// cout<<"get system password:"<<pswd<<endl;
 			// strip ""
 			pswd = pswd.substr(1, pswd.size() - 2);
 			return 0;
