@@ -320,7 +320,6 @@ Util::~Util()
     fclose(this->debug_database);	//NULL is ok, just like free(NULL)
     this->debug_database = NULL;
 #endif
-GlobalTypedef::_logger.shutdown();
 }
 
 bool
