@@ -142,7 +142,8 @@ protected:
       if (num != 0)
       {
         stream << std::string(_cell_padding, ' ') << val;
-        num = _column_sizes[i] - val.size() + num;
+        if (_column_sizes[i] > val.size())
+          num = _column_sizes[i] - val.size() + num;
         stream << std::string(_cell_padding + num, ' ') << "|";
       }
       else
