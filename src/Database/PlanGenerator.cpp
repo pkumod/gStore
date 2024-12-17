@@ -89,11 +89,11 @@ JoinMethod PlanGenerator::GetJoinStrategy(bool s_is_var, bool p_is_var, bool o_i
 			if (p_is_var) return JoinMethod::so2p;
 		} else {
 			SLOG_ERROR("error: var_num not equal to 1 or 2");
-			exit(-1);
+			throw runtime_error("error: var_num not equal to 1 or 2");
 		}
 	}
 	SLOG_ERROR("error: var_num not equal to 1 or 2");
-	exit(-1);
+	throw runtime_error("error: var_num not equal to 1 or 2");
 }
 
 unsigned PlanGenerator::GetCandidateSizeFromWholeDB(unsigned int var_id) const {
@@ -1362,7 +1362,7 @@ std::shared_ptr<PlanTree> PlanGenerator::GetSpecialOneTriplePlan() {
 			}
 			default: {
 				SLOG_ERROR("error: joinmethod error");
-				exit(-1);
+				throw runtime_error("error: joinmethod error");
 			}
 		}
 	}

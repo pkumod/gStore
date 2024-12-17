@@ -14,7 +14,7 @@ JoinMethod PlanTree::get_join_strategy(BGPQuery *bgp_query, shared_ptr<VarDescri
 			return var_descrip->so_edge_type_[edge_index] == GlobalTypedef::EDGE_IN ? JoinMethod::s2po : JoinMethod::o2ps;
 	} else{
 		SLOG_ERROR("not support");
-		exit(-1);
+		throw runtime_error("not support");
 	}
 }
 

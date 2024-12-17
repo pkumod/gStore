@@ -557,16 +557,16 @@ bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, std::shared_p
 			s_id = _kvstore->getIDByString(s_string);
 			if(s_id == INVALID) return false;
 		} else{
-			cout << "error: pass an var in CheckConstBGPExist!" << endl;
-			exit(-1);
+			SLOG_TRACE("error: pass an var in CheckConstBGPExist!");
+			throw runtime_error("error: pass an var in CheckConstBGPExist!");
 		}
 
 		if(o_string.at(0) != '?'){
 			o_id = _kvstore->getIDByString(o_string);
 			if(o_id == INVALID) return false;
 		} else{
-			cout << "error: pass an var in CheckConstBGPExist!" << endl;
-			exit(-1);
+			SLOG_TRACE("error: pass an var in CheckConstBGPExist!");
+			throw runtime_error("error: pass an var in CheckConstBGPExist!");
 		}
 
 		if(p_string.at(0) != '?'){
@@ -574,7 +574,7 @@ bool BGPQuery::CheckConstBGPExist(const vector<Triple> &triple_vt, std::shared_p
 			if(p_id == static_cast<int>(INVALID)) return false;
 		} else{
 			cout << "error: pass an var in CheckConstBGPExist!" << endl;
-			exit(-1);
+			throw runtime_error("error: pass an var in CheckConstBGPExist!");
 		}
 
 		if(!_kvstore->existThisTriple(s_id, p_id, o_id)) return false;

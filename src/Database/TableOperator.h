@@ -93,7 +93,7 @@ class EdgeInfo{
   		if(var_descrip->s_type_[index] == VarDescriptor::EntiType::VarEntiType){
   			if(var_descrip->o_type_[index] == VarDescriptor::EntiType::VarEntiType){
           SLOG_ERROR("error: sub, pre, obj in this triple are all var");
-  				exit(-1);
+          throw runtime_error("error: sub, pre, obj in this triple are all var");
   			}
 			else
 				join_method_ = JoinMethod::o2ps;
@@ -120,7 +120,7 @@ class EdgeInfo{
   		if(var_descrip->so_edge_nei_type_[index] == VarDescriptor::EntiType::VarEntiType){
   			if(var_descrip->so_edge_pre_type_[index] == VarDescriptor::PreType::VarPreType){
           SLOG_ERROR("error: sub, pre, obj in this triple are all var");
-  				exit(-1);
+          throw runtime_error("error: sub, pre, obj in this triple are all var");
   			} else{
   				// nei is var, pre is const
   				join_method_ = JoinMethod::p2so;

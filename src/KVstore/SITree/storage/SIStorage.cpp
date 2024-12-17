@@ -672,7 +672,7 @@ SIStorage::WriteTree(std::shared_ptr<SINode>_np)	//
     if (bp->num > cur_block_num)
 		{
 			printf("blocks num exceed, cur_block_num: %u\n", cur_block_num);
-			exit(1);
+      throw runtime_error("blocks num exceed");
 		}
 #endif
     j = bp->num - 1;
@@ -728,7 +728,6 @@ SIStorage::request(long long needed_mem)	//aligned to byte
     if (!this->handler(needed_mem - freemem))	//disaster in buffer memory
     {
       print(string("error in request: out of buffer-mem, now to exit"));
-      //exit(1);
       return false;;
     }
   this->freemem -= needed_mem;

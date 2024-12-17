@@ -80,7 +80,7 @@ ISArray::ISArray(string _dir_path, string _filename, string mode, unsigned long 
 		if (BM == NULL)
 		{
 			SLOG_ERROR(_filename << ": Fail to initialize ISBlockManager");
-			exit(0);
+			throw runtime_error(_filename + "Fail to initialize ISBlockManager");
 		}
 
 		for(unsigned i = 0; i < CurEntryNum; i++)
@@ -229,7 +229,7 @@ ISArray::AddInCache(unsigned _key, char *_str, unsigned _len)
 		{
 			SLOG_ERROR("Error in SwapOut: CurCacheSize is " << CurCacheSize << " , MaxSize is " << MAX_CACHE_SIZE << " , need size " << _len);
 			// false means cache is empty
-			exit(0);
+			throw runtime_error("Error in SwapOut");
 			//	CurCacheSize = 0;
 		//	break;
 		}

@@ -79,7 +79,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		{
 			SLOG_ERROR("Error in open ");
 			perror("fopen");
-			exit(0);
+			throw runtime_error("Error in open" + IVfile_name);
 		}
 		
 		int fd  = fileno(IVfile);
@@ -95,7 +95,7 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 		if (BM == NULL)
 		{
 			SLOG_ERROR(_filename << ": Fail to initialize IVBlockManager");
-			exit(0);
+			throw runtime_error(_filename + ": Fail to initialize IVBlockManager");
 		}
 
 //		cout << _filename << " CurEntryNum = " << CurEntryNum << endl;
@@ -223,7 +223,7 @@ IVArray::AddInCache(unsigned _key, char *_str, unsigned long _len)
 		if (!SwapOut())
 		{
 			SLOG_ERROR(filename << ": swapout error");
-			exit(0);
+			throw runtime_error(filename + ": swapout error");
 		}
 	}
 

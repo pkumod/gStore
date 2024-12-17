@@ -1758,7 +1758,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			string dictionary_path = this->store_path + "/dictionary.dc";
 			if (!trie->LoadTrie(dictionary_path))
 			{
-				exit(0);
+				throw "load trie is failed";
 			}
 			trie->LoadDictionary();
 		}*/
@@ -2581,7 +2581,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	if (!_fin)
 	{
 		SLOG_ERROR("sub2id&pre2id&obj2id: Fail to rdf open : " << _rdf_file);
-		// exit(0);
 		return false;
 	}
 
@@ -2590,7 +2589,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file)
 	if (!_six_tuples_fout)
 	{
 		SLOG_ERROR("sub2id&pre2id&obj2id: Fail to tuples open: " << _six_tuples_file);
-		// exit(0);
 		return false;
 	}
 
@@ -2881,7 +2879,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	if (!_fin)
 	{
 		SLOG_ERROR("sub2id&pre2id&obj2id: Fail to rdf open : " << _rdf_file);
-		// exit(0);
 		return false;
 	}
 
@@ -2890,7 +2887,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	if (!_six_tuples_fout)
 	{
 		SLOG_ERROR("sub2id&pre2id&obj2id: Fail to tuples open: " << _six_tuples_file);
-		// exit(0);
 		return false;
 	}
 
@@ -3464,7 +3460,6 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	if (!_fin)
 	{
 		SLOG_ERROR("fail to open : " << _rdf_file << ".@insert_test");
-		// exit(0);
 		return false;
 	}
 
@@ -3764,7 +3759,6 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	if (!_fin)
 	{
 		SLOG_ERROR("fail to open : " << _rdf_file << ".@insert_test");
-		// exit(0);
 		throw runtime_error("fail to open " + _rdf_file);
 	}
 
@@ -4373,7 +4367,7 @@ void Database::sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _tri
 				{
 					// todo: complete this, please read DevelopDoc for instruction
 					SLOG_ERROR("Uncomplete function in Database::sub_batch_update");
-					exit(-1);
+					throw runtime_error("Uncomplete function in Database::sub_batch_update");
 				}
 				data.clear();
 				obj_id = id_tuples[i].objid;

@@ -179,7 +179,7 @@ KVstore::getIDByString(string _str)
 		this->kv_trie = new Trie;
 		if (!kv_trie->LoadTrie(dictionary_path))
 		{
-			exit(0);
+			throw "load trie is failed";
 		}
 	}*/
 
