@@ -2199,7 +2199,16 @@ bool Database::exist_triple(const TripleWithObjType &_triple, shared_ptr<Transac
 
 bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 {
-
+	indicators::ProgressBar bar{
+			indicators::option::BarWidth{50},
+			indicators::option::Start{"["},
+			indicators::option::Fill{"="},
+			indicators::option::Lead{">"},
+			indicators::option::Remainder{" "},
+			indicators::option::End{"]"},
+			indicators::option::PostfixText{"Parsing triples 0/5"},
+			indicators::option::ForegroundColor{indicators::Color::green},
+			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
 	// TYPE_ENTITY_LITERAL_ID** _p_id_tuples = NULL;
 	// std::shared_ptr<ID_TUPLE[]> _p_id_tuples = nullptr;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
@@ -2214,7 +2223,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 
 	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	setProgress(Progress_RDFParse);
-	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log))
+	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, bar))
 	{
 		return false;
 	}
@@ -2228,7 +2237,9 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	//
 	// TODO+BETTER: a global ID manager module, should be based on type template
 	// this can be used in vstree, storage and Database
-
+	
+	bar.set_option(indicators::option::PostfixText{"building stringIndex 1/5"});
+	bar.set_progress(60);
 	SLOG_CORE("Begin to save StringIndex ......");
 	// build stringindex before this->kvstore->id2* trees are closed
 	this->stringindex->setNum(StringIndexFile::Entity, this->entity_num);
@@ -2242,6 +2253,8 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 
 	t1 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Saving StringIndex, used " + to_string(t1 - t2) + "ms.");
+	bar.set_option(indicators::option::PostfixText{"building id2string and string2id 2/5"});
+	bar.set_progress(61);
 
 	// NOTICE:close these trees now to save memory
 	SLOG_CORE("Begin to save id2string and string2id ......");
@@ -2260,7 +2273,8 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	
 	t2 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish saving id2string and string2id, used " + to_string(t2 - t1) + "ms.");
-
+	bar.set_option(indicators::option::PostfixText{"building spo2values 3/5"});
+	bar.set_progress(80);
 	// after closing the 6 trees, read the id tuples again, and remove the file     given num, a dimension,return a pointer
 	// NOTICE: the file can also be used for debugging, and a program can start just from the id tuples file
 	//(if copy the 6 id2string trees, no need to parse each time)
@@ -2318,7 +2332,8 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	build_p2value_thread.join();
 	t1 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
-
+	bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
+	bar.set_progress(99);
 	// WARN:we must free the memory for id_tuples array
 	_p_id_tuples.reset();
 	_p_id_tuples_1.reset();
@@ -2337,7 +2352,8 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	{
 		SLOG_ERROR("the statistics info file of db saved failure!");
 	}
-
+	bar.set_option(indicators::option::PostfixText{"Build RDF database done 5/5"});
+	bar.set_progress(100);
 	return true;
 }
 
@@ -2405,7 +2421,7 @@ void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 	SLOG_CORE("Finish building p2values, used " << (t2 - t1) << "ms.");
 }
 
-bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log)
+bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar)
 {
 	// NOTICE: if we keep the id_tuples always in memory, i.e. [unsigned*] each unsigned* is [3]
 	// then for freebase, there is 2.5B triples. the mmeory cost of this array is 25*10^8*3*4 + 25*10^8*8 = 50G
@@ -2551,6 +2567,8 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	std::shared_ptr<ID_TUPLE[]> tmp_id_tuples(new ID_TUPLE[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<ID_TUPLE[]>());
 	std::string split_str = cluster::TripleInfo::getSplitStr();
 	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
+	// parse 60%, max triples 5B，per batch 10M
+	float progress_unit = 60 / 50 / 10;
 	while (true)
 	{
 		++batch_count;
@@ -2562,22 +2580,9 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 		if (parse_triple_num == 0)
 		{
+			bar.set_progress(59);
 			break;
 		}
-		#ifdef SHOW_PROGRESS
-		indicators::ProgressBar bar{
-			indicators::option::BarWidth{50},
-			indicators::option::Start{"["},
-			indicators::option::Fill{"="},
-			indicators::option::Lead{">"},
-			indicators::option::Remainder{" "},
-			indicators::option::End{"]"},
-			indicators::option::PostfixText{"Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
-			indicators::option::ForegroundColor{indicators::Color::green},
-			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
-		int bar_tmp = 0;
-		int one_percent_num = parse_triple_num / 100;
-		#endif
 		// Process the Triple one by one
 		// triples_num will eventually be set to the sum of all parse_triple_num (which seems legit)
 		for (int i = 0; i < parse_triple_num; i++)
@@ -2624,10 +2629,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 		fwrite(tmp_id_tuples.get(), sizeof(ID_TUPLE), parse_triple_num, fp);
 		int64_t t2 = gutil::TimeUtil::timestamp();
 		SLOG_CORE("Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num) + ", use " + to_string(t2-t1) + "ms");
-		#ifdef SHOW_PROGRESS
-		if (!bar.is_completed())
-			bar.set_progress(100);
-		#endif
+		bar.set_progress(int(batch_count * progress_unit));
 	}
 	for (const auto& m: id_tuples)
 	{

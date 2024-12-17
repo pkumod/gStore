@@ -1284,10 +1284,35 @@ int raw_sparql_handler(string sparql)
 	if (!query_response.success())
 	{
 		cout << "Query failed: " << query_response.StatusMsg << endl;
-		return -1;
+		return 1;
 	}
 	else if (!query_response.head.empty())
 	{
+		if (query_response.results.size() == 1 && query_response.results[0].size() == 1)
+		{
+		    string str = query_response.results[0][0];
+		    size_t str_size = str.size();
+		    // start with "{ and end with }"
+		    if (str.find("\"{") == 0 && str.find_last_of("}\"") == str_size-1 )
+		    {
+		        str = str.substr(1, str_size - 2);
+		        str = StringUtil::replace_all(str, "\\\"", "\"");
+		        if (nlohmann::json::accept(str))
+		        {
+		            try
+		            {
+		                nlohmann::json doc = nlohmann::json::parse(str);
+		                std::cout << doc.dump(4) << std::endl;
+						cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
+						return 0;
+		            }
+		            catch(const nlohmann::json::parse_error &e) 
+					{
+						SLOG_ERROR("JSON parse error: " << e.what());
+					}
+		        }
+		    }
+		}
 		Util::printConsole(query_response.head, query_response.results);
 		cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
 	} 
@@ -1408,12 +1433,8 @@ int sparql_handler(const vector<string> &args)
                  std::istreambuf_iterator<char>()); 
 	fin.close();
 
-	if (raw_sparql_handler(sparql))
-	{
-		cout << "Query failed: " << sparql << endl;
-	}
-	cout << endl
-		 << endl;
+	raw_sparql_handler(sparql);
+	std::cout << std::endl;
 	return 0;
 }
 
@@ -1611,7 +1632,7 @@ int create_handler(const vector<string> &args)
 		cout<< "RDF parse error num " << build_response.failed_num << endl;
 		cout<< "See log file for details "<< endl;
 	}
-	cout << "Build RDF database " << db_name << " successfully! use " << (t2-t1) << "ms" << endl;
+	cout << "Build RDF database " << db_name << " successfully! use " << (t2-t1) << " ms." << endl;
 	return 0;
 }
 
@@ -1630,7 +1651,7 @@ int drop_handler(const vector<string> &args)
 		cout << "You can NOT drop current database. Please UNLOAD current database through \"UNLOAD <database_name>;\" before you drop it.";
 		return -1;
 	}
-	server::MessageDropRequest drop_request(db_name, "0");
+	server::MessageDropRequest drop_request(db_name, false);
 	drop_request.username = root_username;
 	drop_request.password = root_password;
 	server::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
