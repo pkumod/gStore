@@ -83,7 +83,7 @@ public:
     std::string opt_id;
     std::string endtime;
     int state = 1;
-    int num = 0;
+    unsigned long long num = 0;
     int fail_num = 0;
     std::string backupfilepath;
     std::string queryfilepath;

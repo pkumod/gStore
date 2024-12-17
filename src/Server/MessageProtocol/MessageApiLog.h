@@ -181,7 +181,7 @@ namespace server
     {
         std::string operation;
         int state;
-        int success_num;
+        unsigned long long success_num;
         int failed_num;
         std::string backupfilepath;
         std::string queryfilepath;

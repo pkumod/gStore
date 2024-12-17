@@ -204,7 +204,10 @@ namespace server
                 apiUtil->get_databaseinfo(log.dbname, db_info);
                 std::shared_ptr<Database> current_databse = db_info->getDatabase();
                 if (current_databse)
+                {
                     response.StatusMsg = current_databse->getProgressStatusStr();
+                    response.success_num = current_databse->getTripleNum();
+                }
             }
         }
         catch (const std::exception &e)
