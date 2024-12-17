@@ -1874,6 +1874,7 @@ std::string Util::md5(const string& text)
 
 void Util::printConsole(std::vector<std::string> &headers, std::vector<std::vector<std::string>> &rows)
 {
+    std::cout.flush();
     PrettyPrint pp(headers);
     for(auto row: rows)
         pp.addRow(row);
