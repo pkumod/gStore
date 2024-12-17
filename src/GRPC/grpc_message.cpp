@@ -331,7 +331,10 @@ void GRPCResp::String(const std::string &str)
     {
         stringstream strstream;
         strstream << "\n==================== http-response ====================\n";
-        strstream << str;
+        if (str.size() > 1024)
+            strstream << str.substr(0, 1021) << "...";
+        else
+            strstream << str;
         strstream << "\n=======================================================";
         SLOG_CORE(strstream.str());
     }

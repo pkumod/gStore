@@ -59,7 +59,8 @@ namespace server
         }
         else if (request.format == "file")
         {
-            
+            // file format does not limit the number
+            rs.output_limit = -1;
             string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".txt";
             string file_path = apiUtil->get_query_result_path() + file_name;
             nlohmann::json json_data;
@@ -210,6 +211,7 @@ namespace server
                     if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
                     {
                         rs_outputlimit = apiUtil->get_max_output_size();
+                        rs.output_limit = rs_outputlimit;
                     }
                 }
                 response.StatusCode = StatusOK;
@@ -377,6 +379,7 @@ namespace server
                     if (rs_outputlimit == -1 || rs_outputlimit > apiUtil->get_max_output_size())
                     {
                         rs_outputlimit = apiUtil->get_max_output_size();
+                        rs.output_limit = rs_outputlimit;
                     }
                 }
 
