@@ -157,6 +157,8 @@ class GeneralEvaluation
 		void kleeneClosure(std::shared_ptr<TempResultSet> temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
 		void BFS(std::shared_ptr<TempResultSet> temp, int sid, int pred, bool forward, int numCol=2);
 
+		std::vector<int> getPredSetByStringList(const std::vector<std::string>& pred_set, const std::vector<std::string>& neg_pred_set)const;
+
 		//Algorithm evaluation high level function
 		void diameterEstimation(std::stringstream &ss, const std::vector<int>& pred_id_set);
 		void betweennessCentrality(std::stringstream &ss, int id, bool directed, const std::vector<int> &pred_id_set);

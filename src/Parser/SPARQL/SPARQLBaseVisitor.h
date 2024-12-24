@@ -511,6 +511,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitIriOrNegIri(SPARQLParser::IriOrNegIriContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitPredSet(SPARQLParser::PredSetContext *ctx) override {
     return visitChildren(ctx);
   }

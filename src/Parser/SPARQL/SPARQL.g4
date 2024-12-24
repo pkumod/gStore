@@ -135,7 +135,8 @@ unaryexpression : '!' primaryexpression|	'+' primaryexpression
  ;
 primaryexpression : brackettedexpression | builtInCall | iriOrFunction | rDFLiteral | numericLiteral | booleanLiteral | var ;
 brackettedexpression : '(' expression ')' ;
-predSet : '{' iri ( ',' iri )* '}' | '{' negIri ( ',' negIri )* '}' | '{' '}' ;
+iriOrNegIri : iri | negIri ;
+predSet : '{' iriOrNegIri ( ',' iriOrNegIri )* '}' | '{' '}' ;
 builtInCall : aggregate|	K_STR '(' expression ')' 
 |	K_LANG '(' expression ')' 
 |	K_LANGMATCHES '(' expression ',' expression ')' 

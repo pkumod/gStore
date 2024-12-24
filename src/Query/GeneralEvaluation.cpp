@@ -1525,7 +1525,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					prepPathQuery();
 					vector<int> uid_ls, vid_ls;
 					vector<vector<int>> uid_ls_ls;
-					vector<int> pred_id_set;
 					uid_ls_ls.push_back(vector<int>());
 					for (auto vert : proj[0].path_args.vert_set)
 						uid_ls_ls.back().push_back(kvstore->getIDByString(vert));
@@ -1538,27 +1537,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						vid_ls.push_back(kvstore->getIDByString(proj[0].path_args.dst));
 					else
 						vid_ls.push_back(-1);	// Dummy for loop
-					if (!proj[0].path_args.pred_set.empty())
-					{
-						for (auto pred : proj[0].path_args.pred_set)
-						{
-							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-							if (pred_id != static_cast<int>(INVALID))
-								pred_id_set.push_back(pred_id);
-						}
-					}
-					else
-					{
-						// Allow all predicates except those in neg_pred_set
-						unordered_set<int> neg_pred_id_set;
-						for (string pred : proj[0].path_args.neg_pred_set)
-							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
-						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-						for (unsigned j = 0; j < pre_num; j++)
-							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
-								pred_id_set.push_back(j);
-					}
-
+					
+					vector<int> pred_id_set = getPredSetByStringList(proj[0].path_args.pred_set, proj[0].path_args.neg_pred_set);
 					// For each u-v pair, query
 					unordered_set<pair<int, int>, hashFunction> unique_pairs;
 					bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
@@ -2086,27 +2066,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 					int hopConstraint = proj[0].path_args.k;
 					bool directed = proj[0].path_args.directed;
-					vector<int> pred_id_set;
-					if (!proj[0].path_args.pred_set.empty())
-					{
-						for (auto pred : proj[0].path_args.pred_set)
-						{
-							TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-							if (pred_id != static_cast<int>(INVALID))
-								pred_id_set.push_back(pred_id);
-						};
-					}
-					else
-					{
-						// Allow all predicates except those in neg_pred_set
-						unordered_set<int> neg_pred_id_set;
-						for (string pred : proj[0].path_args.neg_pred_set)
-							neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
-						unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-						for (unsigned j = 0; j < pre_num; j++)
-							if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
-								pred_id_set.push_back(j);
-					}
+					vector<int> pred_id_set = getPredSetByStringList(proj[0].path_args.pred_set, proj[0].path_args.neg_pred_set);
 					string fun_name = proj[0].path_args.fun_name;
 					fun_name = StringUtil::replace_all(fun_name, "\"", "");
 					// #if defined(DEBUG)
@@ -2676,7 +2636,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						prepPathQuery();
 						vector<int> uid_ls, vid_ls;
-						vector<int> pred_id_set;
 						if (proj[i].path_args.iri_set.size() > 2)
 						{
 							throw runtime_error("iri_set conatins variable params but total params more than two!");
@@ -2723,27 +2682,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							vid_ls.push_back(kvstore->getIDByString(proj[i].path_args.dst));
 						}
 
-						// pred_id_set: convert from IRI to integer ID
-						if (!proj[i].path_args.pred_set.empty())
-						{
-							for (auto pred : proj[i].path_args.pred_set)
-							{
-								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-								if (pred_id != static_cast<int>(INVALID))
-									pred_id_set.push_back(pred_id);
-							}
-						}
-						else
-						{
-							// Allow all predicates except those in neg_pred_set
-							unordered_set<int> neg_pred_id_set;
-							for (string pred : proj[i].path_args.neg_pred_set)
-								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
-							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-							for (unsigned j = 0; j < pre_num; j++)
-								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
-									pred_id_set.push_back(j);
-						}
+						vector<int> pred_id_set = getPredSetByStringList(proj[i].path_args.pred_set, proj[i].path_args.neg_pred_set);
 
 						// For each u-v pair, query
 						unordered_set<pair<int, int>, hashFunction> unique_pairs;
@@ -2861,7 +2800,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 						vector<int> uid_ls, vid_ls;
 						vector<vector<int>> uid_ls_ls;
-						vector<int> pred_id_set;
 
 						// uid_ls_ls (multiple input vertices)
 						auto vars2temp = Varset(proj[i].path_args.vert_set).mapTo(result0.getAllVarset());
@@ -2935,28 +2873,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						else
 							vid_ls.push_back(-1);	// Dummy for loop
 
-						// pred_id_set: convert from IRI to integer ID
-						if (!proj[i].path_args.pred_set.empty())
-						{
-							for (auto pred : proj[i].path_args.pred_set)
-							{
-								TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
-								if (pred_id != static_cast<int>(INVALID))
-									pred_id_set.push_back(pred_id);
-							}
-						}
-						else
-						{
-							// Allow all predicates except those in neg_pred_set
-							unordered_set<int> neg_pred_id_set;
-							for (string pred : proj[i].path_args.neg_pred_set)
-								neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
-							unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
-							for (unsigned j = 0; j < pre_num; j++)
-								if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
-									pred_id_set.push_back(j);
-						}
-
+						vector<int> pred_id_set = getPredSetByStringList(proj[i].path_args.pred_set, proj[i].path_args.neg_pred_set);
 						// For each u-v pair, query
 						unordered_set<pair<int, int>, hashFunction> unique_pairs;
 						bool exist = 0, earlyBreak = 0;	// Boolean queries can break early with true
@@ -4710,4 +4627,41 @@ void GeneralEvaluation::kHopAllNeighbors(std::stringstream &ss, int uid, bool di
 		ss << "\""<< kvstore->getStringByID(m) << "\"";
 	}
 	ss << "]}";
+}
+
+std::vector<int> GeneralEvaluation::getPredSetByStringList(const std::vector<std::string>& pred_set, const std::vector<std::string>& neg_pred_set)const
+{
+	std::vector<int> pred_id_set;
+	unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+	if (pred_set.empty() && neg_pred_set.empty())
+	{
+		for (unsigned j = 0; j < pre_num; j++)
+			pred_id_set.push_back(j);
+	}
+	else if (!pred_set.empty() && neg_pred_set.empty())
+	{
+		unordered_set<int> temp_set;
+		for (auto pred : pred_set)
+		{
+			TYPE_PREDICATE_ID pred_id = kvstore->getIDByPredicate(pred);
+			if (pred_id != static_cast<int>(INVALID) && temp_set.find(pred_id) == temp_set.end())
+			{
+				temp_set.emplace(pred_id);
+				pred_id_set.push_back(pred_id);
+			}
+		}
+	}
+	else
+	{
+		unordered_set<int> neg_pred_id_set;
+		for (string pred : neg_pred_set)
+			neg_pred_id_set.emplace(kvstore->getIDByPredicate(pred));
+		unsigned pre_num = stringindex->getNum(StringIndexFile::Predicate);
+		for (unsigned j = 0; j < pre_num; j++)
+		{
+			if (neg_pred_id_set.find(j) == neg_pred_id_set.end())
+				pred_id_set.push_back(j);
+		}
+	}
+	return pred_id_set;
 }

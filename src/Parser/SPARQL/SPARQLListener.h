@@ -386,6 +386,9 @@ public:
   virtual void enterBrackettedexpression(SPARQLParser::BrackettedexpressionContext *ctx) = 0;
   virtual void exitBrackettedexpression(SPARQLParser::BrackettedexpressionContext *ctx) = 0;
 
+  virtual void enterIriOrNegIri(SPARQLParser::IriOrNegIriContext *ctx) = 0;
+  virtual void exitIriOrNegIri(SPARQLParser::IriOrNegIriContext *ctx) = 0;
+
   virtual void enterPredSet(SPARQLParser::PredSetContext *ctx) = 0;
   virtual void exitPredSet(SPARQLParser::PredSetContext *ctx) = 0;
 

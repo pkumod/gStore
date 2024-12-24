@@ -497,19 +497,25 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				// }
 				if (bicCtx->predSet())
 				{
-					auto predSet = bicCtx->predSet()->iri();
-					for (auto pred : predSet)
+					auto iriOrNegiri = bicCtx->predSet()->iriOrNegIri();
+					for (auto pred : iriOrNegiri)
 					{
 						string prefixedPred = pred->getText();
 						replacePrefix(prefixedPred);
-						proj_var.path_args.pred_set.push_back(prefixedPred);
-					}
-					auto negPredSet = bicCtx->predSet()->negIri();
-					for (auto pred : negPredSet)
-					{
-						string prefixedPred = pred->getText().substr(1);
-						replacePrefix(prefixedPred);
-						proj_var.path_args.neg_pred_set.push_back(prefixedPred);
+						bool is_nei = false;
+						if (prefixedPred[0] == '!')
+						{
+							prefixedPred = pred->getText().substr(1);
+							is_nei = true;
+						}
+						if (is_nei)
+						{
+							proj_var.path_args.neg_pred_set.push_back(prefixedPred);
+						}
+						else
+						{
+							proj_var.path_args.pred_set.push_back(prefixedPred);
+						}
 					}
 				}
 
@@ -591,22 +597,27 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.path_args.src = proj_var.path_args.iri_set[0];
 					proj_var.path_args.dst = proj_var.path_args.iri_set[1];
 				}
-				
-				// set pred_set
-				auto predSet = bicCtx->predSet()->iri();
-				for (auto pred : predSet)
+				auto iriOrNegiri = bicCtx->predSet()->iriOrNegIri();
+				for (auto pred : iriOrNegiri)
 				{
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
-					proj_var.path_args.pred_set.push_back(prefixedPred);
+					bool is_nei = false;
+					if (prefixedPred[0] == '!')
+					{
+						prefixedPred = pred->getText().substr(1);
+						is_nei = true;
+					}
+					if (is_nei)
+					{
+						proj_var.path_args.neg_pred_set.push_back(prefixedPred);
+					}
+					else
+					{
+						proj_var.path_args.pred_set.push_back(prefixedPred);
+					}
 				}
-				auto negPredSet = bicCtx->predSet()->negIri();
-				for (auto pred : negPredSet)
-				{
-					string prefixedPred = pred->getText().substr(1);
-					replacePrefix(prefixedPred);
-					proj_var.path_args.neg_pred_set.push_back(prefixedPred);
-				}
+
 				// set k
 				proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
 				// set directed
@@ -866,19 +877,26 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				replacePrefix((curr_node.path_args).src);
 				(curr_node.path_args).dst = ((SPARQLParser::BuiltInCallContext *)root)->varOrIri(1)->getText();
 				replacePrefix((curr_node.path_args).dst);
-				auto predSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->iri();
-				for (auto pred : predSet)
+				
+				auto iriOrNegiri = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->iriOrNegIri();
+				for (auto pred : iriOrNegiri)
 				{
 					string prefixedPred = pred->getText();
 					replacePrefix(prefixedPred);
-					(curr_node.path_args).pred_set.push_back(prefixedPred);
-				}
-				auto negPredSet = ((SPARQLParser::BuiltInCallContext *)root)->predSet()->negIri();
-				for (auto pred : negPredSet)
-				{
-					string prefixedPred = pred->getText().substr(1);
-					replacePrefix(prefixedPred);
-					(curr_node.path_args).neg_pred_set.push_back(prefixedPred);	// Get rid of the leading !
+					bool is_nei = false;
+					if (prefixedPred[0] == '!')
+					{
+						prefixedPred = pred->getText().substr(1);
+						is_nei = true;
+					}
+					if (is_nei)
+					{
+						(curr_node.path_args).neg_pred_set.push_back(prefixedPred);
+					}
+					else
+					{
+						(curr_node.path_args).pred_set.push_back(prefixedPred);
+					}
 				}
 
 				if (funcName == "KHOPREACHABLE")

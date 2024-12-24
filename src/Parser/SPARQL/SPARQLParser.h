@@ -96,16 +96,16 @@ public:
     RuleConditionalAndexpression = 115, RuleValueLogical = 116, RuleRelationalexpression = 117, 
     RuleNumericexpression = 118, RuleAdditiveexpression = 119, RuleMultiplicativeexpression = 120, 
     RuleUnaryexpression = 121, RulePrimaryexpression = 122, RuleBrackettedexpression = 123, 
-    RulePredSet = 124, RuleBuiltInCall = 125, RuleRegexexpression = 126, 
-    RuleSubstringexpression = 127, RuleStrReplaceexpression = 128, RuleExistsFunc = 129, 
-    RuleNotexistsFunc = 130, RuleAggregate = 131, RuleIriOrFunction = 132, 
-    RuleRDFLiteral = 133, RuleNumericLiteral = 134, RuleNumericLiteralUnsigned = 135, 
-    RuleNumericLiteralPositive = 136, RuleNumericLiteralNegative = 137, 
-    RuleIntegerLiteral = 138, RuleNum_integer = 139, RuleNum_decimal = 140, 
-    RuleNum_double = 141, RuleInteger_positive = 142, RuleDecimal_positive = 143, 
-    RuleDouble_positive = 144, RuleInteger_negative = 145, RuleDecimal_negative = 146, 
-    RuleDouble_negative = 147, RuleBooleanLiteral = 148, RuleString = 149, 
-    RuleIri = 150, RuleNegIri = 151, RulePrefixedName = 152, RuleBlankNode = 153
+    RuleIriOrNegIri = 124, RulePredSet = 125, RuleBuiltInCall = 126, RuleRegexexpression = 127, 
+    RuleSubstringexpression = 128, RuleStrReplaceexpression = 129, RuleExistsFunc = 130, 
+    RuleNotexistsFunc = 131, RuleAggregate = 132, RuleIriOrFunction = 133, 
+    RuleRDFLiteral = 134, RuleNumericLiteral = 135, RuleNumericLiteralUnsigned = 136, 
+    RuleNumericLiteralPositive = 137, RuleNumericLiteralNegative = 138, 
+    RuleIntegerLiteral = 139, RuleNum_integer = 140, RuleNum_decimal = 141, 
+    RuleNum_double = 142, RuleInteger_positive = 143, RuleDecimal_positive = 144, 
+    RuleDouble_positive = 145, RuleInteger_negative = 146, RuleDecimal_negative = 147, 
+    RuleDouble_negative = 148, RuleBooleanLiteral = 149, RuleString = 150, 
+    RuleIri = 151, RuleNegIri = 152, RulePrefixedName = 153, RuleBlankNode = 154
   };
 
   explicit SPARQLParser(antlr4::TokenStream *input);
@@ -242,6 +242,7 @@ public:
   class UnaryexpressionContext;
   class PrimaryexpressionContext;
   class BrackettedexpressionContext;
+  class IriOrNegIriContext;
   class PredSetContext;
   class BuiltInCallContext;
   class RegexexpressionContext;
@@ -2369,14 +2370,28 @@ public:
 
   BrackettedexpressionContext* brackettedexpression();
 
+  class  IriOrNegIriContext : public antlr4::ParserRuleContext {
+  public:
+    IriOrNegIriContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    IriContext *iri();
+    NegIriContext *negIri();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  IriOrNegIriContext* iriOrNegIri();
+
   class  PredSetContext : public antlr4::ParserRuleContext {
   public:
     PredSetContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<IriContext *> iri();
-    IriContext* iri(size_t i);
-    std::vector<NegIriContext *> negIri();
-    NegIriContext* negIri(size_t i);
+    std::vector<IriOrNegIriContext *> iriOrNegIri();
+    IriOrNegIriContext* iriOrNegIri(size_t i);
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
