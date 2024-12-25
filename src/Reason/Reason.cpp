@@ -175,7 +175,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
 
     string label = JsonUtil::jsonParam(returnInfo, "label");
     string value = JsonUtil::jsonParam(returnInfo, "value");
-    int type = JsonUtil::jsonParam(returnInfo, "type", 0);
+    int type = JsonUtil::jsonParam(doc, "type", 0);
 
     if (type == 0)
     {
