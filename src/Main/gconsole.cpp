@@ -2027,6 +2027,8 @@ int setpswd_handler(const vector<string> &args)
 	{
 		server::MessageUserManageRequest password_request(3, tar_usr, new_pswd);
 		server::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
+		password_request.username = root_username;
+		password_request.password = root_password;
 		if (!password_response.success()) 
 		{
 			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
@@ -2252,6 +2254,7 @@ int pusr_handler(const vector<string> &args)
 	CHECK_ARGC(3, 0, 1, 2)
 	string tar_usr;
 	// pusr <database_name> <usrname>
+	std::string tar_db;
 	if (args.size() == 2)
 	{
 		if (usrname != root_username)
@@ -2264,31 +2267,86 @@ int pusr_handler(const vector<string> &args)
 			return -1;
 		}
 		tar_usr = args[1];
+		tar_db = args[0];
 	}
 	// pusr; pusr <database_name>
 	else
 	{
-		cout << "usrname: " << usrname << endl;
 		if (args.size() == 0)
+		{
+			cout << "usrname: " << usrname << endl;
 			return 0;
+		}
 		tar_usr = usrname;
+		tar_db = args[0];
 	}
 
-	unsigned priv = get_priv(tar_usr, args[0]);
-	if (priv == -1u)
+	vector<string> headers = {"user", "database", "privilege"};
+	vector<vector<string>> rows;
+	if (tar_usr == root_username)
 	{
+		rows.push_back({root_username, tar_db, "all"});
+		Util::printConsole(headers, rows);
+		return 0;
+	}
+	
+	server::MessageShowUserRequest showuser_request;
+	showuser_request.username = root_username;
+	showuser_request.password = root_password;
+	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
+	if (!showuser_response.success())
+	{
+		cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
 		return -1;
 	}
-	cout << "privilege on " << args[0] << ": ";
-	for (int i = 0; i < PRIVILEGE_NUM; ++i)
+
+	auto parse_priv = [] (const string &db_string, const string &priv_string, unordered_map<string, string> &db_priv) -> void
 	{
-		if (priv & 1)
+		string buff;
+		for (const char &c : db_string)
 		{
-			cout << priv_offset2name[i] << " ";
+			if (c != ',') 
+			{
+				buff += c;
+			}
+			else
+			{
+				db_priv[buff] += priv_string;
+				db_priv[buff] += ',';
+				buff.clear();
+			}
+			
 		}
-		priv = (priv >> 1);
+	};
+
+	for (const auto &info : showuser_response.ResponseBody) {
+		if (info.username == root_username) continue;
+		unordered_map<string, string> db_priv;
+		parse_priv(info.query_privilege, "query",db_priv);
+		parse_priv(info.load_privilege, "load", db_priv);
+		parse_priv(info.update_privilege, "update", db_priv);
+		parse_priv(info.unload_privilege, "unload", db_priv);
+		parse_priv(info.backup_privilege, "backup", db_priv);
+		parse_priv(info.restore_privilege, "restore", db_priv);
+		parse_priv(info.export_privilege, "export", db_priv);
+		for (auto &pair : db_priv) {
+			if (pair.second.empty()) 
+				continue;
+			pair.second.pop_back();
+			if (count(pair.second.begin(), pair.second.end(), ',') == PRIVILEGE_NUM - 2) 
+				pair.second = "all";
+			if (info.username == tar_usr && pair.first == tar_db)
+				rows.push_back({info.username, pair.first, pair.second});
+		}
+		if (db_priv.empty())
+		{
+			rows.push_back({info.username, tar_db, "no priv"});
+		}
 	}
-	cout << endl;
+	//TO DO
+	Util::printConsole(headers, rows);
+	return 0;
+
 	return 0;
 }
 
