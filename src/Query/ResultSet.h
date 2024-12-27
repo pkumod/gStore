@@ -44,6 +44,7 @@ public:
 	//convert to JSON string
 	bool to_JSON(std::string& str);
 	bool to_JSON(nlohmann::json& json);
+	bool to_NT_TRIPLE_JSON(nlohmann::json& json_data);
 	TempResult to_tempresult();
 	void output(FILE* _fp);		//output all results using Stream
 	void prettyPrint();

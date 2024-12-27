@@ -575,6 +575,46 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 	}
 }
 
+bool ResultSet::to_NT_TRIPLE_JSON(nlohmann::json& json_data)
+{
+	json_data["head"] = nlohmann::json::array();
+	for(int i = 0; i < this->true_select_var_num; i++)
+	{
+		json_data["head"].emplace_back(this->var_name[i]);
+	}
+	// results
+	json_data["results"] = nlohmann::json::array();
+	std::shared_ptr<Bstr []> bp;
+	for(int i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
+	{
+		if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
+		{
+			break;
+		}
+		if (this->useStream)
+		{
+			bp = this->stream->read();
+		}
+		if (i >= this->output_offset)
+		{
+			std::vector<std::string> result_data;
+			for(int j = 0; j < this->true_select_var_num; j++)
+			{
+				string ans_str;
+				if (!this->useStream)
+					ans_str = this->answer[i][j];
+				else
+					ans_str = string(bp[j].getStr());
+				if (ans_str.length() == 0)
+					continue;
+				result_data.emplace_back(ans_str);
+			}
+			json_data["results"].emplace_back(result_data);
+		}
+	}
+	return true;
+}
+
 void
 ResultSet::output(FILE* _fp)
 {

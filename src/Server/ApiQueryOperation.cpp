@@ -73,32 +73,7 @@ namespace server
         }
         else if (request.format == "n-triple")
         {
-            // headers
-            nlohmann::json json_data;
-            json_data["head"] = nlohmann::json::array();
-            for(int i = 0; i < rs.true_select_var_num; i++)
-            {
-                json_data["head"].emplace_back(rs.var_name[i]);
-            }
-            // results
-            json_data["results"] = nlohmann::json::array();
-            for(int i = rs.output_offset; i < rs.ansNum; i++)
-            {
-                if (rs.output_limit != -1 && i == rs.output_offset + rs.output_limit)
-                {
-                    break;
-                }	
-                if (i >= rs.output_offset)
-                {
-                    std::vector<std::string> result_data;
-                    for(int j = 0; j < rs.true_select_var_num; j++)
-                    {
-                        result_data.emplace_back(rs.answer[i][j]);
-                    }
-                    json_data["results"].emplace_back(result_data);
-                }
-            }
-            response.query_json = json_data;
+            rs.to_NT_TRIPLE_JSON(response.query_json);
         }
         else
         {
