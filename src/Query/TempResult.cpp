@@ -108,6 +108,12 @@ TempResultSet::TempResultSet()
 	initial = true;
 }
 
+TempResultSet::TempResultSet(const Task::OperationTaskEvent& event)
+{
+	initial = true;
+	task_event = event;
+}
+
 TempResultSet::TempResultSet(const TempResultSet& that)
 {
 	results = that.results;
@@ -240,7 +246,7 @@ int TempResult::findRightBounder(const vector<int> &this_pos, const ResultPair &
 		return -1;
 }
 
-void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
+void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset, Task::OperationTaskEvent task_event)
 {
 	int this_id_cols = this->id_varset.getVarsetSize();
 
@@ -264,9 +270,15 @@ void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<StringInde
 				string str;
 
 				if (entity_literal_varset.findVar(this->id_varset.vars[k]))
+				{
 					stringindex->randomAccess(this->result[i].id[k], &str, string_index_buffer, string_index_buffer_size, true);
+					task_event.checkOpCancel();
+				}
 				else
+				{
 					stringindex->randomAccess(this->result[i].id[k], &str, string_index_buffer, string_index_buffer_size, false);
+					task_event.checkOpCancel();
+				}
 
 				this->result[i].str.push_back(str);
 			}
@@ -1351,6 +1363,7 @@ int TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 
 void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
 {
+	task_event.checkOpCancel();
 	long tv_begin = gutil::TimeUtil::timestamp();
 
 	// if (this->results.empty() || x.results.empty())
@@ -1370,10 +1383,16 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<S
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
-			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+		{
+			task_event.checkOpCancel();
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset, task_event);
+		}
 	for (int i = 0; i < (int)x.results.size(); i++)
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
-			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+		{
+			task_event.checkOpCancel();
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset, task_event);
+		}
 
 	// long totalFindCompTime = 0, totalInnerJoinTime = 0;
 	for (int i = 0; i < (int)this->results.size(); i++)
@@ -1534,7 +1553,8 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, std::shared_ptr<
 }
 
 void TempResultSet::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num) {
-    unsigned before_size = results[0].result.size();
+    task_event.checkOpCancel();
+	unsigned before_size = results[0].result.size();
     long tv_begin = gutil::TimeUtil::timestamp();
 
     for (int i = 0; i < (int) this->results.size(); i++) {

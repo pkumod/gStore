@@ -38,6 +38,8 @@ namespace gutil
             else if (json[key].is_string())
             {
                 std::string value = json[key].get<std::string>();
+                if (value.empty())
+                    return 0;
                 return std::stoi(value);
             }
         }
@@ -56,6 +58,8 @@ namespace gutil
             {
                 uint32_t max = std::numeric_limits<uint32_t>::max();
                 std::string value = json[key].get<std::string>();
+                if (value.empty())
+                    return 0;
                 int64_t val = std::stoll(value);
                 if (val > max)
                 {
@@ -79,6 +83,8 @@ namespace gutil
             {
                 int64_t max = std::numeric_limits<int64_t>::max();
                 std::string value = json[key].get<std::string>();
+                if (value.empty())
+                    return 0;
                 uint64_t val = std::stoll(value);
                 if (val > max)
                 {
@@ -101,6 +107,8 @@ namespace gutil
             else if (json[key].is_string())
             {
                 std::string value = json[key].get<std::string>();
+                if (value.empty())
+                    return 0;
                 return std::stoul(value);
             }
         }

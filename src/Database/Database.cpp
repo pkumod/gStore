@@ -1637,7 +1637,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	this->stringindex->SetTrie(this->kvstore->getTrie());
 	GeneralEvaluation general_evaluation(this->kvstore, this->stringindex, this->query_cache, this->csr,
 										 this->pre2num, this->pre2sub, this->pre2obj, this->triples_num,
-										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn, this->getfreelist_entity(), this->getentity_num());
+										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn, this->getfreelist_entity(), this->getentity_num(), _result_set.task);
 	if (txn != nullptr)
 		SLOG_CORE("query in transaction............................................");
 	long tv_begin = gutil::TimeUtil::timestamp();
@@ -1647,6 +1647,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	try
 	{
 		/* code */
+		_result_set.task.checkOpCancel();
 		parse_ret = general_evaluation.parseQuery(_query);
 	}
 	catch (const std::runtime_error &e2)
@@ -1699,6 +1700,8 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		}
 
 		long t1 = gutil::TimeUtil::timestamp();
+
+		_result_set.task.checkOpCancel();
 		bool query_ret = general_evaluation.doQuery();
 		long t2 = gutil::TimeUtil::timestamp();
 		SLOG_CORE("GeneralEvaluation::doQuery used " << (t2 - t1) << "ms.");
@@ -1707,11 +1710,14 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		{
 			success_num = -101;
 		}
+
+
 		//	this->debug_lock.unlock();
 
 		long tv_bfget = gutil::TimeUtil::timestamp();
 		// NOTICE: this lock lock ensures that StringIndex is visited sequentially
 		// this->getFinalResult_lock.lock();
+		_result_set.task.checkOpCancel();
 		general_evaluation.getFinalResult(_result_set);
 		// this->getFinalResult_lock.unlock();
 		long tv_afget = gutil::TimeUtil::timestamp();

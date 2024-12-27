@@ -13,6 +13,7 @@
 #include "QueryTree.h"
 #include "RegexExpression.h"
 #include "../Util/EvalMultitypeValue.h"
+#include "../Database/TaskManager.h"
 
 class TempResult
 {
@@ -49,7 +50,7 @@ class TempResult
 		int findLeftBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 		int findRightBounder(const std::vector<int> &this_pos, const ResultPair &x, const int x_id_cols, const std::vector<int> &x_pos) const;
 
-		void convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset);
+		void convertId2Str(Varset convert_varset, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset, Task::OperationTaskEvent task = Task::OperationTaskEvent());
 		void doJoin(TempResult &x, TempResult &r);
 		void doUnion(TempResult &r);
 		void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
@@ -73,7 +74,10 @@ class TempResultSet
 		bool initial;	// If true -- has never been filled, any result will overwrite it
 						// If false -- has been filled by some executed query, even if empty,
 						// will join normally
+		// task event cancel task
+		Task::OperationTaskEvent task_event;
 		TempResultSet();
+		TempResultSet(const Task::OperationTaskEvent& event);
 		TempResultSet(const TempResultSet& that);
 		TempResultSet& operator=(const TempResultSet& that);
 		~TempResultSet() { }

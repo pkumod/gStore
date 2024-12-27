@@ -82,6 +82,7 @@
 #include "log4cplus/configurator.h"
 #include "log4cplus/loggingmacros.h"
 #include "log4cplus/layout.h"
+#include "../Database/TaskManager.h"
 
 #define TOPK_SUPPORT
 // #define thread_num 4

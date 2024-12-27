@@ -12,6 +12,7 @@
 #include "../Util/Stream.h"
 #include "TempResult.h"
 #include "../Util/JsonUtil.h"
+#include "../Database/TaskManager.h"
 
 using namespace gutil;
 class ResultSet
@@ -27,6 +28,7 @@ public:
 	unsigned ansNum;
 	std::string** answer;
 	int output_offset, output_limit;
+	Task::OperationTaskEvent task;
 	ResultSet();
 	~ResultSet();
 	ResultSet(int _v_num, const std::string* _v_names);

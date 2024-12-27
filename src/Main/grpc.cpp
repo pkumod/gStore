@@ -116,6 +116,9 @@ void cluster_recover_task(const GRPCReq *request, GRPCResp *response);
 void license_import(const GRPCReq *request, GRPCResp *response);
 void license_info(const GRPCReq *request, GRPCResp *response);
 void license_remove(const GRPCReq *request, GRPCResp *response);
+//task manager
+void operation_task_cancel(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 {
@@ -1513,6 +1516,12 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 	case OP_REASON_MANAGE:
 	    reason_manage_task(request,response,json_data);
 		break;
+	case OP_OPERATIONTASKCANCEL:
+	    operation_task_cancel(request,response,json_data);
+		break;
+	case OP_OPERATIONTASKLIST:
+	    operation_task_list(request,response,json_data);
+		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
 		response->Error(StatusOperationUndefined);
@@ -2185,34 +2194,38 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			return;
 		}
 	}
-	else if (async)
+	else
 	{
 		std::string opt_id;
 		gutil::IdUtil::nextUID(opt_id);
 		response_data.opt_id = opt_id;
-		response_data.StatusCode = StatusOK;
-		response_data.StatusMsg = "Operation Success.";
-		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		if (async)
 		{
-			server::MessageQueryResponse response;
-			response.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
-			server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+			response_data.StatusCode = StatusOK;
+			response_data.StatusMsg = "Operation Success.";
+			sub_task->add_callback([request_data, opt_id](GRPCTask *)
 			{
-				apiUtil->write_query_log(query_log_ptr);
+				server::MessageQueryResponse response;
+				response.opt_id = opt_id;
+				apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
+				server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+				{
+					apiUtil->write_query_log(query_log_ptr);
+				});
+				server::ApiHandler::query_result_notify(apiUtil, request_data, response);
 			});
-			server::ApiHandler::query_result_notify(apiUtil, request_data, response);
-		});
-	}
-	else
-	{
-		server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+		}
+		else
 		{
-			sub_task->add_callback([query_log_ptr](GRPCTask *)
+			server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 			{
-				apiUtil->write_query_log(query_log_ptr);
-			});
-		}, true);
+				sub_task->add_callback([query_log_ptr](GRPCTask *)
+				{
+					apiUtil->write_query_log(query_log_ptr);
+				});
+			}, true);
+			Task::TaskManager::finishTask(stoull(opt_id));
+		}
 	}
 	
 	if (response_data.StatusCode != server::StatusOK)
@@ -3169,4 +3182,80 @@ void license_remove(const GRPCReq *request, GRPCResp *response)
 	{
 		response->Error(server::StatusCode::StatusOperationFailed, msg);
 	}
+}
+
+void operation_task_cancel(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
+{
+	uint64_t opt_id = JsonUtil::jsonParam(json_data, "opt_id", 0ul);
+	auto task = Task::TaskManager::findTask(opt_id);
+	if (!task)
+	{
+		response->Error(StatusOperationFailed, "opt_id not found");
+		return;
+	}
+	if (task->status_ == -1)
+	{
+		response->Error(StatusOperationFailed, "task already cancel");
+		return;
+	}
+	if (task->status_ == 1)
+	{
+		response->Error(StatusOperationFailed, "task already finish, do not cancel");
+		return;
+	}
+	if (task->cb_)
+	{
+		response->Error(StatusOperationFailed, "task being cancel, please do not repeat");
+		return;
+	}
+	task->cancelTask();
+	if (task->status_ == -1)
+		response->Success("query cancel successfully");
+	else
+		response->Success("task already finish, do not cancel");
+}
+
+void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
+{
+	nlohmann::json json;
+	json["StatusCode"]  = 0;
+    json["StatusMsg"]   = "success";
+	json["list"]    = nlohmann::json::array();
+	
+	int pageNo = JsonUtil::jsonParam(json_data, "pageNo", 0ul);
+	int pageSize = JsonUtil::jsonParam(json_data, "pageSize", 0ul);
+	int status = JsonUtil::jsonParam(json_data, "status", 0);
+	int totalPage = 0;
+	int totalSize = 0;
+	std::vector<std::shared_ptr<Task::OperationTask>> taskL;
+	Task::TaskManager::getTaskList(status, pageNo, pageSize, totalPage, totalSize, taskL);
+	for (const auto m : taskL)
+	{
+		nlohmann::json temp;
+		temp["opt_id"] = std::to_string(m->opt_id_);
+		temp["operation"] = m->operation_;
+		temp["async"] = m->async_;
+		temp["database"] = m->database_;
+		temp["sparql"] = m->sparql_;
+		temp["status"] = m->status_;
+		temp["resultFile"] = m->resultFile_;
+		temp["startTime"] = m->startTime_;
+		temp["endTime"] = m->endTime_;
+		if (m->endTime_ == 0)
+		{
+			temp["queryTime"] = gutil::TimeUtil::timestamp() - m->startTime_;
+		}
+		else
+		{
+			temp["queryTime"] = m->endTime_ - m->startTime_;
+		}
+		json["list"].push_back(temp);
+	}
+
+	json["pageNo"] =  pageNo;
+	json["pageSize"] =  pageSize;
+	json["totalPage"] =  totalPage;
+	json["totalSize"] =  totalSize;
+	std::string json_str = json.dump();
+	response->Json(json_str);
 }

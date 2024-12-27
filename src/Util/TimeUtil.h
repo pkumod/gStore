@@ -3,8 +3,6 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
-#include "GlobalTypedef.h"
-
 
 namespace gutil 
 {

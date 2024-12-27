@@ -107,6 +107,7 @@ namespace server
         {
             SLOG_DEBUG("async query no callback");
         }
+        Task::TaskManager::finishTask(stoull(response.opt_id), file_name);
     }
 
     void ApiHandler::query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb, bool format_check)
@@ -152,6 +153,8 @@ namespace server
             std::string query_start_time;
             try
             {
+                if (!is_update)
+                    rs.task = Task::TaskManager::addQueryTask(stoull(response.opt_id), "query", db_name, sparql, request.async);
                 SLOG_DEBUG("begin query...\n" + sparql);
                 rs.setUsername(username);
                 query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);

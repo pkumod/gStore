@@ -21,6 +21,7 @@
 #include "QueryCache.h"
 #include <dlfcn.h>
 #include "Algorithm/PathQueryHandler.h"
+#include "../Database/TaskManager.h"
 
 struct hashFunction
 {
@@ -54,6 +55,7 @@ class GeneralEvaluation
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
 		shared_ptr<Transaction> txn;
+		Task::OperationTaskEvent task_event;
 
 		shared_ptr<BGPQuery> bgp_query_total;
 
@@ -94,7 +96,7 @@ class GeneralEvaluation
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2num,std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2sub,
 						  std::shared_ptr<TYPE_TRIPLE_NUM[]>& _pre2obj, TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate,
 						  TYPE_ENTITY_LITERAL_ID _limitID_literal, TYPE_ENTITY_LITERAL_ID _limitID_entity,
-						  shared_ptr<Transaction> txn = nullptr, const std::shared_ptr<BlockInfo>& freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0);
+						  shared_ptr<Transaction> txn = nullptr, const std::shared_ptr<BlockInfo>& freelist_entity = nullptr, TYPE_ENTITY_LITERAL_ID entity_num = 0, Task::OperationTaskEvent _task = Task::OperationTaskEvent());
 		// Note that query_tree, well_designed, ranked, bgp_query_total not copied
 		GeneralEvaluation(const GeneralEvaluation& _ge): query_parser(_ge.query_parser), well_designed(-1), \
 			kvstore(_ge.kvstore), stringindex(_ge.stringindex), optimizer_(_ge.optimizer_), \

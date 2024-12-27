@@ -65,7 +65,9 @@ namespace grpc
     OP(OP_REFRESH_CONF,                  refreshconf) \
     OP(OP_LICENSE_IMPORT,              importLicense) \
     OP(OP_LICENSE_INFO,                 queryLicense) \
-    OP(OP_LICENSE_REMOVE,              removeLicense) 
+    OP(OP_LICENSE_REMOVE,              removeLicense) \
+    OP(OP_OPERATIONTASKCANCEL,   operationTaskCancel) \
+    OP(OP_OPERATIONTASKLIST,       operationTaskList)
 }
 
 enum operation_type
