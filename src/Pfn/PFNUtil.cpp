@@ -220,7 +220,8 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
             FileUtil::removePath(oldLibPath);
         }
         // mv the new into using Path
-        FileUtil::movePath(targetFile, lib_path);
+        std::string new_so_path = lib_path + "/lib" + file_name + md5str + ".so";
+        FileUtil::movePath(targetFile, new_so_path);
     }
     else if (FileUtil::fileExists(logFile))
     {
