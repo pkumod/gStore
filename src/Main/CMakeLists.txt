@@ -15,6 +15,22 @@ if ( CMAKE_BUILD_TYPE STREQUAL Static OR CMAKE_BUILD_TYPE STREQUAL Cpack )
                 dl
                 gcov
         )
+elseif(CMAKE_BUILD_TYPE STREQUAL StaticGcc)
+        set( LIB_SYSTEM_DEP
+                boost_thread.a
+                boost_system.a
+                boost_regex.a
+                readline.a
+                ncurses.a
+                tinfo.a
+                curl.a
+                ssl.a
+                crypto.a
+                pthread
+                jemalloc.a
+                dl
+                gcov.a
+        )
 else ()
         set( LIB_SYSTEM_DEP
                 boost_thread
