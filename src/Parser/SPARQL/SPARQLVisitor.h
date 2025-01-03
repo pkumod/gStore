@@ -329,6 +329,10 @@ public:
 
     virtual antlrcpp::Any visitBlankNode(SPARQLParser::BlankNodeContext *context) = 0;
 
+    virtual antlrcpp::Any visitJsonVar(SPARQLParser::JsonVarContext *context) = 0;
+
+    virtual antlrcpp::Any visitJsonVars(SPARQLParser::JsonVarsContext *context) = 0;
+
 
 };
 

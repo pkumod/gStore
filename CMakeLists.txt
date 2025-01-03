@@ -187,6 +187,12 @@ add_custom_target( cpack
     WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
 )
 
+# make pfnbuild
+add_custom_target( pfnbuild
+    COMMAND bash scripts/pfn_build.sh
+    WORKING_DIRECTORY ${GSTORE_ROOT_DIR}/
+)
+
 if (CMAKE_BUILD_TYPE STREQUAL Cpack)
 
     # version

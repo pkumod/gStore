@@ -7,7 +7,7 @@
  * =====================================================================*/
 #pragma once
 
-#include "../../Util/Util.h"
+#include "../../Util/GlobalTypedef.h"
 #include "../../Util/VList.h"
 #include "../../Util/Latch.h"
 using namespace std;

@@ -14,7 +14,7 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 	cout << "global clusteringCoeff" << endl;
 	if (pred_set.empty())
 		return -1;
-	int n = getVertNum();
+	int n = csrHandler->getVertNum();
 	int nclt = 0; // number of closed triplet
 	int nopt = 0; // number of open triplet
 	double gcc;
@@ -24,15 +24,15 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 		unordered_set<int> neiSet;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(curnode, pred);
+			int inSize = csrHandler->getInSize(curnode, pred);
 			for (int j = 0; j < inSize; j++)
 			{
-				neiSet.insert(getInVertID(curnode, pred, j));
+				neiSet.insert(csrHandler->getInVertID(curnode, pred, j));
 			}
-			int outSize = getOutSize(curnode, pred);
+			int outSize = csrHandler->getOutSize(curnode, pred);
 			for (int j = 0; j < outSize; j++)
 			{
-				neiSet.insert(getOutVertID(curnode, pred, j));
+				neiSet.insert(csrHandler->getOutVertID(curnode, pred, j));
 			}
 		}
 
@@ -41,15 +41,15 @@ double PathQueryHandler::clusteringCoeff(bool directed, const std::vector<int> &
 			unordered_set<int> neighbors;
 			for (int pred : pred_set)
 			{
-				int outOutSize = getOutSize(neiNode, pred);
+				int outOutSize = csrHandler->getOutSize(neiNode, pred);
 				for (int k = 0; k < outOutSize; k++)
 				{
-					neighbors.insert(getOutVertID(neiNode, pred, k));
+					neighbors.insert(csrHandler->getOutVertID(neiNode, pred, k));
 				}
-				int outInSize = getInSize(neiNode, pred);
+				int outInSize = csrHandler->getInSize(neiNode, pred);
 				for (int k = 0; k < outInSize; k++)
 				{
-					neighbors.insert(getInVertID(neiNode, pred, k));
+					neighbors.insert(csrHandler->getInVertID(neiNode, pred, k));
 				}
 			}
 			for (int outOutNode : neighbors)
@@ -100,28 +100,28 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 		unordered_set<int> inSet, neighbors;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(uid, pred);
+			int inSize = csrHandler->getInSize(uid, pred);
 			for (int i = 0; i < inSize; i++)
 			{
-				inSet.insert(getInVertID(uid, pred, i));
-				neighbors.insert(getInVertID(uid, pred, i));
+				inSet.insert(csrHandler->getInVertID(uid, pred, i));
+				neighbors.insert(csrHandler->getInVertID(uid, pred, i));
 			}
 		}
 
 		for (int pred : pred_set)
 		{
-			int outSize = getOutSize(uid, pred);
+			int outSize = csrHandler->getOutSize(uid, pred);
 			for (int j = 0; j < outSize; j++)
 			{
-				int outNode = getOutVertID(uid, pred, j);
+				int outNode = csrHandler->getOutVertID(uid, pred, j);
 				if (!neighbors.count(outNode))
 					neighbors.insert(outNode);
 				for (int pd : pred_set) // all out neighbors
 				{
-					int outOutSize = getOutSize(outNode, pd);
+					int outOutSize = csrHandler->getOutSize(outNode, pd);
 					for (int k = 0; k < outOutSize; k++)
 					{
-						int outOutNode = getOutVertID(outNode, pd, k);
+						int outOutNode = csrHandler->getOutVertID(outNode, pd, k);
 						if (inSet.count(outOutNode))
 							dins++; // directed neighbors size
 					}
@@ -144,15 +144,15 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 		unordered_set<int> neiSet;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(uid, pred);
+			int inSize = csrHandler->getInSize(uid, pred);
 			for (int i = 0; i < inSize; i++)
 			{
-				neiSet.insert(getInVertID(uid, pred, i));
+				neiSet.insert(csrHandler->getInVertID(uid, pred, i));
 			}
-			int outSize = getOutSize(uid, pred);
+			int outSize = csrHandler->getOutSize(uid, pred);
 			for (int j = 0; j < outSize; j++)
 			{
-				neiSet.insert(getOutVertID(uid, pred, j));
+				neiSet.insert(csrHandler->getOutVertID(uid, pred, j));
 			}
 		}
 
@@ -161,15 +161,15 @@ double PathQueryHandler::clusteringCoeff(int uid, bool directed, const std::vect
 			unordered_set<int> nbrs;
 			for (int pred : pred_set)
 			{
-				int outOutSize = getOutSize(neiNode, pred);
+				int outOutSize = csrHandler->getOutSize(neiNode, pred);
 				for (int k = 0; k < outOutSize; k++)
 				{
-					nbrs.insert(getOutVertID(neiNode, pred, k));
+					nbrs.insert(csrHandler->getOutVertID(neiNode, pred, k));
 				}
-				int outInSize = getInSize(neiNode, pred);
+				int outInSize = csrHandler->getInSize(neiNode, pred);
 				for (int k = 0; k < outInSize; k++)
 				{
-					nbrs.insert(getInVertID(neiNode, pred, k));
+					nbrs.insert(csrHandler->getInVertID(neiNode, pred, k));
 				}
 			}
 			for (int outOutNode : nbrs)

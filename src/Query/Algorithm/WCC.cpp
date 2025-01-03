@@ -23,7 +23,7 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 	// unsigned pdnum = csr->pre_num;
 	// for(unsigned pd=0; pd<pdnum; ++pd){
 	//	for(int vertexid : id2vid[pd]){
-	int vertex_num = getVertNum();
+	int vertex_num = csrHandler->getVertNum();
 	for (int vertexid = 0; vertexid < vertex_num; ++vertexid)
 	{
 		if (vid2wccid.count(vertexid) == 0)
@@ -45,10 +45,10 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 				// directed or not, all neighbors
 				for (int pred : pred_set)
 				{
-					int sz = getInSize(uid, pred), vid;
+					int sz = csrHandler->getInSize(uid, pred), vid;
 					for (int j = 0; j < sz; j++)
 					{
-						vid = getInVertID(uid, pred, j);
+						vid = csrHandler->getInVertID(uid, pred, j);
 						if (visited.count(vid) == 0)
 						{
 							q.push(vid);
@@ -56,10 +56,10 @@ vector<vector<int>> PathQueryHandler::WCC(const std::vector<int> &pred_set)
 							vid2wccid[vid] = wccid;
 						}
 					}
-					sz = getOutSize(uid, pred);
+					sz = csrHandler->getOutSize(uid, pred);
 					for (int j = 0; j < sz; j++)
 					{
-						vid = getOutVertID(uid, pred, j);
+						vid = csrHandler->getOutVertID(uid, pred, j);
 						if (visited.count(vid) == 0)
 						{
 							q.push(vid);

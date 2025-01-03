@@ -420,6 +420,7 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 		smatch matchResult;
 		string::const_iterator iterStart;
 		string::const_iterator iterEnd;
+		std::string pfn_data;
 		for(long long i = (!this->useStream ? this->output_offset : 0LL); i < this->ansNum; i++)
 		{
 			if (this->output_limit != -1 && i == this->output_offset + this->output_limit)
@@ -536,6 +537,11 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 							ans_type = "error";
 						}
 					}
+					else if (ans_str.size() >= 8 && ans_str.substr(0, 8) == "pfn_type")
+					{
+						pfn_data = ans_str.substr(8, -1);
+						break;
+					}
 					else
 					{
 						ans_type = "error";
@@ -565,7 +571,25 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 
 		results["bindings"] = buildings;
 		json["head"] = head;
-		json["results"] = results;
+		if (pfn_data.empty())
+		{
+			json["results"] = results;
+		}
+		else
+		{
+			nlohmann::json pfn;
+			try
+			{
+				nlohmann::json pfn_json = nlohmann::json::parse(pfn_data);
+				pfn["results"] = pfn_json;
+			}
+			catch (nlohmann::json::exception& e)
+			{
+				pfn["results"] = pfn_data;
+			}
+			json.clear();
+			json = pfn;
+		}
 		return true;
 	}
 	catch (const std::exception& e)

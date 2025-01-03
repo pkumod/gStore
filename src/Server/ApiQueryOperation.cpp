@@ -3,6 +3,19 @@
 
 namespace server
 {
+    std::string ApiHandler::repalce_pfn_query(const std::string& sparql, MessageQueryResponse& response)
+    {
+        if (sparql.size() < 13)
+            return sparql;
+        std::string sparql_prefix = sparql.substr(0, 12);
+        std::transform(sparql_prefix.begin(), sparql_prefix.end(), sparql_prefix.begin(), [](unsigned char c){return std::tolower(c);});
+        if (sparql_prefix != "select (pfn.")
+            return sparql;
+        std::string pfn_sparql = "SELECT (PFN " + sparql.substr(12, sparql.size()-12);
+        response.is_pfn = true;
+        return pfn_sparql;
+    }
+
     bool ApiHandler::query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response)
     {
         int32_t min_memory = Util::getConfigureIntValue("min_memory", 512); // MB
@@ -118,7 +131,7 @@ namespace server
                 return;
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string sparql = request.sparql;
+            std::string sparql = repalce_pfn_query(request.sparql, response);
             // check db_name paramter
             std::string msg;
 
@@ -247,7 +260,7 @@ namespace server
                 return;
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string sparql = request.sparql;
+            std::string sparql = repalce_pfn_query(request.sparql, response);
             // check db_name paramter
             std::string msg;
             shared_ptr<DatabaseInfo> db_info;

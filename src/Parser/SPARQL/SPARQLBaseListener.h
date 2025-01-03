@@ -481,6 +481,12 @@ public:
   virtual void enterBlankNode(SPARQLParser::BlankNodeContext * /*ctx*/) override { }
   virtual void exitBlankNode(SPARQLParser::BlankNodeContext * /*ctx*/) override { }
 
+  virtual void enterJsonVar(SPARQLParser::JsonVarContext * /*ctx*/) override { }
+  virtual void exitJsonVar(SPARQLParser::JsonVarContext * /*ctx*/) override { }
+
+  virtual void enterJsonVars(SPARQLParser::JsonVarsContext * /*ctx*/) override { }
+  virtual void exitJsonVars(SPARQLParser::JsonVarsContext * /*ctx*/) override { }
+
 
   virtual void enterEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }
   virtual void exitEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }

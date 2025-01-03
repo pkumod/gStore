@@ -16,7 +16,7 @@ void PathQueryHandler::PR(bool directed, const std::vector<int> &pred_set, int r
 std::vector<std::pair<int, double>> &idx2val)
 {
 	// initialize
-	int nodeNum = getVertNum();
+	int nodeNum = csrHandler->getVertNum();
 	if (retNum > nodeNum)
 		retNum = nodeNum;
 	vector<int> neiNum(nodeNum);
@@ -24,10 +24,10 @@ std::vector<std::pair<int, double>> &idx2val)
 	for (int vid = 0; vid < nodeNum; ++vid)
 		for (int pred : pred_set)
 		{
-			neiNum[vid] += getOutSize(vid, pred);
+			neiNum[vid] += csrHandler->getOutSize(vid, pred);
 			if (directed)
 				continue;
-			neiNum[vid] += getInSize(vid, pred);
+			neiNum[vid] += csrHandler->getInSize(vid, pred);
 		}
 	double offset = (1 - alpha) / nodeNum;
 	for (int vid = 0; vid < nodeNum; ++vid)
@@ -54,18 +54,18 @@ std::vector<std::pair<int, double>> &idx2val)
 				double add = alpha * oldPR[vid] / neiNum[vid];
 				for (int pred : pred_set)
 				{
-					int outNum = getOutSize(vid, pred);
+					int outNum = csrHandler->getOutSize(vid, pred);
 					for (int i = 0; i < outNum; ++i)
 					{
-						int to = getOutVertID(vid, pred, i); // get the node
+						int to = csrHandler->getOutVertID(vid, pred, i); // get the node
 						newPR[to] += add;
 					}
 					if (directed)
 						continue;
-					int inNum = getInSize(vid, pred);
+					int inNum = csrHandler->getInSize(vid, pred);
 					for (int i = 0; i < inNum; ++i)
 					{
-						int to = getInVertID(vid, pred, i);
+						int to = csrHandler->getInVertID(vid, pred, i);
 						newPR[to] += add;
 					}
 				}

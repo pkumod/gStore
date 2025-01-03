@@ -299,6 +299,8 @@ public:
 	float confidence;
 	int retNum;
 	std::vector<double> misc;	// Miscellaneous args (first introduced for PageRank)
+	std::string pfn_name;
+	std::string pfn_params;
 };
 
 class CompTreeNode

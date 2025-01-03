@@ -37,10 +37,10 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 		{
 			for (int pred : pred_set)
 			{
-				int inNum = getInSize(now, pred);
+				int inNum = csrHandler->getInSize(now, pred);
 				for (int i = 0; i < inNum; i++)
 				{
-					int inN = getInVertID(now, pred, i);
+					int inN = csrHandler->getInVertID(now, pred, i);
 					if (!nodes.count(inN))
 					{
 						q.push(inN);
@@ -51,10 +51,10 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 			}
 			for (int pred : pred_set)
 			{
-				int outNum = getOutSize(now, pred);
+				int outNum = csrHandler->getOutSize(now, pred);
 				for (int i = 0; i < outNum; i++)
 				{
-					int outN = getOutVertID(now, pred, i);
+					int outN = csrHandler->getOutVertID(now, pred, i);
 					if (!nodes.count(outN))
 					{
 						q.push(outN);
@@ -68,10 +68,10 @@ vector<int> PathQueryHandler::bfsCount(int uid, bool directed, const std::vector
 		{
 			for (int pred : pred_set)
 			{
-				int outNum = getOutSize(now, pred);
+				int outNum = csrHandler->getOutSize(now, pred);
 				for (int i = 0; i < outNum; i++)
 				{
-					int outN = getOutVertID(now, pred, i);
+					int outN = csrHandler->getOutVertID(now, pred, i);
 					if (!nodes.count(outN))
 					{
 						q.push(outN);

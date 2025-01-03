@@ -33,19 +33,16 @@ if [ $? -eq 0 ]; then
     make -j$(nproc)
     if [ $? -eq 0 ]; then
         cd ..
+        bash ./scripts/pfn_build.sh
         echo "begin build package-------"
         mkdir -p ${product_name_lower}/.tmp
         mkdir -p ${product_name_lower}/conf
         mkdir -p ${product_name_lower}/scripts
         mkdir -p ${product_name_lower}/pfn
-        mkdir -p ${product_name_lower}/src/Query/Algorithm
-        mkdir -p ${product_name_lower}/src/Database
         cp -r conf bin data LICENSE README.md ${product_name_lower}/
         cp -f conf/* ${product_name_lower}/conf/
         cp -f scripts/test/api_test.sh ${product_name_lower}/scripts/api_test.sh
         cp -r pfn ${product_name_lower}/
-        cp -f src/Query/Algorithm/PathQueryHandler.h ${product_name_lower}/src/Query/Algorithm/
-        cp -f src/Database/CSR.h ${product_name_lower}/src/Database/
         rm -f ${product_name_lower}/bin/.gitignore
         rm -rf ${product_name_lower}/bin/.gconsole_history
         tar -czvf ${static_pkg_name}.tar.gz ${product_name_lower}

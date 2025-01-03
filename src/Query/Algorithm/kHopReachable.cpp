@@ -20,12 +20,12 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 	int uOutTotal = 0, vInTotal = 0;
 	for (int pred : pred_set)
 	{
-		uOutTotal += getOutSize(uid, pred);
-		vInTotal += getInSize(vid, pred);
+		uOutTotal += csrHandler->getOutSize(uid, pred);
+		vInTotal += csrHandler->getInSize(vid, pred);
 		if (!directed)
 		{
-			uOutTotal += getInSize(uid, pred);
-			vInTotal += getOutSize(vid, pred);
+			uOutTotal += csrHandler->getInSize(uid, pred);
+			vInTotal += csrHandler->getOutSize(vid, pred);
 		}
 	}
 	if (uOutTotal == 0 || vInTotal == 0)
@@ -58,7 +58,7 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 	f2[vid] = 0;
 
 	double theta = 1, c_fora = 0.1, alpha = 0.2;
-	double init_rmax = 100.0 / pow(getEdgeNum(), 3.0 / 4.0) / c_fora;
+	double init_rmax = 100.0 / pow(csrHandler->getVertNum(), 3.0 / 4.0) / c_fora;
 	int batchSize = 10;
 	int push_bs = theta * batchSize, bfs_bs = batchSize;
 	int op_cnt;
@@ -84,14 +84,14 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 			{
 				if (!directed)
 				{
-					if (residue1[curNode] / getSetOutSize(curNode, pred_set) >= rmax_fwd)
+					if (residue1[curNode] / csrHandler->getSetOutSize(curNode, pred_set) >= rmax_fwd)
 					{
 						for (int pred : pred_set)
 						{
-							int num_out = getOutSize(curNode, pred);
+							int num_out = csrHandler->getOutSize(curNode, pred);
 							for (int i = 0; i < num_out; i++)
 							{
-								int adj = getOutVertID(curNode, pred, i);
+								int adj = csrHandler->getOutVertID(curNode, pred, i);
 								if (l1.find(adj) == l1.end())
 								{
 									l1[adj] = level + 1;
@@ -99,8 +99,8 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 										return true;
 									if (f2.find(adj) != f2.end() && l1[adj] + f2[adj] <= k)
 										return true;
-									residue1[adj] = (1 - alpha) * residue1[curNode] / getSetOutSize(curNode, pred_set); // Should be equivalent to +=
-									if (residue1[adj] / getSetOutSize(adj, pred_set) >= rmax_fwd)
+									residue1[adj] = (1 - alpha) * residue1[curNode] / csrHandler->getSetOutSize(curNode, pred_set); // Should be equivalent to +=
+									if (residue1[adj] / csrHandler->getSetOutSize(adj, pred_set) >= rmax_fwd)
 										candidatePush1.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush1_next.push(pair<int, int>(adj, level + 1));
@@ -115,14 +115,14 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 
 				else
 				{
-					if (residue1[curNode] / (getSetOutSize(curNode, pred_set) + getSetInSize(curNode, pred_set)) >= rmax_fwd)
+					if (residue1[curNode] / (csrHandler->getSetOutSize(curNode, pred_set) + csrHandler->getSetInSize(curNode, pred_set)) >= rmax_fwd)
 					{
 						for (int pred : pred_set)
 						{
-							int num_out = getOutSize(curNode, pred);
+							int num_out = csrHandler->getOutSize(curNode, pred);
 							for (int i = 0; i < num_out; i++)
 							{
-								int adj = getOutVertID(curNode, pred, i);
+								int adj = csrHandler->getOutVertID(curNode, pred, i);
 								if (l1.find(adj) == l1.end())
 								{
 									l1[adj] = level + 1;
@@ -131,18 +131,18 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 									if (f2.find(adj) != f2.end() && l1[adj] + f2[adj] <= k)
 										return true;
 									residue1[adj] = (1 - alpha) * residue1[curNode] /
-													(getSetOutSize(curNode, pred_set) + getSetInSize(curNode, pred_set)); // Should be equivalent to +=
-									if (residue1[adj] / (getSetOutSize(adj, pred_set) + getSetInSize(adj, pred_set)) >= rmax_fwd)
+													(csrHandler->getSetOutSize(curNode, pred_set) + csrHandler->getSetInSize(curNode, pred_set)); // Should be equivalent to +=
+									if (residue1[adj] / (csrHandler->getSetOutSize(adj, pred_set) + csrHandler->getSetInSize(adj, pred_set)) >= rmax_fwd)
 										candidatePush1.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush1_next.push(pair<int, int>(adj, level + 1));
 								}
 							}
 
-							int num_in = getInSize(curNode, pred);
+							int num_in = csrHandler->getInSize(curNode, pred);
 							for (int i = 0; i < num_in; i++)
 							{
-								int adj = getInVertID(curNode, pred, i);
+								int adj = csrHandler->getInVertID(curNode, pred, i);
 								if (l1.find(adj) == l1.end())
 								{
 									l1[adj] = level + 1;
@@ -151,8 +151,8 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 									if (f2.find(adj) != f2.end() && l1[adj] + f2[adj] <= k)
 										return true;
 									residue1[adj] = (1 - alpha) * residue1[curNode] /
-													(getSetOutSize(curNode, pred_set) + getSetInSize(curNode, pred_set)); // Should be equivalent to +=
-									if (residue1[adj] / (getSetOutSize(adj, pred_set) + getSetInSize(adj, pred_set)) >= rmax_fwd)
+													(csrHandler->getSetOutSize(curNode, pred_set) + csrHandler->getSetInSize(curNode, pred_set)); // Should be equivalent to +=
+									if (residue1[adj] / (csrHandler->getSetOutSize(adj, pred_set) + csrHandler->getSetInSize(adj, pred_set)) >= rmax_fwd)
 										candidatePush1.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush1_next.push(pair<int, int>(adj, level + 1));
@@ -182,10 +182,10 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 			op_cnt++;
 			for (int pred : pred_set)
 			{
-				int num_out = getOutSize(curNode, pred);
+				int num_out = csrHandler->getOutSize(curNode, pred);
 				for (int i = 0; i < num_out; i++)
 				{
-					int adj = getOutVertID(curNode, pred, i);
+					int adj = csrHandler->getOutVertID(curNode, pred, i);
 					if (f1.find(adj) == f1.end())
 					{
 						f1[adj] = fullL1;
@@ -200,10 +200,10 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 				if (directed)
 					continue;
 
-				int num_in = getInSize(curNode, pred);
+				int num_in = csrHandler->getInSize(curNode, pred);
 				for (int i = 0; i < num_in; i++)
 				{
-					int adj = getOutVertID(curNode, pred, i);
+					int adj = csrHandler->getOutVertID(curNode, pred, i);
 					if (f1.find(adj) == f1.end())
 					{
 						f1[adj] = fullL1;
@@ -237,14 +237,14 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 			{
 				if (!directed)
 				{
-					if (residue2[curNode] / getSetInSize(curNode, pred_set) >= rmax_bwd)
+					if (residue2[curNode] / csrHandler->getSetInSize(curNode, pred_set) >= rmax_bwd)
 					{
 						for (int pred : pred_set)
 						{
-							int num_in = getInSize(curNode, pred);
+							int num_in = csrHandler->getInSize(curNode, pred);
 							for (int i = 0; i < num_in; i++)
 							{
-								int adj = getInVertID(curNode, pred, i);
+								int adj = csrHandler->getInVertID(curNode, pred, i);
 								if (l2.find(adj) == l2.end())
 								{
 									l2[adj] = level + 1;
@@ -252,8 +252,8 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 										return true;
 									if (f1.find(adj) != f1.end() && f1[adj] + l2[adj] <= k)
 										return true;
-									residue2[adj] = (1 - alpha) * residue1[curNode] / getSetInSize(curNode, pred_set); // Should be equivalent to +=
-									if (residue2[adj] / getSetInSize(adj, pred_set) >= rmax_fwd)
+									residue2[adj] = (1 - alpha) * residue1[curNode] / csrHandler->getSetInSize(curNode, pred_set); // Should be equivalent to +=
+									if (residue2[adj] / csrHandler->getSetInSize(adj, pred_set) >= rmax_fwd)
 										candidatePush2.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush2_next.push(pair<int, int>(adj, level + 1));
@@ -267,14 +267,14 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 				}
 				else
 				{
-					if (residue2[curNode] / (getSetInSize(curNode, pred_set) + getSetOutSize(curNode, pred_set)) >= rmax_bwd)
+					if (residue2[curNode] / (csrHandler->getSetInSize(curNode, pred_set) + csrHandler->getSetOutSize(curNode, pred_set)) >= rmax_bwd)
 					{
 						for (int pred : pred_set)
 						{
-							int num_in = getInSize(curNode, pred);
+							int num_in = csrHandler->getInSize(curNode, pred);
 							for (int i = 0; i < num_in; i++)
 							{
-								int adj = getInVertID(curNode, pred, i);
+								int adj = csrHandler->getInVertID(curNode, pred, i);
 								if (l2.find(adj) == l2.end())
 								{
 									l2[adj] = level + 1;
@@ -283,18 +283,18 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 									if (f1.find(adj) != f1.end() && f1[adj] + l2[adj] <= k)
 										return true;
 									residue2[adj] = (1 - alpha) * residue1[curNode] /
-													(getSetInSize(curNode, pred_set) + getSetOutSize(curNode, pred_set)); // Should be equivalent to +=
-									if (residue2[adj] / (getSetInSize(adj, pred_set) + getSetOutSize(adj, pred_set)) >= rmax_fwd)
+													(csrHandler->getSetInSize(curNode, pred_set) + csrHandler->getSetOutSize(curNode, pred_set)); // Should be equivalent to +=
+									if (residue2[adj] / (csrHandler->getSetInSize(adj, pred_set) + csrHandler->getSetOutSize(adj, pred_set)) >= rmax_fwd)
 										candidatePush2.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush2_next.push(pair<int, int>(adj, level + 1));
 								}
 							}
 
-							int num_out = getOutSize(curNode, pred);
+							int num_out = csrHandler->getOutSize(curNode, pred);
 							for (int i = 0; i < num_out; i++)
 							{
-								int adj = getOutVertID(curNode, pred, i);
+								int adj = csrHandler->getOutVertID(curNode, pred, i);
 								if (l2.find(adj) == l2.end())
 								{
 									l2[adj] = level + 1;
@@ -303,8 +303,8 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 									if (f1.find(adj) != f1.end() && f1[adj] + l2[adj] <= k)
 										return true;
 									residue2[adj] = (1 - alpha) * residue1[curNode] /
-													(getSetInSize(curNode, pred_set) + getSetOutSize(curNode, pred_set)); // Should be equivalent to +=
-									if (residue2[adj] / (getSetInSize(adj, pred_set) + getSetOutSize(adj, pred_set)) >= rmax_fwd)
+													(csrHandler->getSetInSize(curNode, pred_set) + csrHandler->getSetOutSize(curNode, pred_set)); // Should be equivalent to +=
+									if (residue2[adj] / (csrHandler->getSetInSize(adj, pred_set) + csrHandler->getSetOutSize(adj, pred_set)) >= rmax_fwd)
 										candidatePush2.push(pair<int, int>(adj, level + 1));
 									else
 										candidatePush2_next.push(pair<int, int>(adj, level + 1));
@@ -334,10 +334,10 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 			op_cnt++;
 			for (int pred : pred_set)
 			{
-				int num_in = getInSize(curNode, pred);
+				int num_in = csrHandler->getInSize(curNode, pred);
 				for (int i = 0; i < num_in; i++)
 				{
-					int adj = getOutVertID(curNode, pred, i);
+					int adj = csrHandler->getOutVertID(curNode, pred, i);
 					if (f2.find(adj) == f2.end())
 					{
 						f2[adj] = fullL2;
@@ -352,10 +352,10 @@ bool PathQueryHandler::kHopReachable(int uid, int vid, bool directed, int k, con
 				if (directed)
 					continue;
 
-				int num_out = getOutSize(curNode, pred);
+				int num_out = csrHandler->getOutSize(curNode, pred);
 				for (int i = 0; i < num_out; i++)
 				{
-					int adj = getOutVertID(curNode, pred, i);
+					int adj = csrHandler->getOutVertID(curNode, pred, i);
 					if (f2.find(adj) == f2.end())
 					{
 						f2[adj] = fullL2;

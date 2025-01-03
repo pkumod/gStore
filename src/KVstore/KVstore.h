@@ -9,7 +9,8 @@
 #ifndef _KVSTORE_KVSTORE_H
 #define _KVSTORE_KVSTORE_H
 
-#include "../Util/Util.h"
+// #include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 #include "../Util/VList.h"
 #include "Tree.h"
 #include "../Trie/Trie.h"

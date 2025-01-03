@@ -11,16 +11,16 @@ std::vector<std::pair<int, float>> PathQueryHandler::JaccardSimilarity(int uid, 
         std::set<int> adj_ret = set<int>();
         for(auto pred : pred_set)
         {
-            int inSz = getInSize(id,pred),inNei;
-            int outSz = getOutSize(id,pred),outNei;
+            int inSz = csrHandler->getInSize(id,pred),inNei;
+            int outSz = csrHandler->getOutSize(id,pred),outNei;
             for(int i = 0;i<inSz;i++)
             {
-                inNei = getInVertID(id,pred,i);
+                inNei = csrHandler->getInVertID(id,pred,i);
                 adj_ret.insert(inNei);
             }
             for(int i=0;i<outSz;i++)
             {
-                outNei = getOutVertID(id,pred,i);
+                outNei = csrHandler->getOutVertID(id,pred,i);
                 adj_ret.insert(outNei);
             }
         }

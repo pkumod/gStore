@@ -75,6 +75,7 @@ namespace server
         std::string fileName;
         std::string opt_id;
         nlohmann::json query_json;
+        bool is_pfn;
         MessageQueryResponse();
         MessageQueryResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageQueryResponse(std::string body);

@@ -1,7 +1,7 @@
 #ifndef _UTIL_TRANSACTION_H
 #define _UTIL_TRANSACTION_H
 
-#include "../Util/Util.h"
+#include "../Util/GlobalTypedef.h"
 #include "../Util/IDTriple.h"
 
 using namespace std;

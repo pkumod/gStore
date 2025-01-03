@@ -46,6 +46,7 @@ namespace server
 
         // query
         private:
+        static std::string repalce_pfn_query(const std::string& sparql, MessageQueryResponse& response);
         static bool query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& resquest, MessageQueryResponse& response);
         static void query_format_response_data(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, ResultSet& rs);
         public:

@@ -64,8 +64,6 @@
 #include <stdexcept> 
 #include <pthread.h> 
 #include <math.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <exception>
 #include <sys/sysinfo.h>
 #include <sys/statfs.h>
@@ -82,7 +80,6 @@
 #include "log4cplus/configurator.h"
 #include "log4cplus/loggingmacros.h"
 #include "log4cplus/layout.h"
-#include "../Database/TaskManager.h"
 
 #define TOPK_SUPPORT
 // #define thread_num 4

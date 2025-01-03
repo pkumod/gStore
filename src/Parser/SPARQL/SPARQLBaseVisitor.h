@@ -635,6 +635,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitJsonVar(SPARQLParser::JsonVarContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitJsonVars(SPARQLParser::JsonVarsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
 
 };
 

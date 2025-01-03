@@ -9,4 +9,5 @@ target_link_libraries( database
    query
    trie
    stringindex
+   pfn
 )

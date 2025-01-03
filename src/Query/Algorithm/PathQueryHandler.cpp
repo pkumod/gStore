@@ -4,354 +4,12 @@ using namespace std;
 
 PathQueryHandler::PathQueryHandler(std::shared_ptr<CSR[]>& _csr)
 {
-	if (_csr)
-		csr = _csr;
-	else
-    {
-        csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
-    }
-	cacheMaxSize = 10000;
-	n = -1;
-	m = -1;
+    csrHandler = std::make_shared<CSRQueryHandler>(_csr);
 	srand(time(NULL));
 }
 
 PathQueryHandler::~PathQueryHandler()
 {
-}
-
-int PathQueryHandler::getVertNum()
-{
-	// if (n != -1)
-	// 	return n; // Only consider static graphs for now
-	// set<int> vertices;
-	// for (int j = 0; j < 2; j++)
-	// {
-	// 	for (unsigned i = 0; i < csr[j].pre_num; i++)
-	// 		vertices.insert(csr[j].adjacency_list[i].begin(), csr[j].adjacency_list[i].end());
-	// }
-	// n = vertices.size();
-	// return n;
-
-	// save vertNum to CSR.n when database loadCSR 
-	return csr[1].n;
-}
-
-int PathQueryHandler::getEdgeNum()
-{
-	// if (m != -1)
-	// 	return m; // Only consider static graphs for now
-	// int ret = 0;
-	// for (unsigned i = 0; i < csr[1].pre_num; i++) // Same as summing that of csr[0]
-	// 	ret += csr[1].adjacency_list[i].size();
-	// m = ret;
-	// return m;
-
-	// save edgeNum to CSR.m when database loadCSR 
-	return csr[1].m;
-}
-
-int PathQueryHandler::getSetEdgeNum(const vector<int> &pred_set)
-{
-	int ret = 0;
-	for (int pred : pred_set)
-		ret += csr[1].adjacency_list[pred].size();
-	return ret;
-}
-
-int PathQueryHandler::getInIndexByID(int vid, int pred)
-{
-	if (csr[1].vid2id[pred].find(vid) != csr[1].vid2id[pred].end())
-		return csr[1].vid2id[pred][vid];
-	else
-		return -1;
-}
-
-int PathQueryHandler::getInSize(int vid, int pred)
-{
-	int vIndex = getInIndexByID(vid, pred);
-	if (vIndex == -1) // This vertex does not participate in this pred's relations
-		return 0;
-	else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1)
-		return csr[1].adjacency_list[pred].size() - csr[1].offset_list[pred][vIndex];
-	else
-		return csr[1].offset_list[pred][vIndex + 1] - csr[1].offset_list[pred][vIndex];
-}
-
-int PathQueryHandler::getInVertID(int vid, int pred, int pos)
-{
-	if (pos >= getInSize(vid, pred))
-		return -1;
-	int offset = csr[1].offset_list[pred][getInIndexByID(vid, pred)];
-	return csr[1].adjacency_list[pred][offset + pos];
-}
-
-int PathQueryHandler::getInVertID(int vid, int pos)
-{
-	if (distinctInEdges.find(vid) == distinctInEdges.end())
-		getTotalInSize(vid, true); // Load into cache
-
-	if (pos < static_cast<int>(distinctInEdges[vid].size()))
-		return *next(distinctInEdges[vid].begin(), pos);
-	else
-		return -1;
-}
-
-int PathQueryHandler::getSetInSize(int vid, const std::vector<int> &pred_set)
-{
-	int ret = 0;
-	for (int pred : pred_set)
-		ret += getInSize(vid, pred);
-	return ret;
-}
-
-int PathQueryHandler::getTotalInSize(int vid, bool distinct)
-{
-	int ret = 0;
-	if (!distinct)
-	{
-		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
-			ret += getInSize(vid, i);
-	}
-	else
-	{
-		if (distinctInEdges.find(vid) == distinctInEdges.end())
-		{
-			if (static_cast<int>(distinctInEdges.size()) == cacheMaxSize)
-			{
-				int replacement = rand() % cacheMaxSize;
-				distinctInEdges.erase(next(distinctInEdges.begin(), replacement));
-				// cout << "distinctInEdges replaced entry " << replacement << endl;
-			}
-
-			distinctInEdges[vid] = set<int>();
-			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
-			{
-				int vIndex = getInIndexByID(vid, pred);
-				if (vIndex == -1) // This vertex does not participate in this pred's relations
-					continue;
-				else if (vIndex == static_cast<int>(csr[1].offset_list[pred].size()) - 1 && csr[1].adjacency_list[pred].size() > csr[1].offset_list[pred][vIndex])
-					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]),
-												csr[1].adjacency_list[pred].end());
-				else if (csr[1].offset_list[pred][vIndex + 1] > csr[1].offset_list[pred][vIndex])
-					distinctInEdges[vid].insert(next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex]),
-												next(csr[1].adjacency_list[pred].begin(), csr[1].offset_list[pred][vIndex + 1]));
-			}
-		}
-		ret = distinctInEdges[vid].size();
-	}
-	return ret;
-}
-
-int PathQueryHandler::getOutIndexByID(int vid, int pred)
-{
-	if (csr[0].vid2id[pred].find(vid) != csr[0].vid2id[pred].end())
-		return csr[0].vid2id[pred][vid];
-	else
-		return -1;
-}
-
-int PathQueryHandler::getOutSize(int vid, int pred)
-{
-	int vIndex = getOutIndexByID(vid, pred);
-	if (vIndex == -1) // This vertex does not participate in this pred's relations
-		return 0;
-	else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1)
-		return csr[0].adjacency_list[pred].size() - csr[0].offset_list[pred][vIndex];
-	else
-		return csr[0].offset_list[pred][vIndex + 1] - csr[0].offset_list[pred][vIndex];
-}
-
-int PathQueryHandler::getOutVertID(int vid, int pred, int pos)
-{
-	if (pos >= getOutSize(vid, pred))
-		return -1;
-	int offset = csr[0].offset_list[pred][getOutIndexByID(vid, pred)];
-	return csr[0].adjacency_list[pred][offset + pos];
-}
-
-int PathQueryHandler::getOutVertID(int vid, int pos)
-{
-	if (distinctOutEdges.find(vid) == distinctOutEdges.end())
-		getTotalOutSize(vid, true); // Load into cache
-
-	if (pos < static_cast<int>(distinctOutEdges[vid].size()))
-		return *next(distinctOutEdges[vid].begin(), pos);
-	else
-		return -1;
-}
-
-int PathQueryHandler::getSetOutSize(int vid, const std::vector<int> &pred_set)
-{
-	int ret = 0;
-	for (int pred : pred_set)
-		ret += getOutSize(vid, pred);
-	return ret;
-}
-
-int PathQueryHandler::getTotalOutSize(int vid, bool distinct)
-{
-	int ret = 0;
-	if (!distinct)
-	{
-		for (int i = 0; i < static_cast<int>(csr[1].pre_num); i++)
-			ret += getOutSize(vid, i);
-	}
-	else
-	{
-		if (distinctOutEdges.find(vid) == distinctOutEdges.end())
-		{
-			if (static_cast<int>(distinctOutEdges.size()) == cacheMaxSize)
-			{
-				int replacement = rand() % cacheMaxSize;
-				distinctOutEdges.erase(next(distinctOutEdges.begin(), replacement));
-				// cout << "distinctInEdges replaced entry " << replacement << endl;
-			}
-
-			distinctOutEdges[vid] = set<int>();
-			for (int pred = 0; pred < static_cast<int>(csr[1].pre_num); pred++)
-			{
-				int vIndex = getOutIndexByID(vid, pred);
-				if (vIndex == -1) // This vertex does not participate in this pred's relations
-					continue;
-				else if (vIndex == static_cast<int>(csr[0].offset_list[pred].size()) - 1 && csr[0].adjacency_list[pred].size() > csr[0].offset_list[pred][vIndex])
-					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]),
-												 csr[0].adjacency_list[pred].end());
-				else if (csr[0].offset_list[pred][vIndex + 1] > csr[0].offset_list[pred][vIndex])
-					distinctOutEdges[vid].insert(next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex]),
-												 next(csr[0].adjacency_list[pred].begin(), csr[0].offset_list[pred][vIndex + 1]));
-			}
-		}
-		ret = distinctOutEdges[vid].size();
-	}
-	return ret;
-}
-
-void PathQueryHandler::inputGraph(string filename)
-{
-	// ifstream infile(filename.c_str());
-	ifstream infile(filename);
-
-	int n, numLabel;
-	infile >> n >> numLabel;
-	csr[0].init(numLabel);
-	csr[1].init(numLabel);
-
-	int **indegree = new int *[numLabel];
-	int **outdegree = new int *[numLabel];
-	for (int i = 0; i < numLabel; i++)
-	{
-		indegree[i] = new int[n];
-		memset(indegree[i], 0, n * sizeof(int));
-		outdegree[i] = new int[n];
-		memset(outdegree[i], 0, n * sizeof(int));
-	}
-
-	int from, to, label;
-	while (infile >> from >> to >> label)
-	{
-		outdegree[label][from]++;
-		indegree[label][to]++;
-	}
-	int ***inAdjList = new int **[numLabel];
-	int ***outAdjList = new int **[numLabel];
-	for (int i = 0; i < numLabel; i++)
-	{
-		inAdjList[i] = new int *[n];
-		outAdjList[i] = new int *[n];
-		for (int j = 0; j < n; j++)
-		{
-			inAdjList[i][j] = new int[indegree[i][j]];
-			outAdjList[i][j] = new int[outdegree[i][j]];
-		}
-	}
-	int **pointer_in = new int *[numLabel];
-	int **pointer_out = new int *[numLabel];
-	for (int i = 0; i < numLabel; i++)
-	{
-		pointer_in[i] = new int[n];
-		memset(pointer_in[i], 0, n * sizeof(int));
-		pointer_out[i] = new int[n];
-		memset(pointer_out[i], 0, n * sizeof(int));
-	}
-
-	infile.clear();
-	infile.seekg(0);
-	infile >> n >> numLabel;
-	while (infile >> from >> to >> label)
-	{
-		outAdjList[label][from][pointer_out[label][from]] = to;
-		pointer_out[label][from]++;
-		inAdjList[label][to][pointer_in[label][to]] = from;
-		pointer_in[label][to]++;
-	}
-	infile.close();
-
-	int *pointer_outAdj = new int[numLabel];
-	int *pointer_inAdj = new int[numLabel];
-	memset(pointer_outAdj, 0, numLabel * sizeof(int));
-	memset(pointer_inAdj, 0, numLabel * sizeof(int));
-	for (int i = 0; i < numLabel; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			csr[0].id2vid[i].push_back(j);
-			csr[0].vid2id[i][j] = j;
-			csr[0].offset_list[i].push_back(pointer_outAdj[i]);
-			for (int k = 0; k < outdegree[i][j]; k++)
-			{
-				csr[0].adjacency_list[i].push_back(outAdjList[i][j][k]);
-				pointer_outAdj[i]++;
-			}
-
-			csr[1].id2vid[i].push_back(j);
-			csr[1].vid2id[i][j] = j;
-			csr[1].offset_list[i].push_back(pointer_inAdj[i]);
-			for (int k = 0; k < indegree[i][j]; k++)
-			{
-				csr[1].adjacency_list[i].push_back(inAdjList[i][j][k]);
-				pointer_inAdj[i]++;
-			}
-		}
-	}
-
-	for (int i = 0; i < numLabel; i++)
-	{
-		delete[] indegree[i];
-		delete[] outdegree[i];
-	}
-	delete[] indegree;
-	delete[] outdegree;
-	for (int i = 0; i < numLabel; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			delete[] inAdjList[i][j];
-			delete[] outAdjList[i][j];
-		}
-		delete[] inAdjList[i];
-		delete[] outAdjList[i];
-	}
-	delete[] inAdjList;
-	delete[] outAdjList;
-	for (int i = 0; i < numLabel; i++)
-	{
-		delete[] pointer_in[i];
-		delete[] pointer_out[i];
-	}
-	delete[] pointer_in;
-	delete[] pointer_out;
-	delete[] pointer_outAdj;
-	delete[] pointer_inAdj;
-}
-
-void PathQueryHandler::printCSR()
-{
-	cout << "----------OUT----------" << endl;
-	csr[0].print();
-	cout << endl;
-	cout << "----------IN----------" << endl;
-	csr[1].print();
 }
 
 /**
@@ -376,10 +34,10 @@ void PathQueryHandler::dfs(map<int, vector<int>> &route, map<int, bool> &vis,
 	int num_of_pred = pred_set.size();
 	for (int i = 0; i < num_of_pred; ++i)
 	{
-		int num_out = getOutSize(q, pred_set[i]);
+		int num_out = csrHandler->getOutSize(q, pred_set[i]);
 		for (int j = 0; j < num_out; ++j)
 		{
-			int temp = getOutVertID(q, pred_set[i], j);
+			int temp = csrHandler->getOutVertID(q, pred_set[i], j);
 			if (vis.find(temp) != vis.end() && vis[temp] == 1)
 				continue;
 			vis[temp] = 1;
@@ -402,12 +60,12 @@ void PathQueryHandler::dfs(map<int, vector<int>> &route, map<int, bool> &vis,
 		}
 		// if(directed) continue;
 		// if directed == 0, need to consider the traverse edge.
-		int num_in = getInSize(q, pred_set[i]);
+		int num_in = csrHandler->getInSize(q, pred_set[i]);
 		if (finished)
 			return;
 		for (int j = 0; j < num_in; ++j)
 		{
-			int temp = getInVertID(q, pred_set[i], j);
+			int temp = csrHandler->getInVertID(q, pred_set[i], j);
 			if (vis.find(temp) != vis.end() && vis[temp] == 1)
 				continue;
 			vis[temp] = 1;
@@ -465,12 +123,12 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 	int uOutTotal = 0, vInTotal = 0;
 	for (int pred : pred_set)
 	{
-		uOutTotal += getOutSize(uid, pred);
-		vInTotal += getInSize(vid, pred);
+		uOutTotal += csrHandler->getOutSize(uid, pred);
+		vInTotal += csrHandler->getInSize(vid, pred);
 		if (!directed)
 		{
-			uOutTotal += getInSize(uid, pred);
-			vInTotal += getOutSize(vid, pred);
+			uOutTotal += csrHandler->getInSize(uid, pred);
+			vInTotal += csrHandler->getOutSize(vid, pred);
 		}
 	}
 	if (uOutTotal == 0 || vInTotal == 0)
@@ -497,10 +155,10 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 			fwdQ.pop();
 			for (int pred : pred_set)
 			{
-				int num_out = getOutSize(curNode, pred);
+				int num_out = csrHandler->getOutSize(curNode, pred);
 				for (int i = 0; i < num_out; i++)
 				{
-					int outNode = getOutVertID(curNode, pred, i);
+					int outNode = csrHandler->getOutVertID(curNode, pred, i);
 					if (fSetMark.find(outNode) == fSetMark.end())
 					{
 						fwdQ_next.push(outNode);
@@ -510,10 +168,10 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 				if (directed)
 					continue;
 
-				int num_in = getInSize(curNode, pred);
+				int num_in = csrHandler->getInSize(curNode, pred);
 				for (int i = 0; i < num_in; i++)
 				{
-					int inNode = getInVertID(curNode, pred, i);
+					int inNode = csrHandler->getInVertID(curNode, pred, i);
 					if (fSetMark.find(inNode) == fSetMark.end())
 					{
 						fwdQ_next.push(inNode);
@@ -528,10 +186,10 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 			bwdQ.pop();
 			for (int pred : pred_set)
 			{
-				int num_in = getInSize(curNode, pred);
+				int num_in = csrHandler->getInSize(curNode, pred);
 				for (int i = 0; i < num_in; i++)
 				{
-					int inNode = getInVertID(curNode, pred, i);
+					int inNode = csrHandler->getInVertID(curNode, pred, i);
 					if (bSetMark.find(inNode) == bSetMark.end())
 					{
 						bwdQ_next.push(inNode);
@@ -545,10 +203,10 @@ bool PathQueryHandler::kHopReachableTest(int uid, int vid, bool directed, int k,
 
 				if (directed)
 					continue;
-				int num_out = getOutSize(curNode, pred);
+				int num_out = csrHandler->getOutSize(curNode, pred);
 				for (int i = 0; i < num_out; i++)
 				{
-					int outNode = getOutVertID(curNode, pred, i);
+					int outNode = csrHandler->getOutVertID(curNode, pred, i);
 					if (bSetMark.find(outNode) == bSetMark.end())
 					{
 						bwdQ_next.push(outNode);
@@ -583,12 +241,12 @@ void PathQueryHandler::getPostComments(int vid, int hasCreatorPred, int typePred
 std::vector<int> &postVec, std::vector<int> &commentVec) {
 	postVec.clear();
 	commentVec.clear();
-	int inSz = getInSize(vid, hasCreatorPred);
+	int inSz = csrHandler->getInSize(vid, hasCreatorPred);
 	for (int i = 0; i < inSz; i++) {
-		int cur = getInVertID(vid, hasCreatorPred, i);
-		if (getOutSize(cur, typePred) != 1)
+		int cur = csrHandler->getInVertID(vid, hasCreatorPred, i);
+		if (csrHandler->getOutSize(cur, typePred) != 1)
 			continue;
-		int curType = getOutVertID(cur, typePred, 0);
+		int curType = csrHandler->getOutVertID(cur, typePred, 0);
 		if (curType == postId)
 			postVec.emplace_back(cur);
 		else if (curType == commentId)
@@ -599,9 +257,9 @@ std::vector<int> &postVec, std::vector<int> &commentVec) {
 void PathQueryHandler::getCommReplyOf(int replyPred, const std::vector<int> &commentVec, std::unordered_set<int> &commReplyOf) {
 	commReplyOf.clear();
 	for (int comm : commentVec) {
-		int commOutSz = getOutSize(comm, replyPred);
+		int commOutSz = csrHandler->getOutSize(comm, replyPred);
 		for (size_t i = 0; i < commOutSz; i++)
-			commReplyOf.emplace(getOutVertID(comm, replyPred, i));
+			commReplyOf.emplace(csrHandler->getOutVertID(comm, replyPred, i));
 	}
 }
 
@@ -612,14 +270,14 @@ void PathQueryHandler::updateBarrier(int uid, bool directed, const vector<int> &
 		bar[uid] = l;
 		for (int pred : pred_set)
 		{
-			int inNum = getInSize(uid, pred);
+			int inNum = csrHandler->getInSize(uid, pred);
 			for (int i = 0; i < inNum; ++i)
-				updateBarrier(getInVertID(uid, pred, i), directed, pred_set, bar, l + 1);
+				updateBarrier(csrHandler->getInVertID(uid, pred, i), directed, pred_set, bar, l + 1);
 			if (directed)
 				continue;
-			int outNum = getOutSize(uid, pred);
+			int outNum = csrHandler->getOutSize(uid, pred);
 			for (int i = 0; i < outNum; ++i)
-				updateBarrier(getOutVertID(uid, pred, i), directed, pred_set, bar, l + 1);
+				updateBarrier(csrHandler->getOutVertID(uid, pred, i), directed, pred_set, bar, l + 1);
 		}
 	}
 }
@@ -2032,8 +1690,8 @@ namespace MaxKPX
 
         void read()
         {
-			n = handler.getVertNum();
-			m = handler.getSetEdgeNum(pred_set);
+			n = handler.getCSRHandler()->getVertNum();
+			m = handler.getCSRHandler()->getSetEdgeNum(pred_set);
 
             // printf("\tn = %d;  m = %d (undirected)\n", n, m);
 
@@ -2048,17 +1706,17 @@ namespace MaxKPX
 				int sum=0;
 				for (auto pred : pred_set)
 				{
-					int outNum = handler.getOutSize(uid, pred);
+					int outNum = handler.getCSRHandler()->getOutSize(uid, pred);
 					for (int i = 0; i < outNum; ++i)
 					{
-						int to = handler.getOutVertID(uid, pred, i);
+						int to = handler.getCSRHandler()->getOutVertID(uid, pred, i);
 						edges[pstart[uid]+sum]=to;
 						sum++;
 					}
-					int inNum = handler.getInSize(uid, pred);
+					int inNum = handler.getCSRHandler()->getInSize(uid, pred);
 					for (int i = 0; i < inNum; ++i)
 					{
-						int to = handler.getInVertID(uid, pred, i);
+						int to = handler.getCSRHandler()->getInVertID(uid, pred, i);
 						edges[pstart[uid]+sum]=to;
 						sum++;
 					}
@@ -3363,8 +3021,8 @@ void PathQueryHandler::set_ppr_bounds(pair<iMap<double>, iMap<double>> &fwd_idx,
 									  long total_rw_num, unordered_map<int, double> &v2ppr, double pfail, double &zero_ppr_upper_bound,
 									  iMap<double> &upper_bounds, iMap<double> &lower_bounds)
 {
-	double min_ppr = 1.0 / getVertNum();
-	double sqrt_min_ppr = sqrt(1.0 / getVertNum());
+	double min_ppr = 1.0 / csrHandler->getVertNum();
+	double sqrt_min_ppr = sqrt(1.0 / csrHandler->getVertNum());
 
 	double epsilon_v_div = sqrt(2.67 * rsum * log(2.0 / pfail) / total_rw_num);
 	double default_epsilon_v = epsilon_v_div / sqrt_min_ppr;
@@ -3456,24 +3114,24 @@ inline int PathQueryHandler::random_walk(int start, double alpha, const vector<i
 {
 	int cur = start;
 	int k;
-	if (getSetOutSize(start, pred_set) == 0)
+	if (csrHandler->getSetOutSize(start, pred_set) == 0)
 		return start;
 	while (true)
 	{
 		if ((double)rand() / (double)RAND_MAX <= alpha) // drand, return bool, bernoulli by alpha
 			return cur;
-		if (getSetOutSize(cur, pred_set))
+		if (csrHandler->getSetOutSize(cur, pred_set))
 		{
-			k = rand() % getSetOutSize(cur, pred_set); // lrand
+			k = rand() % csrHandler->getSetOutSize(cur, pred_set); // lrand
 			int curr_idx = k;
 			for (int pred : pred_set)
 			{
-				int curr_out = getOutSize(cur, pred);
+				int curr_out = csrHandler->getOutSize(cur, pred);
 				if (curr_out <= curr_idx)
 					curr_idx -= curr_out;
 				else
 				{
-					cur = getOutVertID(cur, pred, curr_idx);
+					cur = csrHandler->getOutVertID(cur, pred, curr_idx);
 					if (cur == -1)
 					{
 						cout << "ERROR1!!!!!!" << endl;
@@ -3493,14 +3151,14 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 {
 	double myeps = rmax;
 
-	vector<bool> in_forward(getVertNum());
-	vector<bool> in_next_forward(getVertNum());
+	vector<bool> in_forward(csrHandler->getVertNum());
+	vector<bool> in_next_forward(csrHandler->getVertNum());
 
 	std::fill(in_forward.begin(), in_forward.end(), false);
 	std::fill(in_next_forward.begin(), in_next_forward.end(), false);
 
 	vector<pair<int, int>> next_forward_from;
-	next_forward_from.reserve(getVertNum());
+	next_forward_from.reserve(csrHandler->getVertNum());
 	for (auto &v : forward_from)
 		in_forward[v.first] = true;
 
@@ -3513,9 +3171,9 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 		// if (k != -1 && level >= k)
 		// 	continue;
 		in_forward[v] = false;
-		if (fwd_idx.second[v] / getSetOutSize(v, pred_set) >= myeps)
+		if (fwd_idx.second[v] / csrHandler->getSetOutSize(v, pred_set) >= myeps)
 		{
-			int out_neighbor = getSetOutSize(v, pred_set);
+			int out_neighbor = csrHandler->getSetOutSize(v, pred_set);
 			double v_residue = fwd_idx.second[v];
 			fwd_idx.second[v] = 0;
 			if (!fwd_idx.first.exist(v))
@@ -3527,13 +3185,13 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 			if (out_neighbor == 0)
 			{
 				fwd_idx.second[s] += v_residue * (1 - alpha);
-				if (getSetOutSize(s, pred_set) > 0 && in_forward[s] != true && fwd_idx.second[s] / getSetOutSize(s, pred_set) >= myeps)
+				if (csrHandler->getSetOutSize(s, pred_set) > 0 && in_forward[s] != true && fwd_idx.second[s] / csrHandler->getSetOutSize(s, pred_set) >= myeps)
 				{
 					// forward_from.push_back(make_pair(s, level + 1));
 					forward_from.push_back(make_pair(s, 0));
 					in_forward[s] = true;
 				}
-				else if (getSetOutSize(s, pred_set) >= 0 && in_next_forward[s] != true && fwd_idx.second[s] / getSetOutSize(s, pred_set) >= lowest_rmax)
+				else if (csrHandler->getSetOutSize(s, pred_set) >= 0 && in_next_forward[s] != true && fwd_idx.second[s] / csrHandler->getSetOutSize(s, pred_set) >= lowest_rmax)
 				{
 					// next_forward_from.push_back(make_pair(s, level + 1));
 					next_forward_from.push_back(make_pair(s, 0));
@@ -3546,11 +3204,11 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 			// cout << "out_neighbor = " << out_neighbor << endl;
 			for (int pred : pred_set)
 			{
-				int out_neighbor_pred = getOutSize(v, pred);
+				int out_neighbor_pred = csrHandler->getOutSize(v, pred);
 				// out_neighbor_test += out_neighbor_pred;
 				for (int i = 0; i < out_neighbor_pred; i++)
 				{
-					int next = getOutVertID(v, pred, i);
+					int next = csrHandler->getOutVertID(v, pred, i);
 					if (next == -1)
 					{
 						cout << "ERROR!!!!!!" << endl;
@@ -3562,14 +3220,14 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 					else
 						fwd_idx.second[next] += avg_push_residual;
 
-					if (in_forward[next] != true && fwd_idx.second[next] / getSetOutSize(next, pred_set) >= myeps && (k == -1 || level < k))
+					if (in_forward[next] != true && fwd_idx.second[next] / csrHandler->getSetOutSize(next, pred_set) >= myeps && (k == -1 || level < k))
 					{
 						forward_from.push_back(make_pair(next, level + 1));
 						in_forward[next] = true;
 					}
 					else
 					{
-						if (in_next_forward[next] != true && fwd_idx.second[next] / getSetOutSize(next, pred_set) >= lowest_rmax && (k == -1 || level < k))
+						if (in_next_forward[next] != true && fwd_idx.second[next] / csrHandler->getSetOutSize(next, pred_set) >= lowest_rmax && (k == -1 || level < k))
 						{
 							next_forward_from.push_back(make_pair(next, level + 1));
 							in_next_forward[next] = true;
@@ -3580,7 +3238,7 @@ void PathQueryHandler::forward_local_update_linear_topk(int s, double &rsum, dou
 		}
 		else
 		{
-			if (in_next_forward[v] != true && fwd_idx.second[v] / getSetOutSize(v, pred_set) >= lowest_rmax)
+			if (in_next_forward[v] != true && fwd_idx.second[v] / csrHandler->getSetOutSize(v, pred_set) >= lowest_rmax)
 			{
 				next_forward_from.push_back(make_pair(v, level));
 				in_next_forward[v] = true;
@@ -3700,20 +3358,20 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 		{
 			for (int pred : pred_set)
 			{
-				int inSz = getInSize(ret[curr], pred), inNei;
+				int inSz = csrHandler->getInSize(ret[curr], pred), inNei;
 				for (int i = 0; i < inSz; i++)
 				{
-					inNei = getInVertID(ret[curr], pred, i);
+					inNei = csrHandler->getInVertID(ret[curr], pred, i);
 					if (ret_set.find(inNei) == ret_set.end())
 					{
 						ret.push_back(inNei);
 						ret_set.insert(inNei);
 					}
 				}
-				int outSz = getOutSize(ret[curr], pred), outNei;
+				int outSz = csrHandler->getOutSize(ret[curr], pred), outNei;
 				for (int i = 0; i < outSz; i++)
 				{
-					outNei = getOutVertID(ret[curr], pred, i);
+					outNei = csrHandler->getOutVertID(ret[curr], pred, i);
 					if (ret_set.find(outNei) == ret_set.end())
 					{
 						ret.push_back(outNei);
@@ -3726,10 +3384,10 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 		{
 			for (int pred : pred_set)
 			{
-				int outSz = getOutSize(ret[curr], pred), outNei;
+				int outSz = csrHandler->getOutSize(ret[curr], pred), outNei;
 				for (int i = 0; i < outSz; i++)
 				{
-					outNei = getOutVertID(ret[curr], pred, i);
+					outNei = csrHandler->getOutVertID(ret[curr], pred, i);
 					if (ret_set.find(outNei) == ret_set.end())
 					{
 						ret.push_back(outNei);
@@ -3742,10 +3400,10 @@ vector<int> PathQueryHandler::BFS(int uid, bool directed, const vector<int> &pre
 		{
 			for (int pred : pred_set)
 			{
-				int inSz = getInSize(ret[curr], pred), inNei;
+				int inSz = csrHandler->getInSize(ret[curr], pred), inNei;
 				for (int i = 0; i < inSz; i++)
 				{
-					inNei = getInVertID(ret[curr], pred, i);
+					inNei = csrHandler->getInVertID(ret[curr], pred, i);
 					if (ret_set.find(inNei) == ret_set.end())
 					{
 						ret.push_back(inNei);

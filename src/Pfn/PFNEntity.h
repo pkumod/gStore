@@ -10,7 +10,6 @@ struct PFNInfo
 public:
     std::string funName;
     std::string funDesc;
-    std::string funArgs;
     std::string funBody;
     std::string funSubs;
     std::string funStatus;
@@ -31,8 +30,6 @@ public:
                 json.at("funName").get_to(funName);
             if (json.contains("funDesc"))
                 json.at("funDesc").get_to(funDesc);
-            if (json.contains("funArgs"))
-                json.at("funArgs").get_to(funArgs);
             if (json.contains("funBody"))
                 json.at("funBody").get_to(funBody); 
             if (json.contains("funSubs"))
@@ -52,7 +49,6 @@ public:
             {
                 json["funName"] = funName;
                 json["funDesc"] = funDesc;
-                json["funArgs"] = funArgs;
                 json["funBody"] = funBody;
                 json["funSubs"] = funSubs;
                 json["funStatus"] = funStatus;
@@ -76,8 +72,6 @@ public:
                 json.at("funName").get_to(pfn_info.funName);
             if (json.contains("funDesc"))
                 json.at("funDesc").get_to(pfn_info.funDesc);
-            if (json.contains("funArgs"))
-                json.at("funArgs").get_to(pfn_info.funArgs);
             if (json.contains("funBody"))
                 json.at("funBody").get_to(pfn_info.funBody);
             if (json.contains("funSubs"))
@@ -100,7 +94,6 @@ public:
     {
         this->funName = other.funName;
         this->funDesc = other.funDesc;
-        this->funArgs = other.funArgs;
         this->funBody = other.funBody;
         this->funSubs = other.funSubs;
         this->funStatus = other.funStatus;
@@ -110,7 +103,7 @@ public:
 
     bool empty()
     {
-        return funName.empty() && funArgs.empty() && funBody.empty() && funReturn.empty();
+        return funName.empty() && funBody.empty() && funReturn.empty();
     }
 };
 

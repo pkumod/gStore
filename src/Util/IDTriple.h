@@ -2,7 +2,7 @@
 #ifndef _UTIL_IDTRIPLE_H
 #define _UTIL_IDTRIPLE_H
 
-#include "Util.h"
+#include "GlobalTypedef.h"
 
 
 class IDTriple

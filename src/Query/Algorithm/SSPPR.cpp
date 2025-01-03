@@ -108,36 +108,36 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 
 	// Data structures initialization
 	fwd_idx.first.nil = -9;
-	fwd_idx.first.initialize(getVertNum());
+	fwd_idx.first.initialize(csrHandler->getVertNum());
 	fwd_idx.second.nil = -9;
-	fwd_idx.second.initialize(getVertNum());
+	fwd_idx.second.initialize(csrHandler->getVertNum());
 	upper_bounds.nil = -9;
-	upper_bounds.init_keys(getVertNum());
+	upper_bounds.init_keys(csrHandler->getVertNum());
 	lower_bounds.nil = -9;
-	lower_bounds.init_keys(getVertNum());
+	lower_bounds.init_keys(csrHandler->getVertNum());
 	ppr.nil = -9;
-	ppr.initialize(getVertNum());
+	ppr.initialize(csrHandler->getVertNum());
 	topk_filter.nil = -9;
-	topk_filter.initialize(getVertNum());
+	topk_filter.initialize(csrHandler->getVertNum());
 
 	// Params initialization
-	int numPredEdges = getSetEdgeNum(pred_set);
+	int numPredEdges = csrHandler->getSetEdgeNum(pred_set);
 	double ppr_decay_alpha = 0.77;
-	double pfail = 1.0 / getVertNum() / getVertNum() / log(getVertNum()); // log(1/pfail) -> log(1*n/pfail)
+	double pfail = 1.0 / csrHandler->getVertNum() / csrHandler->getVertNum() / log(csrHandler->getVertNum()); // log(1/pfail) -> log(1*n/pfail)
 	double delta = 1.0 / 4;
 	double epsilon = 0.5;
 	double rmax;
 	double rmax_scale = 1.0;
 	double omega;
 	double alpha = 0.2;
-	double min_delta = 1.0 / getVertNum();
-	double threshold = (1.0 - ppr_decay_alpha) / pow(500, ppr_decay_alpha) / pow(getVertNum(), 1 - ppr_decay_alpha);
+	double min_delta = 1.0 / csrHandler->getVertNum();
+	double threshold = (1.0 - ppr_decay_alpha) / pow(500, ppr_decay_alpha) / pow(csrHandler->getVertNum(), 1 - ppr_decay_alpha);
 	double lowest_delta_rmax = epsilon * sqrt(min_delta / 3 / numPredEdges / log(2 / pfail));
 	double rsum = 1.0;
 
 	vector<pair<int, int>> forward_from;
 	forward_from.clear();
-	forward_from.reserve(getVertNum());
+	forward_from.reserve(csrHandler->getVertNum());
 	forward_from.push_back(make_pair(uid, 0));
 
 	fwd_idx.first.clean();	// reserve
@@ -156,7 +156,7 @@ void PathQueryHandler::SSPPR(int uid, int retNum, int k, const vector<int> &pred
 		rmax *= rmax_scale;
 		omega = (2 + epsilon) * log(2 / pfail) / delta / epsilon / epsilon;
 
-		if (getSetOutSize(uid, pred_set) == 0)
+		if (csrHandler->getSetOutSize(uid, pred_set) == 0)
 		{
 			rsum = 0.0;
 			fwd_idx.first.insert(uid, 1);

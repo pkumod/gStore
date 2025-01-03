@@ -46,10 +46,10 @@ std::vector<std::vector<int>> PathQueryHandler::kHopShortestPaths(int uid, int v
 		for (int i = 0; i < num_of_pred; ++i)
 		{
 			int x = pred_set[i];
-			int num = getOutSize(temp_u, x);
+			int num = csrHandler->getOutSize(temp_u, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getOutVertID(temp_u, x, j);
+				int t = csrHandler->getOutVertID(temp_u, x, j);
 				nl.insert(t);
 				auto vit = dis_u.find(t);
 				if (vit == dis_u.end())
@@ -73,10 +73,10 @@ std::vector<std::vector<int>> PathQueryHandler::kHopShortestPaths(int uid, int v
 
 			if (directed)
 				continue;
-			num = getInSize(temp_u, x);
+			num = csrHandler->getInSize(temp_u, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getInVertID(temp_u, x, j);
+				int t = csrHandler->getInVertID(temp_u, x, j);
 			   	nl.insert(t);
 				auto vit = dis_u.find(t);
 				if (vit == dis_u.end())
@@ -128,10 +128,10 @@ std::vector<std::vector<int>> PathQueryHandler::kHopShortestPaths(int uid, int v
             for (int i = 0; i < num_of_pred; ++i)
 		    {
                 int x = pred_set[i];
-                int num = getOutSize(temp_u, x);
+                int num = csrHandler->getOutSize(temp_u, x);
                 for (int j = 0; j < num; ++j)
 			    {
-                    if (getOutVertID(temp_u, x, j) == temp_v)
+                    if (csrHandler->getOutVertID(temp_u, x, j) == temp_v)
                     {
                         pred_l.insert(x);   
                         break;
@@ -139,10 +139,10 @@ std::vector<std::vector<int>> PathQueryHandler::kHopShortestPaths(int uid, int v
                 }
 				if (directed)
 					continue;
-                num = getInSize(temp_u, x);
+                num = csrHandler->getInSize(temp_u, x);
                 for (int j = 0; j < num; ++j)
 			    {
-                    if (getInVertID(temp_u, x, j) == temp_v)
+                    if (csrHandler->getInVertID(temp_u, x, j) == temp_v)
                     {
                         pred_l.insert(x);   
                         break;

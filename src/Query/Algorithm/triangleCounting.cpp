@@ -18,7 +18,7 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 
 	long long numTriangle = 0;
 	// loop each vertex and count triangle
-	int vertex_num = getVertNum();
+	int vertex_num = csrHandler->getVertNum();
 	for (int vid = 0; vid < vertex_num; ++vid)
 	{
 		// count triangle for vid
@@ -28,14 +28,14 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 		unordered_set<int> inSet;
 		for (int pred : pred_set)
 		{
-			int inSize = getInSize(vid, pred);
+			int inSize = csrHandler->getInSize(vid, pred);
 			for (int j = 0; j < inSize; j++)
-				inSet.insert(getInVertID(vid, pred, j));
+				inSet.insert(csrHandler->getInVertID(vid, pred, j));
 			if (directed == 0)
 			{
-				int outSize = getOutSize(vid, pred);
+				int outSize = csrHandler->getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
-					inSet.insert(getOutVertID(vid, pred, j));
+					inSet.insert(csrHandler->getOutVertID(vid, pred, j));
 			}
 		}
 
@@ -46,16 +46,16 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 		{
 			for (int pred : pred_set)
 			{
-				int outSize = getOutSize(vid, pred);
+				int outSize = csrHandler->getOutSize(vid, pred);
 				for (int j = 0; j < outSize; j++)
 				{
-					int outNode = getOutVertID(vid, pred, j);
+					int outNode = csrHandler->getOutVertID(vid, pred, j);
 					for (int pd : pred_set)
 					{
-						int outOutSize = getOutSize(outNode, pd);
+						int outOutSize = csrHandler->getOutSize(outNode, pd);
 						for (int k = 0; k < outOutSize; k++)
 						{
-							int outOutNode = getOutVertID(outNode, pd, k);
+							int outOutNode = csrHandler->getOutVertID(outNode, pd, k);
 							if (inSet.find(outOutNode) != inSet.end())
 								numTriangle++;
 						}
@@ -72,15 +72,15 @@ long long PathQueryHandler::triangleCounting(bool directed, const std::vector<in
 				unordered_set<int> nbrs;
 				for (int pred : pred_set)
 				{
-					int outOutSize = getOutSize(outNode, pred);
+					int outOutSize = csrHandler->getOutSize(outNode, pred);
 					for (int k = 0; k < outOutSize; k++)
 					{
-						nbrs.insert(getOutVertID(outNode, pred, k));
+						nbrs.insert(csrHandler->getOutVertID(outNode, pred, k));
 					}
-					int outInSize = getInSize(outNode, pred);
+					int outInSize = csrHandler->getInSize(outNode, pred);
 					for (int k = 0; k < outInSize; k++)
 					{
-						nbrs.insert(getInVertID(outNode, pred, k));
+						nbrs.insert(csrHandler->getInVertID(outNode, pred, k));
 					}
 				}
 				for (int outOutNode : nbrs)

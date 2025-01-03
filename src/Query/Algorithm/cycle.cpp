@@ -41,10 +41,10 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, con
 			for (int i = 0; i < num_of_pred; ++i)
 			{
 				int x = pred_set[i];
-				int num = getOutSize(temp_u, x);
+				int num = csrHandler->getOutSize(temp_u, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getOutVertID(temp_u, x, j);
+					int t = csrHandler->getOutVertID(temp_u, x, j);
 
 					if (route_v.find(t) != route_v.end())
 					{
@@ -69,10 +69,10 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, con
 				if (directed)
 					continue;
 				// undirected: need to visit the in-neighbours
-				num = getInSize(temp_u, x);
+				num = csrHandler->getInSize(temp_u, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getInVertID(temp_u, x, j);
+					int t = csrHandler->getInVertID(temp_u, x, j);
 
 					if (route_v.find(t) != route_v.end())
 					{
@@ -105,10 +105,10 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, con
 			for (int i = 0; i < num_of_pred; ++i)
 			{
 				int x = pred_set[i];
-				int num = getInSize(temp_v, x);
+				int num = csrHandler->getInSize(temp_v, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getInVertID(temp_v, x, j);
+					int t = csrHandler->getInVertID(temp_v, x, j);
 
 					if (route_u.find(t) != route_u.end())
 					{
@@ -133,10 +133,10 @@ vector<int> PathQueryHandler::shortestPath0(int uid, int vid, bool directed, con
 				if (directed)
 					continue;
 
-				num = getOutSize(temp_v, x);
+				num = csrHandler->getOutSize(temp_v, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getOutVertID(temp_v, x, j);
+					int t = csrHandler->getOutVertID(temp_v, x, j);
 
 					if (route_u.find(t) != route_u.end())
 					{
@@ -223,10 +223,10 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		// 	for(int i = 0; i < num_of_pred; ++i)
 		// 	{
 		// 		int x = pred_set[i];
-		// 		int num_out = getOutSize(temp, x);
+		// 		int num_out = csrHandler->getOutSize(temp, x);
 		// 		for(int j = 0; j < num_out; ++j)
 		// 		{
-		// 			int t = getOutVertID(temp, x, j); //get the node
+		// 			int t = csrHandler->getOutVertID(temp, x, j); //get the node
 		// 			if(dis.find(t) != dis.end())
 		// 				continue;
 		// 			q.push(t);
@@ -238,10 +238,10 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		// 			}
 		// 		}
 		// 		if(finished) break;
-		// 		int num_in = getInSize(temp, x);
+		// 		int num_in = csrHandler->getInSize(temp, x);
 		// 		for(int j = 0; j < num_in; ++j)
 		// 		{
-		// 			int t = getInVertID(temp, x, j);
+		// 			int t = csrHandler->getInVertID(temp, x, j);
 		// 			if(dis.find(t) != dis.end())
 		// 				continue;
 		// 			q.push(t);
@@ -267,10 +267,10 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		// 	for(int i = 0; i < num_of_pred; ++i)
 		// 	{
 		// 		int x = pred_set[i];
-		// 		int num_in = getInSize(temp, x);
+		// 		int num_in = csrHandler->getInSize(temp, x);
 		// 		for(int j = 0; j < num_in; ++j)
 		// 		{
-		// 			int t = getInVertID(temp, x, j);
+		// 			int t = csrHandler->getInVertID(temp, x, j);
 		// 			if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
 		// 			{
 		// 				s.push(x);
@@ -280,10 +280,10 @@ std::vector<int> PathQueryHandler::cycle(int uid, int vid, bool directed,
 		// 			}
 		// 		}
 		// 		if(flag0) break;
-		// 		int num_out = getOutSize(temp, x);
+		// 		int num_out = csrHandler->getOutSize(temp, x);
 		// 		for(int j = 0; j < num_out; ++j)
 		// 		{
-		// 			int t = getOutVertID(temp, x, j);
+		// 			int t = csrHandler->getOutVertID(temp, x, j);
 		// 			if(dis.find(t) != dis.end() && dis[t] == dis[temp] - 1)
 		// 			{
 		// 				s.push(x);

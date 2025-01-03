@@ -23,10 +23,10 @@ void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase
 	//所有从节点i指其他节点的权重（包括自己）（出边）
 	map<int,map<int,double> > weights;
   	//修改初始化-》谓词筛选的顶点现在无误了
-	int Sz = getVertNum();
+	int Sz = csrHandler->getVertNum();
 	for(int i=0;i<Sz;i++)
 	{
-		int predCnt = getSetInSize(i,pred_set)+getSetOutSize(i,pred_set);
+		int predCnt = csrHandler->getSetInSize(i,pred_set)+csrHandler->getSetOutSize(i,pred_set);
 		if(predCnt)
 		vids.insert(i);
 	}
@@ -43,18 +43,18 @@ void PathQueryHandler::louvain(int phase1_loop_num,float min_modularity_increase
 	// 初始化k_i_in
 	for(int pred:pred_set){
 		for(int vid:vids){
-			int vIndex = getInIndexByID(vid, pred);
+			int vIndex = csrHandler->getInIndexByID(vid, pred);
 			if(vIndex!=-1){
-				int begin=csr[1].offset_list[pred][vIndex];
+				int begin  = csrHandler->getPredOffsetIndex(pred, vIndex);
 				int end=0;
 				// 如果是offset_list中的最后一个
-				if(vIndex == csr[1].offset_list[pred].size() - 1){
-					end=csr[1].adjacency_list[pred].size();
+				if(vIndex == csrHandler->getPredOffsetSize(pred) - 1){
+					end = csrHandler->getPredAdjacencySize(pred);
 				}else{
-					end=csr[1].offset_list[pred][vIndex+1];
+					end = csrHandler->getPredOffsetIndex(pred, vIndex+1);
 				}
 				for(int i=begin;i<end;i++){
-					int out_vid=csr[1].adjacency_list[pred][i];
+					int out_vid = csrHandler->getPredAdjacencyIndex(pred, i);
 					if(weights[out_vid].find(vid)==weights[out_vid].end()){
 						weights[out_vid][vid]=1;
 					}else{

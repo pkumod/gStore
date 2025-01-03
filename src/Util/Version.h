@@ -2,7 +2,7 @@
 #define _UTIL_VERSION_H
 
 
-#include "Util.h"
+#include "GlobalTypedef.h"
 
 using namespace std;
 

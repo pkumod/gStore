@@ -49,10 +49,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 			for (int i = 0; i < num_of_pred; ++i)
 			{
 				int x = pred_set[i];
-				int num = getOutSize(temp_u, x);
+				int num = csrHandler->getOutSize(temp_u, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getOutVertID(temp_u, x, j); // get the node
+					int t = csrHandler->getOutVertID(temp_u, x, j); // get the node
 
 					if (dis_v.find(t) != dis_v.end())
 					{
@@ -73,10 +73,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				if (directed)
 					continue;
 
-				num = getInSize(temp_u, x);
+				num = csrHandler->getInSize(temp_u, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getInVertID(temp_u, x, j); // get the node
+					int t = csrHandler->getInVertID(temp_u, x, j); // get the node
 
 					if (dis_v.find(t) != dis_v.end())
 					{
@@ -107,11 +107,11 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 			for (int i = 0; i < num_of_pred; ++i)
 			{
 				int x = pred_set[i];
-				int num = getInSize(temp_v, x);
+				int num = csrHandler->getInSize(temp_v, x);
 
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getInVertID(temp_v, x, j);
+					int t = csrHandler->getInVertID(temp_v, x, j);
 
 					if (dis_u.find(t) != dis_u.end())
 					{
@@ -133,10 +133,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 				if (directed)
 					continue;
 
-				num = getOutSize(temp_v, x);
+				num = csrHandler->getOutSize(temp_v, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getOutVertID(temp_v, x, j);
+					int t = csrHandler->getOutVertID(temp_v, x, j);
 
 					if (dis_u.find(t) != dis_u.end())
 					{
@@ -176,10 +176,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 		for (int i = 0; i < num_of_pred; ++i)
 		{
 			int x = pred_set[i];
-			int num = getOutSize(temp, x);
+			int num = csrHandler->getOutSize(temp, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getOutVertID(temp, x, j);
+				int t = csrHandler->getOutVertID(temp, x, j);
 				if (dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
 				{
 					s.push(x);
@@ -193,10 +193,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 
 			if (directed)
 				continue;
-			num = getInSize(temp, x);
+			num = csrHandler->getInSize(temp, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getInVertID(temp, x, j);
+				int t = csrHandler->getInVertID(temp, x, j);
 				if (dis_v.find(t) != dis_v.end() && dis_v[t] == dis_v[temp] - 1)
 				{
 					s.push(-x - 1);
@@ -231,10 +231,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 		for (int i = 0; i < num_of_pred; ++i)
 		{
 			int x = pred_set[i];
-			int num = getInSize(temp, x);
+			int num = csrHandler->getInSize(temp, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getInVertID(temp, x, j);
+				int t = csrHandler->getInVertID(temp, x, j);
 				if (dis_u.find(t) != dis_u.end() && dis_u[t] == dis_u[temp] - 1)
 				{
 					s_new.push(x);
@@ -249,10 +249,10 @@ vector<int> PathQueryHandler::shortestPath(int uid, int vid, bool directed, cons
 			if (directed)
 				continue;
 
-			num = getOutSize(temp, x);
+			num = csrHandler->getOutSize(temp, x);
 			for (int j = 0; j < num; ++j)
 			{
-				int t = getOutVertID(temp, x, j);
+				int t = csrHandler->getOutVertID(temp, x, j);
 				if (dis_u.find(t) != dis_u.end() && dis_u[t] == dis_u[temp] - 1)
 				{
 					s_new.push(-x - 1);

@@ -7,11 +7,12 @@
  * =====================================================================*/
 
 #pragma once
-#include "../../Util/Util.h"
+#include "../../Util/GlobalTypedef.h"
 #include "../../Util/VList.h"
 #include "../../Util/Version.h"
 #include "../../Util/Transaction.h"
 #include "../../Util/GraphLock.h"
+#include "../../Util/Latch.h"
 
 using namespace std;
 

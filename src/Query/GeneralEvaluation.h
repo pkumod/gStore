@@ -154,7 +154,6 @@ class GeneralEvaluation
 			vector<vector<GroupPattern::Pattern> >& basic_query_handle, long tv_begin, long tv_handle, int dep=0);
 		void getAllPattern(const GroupPattern &group_pattern, vector<GroupPattern::Pattern> &vp);
 		void copyBgpResult2TempResult(std::shared_ptr<BGPQuery> bgp_query, int varnum, TempResult &tr);
-		std::map<std::string, std::string> dynamicFunction(const std::vector<int> &iri_set, bool directed, int k, const std::vector<int> &pred_set, const std::string& fun_name, const std::string& username);
 
 		void kleeneClosure(std::shared_ptr<TempResultSet> temp, TempResult * const tr, const string &subject, const string &predicate, const string &object, int dep);
 		void BFS(std::shared_ptr<TempResultSet> temp, int sid, int pred, bool forward, int numCol=2);
@@ -168,6 +167,12 @@ class GeneralEvaluation
 		void degreeCorrelation(std::stringstream &ss, int uid, int k, const std::vector<int> &pred_id_set);
 		void kHopShortestPaths(std::stringstream &ss, int uid, int vid, bool directed, const std::vector<int> &pred_id_set, bool &notFirstOutput);
 		void kHopAllNeighbors(std::stringstream &ss, int uid, bool directed, int k, const std::vector<int> &pred_id_set, int retNum);
+		// pfn analysis query
+		std::string getPfnSoFile(const std::string& username, const std::string& fun_name);
+		std::string excutePfnSoFile(const std::string& fun_name, const std::string& soFile, const std::string& pfn_params);
+		std::string pfnQuery(const std::string& pfn_name, const std::string& pfn_params, const std::string& username);
+		void pfnConvertVar(std::vector<std::pair<std::string, vector<int>>>& varList, std::set<std::string>& param_jsons, nlohmann::json& param_json, int pos);
+		std::string pfnQueryByVar(const std::string& pfn_name, const std::string& pfn_params, const std::string& username, TempResult &result0, int begin, int end, int result0_id_cols);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

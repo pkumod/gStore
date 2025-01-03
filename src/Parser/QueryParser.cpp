@@ -583,52 +583,21 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
 				proj_var.aggregate_type = ProjectionVar::PFN_type;
-				// set iri_set
-				auto iriSet = bicCtx->varOrIriSet()->varOrIri();
-				for (auto iri : iriSet)
-				{
-					string prefixedIri = iri->getText();
-					replacePrefix(prefixedIri);
-					proj_var.path_args.iri_set.push_back(prefixedIri);
-				}
-				// set src and dst when iri_set size is two 
-				if (proj_var.path_args.iri_set.size() == 2)
-				{
-					proj_var.path_args.src = proj_var.path_args.iri_set[0];
-					proj_var.path_args.dst = proj_var.path_args.iri_set[1];
-				}
-				auto iriOrNegiri = bicCtx->predSet()->iriOrNegIri();
-				for (auto pred : iriOrNegiri)
-				{
-					string prefixedPred = pred->getText();
-					replacePrefix(prefixedPred);
-					bool is_nei = false;
-					if (prefixedPred[0] == '!')
-					{
-						prefixedPred = pred->getText().substr(1);
-						is_nei = true;
-					}
-					if (is_nei)
-					{
-						proj_var.path_args.neg_pred_set.push_back(prefixedPred);
-					}
-					else
-					{
-						proj_var.path_args.pred_set.push_back(prefixedPred);
-					}
-				}
+				proj_var.path_args.pfn_name = bicCtx->VARNAME()->getText();
 
-				// set k
-				proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
-				// set directed
-				if (bicCtx->booleanLiteral()->getText() == "true")
-					proj_var.path_args.directed = true;
-				else
-					proj_var.path_args.directed = false;
-				// set fun_name
-				proj_var.path_args.fun_name = bicCtx->string()->getText();
+				std::string pfn_params = "{";
+				auto jsonVar = bicCtx->jsonVars()->jsonVar();
+				int size = jsonVar.size();
+				for (auto var : jsonVar)
+				{
+					pfn_params += var->getText();
+					size--;
+					if (size != 0)
+						pfn_params += ",";
+				}
+				pfn_params += "}";
+				proj_var.path_args.pfn_params = pfn_params;
 				proj_var.var = varCtx->getText();
-				SLOG_CORE("call personalized function:" << proj_var.path_args.fun_name);
 			}
 			else if (tmp == "CONTAINS")	// Original built-in calls, may add others later
 			{

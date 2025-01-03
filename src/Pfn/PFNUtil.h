@@ -6,7 +6,7 @@
 using namespace std;
 using namespace gutil;
 
-#define PFN_HEADER "#include \"../../../src/Query/Algorithm/PathQueryHandler.h\"\n\nusing namespace std;\n\n"
+#define PFN_HEADER "#include \"../../include/Pfn/GAnalysis.h\"\n\nusing namespace std;\n\n"
 
 
 class PFNUtil

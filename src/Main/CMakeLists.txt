@@ -68,6 +68,7 @@ set( LIB_GSTROE_DEP
         reason
         pfn
         cluster
+        httputil
 )
 set( BIN_LIST
         # gadd
@@ -114,21 +115,50 @@ link_directories(
         ${GSTORE_3RDLIB_DIR}
         ${GSTORE_PFNLIB_DIR}
 )
-add_library( gcsr SHARED ../Database/CSR.cpp )
-aux_source_directory( ../Query/Algorithm ALGORITHM_LIST )
-add_library( gpathqueryhandler SHARED ${ALGORITHM_LIST} )
-target_link_libraries( gpathqueryhandler gcsr )
-set_target_properties( gcsr gpathqueryhandler PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_PFNLIB_DIR} )
 
-# add_executable( shutdown shutdown.cpp )
-# target_link_libraries( shutdown ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
-# add_executable( rollback rollback.cpp )
-# target_link_libraries( rollback ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
-# add_executable( gpara gpara.cpp )
-# target_link_libraries( gpara ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+# ganalysis
+aux_source_directory( ../KVstore/ KVSTORE_LIST )
+aux_source_directory( ../KVstore/ISArray KVSTORE_LIST )
+aux_source_directory( ../KVstore/IVArray KVSTORE_LIST )
+aux_source_directory( ../KVstore/SITree KVSTORE_LIST )
+aux_source_directory( ../KVstore/SITree/heap KVSTORE_LIST )
+aux_source_directory( ../KVstore/SITree/node KVSTORE_LIST )
+aux_source_directory( ../KVstore/SITree/storage KVSTORE_LIST )
+add_library( ganalysis SHARED 
+        ${KVSTORE_LIST}
+        ../Util/Bstr.cpp
+        ../Util/VList.cpp
+        ../Util/Stream.cpp
+        ../Util/EvalMultitypeValue.cpp
+        ../Util/TimeUtil.cpp
+        ../Util/ResourceUtil.cpp
+        ../Util/StringUtil.cpp
+        ../Util/SpinLock.cpp
+        ../Util/INIParser.cpp
+        ../Util/FileUtil.cpp
+        ../Util/Latch.cpp
+        ../Util/GlobalTypedef.cpp
+        ../Util/Version.cpp
+        ../Util/Transaction.cpp
+        ../Util/IDTriple.cpp
+        ../Util/GraphLock.cpp
+        ../Util/Latch.cpp
+        ../Trie/Trie.cpp
+        ../Trie/TrieNode.cpp
+        ../Parser/RDFParser.cpp
+        ../Parser/TurtleParser.cpp
+        ../Pfn/GAnalysis.cpp
+        ../Database/CSR.cpp
+        ../Query/Algorithm/CSRQueryHandler.cpp )
+
+set_target_properties( ganalysis PROPERTIES LINK_FLAGS "-Wl,-rpath,./" LIBRARY_OUTPUT_DIRECTORY  ${GSTORE_PFNLIB_DIR} )
 
 foreach( bin_name main_name IN ZIP_LISTS BIN_LIST MAIN_LIST )
    message( STATUS "bin_name = ${bin_name} main_name = ${main_name}" )
    add_executable( ${bin_name} ${main_name} )
-   target_link_libraries( ${bin_name} ${LIB_GSTROE_DEP} httputil ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+   if ( CMAKE_BUILD_TYPE STREQUAL Static OR CMAKE_BUILD_TYPE STREQUAL Cpack )
+        target_link_libraries( ${bin_name} ${LIB_GSTROE_DEP} ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+   else ()
+        target_link_libraries( ${bin_name} ${LIB_GSTROE_DEP} ganalysis ${LIB_3RD_DEP} ${LIB_SYSTEM_DEP} )
+   endif()
 endforeach()

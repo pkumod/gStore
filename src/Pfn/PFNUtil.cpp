@@ -3,7 +3,7 @@
 PFNUtil::PFNUtil() 
 {
     pthread_rwlock_init(&pfn_data_lock, NULL);
-    pfn_base_path = Util::getConfigureValue("pfn_base_path");
+    pfn_base_path = Util::getExactPath(Util::getConfigureValue("pfn_base_path").c_str()) + "/";
     pfn_cpp_path = pfn_base_path + "cpp/";
     pfn_lib_path = pfn_base_path + "lib/";
 }
@@ -199,8 +199,11 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string targetFile = targetDir + "/lib" + file_name + md5str + ".so";
     string logFile = targetDir + "/lib" + file_name + md5str + ".out";
     FileUtil::removePath(targetFile);
-    string libaray = pfn_base_path + "lib/libgpathqueryhandler.so " + pfn_base_path + "lib/libgcsr.so";
-    string cmd = "g++ -std=c++17 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " 2>" + logFile;
+    string pfn_lib = pfn_base_path + "lib/";
+    string pfn_include = pfn_base_path + "include/";
+    string libaray = pfn_lib + "libganalysis.so";
+    string cmd = "g++ -std=c++17 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " -L " + pfn_lib + " -llog4cplus" + " -I" + pfn_include + " 2>" + logFile;
+    SLOG_TRACE("fun_build g++:" << cmd);
     int status;
     status = system(cmd.c_str());
     string error_msg = "";
@@ -267,7 +270,6 @@ void PFNUtil::fun_review(const std::string &username, struct PFNInfo *pfn_info)
 std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_header)
 {
     const string fun_name = fun_info->funName;
-    const string fun_args = fun_info->funArgs;
     const string fun_subs = gutil::StringUtil::url_decode(fun_info->funSubs);
     string fun_body =  gutil::StringUtil::url_decode(fun_info->funBody);
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
@@ -292,22 +294,12 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
         _buf << fun_subs << '\n';
     }
 
-    _buf << "extern \"C\" string " + fun_name;
+    _buf << "extern \"C\" bool " + fun_name;
     #if defined(DEBUG)
     SLOG_DEBUG("fun_args: " + fun_args);
     #endif
-    if (fun_args == "1") // int uid, int vid, bool directed, vector<int> pred_set
-    {
-        _buf << "(std::vector<int> iri_set, bool directed, std::vector<int> pred_set, PathQueryHandler* queryUtil)\n";
-    }
-    else if (fun_args == "2") // int uid, int vid, bool directed, int k, vector<int> pred_set
-    {
-        _buf << "(std::vector<int> iri_set, bool directed, int k, std::vector<int> pred_set, PathQueryHandler* queryUtil)\n";
-    }
-    else
-    {
-        throw std::runtime_error("the fun_args " + fun_args + " not match: {\"1\", \"2\"}");
-    }
+     _buf << "(GAnalysis& ganalysis, const std::string& params, std::string& result)\n";
+
     bool add_brace = false;
     if (fun_body[0] != '{')
     {

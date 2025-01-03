@@ -17,7 +17,7 @@ using namespace std;
 	int s = uid;
 	std::vector<int> cnt;
 	std::vector<int> q[2];
-	int N = getVertNum();
+	int N = csrHandler->getVertNum();
 	std::vector<char> visited(N, 0);
 	size_t qsz = 1, next_qsz = 0;
 	int idx = 0, next_idx = 1;
@@ -34,15 +34,15 @@ using namespace std;
 				for (int pred : pred_set)
 				{
 					if (d)
-						sz = getOutSize(v, pred);
+						sz = csrHandler->getOutSize(v, pred);
 					else
-						sz = getInSize(v, pred);
+						sz = csrHandler->getInSize(v, pred);
 					for (int j = 0; j < sz; j++)
 					{
 						if (d)
-							n = getOutVertID(v, pred, j);
+							n = csrHandler->getOutVertID(v, pred, j);
 						else
-							n = getInVertID(v, pred, j);
+							n = csrHandler->getInVertID(v, pred, j);
 						if (visited[n] == 0)
 						{
 							if (k == 1)

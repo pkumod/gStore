@@ -33,10 +33,10 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 		int inNum, outNum, to;
 		for (int pred : pred_set)
 		{
-			outNum = getOutSize(uid, pred);
+			outNum = csrHandler->getOutSize(uid, pred);
 			for (int i = 0; i < outNum; ++i)
 			{
-				to = getOutVertID(uid, pred, i);
+				to = csrHandler->getOutVertID(uid, pred, i);
 				if (to < 0 || to >= bar.size())
 					continue;	
 				bool stacked = false;
@@ -63,10 +63,10 @@ int PathQueryHandler::bc_dfs(int uid, int vid, int &retBudget, bool directed, in
 			}
 			if (directed)
 				continue;
-			inNum = getInSize(uid, pred);
+			inNum = csrHandler->getInSize(uid, pred);
 			for (int i = 0; i < inNum; ++i)
 			{
-				to = getInVertID(uid, pred, i);
+				to = csrHandler->getInVertID(uid, pred, i);
 				if (to < 0 || to >= bar.size())
 					continue;	
 				bool stacked = false;
@@ -121,7 +121,7 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int re
 		return vector<vector<int>>();
 	vector<vector<int>> ret;
 	vector<pair<int, int>> s;
-	int size = getVertNum();
+	int size = csrHandler->getVertNum();
 	if (size == 0)
 		return vector<vector<int>>();
 	vector<int> bar(size, 0);
@@ -136,10 +136,10 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int re
 			continue;	
 		for (int pred : pred_set)
 		{
-			int inNum = getInSize(cur, pred);
+			int inNum = csrHandler->getInSize(cur, pred);
 			for (int i = 0; i < inNum; ++i)
 			{
-				int to = getInVertID(cur, pred, i);
+				int to = csrHandler->getInVertID(cur, pred, i);
 				if (to < 0)
 					continue;	
 				if (bar[to] == 0 && to != vid)
@@ -150,10 +150,10 @@ vector<vector<int>> PathQueryHandler::kHopEnumeratePath(int uid, int vid, int re
 			}
 			if (directed)
 				continue;
-			int outNum = getOutSize(cur, pred);
+			int outNum = csrHandler->getOutSize(cur, pred);
 			for (int i = 0; i < outNum; ++i)
 			{
-				int to = getOutVertID(cur, pred, i);
+				int to = csrHandler->getOutVertID(cur, pred, i);
 				if (to < 0)
 					continue;	
 				if (bar[to] == 0 && to != vid)

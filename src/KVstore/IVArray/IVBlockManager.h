@@ -18,7 +18,7 @@
  * so each block stores 4096- sizeof(unsigned) - sizeof(unsigned long) bits value
  * ======================================================================*/
 
-#include "../../Util/Util.h"
+#include "../../Util/GlobalTypedef.h"
 
 using namespace std;
 

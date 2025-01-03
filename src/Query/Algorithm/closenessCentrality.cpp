@@ -29,10 +29,10 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 		cnt++;
 		for (int pred : pred_set)
 		{
-			int outNum = getOutSize(ele, pred);
+			int outNum = csrHandler->getOutSize(ele, pred);
 			for (int i = 0; i < outNum; ++i)
 			{
-				int to = getOutVertID(ele, pred, i); // get the node
+				int to = csrHandler->getOutVertID(ele, pred, i); // get the node
 				if (dis.find(to) != dis.end())
 					continue;
 				dis[to] = dis[ele] + 1;
@@ -41,10 +41,10 @@ double PathQueryHandler::closenessCentrality(int uid, bool directed, const std::
 			}
 			if (directed)
 				continue;
-			int inNum = getInSize(ele, pred);
+			int inNum = csrHandler->getInSize(ele, pred);
 			for (int i = 0; i < inNum; ++i)
 			{
-				int to = getInVertID(ele, pred, i); // get the node
+				int to = csrHandler->getInVertID(ele, pred, i); // get the node
 				if (dis.find(to) != dis.end())
 					continue;
 				dis[to] = dis[ele] + 1;

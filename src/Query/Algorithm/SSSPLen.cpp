@@ -25,10 +25,10 @@ unordered_map<int, int> PathQueryHandler::SSSPLen(int uid, bool directed, const 
 		Q.pop();
 		for (int pred : pred_set)
 		{
-			int outNum = getOutSize(vid, pred);
+			int outNum = csrHandler->getOutSize(vid, pred);
 			for (int i = 0; i < outNum; ++i)
 			{
-				int to = getOutVertID(vid, pred, i); // get the node]
+				int to = csrHandler->getOutVertID(vid, pred, i); // get the node]
 				if (!vis.count(to))
 				{
 					vis.insert(to);
@@ -38,10 +38,10 @@ unordered_map<int, int> PathQueryHandler::SSSPLen(int uid, bool directed, const 
 			}
 			if (directed)
 				continue;
-			int inNum = getInSize(vid, pred);
+			int inNum = csrHandler->getInSize(vid, pred);
 			for (int i = 0; i < inNum; ++i)
 			{
-				int to = getInVertID(vid, pred, i);
+				int to = csrHandler->getInVertID(vid, pred, i);
 				if (!vis.count(to))
 				{
 					vis.insert(to);

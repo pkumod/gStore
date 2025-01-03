@@ -14,6 +14,8 @@ CTRL+C to quit current command. CTRL+D to exit this console.
 #include <termios.h>
 #include "../Util/Util.h"
 #include "../Api/APIConnector.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 
 using namespace std;
 
@@ -2793,7 +2795,7 @@ int funquery_handler(const vector<string>& args)
 
 	for (const PFNInfo &item : funquery_response.list)
 	{
-		rows.push_back({item.funName, item.funDesc, item.funArgs, 
+		rows.push_back({item.funName, item.funDesc, 
 						"./pfn/" + item.funName + ".cpp", item.funStatus, item.lastTime});
 	}
 	

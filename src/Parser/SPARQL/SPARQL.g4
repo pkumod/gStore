@@ -212,7 +212,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_CLUSTERCOEFF '(' (varOrIri ',')? booleanLiteral ',' predSet ')'
 |   K_MAXIMUMKPLEX '(' predSet (',' num_integer)? ')'
 |   K_CORETRUSS '(' predSet ',' num_integer ',' num_integer ')'
-|   K_PFN '(' varOrIriSet ',' booleanLiteral ',' integerLiteral ',' predSet ',' string ')'
+|   K_PFN VARNAME '(' jsonVars ')'
 |   K_KHOPCOUNT '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet ')'
 |   K_KHOPNEIGHBOR '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet (',' integerLiteral)? ')'
 |   K_SHORTESTPATHCOUNT '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
@@ -437,6 +437,10 @@ STRING_LITERAL1 : '\'' ( ~('\u0027' | '\u005C' | '\u000A' | '\u000D') | ECHAR )*
 STRING_LITERAL2 : '"'  ( ~('\u0022' | '\u005C' | '\u000A' | '\u000D') | ECHAR )* '"' ;
 STRING_LITERAL_LONG1 : '\'\'\'' ( ( '\'' | '\'\'' )? ( [^'\\] | ECHAR ) )* '\'\'\'' ;
 STRING_LITERAL_LONG2 : '"""' ( ( '"' | '""' )? ( [^"\\] | ECHAR ) )* '"""' ;
+
+jsonVar : string ':' string | string ':' '[' string ( ',' string )* ']' ;
+jsonVars : '{' jsonVar ( ',' jsonVar )* '}' ;
+
 ECHAR : '\\' ('t' | 'b' | 'n' | 'r' | 'f' | '"' | '\'') ;
 NIL : '(' WS* ')' ;
 WS : (' ' | '\t' | '\r' | '\n') ->skip ;

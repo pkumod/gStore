@@ -30,8 +30,8 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 		LPA(PathQueryHandler &_g, bool _directed, const vector<int> &_pred_set)
 			: g(_g), directed(_directed), pred_set(_pred_set), maxQ(-1)
 		{
-			nodeNum = g.getVertNum();
-			edgeNum = g.getEdgeNum();
+			nodeNum = g.csrHandler->getVertNum();
+			edgeNum = g.csrHandler->getVertNum();
 			comNum = nodeNum;
 			coms.resize(nodeNum);
 			labels.resize(nodeNum);
@@ -53,20 +53,20 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 				int maxCnt = 0, maxNum = 0;
 				for (int pred : pred_set)
 				{
-					int inNum = g.getInSize(vid, pred);
+					int inNum = g.csrHandler->getInSize(vid, pred);
 					for (int i = 0; i < inNum; ++i)
 					{
-						int to = g.getInVertID(vid, pred, i);
+						int to = g.csrHandler->getInVertID(vid, pred, i);
 						cnt[labels[to]]++;
 						if (maxCnt < cnt[labels[to]])
 							maxCnt = cnt[labels[to]];
 					}
 					if (directed)
 						continue;
-					int outNum = g.getOutSize(vid, pred);
+					int outNum = g.csrHandler->getOutSize(vid, pred);
 					for (int i = 0; i < outNum; ++i)
 					{
-						int to = g.getOutVertID(vid, pred, i);
+						int to = g.csrHandler->getOutVertID(vid, pred, i);
 						cnt[labels[to]]++;
 						if (maxCnt < cnt[labels[to]])
 							maxCnt = cnt[labels[to]];
@@ -103,19 +103,19 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 			{
 				for (int pred : pred_set)
 				{
-					int outNum = g.getOutSize(node, pred);
+					int outNum = g.csrHandler->getOutSize(node, pred);
 					for (int i = 0; i < outNum; ++i)
 					{
-						int to = g.getOutVertID(node, pred, i);
+						int to = g.csrHandler->getOutVertID(node, pred, i);
 						if (nodes.find(to) != nodes.end())
 							res++;
 					}
 					if (directed)
 						continue;
-					int inNum = g.getInSize(node, pred);
+					int inNum = g.csrHandler->getInSize(node, pred);
 					for (int i = 0; i < inNum; ++i)
 					{
-						int to = g.getInVertID(node, pred, i);
+						int to = g.csrHandler->getInVertID(node, pred, i);
 						if (nodes.find(to) != nodes.end())
 							res++;
 					}
@@ -133,11 +133,11 @@ vector<vector<int>> PathQueryHandler::labelProp(bool directed, const std::vector
 					continue;
 				for (int pred : pred_set)
 				{
-					int outNum = g.getOutSize(vid, pred);
+					int outNum = g.csrHandler->getOutSize(vid, pred);
 					res += outNum;
 					if (directed)
 						continue;
-					int inNum = g.getInSize(vid, pred);
+					int inNum = g.csrHandler->getInSize(vid, pred);
 					res += inNum;
 				}
 			}

@@ -9,7 +9,7 @@
 
 #pragma once
 #include "../EntryBlockList.h"
-#include "../../Util/Util.h"
+#include "../../Util/GlobalTypedef.h"
 #include "../../Util/SpinLock.h"
 #include "IVEntry.h"
 #include "IVBlockManager.h"

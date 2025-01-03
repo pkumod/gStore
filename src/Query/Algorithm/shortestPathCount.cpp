@@ -14,7 +14,7 @@ using namespace std;
 */
 int PathQueryHandler::shortestPathCount(int uid, int vid, bool directed, const std::vector<int> &pred_set)
 {
-	int N = getVertNum();
+	int N = csrHandler->getVertNum();
 	std::vector<int> q[2], tq[2];
 	std::vector<int> scnt(N, 0), tcnt(N, 0); // scnt[v]: s--v, number of all shortest paths
 	std::vector<int> sd(N, 0), td(N, 0);	 // sd[v]: s--v, shortest path len
@@ -52,15 +52,15 @@ int PathQueryHandler::shortestPathCount(int uid, int vid, bool directed, const s
 					for (int pred : pred_set)
 					{
 						if (d)
-							sz = getOutSize(v, pred);
+							sz = csrHandler->getOutSize(v, pred);
 						else
-							sz = getInSize(v, pred);
+							sz = csrHandler->getInSize(v, pred);
 						for (int j = 0; j < sz; j++)
 						{
 							if (d)
-								n = getOutVertID(v, pred, j);
+								n = csrHandler->getOutVertID(v, pred, j);
 							else
-								n = getInVertID(v, pred, j);
+								n = csrHandler->getInVertID(v, pred, j);
 							// if (nbr_dedup[n] != v)
 							// {
 							// 	nbr_dedup[n] = v;
@@ -109,15 +109,15 @@ int PathQueryHandler::shortestPathCount(int uid, int vid, bool directed, const s
 					for (int pred : pred_set)
 					{
 						if (d)
-							sz = getInSize(v, pred);
+							sz = csrHandler->getInSize(v, pred);
 						else
-							sz = getOutSize(v, pred);
+							sz = csrHandler->getOutSize(v, pred);
 						for (int j = 0; j < sz; j++)
 						{
 							if (d)
-								n = getInVertID(v, pred, j);
+								n = csrHandler->getInVertID(v, pred, j);
 							else
-								n = getOutVertID(v, pred, j);
+								n = csrHandler->getOutVertID(v, pred, j);
 							// if (nbr_dedup[n] != v)
 							// {
 							// 	nbr_dedup[n] = v;

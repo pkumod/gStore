@@ -255,6 +255,7 @@ namespace server
         this->ansNum = 0;
         this->outputLimit = -1;
         this->isUpdate = false;
+        this->is_pfn = false;
     }
 
     void MessageQueryResponse::toJson(nlohmann::json& json)
@@ -262,7 +263,8 @@ namespace server
         if (!this->isUpdate)
         {
             json = this->query_json;
-            json["OutputLimit"] = this->outputLimit;
+            if (!this->is_pfn)
+                json["OutputLimit"] = this->outputLimit;
             if (!this->fileName.empty())
             {
                 json["FileName"] = this->fileName;
@@ -270,9 +272,12 @@ namespace server
         }
         json["StatusCode"] = this->StatusCode;
         json["StatusMsg"] = this->StatusMsg;
-        json["AnsNum"] = this->ansNum;
-        json["ThreadId"] = this->threadId;
         json["QueryTime"] = this->queryTime;
+        if (!this->is_pfn)
+        {
+            json["AnsNum"] = this->ansNum;
+            json["ThreadId"] = this->threadId;
+        }
     }
 
     void MessageQueryResponse::toJsonString(std::string& json_str)

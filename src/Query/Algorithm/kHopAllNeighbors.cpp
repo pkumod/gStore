@@ -23,10 +23,10 @@ std::vector<int> PathQueryHandler::kHopAllNeighbors(int uid, bool direction, int
 		for (int i = 0; i < num_of_pred; ++i)
 		{
 			int x = pred_set[i];
-            num = getOutSize(temp_u, x);
+            num = csrHandler->getOutSize(temp_u, x);
             for (int j = 0; j < num; ++j)
             {
-                int t = getOutVertID(temp_u, x, j);
+                int t = csrHandler->getOutVertID(temp_u, x, j);
                 nl.insert(t);
                 auto vit = dis_u.find(t);
                 if (vit == dis_u.end())
@@ -41,10 +41,10 @@ std::vector<int> PathQueryHandler::kHopAllNeighbors(int uid, bool direction, int
             }
 			if (!direction)
 			{
-				num = getInSize(temp_u, x);
+				num = csrHandler->getInSize(temp_u, x);
 				for (int j = 0; j < num; ++j)
 				{
-					int t = getInVertID(temp_u, x, j);
+					int t = csrHandler->getInVertID(temp_u, x, j);
 					nl.insert(t);
 					auto vit = dis_u.find(t);
 					if (vit == dis_u.end())

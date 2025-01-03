@@ -479,6 +479,12 @@ public:
   virtual void enterBlankNode(SPARQLParser::BlankNodeContext *ctx) = 0;
   virtual void exitBlankNode(SPARQLParser::BlankNodeContext *ctx) = 0;
 
+  virtual void enterJsonVar(SPARQLParser::JsonVarContext *ctx) = 0;
+  virtual void exitJsonVar(SPARQLParser::JsonVarContext *ctx) = 0;
+
+  virtual void enterJsonVars(SPARQLParser::JsonVarsContext *ctx) = 0;
+  virtual void exitJsonVars(SPARQLParser::JsonVarsContext *ctx) = 0;
+
 
 };
 
