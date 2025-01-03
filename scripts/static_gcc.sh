@@ -10,7 +10,7 @@ architecture=`uname -m`
 version=1.4
 product_name=gStore
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
-static_pkg_name="$product_name_lower-$version-static-$os-$architecture"
+static_pkg_name="$product_name_lower-$version-static-gcc-$os-$architecture"
 
 echo "系统: $os"
 echo "架构: $architecture"
