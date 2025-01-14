@@ -633,7 +633,8 @@ bool ResultSet::to_NT_TRIPLE_JSON(nlohmann::json& json_data)
 					continue;
 				result_data.emplace_back(ans_str);
 			}
-			json_data["results"].emplace_back(result_data);
+			if (!result_data.empty())
+				json_data["results"].emplace_back(result_data);
 		}
 	}
 	return true;

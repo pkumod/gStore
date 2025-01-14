@@ -1314,6 +1314,12 @@ int raw_sparql_handler(string sparql)
 					}
 		        }
 		    }
+			else if (str.size() >= 8 && str.substr(0, 8) == "pfn_type")
+			{
+				std::cout << str.substr(8, -1) << std::endl;
+				cout << "pfn query use " << query_response.queryTime << " ms." << endl;
+				return 0;
+			}
 		}
 		Util::printConsole(query_response.head, query_response.results);
 		cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;

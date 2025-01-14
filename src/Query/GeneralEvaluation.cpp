@@ -2051,6 +2051,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				}
 				else if (proj[0].aggregate_type == ProjectionVar::PFN_type)
 				{
+					prepPathQuery();
 					new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = pfnQuery(proj[0].path_args.pfn_name, proj[0].path_args.pfn_params, ret_result.getUsername());
 				}
 			}
@@ -2539,6 +2540,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					}
 					else if (proj[i].aggregate_type == ProjectionVar::PFN_type)
 					{
+						prepPathQuery();
 						new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = pfnQueryByVar(proj[i].path_args.pfn_name, proj[i].path_args.pfn_params, ret_result.getUsername(), result0, begin, end, result0_id_cols);
 					}
 					else	// Path query
