@@ -48,7 +48,7 @@ RUN mkdir -p build
 
 RUN cd build && cmake ..
 
-RUN cd build && make pre && make -j$(nproc)
+RUN cd build && make pre && make -j$(nproc) && make pfnbuild
 
 FROM ubuntu:20.04 AS runtime
 
@@ -75,8 +75,6 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /usr/src/gstore/bin/ /gstore/bin/
 COPY --from=builder /usr/src/gstore/pfn/ /gstore/pfn/
 COPY --from=builder /usr/src/gstore/lib/ /gstore/lib/
-COPY --from=builder /usr/src/gstore/src/Query/Algorithm/PathQueryHandler.h /gstore/src/Query/Algorithm/PathQueryHandler.h
-COPY --from=builder /usr/src/gstore/src/Database/CSR.h /gstore/src/Database/CSR.h
 # configure files
 COPY --from=builder /usr/src/gstore/conf/ /gstore/conf/
 COPY --from=builder /usr/src/gstore/data/ /gstore/data/
