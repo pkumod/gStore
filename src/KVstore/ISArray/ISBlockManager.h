@@ -10,6 +10,7 @@
  * so each block stores 4096- 2 * sizeof(unsigned) bits value
  * ======================================================================*/
 
+#pragma once
 #include "../../Util/GlobalTypedef.h"
 
 using namespace std;

@@ -6,6 +6,8 @@
 # Description: defines the class for parsing SPARQL queries based on ANTLR4
 =============================================================================*/
 
+#pragma once
+
 #include <typeinfo>
 
 #include "antlr4-runtime.h"

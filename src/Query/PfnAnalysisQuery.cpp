@@ -11,6 +11,7 @@
  */
 #include "GeneralEvaluation.h"
 #include "../Pfn/GAnalysis.h"
+#include "../Database/TaskManager.h"
 
 typedef bool (*pfn_analysis_name)(GAnalysis&, const std::string&, std::string&);
 
@@ -46,6 +47,7 @@ void GeneralEvaluation::pfnConvertVar(std::vector<std::pair<std::string, vector<
 		return;
 	for (auto& m : varList[pos].second)
 	{
+        task_event.checkOpCancel();
 		std::string vid_str = kvstore->getStringByID(m);
 		if (vid_str.empty())
 			continue;
@@ -92,7 +94,10 @@ std::string GeneralEvaluation::pfnQueryByVar(const std::string& pfn_name, const 
 							varL.second.push_back(result0.result[j].id[var2temp]);
 					}
 					if (varL.second.size() > 0)
-						varList.push_back(varL);
+                    {
+                        SLOG_CORE("var size:" << varL.second.size());
+                        varList.push_back(varL);
+                    }
 				}
 			}
 		}
@@ -101,9 +106,12 @@ std::string GeneralEvaluation::pfnQueryByVar(const std::string& pfn_name, const 
 		nlohmann::json param_json = json;
 		pfnConvertVar(varList, param_jsons, param_json, 0);
 
+        SLOG_CORE("pfn var param size:" << param_jsons.size());
+
 		nlohmann::json result_s = nlohmann::json::array();
 		for (auto&m : param_jsons)
 		{
+            task_event.checkOpCancel();
             std::string result_str = excutePfnSoFile(pfn_name, sofile, m);
 			try
 			{
@@ -205,7 +213,22 @@ std::string GeneralEvaluation::excutePfnSoFile(const std::string& fun_name, cons
     
     GAnalysis ganalysis(kvstore, pqHandler->getCSRHandler());
     std::string result;
-    bool success = p_fun(ganalysis, pfn_params, result);
+    try
+	{
+        bool success = p_fun(ganalysis, pfn_params, result);
+    }
+    catch (const std::exception &e)
+    {
+		string content = "run dynamic function fail: " + string(e.what());
+        SLOG_ERROR(content);
+		throw runtime_error(content);
+    }
+	catch (...)
+	{
+		string content = "run dynamic function fail: unknown error";
+		SLOG_ERROR(content);
+		throw runtime_error(content);
+	}
     dlclose(handle);
     SLOG_CORE("result: " + result);
     return result;

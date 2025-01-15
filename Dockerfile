@@ -41,7 +41,7 @@ WORKDIR /usr/src/gstore
 
 RUN mkdir .tmp 
 
-# Copy gStore source code; run `make tarball` to generate this file
+# Copy gStore source code; run `make tarball` or bash scripts/tarball.sh to generate this file
 ADD gstore.tar.gz /usr/src/gstore
 
 RUN mkdir -p build
@@ -78,14 +78,9 @@ COPY --from=builder /usr/src/gstore/lib/ /gstore/lib/
 # configure files
 COPY --from=builder /usr/src/gstore/conf/ /gstore/conf/
 COPY --from=builder /usr/src/gstore/data/ /gstore/data/
-# COPY --from=builder /usr/src/gstore/api/ /gstore/api/
-# COPY --from=builder /usr/src/gstore/scripts/ /gstore/scripts/
-# COPY --from=builder /usr/src/gstore/docs/ /gstore/docs/
 COPY --from=builder /usr/src/gstore/README.md /gstore/README.md
 COPY --from=builder /usr/src/gstore/README_ZH.md /gstore/README_ZH.md
 COPY --from=builder /usr/src/gstore/LICENSE /gstore/LICENSE
-# Entry Point Script
-# COPY scripts/docker-entrypoint.sh /
 
 WORKDIR /gstore/
 VOLUME [ "/gstore/" ]
@@ -93,7 +88,8 @@ VOLUME [ "/gstore/" ]
 RUN echo "*    -    nofile    65535" >> /etc/security/limits.conf \
  && echo "*    -    noproc    65535" >> /etc/security/limits.conf \
  && echo "/gstore/lib" >> /etc/ld.so.conf.d/libgstore.conf \
- && echo "/gstore/pfn/lib" >> /etc/ld.so.conf.d/libgstore.conf 
+ && echo "/gstore/pfn/lib" >> /etc/ld.so.conf.d/libgstore.conf \
+ && ldconfig
 EXPOSE 9000
 
 # For example: 

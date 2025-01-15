@@ -56,7 +56,7 @@ class TempResult
 		void doOptional(std::vector<bool> &binding, TempResult &x, TempResult &rn, TempResult &ra, bool add_no_binding);
 		void doMinus(TempResult &x, TempResult &r);
 
-        void doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max());
+        void doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max(), Task::OperationTaskEvent task = Task::OperationTaskEvent());
 		void doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset);
 
 		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel = true);

@@ -71,44 +71,12 @@ set( LIB_GSTROE_DEP
         httputil
 )
 set( BIN_LIST
-        # gadd
-        # gbackup
-        # gbuild
-        gconsole
-        # gdrop
-        # gexport
-        # ghttp
-        # ginit
-        # gmonitor          
-        # gquery      
-        # grestore     
-        gserver         
-        # gserver     
-        # gserver_backup_scheduler     
-        # gshow     
-        # gsub
-        # greason
-        # glicense     
+        gconsole 
+        gserver           
 )
 set( MAIN_LIST 
-        # gadd.cpp  
-        # gbackup.cpp 
-        # gbuild.cpp   
         gconsole.cpp 
-        # gdrop.cpp   
-        # gexport.cpp                  
-        # ghttp.cpp 
-        # ginit.cpp 
-        # gmonitor.cpp 
-        # gquery.cpp  
-        # grestore.cpp 
         grpc.cpp     
-        # gserver.cpp 
-        # gserver_backup_scheduler.cpp 
-        # gshow.cpp
-        # gsub.cpp
-        # greason.cpp
-        # glicense.cpp
 )
 include_directories( ${INCLUDE_3RD_PATH} )
 link_directories( 
@@ -137,7 +105,6 @@ add_library( ganalysis SHARED
         ../Util/INIParser.cpp
         ../Util/FileUtil.cpp
         ../Util/Latch.cpp
-        ../Util/GlobalTypedef.cpp
         ../Util/Version.cpp
         ../Util/Transaction.cpp
         ../Util/IDTriple.cpp

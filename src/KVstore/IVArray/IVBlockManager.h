@@ -17,6 +17,7 @@
  * (unsigned long) records the length of string
  * so each block stores 4096- sizeof(unsigned) - sizeof(unsigned long) bits value
  * ======================================================================*/
+#pragma once
 
 #include "../../Util/GlobalTypedef.h"
 

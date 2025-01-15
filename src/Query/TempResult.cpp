@@ -1266,14 +1266,16 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 	return ret_femv;
 }
 
-void TempResult::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_number) {
+void TempResult::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_number, Task::OperationTaskEvent task) {
     unsigned original_size = this->result.size();
     unsigned delete_num = 0, save_num = 0;
 
     Varset this_varset = this->getAllVarset();
     int this_id_cols = this->id_varset.getVarsetSize();
 
-    for (unsigned i = 0; save_num < limit_number && i < original_size-delete_num;) {
+    for (unsigned i = 0; save_num < limit_number && i < original_size-delete_num;)
+	{
+		task.checkOpCancel();
 		bool isel = true;
 		if (!filter.varset.vars.empty())
 			isel = entity_literal_varset.findVar(filter.varset.vars[0]);
@@ -1557,8 +1559,9 @@ void TempResultSet::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore
 	unsigned before_size = results[0].result.size();
     long tv_begin = gutil::TimeUtil::timestamp();
 
-    for (int i = 0; i < (int) this->results.size(); i++) {
-        this->results[i].doFilter(filter, kvstore, entity_literal_varset, limit_num);
+    for (int i = 0; i < (int) this->results.size(); i++)
+	{
+        this->results[i].doFilter(filter, kvstore, entity_literal_varset, limit_num, task_event);
     }
 
     long tv_end = gutil::TimeUtil::timestamp();
