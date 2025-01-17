@@ -339,9 +339,6 @@ void GRPCResp::String(const std::string &str)
         SLOG_CORE(strstream.str());
     }
     size_t buf_size = str.size();
-    // std::vector<Bytef> buf_data;
-    // buf_data.resize(buf_size);
-    // std::copy(str.begin(), str.end(), buf_data.begin());
     const void *buf = str.c_str();
     auto *compress_data = malloc(buf_size*2);
     size_t compress_size = 0;
@@ -546,6 +543,11 @@ int GRPCResp::compress(const void *buf, const size_t& buf_size, void *compress_d
     {
         if (headers["Content-Encoding"].find("gzip") != std::string::npos)
         {
+            if (buf_size <= 256)
+            {
+                headers["Content-Encoding"] = "";
+                return StatusNoComrpess;
+            }
             if (compress_data != nullptr)
             {
                 int rt = CompressUtil::GzipHelper::compress(buf, buf_size, compress_data, compress_size);
