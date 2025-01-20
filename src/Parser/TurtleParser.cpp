@@ -349,6 +349,15 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
                if (token=="false") return False;
                return Name;
             } else {
+               if ((unsigned char)c > 0x80)
+               {// chinese
+                  token=c;
+                  while (read(c)) {
+                     if (issep(c)) { unread(); break; }
+                     token+=c;
+                  }
+                  return Name;
+               }
                stringstream msg;
                msg << "lexer error in line " << line << ": unexpected character " << c;
                throw Exception(msg.str());
