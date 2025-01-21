@@ -501,13 +501,13 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					for (auto pred : iriOrNegiri)
 					{
 						string prefixedPred = pred->getText();
-						replacePrefix(prefixedPred);
 						bool is_nei = false;
 						if (prefixedPred[0] == '!')
 						{
 							prefixedPred = pred->getText().substr(1);
 							is_nei = true;
 						}
+						replacePrefix(prefixedPred);
 						if (is_nei)
 						{
 							proj_var.path_args.neg_pred_set.push_back(prefixedPred);
