@@ -851,13 +851,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				for (auto pred : iriOrNegiri)
 				{
 					string prefixedPred = pred->getText();
-					replacePrefix(prefixedPred);
 					bool is_nei = false;
 					if (prefixedPred[0] == '!')
 					{
 						prefixedPred = pred->getText().substr(1);
 						is_nei = true;
 					}
+					replacePrefix(prefixedPred);
 					if (is_nei)
 					{
 						(curr_node.path_args).neg_pred_set.push_back(prefixedPred);
