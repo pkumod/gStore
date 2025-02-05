@@ -2320,30 +2320,46 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		this->triples_num = j;
 	t1 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish removing duplicate tuples, used " + to_string(t1 - t2) + "ms.");
-	// copy the id tuples to the other two arrays
-	ID_TUPLE* tmp_array_1 = new ID_TUPLE[this->triples_num];
-	ID_TUPLE* tmp_array_2 = new ID_TUPLE[this->triples_num];
-	std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_1);
-	std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_2);
-	std::shared_ptr<ID_TUPLE[]> _p_id_tuples_1(tmp_array_1, std::default_delete<ID_TUPLE[]>());
-	std::shared_ptr<ID_TUPLE[]> _p_id_tuples_2(tmp_array_2, std::default_delete<ID_TUPLE[]>());
-	t2 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish copying id tuples, used " + to_string(t2 - t1) + "ms.");
+	if (Util::getConfigureValue("build_multi_thread") == "off")
+	{
+		t2 = gutil::TimeUtil::timestamp();
+		build_s2xx(_p_id_tuples);
+		build_o2xx(_p_id_tuples);
+		build_p2xx(_p_id_tuples);
+		t1 = gutil::TimeUtil::timestamp();
+		SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
+		bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
+		bar.set_progress(99);
+		// WARN:we must free the memory for id_tuples array
+		_p_id_tuples.reset();
+	}
+	else
+	{
+		// copy the id tuples to the other two arrays
+		ID_TUPLE* tmp_array_1 = new ID_TUPLE[this->triples_num];
+		ID_TUPLE* tmp_array_2 = new ID_TUPLE[this->triples_num];
+		std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_1);
+		std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_2);
+		std::shared_ptr<ID_TUPLE[]> _p_id_tuples_1(tmp_array_1, std::default_delete<ID_TUPLE[]>());
+		std::shared_ptr<ID_TUPLE[]> _p_id_tuples_2(tmp_array_2, std::default_delete<ID_TUPLE[]>());
+		t2 = gutil::TimeUtil::timestamp();
+		SLOG_CORE("Finish copying id tuples, used " + to_string(t2 - t1) + "ms.");
 
-	thread build_s2value_thread(&Database::build_s2xx, this, _p_id_tuples);
-	thread build_o2value_thread(&Database::build_o2xx, this, _p_id_tuples_1);
-	thread build_p2value_thread(&Database::build_p2xx, this, _p_id_tuples_2);
-	build_s2value_thread.join();
-	build_o2value_thread.join();
-	build_p2value_thread.join();
-	t1 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
-	bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
-	bar.set_progress(99);
-	// WARN:we must free the memory for id_tuples array
-	_p_id_tuples.reset();
-	_p_id_tuples_1.reset();
-	_p_id_tuples_2.reset();
+		thread build_s2value_thread(&Database::build_s2xx, this, _p_id_tuples);
+		thread build_o2value_thread(&Database::build_o2xx, this, _p_id_tuples_1);
+		thread build_p2value_thread(&Database::build_p2xx, this, _p_id_tuples_2);
+		build_s2value_thread.join();
+		build_o2value_thread.join();
+		build_p2value_thread.join();
+		t1 = gutil::TimeUtil::timestamp();
+		SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
+		bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
+		bar.set_progress(99);
+		// WARN:we must free the memory for id_tuples array
+		_p_id_tuples.reset();
+		_p_id_tuples_1.reset();
+		_p_id_tuples_2.reset();
+	}
 
 	bool flag = this->saveDBInfoFile();
 	if (!flag)
