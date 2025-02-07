@@ -199,7 +199,7 @@ namespace server
             for (std::string rdf_file : nt_files)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
-                success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
+                success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr, clusterlog);
             }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
