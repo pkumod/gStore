@@ -1144,7 +1144,7 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 
     while(old_p_offset < old_p_len)
     {
-		SLOG_CORE(" old_p_offset < old_p_len ");
+		//SLOG_CORE(" old_p_offset < old_p_len ");
         int next_o_offset;
         if(old_p_offset + 3 > old_p_len){
             next_o_offset = _len; //to the last pid
@@ -1167,7 +1167,6 @@ KVstore::Remove_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
         old_p_offset += 2;
     }
     _values[0] = o_offset - old_p_len;
-    //cout << o_offset << " " << old_p_len << " " << _values[0] << endl;
     int deleted_pre_num = _tmp[1] - pre_num;
     _values[1] = pre_num;
     _values[2] = entity_num;
