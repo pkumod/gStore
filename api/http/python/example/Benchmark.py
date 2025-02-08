@@ -1,128 +1,145 @@
 """
 # Filename: Benchmark.py
-# Author: suxunbin
-# Last Modified: 2019-5-15 20:11
-# Description: a simple example of multi-thread query
+# Author: wangjian
+# Last Modified: 2025-01-09 15:08
+# Description: Functional and performance testing based on the specified benchmark datasets
 """
-import threading
+import time
+import json
 import sys
-sys.path.append('../src')
+sys.path.append('./src')
 import GstoreConnector
 
-# before you run this example, make sure that you have started up ghttp service (using bin/ghttp db_name port)
+# before you run this benchmark testing, make sure that you have started up api service (using bin/gserver -b)
 # default db_name: lubm(must be built in advance)
 
 IP = "127.0.0.1"
 Port = 9000
-httpType = "ghttp"
 username = "root"
 password = "123456"
-tnum = 1000
-correctness = True
-RequestType = "POST"
+load_num = 10
+query_num = 10
+# base_path
+#   ├── lubm10m
+#   │   ├── 1k.nt
+#   │   ├── 10k.nt
+#   │   ├── 100k.nt
+#   │   ├── lubm_q1.rq - lubm_q14.rq (14 queries)
+base_path = "path_to_test_dir"
+db_name = "lubm10m"
+# query files, 14 queries in total
+sparqls = [
+    "lubm_q1.rq", 
+    "lubm_q2.rq", 
+    "lubm_q3.rq", 
+    "lubm_q4.rq", 
+    "lubm_q5.rq", 
+    "lubm_q6.rq", 
+    "lubm_q7.rq", 
+    "lubm_q8.rq", 
+    "lubm_q9.rq", 
+    "lubm_q10.rq", 
+    "lubm_q11.rq", 
+    "lubm_q12.rq", 
+    "lubm_q13.rq", 
+    "lubm_q14.rq"
+    ]
+# batch update files, 3 data files in total
+batch_updates = ["1k.nt", "10k.nt", "100k.nt"]
 
-threads = []
-result = [15, 0, 828, 27, 27, 5916]
-sparql = []
-sparql0 = "select ?x where\
-            {\
-             ?x   <ub:name> <FullProfessor0> .\
-            }"
-sparql1 = "select distinct ?x where\
-            {\
-            ?x <rdf:type>  <ub:GraduateStudent>.\
-            ?y <rdf:type>  <ub:GraduateStudent>.\
-            ?z <rdf:type>  <ub:GraduateStudent>.\
-            ?x <ub:memberOf>  ?z.\
-            ?z <ub:subOrganizationOf> ?y.\
-            ?x <ub:undergaduateDegreeFrom> ?y.\
-            }"
-sparql2 = "select distinct ?x where\
-            {\
-            ?x   <rdf:type>  <ub:Course>.\
-            ?x   <ub:name>   ?y.\
-            }"
-sparql3 = "select ?x where\
-            {\
-            ?x   <rdf:type>  <ub:UndergraduateStudent>.\
-            ?y   <ub:name>  <Course1>.\
-            ?x   <ub:takesCourse>  ?y.\
-            ?z   <ub:teacherOf>  ?y.\
-            ?z   <ub:name>  <FullProfessor1>.\
-            ?z   <ub:worksFor>   ?w.\
-            ?w   <ub:name>    <Department0>.\
-            }"
-sparql4 = "select distinct ?x where\
-            {\
-            ?x   <rdf:type>  <ub:UndergraduateStudent>.\
-            ?y   <ub:name>   <Course1>.\
-            ?x   <ub:takesCourse>  ?y.\
-            ?z   <ub:teacherOf>  ?y.\
-            ?z   <ub:name>  <FullProfessor1>.\
-            ?z   <ub:worksFor>  ?w.\
-            ?w   <ub:name>  <Department0>.\
-            }"
-sparql5 = "select distinct ?x where\
-            {\
-            ?x    <rdf:type>    <ub:UndergraduateStudent>.\
-            }"
+# build
+def build(gc):
+    # drop the database
+    res = gc.drop(db_name)
+    # build the database
+    startTime = time.perf_counter()
+    res = gc.build(db_name, base_path + db_name + "/" + db_name + ".nt")
+    endTime = time.perf_counter()
+     # convert time to ms and print
+    costTime = round((endTime - startTime) * 1000)
+    print("build cost time(ms): " + str(costTime))
+    res = gc.monitor(db_name)
+    json_obj = json.loads(res)
+    triple_num = int(json_obj['tripleNum'])
+    build_perf = round(triple_num / (endTime - startTime))
+    print("build number of triples: " + json_obj['tripleNum'])
+    print("build performance(triples/s): " + str(build_perf))
 
-# thread function
-def Mythread(rnum, sparql, filename, RequestType):
-    global correctness
-    
-    # query
-    gc = GstoreConnector.GstoreConnector(IP, Port, username, password, http_type=httpType)
-    res = gc.query("lubm", "json", sparql, RequestType)
+def load(gc):
+    # load the database
+    startTime = time.perf_counter()
+    res = gc.load(db_name)
+    endTime = time.perf_counter()
+     # convert time to ms and print
+    costTime = round((endTime - startTime) * 1000)
+    return costTime
 
-    # fquery
-    #gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
-    #gc.fquery("lubm", "json", sparql, filename, RequestType)
-    #with open(filename, "r") as f:
-    #    res = f.read()
+def unload(gc):
+    # unload the database
+    gc.unload(db_name)
 
-    # count the nums
-    m = 0
-    for i in range(len(sparql)):
-        if (sparql[i] == "?"):
-            m = m + 1        
-        if (sparql[i] == "{"):
-            break
-    n = 0
-    for i in range(len(res)):
-        if (res[i] == "{"):
-            n = n + 1
-    Num = (n-3)/(m+1)
-    
-    # compare the result
-    if (rnum != Num):
-        correctness = False
-        print("sparql: "+sparql)
-        print("Num: "+str(Num))
-    
-# create sparql
-sparql.append(sparql0)
-sparql.append(sparql1)
-sparql.append(sparql2)
-sparql.append(sparql3)
-sparql.append(sparql4)
-sparql.append(sparql5)
+def query(gc, sparql):
+    costTimes = [None] * query_num
+    for i in range(query_num):
+        res = gc.query(db_name, sparql)
+        json_obj = json.loads(res)
+        costTimes[i] = int(json_obj['QueryTime'])
+    average = sum(costTimes) / len(costTimes)
+    return average
 
-#create the threads
-for i in range(tnum):
-    filename = "result/res" + str(i) + ".txt"
-    t = threading.Thread(target=Mythread, args=(result[i%6],sparql[i%6],filename, RequestType,))
-    threads.append(t)
 
-# start threads
-for i in threads:
-    i.start()  
+def testLoad(gc):
+    costTimes = [None] * load_num
+    for i in range(load_num):
+        unload(gc)
+        costTimes[i] = load(gc)
+        time.sleep(1)
+    averageTime = sum(costTimes) / len(costTimes)
+    print("load average time(ms): " + str(averageTime))
+    res = gc.monitor(db_name)
+    json_obj = json.loads(res)
+    triple_num = int(json_obj['tripleNum'])
+    build_perf = round(triple_num / averageTime) * 1000
+    print("load performance(triples/s): " + str(build_perf))
 
-# wait for the threads
-for i in threads:
-    i.join()
+def testQuery(gc):
+    for sparql in sparqls:
+        file_path = base_path + db_name + "/" + sparql
+        sparql_str = open(file_path, 'r').read()
+        average = query(gc, sparql_str)
+        print("["+sparql+"] average time(ms): " + str(average))
+        time.sleep(1)
 
-if (correctness == True):
-    print("The answers are correct!")
-else:
-    print("The answers exist errors!")
+def testBatchInsertAndBatchRemove(gc):
+    res = gc.backup(db_name)
+    json_obj = json.loads(res)
+    backup_file_path = json_obj['backupfilepath']
+    for file in batch_updates:
+        startTime = time.perf_counter()
+        res = gc.batchRemove(db_name, base_path + db_name + "/" + file)
+        endTime = time.perf_counter()
+        costTime = (endTime - startTime) * 1000
+        print("batch remove [" + file +"] cost time(ms): " + str(costTime))
+        json_obj = json.loads(res)
+        remove_num = json_obj['success_num']
+        remove_perf = round(remove_num / (endTime - startTime))
+        print("batch remove [" + file +"] performance(triples/s): " + str(remove_perf))
+
+    for file in batch_updates:
+        startTime = time.perf_counter()
+        res = gc.batchInsert(db_name, base_path + db_name + "/" + file)
+        endTime = time.perf_counter()
+        costTime = round((endTime - startTime) * 1000)
+        print("batch insert [" + file +"] cost time(ms): " + str(costTime))
+        json_obj = json.loads(res)
+        insert_num = json_obj['success_num']
+        insert_perf = round(insert_num / (endTime - startTime))
+        print("batch insert [" + file +"] performance(triples/s): " + str(insert_perf))
+
+# connect to gstore
+gc = GstoreConnector.GstoreConnector(IP, Port, username, password)
+
+build(gc)
+testLoad(gc)
+testQuery(gc)
+testBatchInsertAndBatchRemove(gc)
