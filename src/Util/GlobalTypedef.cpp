@@ -49,16 +49,18 @@ std::string GlobalTypedef::sys_uname()
     return global_config["system_username"];
 }
 
-int32_t GlobalTypedef::backup_interval()
-{
-    std::string backup_time = global_config["backup_time"];
-    return atoi(backup_time.c_str());
-}
 int32_t GlobalTypedef::backup_max()
 {
     std::string max_backups = global_config["max_backups"];
     return atoi(max_backups.c_str());
 }
+
+int32_t GlobalTypedef::thread_num()
+{
+    std::string thread_num = global_config["thread_num"];
+    return atoi(thread_num.c_str());
+}
+
 bool GlobalTypedef::isEnabledFor(log4cplus::LogLevel ll)
 {
     return _logger.isEnabledFor(ll);

@@ -745,6 +745,21 @@ void initialServer(uint16_t port, bool background)
 		SLOG_INFO("cluster status off");
 	}
 	GRPCServer grpcServer;
+	// grpc server global setting
+	const int32_t thread_num = GlobalTypedef::thread_num();
+	const struct WFGlobalSettings setting = {
+		.endpoint_params	=	ENDPOINT_PARAMS_DEFAULT,
+		.dns_server_params	=	ENDPOINT_PARAMS_DEFAULT,
+		.dns_ttl_default	=	12 * 3600,
+		.dns_ttl_min		=	180,
+		.dns_threads		=	4,
+		.poller_threads		=	4,
+		.handler_threads	=	thread_num,
+		.compute_threads	=	-1,
+		.resolv_conf_path	=	"/etc/resolv.conf",
+		.hosts_path			=	"/etc/hosts",
+	};
+	WFGlobal::set_global_settings(&setting);
 	// register rest service
 	register_service(grpcServer);
 	int max_try = 30;

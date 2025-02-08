@@ -146,9 +146,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
     // backup
     Util::setGlobalConfig(ini_parser, "backup", "backup_path", "./backups/");
-    Util::setGlobalConfig(ini_parser, "backup", "auto_backup", "0");
-    Util::setGlobalConfig(ini_parser, "backup", "max_backups", "4");
-    Util::setGlobalConfig(ini_parser, "backup", "backup_time", "72000");
+    Util::setGlobalConfig(ini_parser, "backup", "max_backups", "3");
     // upload
     Util::setGlobalConfig(ini_parser, "upload", "upload_path", "./upload/");
     Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size", "1073741824");

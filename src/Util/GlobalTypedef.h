@@ -346,8 +346,8 @@ public:
 	static std::string upload_path();
 	static std::string root_uname();	
 	static std::string sys_uname();
-	static int32_t backup_interval();
 	static int32_t backup_max();
+	static int32_t thread_num();
 	static bool isEnabledFor(log4cplus::LogLevel ll);
 };
 
