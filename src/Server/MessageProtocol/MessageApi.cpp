@@ -410,7 +410,7 @@ namespace server
             nlohmann::json temp;
             for (auto &m : this->subjectList)
             {
-                temp["name"] = m.first;
+                temp["name"] = Util::clear_angle_brackets(m.first);
                 temp["value"] = m.second;
                 json["subjectList"].push_back(temp);
             }
