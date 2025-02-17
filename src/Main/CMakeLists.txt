@@ -15,7 +15,7 @@ if ( CMAKE_BUILD_TYPE STREQUAL Static OR CMAKE_BUILD_TYPE STREQUAL Cpack )
                 dl
                 gcov
         )
-elseif(CMAKE_BUILD_TYPE STREQUAL StaticGcc)
+elseif(CMAKE_BUILD_TYPE STREQUAL StaticGcc OR CMAKE_BUILD_TYPE STREQUAL CpackGcc )
         set( LIB_SYSTEM_DEP
                 boost_thread.a
                 boost_system.a

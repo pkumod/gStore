@@ -23,7 +23,8 @@ echo "start clean build-------"
 rm -rf build
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Cpack
+cmake .. -DCMAKE_BUILD_TYPE=CpackGcc
 make pre
 make -j$(nproc)
+bash ./scripts/pfn_build.sh
 cpack
