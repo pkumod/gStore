@@ -2034,9 +2034,9 @@ int setpswd_handler(const vector<string> &args)
 	else 
 	{
 		server::MessageUserManageRequest password_request(3, tar_usr, new_pswd);
-		server::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
 		password_request.username = root_username;
 		password_request.password = root_password;
+		server::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
 		if (!password_response.success()) 
 		{
 			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
