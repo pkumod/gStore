@@ -3139,7 +3139,9 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				{
 					server::MessageLicenseResponse respData(server::StatusCode::StatusOK, msg);
 					respData.json = apiUtil->get_license();
-					resp->Json(respData.json);
+					nlohmann::json license_json;
+					respData.toJson(license_json);
+					resp->Json(license_json);
 				}
 				else 
 				{
