@@ -26,5 +26,5 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=CpackGcc
 make pre
 make -j$(nproc)
-bash ./scripts/pfn_build.sh
+make pfnbuild
 cpack
