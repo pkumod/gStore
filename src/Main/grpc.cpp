@@ -722,7 +722,7 @@ void initialServer(uint16_t port, bool background)
 	ofp.close();
 	sleep(1);
 	if (clusterManagerPtr->isEnable()) {
-		SLOG_INFO("cluster status on");
+		SLOG_DEBUG("cluster status on");
 		clusterManagerPtr->init();
 		std::vector<std::string> headers = {"name", "value"};
 		std::vector<std::vector<std::string>> rows;
@@ -742,7 +742,7 @@ void initialServer(uint16_t port, bool background)
 		}
 		Util::printConsole(headers, rows);
 	} else {
-		SLOG_INFO("cluster status off");
+		SLOG_DEBUG("cluster status off");
 	}
 	GRPCServer grpcServer;
 	// grpc server global setting
@@ -1571,14 +1571,18 @@ void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
 			{"StatusCode", 0},
 			{"StatusMsg", "login successfully"}
 		};
-		string licensetype;
-		if (apiUtil->get_license().type == "0") 
+		string licensetype = apiUtil->get_license().type;
+		if (licensetype == "0") 
 		{
 			licensetype = "trial";
 		}
-		else
+		else if(licensetype == "1")
 		{
 			licensetype = "official";
+		} 
+		else 
+		{
+			licensetype = "opensource";
 		}
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
@@ -1609,14 +1613,18 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
-		string licensetype;
-		if (apiUtil->get_license().type == "0") 
+		string licensetype = apiUtil->get_license().type;
+		if (licensetype == "0") 
 		{
 			licensetype = "trial";
 		}
-		else
+		else if(licensetype == "1")
 		{
 			licensetype = "official";
+		} 
+		else 
+		{
+			licensetype = "opensource";
 		}
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
@@ -1643,6 +1651,20 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
+		string licensetype = apiUtil->get_license().type;
+		if (licensetype == "0") 
+		{
+			licensetype = "trial";
+		}
+		else if(licensetype == "1")
+		{
+			licensetype = "official";
+		} 
+		else 
+		{
+			licensetype = "opensource";
+		}
+		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["type"] = HTTP_TYPE;
 		response->Json(resp_data);
