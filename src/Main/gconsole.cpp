@@ -249,7 +249,7 @@ COMMAND commands[] =
 #define PRINT_ENTER_HELP_MSG                                                                                                 \
 	cout << product_name << " Ver " << product_version << " for Linux on x86_64 (Source distribution)" << endl;                         \
 	cout << product_name << " Console(gconsole), an interactive shell based utility to communicate with " << product_name_lower << " repositories." << endl; \
-	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;                                               \
+	cout << "Copyright (c) 2016-"<< current_year << ", pkumod and topgraph and/or its affiliates." << endl;                                               \
 	cout << "" << endl;                                                                                                      \
 	cout << "Usage: bin/gconsole [OPTIONS]" << endl;                                                                         \
 	cout << "  -?, --help          Display this help and exit." << endl;                                                     \
@@ -268,7 +268,7 @@ COMMAND commands[] =
 	return -1;
 #define PRINT_VERSION                                                               \
 	cout << product_name<<" version: " << product_version << " Source distribution" << endl; \
-	cout << "Copyright (c) 2016, 2024, pkumod and topgraph and/or its affiliates." << endl;
+	cout << "Copyright (c) 2016-" << current_year << ", pkumod and topgraph and/or its affiliates." << endl;
 #define CHECK_CURRENT_DB_LOADED                                                                                    \
 	if (_current_database.empty())                                                                                     \
 	{                                                                                                              \
@@ -325,6 +325,7 @@ unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, av
 
 string _db_home, _db_suffix, default_backup_path;
 string product_name, product_name_lower, product_version;
+string current_year;
 string root_username, root_password;
 string _server_port;
 string _current_database;
@@ -345,6 +346,7 @@ int main(int argc, char **argv)
 	product_name = GlobalTypedef::product_name;
 	product_name_lower = product_name;
 	product_name_lower[0] = tolower(product_name_lower[0]);
+	current_year = TimeUtil::now("%Y");
 	if (argc == 2)
 	{
 		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
