@@ -32,7 +32,7 @@ public:
 	std::string password;
 	std::string content_type;
 	GstoreConnector(void);
-	GstoreConnector(std::string _ip, int _port, std::string _http_type, std::string _user, std::string _passwd);
+	GstoreConnector(std::string _ip, int _port, std::string _user, std::string _passwd);
 	~GstoreConnector(void);
 
 public:

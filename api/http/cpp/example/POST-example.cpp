@@ -34,7 +34,6 @@ int main(int argc, char* argv[])
 {
 	std::string IP = "127.0.0.1";
 	int Port = 9000;
-	std::string httpType = "ghttp";
 	std::string username = "root";
 	std::string password = "123456";
 	std::string sparql = "select ?x where \
@@ -50,7 +49,7 @@ int main(int argc, char* argv[])
 	std::string filename = "res.txt";
 
 	// start a gc with given IP, Port, username and password
-	GstoreConnector gc(IP, Port, httpType, username, password);
+	GstoreConnector gc(IP, Port, username, password);
 
 	// check server
 	std::string res = gc.check("POST");
