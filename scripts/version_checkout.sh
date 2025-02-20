@@ -132,7 +132,11 @@ else
     cmake ..
     make pre
     make -j4
-    make init
+    if [[ $new_version = "1.3" ]]; then
+        make init
+    else
+        make pfnbuild
+    fi
     cd ..
     echo "Compilation ends successfully!"
 fi
@@ -254,11 +258,13 @@ if [[ $cur_version < "1.3" ]] && [[ $new_version > "1.2" ]]; then
     mv ./pfn/fun ./pfn/cpp/
 fi
 
-for database_name in ${database_list[@]}
-do
-    if [[ $database_name != 'system' ]]; then
-        bin/ginit -db $database_name
-    fi
-done
-
+# 1.4版本通过gconsole的init命令进行手动初始化
+if [[ $new_version < "1.4" ]]; then
+    for database_name in ${database_list[@]}
+    do
+        if [[ $database_name != 'system' ]]; then
+            bin/ginit -db $database_name
+        fi
+    done
+fi
 echo "version update successfully, backup file in the $backup_path"
