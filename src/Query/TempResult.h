@@ -58,6 +58,7 @@ class TempResult
 
         void doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max(), Task::OperationTaskEvent task = Task::OperationTaskEvent());
 		void doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset);
+		float doSimilarity(const std::string& s, const std::string& t);
 
 		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel = true);
 

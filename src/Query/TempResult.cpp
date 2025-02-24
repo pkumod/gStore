@@ -725,6 +725,68 @@ void TempResult::doMinus(TempResult &x, TempResult &r)
 	}
 }
 
+float TempResult::doSimilarity(const std::string& s, const std::string& t)
+{
+	// jaro-similarity
+	// (m/x_len + m/y_len + (m-t)/m)/3
+	// https://www.jianshu.com/p/a4af202cb702
+	if (s == t)
+        return 1;
+    int s_len = s.size();
+    int t_len = t.size();
+
+    if (s_len == 0 || t_len == 0)
+        return 0;
+
+    if (s_len < t_len)
+        return doSimilarity(t, s);
+
+    if (s.find(t) != std::string::npos)
+    {
+        return ((float)t_len/(float)s_len + (float)t_len/(float)t_len + 1)/3;
+    }
+
+    int match_dt = std::floor(t_len/2) - 1;
+    std::vector<int> sv(s_len, -1);
+    std::vector<int> tv(t_len, -1);
+    int m = 0;
+    for (int i=0; i<s_len; i++)
+    {
+        if (i-match_dt > t_len)
+            break;
+        for (int j=0; j<t_len; j++)
+        {
+            if (j<(i-match_dt) || (j>(i+match_dt)))
+                continue;
+            else
+            {
+                if (s[i] == t[j] && tv[j]==-1)
+                {
+                    sv[i] = m;
+                    tv[j] = m;
+                    m += 1;
+                    break;
+                }
+            }
+
+        }
+    }
+	if (m == 0)
+        return 0;
+    std::vector<int> sm, tm;
+    for (const auto &m: sv){ if (m != -1) sm.push_back(m); }
+    for (const auto &m: tv){ if (m != -1) tm.push_back(m); }
+    int num = 0;
+    for (int i = 0; i < sm.size(); i++)
+    {
+        if (sm[i] != tm[i])
+            num += 1;
+    }
+    num = floor(num/2);
+    float ret = ((float)m/(float)s_len + (float)m/(float)t_len + ((float)m-(float)num)/(float)m)/3;
+    return ret;
+}
+
 EvalMultitypeValue
 TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel)
 {
@@ -1145,6 +1207,18 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 			else
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
 		}
+
+		return ret_femv;
+	}
+	else if (root.oprt == "SIMILARITY")
+	{
+		EvalMultitypeValue x, y;
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel);
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
+
+		ret_femv.datatype = EvalMultitypeValue::xsd_decimal;
+		// ret_femv.term_value = "\"0.2\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+		ret_femv.flt_value = doSimilarity(x.term_value, y.term_value);
 
 		return ret_femv;
 	}

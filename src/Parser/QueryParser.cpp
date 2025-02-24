@@ -826,7 +826,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				&& funcName != "ISLITERAL" && funcName != "ISNUMERIC" && funcName != "LANG" \
 				&& funcName != "LANGMATCHES" && funcName != "BOUND" && funcName != "SIMPLECYCLEBOOLEAN" \
 				&& funcName != "CYCLEBOOLEAN" && funcName != "SHORTESTPATHLEN" && funcName != "SHORTESTPATHLEN" \
-				&& funcName != "KHOPREACHABLE" && funcName != "DATATYPE" && funcName != "CONTAINS" \
+				&& funcName != "KHOPREACHABLE" && funcName != "DATATYPE" && funcName != "CONTAINS" && funcName != "SIMILARITY" \
 				&& funcName != "UCASE" && funcName != "LCASE" && funcName != "STRSTARTS" \
 				&& funcName != "NOW" && funcName != "YEAR" && funcName != "MONTH" \
 				&& funcName != "DAY" && funcName != "HOURS" && funcName != "MINUTES" \
