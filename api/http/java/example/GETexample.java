@@ -14,7 +14,6 @@ public class GETexample{
 	{
         String IP = "127.0.0.1";
 		int Port = 9000;
-		String httpType = "ghttp";
         String username = "root";
         String password = "123456";
 		String sparql = "select ?x where"
@@ -30,7 +29,7 @@ public class GETexample{
         String filename = "res.txt";
 
 		// start a gc with given IP, Port, username and password
-		GstoreConnector gc = new GstoreConnector(IP, Port, httpType, username, password);
+		GstoreConnector gc = new GstoreConnector(IP, Port, username, password);
 
 		// build a database with a RDF graph
 		String res = gc.build("lubm", "data/lubm/lubm.nt");

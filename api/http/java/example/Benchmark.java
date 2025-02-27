@@ -14,7 +14,6 @@ import jgsc.GstoreConnector;
 class MyThread extends Thread {
 	public static String IP = "127.0.0.1"; 
 	public static int Port = 9000;
-	public static String httpType = "ghttp";
 	public static String username = "root";
 	public static String password = "123456";
 	public static boolean correctness = true; 
@@ -33,7 +32,7 @@ class MyThread extends Thread {
 	}
 	public void run() {
 	    // query
-		GstoreConnector gc = new GstoreConnector(IP, Port, httpType, username, password);
+		GstoreConnector gc = new GstoreConnector(IP, Port, username, password);
 		String res = gc.query("lubm", "json", sparql, RequestType);
 
 		// fquery

@@ -10,16 +10,14 @@ const request = require('request-promise');
 let strUrl = ""
 
 class GstoreConnector {
-    constructor(ip = '', port, httpType = 'ghttp', username = '', password = '') 
+    constructor(ip = '', port, username = '', password = '') 
     {
         if (ip == 'localhost')
             this.serverIP = '127.0.0.1';
         else
             this.serverIP = ip;
         this.serverPort = port;
-        this.Url = 'http://' + this.serverIP + ':' + this.serverPort.toString() + '/';
-        if (httpType == 'grpc')
-            this.Url = this.Url + 'grpc/api/';
+        this.Url = 'http://' + this.serverIP + ':' + this.serverPort.toString() + '/api';
         this.username = username;
         this.password = password;
     }

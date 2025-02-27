@@ -28,20 +28,15 @@ public class GstoreConnector {
     private String username;
     private String password;
 
-    public GstoreConnector(String _ip, int _port, String _http_type, String _user, String _passwd) {
+    public GstoreConnector(String _ip, int _port, String _user, String _passwd) {
         if (_ip.equals("localhost")) {
             this.serverIP = GstoreConnector.defaultServerIP;
         } else {
             this.serverIP = _ip;
         }
         this.serverPort = _port;
-        this.apiUrl = "http://" + this.serverIP + ":" + this.serverPort + "/";
-        if ("grpc".equals(_http_type)) {
-            this.fileUrl = this.apiUrl + "grpc/file";
-            this.apiUrl = this.apiUrl + "grpc/api";
-        } else {
-            this.fileUrl = this.apiUrl + "file";
-        }
+        this.apiUrl = "http://" + this.serverIP + ":" + this.serverPort + "/api";
+        this.fileUrl = this.apiUrl + "file";
         this.username = _user;
         this.password = _passwd;
     }

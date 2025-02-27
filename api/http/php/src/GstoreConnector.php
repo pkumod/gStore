@@ -13,15 +13,13 @@ class GstoreConnector {
     var $username;
     var $password;
 
-    function __construct($ip, $port, $httpType, $user, $passwd) {
+    function __construct($ip, $port, $user, $passwd) {
         if ($ip == "localhost")
             $this->serverIP = "127.0.0.1";
         else
             $this->serverIP = $ip;
         $this->serverPort = $port;
-        $this->Url = "http://" . $ip . ":" . strval($port) . "/";
-        if ($httpType == "grpc")
-            $this->Url .= "grpc/api/"; 
+        $this->Url = "http://" . $ip . ":" . strval($port) . "/api";
         $this->username = $user;
         $this->password = $passwd;
     }

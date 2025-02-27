@@ -30,7 +30,6 @@ const sparql = "select ?x where{" +
 const gc = new GstoreConnector(
     "127.0.0.1",
     9000,
-    "ghttp",
     "root",
     "123456"
 );
