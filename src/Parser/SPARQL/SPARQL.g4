@@ -158,6 +158,8 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |	K_LCASE '(' expression ')' 
 |	KK_ENCODE_FOR_URI '(' expression ')' 
 |	K_CONTAINS '(' expression ',' expression ')' 
+|	K_CONTAINALL '(' expression ',' expression (',' expression)? ')' 
+|	K_CONTAINANY '(' expression ',' expression (',' expression)? ')' 
 |   K_SIMILARITY '(' expression ',' expression ')' 
 |	K_STRSTARTS '(' expression ',' expression ')' 
 |	K_STRENDS '(' expression ',' expression ')' 
@@ -334,6 +336,8 @@ K_NOT : N O T ;
 K_STRENDS : S T R E N D S ;
 K_OFFSET : O F F S E T ;
 K_CONTAINS : C O N T A I N S ;
+K_CONTAINALL : C O N T A I N A L L ;
+K_CONTAINANY : C O N T A I N A N Y ;
 K_SIMILARITY : S I M I L A R I T Y ;
 K_PREFIX : P R E F I X ;
 K_MINUTES : M I N U T E S ;

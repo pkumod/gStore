@@ -607,6 +607,17 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				proj_var.func_args.push_back(bicCtx->expression(0)->getText());
 				proj_var.func_args.push_back(bicCtx->expression(1)->getText());
 				proj_var.var = varCtx->getText();
+			} else if (tmp == "CONTAINALL")
+			{
+				query_tree_ptr->addProjectionVar();
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = ProjectionVar::ContainAll_type;
+			} 
+			else if (tmp == "CONTAINANY")
+			{
+				query_tree_ptr->addProjectionVar();
+				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
+				proj_var.aggregate_type = ProjectionVar::ContainAny_type;
 			} else if (tmp == "CONCAT") {
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -830,7 +841,8 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				&& funcName != "UCASE" && funcName != "LCASE" && funcName != "STRSTARTS" \
 				&& funcName != "NOW" && funcName != "YEAR" && funcName != "MONTH" \
 				&& funcName != "DAY" && funcName != "HOURS" && funcName != "MINUTES" \
-				&& funcName != "ABS" && funcName != "REGEX" && funcName != "IF")
+				&& funcName != "ABS" && funcName != "REGEX" && funcName != "IF" \
+				&& funcName != "CONTAINALL" && funcName != "CONTAINANY")
 				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
 			curr_node.oprt = funcName;
 			if (funcName == "BOUND")

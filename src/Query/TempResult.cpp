@@ -788,7 +788,7 @@ float TempResult::doSimilarity(const std::string& s, const std::string& t)
 }
 
 EvalMultitypeValue
-TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel)
+TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel, std::string sep)
 {
 	// Arithmetic and logical operations
 	// if (root->lchild == NULL && root->rchild == NULL)	// leaf node
@@ -828,7 +828,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		}
 		else  	// literal
 			x.term_value = root.val;
-		x.deduceTypeValue();
+		x.deduceTypeValue(sep);
 		// cout << "x.term_value = " << x.term_value << endl;
 		return x;
 	}
@@ -1217,7 +1217,6 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
 
 		ret_femv.datatype = EvalMultitypeValue::xsd_decimal;
-		// ret_femv.term_value = "\"0.2\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
 		ret_femv.flt_value = doSimilarity(x.term_value, y.term_value);
 
 		return ret_femv;
@@ -1334,6 +1333,79 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		else
 			ret_femv = doComp(root.children[2], row, id_cols, kvstore, this_varset, isel);
 		
+		return ret_femv;
+	}
+	else if (root.oprt == "CONTAINALL")
+	{
+		EvalMultitypeValue x, y;
+		std::string sep = ",";
+		if (root.children.size() == 3 && root.children[2].val.size() == 3)
+			sep = root.children[2].val;
+
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel, sep);
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel, sep);
+		std::vector<std::string> x_content;
+		if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			x_content.push_back(x.term_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_list)
+		{
+			x_content = x.list_value;
+		}
+		if(y.datatype == EvalMultitypeValue::xsd_list)
+		{
+			std::vector<std::string> y_content = y.list_value;
+			bool contain_all = true;
+			for (auto x_item : x_content)
+			{
+				if (std::find(y_content.begin(), y_content.end(), x_item) == y_content.end()) 
+				{
+					contain_all = false;
+					break;
+				}
+			}
+			if (contain_all)
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+			else
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		}
+		return ret_femv;
+	}
+	else if (root.oprt == "CONTAINANY")
+	{
+		EvalMultitypeValue x, y;
+		std::string sep = ",";
+		if (root.children.size() == 3 && root.children[2].val.size() == 3)
+			sep = root.children[2].val[1];
+		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel, sep);
+		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel, sep);
+		std::vector<std::string> x_content;
+		if (x.datatype == EvalMultitypeValue::xsd_string)
+		{
+			x_content.push_back(x.term_value);
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_list)
+		{
+			x_content = x.list_value;
+		}
+		if(x.datatype == EvalMultitypeValue::xsd_list && y.datatype == EvalMultitypeValue::xsd_list)
+		{
+			std::vector<std::string> y_content = y.list_value;
+			bool contain_any = false;
+			for (auto y_item : y_content)
+			{
+				if (std::find(x_content.begin(), x_content.end(), y_item) != x_content.end())
+				{
+					contain_any = true;
+					break;
+				}
+			}
+			if (contain_any)
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
+			else
+				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
+		}
 		return ret_femv;
 	}
 

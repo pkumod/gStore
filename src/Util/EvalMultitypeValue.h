@@ -7,6 +7,7 @@
 #include <sstream>
 #include <sys/time.h>
 #include <chrono>
+#include "Util.h"
 class EvalMultitypeValue
 {
 	public:
@@ -69,7 +70,7 @@ class EvalMultitypeValue
 		};
 
 		// Treating xsd_long as xsd_integer doesn't work. 8-byte assign to 4-byte causes memory problems
-		enum DataType {rdf_term, iri, literal, xsd_string,
+		enum DataType {rdf_term, iri, literal, xsd_string, xsd_list,
 			xsd_boolean, xsd_integer, xsd_decimal, xsd_float, xsd_long, xsd_double,
 			xsd_datetime};
 
@@ -82,6 +83,7 @@ class EvalMultitypeValue
 		double dbl_value;
 		long long long_value;
 		DateTime dt_value;
+		std::vector<std::string> list_value;
 
 		bool isSimpleLiteral();
 		void convert2Type(EvalMultitypeValue::DataType to_type);
@@ -105,7 +107,7 @@ class EvalMultitypeValue
 		EvalMultitypeValue():datatype(rdf_term), int_value(0), flt_value(0), dbl_value(0){}
 
 		void deduceTermValue();	// Set term value according to datatype and essential value
-		void deduceTypeValue();	// Set datatype and value according to term_value, for numeric & boolean
+		void deduceTypeValue(std::string sep = ",");	// Set datatype and value according to term_value, for numeric & boolean
 
 		std::string getLangTag();	// Return language tag of literal
 		bool argCompatible(EvalMultitypeValue &x);	// Check argument compatibility

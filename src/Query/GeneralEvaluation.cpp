@@ -1507,6 +1507,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				proj[0].aggregate_type != ProjectionVar::Min_type && \
 				proj[0].aggregate_type != ProjectionVar::Max_type && \
 				proj[0].aggregate_type != ProjectionVar::Contains_type && \
+				proj[0].aggregate_type != ProjectionVar::ContainAll_type && \
+				proj[0].aggregate_type != ProjectionVar::ContainAny_type && \
 				proj[0].aggregate_type != ProjectionVar::Sample_type )
 			{
 				// Non-aggregate functions, no var (all constant) in arg list
@@ -2065,7 +2067,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					end = result0_size - 1;
 					int resultSz = result0_size;
 					if (proj.size() == 1 && proj[0].aggregate_type != ProjectionVar::None_type \
-					&& proj[0].aggregate_type != ProjectionVar::CompTree_type && proj[0].aggregate_type != ProjectionVar::Contains_type \
+					&& proj[0].aggregate_type != ProjectionVar::CompTree_type \
+					&& proj[0].aggregate_type != ProjectionVar::Contains_type \
+					&& proj[0].aggregate_type != ProjectionVar::ContainAll_type \
+					&& proj[0].aggregate_type != ProjectionVar::ContainAny_type \
 					&& proj[0].aggregate_type != ProjectionVar::PFN_type)
 						resultSz = 1;
 					// Reserve all lines of results

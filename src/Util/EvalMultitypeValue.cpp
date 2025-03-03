@@ -995,7 +995,7 @@ void EvalMultitypeValue::deduceTermValue()
 		term_value = str_value;
 }
 
-void EvalMultitypeValue::deduceTypeValue()
+void EvalMultitypeValue::deduceTypeValue(std::string sep)
 {
 	datatype = EvalMultitypeValue::xsd_boolean;
 	bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
@@ -1025,15 +1025,26 @@ void EvalMultitypeValue::deduceTypeValue()
 			sufStr = sufStr.substr(baseLen);
 			string contentStr = term_value.substr(0, sufPos + 1);
 			size_t contentLen = contentStr.size();
-			if (sufStr == "string") {
-				datatype = EvalMultitypeValue::xsd_string;
+			if (sufStr == "string")
+			{
+				datatype = EvalMultitypeValue::xsd_string; 
 				str_value = contentStr;
-			} else if (sufStr == "boolean") {
+			}
+			else if (sufStr == "list")
+			{
+				contentStr = contentStr.substr(1, contentLen - 2);
+				datatype = EvalMultitypeValue::xsd_list;
+				Util::split(contentStr, sep, list_value);
+			}
+			else if (sufStr == "boolean")
+			{
 				if (contentStr == "\"true\"")
 					bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
 				else if (contentStr == "\"false\"")
 					bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
-			} else if (sufStr == "dateTime" || sufStr == "date") {
+			}
+			else if (sufStr == "dateTime" || sufStr == "date")
+			{
 				datatype = EvalMultitypeValue::xsd_datetime;
 				vector<float> date;
 				size_t p = 0, nextP = 0;
@@ -1163,6 +1174,16 @@ string EvalMultitypeValue::getRep()
 			to_string(dt_value.date[2]) + "T" + to_string(dt_value.date[3]) + ":" + \
 			to_string(dt_value.date[4]) + ":" + to_string(dt_value.date[5]) + \
 			"\"^^<http://www.w3.org/2001/XMLSchema#dateTime>";
+	}
+	else if (datatype == EvalMultitypeValue::xsd_list)
+	{
+		for (size_t i = 0; i < list_value.size(); i++)
+		{
+			if (i != 0)
+				ret += ", ";
+			ret += list_value[i];
+		}
+		ret += "\"^^<http://www.w3.org/2001/XMLSchema#list>";
 	}
 	return ret;
 }
