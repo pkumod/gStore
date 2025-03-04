@@ -1345,7 +1345,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel, sep);
 		std::vector<std::string> x_content;
 		if (x.datatype == EvalMultitypeValue::xsd_string)
-
+		{
 			x_content.push_back(Util::getStrValue(x.str_value));
 		}
 		else if (x.datatype == EvalMultitypeValue::xsd_list)
