@@ -114,6 +114,7 @@ public:
 	static char* a_trim(char *szOutput, const char * szInput);
 
 	static void split(const std::string& str, const std::string& pat, std::vector<std::string>& res);
+	static string getStrValue(const std::string& str);
 	//NOTICE: this function must be called at the beginning of executing!
 	Util();
 	~Util();

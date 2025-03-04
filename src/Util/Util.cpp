@@ -1584,6 +1584,15 @@ Util::split(const std::string& str, const std::string& pat, std::vector<std::str
     }
 }
 
+string Util::getStrValue(const std::string& str)
+{
+    if (str.size() >= 3)
+    {
+        return str.substr(1, str.size()-2);
+    }
+    return str;
+}
+
 void 
 Util::init_backuplog()
 {

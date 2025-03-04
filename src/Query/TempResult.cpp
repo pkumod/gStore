@@ -1340,18 +1340,21 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		EvalMultitypeValue x, y;
 		std::string sep = ",";
 		if (root.children.size() == 3 && root.children[2].val.size() == 3)
-			sep = root.children[2].val;
-
+			sep = root.children[2].val[1];
 		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel, sep);
 		y = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel, sep);
 		std::vector<std::string> x_content;
 		if (x.datatype == EvalMultitypeValue::xsd_string)
-		{
-			x_content.push_back(x.term_value);
+
+			x_content.push_back(Util::getStrValue(x.str_value));
 		}
 		else if (x.datatype == EvalMultitypeValue::xsd_list)
 		{
 			x_content = x.list_value;
+		}
+		else
+		{
+			x_content.push_back(Util::getStrValue(x.term_value));
 		}
 		if(y.datatype == EvalMultitypeValue::xsd_list)
 		{
@@ -1383,13 +1386,17 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		std::vector<std::string> x_content;
 		if (x.datatype == EvalMultitypeValue::xsd_string)
 		{
-			x_content.push_back(x.term_value);
+			x_content.push_back(Util::getStrValue(x.str_value));
 		}
 		else if (x.datatype == EvalMultitypeValue::xsd_list)
 		{
 			x_content = x.list_value;
 		}
-		if(x.datatype == EvalMultitypeValue::xsd_list && y.datatype == EvalMultitypeValue::xsd_list)
+		else
+		{
+			x_content.push_back(Util::getStrValue(x.term_value));
+		}
+		if(y.datatype == EvalMultitypeValue::xsd_list)
 		{
 			std::vector<std::string> y_content = y.list_value;
 			bool contain_any = false;
