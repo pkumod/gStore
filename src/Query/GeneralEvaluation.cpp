@@ -2312,7 +2312,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 									{
 										numeric_sum = numeric_sum + tmp;
-										SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
+										// SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Groupconcat_type)
 									{
@@ -2402,7 +2402,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (proj[i].aggregate_type == ProjectionVar::Sum_type
 								|| proj[i].aggregate_type == ProjectionVar::Avg_type)
 							{
-								SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
+								// SLOG_CORE("numeric_sum.term_value = " << numeric_sum.term_value);
 								ss << numeric_sum.term_value;
 							}
 							else if (proj[i].aggregate_type == ProjectionVar::Min_type)
