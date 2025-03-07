@@ -684,7 +684,7 @@ antlrcpp::Any QueryParser::visitHavingClause(SPARQLParser::HavingClauseContext *
 		}
 	}
 
-	query_tree_ptr->getHaving().print(0);
+	// query_tree_ptr->getHaving().print(0);
 
 	return antlrcpp::Any();
 }
