@@ -73,9 +73,11 @@ public:
 	antlrcpp::Any visitModify(SPARQLParser::ModifyContext *ctx);
 	antlrcpp::Any visitTriplesSameSubject(SPARQLParser::TriplesSameSubjectContext *ctx);
 
+	// having
+	antlrcpp::Any visitHavingClause(SPARQLParser::HavingClauseContext *context);
 	void parseSelectAggregateFunction(SPARQLParser::ExpressionContext *expCtx, \
 		SPARQLParser::VarContext *varCtx);
-	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node);
+	void buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node, bool having = false);
 	void addTriple(std::string subject, std::string predicate, std::string object, bool kleene, \
 		GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);

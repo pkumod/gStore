@@ -86,6 +86,69 @@ class GroupPattern
 		void relabel(QueryTreeRelabeler& qtr);
 };
 
+class PathArgs
+{
+public:
+	std::string src, dst, fun_name;
+	bool directed;
+	std::vector<std::string> iri_set;
+	std::vector<std::string> vert_set;
+	std::vector<std::string> pred_set;
+	std::vector<std::string> neg_pred_set;
+	int k;
+	float confidence;
+	int retNum;
+	std::vector<double> misc;	// Miscellaneous args (first introduced for PageRank)
+	std::string pfn_name;
+	std::string pfn_params;
+};
+
+class CompTreeNode
+{
+public:
+	std::string oprt;	// operator
+	// CompTreeNode *lchild;
+	// CompTreeNode *rchild;
+	std::vector<CompTreeNode> children;	// child nodes
+	std::string val;	// variable, or literal followed by datatype suffix
+	PathArgs path_args;
+	Varset varset;
+	bool done;
+
+	CompTreeNode(): done(false) {}
+	// CompTreeNode(const CompTreeNode& that);
+	// CompTreeNode& operator=(const CompTreeNode& that);
+	// ~CompTreeNode();
+	void print(int dep);	// Print subtree rooted at this node
+	Varset getVarset();
+	CompTreeNode(const CompTreeNode& that)
+	{
+		oprt = that.oprt;
+		children = that.children;
+		val = that.val;
+		path_args = that.path_args;
+		varset = that.varset;
+		done = that.done;
+	}
+	CompTreeNode& operator = (const CompTreeNode& that)
+	{
+		oprt = that.oprt;
+		children = that.children;
+		val = that.val;
+		path_args = that.path_args;
+		varset = that.varset;
+		done = that.done;
+
+		return *this;
+	}
+	void relabel(QueryTreeRelabeler& qtr){
+		qtr.relabel(varset);
+		qtr.relabel_safe(val);
+		for(std::vector<CompTreeNode>::iterator it=children.begin(); it!=children.end(); it++)
+			it->relabel(qtr);
+	};
+};
+
 class QueryTree
 {
 public:
@@ -93,11 +156,6 @@ public:
 	enum ProjectionModifier {Modifier_None, Modifier_Distinct, Modifier_Reduced, Modifier_Count, Modifier_Duplicates};
 	enum UpdateType {Not_Update, Insert_Data, Delete_Data, Delete_Where, Insert_Clause, Delete_Clause, Modify_Clause};
 	enum VarType {Entity, Predicate, EntityPredicate};
-	// typedef ::GroupPattern GroupPattern;
-	// typedef ::ProjectionVar ProjectionVar;
-	// typedef ::CompTreeNode CompTreeNode;
-	// typedef ::Order Order;
-	
 private:
 	QueryForm query_form;
 
@@ -106,6 +164,7 @@ private:
 	bool projection_asterisk;
 
 	Varset group_by;
+	CompTreeNode having;
 	std::vector<Order> order_by;
 	int offset, limit;
 
@@ -209,6 +268,7 @@ public:
 
 	void setSingleBGP(bool val);
 	bool getSingleBGP();
+	CompTreeNode& getHaving();
 };
 
 class GroupPattern::Pattern
@@ -284,69 +344,6 @@ public:
 		qtr.relabel_safe(predicate.value);
 		qtr.relabel_safe(object.value);
 	}
-};
-
-class PathArgs
-{
-public:
-	std::string src, dst, fun_name;
-	bool directed;
-	std::vector<std::string> iri_set;
-	std::vector<std::string> vert_set;
-	std::vector<std::string> pred_set;
-	std::vector<std::string> neg_pred_set;
-	int k;
-	float confidence;
-	int retNum;
-	std::vector<double> misc;	// Miscellaneous args (first introduced for PageRank)
-	std::string pfn_name;
-	std::string pfn_params;
-};
-
-class CompTreeNode
-{
-public:
-	std::string oprt;	// operator
-	// CompTreeNode *lchild;
-	// CompTreeNode *rchild;
-	std::vector<CompTreeNode> children;	// child nodes
-	std::string val;	// variable, or literal followed by datatype suffix
-	PathArgs path_args;
-	Varset varset;
-	bool done;
-
-	CompTreeNode(): done(false) {}
-	// CompTreeNode(const CompTreeNode& that);
-	// CompTreeNode& operator=(const CompTreeNode& that);
-	// ~CompTreeNode();
-	void print(int dep);	// Print subtree rooted at this node
-	Varset getVarset();
-	CompTreeNode(const CompTreeNode& that)
-	{
-		oprt = that.oprt;
-		children = that.children;
-		val = that.val;
-		path_args = that.path_args;
-		varset = that.varset;
-		done = that.done;
-	}
-	CompTreeNode& operator = (const CompTreeNode& that)
-	{
-		oprt = that.oprt;
-		children = that.children;
-		val = that.val;
-		path_args = that.path_args;
-		varset = that.varset;
-		done = that.done;
-
-		return *this;
-	}
-	void relabel(QueryTreeRelabeler& qtr){
-		qtr.relabel(varset);
-		qtr.relabel_safe(val);
-		for(std::vector<CompTreeNode>::iterator it=children.begin(); it!=children.end(); it++)
-			it->relabel(qtr);
-	};
 };
 
 class GroupPattern::Bind

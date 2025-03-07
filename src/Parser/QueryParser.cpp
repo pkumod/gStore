@@ -666,6 +666,29 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	}
 }
 
+antlrcpp::Any QueryParser::visitHavingClause(SPARQLParser::HavingClauseContext *ctx)
+{
+	for (auto havingCondition : ctx->havingCondition())
+	{
+		if (havingCondition->children.size() > 1)
+			throw runtime_error("[ERROR]	The supported Having key is var only.");
+		string var = havingCondition->getText();
+		if (havingCondition->constraint()->brackettedexpression())
+		{
+			buildCompTree(havingCondition->constraint()->brackettedexpression()->expression()->conditionalOrexpression(), \
+			-1, query_tree_ptr->getHaving(), true);
+		}
+		else if (havingCondition->constraint()->builtInCall())
+		{
+			buildCompTree(havingCondition->constraint()->builtInCall(), -1, query_tree_ptr->getHaving(), true);
+		}
+	}
+
+	query_tree_ptr->getHaving().print(0);
+
+	return antlrcpp::Any();
+}
+
 /**
 	Build a CompTree (i.e., a tree structure denoting the operand-operator
 	relations in an expression), in SELECT/FILTER/ORDER BY.
@@ -675,7 +698,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 	used to branch out the right child node.
 	@param curr_node pointer to the current CompTree node.
 */
-void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node)
+void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, CompTreeNode &curr_node, bool having)
 {
 	if (root->children.size() == 1)
 	{
@@ -713,7 +736,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 		else
 		{
 			if (root->children[0]->children.size() != 0)
-				buildCompTree(root->children[0], -1, curr_node);
+				buildCompTree(root->children[0], -1, curr_node, having);
 			else
 			{
 				// var from varCtx
@@ -757,12 +780,12 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 			for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expressionList()->expression())
 			{
 				curr_node.children.push_back(CompTreeNode());
-				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild], having);
 				numChild++;
 			}
 		} else if (left != "NOW") {
 			curr_node.children.push_back(CompTreeNode());
-			buildCompTree(root->children[1], -1, curr_node.children[0]);
+			buildCompTree(root->children[1], -1, curr_node.children[0], having);
 		}
 	}
 	else if (root->children.size() % 2 == 1)	// >= 3, odd #children
@@ -770,20 +793,20 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 		string left = root->children[1]->getText();
 		transform(left.begin(), left.end(), left.begin(), ::toupper);
 		if (root->children[0]->getText() == "(")
-			buildCompTree(root->children[1], -1, curr_node);
+			buildCompTree(root->children[1], -1, curr_node, having);
 		else if (left == "IN")
 		{
 			// relationalexpression : numericexpression K_IN expressionList
 			curr_node.oprt = "IN";
 			curr_node.val = "";
 			curr_node.children.push_back(CompTreeNode());
-			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
+			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0], having);
 			int numChild = 1;
 			for (auto expression : \
 				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
 			{
 				curr_node.children.push_back(CompTreeNode());
-				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild], having);
 				numChild++;
 			}
 		}
@@ -801,11 +824,11 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				// buildCompTree(root, oper_pos + 2, curr_node.rchild);
 				curr_node.children.push_back(CompTreeNode());
 				curr_node.children.push_back(CompTreeNode());
-				buildCompTree(root->children[oper_pos + 1], -1, curr_node.children[0]);
-				buildCompTree(root, oper_pos + 2, curr_node.children[1]);
+				buildCompTree(root->children[oper_pos + 1], -1, curr_node.children[0], having);
+				buildCompTree(root, oper_pos + 2, curr_node.children[1], having);
 			}
 			else 	// oper_pos == rightmostOprtPos, the last operator on this level has been handled
-				buildCompTree(root->children[oper_pos + 1], -1, curr_node);
+				buildCompTree(root->children[oper_pos + 1], -1, curr_node, having);
 		}
 	}
 	else 	// >= 3, even #children, must be NOT IN or function call
@@ -819,13 +842,13 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 			curr_node.oprt = "NOT IN";
 			curr_node.val = "";
 			curr_node.children.push_back(CompTreeNode());
-			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0]);
+			buildCompTree(((SPARQLParser::RelationalexpressionContext *)root)->numericexpression()[0], -1, curr_node.children[0], having);
 			int numChild = 1;
 			for (auto expression : \
 				((SPARQLParser::RelationalexpressionContext *)root)->expressionList()->expression())
 			{
 				curr_node.children.push_back(CompTreeNode());
-				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+				buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild], having);
 				numChild++;
 			}
 		}
@@ -843,8 +866,21 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				&& funcName != "DAY" && funcName != "HOURS" && funcName != "MINUTES" \
 				&& funcName != "ABS" && funcName != "REGEX" && funcName != "IF" \
 				&& funcName != "CONTAINALL" && funcName != "CONTAINANY")
-				throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
+			{
+				if (!having)
+				{
+					throw runtime_error("[ERROR] Filter currently does not support this built-in call.");
+				}	
+				else if (funcName != "COUNT" && funcName != "MIN" && funcName != "MAX" && funcName != "AVG" && funcName != "SUM")
+				{
+					throw runtime_error("[ERROR] HAVING currently does not support this built-in call.");
+				}
+			}
 			curr_node.oprt = funcName;
+			if (having)
+			{
+				// not support || && next version handle
+			}
 			if (funcName == "BOUND")
 			{
 				curr_node.children.push_back(CompTreeNode());
@@ -898,7 +934,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				for (auto expression : ((SPARQLParser::RegexexpressionContext *)root)->expression())
 				{
 					curr_node.children.push_back(CompTreeNode());
-					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild], having);
 					numChild++;
 				}
 			}
@@ -908,7 +944,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 				for (auto expression : ((SPARQLParser::BuiltInCallContext *)root)->expression())
 				{
 					curr_node.children.push_back(CompTreeNode());
-					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild]);
+					buildCompTree(expression->conditionalOrexpression(), -1, curr_node.children[numChild], having);
 					numChild++;
 				}
 			}

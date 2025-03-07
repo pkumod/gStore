@@ -1218,6 +1218,11 @@ bool QueryTree::getSingleBGP()
 	return singleBGP;
 }
 
+CompTreeNode& QueryTree::getHaving()
+{
+	return having;
+}
+
 void QueryTree::relabel(QueryTreeRelabeler& qtr){
     for(vector<ProjectionVar>::iterator it=projection.begin(); it!=projection.end(); it++)
 		it->relabel(qtr);	// Do nothing

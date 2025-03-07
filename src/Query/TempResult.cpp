@@ -1455,6 +1455,45 @@ void TempResult::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> k
     this->result.erase(this->result.begin()+(save_num), this->result.end());
     this->result.shrink_to_fit();
 }
+
+void TempResult::doHaving(const CompTreeNode &having, std::shared_ptr<KVstore> kvstore)
+{
+	if (having.children.size() == 0)
+		return;
+	unsigned original_size = this->result.size();
+    unsigned delete_num = 0, save_num = 0;
+	long tv_begin = gutil::TimeUtil::timestamp();
+	Varset this_varset = this->getAllVarset();
+	int this_id_cols = this->id_varset.getVarsetSize();
+	for (unsigned i = 0; i < original_size-delete_num;)
+	{
+		EvalMultitypeValue ret_femv = doComp(having, this->result[i], this_id_cols, kvstore, this_varset);
+		if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
+			++i;
+            ++save_num;
+        } else {
+			this->result[i].swap(this->result[original_size - 1 - delete_num]);
+            ++delete_num;
+        }
+	}
+
+	unsigned size = this->result.size();
+	for (unsigned i = save_num; i < size; i++)
+	{
+		if (result[i].id)
+		{
+			delete[] result[i].id;
+			result[i].id = nullptr;
+		}
+	}
+
+    this->result.erase(this->result.begin()+(save_num), this->result.end());
+    this->result.shrink_to_fit();
+
+	long tv_end = gutil::TimeUtil::timestamp();
+	SLOG_CORE("after do having, used " << (tv_end - tv_begin) << " ms.");
+}
+
 void TempResult::doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset)
 {
 	Varset this_varset = this->getAllVarset();
@@ -1872,4 +1911,37 @@ void TempResultSet::print()
 	SLOG_CORE("total temp result: " << this->results.size());
 	for (int i = 0; i < (int)this->results.size(); i++)
 		this->results[i].print(i);
+}
+
+EvalMultitypeValue TempResult::doCompareValue(EvalMultitypeValue& lRes, EvalMultitypeValue& rRes, std::string& oprt)
+{
+    if (oprt == "||")
+		return lRes || rRes;
+    else if (oprt == "&&")
+        return lRes && rRes;
+    else if (oprt == "=")
+        return lRes == rRes;
+    else if (oprt == "!=")
+        return lRes != rRes;
+    else if (oprt == "<")
+        return lRes < rRes;
+    else if (oprt == ">")
+        return lRes > rRes;
+    else if (oprt == "<=")
+        return lRes <= rRes;
+    else if (oprt == ">=")
+        return lRes >= rRes;
+    else if (oprt == "+")
+        return lRes + rRes;
+    else if (oprt == "-")
+        return lRes - rRes;
+    else if (oprt == "*")
+        return lRes * rRes;
+    else if (oprt == "/")
+        return lRes / rRes;
+    
+    EvalMultitypeValue ret_femv;
+	ret_femv.datatype = EvalMultitypeValue::xsd_boolean;
+	ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::error_value;
+    return ret_femv;
 }

@@ -57,10 +57,12 @@ class TempResult
 		void doMinus(TempResult &x, TempResult &r);
 
         void doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, unsigned limit_num = std::numeric_limits<unsigned>::max(), Task::OperationTaskEvent task = Task::OperationTaskEvent());
+		void doHaving(const CompTreeNode &having, std::shared_ptr<KVstore> kvstore);
 		void doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset);
 		float doSimilarity(const std::string& s, const std::string& t);
 
 		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel = true, std::string sep = ",");
+		static EvalMultitypeValue doCompareValue(EvalMultitypeValue& lRes, EvalMultitypeValue& rRes, std::string& oprt);
 
 		void print(int no=-1);
 	private:

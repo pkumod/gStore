@@ -173,6 +173,7 @@ class GeneralEvaluation
 		std::string pfnQuery(const std::string& pfn_name, const std::string& pfn_params, const std::string& username);
 		void pfnConvertVar(std::vector<std::pair<std::string, vector<int>>>& varList, std::set<std::string>& param_jsons, nlohmann::json& param_json, int pos);
 		std::string pfnQueryByVar(const std::string& pfn_name, const std::string& pfn_params, const std::string& username, TempResult &result0, int begin, int end, int result0_id_cols);
+		bool doHavingAggregateFunction(TempResult &result0, int result0_id_cols, int begin, int end);
 };
 
 #endif // _QUERY_GENERALEVALUATION_H

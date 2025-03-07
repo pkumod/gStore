@@ -1441,6 +1441,10 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 			TempResult &result0 = this->temp_result->results[0];
 			Varset result0Varset = result0.id_varset + result0.str_varset;
 			TempResult &new_result0 = new_temp_result->results[0];
+			if (!this->query_tree.getGroupByVarset().empty())
+			{
+				// handle dohaving || && next version handle
+			}
 
 			for (int i = 0; i < (int)proj.size(); i++)
 				if (proj[i].aggregate_type == ProjectionVar::None_type)
@@ -2093,6 +2097,11 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						new_result0.result.back().id[i] = INVALID;
 				}
 
+				if(doHavingAggregateFunction(result0, result0_id_cols, begin, end))
+				{
+					begin = end + 1;
+					continue;
+				}
 
 				for (int i = 0; i < (int)proj.size(); i++)
 				{
