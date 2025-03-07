@@ -14,7 +14,7 @@ bool GeneralEvaluation::doHavingAggregateFunction(TempResult &result0, int resul
         && funcName != "MAX" && funcName != "AVG" 
         && funcName != "SUM")
     {
-        SLOG_ERROR("not support this aggregate " << funcName);
+        // SLOG_ERROR("not support this aggregate " << funcName);
         return false;;
     }
 

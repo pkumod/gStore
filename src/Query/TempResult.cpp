@@ -292,6 +292,62 @@ void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<StringInde
 	this->str_varset = new_str_varset;
 }
 
+void TempResult::convertId2Str(Varset convert_varset, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset, Task::OperationTaskEvent task_event)
+{
+	int this_id_cols = this->id_varset.getVarsetSize();
+
+	Varset new_id_varset = this->id_varset - convert_varset;
+	Varset new_str_varset = this->str_varset + convert_varset;
+	int new_id_cols = new_id_varset.getVarsetSize();
+
+	vector<int> this2new_id_pos = this->id_varset.mapTo(new_id_varset);
+
+	for (int i = 0; i < (int)this->result.size(); i++)
+	{
+		unsigned *v = new unsigned [new_id_cols];
+
+		for (int k = 0; k < this_id_cols; k++)
+			if (this2new_id_pos[k] != -1)
+			{
+				v[this2new_id_pos[k]] = this->result[i].id[k];
+			}
+			else
+			{
+				string str;
+				unsigned id = this->result[i].id[k];
+				if (id >= 0)
+				{
+					if (entity_literal_varset.findVar(this->id_varset.vars[k]))
+					{
+						if (id < GlobalTypedef::LITERAL_FIRST_ID)
+						{
+							str = kvstore->getEntityByID(id);
+							task_event.checkOpCancel();
+						}
+						else
+						{
+							str = kvstore->getLiteralByID(id);
+							task_event.checkOpCancel();
+						}
+					}
+					else
+					{
+						str = kvstore->getPredicateByID(id);
+					}
+				}
+
+				this->result[i].str.push_back(str);
+			}
+
+		delete[] this->result[i].id;
+		this->result[i].id = v;
+        this->result[i].sz = new_id_cols;
+	}
+
+	this->id_varset = new_id_varset;
+	this->str_varset = new_str_varset;
+}
+
 void TempResult::doJoin(TempResult &x, TempResult &r)
 {
 	// long large_begin, large_end;
@@ -1555,7 +1611,7 @@ int TempResultSet::findCompatibleResult(Varset &_id_varset, Varset &_str_varset)
 	return (int)this->results.size() - 1;
 }
 
-void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
+void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset)
 {
 	task_event.checkOpCancel();
 	long tv_begin = gutil::TimeUtil::timestamp();
@@ -1579,13 +1635,13 @@ void TempResultSet::doJoin(TempResultSet &x, TempResultSet &r, std::shared_ptr<S
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
 		{
 			task_event.checkOpCancel();
-			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset, task_event);
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, kvstore, entity_literal_varset, task_event);
 		}
 	for (int i = 0; i < (int)x.results.size(); i++)
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
 		{
 			task_event.checkOpCancel();
-			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset, task_event);
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, kvstore, entity_literal_varset, task_event);
 		}
 
 	// long totalFindCompTime = 0, totalInnerJoinTime = 0;
@@ -1634,7 +1690,7 @@ void TempResultSet::doUnion(TempResultSet &x, TempResultSet &r)
 	SLOG_CORE("after doUnion, used " << (tv_end - tv_begin) <<" ms.");
 }
 
-void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
+void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, shared_ptr<KVstore> kvstore, Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1656,10 +1712,10 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, std::shared_p
 	// Align this and x's str varset
 	for (int i = 0; i < (int)this->results.size(); i++)
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
-			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, kvstore, entity_literal_varset);
 	for (int i = 0; i < (int)x.results.size(); i++)
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
-			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, kvstore, entity_literal_varset);
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{
@@ -1685,7 +1741,7 @@ void TempResultSet::doOptional(TempResultSet &x, TempResultSet &r, std::shared_p
 	SLOG_CORE("after doOptional, used " << (tv_end - tv_begin) <<" ms.");
 }
 
-void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, std::shared_ptr<StringIndex> stringindex, Varset &entity_literal_varset)
+void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, shared_ptr<KVstore> kvstore,  Varset &entity_literal_varset)
 {
 	long tv_begin = gutil::TimeUtil::timestamp();
 
@@ -1704,10 +1760,10 @@ void TempResultSet::doMinus(TempResultSet &x, TempResultSet &r, std::shared_ptr<
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 		if (this->results[i].id_varset.hasCommonVar(x_str_varset))
-			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, stringindex, entity_literal_varset);
+			this->results[i].convertId2Str(this->results[i].id_varset * x_str_varset, kvstore, entity_literal_varset);
 	for (int i = 0; i < (int)x.results.size(); i++)
 		if (x.results[i].id_varset.hasCommonVar(this_str_varset))
-			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, stringindex, entity_literal_varset);
+			x.results[i].convertId2Str(x.results[i].id_varset * this_str_varset, kvstore, entity_literal_varset);
 
 	for (int i = 0; i < (int)this->results.size(); i++)
 	{

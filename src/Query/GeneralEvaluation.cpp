@@ -468,7 +468,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 			else
 			{
 				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				temp->release();
 				result->release();
@@ -679,7 +679,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						else
 						{
 							std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+							sub_result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 							temp->release();
 							sub_result->release();
@@ -701,7 +701,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 					else
 					{
 						std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-						result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+						result->doJoin(*sub_result, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 						sub_result->release();
 						result->release();
@@ -748,7 +748,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 				else
 				{
 					std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-					result->doJoin(*sub_result, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doJoin(*sub_result, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 					sub_result->release();
 					result->release();
@@ -986,7 +986,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						else
 						{
 							std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-							sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+							sub_result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 							temp->release();
 							sub_result->release();
@@ -1030,7 +1030,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 							else
 							{
 								std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-								sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+								sub_result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 								temp->release();
 								sub_result->release();
@@ -1095,7 +1095,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 								std::shared_ptr<TempResultSet> temp = queryEvaluation(dep + 1);
 
 								std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-								sub_result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+								sub_result->doOptional(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 								temp->release();
 								sub_result->release();
@@ -1156,7 +1156,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 			else
 			{
 				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				result->doJoin(*sub_result_outer, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				sub_result_outer->release();
 				result->release();
@@ -1177,9 +1177,9 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 				std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
 
 				if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Optional_type)
-					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doOptional(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 				else if (group_pattern.sub_group_pattern[i].type == GroupPattern::SubGroupPattern::Minus_type)
-					result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doMinus(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 				temp->release();
 				result->release();
@@ -1237,7 +1237,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 	    		else
 		    	{
 		    		std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-	    			result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+	    			result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 		    		temp->release();
 	    			result->release();
@@ -1270,7 +1270,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 				else
 				{
 					std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-					result->doJoin(*temp_trs, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+					result->doJoin(*temp_trs, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 					temp_trs->release();
 					result->release();
 					temp_trs.reset();
@@ -3583,7 +3583,7 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 			SLOG_CORE("Final result size: "<<temp->results[0].result.size());
 
 			std::shared_ptr<TempResultSet> new_result = std::make_shared<TempResultSet>(task_event);
-			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			sub_result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 			sub_result->release();
 			sub_result.reset();
@@ -3754,7 +3754,7 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, std::sha
 		else
 		{
 			new_result = std::make_shared<TempResultSet>(task_event);
-			sub_result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			sub_result->doJoin(*temp, *new_result, this->kvstore, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
 			temp->release();
 			sub_result->release();
