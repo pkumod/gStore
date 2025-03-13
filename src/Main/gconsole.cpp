@@ -669,7 +669,7 @@ int execute_line(char *line)
 	while (j > -1)
 	{
 		// search for > from tail of line before }: sparql triple may contain >, which would only be in {} or before {}
-		if (line[j] == '"' || line[j] == '}')
+		if (line[j] == '"' || line[j] == '}' || line[j] == ')')
 			break;
 		else if (line[j] == '>') // pos of last '>'
 		{
