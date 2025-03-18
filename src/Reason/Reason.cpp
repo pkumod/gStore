@@ -89,6 +89,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
   string insert_sparql = "";
   string delete_sparql = "";
   string check_sparql = "";
+  string select_sparql = "";
 
   if (FileUtil::fileExists(rulefilepath) == false)
   {
@@ -144,13 +145,13 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
           string filter;
           filters[j].get_to(filter);
           if (j > 0)
-            subfilter = subfilter + " & " + filter + " ";
+            subfilter = subfilter + " && " + filter + " ";
           else
             subfilter = subfilter + "  " + filter + " ";
         }
         if (filters.size() > 0)
         {
-          subfilter = " filter( " + subfilter + ").";
+          subfilter = " filter(" + subfilter + ").";
         }
       }
       subwhere = "{" + subwhere + subfilter + "}";
@@ -191,6 +192,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
         insert_sparql = "insert {" + source + " <Rule:" + label + "> " + value + ". } where " + wheresparql;
       }
       delete_sparql = "delete where {?x <Rule:" + label + "> " + value + ".}";
+      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). bind(" + value + " as ?o). ?s ?p ?o. }";
     }
     else
     {
@@ -208,22 +210,27 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
       }
 
       delete_sparql = "delete where {?x <Rule:" + label + "> ?y.}";
+      select_sparql = "select ?s ?p ?o where {bind(<Rule:" + label + "> as ?p). ?s ?p ?o.}";
     }
     check_sparql = "select (count(*) as ?result) where { " + wheresparql + " }";
 
     doc["status"] = "已编译";
+    doc["checkResult"] = "";
     doc["insert_sparql"] = insert_sparql;
     doc["delete_sparql"] = delete_sparql;
     doc["check_sparql"] = check_sparql;
+    doc["select_sparql"] = select_sparql;
 
     results.insert_sparql = insert_sparql;
     results.delete_sparql = delete_sparql;
     results.check_sparql = check_sparql;
+    results.select_sparql = select_sparql;
 
     results.issuccess = 1;
     SLOG_CORE("insert_sparql:" << insert_sparql);
     SLOG_CORE("delete_sparql:" << delete_sparql);
     SLOG_CORE(" check_sparql:" << check_sparql);
+    SLOG_CORE("select_sparql:" << select_sparql);
 
     std::ofstream file(rulefilepath);
     file << doc.dump();

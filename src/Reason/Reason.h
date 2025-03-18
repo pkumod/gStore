@@ -10,6 +10,7 @@ struct ReasonSparql
   string insert_sparql;
   string delete_sparql;
   string check_sparql;
+  string select_sparql;
   string error_message;
   int issuccess = 0;
 };

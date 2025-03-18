@@ -318,7 +318,7 @@ namespace server
 
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
-                if (apiUtil->rdlock_databaseinfo(db_info))
+                if (apiUtil->rdlock_databaseinfo(db_info) == false)
                 {
                     msg = "get current database read lock fail.";
                     response.Error(StatusOperationFailed, msg);
@@ -362,41 +362,57 @@ namespace server
                 }
                 int effectNum = 0;
                 string checkMsg = "ok";
-                nlohmann::json json;
-                if (rs.to_JSON(json))
+                try
                 {
-                    checkMsg = "query result is not json format!";
-                    effectNum = 0;
-                }
-                else
-                {
-                    if (json.contains("results"))
+                    std::string countNum = rs.answer[0][0];
+                    SLOG_TRACE("countNum: " + countNum);
+                    size_t pos = countNum.find("\"^^<");
+                    if (pos != string::npos) 
                     {
-                        nlohmann::json results = json["results"];
-                        if (results.contains("bindings"))
-                        {
-                            nlohmann::json bindings = results["bindings"];
-                            if (bindings.size() > 0)
-                            {
-                                nlohmann::json resultobj = bindings[0]["result"];
-                                if (resultobj.contains("value"))
-                                {
-                                    string result_value;
-                                    resultobj.at("value").get_to(result_value);
-                                    effectNum = stoi(result_value);
-                                }
-                                else
-                                {
-                                    effectNum = 0;
-                                }
-                            }
-                            else
-                            {
-                                effectNum = 0;
-                            }
-                        }
+                        countNum = countNum.substr(1, pos - 1);
                     }
+                    effectNum = std::stoi(countNum);
                 }
+                catch(const std::exception& e)
+                {
+                    SLOG_ERROR("parse countNum error: " << e.what());
+                }
+                
+                // nlohmann::json json;
+                // if (rs.to_JSON(json))
+                // {
+                //     checkMsg = "query result is not json format!";
+                //     effectNum = 0;
+                // }
+                // else
+                // {
+                //     if (json.contains("results"))
+                //     {
+                //         nlohmann::json results = json["results"];
+                //         if (results.contains("bindings"))
+                //         {
+                //             nlohmann::json bindings = results["bindings"];
+                //             if (bindings.size() > 0)
+                //             {
+                //                 nlohmann::json resultobj = bindings[0]["result"];
+                //                 if (resultobj.contains("value"))
+                //                 {
+                //                     string result_value;
+                //                     resultobj.at("value").get_to(result_value);
+                //                     effectNum = stoi(result_value);
+                //                 }
+                //                 else
+                //                 {
+                //                     effectNum = 0;
+                //                 }
+                //             }
+                //             else
+                //             {
+                //                 effectNum = 0;
+                //             }
+                //         }
+                //     }
+                // }
                 ReasonHelper::updateReasonRuleEffectNum(rulename, _db_path, effectNum, checkMsg);
                 ReasonHelper::updateReasonRuleStatus(rulename, "已校验", _db_path);
                 response.check_sparql = resultInfo.check_sparql;

@@ -615,7 +615,7 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
     int rwlock_code = pthread_rwlock_rdlock(&already_build_map_lock);
     if (rwlock_code != 0) 
     {
-        SLOG_ERROR("already_build_map read lock error: " + to_string(rwlock_code));
+        SLOG_ERROR("gets already_build_map read lock error: " + to_string(rwlock_code));
         dbInfo = nullptr;
         return false;
     }
@@ -627,7 +627,7 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
     }
     else
     {
-        SLOG_ERROR("can't find [" + db_name + "] database info from already_build_map");
+        SLOG_ERROR("cannot find [" + db_name + "] database info in the already_build_map");
         dbInfo = nullptr;
     }
     unlock_already_build_map();
@@ -667,12 +667,12 @@ bool APIUtil::wrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
         return result;
     if (pthread_rwlock_wrlock(&(dbinfo->db_lock)) == 0)
     {
-        SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock ok.");
+        SLOG_CORE("gets database[" + dbinfo->getName() + "] write lock ok.");
         result = true;
     }
     else
     {
-        SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock fail.");
+        SLOG_CORE("gets database[" + dbinfo->getName() + "] write lock fail.");
     }
     return result;
 }
@@ -689,7 +689,7 @@ bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const tim
         return result;
     if (pthread_rwlock_trywrlock(&(dbinfo->db_lock)) == 0)
     {
-        SLOG_CORE("try gets databaseinfo[" + dbinfo->getName() + "] write lock ok.");
+        SLOG_CORE("try gets database[" + dbinfo->getName() + "] write lock ok.");
         result = true;
     }
     else
@@ -701,12 +701,12 @@ bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const tim
         str_timeout.tv_nsec = now.tv_usec * 1000;
         if (pthread_rwlock_timedwrlock(&(dbinfo->db_lock), &str_timeout) == 0)
         {
-            SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock ok.");
+            SLOG_CORE("gets database[" + dbinfo->getName() + "] write lock ok.");
             result = true;
         }
         else
         {
-            SLOG_CORE("gets databaseinfo[" + dbinfo->getName() + "] write lock timeout.");
+            SLOG_CORE("gets database[" + dbinfo->getName() + "] write lock timeout.");
         }
     }
     return result;
@@ -718,13 +718,13 @@ bool APIUtil::rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     if (rwlock_code == 0)
     {
         // #if defined(DEBUG)
-        SLOG_CORE("read lock database[" + dbinfo->getName() + "] ok");
+        SLOG_CORE("gets database[" + dbinfo->getName() + "] read lock ok");
         // #endif
         return true;
     }
     else
     {
-        SLOG_ERROR("read lock database[" + dbinfo->getName() + "] error: " + to_string(rwlock_code));
+        SLOG_ERROR("gets database[" + dbinfo->getName() + "] read lock error: " + to_string(rwlock_code));
         return false;
     }
 }
@@ -740,12 +740,12 @@ bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     int rwlock_code = pthread_rwlock_unlock(&(dbinfo->db_lock));
     if (rwlock_code == 0)
     {
-        SLOG_CORE("database [" + dbinfo->getName() + "] unlock ok");
+        SLOG_CORE("database[" + dbinfo->getName() + "] unlock ok");
         return true;
     }
     else
     {
-        SLOG_ERROR("database [" + dbinfo->getName() + "] unlock error: " + to_string(rwlock_code));
+        SLOG_ERROR("database[" + dbinfo->getName() + "] unlock error: " + to_string(rwlock_code));
         return false;
     }
 }
