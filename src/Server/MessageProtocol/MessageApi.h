@@ -211,6 +211,7 @@ namespace server
         uint32_t connectionNum;
         uint64_t diskUsed;
         std::unordered_map<std::string, unsigned long long> subjectList;
+        nlohmann::json schema;
         MessageMonitorResponse();
         MessageMonitorResponse(int code, std::string msg) : MessageResponse(code, msg) {}
         MessageMonitorResponse(std::string body);

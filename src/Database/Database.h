@@ -38,6 +38,43 @@ const std::map<DatabaseProgressStatus, std::string> DatabseProgressMap
     {Progress_build_spo2values,  "Begin to build spo2values"},
 };
 
+struct RelationInfo
+{
+	public:
+    std::string source;
+    std::string label;
+    std::string target;
+	bool empty()
+	{
+		return source.empty() || target.empty();
+	}
+
+	bool operator < (const RelationInfo& s) const
+	{
+		if (getString() < s.getString())
+			return true;
+		return false;
+	}
+
+	bool operator > (const RelationInfo& s) const
+	{
+		if (getString() > s.getString())
+			return true;
+		return false;
+	}
+	bool operator = (const RelationInfo& s) const
+	{
+		if (getString() == s.getString())
+			return true;
+		return false;
+	}
+
+	string getString()const
+	{
+		return source + label + target;
+	}
+};
+
 class Database
 {
 public:
@@ -362,7 +399,7 @@ private:
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	// static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 
-	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples);
 	// bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
 	void subject2id_RDFintoSignature(const string& _sub, TYPE_ENTITY_LITERAL_ID& _sub_id, unordered_set<TYPE_ENTITY_LITERAL_ID>& sub_lists);
 	void predicate2id_RDFintoSignature(const string& _pre, TYPE_PREDICATE_ID& _pre_id);
@@ -386,6 +423,15 @@ private:
 	bool write_update_log(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIPLE_NUM _triple_num, int type, shared_ptr<Transaction> txn);
 	void updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoidlist, TYPE_ENTITY_LITERAL_ID pred_id);
 	void addTripleUpdateNum(TYPE_TRIPLE_NUM num){ triple_update_num += num; }
+
+	// build close
+	void buildCloseToSaveMemory();
+	// schema
+	string getSchemaPath();
+	void createSchema(const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples, std::set<int>& id_propertys, const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
+	void buildSchema(const string _rdf_file, const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples);
+	public:
+	void getSchemaInfo(nlohmann::json& schema, bool all);
 };
 
 #endif //_DATABASE_DATABASE_H

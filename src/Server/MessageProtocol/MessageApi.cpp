@@ -415,6 +415,7 @@ namespace server
                 json["subjectList"].push_back(temp);
             }
         }
+        json["schema"] = schema;
         json_str = json.dump();
     }
     

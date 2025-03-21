@@ -119,6 +119,8 @@ void license_remove(const GRPCReq *request, GRPCResp *response);
 //task manager
 void operation_task_cancel(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+// schema
+void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 {
@@ -1536,6 +1538,9 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		break;
 	case OP_OPERATIONTASKLIST:
 	    operation_task_list(request,response,json_data);
+		break;
+	case OP_SCHEMA:
+		schema_task(request, response, json_data);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
@@ -3296,5 +3301,38 @@ void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::j
 	json["totalPage"] =  totalPage;
 	json["totalSize"] =  totalSize;
 	std::string json_str = json.dump();
+	response->Json(json_str);
+}
+
+void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
+{
+	std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
+	if (db_name.empty())
+	{
+		response->Error(StatusParamIsIllegal, "db_name can't be empty");
+		return;
+	}
+
+	if (apiUtil->check_db_built(db_name) == false)
+	{
+		response->Error(StatusOperationConditionsAreNotSatisfied, "the database [" + db_name + "] not built yet.");
+		return;
+	}
+
+	shared_ptr<DatabaseInfo> database_info;
+	apiUtil->get_databaseinfo(db_name, database_info);
+	if (apiUtil->rdlock_databaseinfo(database_info) == false)
+	{
+		response->Error(StatusLossOfLock, "Unable to monitor due to loss of lock");
+		return;
+	}
+	shared_ptr<Database> current_database = database_info->getDatabase();
+	apiUtil->unlock_databaseinfo(database_info);
+	nlohmann::json rjson;
+	rjson["StatusCode"]  = 0;
+    rjson["StatusMsg"]   = "success";
+	rjson["ResponseBody"] = nlohmann::json::object();
+	current_database->getSchemaInfo(rjson["ResponseBody"], false);
+	std::string json_str = rjson.dump();
 	response->Json(json_str);
 }

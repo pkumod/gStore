@@ -24,7 +24,7 @@ Database::Database()
 	this->update_log_since_backup = "update_since_backup.log";
 	// this->csr = nullptr;
 
-	this->type_predicate_name = {"type","TYPE","类型"};
+	this->type_predicate_name = {"<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>"};
 
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
@@ -81,7 +81,7 @@ Database::Database(string _name)
 	this->update_log = "update.log";
 	this->update_log_since_backup = "update_since_backup.log";
 	// this->csr = nullptr;
-	this->type_predicate_name = {"type","TYPE","类型"};
+	this->type_predicate_name = {"<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>"};
 	string kv_store_path = store_path + "/kv_store";
 	this->kvstore = std::make_shared<KVstore>(kv_store_path);
 	string stringindex_store_path = store_path + "/stringindex_store";
@@ -2091,10 +2091,8 @@ bool Database::checkIsTypePredicate(string &predicate)
 {
 	for (size_t i = 0; i < this->type_predicate_name.size(); i++)
 	{
-		if (gutil::StringUtil::contains(predicate, this->type_predicate_name[i]))
-		{
+		if (this->type_predicate_name[i] == predicate)
 			return true;
-		}
 	}
 	return false;
 }
@@ -2229,10 +2227,14 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 
 	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	setProgress(Progress_RDFParse);
-	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, bar))
+	std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>> id_tuples;
+	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, bar, id_tuples))
 	{
 		return false;
 	}
+
+	thread build_schema_thread(&Database::buildSchema, this, _rdf_file, id_tuples);
+
 	int64_t t2 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	// TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset
@@ -2261,21 +2263,6 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	SLOG_CORE("Saving StringIndex, used " + to_string(t1 - t2) + "ms.");
 	bar.set_option(indicators::option::PostfixText{"building id2string and string2id 2/5"});
 	bar.set_progress(61);
-
-	// NOTICE:close these trees now to save memory
-	SLOG_CORE("Begin to save id2string and string2id ......");
-	thread close_entity2id_thread([this](){ this->kvstore->close_entity2id(); });
-	thread close_id2entity_thread([this](){ this->kvstore->close_id2entity(); });
-	thread close_literal2id_thread([this](){ this->kvstore->close_literal2id(); });
-	thread close_id2literal_thread([this](){ this->kvstore->close_id2literal(); });
-	thread close_predicate2id_thread([this](){ this->kvstore->close_predicate2id(); });
-	thread close_id2predicate_thread([this](){ this->kvstore->close_id2predicate(); });
-	close_entity2id_thread.join();
-	close_id2entity_thread.join();
-	close_literal2id_thread.join();
-	close_id2literal_thread.join();
-	close_predicate2id_thread.join();
-	close_id2predicate_thread.join();
 	
 	t2 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish saving id2string and string2id, used " + to_string(t2 - t1) + "ms.");
@@ -2374,9 +2361,30 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	{
 		SLOG_ERROR("the statistics info file of db saved failure!");
 	}
+	// build_schema must kvstore in memory
+	build_schema_thread.join();
+	buildCloseToSaveMemory();
 	bar.set_option(indicators::option::PostfixText{"Build RDF database done 5/5"});
 	bar.set_progress(100);
 	return true;
+}
+
+void Database::buildCloseToSaveMemory()
+{
+	// NOTICE:close these trees now to save memory
+	SLOG_CORE("Begin to save id2string and string2id ......");
+	thread close_entity2id_thread([this](){ this->kvstore->close_entity2id(); });
+	thread close_id2entity_thread([this](){ this->kvstore->close_id2entity(); });
+	thread close_literal2id_thread([this](){ this->kvstore->close_literal2id(); });
+	thread close_id2literal_thread([this](){ this->kvstore->close_id2literal(); });
+	thread close_predicate2id_thread([this](){ this->kvstore->close_predicate2id(); });
+	thread close_id2predicate_thread([this](){ this->kvstore->close_id2predicate(); });
+	close_entity2id_thread.join();
+	close_id2entity_thread.join();
+	close_literal2id_thread.join();
+	close_id2literal_thread.join();
+	close_predicate2id_thread.join();
+	close_id2predicate_thread.join();
 }
 
 void Database::readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples)
@@ -2443,7 +2451,7 @@ void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 	SLOG_CORE("Finish building p2values, used " << (t2 - t1) << "ms.");
 }
 
-bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar)
+bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples)
 {
 	// NOTICE: if we keep the id_tuples always in memory, i.e. [unsigned*] each unsigned* is [3]
 	// then for freebase, there is 2.5B triples. the mmeory cost of this array is 25*10^8*3*4 + 25*10^8*8 = 50G
@@ -2508,73 +2516,6 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	SLOG_CORE("Begin to build Trie ......");
 	int num_lines = 0;
-	// NOTICE: The following code block has no practical effect,
-	// and the parsing error log can be placed in the following loop
-	// annotating code start
-
-	// {
-	// 	long begin = gutil::TimeUtil::timestamp();
-	// 	ifstream _fin0(_rdf_file.c_str());
-	// 	// parse a file
-	// 	RDFParser _parser0(_fin0);
-
-	// 	// Initialize trie
-
-	// 	std::shared_ptr<Trie> trie = kvstore->getTrie();
-	// 	int batch_count = 0;
-	// 	while (true)
-	// 	{
-	// 		++batch_count;
-	// 		int parse_triple_num = 0;
-	// 		// TODO: make the line numbers reported inside parseFile global
-	// 		int curr_lines = _parser0.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
-	// 		num_lines = curr_lines;
-	// 		if (parse_triple_num == 0)
-	// 		{
-	// 			break;
-	// 		}
-
-	// 		indicators::ProgressBar bar{
-	// 			indicators::option::BarWidth{50},
-	// 			indicators::option::Start{"["},
-	// 			indicators::option::Fill{"="},
-	// 			indicators::option::Lead{">"},
-	// 			indicators::option::Remainder{" "},
-	// 			indicators::option::End{"]"},
-	// 			indicators::option::PostfixText{"Build Trie for batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num)},
-	// 			indicators::option::ForegroundColor{indicators::Color::green},
-	// 			indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}};
-
-	// 		int bar_tmp = 0;
-	// 		int one_percent_num = parse_triple_num / 100;
-
-	// 		// Process the Triple one by one
-	// 		for (int i = 0; i < parse_triple_num; i++)
-	// 		{
-	// 			++bar_tmp;
-	// 			if (bar_tmp == one_percent_num)
-	// 			{
-	// 				bar.tick();
-	// 				bar_tmp = 0;
-	// 			}
-
-	// 			string t = triple_array[i].getSubject();
-	// 			trie->Addstring(t);
-	// 			t = triple_array[i].getPredicate();
-	// 			trie->Addstring(t);
-	// 			t = triple_array[i].getObject();
-	// 			trie->Addstring(t);
-	// 		}
-	// 		if (!bar.is_completed())
-	// 			bar.set_progress(100);
-	// 	}
-	// 	SLOG_CORE("Add triples to Trie, begin to build Prefix ......");
-	// 	trie->BuildPrefix();
-	// 	SLOG_CORE("Build Prefix and Trie done. used " << gutil::TimeUtil::timestamp() - begin << "ms.");
-	// }
-
-	// annotating code end
-
 	RDFParser _parser(_fin); // RDFParser is actually invoked twice, see above
 
 	num_lines = 0;
@@ -2585,10 +2526,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 
 	int batch_count = 0;
 	unordered_set<TYPE_ENTITY_LITERAL_ID> sub_lists;
-	std::map<int, vector<ID_TUPLE>> id_tuples;
 	std::shared_ptr<ID_TUPLE[]> tmp_id_tuples(new ID_TUPLE[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<ID_TUPLE[]>());
-	std::string split_str = cluster::TripleInfo::getSplitStr();
-	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
 	// parse 60%, max triples 5B，per batch 10M
 	float progress_unit = 60 / 50 / 10;
 	while (true)
@@ -2643,9 +2581,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			tmp_id_tuple.objid = _obj_id;
 			// when the predicat is type
 			if (triple_array[i].isObjEntity() && this->checkIsTypePredicate(_pre))
-			{
-				id_tuples[_obj_id].push_back(tmp_id_tuple);
-			}
+				id_tuples[_obj_id].insert(_sub_id);
 			tmp_id_tuples[i] = tmp_id_tuple;
 		}
 		fwrite(tmp_id_tuples.get(), sizeof(ID_TUPLE), parse_triple_num, fp);
@@ -2656,15 +2592,9 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	for (const auto& m: id_tuples)
 	{
 		std::string obj_v = (this->kvstore)->getEntityByID(m.first);
-		if (obj_v.empty())
+		if (obj_v.empty() || m.second.size() == 0)
 			continue;
-		auto obj_array = m.second;
-		sort(obj_array.begin(), obj_array.end(), Util::spo_cmp_idtuple);
-		auto new_end = unique(obj_array.begin(), obj_array.end(), Util::equal);
-		obj_array.erase(new_end, obj_array.end());
-		if (obj_array.size() == 0)
-			continue;
-		this->umap.insert(pair<string, unsigned long long>(obj_v, obj_array.size()));
+		this->umap.insert(pair<string, unsigned long long>(obj_v, m.second.size()));
 	}
 
 	this->kvstore->set_if_single_thread(false);
