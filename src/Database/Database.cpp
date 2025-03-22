@@ -1883,6 +1883,12 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		}
 		if (txn == nullptr)
 			pthread_rwlock_unlock(&(this->update_lock));
+			
+		if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data && update_success_triple_num > 0)
+		{
+			thread update_schema_thread(&Database::updateSchema, this);
+			update_schema_thread.detach();
+		}
 	}
 
 	long tv_final = gutil::TimeUtil::timestamp();
