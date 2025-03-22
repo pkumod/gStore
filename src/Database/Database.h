@@ -209,6 +209,8 @@ private:
 	mutex log_lock;
 	//for umap
 	mutex umap_lock;
+	// for schema_lock;
+	mutex schema_lock;
 
 	std::shared_ptr<KVstore> kvstore;
 	std::shared_ptr<StringIndex> stringindex;
@@ -430,6 +432,7 @@ private:
 	string getSchemaPath();
 	void createSchema(const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples, std::set<int>& id_propertys, const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
 	void buildSchema(const string _rdf_file, const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples);
+	void updateSchema();
 	public:
 	void getSchemaInfo(nlohmann::json& schema, bool all);
 };

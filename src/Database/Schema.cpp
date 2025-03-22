@@ -131,6 +131,98 @@ void Database::createSchema(const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>
 	file.close();
 }
 
+void Database::updateSchema()
+{
+	schema_lock.lock();
+	nlohmann::json scheam = nlohmann::json::object();
+	scheam["nodes"] = nlohmann::json::array();
+	scheam["edges"] = nlohmann::json::array();
+	nlohmann::json item = nlohmann::json::object();
+	std::string rdf_type = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
+	// type 0:实体, 1:属性
+	do
+	{//所有实体类型
+		ResultSet rs;
+		string query_sparql = "select distinct ?o where {?s " + rdf_type + " ?o}";
+		bool suc = this->query(query_sparql, rs);
+		if (suc && rs.ansNum > 0)
+		{
+			for (unsigned int i = 0; i < rs.ansNum; i++)
+			{
+				item.clear();
+				item["id"] = this->kvstore->getIDByEntity(rs.answer[i][0]);
+				item["label"] = rs.answer[i][0];
+				item["type"] = 0;
+				scheam["nodes"] .push_back(item);
+			}
+		}
+	}while(0);
+
+	do
+	{
+		//所有实体属性
+		ResultSet rs;
+		string query_sparql = "select distinct ?p where {?s " + rdf_type 
+							+ " ?type. ?s ?p ?o . filter(isLiteral(?o))}";
+		bool suc = this->query(query_sparql, rs);
+		if (suc && rs.ansNum > 0)
+		{
+			for (unsigned int i = 0; i < rs.ansNum; i++)
+			{
+				item.clear();
+				item["id"] = this->kvstore->getIDByPredicate(rs.answer[i][0]);
+				item["label"] = rs.answer[i][0];
+				item["type"] = 1;
+				scheam["nodes"] .push_back(item);
+			}
+		}
+	}while(0);
+
+	do
+	{
+		// 所有边关系
+		ResultSet rs;
+		string query_sparql = "select distinct ?source_type ?p ?target_type where {?s " 
+							+ rdf_type + " ?source_type. ?s ?p ?o. ?o " + rdf_type + " ?target_type filter(isIRI(?o))}";
+		bool suc = this->query(query_sparql, rs);
+		if (suc && rs.ansNum > 0)
+		{
+			for (unsigned int i = 0; i < rs.ansNum; i++)
+			{
+				item.clear();
+				item["source"] = this->kvstore->getIDByEntity(rs.answer[i][0]);
+				item["label"] = rs.answer[i][1];
+				item["target"] = this->kvstore->getIDByEntity(rs.answer[i][2]);
+				scheam["edges"] .push_back(item);
+			}
+		}
+	} while (0);
+
+	do
+	{
+		// 所有边属性
+		ResultSet rs;
+		string query_sparql = "select distinct ?type ?p where {?s " + rdf_type + " ?type. ?s ?p ?o. filter(isLiteral(?o))}";
+		bool suc = this->query(query_sparql, rs);
+		if (suc && rs.ansNum > 0)
+		{
+			for (unsigned int i = 0; i < rs.ansNum; i++)
+			{
+				item.clear();
+				item["source"] = this->kvstore->getIDByEntity(rs.answer[i][0]);
+				item["target"] = this->kvstore->getIDByPredicate(rs.answer[i][1]);
+				scheam["edges"] .push_back(item);
+			}
+		}
+	} while (0);
+	
+	ofstream file;
+	file.open(getSchemaPath());
+	file << scheam.dump();
+	file.close();
+	schema_lock.unlock();
+}
+
 void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 {
 	std::ifstream file(getSchemaPath());
