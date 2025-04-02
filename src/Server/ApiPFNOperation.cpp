@@ -32,7 +32,7 @@ namespace server
         PFNInfo pfn_info = request.funInfo;
         if (pfn_info.empty())
         {
-            msg =  "the value of funInfo can not be empty!";
+            msg =  "Neither funName nor funBody can be empty!";
             response.Error(StatusParamIsIllegal, msg);
             return;
         }
@@ -111,7 +111,7 @@ namespace server
             struct PFNInfo pfn_info = request.funInfo;
             if (pfn_info.empty())
             {
-                msg =  "the value of funInfo can not be empty!";
+                msg =  "Neither funName nor funBody can be empty!";
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }

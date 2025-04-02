@@ -1,6 +1,7 @@
 #pragma once
 #include "../KVstore/KVstore.h"
 #include "../Query/Algorithm/CSRQueryHandler.h"
+#include "nlohmann/json.hpp"
 
 class GAnalysis
 {

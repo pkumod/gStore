@@ -105,7 +105,7 @@ void PFNUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
         if (fout)
         {
             content = PFNUtil::fun_build_source_data(pfn_info, true);
-            SLOG_DEBUG("fun_build_source_data success");
+            SLOG_CORE("fun_build_source_data success");
             fout << content;
             fout.close();
         } 
@@ -148,9 +148,7 @@ void PFNUtil::fun_update(const std::string &username, struct PFNInfo *pfn_info)
         if (fout) 
         {
             content = PFNUtil::fun_build_source_data(pfn_info, true);
-            #if defined(DEBUG)
-            SLOG_DEBUG("fun_build_source_data success");
-            #endif
+            SLOG_CORE("fun_build_source_data success");
             fout << content;
             fout.close();
         } 
@@ -203,7 +201,7 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     string pfn_include = pfn_base_path + "include/";
     string libaray = pfn_lib + "libganalysis.so";
     string cmd = "g++ -std=c++17 -fPIC " + sourceFile + " -shared -o " + targetFile + " " + libaray + " -L " + pfn_lib + " -llog4cplus" + " -I" + pfn_include + " 2>" + logFile;
-    SLOG_TRACE("fun_build g++:" << cmd);
+    SLOG_CORE("fun_build g++:" << cmd);
     int status;
     status = system(cmd.c_str());
     string error_msg = "";
@@ -216,9 +214,7 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
         vector<std::string> oldLibFiles = PFNUtil::get_files(lib_path.c_str(), oldLibPrefix);
         for (std::string oldLibFile : oldLibFiles)
         {
-            #if defined(DEBUG)
-            SLOG_DEBUG("delete old so file: " << oldLibFile);
-            #endif
+            SLOG_CORE("delete old so file: " << oldLibFile);
             std::string oldLibPath = lib_path + "/" + oldLibFile;
             FileUtil::removePath(oldLibPath);
         }
@@ -275,7 +271,7 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
     if(fun_body_o != NULL) 
     {
-         Util::a_trim(fun_body_o, fun_body.c_str());
+        Util::a_trim(fun_body_o, fun_body.c_str());
         if(fun_body_o && strlen(fun_body_o) > 0)
             fun_body = string(fun_body_o);
         xfree(fun_body_o);
@@ -283,9 +279,6 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     stringstream _buf;
     if (has_header)
     {
-        #if defined(DEBUG)
-        SLOG_DEBUG("fun header:\n" + PFNUtil::pfn_include_header);
-        #endif
         _buf << PFN_HEADER;
     }
     
@@ -295,10 +288,7 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
     }
 
     _buf << "extern \"C\" bool " + fun_name;
-    #if defined(DEBUG)
-    SLOG_DEBUG("fun_args: " + fun_args);
-    #endif
-     _buf << "(GAnalysis& ganalysis, const std::string& params, std::string& result)\n";
+    _buf << "(GAnalysis& ganalysis, const std::string& params, std::string& result)\n";
 
     bool add_brace = false;
     if (fun_body[0] != '{')

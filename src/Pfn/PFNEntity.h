@@ -13,7 +13,6 @@ public:
     std::string funBody;
     std::string funSubs;
     std::string funStatus;
-    std::string funReturn;
     std::string lastTime;
 public:
     PFNInfo() {}
@@ -36,8 +35,6 @@ public:
                 json.at("funSubs").get_to(funSubs);
             if (json.contains("funStatus"))
                 json.at("funStatus").get_to(funStatus);
-            if (json.contains("funReturn"))
-                json.at("funReturn").get_to(funReturn);
             if (json.contains("lastTime"))
                 json.at("lastTime").get_to(lastTime);
         }
@@ -52,7 +49,6 @@ public:
                 json["funBody"] = funBody;
                 json["funSubs"] = funSubs;
                 json["funStatus"] = funStatus;
-                json["funReturn"] = funReturn;
                 json["lastTime"] = lastTime;
                 return true;
             }
@@ -78,8 +74,6 @@ public:
                 json.at("funSubs").get_to(pfn_info.funSubs);
             if (json.contains("funStatus"))
                 json.at("funStatus").get_to(pfn_info.funStatus);
-            if (json.contains("funReturn"))
-                json.at("funReturn").get_to(pfn_info.funReturn);
             if (json.contains("lastTime"))
                 json.at("lastTime").get_to(pfn_info.lastTime);
             return true;
@@ -97,13 +91,12 @@ public:
         this->funBody = other.funBody;
         this->funSubs = other.funSubs;
         this->funStatus = other.funStatus;
-        this->funReturn = other.funReturn;
         this->lastTime = other.lastTime;
     }
 
     bool empty()
     {
-        return funName.empty() && funBody.empty() && funReturn.empty();
+        return funName.empty() && funBody.empty();
     }
 };
 

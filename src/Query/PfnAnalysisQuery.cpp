@@ -5,9 +5,9 @@
  * @LastEditTime: 2025-1-10 11:50:20
  * @LastEditors: hexuejiang 1632802996@qq.com
  * @Description: pfn query
- * @Sparql: SELECT (PFN.xxx({\"src\":\"<Alice>\", \"dst\": \"<Bob>\", \"direct\":\"true\", \"predSet\":[\"<喜欢>\",\"<关注>\"]}) AS ?z) WHERE {}
+ * @Sparql: SELECT (PFN.xxx({"src":"<Alice>", "dst":"<Bob>", "direct":"true", "predSet":["<喜欢>","<关注>"]}) AS ?z) WHERE {}
  * @function name: xxx
- * @param: {\"src\":\"<Alice>\", \"dst\": \"<Bob>\", \"direct\":\"true\", \"predSet\":[\"<喜欢>\",\"<关注>\"]}
+ * @param: {"src":"<Alice>", "dst":"<Bob>", "direct":"true", "predSet":["<喜欢>","<关注>"]}
  */
 #include "GeneralEvaluation.h"
 #include "../Pfn/GAnalysis.h"
@@ -19,11 +19,11 @@ std::string GeneralEvaluation::pfnQuery(const std::string& pfn_name, const std::
 {
     try
 	{
-        SLOG_TRACE("pfnQuery pfn_name:" << pfn_name << " pfn_params:" << pfn_params);
+        SLOG_CORE("pfnQuery pfn_name:" << pfn_name << " pfn_params:" << pfn_params);
         // notice pfn_params parse check, do not delete
         nlohmann::json json = nlohmann::json::parse(pfn_params);
         std::string sofile =  getPfnSoFile(username, pfn_name);
-        std::string result = "pfn_type" + excutePfnSoFile(pfn_name, sofile, pfn_params);
+        std::string result = "pfn_type" + excutePfnSoFile(pfn_name, sofile, json.dump());
         return result;
     }
     catch (const std::exception &e)
@@ -70,7 +70,7 @@ std::string GeneralEvaluation::pfnQueryByVar(const std::string& pfn_name, const 
 {
 	try
 	{
-        SLOG_TRACE("pfnQueryByVar pfn_name:" << pfn_name << " pfn_params:" << pfn_params);
+        SLOG_CORE("pfnQueryByVar pfn_name:" << pfn_name << " pfn_params:" << pfn_params);
         nlohmann::json json = nlohmann::json::parse(pfn_params);
         std::string sofile =  getPfnSoFile(username, pfn_name);
 
@@ -219,17 +219,17 @@ std::string GeneralEvaluation::excutePfnSoFile(const std::string& fun_name, cons
     }
     catch (const std::exception &e)
     {
-		string content = "run dynamic function fail: " + string(e.what());
+		string content = "run " + fun_name + " fail: " + string(e.what());
         SLOG_ERROR(content);
 		throw runtime_error(content);
     }
 	catch (...)
 	{
-		string content = "run dynamic function fail: unknown error";
+		string content = "run " + fun_name + " fail: unknown error";
 		SLOG_ERROR(content);
 		throw runtime_error(content);
 	}
     dlclose(handle);
-    SLOG_CORE("result: " + result);
+    SLOG_CORE("run " + fun_name + " result: " << result);
     return result;
 }
