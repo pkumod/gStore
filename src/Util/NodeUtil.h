@@ -16,5 +16,6 @@ namespace gutil {
     public:
         static std::string node2string(const char* _raw_str);
         static std::string clear_angle_brackets(const string& _node_str);
+        static std::string clear_angle_brackets_and_prefix(const string& _node_str);
     };
 }

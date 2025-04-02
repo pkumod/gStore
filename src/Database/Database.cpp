@@ -2233,13 +2233,14 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 
 	// map sub2id, pre2id, entity/literal in obj2id, store in kvstore, encode RDF data into signature
 	setProgress(Progress_RDFParse);
-	std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>> id_tuples;
+	std::map<std::string, std::set<std::string>> id_tuples;
 	if (!this->sub2id_pre2id_obj2id_RDFintoSignature(_rdf_file, _error_log, bar, id_tuples))
 	{
 		return false;
 	}
-
+	// build schema in background
 	thread build_schema_thread(&Database::buildSchema, this, _rdf_file, id_tuples);
+	build_schema_thread.detach(); 
 
 	int64_t t2 = gutil::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
@@ -2360,15 +2361,13 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		return false;
 	}
 	t2 = gutil::TimeUtil::timestamp();
-	SLOG_CORE("db info saved, used " + to_string(t2 - t1) + "ms.");
+	SLOG_CORE("Finish saving DBInfo, used " + to_string(t2 - t1) + "ms.");
 
 	flag = this->saveStatisticsInfoFile();
 	if (!flag)
 	{
 		SLOG_ERROR("the statistics info file of db saved failure!");
 	}
-	// build_schema must kvstore in memory
-	build_schema_thread.join();
 	buildCloseToSaveMemory();
 	bar.set_option(indicators::option::PostfixText{"Build RDF database done 5/5"});
 	bar.set_progress(100);
@@ -2457,7 +2456,7 @@ void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 	SLOG_CORE("Finish building p2values, used " << (t2 - t1) << "ms.");
 }
 
-bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples)
+bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<string, std::set<std::string>>& id_tuples)
 {
 	// NOTICE: if we keep the id_tuples always in memory, i.e. [unsigned*] each unsigned* is [3]
 	// then for freebase, there is 2.5B triples. the mmeory cost of this array is 25*10^8*3*4 + 25*10^8*8 = 50G
@@ -2586,8 +2585,9 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			tmp_id_tuple.preid = _pre_id;
 			tmp_id_tuple.objid = _obj_id;
 			// when the predicat is type
-			if (triple_array[i].isObjEntity() && this->checkIsTypePredicate(_pre))
-				id_tuples[_obj_id].insert(_sub_id);
+			if (triple_for_spo.isObjEntity() && this->checkIsTypePredicate(_pre))
+				id_tuples[_obj].insert(_sub);
+				
 			tmp_id_tuples[i] = tmp_id_tuple;
 		}
 		fwrite(tmp_id_tuples.get(), sizeof(ID_TUPLE), parse_triple_num, fp);
@@ -2597,7 +2597,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	}
 	for (const auto& m: id_tuples)
 	{
-		std::string obj_v = (this->kvstore)->getEntityByID(m.first);
+		std::string obj_v = m.first;
 		if (obj_v.empty() || m.second.size() == 0)
 			continue;
 		this->umap.insert(pair<string, unsigned long long>(obj_v, m.second.size()));

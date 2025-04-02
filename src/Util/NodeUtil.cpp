@@ -74,4 +74,27 @@ namespace gutil
         }
         return result;
     }
+
+    std::string NodeUtil::clear_angle_brackets_and_prefix(const string& _node_str)
+    {
+        string result = _node_str;
+        if (!result.empty() && result[0] == '<') {
+            result.erase(result.begin());
+        }
+        if (!result.empty() && result[result.size() - 1] == '>') {
+            result.erase(result.end() - 1);
+        }
+        if (!result.empty() && result.find('http') != string::npos) {
+            size_t start = result.find("http");
+            if (result.find("#") != string::npos)
+            {
+                size_t end = result.find_last_of("#");
+                result.erase(start, end - start + 1);
+            } else if (result.find("/") != string::npos) {
+                size_t end = result.find_last_of("/");
+                result.erase(start, end - start + 1);
+            }
+        }
+        return result;
+    }
 }

@@ -401,7 +401,7 @@ private:
 	void sub_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 	// static void run_batch_update(vector<ID_TUPLE> id_tuples, TYPE_TRIPLE_NUM _triple_num, unsigned &update_num, UPDATE_TYPE type, shared_ptr<Transaction> txn = nullptr);
 
-	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples);
+	bool sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, const string _error_log, indicators::ProgressBar& bar, std::map<string, std::set<std::string>>& id_tuples);
 	// bool literal2id_RDFintoSignature(const string _rdf_file, int** _p_id_tuples, TYPE_TRIPLE_NUM _id_tuples_max);
 	void subject2id_RDFintoSignature(const string& _sub, TYPE_ENTITY_LITERAL_ID& _sub_id, unordered_set<TYPE_ENTITY_LITERAL_ID>& sub_lists);
 	void predicate2id_RDFintoSignature(const string& _pre, TYPE_PREDICATE_ID& _pre_id);
@@ -430,8 +430,8 @@ private:
 	void buildCloseToSaveMemory();
 	// schema
 	string getSchemaPath();
-	void createSchema(const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples, std::set<int>& id_propertys, const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
-	void buildSchema(const string _rdf_file, const std::map<int, std::set<TYPE_ENTITY_LITERAL_ID>>& id_tuples);
+	void createSchema(const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
+	void buildSchema(const std::string _rdf_file, const std::map<std::string, std::set<std::string>>& id_tuples);
 	void updateSchema();
 	public:
 	void getSchemaInfo(nlohmann::json& schema, bool all);
