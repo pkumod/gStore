@@ -1095,6 +1095,15 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 				ret_femv.datatype = EvalMultitypeValue::iri;
 				ret_femv.term_value = x.str_value.substr(p + 2);
 			}
+			else
+			{
+				p = x.term_value.rfind("^^");
+				if (p != string::npos)
+				{
+					ret_femv.datatype = EvalMultitypeValue::iri;
+					ret_femv.term_value = x.term_value.substr(p + 2);
+				}
+			}
 		}
 		else if (x.datatype == EvalMultitypeValue::literal)
 		{
