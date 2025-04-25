@@ -48,7 +48,6 @@ namespace server
         {
             if (!build_check(apiUtil, request, response))
                 return;
-            
             std::string db_name = request.db_name;
             std::string username = request.username;
             std::string db_path = request.db_path;
@@ -65,7 +64,6 @@ namespace server
                     return;
                 }
             }
-
             string _db_path = GlobalTypedef::db_path(db_name);
             string database = db_name;
             SLOG_DEBUG("Import dataset to build database...");
@@ -88,8 +86,13 @@ namespace server
             int success_num = current_database->getTripleNum();
             current_db_info->setDatabase(nullptr);
             current_database.reset();
-            if (flag)
+            try
             {
+                if (!flag) 
+                {
+                    result = "build failed.";
+                    throw std::runtime_error(result);
+                }
                 // if zip file then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
@@ -97,34 +100,27 @@ namespace server
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {
-                        result = "Import RDF file to database failed: load error.";
-                        FileUtil::removePath(_db_path);
-                        if (!unz_dir_path.empty())
-                        {
-                            FileUtil::removePath(unz_dir_path);
-                        }
-                        response.StatusMsg = result;
-                        response.StatusCode = StatusOperationFailed;
-                        current_database.reset();
-                        return;
+                        result = "unable to load database.";
+                        throw std::runtime_error(result);
                     }
                     for (std::string rdf_zip : nt_files)
                     {
+                        SLOG_DEBUG("batch insert rdf file: " + rdf_zip);
                         current_database->batch_insert(rdf_zip, false, nullptr);
                     }
                     nt_file_num += nt_files.size();
                     if (!current_database->save())
-					{
-                        response.Error(StatusOperationFailed, "disk or memory is not enough");
-                        return;
+                    {
+                        result = "disk or memory is not enough.";
+                        throw std::runtime_error(result);
                     }
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }
             }
-            else
+            catch(const std::exception& e)
             {
-                result = "Import RDF file to database failed.";
+                result = "Import RDF file to database failed:" + string(e.what());
                 FileUtil::removePath(_db_path);
                 if (!unz_dir_path.empty())
                 {
@@ -132,6 +128,8 @@ namespace server
                 }
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
+                current_database.reset();
+                SLOG_ERROR(result);
                 return;
             }
             // init databaseinfo

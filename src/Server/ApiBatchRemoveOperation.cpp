@@ -40,6 +40,8 @@ namespace server
 
     void ApiHandler::batch_remove(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
+        shared_ptr<DatabaseInfo> db_info;
+        std::string unz_dir_path;
         try
         {
             if (!batch_remove_check(apiUtil, request, response))
@@ -47,7 +49,6 @@ namespace server
             
             std::string file = request.file;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
             std::string file_suffix = FileUtil::fileSuffix(file);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
@@ -61,10 +62,12 @@ namespace server
             }
             std::string db_name = request.db_name;
             std::string remote_ip = request.remote_ip;
-            shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
+                // remove unzip files
+                if (unz_dir_path != "")
+                    FileUtil::removeDir(unz_dir_path);
                 response.StatusMsg = "Unable to batch remove due to loss of lock.";
                 response.StatusCode = StatusLossOfLock;
                 return;
@@ -80,6 +83,9 @@ namespace server
                 SLOG_DEBUG("begin remove data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr);
             }
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
@@ -102,6 +108,11 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                apiUtil->unlock_databaseinfo(db_info);
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             response.StatusMsg = "Batch remove fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
@@ -109,6 +120,8 @@ namespace server
 
     void ApiHandler::batch_remove_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
+        shared_ptr<DatabaseInfo> db_info;
+        std::string unz_dir_path;
         try
         {
             if (!batch_remove_check(apiUtil, request, response))
@@ -140,7 +153,6 @@ namespace server
 
             std::string file = request.file;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
             std::string file_suffix = FileUtil::fileSuffix(file);
             bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
             if (is_zip)
@@ -157,6 +169,9 @@ namespace server
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
+                // remove unzip files
+                if (unz_dir_path != "")
+                    FileUtil::removeDir(unz_dir_path);
                 response.StatusMsg = "Unable to batch remove due to loss of lock.";
                 response.StatusCode = StatusLossOfLock;
                 return;
@@ -260,6 +275,11 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                apiUtil->unlock_databaseinfo(db_info);
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             response.StatusMsg = "Batch remove fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }

@@ -182,7 +182,7 @@ namespace gutil
         result.erase(remove(result.begin(), result.end(), '\t'), result.end());
         result.erase(remove(result.begin(), result.end(), '\v'), result.end());
         result.erase(remove(result.begin(), result.end(), '\f'), result.end());
-        return result;
+        return replace_all(result, "    ", "");
     }
 
     std::string StringUtil::replace_all(const std::string& str, const std::string& oldtext, const std::string& newtext)

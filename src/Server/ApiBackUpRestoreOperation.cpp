@@ -272,7 +272,7 @@ namespace server
             }
             std::string export_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".nt";
             bool compress = request.compress;
-            SLOG_DEBUG("export_path: " << export_path << " ,compress:" << compress);
+            SLOG_DEBUG("export_path:" << export_path << ", compress:" << compress);
             FILE *ofp = fopen(export_path.c_str(), "w");
             db_info->getDatabase()->export_db(ofp);
             fflush(ofp);
@@ -283,7 +283,7 @@ namespace server
             if (compress)
             {
                 std::string zip_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".zip";
-                if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path))
+                if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path, false))
                 {
                     FileUtil::removePath(export_path);
                     FileUtil::removePath(zip_path);

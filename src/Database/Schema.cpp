@@ -154,7 +154,7 @@ void Database::updateSchema()
 		ResultSet rs;
 		int nodeIndex = 1;
 		string query_sparql = "select distinct ?o where {?s " + rdf_type + " ?o}";
-		bool suc = this->query(query_sparql, rs);
+		bool suc = this->query(query_sparql, rs, nullptr);
 		if (suc && rs.ansNum > 0)
 		{
 			for (unsigned int i = 0; i < rs.ansNum; i++)
@@ -169,7 +169,7 @@ void Database::updateSchema()
 				// 所有实体属性
 				ResultSet property_rs;
 				query_sparql = "select distinct ?p where {?s " + rdf_type + " " + rs.answer[i][0] + ". ?s ?p ?o . filter(isLiteral(?o))}";
-				suc = this->query(query_sparql, property_rs);
+				suc = this->query(query_sparql, property_rs, nullptr);
 				if (suc && property_rs.ansNum > 0)
 				{
 					for (unsigned int j = 0; j < property_rs.ansNum; j++)
@@ -197,7 +197,7 @@ void Database::updateSchema()
 		ResultSet rs;
 		string query_sparql = "select distinct ?source_type ?p ?target_type where {?s " 
 							+ rdf_type + " ?source_type. ?s ?p ?o. ?o " + rdf_type + " ?target_type filter(isIRI(?o))}";
-		bool suc = this->query(query_sparql, rs);
+		bool suc = this->query(query_sparql, rs, nullptr);
 		if (suc && rs.ansNum > 0)
 		{
 			for (unsigned int i = 0; i < rs.ansNum; i++)

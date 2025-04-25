@@ -327,16 +327,16 @@ GRPCReq &GRPCReq::operator=(GRPCReq&& other)
 // GRPCResp
 void GRPCResp::String(const std::string &str)
 {
-    if(GlobalTypedef::_logger.isEnabledFor(log4cplus::TRACE_LOG_LEVEL))
+    if(GlobalTypedef::_logger.isEnabledFor(log4cplus::DEBUG_LOG_LEVEL))
     {
         stringstream strstream;
         strstream << "\n==================== http-response ====================\n";
-        if (str.size() > 1024)
-            strstream << str.substr(0, 1021) << "...";
+        if (str.size() > 512)
+            strstream << str.substr(0, 512) << "...";
         else
             strstream << str;
         strstream << "\n=======================================================";
-        SLOG_CORE(strstream.str());
+        SLOG_DEBUG(strstream.str());
     }
     size_t buf_size = str.size();
     const void *buf = str.c_str();

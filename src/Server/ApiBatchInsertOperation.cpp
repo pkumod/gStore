@@ -53,6 +53,8 @@ namespace server
 
     void ApiHandler::batch_insert(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     { 
+        shared_ptr<DatabaseInfo> db_info;
+        std::string unz_dir_path;
         try
         {
             int64_t t = gutil::TimeUtil::timestamp();
@@ -62,7 +64,6 @@ namespace server
 
             std::string file = request.file;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
             if (is_file)
             {
                 std::string file_suffix = FileUtil::fileSuffix(file);
@@ -73,7 +74,9 @@ namespace server
                         return;
                 }
                 else
+                {
                     nt_files.push_back(file);
+                }    
             }
             else
             {
@@ -81,11 +84,13 @@ namespace server
                 FileUtil::dir_filenames(request.dir, nt_files, "", true);
             }
             std::string db_name = request.db_name;
-            shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
 
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
+                // remove unzip files
+                if (unz_dir_path != "")
+                    FileUtil::removeDir(unz_dir_path);
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
                 return;
@@ -100,6 +105,9 @@ namespace server
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
             }
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
             // save data and unlock
@@ -112,19 +120,24 @@ namespace server
                     response.Error(StatusOperationFailed, "disk or memory not enough");
                     return;
                 }
+                int64_t t2 = gutil::TimeUtil::timestamp();
+                SLOG_DEBUG("auto checkpoint used: " << t2 - t1);
             }
-            int64_t t2 = gutil::TimeUtil::timestamp();
-            SLOG_TRACE("------------------------ database save data .................:" << t2 - t1);
             apiUtil->unlock_databaseinfo(db_info);
+            db_info.reset();
 
             response.StatusCode = StatusOK;
             response.StatusMsg = "Batch insert data successfully.";
             response.successNum = success_num;
             response.failedNum = parse_error_num;
-            SLOG_TRACE("------------------------ database insert data tatol:" << t2 - t);
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                apiUtil->unlock_databaseinfo(db_info);
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             response.StatusMsg = "Batch insert fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
@@ -132,6 +145,8 @@ namespace server
 
     void ApiHandler::batch_insert_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     {
+        shared_ptr<DatabaseInfo> db_info;
+        std::string unz_dir_path;
         try
         {
             bool is_file = true;
@@ -164,7 +179,6 @@ namespace server
 
             std::string file = request.file;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
             if (is_file)
             {
                 std::string file_suffix = FileUtil::fileSuffix(file);
@@ -183,10 +197,12 @@ namespace server
                 FileUtil::dir_filenames(request.dir, nt_files, "", true);
             }
 
-            shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
+                // remove unzip files
+                if (unz_dir_path != "")
+                    FileUtil::removeDir(unz_dir_path);
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
                 return;
@@ -285,6 +301,11 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                apiUtil->unlock_databaseinfo(db_info);
+            // remove unzip files
+            if (unz_dir_path != "")
+                FileUtil::removeDir(unz_dir_path);
             response.StatusMsg = "Batch insert fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }

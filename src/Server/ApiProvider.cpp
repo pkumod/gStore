@@ -10,9 +10,9 @@ namespace server
                 return false;
             return true;
         });
-        if( code != CompressUtil::UnZipOK )
+        if (code != CompressUtil::UnZipOK )
         {
-            response.StatusMsg = "uncompress is failed error.";
+            response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
             response.StatusCode = code;
             return false;
         }
@@ -25,7 +25,7 @@ namespace server
         if (code != CompressUtil::UnZipOK)
         {
             FileUtil::removePath(unz_dir_path);
-            response.StatusMsg = "uncompress is failed error.";
+            response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
             response.StatusCode = code;
             return false;
         }
@@ -57,7 +57,7 @@ namespace server
         if (code != CompressUtil::UnZipOK)
         {
             FileUtil::removePath(unz_dir_path);
-            response.StatusMsg = "uncompress is failed error.";
+            response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
             response.StatusCode = code;
             return false;
         }
