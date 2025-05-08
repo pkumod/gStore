@@ -268,6 +268,16 @@ int32_t Util::getConfigureIntValue(const std::string& keyname, int32_t default_v
     return default_value;
 }
 
+uint64_t Util::getConfigureLongValue(const std::string& keyname, uint64_t default_value)
+{
+    string value = Util::getConfigureValue(keyname);
+    if (!value.empty()) 
+    {
+        return stoll(value);
+    }
+    return default_value;
+}
+
 Util::Util()
 {
     Util::configure();

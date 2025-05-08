@@ -187,7 +187,7 @@ public:
     int get_max_output_size();
     int get_connection_num();
     void increase_connection_num();
-    size_t get_upload_max_body_size();
+    uint64_t get_upload_max_body_size();
     bool check_upload_allow_extensions(const string& suffix);
     bool check_upload_allow_compress_packages(const string& suffix);
 };

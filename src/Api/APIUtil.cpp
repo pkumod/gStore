@@ -2288,10 +2288,10 @@ void APIUtil::increase_connection_num()
     }
 }
 
-size_t
+uint64_t
 APIUtil::get_upload_max_body_size()
 {
-    return Util::getConfigureIntValue("upload_max_body_size");
+    return Util::getConfigureLongValue("upload_max_body_size");
 }
 
 bool

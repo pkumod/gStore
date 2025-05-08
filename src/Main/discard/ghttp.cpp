@@ -5677,8 +5677,8 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	}
 	if(request->header.find("Content-Length") != request->header.end())
 	{
-		size_t content_length = stoul(request->header.find("Content-Length")->second, nullptr, 0);
-		size_t max_body_size = apiUtil->get_upload_max_body_size();
+		uint64_t content_length = stoul(request->header.find("Content-Length")->second, nullptr, 0);
+		uint64_t max_body_size = apiUtil->get_upload_max_body_size();
 		if (content_length > max_body_size)
 		{
 			SLOG_DEBUG("File size is " + to_string(content_length) + " byte, allowed max size " + to_string(max_body_size) + " byte!");

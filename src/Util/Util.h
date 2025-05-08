@@ -126,6 +126,7 @@ public:
 	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname, string default_value="");
 	static string getConfigureValue(const std::string& keyname, string default_value="");
 	static int32_t getConfigureIntValue(const std::string& keyname, int32_t default_value=0);
+	static uint64_t getConfigureLongValue(const std::string& keyname, uint64_t  default_value=0);
 	// static bool config_advanced();
 	// static bool config_debug();
 
