@@ -6,11 +6,12 @@ if [ -f /etc/os-release ]; then
     . /etc/os-release
     os=$ID
 fi
+current_date=$(date +%Y%m%d)
 architecture=`uname -m`
 version=1.4
 product_name=gStore
 product_name_lower=$(echo "$product_name" | tr '[:upper:]' '[:lower:]')
-static_pkg_name="$product_name_lower-$version-static-$os-$architecture"
+static_pkg_name="$product_name_lower-$version-static-$os-$architecture.$current_date.tar.gz"
 
 echo "系统: $os"
 echo "架构: $architecture"
@@ -22,7 +23,7 @@ echo "start build static package-------"
 
 # clear build
 echo "start clean build-------"
-rm -rf ${static_pkg_name}.tar.gz
+rm -rf ${static_pkg_name}
 rm -rf ${product_name_lower}
 rm -rf build
 mkdir -p build
@@ -42,7 +43,7 @@ if [ $? -eq 0 ]; then
         cp -f scripts/test/api_test.sh ${product_name_lower}/scripts/api_test.sh
         rm -f ${product_name_lower}/bin/.gitignore
         rm -rf ${product_name_lower}/bin/.gconsole_history
-        tar -czvf ${static_pkg_name}.tar.gz ${product_name_lower}
+        tar -czvf ${static_pkg_name} ${product_name_lower}
         echo "build static package successfully!!!"
     else
         echo "build static package make fail!!!"
