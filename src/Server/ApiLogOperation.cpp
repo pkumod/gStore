@@ -54,7 +54,7 @@ namespace server
             int page_no = resquest.pageNo;
             int page_size = resquest.pageSize;
             shared_ptr<struct DBQueryLogs> dbQueryLogsPtr = make_shared<struct DBQueryLogs>();
-            apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr);
+            apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr, resquest.db_name);
             vector<struct DBQueryLogInfo> logList = dbQueryLogsPtr->getQueryLogInfoList();
             size_t count = logList.size();
             
@@ -119,7 +119,7 @@ namespace server
             int page_no = resquest.pageNo;
             int page_size = resquest.pageSize;
             shared_ptr<struct DBAccessLogs> dbAccessLogsPtr = make_shared<struct DBAccessLogs>();
-            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr);
+            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr, resquest.db_name);
             vector<struct DBAccessLogInfo> logList = dbAccessLogsPtr->getAccessLogInfoList();
             size_t count = logList.size();
             nlohmann::json info;

@@ -63,6 +63,7 @@ namespace server
         std::string date;
         int pageNo;
         int pageSize;
+        std::string db_name;
         MessageQueryLogRequest(const nlohmann::json& json_data);
 
         // gconsole use;
@@ -124,6 +125,7 @@ namespace server
         std::string date;
         int pageNo;
         int pageSize;
+        std::string db_name;
         MessageAccessLogRequest(const std::string date, int pageNo, int pageSize) : MessageRequest(std::string("accesslog")), date(date), pageNo(pageNo), pageSize(pageSize) { }
         MessageAccessLogRequest(const nlohmann::json& json_data);
         // gconsole use

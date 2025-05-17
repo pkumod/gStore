@@ -1837,13 +1837,13 @@ void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
     closedir(dirp);
 }
 
-void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr)
+void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name)
 {
     string accessLog = APIUtil::access_log_path + date + ".log";
     vector<std::string> lines;
     int total_size = 0;
     int total_page = 0;
-    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock)) 
+    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock, db_name)) 
     {   
         size_t count = lines.size();			
         string line;
@@ -2017,13 +2017,13 @@ void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
     closedir(dirp);
 }
 
-void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBQueryLogs> logPtr)
+void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBQueryLogs> logPtr, std::string db_name)
 {
     string queryLog = APIUtil::query_log_path + date + ".log";
     vector<std::string> lines;
     int total_size = 0;
     int total_page = 0;
-    if (get_file_lines(lines, queryLog, page_no, page_size, total_size, total_page, &query_log_lock)) 
+    if (get_file_lines(lines, queryLog, page_no, page_size, total_size, total_page, &query_log_lock, db_name)) 
     {
         size_t count = lines.size();
         string line;
@@ -2321,9 +2321,15 @@ APIUtil::check_upload_allow_compress_packages(const string& suffix)
 }
 
 bool 
-APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock) {
+APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock, std::string db_name)
+{
     total_size = 0;
     total_page = 0;
+    std::string db_name_str;
+    if (!db_name.empty())
+    {
+        db_name_str = "\"dbname\":\"" + db_name + "\"";
+    }
     if(FileUtil::fileExists(log_file))
     {
         pthread_rwlock_rdlock(rw_lock);
@@ -2345,6 +2351,8 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         //count total
         while (getline(in, line, '\n'))
         {
+            if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+                continue;
             total_size++;
         }
         in.close();
@@ -2374,7 +2382,10 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         {
             in.getline(buf_temp, sizeof(buf_temp));
         }
-        while (startLine < endLine && getline(in, line, '\n')) {
+        while (startLine < endLine && getline(in, line, '\n'))
+        {
+            if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+                continue;
             lines.push_back(line);
             startLine++;
         }

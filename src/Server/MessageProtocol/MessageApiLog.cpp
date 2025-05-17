@@ -139,6 +139,7 @@ namespace server
         this->date = JsonUtil::jsonParam(json_data, "date");
         this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
         this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
     }
 
     void MessageQueryLogRequest::to_json(std::string& json_str)
@@ -269,6 +270,7 @@ namespace server
         this->date = JsonUtil::jsonParam(json_data, "date");
         this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
         this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
     }
 
     void MessageAccessLogRequest::to_json(std::string& json_str)

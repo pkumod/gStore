@@ -17,13 +17,13 @@ public:
     std::string fileName;
     int statusCode;
     size_t queryTime;
-    std::string dbName;
+    std::string dbname;
 public:
     DBQueryLogInfo() {}
     DBQueryLogInfo(const string &_queryDateTime, const string &_remoteIP, const string &_sparql, long _ansNum, const string &_format, const string &_fileName, int _statusCode, size_t _queryTime, const string &_dbName):
-    queryDateTime(_queryDateTime), remoteIP(_remoteIP), sparql(_sparql), ansNum(_ansNum), format(_format), fileName(_fileName), statusCode(_statusCode), queryTime(_queryTime), dbName(_dbName) {}
+    queryDateTime(_queryDateTime), remoteIP(_remoteIP), sparql(_sparql), ansNum(_ansNum), format(_format), fileName(_fileName), statusCode(_statusCode), queryTime(_queryTime), dbname(_dbName) {}
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DBQueryLogInfo, queryDateTime, remoteIP, sparql, ansNum, format, fileName, statusCode, queryTime, dbName);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DBQueryLogInfo, queryDateTime, remoteIP, sparql, ansNum, format, fileName, statusCode, queryTime, dbname);
 
 struct DBQueryLogs
 {
