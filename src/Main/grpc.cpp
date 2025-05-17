@@ -289,14 +289,15 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 			return false;
 		}
 	}
+	std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
 	// add callback task for access log start
 	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	if (async == false)
 	{
 		std::shared_ptr<DBAccessLogInfo> access_log_info_ptr = std::make_shared<DBAccessLogInfo>(ip_addr, operation);
-		rpc_task->add_callback([access_log_info_ptr](GRPCTask *task) {
+		rpc_task->add_callback([access_log_info_ptr, db_name](GRPCTask *task) {
 			GRPCResp *resp = task->get_resp();
-			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg, "", resp->success_num, resp->failed_num);
+			apiUtil->write_access_log(access_log_info_ptr->operation, access_log_info_ptr->ip, resp->resp_code, resp->resp_msg, "", resp->success_num, resp->failed_num, db_name);
 		});
 	}
 	// add callback task for access log end
@@ -312,7 +313,6 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	std::string username = JsonUtil::jsonParam(json_data, "username");
 	std::string password = JsonUtil::jsonParam(json_data, "password");
 	std::string encryption = JsonUtil::jsonParam(json_data, "encryption");
-	std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
 	bool is_inner = JsonUtil::jsonBoolParam(json_data, "inner", false);
 	bool need_check_privilege = true;
 	// skip check privilege for inner request
@@ -2116,7 +2116,7 @@ void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 		{
 			server::MessageBackupResponse response_data;
 			response_data.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			server::ApiHandler::backup_async(apiUtil, request_data, response_data);
 		});
 	}
@@ -2185,7 +2185,7 @@ void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
 		{
 			server::MessageRestoreResponse response_data;
 			response_data.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			server::ApiHandler::restore_async(apiUtil, request_data, response_data);
 		});
 	}
@@ -2249,7 +2249,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			{
 				server::MessageQueryResponse response;
 				response.opt_id = opt_id;
-				apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id);
+				apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id, 0, 0, request_data.db_name);
 				server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 				{
 					apiUtil->write_query_log(query_log_ptr);
@@ -2468,7 +2468,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		{
 			server::MessageBatchInsertResponse response_data;
 			response_data.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
 				server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else
@@ -2538,7 +2538,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		{
 			server::MessageBatchRemoveResponse response_data;
 			response_data.opt_id = opt_id;
-			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id);
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
 				server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else
