@@ -36,8 +36,8 @@ private:
     string access_log_mode;
     string access_log_path;
     string query_result_path;
-    std::vector<std::string> upload_allow_extensions;
-    std::vector<std::string> upload_allow_compress_packages;
+    std::set<std::string> upload_allow_extensions;
+    std::set<std::string> upload_allow_compress_packages;
 
     // std::map<std::string, shared_ptr<Database>> databases;
     std::map<std::string, shared_ptr<DBUserInfo>> users;

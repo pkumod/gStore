@@ -57,8 +57,9 @@ namespace CompressUtil
         const std::string& getDirPath()const{ return m_dirpath_; }
         bool doExtractCurrentFile(unzFile unfile);
         public:
-        std::string getMaxFilePath()const; 
+        void getMaxFilePath(std::pair<std::string, unsigned long long>& max)const; 
         void getFileList(std::vector<std::string>& files, const std::string& except)const;
+        void getFileList(std::map<std::string, unsigned long long>& uncompress_files)const;
         ZipCode unCompress();
     };
 

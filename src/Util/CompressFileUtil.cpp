@@ -175,15 +175,17 @@ namespace CompressUtil
         m_files_info_.insert(std::make_pair(file_path, size));
     }
 
-    string UnCompressZip::getMaxFilePath()const
+    void UnCompressZip::getMaxFilePath(std::pair<std::string, unsigned long long>& max)const
     {
-        std::pair<std::string, unsigned long long> max("", 0); 
-        for (const auto& m : m_files_info_)
-        {
-            if (m.second > max.second)
-                max = m;
-        }
-        return max.first;
+        // get max file
+        auto max_iter = std::max_element(
+            m_files_info_.begin(), 
+            m_files_info_.end(), 
+            [&](const std::pair<std::string, unsigned long long>& a, const std::pair<std::string, unsigned long long>& b) {
+                return a.second < b.second;
+        });
+        max.first = max_iter->first;
+        max.second = max_iter->second;
     }
 
     void UnCompressZip::getFileList(std::vector<std::string>& files, const std::string& except)const
@@ -193,6 +195,12 @@ namespace CompressUtil
             if (m.first != except)
                 files.push_back(m.first);
         }
+    }
+
+    void UnCompressZip::getFileList(std::map<std::string, unsigned long long>& uncompress_files)const
+    {
+        for (const auto& m : m_files_info_)
+            uncompress_files.insert(m);
     }
 
     bool UnCompressZip::doExtractCurrentFile(unzFile unfile)
@@ -208,7 +216,7 @@ namespace CompressUtil
             return false;
 
         std::string file_path = getDirPath() + "/" + filename;
-        SLOG_CORE("unCompress start:file_path"<<file_path<<"size:"<<file_info.uncompressed_size);
+        SLOG_CORE("uncompresse file:" << file_path <<", size:" << file_info.uncompressed_size);
         if (FileHelper::isFileDir(filename))
         {
             mkdir(file_path.c_str(), 0775);

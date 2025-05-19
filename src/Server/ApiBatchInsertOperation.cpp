@@ -2,7 +2,7 @@
 
 namespace server
 {
-    bool ApiHandler::batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, bool& is_file)
+    bool ApiHandler::batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths)
     {
         std::string db_name = request.db_name;
         std::string msg;
@@ -10,30 +10,6 @@ namespace server
         {
             response.StatusCode = StatusParamIsIllegal;
             response.StatusMsg = msg;
-            return false;
-        }
-        std::string file = request.file;
-        std::string dir = request.dir;
-        if (apiUtil->check_param_value("file", file, msg) == false)
-        {
-            is_file = false;
-            if (apiUtil->check_param_value("dir", dir, msg) == false)
-            {
-                response.StatusMsg = "file and dir cannot be empty at the same time!";
-                response.StatusCode = StatusParamIsIllegal;
-                return false;
-            }
-        }
-        if (is_file && FileUtil::fileExists(file) == false)
-        {
-            response.StatusMsg = "The data file is not exist";
-            response.StatusCode = StatusParamIsIllegal;
-            return false;
-        }
-        if (!is_file && FileUtil::dirExists(dir) == false)
-        {
-            response.StatusMsg = "The data directory is not exist";
-            response.StatusCode = StatusParamIsIllegal;
             return false;
         }
         if (apiUtil->check_db_built(db_name) == false)
@@ -48,84 +24,141 @@ namespace server
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }
+        std::vector<std::string> files = request.file;
+        if (files.empty())
+        {
+            response.StatusMsg = "the value of file can not be empty!";
+            response.StatusCode = StatusParamIsIllegal;
+            return false;
+        } 
+        else
+        {
+            bool db_paths_rt = true;
+            std::map<std::string, unsigned long long> uncompress_files;
+            for (auto& file : files) {
+                std::string local_path = GlobalTypedef::upload_path();
+                // download file from remote
+                if (request.remote) 
+                {
+                    CURLcode rt = HttpUtil::DownloadFile(file, local_path);
+                    if (rt != CURLcode::CURLE_OK || FileUtil::pathExists(local_path) == false) {
+                        response.StatusMsg = "Download file '" + file + "' failed.";
+                        response.StatusCode = StatusOperationFailed;
+                        db_paths_rt = false;
+                        break;
+                    }
+                    temp_paths.push_back(local_path);
+                }
+                else
+                {
+                    if (FileUtil::pathExists(file) == false)
+                    {
+                        response.StatusMsg = "The file '" + file + "' is not exist.";
+                        response.StatusCode = StatusOperationFailed;
+                        db_paths_rt = false;
+                        break;
+                    }
+                    local_path = file;
+                }
+                std::string file_name = FileUtil::fileName(local_path);
+                std::string file_suffix = FileUtil::fileSuffix(local_path);
+                bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+                // check file suffix
+                if (!apiUtil->check_upload_allow_extensions(file_suffix) &&  !is_zip)
+                {
+                    response.StatusMsg = "The file suffix '" + file_suffix + "' is not allowed.";
+                    response.StatusCode = StatusParamIsIllegal;
+                    db_paths_rt = false;
+                    break;
+                }
+                if (is_zip)
+                {
+                    // uncompress zip
+                    size_t pos = file_name.size() - file_suffix.size() - 1;
+                    std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+                    temp_paths.push_back(uncompress_path);
+                    bool unzip = uncompress_zip(apiUtil, local_path, uncompress_files, uncompress_path, response);
+                    if (!unzip)
+                    {
+                        db_paths_rt = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // add file to file_paths
+                    uncompress_files[local_path] = 0ull;
+                }
+            }
+            if (!db_paths_rt)
+            {
+                // delete temp files: uncompress_path and download_path
+                for (auto& path : temp_paths)
+                {
+                    FileUtil::removePath(path);
+                }
+                return false;
+            }
+            for (auto& item: uncompress_files)
+            {
+                file_paths.push_back(item.first);
+            }
+        }
         return true;
     }
 
     void ApiHandler::batch_insert(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     { 
         shared_ptr<DatabaseInfo> db_info;
-        std::string unz_dir_path;
+        int64_t t = gutil::TimeUtil::timestamp();
+        std::vector<std::string> file_paths; // local file path
+        std::vector<std::string> temp_paths; // download files or uncompress files
         try
         {
-            int64_t t = gutil::TimeUtil::timestamp();
-            bool is_file = true;
-            if (!batch_insert_check(apiUtil, request, response, is_file))
+            if (!batch_insert_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
-
-            std::string file = request.file;
-            std::vector<std::string> nt_files;
-            if (is_file)
-            {
-                std::string file_suffix = FileUtil::fileSuffix(file);
-                bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-                if (is_zip)
-                {
-                    if (!uncompress_zip(apiUtil, file, nt_files, unz_dir_path, response))
-                        return;
-                }
-                else
-                {
-                    nt_files.push_back(file);
-                }    
-            }
-            else
-            {
-                // is dirctory
-                FileUtil::dir_filenames(request.dir, nt_files, "", true);
-            }
             std::string db_name = request.db_name;
             apiUtil->get_databaseinfo(db_name, db_info);
-
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
-                // remove unzip files
-                if (unz_dir_path != "")
-                    FileUtil::removeDir(unz_dir_path);
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
-                return;
+                throw new std::runtime_error(response.StatusMsg);
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
-            for (std::string rdf_file : nt_files)
+            for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
             }
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
+            if (success_num > 0)
+            {
+                SLOG_DEBUG("update schema");
+                db_info->getDatabase()->updateSchema();
+            }
             // exclude Info line
-            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             int64_t t1 = gutil::TimeUtil::timestamp();
             if (Util::getConfigureValue("check_point") == "on")
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    apiUtil->unlock_databaseinfo(db_info);
-                    response.Error(StatusOperationFailed, "disk or memory not enough");
-                    return;
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "disk or memory is not enough";
+                    throw new std::runtime_error(response.StatusMsg);
                 }
                 int64_t t2 = gutil::TimeUtil::timestamp();
                 SLOG_DEBUG("auto checkpoint used: " << t2 - t1);
             }
             apiUtil->unlock_databaseinfo(db_info);
             db_info.reset();
-
+            // remove temp files
+            remove_temp_files(temp_paths);
             response.StatusCode = StatusOK;
             response.StatusMsg = "Batch insert data successfully.";
             response.successNum = success_num;
@@ -135,22 +168,25 @@ namespace server
         {
             if (db_info)
                 apiUtil->unlock_databaseinfo(db_info);
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
-            response.StatusMsg = "Batch insert fail: " + string(e.what());
-            response.StatusCode = StatusOperationFailed;
+            // remove temp files
+            remove_temp_files(temp_paths);
+            if (response.StatusMsg.empty())
+            {
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = string(e.what());
+            }
+            SLOG_ERROR("Batch insert fail: " << response.StatusMsg << "(code " << response.StatusCode << ")");
         }
     }
 
     void ApiHandler::batch_insert_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     {
         shared_ptr<DatabaseInfo> db_info;
-        std::string unz_dir_path;
+        std::vector<std::string> file_paths; // local file path
+        std::vector<std::string> temp_paths; // download files or uncompress files
         try
         {
-            bool is_file = true;
-            if (!batch_insert_check(apiUtil, request, response, is_file))
+            if (!batch_insert_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
 
             shared_ptr<ofstream> clusterlog = nullptr;
@@ -167,66 +203,47 @@ namespace server
             if (!prepare_result)
             {
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
                 response.StatusCode = StatusOperationFailed;
-                SLOG_ERROR(response.StatusMsg);
-                return;
+                response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
+                throw new runtime_error(response.StatusMsg);
             }
             cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
             logpath = cluster_db_path + to_string(log_index) + ".log";
             clusterlog = make_shared<ofstream>();
             clusterlog->open(logpath.c_str());
 
-            std::string file = request.file;
-            std::vector<std::string> nt_files;
-            if (is_file)
-            {
-                std::string file_suffix = FileUtil::fileSuffix(file);
-                bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-                if (is_zip)
-                {
-                    if (!uncompress_zip(apiUtil, file, nt_files, unz_dir_path, response))
-                        return;
-                }
-                else
-                    nt_files.push_back(file);
-            }
-            else
-            {
-                // is dirctory
-                FileUtil::dir_filenames(request.dir, nt_files, "", true);
-            }
-
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
-                // remove unzip files
-                if (unz_dir_path != "")
-                    FileUtil::removeDir(unz_dir_path);
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
-                return;
+                throw new runtime_error(response.StatusMsg);
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
-            for (std::string rdf_file : nt_files)
+            for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr, clusterlog);
             }
+            if (success_num > 0)
+            {
+                SLOG_DEBUG("update schema");
+                db_info->getDatabase()->updateSchema();
+            }
             // exclude Info line
-            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    apiUtil->unlock_databaseinfo(db_info);
-                    response.Error(StatusOperationFailed, "disk or memory not enough");
-                    return;
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "disk or memory is not enough";
+                    throw new runtime_error(response.StatusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
@@ -245,16 +262,11 @@ namespace server
             if (success_num > 0)
             {
                 SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-                string tmp_dir_path = unz_dir_path;
                 bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Insert, log_file_name), true);
                 if (append_result)
                 {
                     SLOG_DEBUG("response result:\n" << json_str);
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
-                    if (!tmp_dir_path.empty())
-                    {
-                        FileUtil::removePath(tmp_dir_path);
-                    }
                 }
                 else
                 {
@@ -263,9 +275,8 @@ namespace server
                     // try get wrlock timeout 600 senconds
                     if (apiUtil->trywrlock_databaseinfo(db_info, 600))
                     {
-
                         uint64_t num = 0;
-                        for (std::string rdf_file : nt_files)
+                        for (std::string rdf_file : file_paths)
                         {
                             num += db_info->getDatabase()->batch_remove(rdf_file);
                         }
@@ -275,10 +286,6 @@ namespace server
                     else
                     {
                         SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[1]");
-                    }
-                    if (!tmp_dir_path.empty())
-                    {
-                        FileUtil::removePath(tmp_dir_path);
                     }
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
                     response.StatusMsg = "Less than half of the cluster nodes reply.";
@@ -291,23 +298,24 @@ namespace server
                 SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
                 FileUtil::removePath(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-                // remove unzip files
-                if (!unz_dir_path.empty())
-                {
-                    FileUtil::removePath(unz_dir_path);
-                }
             }
             // cluster sync task end
+
+            // remove temp files
+            remove_temp_files(temp_paths);
         }
         catch (const std::exception &e)
         {
             if (db_info)
                 apiUtil->unlock_databaseinfo(db_info);
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
-            response.StatusMsg = "Batch insert fail: " + string(e.what());
-            response.StatusCode = StatusOperationFailed;
+            // remove temp files
+            remove_temp_files(temp_paths);
+            if (response.StatusMsg.empty())
+            {
+                response.StatusMsg = string(e.what());
+                response.StatusCode = StatusOperationFailed;
+            }
+            SLOG_ERROR("Batch insert fail: " << response.StatusMsg);
         }
     }
 }

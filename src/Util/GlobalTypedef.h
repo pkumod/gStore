@@ -53,6 +53,7 @@
 #include <functional>
 #include <utility>
 #include <new>
+#include <filesystem>
 
 //NOTICE:below are libraries need to link
 #include <thread>    //only for c++11 or greater versions
@@ -348,6 +349,8 @@ public:
 	static std::string sys_uname();
 	static int32_t backup_max();
 	static int32_t thread_num();
+	static void upload_allow_extensions(std::set<std::string>& allow_extensions);
+	static void upload_allow_compress_packages(std::set<std::string>& allow_compress_packages);
 	static bool isEnabledFor(log4cplus::LogLevel ll);
 };
 

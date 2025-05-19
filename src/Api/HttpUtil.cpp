@@ -67,7 +67,7 @@ static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
 
 size_t HttpUtil::write_callback(void *contents, size_t size, size_t nmemb, std::string *s)
 {
-	 size_t newLength = size * nmemb;
+	size_t newLength = size * nmemb;
     try {
         s->append((char*)contents, newLength);
     } catch(std::bad_alloc &e) {
@@ -83,6 +83,21 @@ TResponse HttpUtil::response_parser(CURLcode& code, const std::string& body)
 		return TResponse(body);
 	else
 		return TResponse(code, curl_easy_strerror(code));
+}
+
+std::string HttpUtil::get_file_ext(const std::string& filename)
+{
+    std::string::size_type pos1 = filename.find_last_of("/");
+    if (pos1 == std::string::npos)
+        pos1 = 0;
+    else
+        pos1++;
+    std::string file = filename.substr(pos1, -1);
+    std::string::size_type pos2 = file.find_last_of(".");
+    if (pos2 == std::string::npos)
+        return "";
+    else
+        return file.substr(pos2 + 1, -1);
 }
 
 CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
@@ -380,6 +395,97 @@ CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::strin
 	curl_slist_free_all(headerlist);
 	SLOG_CORE("url: " + strUrl + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
     return res;
+}
+
+
+CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
+{
+	SLOG_CORE("url: " + strUrl + ", savePath: " + filePath);
+	CURLcode res;
+	CURL* curl = curl_easy_init();
+	if (NULL == curl)
+	{
+		return CURLE_FAILED_INIT;
+	}
+	if (m_bDebug)
+	{
+		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
+	}
+	std::string readBuffer;
+	std::string headerBuffer;
+	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+	curl_easy_setopt(curl, CURLOPT_HEADER, 0);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, NULL);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headerBuffer);
+	res = curl_easy_perform(curl);
+	if (res != CURLE_OK)
+	{
+		SLOG_ERROR("download file failed: " << curl_easy_strerror(res));
+		curl_easy_cleanup(curl);
+		filePath = "";
+		return res;
+	}
+	// curl_easy_setopt(curl, CURLOPT_HEADER, 1);
+	// curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, NULL);
+	// curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headerBuffer);
+	// res = curl_easy_perform(curl);
+	// if (res != CURLE_OK)
+	// {
+	// 	SLOG_ERROR("download file failed: " << curl_easy_strerror(res));
+	// 	curl_easy_cleanup(curl);
+	// 	filePath = "";
+	// 	return res;
+	// }
+	std::stringstream sshb(headerBuffer);
+	std::string item;
+	std::string filename;
+	std::string pattern = "filename=\"(.*?)\"";
+	std::regex regex = std::regex(pattern);
+	std::smatch match;
+	while (std::getline(sshb, item, '\n')) {
+		SLOG_CORE(item);
+		if (std::regex_search(item, match, regex)) {
+			filename = match[1];
+			break;
+		}
+	}
+	// 校验文件类型
+	if (filename.empty())
+	{
+		filename = strUrl.substr(strUrl.find_last_of("/") + 1);
+	}
+	std::string file_suffix = get_file_ext(filename);
+	SLOG_CORE("filename: " + filename + ", extname: " + file_suffix);
+	// 获取允许的文件格式
+	std::set<std::string> extensions;
+	GlobalTypedef::upload_allow_extensions(extensions);
+	GlobalTypedef::upload_allow_compress_packages(extensions);
+	if (std::find(extensions.begin(), extensions.end(), file_suffix) == extensions.end()) {
+		SLOG_ERROR("download file type not allowed: " + filename);
+		filePath = "";
+		return CURLE_WRITE_ERROR;
+	}
+	filePath = filePath + filename;
+	// 判断filePath文件如果存在，先删除
+	std::filesystem::path _path(filePath);
+	if (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath)) {
+		std::filesystem::remove(_path);
+	}
+	FILE* fw = fopen(filePath.c_str(), "wb");
+	if (!fw)
+	{
+		SLOG_ERROR("open file failed: " + filePath);
+		filePath = "";
+		return CURLE_WRITE_ERROR;
+	}
+	fwrite(readBuffer.c_str(), 1, readBuffer.size(), fw);
+	fclose(fw);
+	curl_easy_cleanup(curl);
+	SLOG_CORE("download url: " + strUrl + ", savePath: " + filePath + ", code: " + std::to_string(res) + " (" + curl_easy_strerror(res) + ")");
+	return res;
 }
 
 httpentities::ShutdownResponse HttpUtil::shutdown(const std::string& url, httpentities::ShutdownRequest& request)

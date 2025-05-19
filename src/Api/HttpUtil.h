@@ -1,8 +1,6 @@
 #pragma once
 #include <curl/curl.h>
-#include <string>
 #include <cstring>
-#include <iostream>
 #include "HttpEntities.h"
 #include "../Util/GlobalTypedef.h"
 
@@ -17,6 +15,7 @@ private:
 
 	template<typename TResponse>
 	static TResponse response_parser(CURLcode& code, const std::string& body);
+	static std::string get_file_ext(const std::string &file);
 public:
 	/**
 	* @brief: HTTP POST request
@@ -53,6 +52,8 @@ public:
 	static CURLcode Get(const std::string& strUrl, std::string& strResponse);
 
 	static CURLcode Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse);
+
+	static CURLcode DownloadFile(const std::string& strUrl, std::string& filePath);
 
 	static httpentities::ShutdownResponse shutdown(const std::string& url, httpentities::ShutdownRequest& request);
 

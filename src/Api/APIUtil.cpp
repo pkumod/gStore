@@ -282,10 +282,8 @@ void APIUtil::init_params()
     }
 
     // init upload config
-    string configure_extensions = Util::getConfigureValue("upload_allow_extensions");
-    Util::split(configure_extensions, "|", upload_allow_extensions);
-    string configure_compress_packages = Util::getConfigureValue("upload_allow_compress_packages");
-    Util::split(configure_compress_packages, "|", upload_allow_compress_packages);
+    GlobalTypedef::upload_allow_extensions(upload_allow_extensions);
+    GlobalTypedef::upload_allow_compress_packages(upload_allow_compress_packages);
 }
 
 void APIUtil::refresh_conf()
@@ -812,7 +810,7 @@ bool APIUtil::remove_txn_manager(const std::string& db_name, bool checkpoint)
     auto it = txn_managers.find(db_name);
 	if (it == txn_managers.end())
 	{
-        SLOG_WARN("can not get " + db_name + " txn manager.");
+        SLOG_WARN("missing txn manager for " + db_name);
 		pthread_rwlock_unlock(&txn_m_lock);
 		return false;
 	}
@@ -2297,27 +2295,15 @@ APIUtil::get_upload_max_body_size()
 bool
 APIUtil::check_upload_allow_extensions(const string& suffix)
 {
-    for (std::string item : upload_allow_extensions)
-    {
-        if (item == suffix)
-        {
-            return true;
-        }
-    }
-    return false;
+    std::set<std::string>::iterator it = std::find(upload_allow_extensions.begin(), upload_allow_extensions.end(), suffix);
+    return it != upload_allow_extensions.end();
 }
 
 bool
 APIUtil::check_upload_allow_compress_packages(const string& suffix)
 {
-    for (std::string item : upload_allow_compress_packages)
-    {
-        if (item == suffix)
-        {
-            return true;
-        }
-    }
-    return false;
+    std::set<std::string>::iterator it = std::find(upload_allow_compress_packages.begin(), upload_allow_compress_packages.end(), suffix);
+    return it != upload_allow_compress_packages.end();
 }
 
 bool 

@@ -7,20 +7,39 @@ namespace server
     MessageBuildRequest::MessageBuildRequest(std::string db_name, std::string db_path) : MessageRequest(std::string("build"))
     {
         this->db_name = db_name;
-        this->db_path = db_path;
+        this->async = false;
+        this->remote = false;
+        if (!db_path.empty()) {
+            this->db_path.push_back(db_path);
+        }
     }
 
     MessageBuildRequest::MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path) : MessageRequest("build", username, password)
     {
         this->db_name = db_name;
-        this->db_path = db_path;
+        this->async = false;
+        this->remote = false;
+        if (!db_path.empty()) {
+            this->db_path.push_back(db_path);
+        }
     }
 
     MessageBuildRequest::MessageBuildRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
         this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
-        this->db_path = JsonUtil::jsonParam(json_data, "db_path");
+        if (json_data.contains("db_path"))
+        {
+            if (json_data["db_path"].is_array()) {
+                JsonUtil::jsonArrayParam(json_data, "db_path", this->db_path);
+            } else {
+                std::string db_path = JsonUtil::jsonParam(json_data, "db_path", "");
+                if (!db_path.empty()) {
+                    this->db_path.push_back(db_path);
+                }
+            }
+        }
         this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->remote = JsonUtil::jsonBoolParam(json_data, "remote", false);
         this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
@@ -31,6 +50,7 @@ namespace server
             {"username", this->username},
             {"password", this->password},
             {"db_name", this->db_name},
+            {"remote", this->remote},
             {"db_path", this->db_path}};
         json_str = json.dump();
     }
@@ -43,6 +63,7 @@ namespace server
             {"password", ""},
             {"db_name", this->db_name},
             {"db_path", this->db_path},
+            {"remote", this->remote},
             {"inner", "true"}};
         json_str = json.dump();
     }
@@ -297,17 +318,21 @@ namespace server
     }
 
     // batch insert
-    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string db_name, std::string file, std::string dir) : MessageRequest(std::string("batchInsert"))
+    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string db_name, std::string file) : MessageRequest(std::string("batchInsert"))
     {
         this->db_name = db_name;
-        this->file = file;
-        this->dir = dir;
+        this->async = false;
+        this->remote = false;
+        if (!file.empty())
+            this->file.push_back(file);
     }
-    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file, std::string dir) : MessageRequest("batchInsert", username, password)
+    MessageBatchInsertRequest::MessageBatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file) : MessageRequest("batchInsert", username, password)
     {
         this->db_name = db_name;
-        this->file = file;
-        this->dir = dir;
+        this->async = false;
+        this->remote = false;
+        if (!file.empty())
+            this->file.push_back(file);
     }
     void MessageBatchInsertRequest::to_json(std::string& json_str)
     {
@@ -316,8 +341,7 @@ namespace server
             {"username", this->username},
             {"password", this->password},
             {"db_name", this->db_name},
-            {"file", this->file},
-            {"dir", this->dir}};
+            {"file", this->file}};
         json_str = json.dump();
     }
     void MessageBatchInsertRequest::to_inner_json(std::string& json_str)
@@ -328,7 +352,7 @@ namespace server
             {"password", this->password},
             {"db_name", this->db_name},
             {"file", this->file},
-            {"dir", this->dir},
+            {"remote", this->remote},
             {"inner", "true"}};
         json_str = json.dump();
     }
@@ -336,9 +360,21 @@ namespace server
     MessageBatchInsertRequest::MessageBatchInsertRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
         this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
-        this->file = JsonUtil::jsonParam(json_data, "file");
-        this->dir = JsonUtil::jsonParam(json_data, "dir");
+        if (json_data.contains("file"))
+        {
+            if (json_data["file"].is_array())
+            {
+                JsonUtil::jsonArrayParam(json_data, "file", this->file);
+            }
+            else
+            {
+                std::string value = JsonUtil::jsonParam(json_data, "file", "");
+                if (!value.empty())
+                    this->file.push_back(value);
+            }
+        }
         this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+        this->remote = JsonUtil::jsonBoolParam(json_data, "remote", false);
         this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
 
@@ -379,12 +415,15 @@ namespace server
     {
         this->db_name = db_name;
         this->file = file;
+        this->remote = false;
+        this->async = false;
     }
 
     MessageBatchRemoveRequest::MessageBatchRemoveRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
         this->db_name = JsonUtil::jsonParam(json_data, "db_name", "");
-        this->file = JsonUtil::jsonParam(json_data, "file");
+        this->file = JsonUtil::jsonParam(json_data, "file", "");
+        this->remote = JsonUtil::jsonBoolParam(json_data, "remote", false);
         this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
         this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
@@ -392,6 +431,8 @@ namespace server
     MessageBatchRemoveRequest::MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file) : MessageRequest("batchRemove", username, password) {
         this->db_name = db_name;
         this->file = file;
+        this->remote = false;
+        this->async = false;
     }
 
     void MessageBatchRemoveRequest::to_json(std::string& json_str)
@@ -401,6 +442,7 @@ namespace server
             {"username", this->username},
             {"password", this->password},
             {"db_name", this->db_name},
+            {"remote", this->remote},
             {"file", this->file}};
         json_str = json.dump();
     }
@@ -413,6 +455,7 @@ namespace server
             {"password", this->password},
             {"db_name", this->db_name},
             {"file", this->file},
+            {"remote", this->remote},
             {"inner", "true"}};
         json_str = json.dump();
     }

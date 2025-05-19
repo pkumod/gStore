@@ -31,5 +31,6 @@ namespace gutil
         static std::uint64_t fileSize(const std::string& path);
         static std::uint64_t dirSize(const std::string& path);
         static std::uint64_t fileLines(const std::string& file_path);
+        static bool isEmptyDir(const std::string& dir_path);
     };
 }

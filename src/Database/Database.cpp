@@ -3343,12 +3343,6 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	SLOG_CORE("insert rdf triples done.");
 	SLOG_CORE("inserted triples num: " << success_num);
 
-	if (success_num != 0)
-	{
-		thread update_schema_thread(&Database::updateSchema, this);
-		update_schema_thread.detach();
-	}
-
 	return success_num;
 }
 

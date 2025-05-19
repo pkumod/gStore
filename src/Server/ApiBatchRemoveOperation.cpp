@@ -2,24 +2,12 @@
 
 namespace server
 {
-    bool ApiHandler::batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
+    bool ApiHandler::batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths)
     {
         std::string msg;
         if (apiUtil->check_param_value("db_name", request.db_name, msg) == false)
         {
             response.StatusMsg = msg;
-            response.StatusCode = StatusParamIsIllegal;
-            return false;
-        }
-        if (apiUtil->check_param_value("file", request.file, msg) == false)
-        {
-            response.StatusMsg = msg;
-            response.StatusCode = StatusParamIsIllegal;
-            return false;
-        }
-        if (FileUtil::fileExists(request.file) == false)
-        {
-            response.StatusMsg = "The data file is not exist";
             response.StatusCode = StatusParamIsIllegal;
             return false;
         }
@@ -35,74 +23,121 @@ namespace server
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }
+        string file = request.file;
+        if (apiUtil->check_param_value("file", file, msg) == false)
+        {
+            response.StatusMsg = msg;
+            response.StatusCode = StatusParamIsIllegal;
+            return false;
+        }
+        else
+        {
+            std::map<std::string, unsigned long long> uncompress_files;
+            std::string local_path = GlobalTypedef::upload_path();
+            // download file from remote
+            if (request.remote) 
+            {
+                CURLcode rt = HttpUtil::DownloadFile(file, local_path);
+                if (rt != CURLcode::CURLE_OK || FileUtil::pathExists(local_path) == false) {
+                    response.StatusMsg = "Download file '" + file + "' failed.";
+                    response.StatusCode = StatusOperationFailed;
+                    return false;
+                }
+                temp_paths.push_back(local_path);
+            }
+            else
+            {
+                if (FileUtil::pathExists(file) == false)
+                {
+                    response.StatusMsg = "The file '" + file + "' is not exist.";
+                    response.StatusCode = StatusOperationFailed;
+                    return false;
+                }
+                local_path = file;
+            }
+            std::string file_name = FileUtil::fileName(local_path);
+            std::string file_suffix = FileUtil::fileSuffix(local_path);
+            bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+            // check file suffix
+            if (!apiUtil->check_upload_allow_extensions(file_suffix) &&  !is_zip)
+            {
+                response.StatusMsg = "The file suffix '" + file_suffix + "' is not allowed.";
+                response.StatusCode = StatusParamIsIllegal;
+                if (request.remote)
+                    FileUtil::removeFile(local_path);
+                return false;
+            }
+            if (is_zip)
+            {
+                // uncompress zip
+                size_t pos = file_name.size() - file_suffix.size() - 1;
+                std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+                temp_paths.push_back(uncompress_path);
+                bool unzip = uncompress_zip(apiUtil, local_path, uncompress_files, uncompress_path, response);
+                if (!unzip)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // add file to file_paths
+                uncompress_files[local_path] = 0ull;
+            }
+            for (auto& item: uncompress_files)
+            {
+                file_paths.push_back(item.first);
+            }
+        }
         return true;
     }
 
     void ApiHandler::batch_remove(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
         shared_ptr<DatabaseInfo> db_info;
-        std::string unz_dir_path;
+        std::vector<std::string> file_paths; // local file path
+        std::vector<std::string> temp_paths; // download files or uncompress files
         try
         {
-            if (!batch_remove_check(apiUtil, request, response))
+            if (!batch_remove_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
-            
-            std::string file = request.file;
-            std::vector<std::string> nt_files;
-            std::string file_suffix = FileUtil::fileSuffix(file);
-            bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-            if (is_zip)
-            {
-                if (!uncompress_zip(apiUtil, file, nt_files, unz_dir_path, response))
-                    return;
-            }
-            else
-            {
-                nt_files.push_back(file);
-            }
             std::string db_name = request.db_name;
             std::string remote_ip = request.remote_ip;
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
-                // remove unzip files
-                if (unz_dir_path != "")
-                    FileUtil::removeDir(unz_dir_path);
-                response.StatusMsg = "Unable to batch remove due to loss of lock.";
                 response.StatusCode = StatusLossOfLock;
-                return;
+                response.StatusMsg = "Unable to batch remove due to loss of lock.";
+                throw new std::runtime_error(response.StatusMsg);
             }
-
             unsigned success_num = 0;
             unsigned total_num = 0;
             size_t parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
-            for (std::string rdf_file : nt_files)
+            for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr);
             }
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
             // exclude Info line
-            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    apiUtil->unlock_databaseinfo(db_info);
-                    response.Error(StatusOperationFailed, "disk or memory not enough");
-                    return;
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "disk or memory is not enough";
+                    throw new std::runtime_error(response.StatusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
-
-            string msg = "Batch remove data successfully.";
+            db_info.reset();
+            // remove temp files
+            remove_temp_files(temp_paths);
             response.StatusCode = StatusOK;
-            response.StatusMsg = msg;
+            response.StatusMsg = "Batch remove data successfully.";
             response.successNum = success_num;
             response.failedNum = parse_error_num;
         }
@@ -110,21 +145,25 @@ namespace server
         {
             if (db_info)
                 apiUtil->unlock_databaseinfo(db_info);
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
-            response.StatusMsg = "Batch remove fail: " + string(e.what());
-            response.StatusCode = StatusOperationFailed;
+            // remove temp files
+            remove_temp_files(temp_paths);
+            if (response.StatusMsg.empty())
+            {
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = string(e.what());
+            }
+            SLOG_ERROR("Batch remove fail: " << response.StatusMsg << "(code " << response.StatusCode << ")");
         }
     }
 
     void ApiHandler::batch_remove_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
         shared_ptr<DatabaseInfo> db_info;
-        std::string unz_dir_path;
+        std::vector<std::string> file_paths; // local file path
+        std::vector<std::string> temp_paths; // download files or uncompress files
         try
         {
-            if (!batch_remove_check(apiUtil, request, response))
+            if (!batch_remove_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
             
             std::string cluster_db_path;
@@ -141,93 +180,69 @@ namespace server
             if (!prepare_result)
             {
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
-                response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
                 response.StatusCode = StatusOperationFailed;
-                SLOG_ERROR(msg);
-                return;
+                response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
+                throw new runtime_error(response.StatusMsg);
             }
             cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
             logpath = cluster_db_path + to_string(log_index) + ".log";
             shared_ptr<ofstream> clusterlog = make_shared<ofstream>();
             clusterlog->open(logpath.c_str());
 
-            std::string file = request.file;
-            std::vector<std::string> nt_files;
-            std::string file_suffix = FileUtil::fileSuffix(file);
-            bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-            if (is_zip)
-            {
-                if (!uncompress_zip(apiUtil, file, nt_files, unz_dir_path, response))
-                    return;
-            }
-            else
-            {
-                nt_files.push_back(file);
-            }
-            std::string remote_ip = request.remote_ip;
-            shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
             {
-                // remove unzip files
-                if (unz_dir_path != "")
-                    FileUtil::removeDir(unz_dir_path);
-                response.StatusMsg = "Unable to batch remove due to loss of lock.";
                 response.StatusCode = StatusLossOfLock;
-                return;
+                response.StatusMsg = "Unable to batch insert due to loss of lock.";
+                throw new runtime_error(response.StatusMsg);
             }
-
             unsigned success_num = 0;
             unsigned total_num = 0;
             size_t parse_error_num = 0;
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
-            for (std::string rdf_file : nt_files)
+            for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
                 success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr, clusterlog);
             }
             // exclude Info line
-            parse_error_num = FileUtil::fileLines(error_log) - total_num - nt_files.size();
+            parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    apiUtil->unlock_databaseinfo(db_info);
-                    response.Error(StatusOperationFailed, "disk or memory not enough");
-                    return;
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "disk or memory is not enough";
+                    throw new runtime_error(response.StatusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
+            db_info.reset();
             // close cluster log
             clusterlog->close();
-            msg = "Batch remove data successfully.";
 
             MessageBatchRemoveResponse resp_data;
             resp_data.StatusCode = StatusOK;
-            resp_data.StatusMsg = msg;
+            resp_data.StatusMsg = "Batch remove data successfully.";
             resp_data.successNum = success_num;
             resp_data.failedNum = parse_error_num;
             resp_data.opt_id = response.opt_id;
             std::string json_str;
             resp_data.toJsonString(json_str);
+
             // cluster sync task begin
             string log_file_name = to_string(log_index) + ".log";
             if (success_num > 0)
             {
                 SLOG_DEBUG("add log appendEntities task, copy num " + to_string(success_num));
-                string tmp_dir_path = unz_dir_path;
                 bool append_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Append, ClusterUpdateType_Delete, log_file_name), true);
                 if (append_result)
                 {
                     SLOG_DEBUG("response result:\n" << json_str);
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Commit));
                     response = resp_data;
-                    if (!tmp_dir_path.empty())
-                    {
-                        FileUtil::removePath(tmp_dir_path);
-                    }
                 }
                 else
                 {
@@ -236,28 +251,23 @@ namespace server
                     if (apiUtil->trywrlock_databaseinfo(db_info, 600))
                     {
                         uint64_t num = 0;
-                        for (std::string rdf_file : nt_files)
+                        for (std::string rdf_file : file_paths)
                         {
                             num += db_info->getDatabase()->batch_insert(rdf_file);
                         }
                         SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
                         apiUtil->unlock_databaseinfo(db_info);
+                        db_info.reset();
                     }
                     else
                     {
                         SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
                     }
-                    if (!tmp_dir_path.empty())
-                    {
-                        FileUtil::removePath(tmp_dir_path);
-                    }
-                    msg = "Less than half of the cluster nodes reply.";
-                    SLOG_ERROR(msg);
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
-                    resp_data.StatusMsg = msg;
+                    resp_data.StatusMsg = "Less than half of the cluster nodes reply.";
                     resp_data.StatusCode = StatusOperationFailed;
-                    resp_data.toJsonString(json_str);
                     response = resp_data;
+                    SLOG_ERROR(response.StatusMsg);
                 }
             }
             else
@@ -265,23 +275,23 @@ namespace server
                 SLOG_DEBUG("No data needs to be synchronized, update log stauts to failed");
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
                 FileUtil::removePath(clusterManagerPtr->getDbDirPath(db_name)+log_file_name);
-                // remove unzip files
-                if (!unz_dir_path.empty())
-                {
-                    FileUtil::removePath(unz_dir_path);
-                }
                 response = resp_data;
             }
+            // remove temp files
+            remove_temp_files(temp_paths);
         }
         catch (const std::exception &e)
         {
             if (db_info)
                 apiUtil->unlock_databaseinfo(db_info);
-            // remove unzip files
-            if (unz_dir_path != "")
-                FileUtil::removeDir(unz_dir_path);
-            response.StatusMsg = "Batch remove fail: " + string(e.what());
-            response.StatusCode = StatusOperationFailed;
+            // remove temp files
+            remove_temp_files(temp_paths);
+            if (response.StatusMsg.empty())
+            {
+                response.StatusMsg = string(e.what());
+                response.StatusCode = StatusOperationFailed;
+            }
+            SLOG_ERROR("Batch remove fail: " << response.StatusMsg);
         }
     }
 }

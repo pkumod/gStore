@@ -193,12 +193,23 @@ namespace gutil
 
     std::string FileUtil::fileSuffix(const std::string &filepath)
     {
-        std::string::size_type pos = filepath.find_last_of(".");
-        if (pos == std::string::npos)
+        std::string::size_type pos1 = filepath.find_last_of("/");
+        if (pos1 == std::string::npos)
+        {
+            pos1 = 0;
+        }
+        else
+        {
+            pos1++;
+        }
+        std::string file = filepath.substr(pos1, -1);
+
+        std::string::size_type pos2 = file.find_last_of(".");
+        if (pos2 == std::string::npos)
         {
             return "";
         }
-        return filepath.substr(pos + 1);
+        return file.substr(pos2 + 1, -1);
     }
 
     bool FileUtil::removeDir(const std::string& dir_path)
@@ -369,5 +380,10 @@ namespace gutil
             file.close();
         }
         return line_count;
+    }
+
+    bool FileUtil::isEmptyDir(const std::string& dir_path)
+    {
+        return std::filesystem::is_empty(dir_path);
     }
 }

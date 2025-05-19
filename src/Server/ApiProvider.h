@@ -31,8 +31,8 @@ namespace server
     class ApiHandler
     {
         private:
-        static bool uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response);
-        static bool uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response, std::string& max_file);
+        static bool uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::map<std::string, unsigned long long>& uncompress_files, const std::string& uncompress_path, MessageResponse& response);
+        static bool remove_temp_files(std::vector<std::string>& temp_paths, const bool remove_parents_if_empty = true);
         public:
         ApiHandler(){};
         ~ApiHandler(){};
@@ -98,21 +98,21 @@ namespace server
 
         // build
         private:
-        static bool build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response);
+        static bool build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response, std::map<std::string, unsigned long long>& file_paths, std::vector<std::string>& temp_paths);
         public:
         static void build(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response);
         static void build_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBuildRequest& request, MessageBuildResponse& response);
 
         // batchInsert
         private:
-        static bool batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, bool& is_file);
+        static bool batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths);
         public:
         static void batch_insert(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response);
         static void batch_insert_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response);
 
         // batchRemove
         private:
-        static bool batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);
+        static bool batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths);
         public:
         static void batch_remove(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);
         static void batch_remove_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response);

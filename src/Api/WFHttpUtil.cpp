@@ -46,8 +46,8 @@ void WFHttpUtil::fwrite_callback(WFHttpTask *task)
 }
 
 bool WFHttpUtil::ErrorHandler(WFHttpTask *task) {
-    protocol::HttpRequest *req = task -> get_req();
-    protocol::HttpResponse *resp = task -> get_resp();
+    // protocol::HttpRequest *req = task -> get_req();
+    // protocol::HttpResponse *resp = task -> get_resp();
     int state = task -> get_state();
     int error = task -> get_error();
     
@@ -76,6 +76,21 @@ bool WFHttpUtil::ErrorHandler(WFHttpTask *task) {
         return false;
     }
     return true;
+}
+
+std::string WFHttpUtil::get_file_ext(const std::string& filename)
+{
+    std::string::size_type pos1 = filename.find_last_of("/");
+    if (pos1 == std::string::npos)
+        pos1 = 0;
+    else
+        pos1++;
+    std::string file = filename.substr(pos1, -1);
+    std::string::size_type pos2 = file.find_last_of(".");
+    if (pos2 == std::string::npos)
+        return "";
+    else
+        return file.substr(pos2 + 1, -1);
 }
 
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
@@ -245,3 +260,78 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::
     return http_task -> get_state();
 }
 
+int WFHttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
+{
+    WFHttpTask* httptask = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, fwrite_callback);
+    httptask->set_callback([httptask, strUrl, &filePath](WFHttpTask* task) {
+        FileData* data = (FileData*) task -> user_data;
+        WFFacilities::WaitGroup *wait_group = data -> _wait_group;
+        if (!ErrorHandler(task))
+        {
+            filePath = "";
+            wait_group -> done();
+            return;
+        }
+        protocol::HttpResponse *resp = task ->get_resp();
+        protocol::HttpHeaderCursor resp_cursor(resp);
+        std::string name;
+        std::string value;
+        std::string filename = "";
+        while (resp_cursor.next(name, value))
+        {
+            SLOG_CORE(name + ": " + value);
+            if (name == "Content-Disposition")
+            {
+                std::regex pattern(R"(filename=(.*?)(;|$))");
+                std::smatch matches;
+                if (std::regex_search(value, matches, pattern)) {
+                    filename = matches[1];
+                    filename.erase(remove(filename.begin(), filename.end(), '"'), filename.end());
+                    break;
+                }
+            }
+        }
+        if (filename.empty())
+        {
+            filename = strUrl.substr(strUrl.find_last_of("/") + 1);
+        }
+        std::string file_suffix = get_file_ext(filename);
+        SLOG_CORE("filename: " + filename + ", extname: " + file_suffix);
+        // 获取允许的文件格式
+        std::set<std::string> extensions;
+        GlobalTypedef::upload_allow_extensions(extensions);
+        GlobalTypedef::upload_allow_compress_packages(extensions);
+        if (std::find(extensions.begin(), extensions.end(), file_suffix) == extensions.end()) {
+            wait_group -> done();
+            SLOG_ERROR("Download File type not allowed: " + filename);
+            filePath = "";
+            return;
+        }
+        filePath = filePath + filename;
+        // 判断filePath文件如果存在，先删除
+        std::filesystem::path _path(filePath);
+        if (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath)) {
+            std::filesystem::remove(_path);
+        }
+        const void *body;
+        size_t body_len;
+        std::ofstream file(filePath, std::ios::binary);
+        resp->get_parsed_body(&body, &body_len);
+        if (file.is_open()) {
+            file.write((const char*)body, body_len);
+            file.close();
+            SLOG_CORE("Download File success: " + filePath);
+        } else {
+            filePath = "";
+            SLOG_ERROR("Donwload File failed: open " + filePath+ " failed");
+        }
+        wait_group->done();
+    });
+    WFFacilities::WaitGroup wait_group(1);
+    FileData data = {nullptr, &wait_group};
+    httptask->user_data = (void*) &data;
+    httptask->start();
+    wait_group.wait();
+
+    return httptask->get_state();
+}

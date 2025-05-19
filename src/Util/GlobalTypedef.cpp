@@ -61,6 +61,26 @@ int32_t GlobalTypedef::thread_num()
     return atoi(thread_num.c_str());
 }
 
+void GlobalTypedef::upload_allow_extensions(std::set<std::string>& allow_extensions)
+{
+    std::string allow_ext = global_config["upload_allow_extensions"];
+    std::stringstream ss(allow_ext);
+    std::string item;
+    while (std::getline(ss, item, '|')) {
+        allow_extensions.insert(item);
+    }
+}
+
+void GlobalTypedef::upload_allow_compress_packages(std::set<std::string>& allow_compress_packages)
+{
+    std::string allow_ext = global_config["upload_allow_compress_packages"];
+    std::stringstream ss(allow_ext);
+    std::string item;
+    while (std::getline(ss, item, '|')) {
+        allow_compress_packages.insert(item);
+    }
+}
+
 bool GlobalTypedef::isEnabledFor(log4cplus::LogLevel ll)
 {
     return _logger.isEnabledFor(ll);

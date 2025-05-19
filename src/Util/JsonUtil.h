@@ -20,6 +20,7 @@ namespace gutil
         static int64_t jsonParam(const nlohmann::json& json, const std::string &key, const int64_t &default_val);
         static uint64_t jsonParam(const nlohmann::json& json, const std::string &key, const uint64_t &default_val);
         static bool jsonBoolParam(const nlohmann::json& json, const std::string &key, const bool &default_val);
+        static void jsonArrayParam(const nlohmann::json& json, const std::string &key, std::vector<std::string> &vec);
         static bool hasJsonParam(const nlohmann::json& json, const std::string &key);
         static bool accept(const std::string &json_str);
         static bool parse(const std::string &json_str, nlohmann::json &json);

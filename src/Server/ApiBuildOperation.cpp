@@ -2,15 +2,77 @@
 
 namespace server
 {
-    bool ApiHandler::build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response)
+    bool ApiHandler::build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response, std::map<std::string, unsigned long long>& file_paths, std::vector<std::string>& temp_paths)
     {
         std::string db_name = request.db_name;
         std::string msg;
-        if (!request.db_path.empty() && FileUtil::fileExists(request.db_path) == false)
+        if (!request.db_path.empty())
         {
-            response.StatusMsg = "RDF file not exist.";
-            response.StatusCode = StatusParamIsIllegal;
-            return false;
+            bool db_paths_rt = true;
+            for (auto& db_path_item : request.db_path) {
+                std::string local_path = GlobalTypedef::upload_path();
+                // download file from remote
+                if (request.remote) 
+                {
+                    CURLcode rt = HttpUtil::DownloadFile(db_path_item, local_path);
+                    if (rt != CURLcode::CURLE_OK || FileUtil::pathExists(local_path) == false) {
+                        response.StatusMsg = "Download file '" + db_path_item + "' failed.";
+                        response.StatusCode = StatusOperationFailed;
+                        db_paths_rt = false;
+                        break;
+                    }
+                    temp_paths.push_back(local_path);
+                }
+                else
+                {
+                    if (FileUtil::pathExists(db_path_item) == false)
+                    {
+                        response.StatusMsg = "RDF file '" + db_path_item + "' not exist.";
+                        response.StatusCode = StatusOperationFailed;
+                        db_paths_rt = false;
+                        break;
+                    }
+                    local_path = db_path_item;
+                }
+                std::string file_name = FileUtil::fileName(local_path);
+                std::string file_suffix = FileUtil::fileSuffix(local_path);
+                bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
+                // check file suffix
+                if (!apiUtil->check_upload_allow_extensions(file_suffix) &&  !is_zip)
+                {
+                    response.StatusMsg = "The file suffix '" + file_suffix + "' is not allowed.";
+                    response.StatusCode = StatusParamIsIllegal;
+                    db_paths_rt = false;
+                    break;
+                }
+                if (is_zip)
+                {
+                    // uncompress zip
+                    size_t pos = file_name.size() - file_suffix.size() - 1;
+                    std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+                    temp_paths.push_back(uncompress_path);
+                    bool unzip = uncompress_zip(apiUtil, local_path, file_paths, uncompress_path, response);
+                    if (!unzip)
+                    {
+                        db_paths_rt = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // add file to file_paths
+                    file_paths[local_path] = FileUtil::fileSize(local_path);
+                }
+            }
+            if (!db_paths_rt)
+            {
+                // delete temp files: uncompress_path and download_path
+                for (auto& path : temp_paths)
+                {
+                    FileUtil::removePath(path);
+                }
+                return false;
+            }
         }
         if (apiUtil->check_param_value("db_name", db_name, msg) == false)
         {
@@ -46,54 +108,64 @@ namespace server
     {
         try
         {
-            if (!build_check(apiUtil, request, response))
+            std::map<std::string, unsigned long long> file_paths; // local file path
+            std::vector<std::string> temp_paths; // download files or uncompress files
+            if (!build_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string db_path = request.db_path;
-            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+            std::string db_path;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
-            std::string file_suffix = FileUtil::fileSuffix(db_path);
-            bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-            if (is_zip)
+            if (!file_paths.empty()) 
             {
-                if (!uncompress_zip(apiUtil, db_path, nt_files, unz_dir_path, response, db_path))
+                auto maxIter = std::max_element(
+                    file_paths.begin(),
+                    file_paths.end(),
+                    [](const std::pair<std::string, unsigned long long>& a, const std::pair<std::string, unsigned long long>& b) {
+                        return a.second < b.second;
+                    }
+                );
+                db_path = maxIter->first;
+                nt_files.reserve(file_paths.size());
+                for (const auto& pair : file_paths)
                 {
-                    apiUtil->erase_databaseinfo(db_name);
-                    return;
+                    if (pair.first != db_path)
+                        nt_files.push_back(pair.first);
                 }
             }
-            string _db_path = GlobalTypedef::db_path(db_name);
-            string database = db_name;
+            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(database);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
-            // build empty database
             bool flag = true;
             int nt_file_num = 0;
-            if (!db_path.empty())
-            {
-                flag = current_database->build(db_path);
-                nt_file_num = 1;
-            }
-            else
-                flag = current_database->BuildEmptyDB();
-            int success_num = current_database->getTripleNum();
-            current_db_info->setDatabase(nullptr);
-            current_database.reset();
+            int success_num = 0;
+            std::string db_home_path = GlobalTypedef::db_path(db_name);
             try
             {
+                if (!db_path.empty())
+                {
+                    flag = current_database->build(db_path);
+                    success_num = current_database->getTripleNum();
+                    nt_file_num = 1;
+                }
+                else
+                {
+                    // build empty database
+                    flag = current_database->BuildEmptyDB();
+                }
+                current_db_info->setDatabase(nullptr);
+                current_database.reset();
                 if (!flag) 
                 {
                     result = "build failed.";
                     throw std::runtime_error(result);
                 }
-                // if zip file then excuse batchInsert
+                // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
                     current_database = make_shared<Database>(db_name);
@@ -103,16 +175,22 @@ namespace server
                         result = "unable to load database.";
                         throw std::runtime_error(result);
                     }
-                    for (std::string rdf_zip : nt_files)
+                    uint64_t total_update_num = 0;
+                    for (std::string rdf_file : nt_files)
                     {
-                        SLOG_DEBUG("batch insert rdf file: " + rdf_zip);
-                        current_database->batch_insert(rdf_zip, false, nullptr);
+                        SLOG_DEBUG("batch insert rdf file: " + rdf_file);
+                        total_update_num = total_update_num + current_database->batch_insert(rdf_file, false, nullptr);
                     }
                     nt_file_num += nt_files.size();
                     if (!current_database->save())
                     {
                         result = "disk or memory is not enough.";
                         throw std::runtime_error(result);
+                    }
+                    if (total_update_num > 0)
+                    {
+                        SLOG_DEBUG("update schema");
+                        current_database->updateSchema();
                     }
                     success_num = current_database->getTripleNum();
                     current_database.reset();
@@ -121,11 +199,8 @@ namespace server
             catch(const std::exception& e)
             {
                 result = "Import RDF file to database failed:" + string(e.what());
-                FileUtil::removePath(_db_path);
-                if (!unz_dir_path.empty())
-                {
-                    FileUtil::removePath(unz_dir_path);
-                }
+                FileUtil::removePath(db_home_path);
+                remove_temp_files(temp_paths);
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
                 current_database.reset();
@@ -140,13 +215,13 @@ namespace server
             // init user privilege
             apiUtil->init_privilege(username, db_name);
             ofstream f;
-            f.open(_db_path + "/success.txt");
+            f.open(db_home_path + "/success.txt");
             f.close();
             // add backup.log
             // Util::add_backuplog(db_name);
             // build response result
             result = "Import RDF file to database done.";
-            string error_log = _db_path + "/parse_error.log";
+            string error_log = db_home_path + "/parse_error.log";
             size_t parse_error_num = FileUtil::fileLines(error_log);
             // exclude Info line
             if (parse_error_num > 0)
@@ -156,11 +231,8 @@ namespace server
                 SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
                 SLOG_ERROR("See log file for details " + error_log);
             }
-            // remove unzip dir
-            if (!unz_dir_path.empty())
-            {
-                FileUtil::removePath(unz_dir_path);
-            }
+            // remove temp files
+            remove_temp_files(temp_paths);
 
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;
@@ -179,90 +251,98 @@ namespace server
     {
         try
         {
-            if (!build_check(apiUtil, request, response))
+            std::map<std::string, unsigned long long> file_paths; // local file path
+            std::vector<std::string> temp_paths; // download files or uncompress files
+            if (!build_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
-            
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string db_path = request.db_path;
-            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+            std::string db_path;
             std::vector<std::string> nt_files;
-            std::string unz_dir_path;
-            std::string file_suffix = FileUtil::fileSuffix(db_path);
-            bool is_zip = apiUtil->check_upload_allow_compress_packages(file_suffix);
-            if (is_zip)
+            if (!file_paths.empty()) 
             {
-                if (!uncompress_zip(apiUtil, db_path, nt_files, unz_dir_path, response, db_path))
+                auto maxIter = std::max_element(
+                    file_paths.begin(),
+                    file_paths.end(),
+                    [](const std::pair<std::string, unsigned long long>& a, const std::pair<std::string, unsigned long long>& b) {
+                        return a.second < b.second;
+                    }
+                );
+                db_path = maxIter->first;
+                nt_files.reserve(file_paths.size());
+                for (const auto& pair : file_paths)
                 {
-                    apiUtil->erase_databaseinfo(db_name);
-                    return;
+                    if (pair.first != db_path)
+                        nt_files.push_back(pair.first);
                 }
             }
-
-            string _db_path = GlobalTypedef::db_path(db_name);
-            string database = db_name;
+            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + database + "\tRDF_data: " + db_path);
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(database);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
             // build empty database
             bool flag = true;
             int nt_file_num = 0;
-            if (!db_path.empty())
+            int success_num = 0 ;
+            std::string db_home_path = GlobalTypedef::db_path(db_name);
+            try
             {
-                flag = current_database->build(db_path);
-                nt_file_num = 1;
-            }
-            else
-                flag = current_database->BuildEmptyDB();
-            int success_num = current_database->getTripleNum();
-            current_db_info->setDatabase(nullptr);
-            current_database.reset();
-            if (flag)
-            {
-                // if zip file then excuse batchInsert
+                if (!db_path.empty())
+                {
+                    flag = current_database->build(db_path);
+                    success_num = current_database->getTripleNum();
+                    nt_file_num = 1;
+                }
+                else
+                {
+                    flag = current_database->BuildEmptyDB();
+                }    
+                current_db_info->setDatabase(nullptr);
+                current_database.reset();
+                if (!flag) 
+                {
+                    result = "build failed.";
+                    throw std::runtime_error(result);
+                }
+                // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
                     current_database = make_shared<Database>(db_name);
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {
-                        result = "Import RDF file to database failed: load error.";
-                        FileUtil::removePath(_db_path);
-                        if (!unz_dir_path.empty())
-                        {
-                            FileUtil::removePath(unz_dir_path);
-                        }
-                        response.StatusMsg = result;
-                        response.StatusCode = StatusOperationFailed;
-                        current_database.reset();
-                        return;
+                        result = "unable to load database.";
+                        throw std::runtime_error(result);
                     }
+                    uint64_t total_update_num = 0;
                     for (std::string rdf_zip : nt_files)
                     {
-                        current_database->batch_insert(rdf_zip, false, nullptr);
+                        total_update_num = total_update_num + current_database->batch_insert(rdf_zip, false, nullptr);
                     }
                     nt_file_num += nt_files.size();
                     if (!current_database->save())
-					{
-                        response.Error(StatusOperationFailed, "disk or memory is not enough");
-                        return;
+                    {
+                        result = "disk or memory is not enough.";
+                        throw std::runtime_error(result);
+                    }
+                    if (total_update_num > 0)
+                    {
+                        SLOG_DEBUG("update schema");
+                        current_database->updateSchema();
                     }
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }
-            }
-            else
+            } 
+            catch (const std::exception &e)
             {
-                result = "Import RDF file to database failed.";
-                FileUtil::removePath(_db_path);
-                if (!unz_dir_path.empty())
-                {
-                    FileUtil::removePath(unz_dir_path);
-                }
+                result = "Import RDF file to database failed: " + string(e.what());
+                FileUtil::removePath(db_home_path);
+                remove_temp_files(temp_paths);
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
                 return;
@@ -275,13 +355,13 @@ namespace server
             // init user privilege
             apiUtil->init_privilege(username, db_name);
             ofstream f;
-            f.open(_db_path + "/success.txt");
+            f.open(db_home_path + "/success.txt");
             f.close();
             // add backup.log
             // Util::add_backuplog(db_name);
             // build response result
             result = "Import RDF file to database done.";
-            string error_log = _db_path + "/parse_error.log";
+            string error_log = db_home_path + "/parse_error.log";
             size_t parse_error_num = FileUtil::fileLines(error_log);
             // exclude Info line
             if (parse_error_num > 0)
@@ -291,11 +371,8 @@ namespace server
                 SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
                 SLOG_ERROR("See log file for details " + error_log);
             }
-            // remove unzip dir
-            if (!unz_dir_path.empty())
-            {
-                FileUtil::removePath(unz_dir_path);
-            }
+            // remove temp files
+            remove_temp_files(temp_paths);
 
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;

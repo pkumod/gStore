@@ -7,7 +7,8 @@ namespace server
     struct MessageBuildRequest : public MessageRequest
     {
         std::string db_name;
-        std::string db_path;
+        std::vector<std::string> db_path;
+        bool remote; 
         bool async;
         std::string callback;
         MessageBuildRequest(std::string db_name, std::string db_path);
@@ -88,14 +89,14 @@ namespace server
     struct MessageBatchInsertRequest : public MessageRequest
     {
         std::string db_name;
-        std::string file;
-        std::string dir;
+        std::vector<std::string> file;
+        bool remote;
         bool async;
         std::string callback;
         MessageBatchInsertRequest()=delete;
         MessageBatchInsertRequest(const nlohmann::json& json_data);
-        MessageBatchInsertRequest(std::string db_name, std::string file, std::string dir);
-        MessageBatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file, std::string dir);
+        MessageBatchInsertRequest(std::string db_name, std::string file);
+        MessageBatchInsertRequest(std::string username, std::string password,std::string db_name, std::string file);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
     };
@@ -116,10 +117,11 @@ namespace server
     {
         std::string db_name;
         std::string file;
+        bool remote;
         bool async;
         std::string callback;
         MessageBatchRemoveRequest(const nlohmann::json& json_data);
-        MessageBatchRemoveRequest(std::string db_name,  std::string file);
+        MessageBatchRemoveRequest(std::string db_name, std::string file);
         MessageBatchRemoveRequest(std::string username, std::string password,std::string db_name, std::string file);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;

@@ -137,6 +137,20 @@ namespace gutil
         return default_val;
     }
 
+    void JsonUtil::jsonArrayParam(const nlohmann::json& json, const std::string &key, std::vector<std::string> &vec)
+    {
+        if (json.contains(key))
+        {
+            if (json[key].is_array())
+            {
+                for (auto &item : json[key])
+                {
+                    vec.push_back(item.get<std::string>());
+                }
+            }
+        }
+    }
+
     bool JsonUtil::hasJsonParam(const nlohmann::json &json, const std::string &key)
     {
         return json.contains(key);

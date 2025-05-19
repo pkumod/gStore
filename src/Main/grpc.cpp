@@ -1094,7 +1094,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 			return;
 		}
 	}
-	std::string file_suffix = GRPCUtil::fileSuffix(filename);
+	std::string file_suffix = FileUtil::fileSuffix(filename);
 	if (!apiUtil->check_upload_allow_compress_packages(file_suffix) && apiUtil->check_upload_allow_extensions(file_suffix) == false)
 	{
 		msg = "The type of upload file is not supported!";
@@ -1108,7 +1108,7 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		return;
 	}
 	// remove path info, only return base filename
-	std::string file_name = GRPCUtil::fileName(filename);
+	std::string file_name = FileUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
 	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
 	std::string notify_msg = "{\"StatusCode\":0, \"StatusMsg\":\"success\", \"filepath\": \""+file_dst+"\"}";

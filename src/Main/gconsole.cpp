@@ -1629,6 +1629,11 @@ int create_handler(const vector<string> &args)
 	server::MessageBuildRequest build_request(db_name, db_path);
 	build_request.username = root_username;
 	build_request.password = root_password;	
+	if (StringUtil::start_with(db_path, "http://") || StringUtil::start_with(db_path, "https://"))
+	{
+		build_request.remote = true;
+	}
+	
 	int64_t t1 = gutil::TimeUtil::timestamp();
 	server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 	int64_t t2 = gutil::TimeUtil::timestamp();
@@ -2482,25 +2487,13 @@ int batchinsert_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 	string file_path = args[0];
-	string dir_path;
-	if (FileUtil::is_dir(file_path)) 
-	{
-		dir_path = file_path;
-		file_path = "";
-	}
-	if (!file_path.empty() && !FileUtil::fileExists(file_path))
-	{
-		cout << "File " << file_path << " does not exist." << endl;
-		return -1;
-	}
-	if (!dir_path.empty() && !FileUtil::dirExists(dir_path))
-	{
-		cout << "Dir " << dir_path << " does not exist." << endl;
-		return -1;
-	}
-	server::MessageBatchInsertRequest insert_request(_current_database, file_path, dir_path);
+	server::MessageBatchInsertRequest insert_request(_current_database, file_path);
 	insert_request.username = root_username;
 	insert_request.password = root_password;
+	if (StringUtil::start_with(file_path, "http://") || StringUtil::start_with(file_path, "https://"))
+	{
+		insert_request.remote = true;
+	}
 	long duration_time = gutil::TimeUtil::timestamp();
 	server::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
 	duration_time = gutil::TimeUtil::timestamp() - duration_time;
@@ -2520,14 +2513,13 @@ int batchremove_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 	string file_path = args[0];
-	if (!FileUtil::fileExists(file_path))
-	{
-		cout << "File " << file_path << " does not exist." << endl;
-		return -1;
-	}
 	server::MessageBatchRemoveRequest remove_request(_current_database, file_path);
 	remove_request.username = root_username;
 	remove_request.password = root_password;
+	if (StringUtil::start_with(file_path, "http://") || StringUtil::start_with(file_path, "https://"))
+	{
+		remove_request.remote = true;
+	}
 	long duration_time = gutil::TimeUtil::timestamp();
 	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = gutil::TimeUtil::timestamp() - duration_time;

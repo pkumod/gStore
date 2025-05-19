@@ -2,6 +2,7 @@
 
 #include <workflow/WFTaskFactory.h>
 #include <workflow/WFFacilities.h>
+#include <workflow/HttpUtil.h>
 #include "../Util/GlobalTypedef.h"
 
 constexpr int REDIRECT_MAX = 3, RETRY_MAX = 5;
@@ -121,50 +122,51 @@ public:
 private:
     void _get_file_name_type(const std::string &file_path, std::string *filename, std::string *content_type)
     {
-    if (filename == NULL || content_type == NULL) return;
+        if (filename == NULL || content_type == NULL) return;
 
-    size_t last_spliter = file_path.find_last_of("/\\");
-    *filename = file_path.substr(last_spliter + 1);
-    size_t dot_pos = filename->find_last_of(".");
-    if (dot_pos == std::string::npos)
-    {
+        size_t last_spliter = file_path.find_last_of("/\\");
+        *filename = file_path.substr(last_spliter + 1);
+        size_t dot_pos = filename->find_last_of(".");
+        if (dot_pos == std::string::npos)
+        {
+            *content_type = "application/octet-stream";
+            return;
+        }
+        std::string ext = filename->substr(dot_pos + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if (ext == "jpg" || ext == "jpeg")
+        {
+            *content_type = "image/jpeg";
+            return;
+        }
+
+        if (ext == "txt" || ext == "log")
+        {
+            *content_type = "text/plain";
+            return;
+        }
         *content_type = "application/octet-stream";
         return;
-    }
-    std::string ext = filename->substr(dot_pos + 1);
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    if (ext == "jpg" || ext == "jpeg")
-    {
-        *content_type = "image/jpeg";
-        return;
-    }
-
-    if (ext == "txt" || ext == "log")
-    {
-        *content_type = "text/plain";
-        return;
-    }
-    *content_type = "application/octet-stream";
-    return;
-    }
-    std::string boundary_;
-    std::string body_content_;
-    std::vector<std::pair<std::string, std::string> > params_;
-    std::vector<std::pair<std::string, std::string> > files_;
+        }
+        std::string boundary_;
+        std::string body_content_;
+        std::vector<std::pair<std::string, std::string> > params_;
+        std::vector<std::pair<std::string, std::string> > files_;
     };
 
-std::string http_wrapper(const std::string &url) {
-    const char* tmp = url.c_str();
-    if (strncasecmp(tmp, "http://", 7) != 0 &&
-        strncasecmp(tmp, "https://", 8) != 0) 
+    std::string http_wrapper(const std::string &url) 
     {
-        return "http://" + url;
+        const char* tmp = url.c_str();
+        if (strncasecmp(tmp, "http://", 7) != 0 &&
+            strncasecmp(tmp, "https://", 8) != 0) 
+        {
+            return "http://" + url;
+        }
+        else 
+        {
+            return url;
+        }
     }
-    else 
-    {
-        return url;
-    }
-}
 } // anonymous namespace
 
 class WFHttpUtil
@@ -180,6 +182,7 @@ private:
 
     static bool ErrorHandler(WFHttpTask *task);
 
+    static std::string get_file_ext(const std::string &file);
 
 public:
 	/**
@@ -247,4 +250,7 @@ public:
      * @return: returned value
      */
 	static int Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, const int& timeOut, std::string& strResponse);
+
+    // 基于WFNetworkTask实现文件下载
+    static int DownloadFile(const std::string& strUrl, std::string& filePath);
 };

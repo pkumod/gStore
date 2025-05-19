@@ -2,39 +2,7 @@
 
 namespace server
 {
-    bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response)
-    {
-        auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
-        {
-            if( apiUtil->check_upload_allow_extensions(FileUtil::fileSuffix(filename)) == false )
-                return false;
-            return true;
-        });
-        if (code != CompressUtil::UnZipOK )
-        {
-            response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
-            response.StatusCode = code;
-            return false;
-        }
-        std::string file_name = FileUtil::fileName(file);
-        size_t pos = file_name.size() - FileUtil::fileSuffix(file).size() - 1;
-        unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
-        FileUtil::createDirs(unz_dir_path);
-        CompressUtil::UnCompressZip upfile(file, unz_dir_path);
-        code = upfile.unCompress();
-        if (code != CompressUtil::UnZipOK)
-        {
-            FileUtil::removePath(unz_dir_path);
-            response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
-            response.StatusCode = code;
-            return false;
-        }
-        upfile.getFileList(nt_files, "");
-
-        return true;
-    }
-
-    bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::vector<std::string>& nt_files, std::string& unz_dir_path, MessageResponse& response, std::string& max_file)
+    bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::map<std::string, unsigned long long>& uncompress_files, const std::string& uncompress_path, MessageResponse& response)
     {
         auto code = CompressUtil::FileHelper::foreachZip(file,[apiUtil](std::string filename)->bool
         {
@@ -48,23 +16,42 @@ namespace server
             response.StatusCode = code;
             return false;
         }
-        std::string file_name = FileUtil::fileName(file);
-        size_t pos = file_name.size() - FileUtil::fileSuffix(file).size() - 1;
-        unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
-        FileUtil::createDirs(unz_dir_path);
-        CompressUtil::UnCompressZip upfile(file, unz_dir_path);
+        if (!FileUtil::dirExists(uncompress_path))
+            FileUtil::createDirs(uncompress_path);
+        CompressUtil::UnCompressZip upfile(file, uncompress_path);
         code = upfile.unCompress();
         if (code != CompressUtil::UnZipOK)
         {
-            FileUtil::removePath(unz_dir_path);
             response.StatusMsg = "uncompress failed(code="+to_string(code)+")";
             response.StatusCode = code;
             return false;
         }
-        max_file = upfile.getMaxFilePath();
-        upfile.getFileList(nt_files, max_file);
-        
+        upfile.getFileList(uncompress_files);
         return true;
+    }
+
+    bool ApiHandler::remove_temp_files(std::vector<std::string>& temp_paths, const bool remove_parents_if_empty)
+    {
+        if (temp_paths.empty())
+            return true;
+        std::set<std::string> parent_paths;
+        for (auto& temp_path : temp_paths)
+        {
+            if (FileUtil::pathExists(temp_path) && temp_path != GlobalTypedef::upload_path())
+                FileUtil::removePath(temp_path);
+            if (remove_parents_if_empty)
+            {
+                string parent_path = FileUtil::parentPath(temp_path);
+                if (FileUtil::isEmptyDir(parent_path))
+                    parent_paths.insert(parent_path);
+            }
+        }
+        std::vector<std::string> parent_paths_vec;
+        for (auto& parent_path : parent_paths)
+        {
+            parent_paths_vec.push_back(parent_path);
+        }
+        return remove_temp_files(parent_paths_vec, remove_parents_if_empty);
     }
 
     void ApiHandler::load(shared_ptr<APIUtil>& apiUtil, const MessageLoadRequest& resquest, MessageLoadResponse& response)
