@@ -141,9 +141,10 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "log", "log_mode", "conf/slog.properties");
     Util::setGlobalConfig(ini_parser, "log", "querylog_mode", "1");
     Util::setGlobalConfig(ini_parser, "log", "querylog_path", "logs/endpoint/");
-    Util::setGlobalConfig(ini_parser, "log", "accesslog_mode", "0");
+    Util::setGlobalConfig(ini_parser, "log", "querylog_days", "30");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_mode", "1");
     Util::setGlobalConfig(ini_parser, "log", "accesslog_path", "logs/ipaccess/");
-    Util::setGlobalConfig(ini_parser, "log", "queryresult_path", "logs/query_result/");
+    Util::setGlobalConfig(ini_parser, "log", "accesslog_days", "30");
     // backup
     Util::setGlobalConfig(ini_parser, "backup", "backup_path", "./backups/");
     Util::setGlobalConfig(ini_parser, "backup", "max_backups", "3");
@@ -170,6 +171,10 @@ Util::configure()
     temp_str = Util::getConfigureValue("backup_path");
     gutil::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["backup_path"] = temp_str;
+    FileUtil::createDirs(temp_str);
+
+    // create export_path
+    temp_str = GlobalTypedef::export_path;
     FileUtil::createDirs(temp_str);
 
     // create pfn_base_path

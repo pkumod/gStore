@@ -35,7 +35,6 @@ private:
     string query_log_path;
     string access_log_mode;
     string access_log_path;
-    string query_result_path;
     std::set<std::string> upload_allow_extensions;
     std::set<std::string> upload_allow_compress_packages;
 
@@ -182,7 +181,6 @@ public:
     void print_license();
 
     // for data get
-    string get_query_result_path();
     int get_thread_pool_num();
     int get_max_output_size();
     int get_connection_num();

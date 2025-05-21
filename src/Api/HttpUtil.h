@@ -16,6 +16,9 @@ private:
 	template<typename TResponse>
 	static TResponse response_parser(CURLcode& code, const std::string& body);
 	static std::string get_file_ext(const std::string &file);
+	static void url_encode(std::string& str);
+	static void url_decode(std::string& str);
+	static bool is_url_encode(const std::string &str);
 public:
 	/**
 	* @brief: HTTP POST request

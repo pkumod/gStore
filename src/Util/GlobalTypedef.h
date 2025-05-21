@@ -349,6 +349,8 @@ public:
 	static std::string sys_uname();
 	static int32_t backup_max();
 	static int32_t thread_num();
+	static int32_t querylog_days();
+	static int32_t accesslog_days();
 	static void upload_allow_extensions(std::set<std::string>& allow_extensions);
 	static void upload_allow_compress_packages(std::set<std::string>& allow_compress_packages);
 	static bool isEnabledFor(log4cplus::LogLevel ll);

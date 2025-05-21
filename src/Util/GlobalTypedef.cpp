@@ -61,6 +61,18 @@ int32_t GlobalTypedef::thread_num()
     return atoi(thread_num.c_str());
 }
 
+int32_t GlobalTypedef::querylog_days()
+{
+    std::string log_num = global_config["querylog_days"];
+    return atoi(log_num.c_str());
+}
+
+int32_t GlobalTypedef::accesslog_days()
+{
+    std::string log_num = global_config["accesslog_days"];
+    return atoi(log_num.c_str());
+}
+
 void GlobalTypedef::upload_allow_extensions(std::set<std::string>& allow_extensions)
 {
     std::string allow_ext = global_config["upload_allow_extensions"];

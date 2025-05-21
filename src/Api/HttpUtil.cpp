@@ -11,7 +11,7 @@ HttpUtil::~HttpUtil()
 
 }
 
-static const std::string UrlEncode(const std::string& s)
+void HttpUtil::url_encode(std::string& s)
 {
 	std::string ret;
 	unsigned char* ptr = (unsigned char*)s.c_str();
@@ -37,7 +37,51 @@ static const std::string UrlEncode(const std::string& s)
 			ret.append(buf);
 		}
 	}
-	return ret;
+	s = ret;
+}
+
+void HttpUtil::url_decode(std::string& str)
+{
+	std::string strTemp = "";
+	size_t length = str.length();
+	unsigned char x;
+	for (size_t i = 0; i < length; i++)
+	{
+		if (str[i] == '+')
+			strTemp += ' ';
+		else if (str[i] == '%')
+		{
+			assert(i + 2 < length);
+			x = (unsigned char)str[++i];
+			unsigned char high;
+			if (x >= 'A' && x <= 'Z')
+				high = x - 'A' + 10;
+			else if (x >= 'a' && x <= 'z')
+				high = x - 'a' + 10;
+			else if (x >= '0' && x <= '9')
+				high = x - '0';
+			else
+				assert(0);
+
+			x = (unsigned char)str[++i];
+			unsigned char low = 0;
+			if (x >= 'A' && x <= 'Z')
+				low = x - 'A' + 10;
+			else if (x >= 'a' && x <= 'z')
+				low = x - 'a' + 10;
+			else if (x >= '0' && x <= '9')
+				low = x - '0';
+
+			strTemp += high * 16 + low;
+		}
+		else
+			strTemp += str[i];
+	}
+	str = strTemp;
+}
+bool HttpUtil::is_url_encode(const std::string &str)
+{
+	return str.find("%") != std::string::npos || str.find("+") != std::string::npos;
 }
 
 static int OnDebug(CURL*, curl_infotype itype, char* pData, size_t size, void*)
@@ -102,7 +146,12 @@ std::string HttpUtil::get_file_ext(const std::string& filename)
 
 CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 {
-	SLOG_CORE("url: " + strUrl);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -115,7 +164,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
@@ -130,7 +179,12 @@ CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 
 CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 {
-	SLOG_CORE("url: " + strUrl);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -143,7 +197,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 		curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
 	}
 	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url);
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
 
@@ -166,7 +220,12 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 
 CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::string>& headers, std::string& strResponse)
 {
-	SLOG_CORE("url: " + strUrl);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -191,7 +250,7 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, st
 		headerlist = curl_slist_append(headerlist, header_str.c_str());
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&strResponse);
@@ -206,7 +265,12 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, st
 
 CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, std::string& strResponse)
 {
-	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url + ", requestBody: " + strPost);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -223,7 +287,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, s
 	std::string content_type = "Content-Type:application/json";
 	headerlist = curl_slist_append(headerlist, content_type.c_str());
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
@@ -240,7 +304,12 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, s
 
 CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
-	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url + ", requestBody: " + strPost);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -257,7 +326,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, c
 	headerlist = curl_slist_append(headerlist, content_type.c_str());
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
 	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 4096);
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
@@ -279,7 +348,12 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::string& strPost, c
 
 CURLcode HttpUtil::Post(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& strPost, std::string& strResponse)
 {
-	SLOG_CORE("url: " + strUrl + ", requestBody: " + strPost);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url + ", requestBody: " + strPost);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -309,7 +383,7 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::map<std::string, s
 		headerlist = curl_slist_append(headerlist, header_str.c_str());
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);  
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strPost.c_str());
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, NULL);
@@ -326,7 +400,12 @@ CURLcode HttpUtil::Post(const std::string& strUrl, const std::map<std::string, s
 
 CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::string, std::string>& headers, long timeOut, const std::string& filePath, const std::map<std::string, std::string>& params, std::string& strResponse)
 {
-	SLOG_CORE("url: " + strUrl + ", filePath: " + filePath);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url + ", filePath: " + filePath);
     strResponse.clear();
     CURLcode res;
     CURL* curl = curl_easy_init();
@@ -340,7 +419,7 @@ CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::strin
         curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, OnDebug);
     }
 	// 设置目标URL
-    curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
     // 设置POST请求
 	curl_easy_setopt(curl, CURLOPT_POST, 1);
 	
@@ -400,7 +479,12 @@ CURLcode HttpUtil::PostFile(const std::string& strUrl, const std::map<std::strin
 
 CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
 {
-	SLOG_CORE("url: " + strUrl + ", savePath: " + filePath);
+	std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+	SLOG_CORE("url: " + encode_url + ", savePath: " + filePath);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -414,7 +498,7 @@ CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath
 	}
 	std::string readBuffer;
 	std::string headerBuffer;
-	curl_easy_setopt(curl, CURLOPT_URL, UrlEncode(strUrl).c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, encode_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 	curl_easy_setopt(curl, CURLOPT_HEADER, 0);

@@ -57,10 +57,11 @@ namespace server
             apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr, resquest.db_name);
             vector<struct DBQueryLogInfo> logList = dbQueryLogsPtr->getQueryLogInfoList();
             size_t count = logList.size();
-            
+            nlohmann::json info;
             for (size_t i = 0; i < count; i++)
             {
-                nlohmann::json info = logList[i];
+                DBQueryLogInfo log_info = logList[i];
+                log_info.toJSON(info);
                 response.list.push_back(info);
             }
 
@@ -84,9 +85,6 @@ namespace server
         {
             vector<string> logfiles;
             apiUtil->get_query_log_files(logfiles);
-            sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
-                return a > b;
-            });
             size_t count = logfiles.size();
             std::string item;
             for (size_t i = 0; i < count; i++)
@@ -150,9 +148,6 @@ namespace server
         {
             vector<string> logfiles;
             apiUtil->get_access_log_files(logfiles);
-            sort(logfiles.begin(), logfiles.end(), [](const string& a, const string& b) {
-                return a > b;
-            });
             size_t count = logfiles.size();
             std::string item;
             for (size_t i = 0; i < count; i++)

@@ -16,14 +16,55 @@ public:
     std::string format;
     std::string fileName;
     int statusCode;
+    std::string statusMsg;
     size_t queryTime;
     std::string dbname;
 public:
     DBQueryLogInfo() {}
-    DBQueryLogInfo(const string &_queryDateTime, const string &_remoteIP, const string &_sparql, long _ansNum, const string &_format, const string &_fileName, int _statusCode, size_t _queryTime, const string &_dbName):
-    queryDateTime(_queryDateTime), remoteIP(_remoteIP), sparql(_sparql), ansNum(_ansNum), format(_format), fileName(_fileName), statusCode(_statusCode), queryTime(_queryTime), dbname(_dbName) {}
+    DBQueryLogInfo(const string &_queryDateTime, const string &_remoteIP, const string &_sparql, long _ansNum, const string &_format, 
+        const string &_fileName, int _statusCode, const string& _statusMsg, size_t _queryTime, const string &_dbName):
+        queryDateTime(_queryDateTime), remoteIP(_remoteIP), sparql(_sparql), ansNum(_ansNum), format(_format), 
+        fileName(_fileName), statusCode(_statusCode), statusMsg(_statusMsg), queryTime(_queryTime), dbname(_dbName) {}
+    void toJSON(nlohmann::json& doc)
+    {
+        doc["queryDateTime"] = queryDateTime;
+        doc["remoteIP"] = remoteIP;
+        doc["sparql"] = sparql;
+        doc["ansNum"] = ansNum;
+        doc["format"] = format;
+        doc["fileName"] = fileName;
+        doc["statusCode"] = statusCode;
+        doc["statusMsg"] = statusMsg;
+        doc["queryTime"] = queryTime;
+        doc["dbname"] = dbname;
+    }
+    static bool fromJSON(const std::string& json_str, DBQueryLogInfo& info)
+    {
+        if(!nlohmann::json::accept(json_str))
+        {
+            return false;
+        }
+        try
+        {
+            nlohmann::json doc = json::parse(json_str);
+            doc.at("queryDateTime").get_to(info.queryDateTime);
+            doc.at("remoteIP").get_to(info.remoteIP);
+            doc.at("sparql").get_to(info.sparql);
+            doc.at("ansNum").get_to(info.ansNum);
+            doc.at("format").get_to(info.format);
+            doc.at("fileName").get_to(info.fileName);
+            doc.at("statusCode").get_to(info.statusCode);
+            doc.at("statusMsg").get_to(info.statusMsg);
+            doc.at("queryTime").get_to(info.queryTime);
+            doc.at("dbname").get_to(info.dbname);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DBQueryLogInfo, queryDateTime, remoteIP, sparql, ansNum, format, fileName, statusCode, queryTime, dbname);
 
 struct DBQueryLogs
 {
@@ -60,11 +101,9 @@ public:
     }
     void addQueryLogInfo(const string &json_str)
     {
-        if(json::accept(json_str))
-        {
-            DBQueryLogInfo item = json::parse(json_str);
+        struct DBQueryLogInfo item;
+        if(DBQueryLogInfo::fromJSON(json_str, item))
             list.push_back(item);
-        }
     }
     vector<struct DBQueryLogInfo> getQueryLogInfoList()
     {

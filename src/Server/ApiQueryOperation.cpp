@@ -74,15 +74,26 @@ namespace server
         {
             // file format does not limit the number
             rs.output_limit = -1;
-            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".txt";
-            string file_path = apiUtil->get_query_result_path() + file_name;
+            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".json";
+            string file_path = GlobalTypedef::export_path + file_name;
             nlohmann::json json_data;
             rs.to_JSON(json_data);
             ofstream outfile;
             outfile.open(file_path);
             outfile << json_data.dump();
             outfile.close();
-            response.fileName = file_name;
+            response.fileName = file_path;
+        }
+        else if (request.format == "n-triple-file")
+        {
+            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".txt";
+            string file_path = GlobalTypedef::export_path + file_name;
+            FILE* fptr = fopen(file_path.c_str(), "w");
+            rs.output_limit = -1;
+            rs.output(fptr);
+            fflush(fptr);
+            fclose(fptr);
+            response.fileName = file_path;
         }
         else if (request.format == "n-triple")
         {
@@ -102,7 +113,7 @@ namespace server
         response.toJsonString(strPost);
         // save result to file
         string file_name = response.opt_id + ".json";
-        string file_path = apiUtil->get_query_result_path() + file_name;
+        string file_path = GlobalTypedef::export_path + file_name;
         ofstream outfile;
         outfile.open(file_path);
         outfile << strPost;
@@ -238,7 +249,7 @@ namespace server
             }
             // add callback task for query log start
             std::shared_ptr<DBQueryLogInfo> query_log_ptr = std::make_shared<DBQueryLogInfo>(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, request.format, response.fileName, response.StatusCode, query_time, db_name);
+                response.ansNum, request.format, response.fileName, response.StatusCode, response.StatusMsg, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet
             rs.release();
@@ -451,7 +462,7 @@ namespace server
             }
             // add callback task for query log start
             std::shared_ptr<DBQueryLogInfo> query_log_ptr = std::make_shared<DBQueryLogInfo>(query_start_time, request.remote_ip, sparql, 
-                rs_ansNum, request.format, file_name, response.StatusCode, query_time, db_name);
+                response.ansNum, request.format, file_name, response.StatusCode, response.StatusMsg, query_time, db_name);
             cb(query_log_ptr);
             // release ResultSet
             rs.release();

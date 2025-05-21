@@ -257,8 +257,6 @@ void APIUtil::init_params()
     query_log_path = Util::getConfigureValue("querylog_path");
     access_log_mode = Util::getConfigureValue("accesslog_mode", "0");
     access_log_path = Util::getConfigureValue("accesslog_path");
-    query_result_path = Util::getConfigureValue("queryresult_path");
-
     //load ip-list
     ipWhiteFile = Util::getConfigureValue("ip_allow_path");
     ipBlackFile = Util::getConfigureValue("ip_deny_path");
@@ -449,7 +447,8 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
             return a < b;
         });
         for (auto file_name : backup_files) {
-            std::string remove_file_path = backup_path + "/" + file_name;
+            SLOG_DEBUG("delete oldest backup: " + file_name);
+            std::string remove_file_path = backup_path + file_name;
             FileUtil::removePath(remove_file_path);
             cur_backups--;
             if (cur_backups < max_backups) {
@@ -1815,24 +1814,11 @@ void APIUtil::reset_access_ip_error_num(const string& ip)
 
 void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
 {
-    DIR *dirp = opendir(APIUtil::access_log_path.c_str());
-    if (dirp == NULL)
-    {
-        SLOG_WARN("access log dir is not exist.");
-        return;
-    }
-    struct dirent *dir_entry = NULL;
-    string file_name;
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        file_name = dir_entry->d_name;
-        if (file_name.find(".log") != string::npos)
-        {
-            file_list.push_back(dir_entry->d_name);
-        }
-        
-    }
-    closedir(dirp);
+    FileUtil::dir_filenames(access_log_path, file_list, ".log");
+    // sort desc
+    std::sort(file_list.begin(), file_list.end(), [](const std::string& a, const std::string& b) {
+        return a > b;
+    });
 }
 
 void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name)
@@ -1870,8 +1856,26 @@ const string &optId, unsigned num, unsigned fail_num, std::string dbname)
     string iplog_file = access_log_path + iplog_name + ".log";
     if (FileUtil::fileExists(iplog_file) == false)
     {
-        SLOG_DEBUG("ip access log file is not exist, now create it.");
+        SLOG_DEBUG("ip access log file is not exist, now create it: " + iplog_file);
         FileUtil::createFile(iplog_file);
+        // remove old log files
+        vector<std::string> log_files;
+        FileUtil::dir_filenames(access_log_path, log_files, ".log");
+        int32_t max_files = GlobalTypedef::accesslog_days();
+        size_t cur_files = log_files.size();
+        if (cur_files > max_files)
+        {
+            // sort asc
+            std::sort(log_files.begin(), log_files.end(), [](const std::string& a, const std::string& b) {
+                return a < b;
+            });
+            for (int i=0; i < cur_files - max_files; i++) {
+                string file_name = log_files[i];
+                std::string remove_file_path = access_log_path + file_name;
+                SLOG_DEBUG("remove oldest access log file: " + remove_file_path);
+                FileUtil::removePath(remove_file_path);
+            }
+        }
     }
     // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&access_log_lock);
@@ -1995,24 +1999,11 @@ bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
 
 void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
 {
-    DIR *dirp = opendir(APIUtil::query_log_path.c_str());
-    if (dirp == NULL)
-    {
-        SLOG_WARN("query log dir is not exist.");
-        return;
-    }
-    struct dirent *dir_entry = NULL;
-    string file_name;
-    while ((dir_entry = readdir(dirp)) != NULL)
-    {
-        file_name = dir_entry->d_name;
-        if (file_name.find(".log") != string::npos)
-        {
-            file_list.push_back(dir_entry->d_name);
-        }
-        
-    }
-    closedir(dirp);
+    FileUtil::dir_filenames(query_log_path, file_list, ".log");
+    // sort desc
+    std::sort(file_list.begin(), file_list.end(), [](const std::string& a, const std::string& b) {
+        return a > b;
+    });
 }
 
 void APIUtil::get_query_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBQueryLogs> logPtr, std::string db_name)
@@ -2051,10 +2042,30 @@ void APIUtil::write_query_log(std::shared_ptr<DBQueryLogInfo> log)
     {
         SLOG_DEBUG("query log file is not exist, now create it: " + querylog_file);
         FileUtil::createFile(querylog_file);
+        // remove old log files
+        vector<std::string> log_files;
+        FileUtil::dir_filenames(query_log_path, log_files, ".log");
+        int32_t max_files = GlobalTypedef::querylog_days();
+        size_t cur_files = log_files.size();
+        if (cur_files > max_files)
+        {
+            // sort asc
+            std::sort(log_files.begin(), log_files.end(), [](const std::string& a, const std::string& b) {
+                return a < b;
+            });
+            for (int i=0; i < cur_files - max_files; i++) {
+                std::string file_name = log_files[i];
+                std::string remove_file_path = query_log_path + file_name;
+                SLOG_DEBUG("remove oldest query log file: " + remove_file_path);
+                FileUtil::removePath(remove_file_path);
+            }
+        }
     }
     pthread_rwlock_wrlock(&query_log_lock);
-    nlohmann::json json_data = *log;
+    nlohmann::json json_data;
+    log->toJSON(json_data);
     std::string line = json_data.dump();
+    SLOG_DEBUG("write query log: " + line);
     FileUtil::writeLine(querylog_file, line);
     pthread_rwlock_unlock(&query_log_lock);
 }
@@ -2256,11 +2267,6 @@ void APIUtil::print_license()
 LicenseInfo APIUtil::get_license()
 {
     return license_info;
-}
-
-string APIUtil::get_query_result_path()
-{
-    return query_result_path;
 }
 
 int APIUtil::get_thread_pool_num() 

@@ -16,8 +16,9 @@ namespace gutil
     {
         if (access(path.c_str(), 0) != 0)
         {
-            // file permission 0644
-            if (creat(path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) != 0)
+            // file permission 0755
+            mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+            if (creat(path.c_str(), mode) != 0)
             {
                 return false;
             }

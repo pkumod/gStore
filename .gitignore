@@ -133,6 +133,7 @@ bin
 # test build
 scripts/test/
 upload
+export
 
 # cluster
 cluster

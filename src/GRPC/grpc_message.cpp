@@ -722,7 +722,9 @@ int GRPCUtil::send_file(const std::string &path, size_t file_start, size_t file_
     if (content_type == CONTENT_TYPE_NONE || content_type == CONTENT_TYPE_UNDEFINED) {
         content_type = APPLICATION_OCTET_STREAM;
     }
+    std::string fileName = StringUtil::url_encode(GRPCUtil::fileName(path));
     resp->headers["Content-Type"] = ContentType::to_str(content_type);
+    resp->headers["Content-Disposition"] = "atachment; filename=\"" + fileName + "\"";
 
     size_t size = end - start;
     void *buf = malloc(size);
