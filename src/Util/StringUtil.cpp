@@ -107,7 +107,7 @@ namespace gutil
         }
     }
 
-    std::string StringUtil::url_encode(const std::string& str)
+    void StringUtil::url_encode(std::string& str)
     {
         std::string strTemp = "";
         size_t length = str.length();
@@ -131,10 +131,10 @@ namespace gutil
                 strTemp += x > 9 ? x + 55 : x + 48;
             }
         }
-        return strTemp;
+        str = strTemp;
     }
 
-    std::string StringUtil::url_decode(const std::string& str)
+    void StringUtil::url_decode(std::string& str)
     {
         std::string strTemp = "";
         size_t length = str.length();
@@ -171,7 +171,7 @@ namespace gutil
             else
                 strTemp += str[i];
         }
-        return strTemp;
+        str = strTemp;
     }
 
     std::string StringUtil::clear_linebreak(const std::string& str)

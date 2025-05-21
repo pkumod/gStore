@@ -151,7 +151,6 @@ CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
 	{
 		url_encode(encode_url);
 	}
-	SLOG_CORE("url: " + encode_url);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -184,7 +183,6 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::string& filename)
 	{
 		url_encode(encode_url);
 	}
-	SLOG_CORE("url: " + encode_url);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
 	if (NULL == curl)
@@ -225,7 +223,6 @@ CURLcode HttpUtil::Get(const std::string& strUrl, const std::map<std::string, st
 	{
 		url_encode(encode_url);
 	}
-	SLOG_CORE("url: " + encode_url);
 	strResponse.clear();
 	CURLcode res;
 	CURL* curl = curl_easy_init();
@@ -540,6 +537,10 @@ CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath
 	if (filename.empty())
 	{
 		filename = strUrl.substr(strUrl.find_last_of("/") + 1);
+	}
+	if (is_url_encode(filename)) 
+	{
+		url_decode(filename);
 	}
 	std::string file_suffix = get_file_ext(filename);
 	SLOG_CORE("filename: " + filename + ", extname: " + file_suffix);

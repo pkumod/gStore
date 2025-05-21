@@ -140,7 +140,7 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
-					v = gutil::StringUtil::url_decode(iter->second);
+					gutil::StringUtil::url_decode(v);
 				}
 				json_data[iter->first] = v;
 				iter++;
@@ -186,7 +186,7 @@ void parseRequest(const GRPCReq *request, nlohmann::json &json_data)
 				v = iter->second;
 				if (UrlEncode::is_url_encode(v))
 				{
-					v = gutil::StringUtil::url_decode(iter->second);
+					gutil::StringUtil::url_decode(v);
 				}
 				json_data[iter->first] = v;
 				iter++;
@@ -301,7 +301,7 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 		});
 	}
 	// add callback task for access log end
-	if (op_type == OP_CHECK)
+	if (op_type == OP_CHECK || op_type == OP_DOWNLOADFILE)
 	{
 		return true;
 	}
@@ -961,17 +961,17 @@ void register_service(GRPCServer &svr)
 		ReqMethod::OPTIONS);
 
 	svr.ROUTE(
-		"/file/download", [](const GRPCReq *request, GRPCResp *response)
+		"/file/download/*", [](const GRPCReq *request, GRPCResp *response)
 		{
 			download_file(request, response);
 		},
-		ReqMethod::POST);
+		ReqMethod::GET);
 
 	svr.ROUTE(
-		"/file/download", [](const GRPCReq *request, GRPCResp *response)
+		"/file/download/*", [](const GRPCReq *request, GRPCResp *response)
 		{
 			response->add_header_pair("Access-Control-Allow-Origin", "*");
-			response->add_header_pair("Access-Control-Allow-Methods", "POST");
+			response->add_header_pair("Access-Control-Allow-Methods", "GET");
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
@@ -1128,53 +1128,19 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	{
 		return;
 	}
-	std::string error;
-	std::string filepath = JsonUtil::jsonParam(json_data, "filepath");
-	apiUtil->check_param_value("filepath", filepath, error);
-	if (error.empty() == false)
-	{
-		response->Error(StatusParamIsIllegal, error);
-		return;
+	const char* uri = request->get_request_uri();
+	SLOG_DEBUG("request uri: " << uri);
+	string path = string(uri + 15);
+	if (grpc::UrlEncode::is_url_encode(path)) {
+		gutil::StringUtil::url_decode(path);
 	}
-	if (FileUtil::is_file(filepath))
-	{
-		// the file must in the gstore home dir
-		std::string exact_path = Util::getExactPath(filepath.c_str());
-		std::string cur_path = Util::currentPath();
-		SLOG_DEBUG("download file path: " + filepath);
-		SLOG_DEBUG("file exact path: " + exact_path);
-		if (gutil::StringUtil::start_with(exact_path, cur_path) == false)
-		{
-			error = "Download file must in the "+ GlobalTypedef::product_name +" home dir";
-			response->Error(StatusOperationFailed, error);
-			return;
-		}
-		bool compress = JsonUtil::jsonBoolParam(json_data, "compress", false);
-		if (compress) // compress to zip file
-		{
-			std::string* zip_file_path = new string(exact_path + ".zip");
-			CompressUtil::CompressZip compress_util;
-			if (compress_util.compressDirExportZip(exact_path, *zip_file_path)) {
-				task_of(response)->add_callback([zip_file_path](GRPCTask *_task){
-					FileUtil::removePath(*zip_file_path);
-					delete zip_file_path;
-				});
-				response->File(*zip_file_path);
-			}
-			else
-			{
-				response->File(exact_path);
-			}
-		}
-		else 
-		{
-			response->File(exact_path);
-		}
-	}
-	else
-	{
-		error = "Download file is not exist";
-		response->Error(StatusOperationFailed, error);
+	string full_path = GlobalTypedef::export_path + path;
+	SLOG_DEBUG("full path: " << full_path);
+	full_path = Util::getExactPath(full_path.c_str());
+	if (FileUtil::fileExists(full_path)) {
+		response->File(full_path);
+	} else {
+		response->Error(StatusFileNotFound);
 	}
 }
 
@@ -1591,7 +1557,7 @@ void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
 		}
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
-		resp_data["RootPath"] = Util::currentPath();
+		// resp_data["RootPath"] = Util::currentPath();
 		resp_data["type"] = HTTP_TYPE;
 		string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 		apiUtil->reset_access_ip_error_num(remote_ip);

@@ -93,6 +93,80 @@ std::string WFHttpUtil::get_file_ext(const std::string& filename)
         return file.substr(pos2 + 1, -1);
 }
 
+void WFHttpUtil::url_encode(std::string& s)
+{
+	std::string ret;
+	unsigned char* ptr = (unsigned char*)s.c_str();
+	ret.reserve(s.length());
+
+	for (int i = 0; i < s.length(); ++i)
+	{
+		if ((int(ptr[i]) == 42) || (int(ptr[i]) == 45) || (int(ptr[i]) == 46) || (int(ptr[i]) == 47) || (int(ptr[i]) == 58) || (int(ptr[i]) == 95))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 48) && (int(ptr[i]) <= 57))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 65) && (int(ptr[i]) <= 90))
+			ret += ptr[i];
+		else if ((int(ptr[i]) >= 97) && (int(ptr[i]) <= 122))
+			ret += ptr[i];
+		else if (int(ptr[i]) == 32)
+			ret += '+';
+		else if ((int(ptr[i]) != 9) && (int(ptr[i]) != 10) && (int(ptr[i]) != 13))
+		{
+			char buf[5];
+			memset(buf, 0, 5);
+			snprintf(buf, 5, "%%%X", ptr[i]);
+			ret.append(buf);
+		}
+	}
+	s = ret;
+}
+
+void WFHttpUtil::url_decode(std::string& str)
+{
+	std::string strTemp = "";
+	size_t length = str.length();
+	unsigned char x;
+	for (size_t i = 0; i < length; i++)
+	{
+		if (str[i] == '+')
+			strTemp += ' ';
+		else if (str[i] == '%')
+		{
+			assert(i + 2 < length);
+			x = (unsigned char)str[++i];
+			unsigned char high;
+			if (x >= 'A' && x <= 'Z')
+				high = x - 'A' + 10;
+			else if (x >= 'a' && x <= 'z')
+				high = x - 'a' + 10;
+			else if (x >= '0' && x <= '9')
+				high = x - '0';
+			else
+				assert(0);
+
+			x = (unsigned char)str[++i];
+			unsigned char low = 0;
+			if (x >= 'A' && x <= 'Z')
+				low = x - 'A' + 10;
+			else if (x >= 'a' && x <= 'z')
+				low = x - 'a' + 10;
+			else if (x >= '0' && x <= '9')
+				low = x - '0';
+
+			strTemp += high * 16 + low;
+		}
+		else
+			strTemp += str[i];
+	}
+	str = strTemp;
+}
+
+bool WFHttpUtil::is_url_encode(const std::string &str)
+{
+	return str.find("%") != std::string::npos || str.find("+") != std::string::npos;
+}
+
 int WFHttpUtil::Post(const std::string& strUrl, const std::string& strPost, const std::string& filename)
 {
     struct WFGlobalSettings settings = GLOBAL_SETTINGS_DEFAULT;
@@ -262,8 +336,13 @@ int WFHttpUtil::Get(const std::string& strUrl, const std::map<std::string, std::
 
 int WFHttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
 {
-    WFHttpTask* httptask = WFTaskFactory::create_http_task(http_wrapper(strUrl), REDIRECT_MAX, RETRY_MAX, fwrite_callback);
-    httptask->set_callback([httptask, strUrl, &filePath](WFHttpTask* task) {
+    std::string encode_url = strUrl;
+	if (!is_url_encode(strUrl))
+	{
+		url_encode(encode_url);
+	}
+    WFHttpTask* httptask = WFTaskFactory::create_http_task(http_wrapper(encode_url), REDIRECT_MAX, RETRY_MAX, fwrite_callback);
+    httptask->set_callback([httptask, encode_url, &filePath](WFHttpTask* task) {
         FileData* data = (FileData*) task -> user_data;
         WFFacilities::WaitGroup *wait_group = data -> _wait_group;
         if (!ErrorHandler(task))
@@ -293,7 +372,11 @@ int WFHttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
         }
         if (filename.empty())
         {
-            filename = strUrl.substr(strUrl.find_last_of("/") + 1);
+            filename = encode_url.substr(encode_url.find_last_of("/") + 1);
+        }
+        if (is_url_encode(filename)) 
+        {
+            url_decode(filename);
         }
         std::string file_suffix = get_file_ext(filename);
         SLOG_CORE("filename: " + filename + ", extname: " + file_suffix);

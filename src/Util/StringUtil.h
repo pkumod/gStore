@@ -18,8 +18,8 @@ namespace gutil {
         static bool start_with(const std::string& str, const std::string& prefix);
         static bool contains(const string& _parent, const string& _child);
 	    static void append(string& str, const char suffix);
-        static std::string url_encode(const std::string& str);
-        static std::string url_decode(const std::string& str);
+        static void url_encode(std::string& str);
+        static void url_decode(std::string& str);
         static std::string clear_linebreak(const std::string& str);
         static std::string replace_all(const std::string& str, const std::string& oldtext, const std::string& newtext);
         static std::string replace_all_ignore_case(const std::string& str, const std::string& oldtext, const std::string& newtext);

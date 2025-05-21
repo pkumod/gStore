@@ -183,6 +183,9 @@ private:
     static bool ErrorHandler(WFHttpTask *task);
 
     static std::string get_file_ext(const std::string &file);
+    static void url_encode(std::string& str);
+	static void url_decode(std::string& str);
+	static bool is_url_encode(const std::string &str);
 
 public:
 	/**

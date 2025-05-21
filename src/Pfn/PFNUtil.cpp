@@ -266,8 +266,10 @@ void PFNUtil::fun_review(const std::string &username, struct PFNInfo *pfn_info)
 std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_header)
 {
     const string fun_name = fun_info->funName;
-    const string fun_subs = gutil::StringUtil::url_decode(fun_info->funSubs);
-    string fun_body =  gutil::StringUtil::url_decode(fun_info->funBody);
+    string fun_subs = fun_info->funSubs;
+    gutil::StringUtil::url_decode(fun_subs);
+    string fun_body = fun_info->funBody;
+    gutil::StringUtil::url_decode(fun_body);
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
     if(fun_body_o != NULL) 
     {

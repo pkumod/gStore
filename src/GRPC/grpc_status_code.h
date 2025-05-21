@@ -20,6 +20,7 @@ enum StatusCode
     StatusFileRangeInvalid,
     StatusFileReadError,
     StatusFileWriteError,
+    StatusFileNotFound,
 
     // Json
     StatusJsonInvalid,

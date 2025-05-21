@@ -713,15 +713,15 @@ int GRPCUtil::send_file(const std::string &path, size_t file_start, size_t file_
         return StatusFileRangeInvalid;
     }
 
-    content_type content_type = CONTENT_TYPE_NONE;
-    std::string suffix = GRPCUtil::fileSuffix(path);
-    if(!suffix.empty())
-    {
-        content_type = ContentType::to_enum_by_suffix(suffix);
-    }
-    if (content_type == CONTENT_TYPE_NONE || content_type == CONTENT_TYPE_UNDEFINED) {
-        content_type = APPLICATION_OCTET_STREAM;
-    }
+    content_type content_type = APPLICATION_OCTET_STREAM;
+    // std::string suffix = GRPCUtil::fileSuffix(path);
+    // if(!suffix.empty())
+    // {
+    //     content_type = ContentType::to_enum_by_suffix(suffix);
+    // }
+    // if (content_type == CONTENT_TYPE_NONE || content_type == CONTENT_TYPE_UNDEFINED) {
+    //     content_type = APPLICATION_OCTET_STREAM;
+    // }
     std::string fileName = StringUtil::url_encode(GRPCUtil::fileName(path));
     resp->headers["Content-Type"] = ContentType::to_str(content_type);
     resp->headers["Content-Disposition"] = "atachment; filename=\"" + fileName + "\"";

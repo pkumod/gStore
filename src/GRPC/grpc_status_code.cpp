@@ -16,6 +16,7 @@ std::map<int, const char *> error_code_table = {
     { StatusFileRangeInvalid, "File Range Invalid" },
     { StatusFileReadError, "File Read Error" },
     { StatusFileWriteError, "File Write Error" },
+    { StatusFileNotFound, "File Not Found" },
     { StatusJsonInvalid, "Invalid Json Syntax" },
     { StatusProxyError, "Http Proxy Error" },
     { StatusRouteVerbNotImplment, "Route Http Method not implement" },

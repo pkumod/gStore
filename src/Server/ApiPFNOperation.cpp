@@ -118,7 +118,7 @@ namespace server
             std::string username = request.username;
             pfnUtil->fun_review(username, &pfn_info);
             string content = pfn_info.funBody;
-            content = gutil::StringUtil::url_encode(content);
+            gutil::StringUtil::url_encode(content);
             response.StatusMsg = "success";
             response.body = content;
         }

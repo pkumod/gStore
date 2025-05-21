@@ -82,7 +82,7 @@ namespace server
             outfile.open(file_path);
             outfile << json_data.dump();
             outfile.close();
-            response.fileName = file_path;
+            response.fileName = file_name;
         }
         else if (request.format == "n-triple-file")
         {
@@ -93,7 +93,7 @@ namespace server
             rs.output(fptr);
             fflush(fptr);
             fclose(fptr);
-            response.fileName = file_path;
+            response.fileName = file_name;
         }
         else if (request.format == "n-triple")
         {

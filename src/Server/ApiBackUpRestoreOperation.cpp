@@ -238,12 +238,6 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string db_path = request.db_path;
-            if (apiUtil->check_param_value("db_path", db_path, msg) == false)
-            {
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
             if (apiUtil->check_db_built(db_name) == false)
             {
                 msg = "Database not build yet.";
@@ -265,12 +259,9 @@ namespace server
                 response.Error(StatusLossOfLock, msg);
                 return;
             }
-            gutil::StringUtil::append(db_path, '/');
-            if (FileUtil::dirExists(db_path) == false)
-            {
-                FileUtil::createDirs(db_path);
-            }
-            std::string export_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".nt";
+            std::string db_path = GlobalTypedef::export_path;
+            std::string export_name =  db_name + "_" + gutil::TimeUtil::now() + ".nt";
+            std::string export_path = db_path + export_name;
             bool compress = request.compress;
             SLOG_DEBUG("export_path:" << export_path << ", compress:" << compress);
             FILE *ofp = fopen(export_path.c_str(), "w");
@@ -282,7 +273,8 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             if (compress)
             {
-                std::string zip_path = db_path + db_name + "_" + gutil::TimeUtil::now() + ".zip";
+                export_name = db_name + "_" + gutil::TimeUtil::now() + ".zip";
+                std::string zip_path = db_path + export_name;
                 if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path, false))
                 {
                     FileUtil::removePath(export_path);
@@ -292,12 +284,11 @@ namespace server
                     return;
                 }
                 FileUtil::removePath(export_path);
-                export_path = zip_path;
             }
             msg = "Export the database successfully.";
             response.StatusCode = 0;
             response.StatusMsg = msg;
-            response.filepath = export_path;
+            response.filepath = export_name;
         }
         catch (const std::exception &e)
         {
