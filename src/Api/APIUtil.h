@@ -99,7 +99,7 @@ public:
     bool unlock_already_build_map();
     bool init_databaseinfo(const std::string& db_name, const std::string creator, const std::string build_time, const DatabaseStatus status);
     bool update_database_status(const std::string& db_name, const DatabaseStatus status);
-    bool remove_databaseinfo(const std::string& db_name, std::string msg);
+    bool remove_databaseinfo(const std::string& db_name, std::string& msg);
     bool backup_databaseinfo(const std::string& db_name, const bool& compress, std::string& backup_path, std::string& msg);
     bool restore_databaseinfo(const std::string& username, const std::string& db_name, std::string& backup_path, std::string& msg);
     bool rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg);

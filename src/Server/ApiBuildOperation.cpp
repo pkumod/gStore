@@ -140,6 +140,13 @@ namespace server
             shared_ptr<Database> current_database = make_shared<Database>(db_name);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
+            if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
+            {
+                response.StatusMsg = "unable to build due to loss of lock.";
+                response.StatusCode = StatusLossOfLock;
+                apiUtil->remove_databaseinfo(db_name, result);
+                return;
+            }
             current_db_info->setDatabase(current_database);
             bool flag = true;
             int nt_file_num = 0;
@@ -198,6 +205,8 @@ namespace server
             }
             catch(const std::exception& e)
             {
+                if (current_db_info != nullptr)
+                    apiUtil->unlock_databaseinfo(current_db_info);
                 result = "Import RDF file to database failed:" + string(e.what());
                 FileUtil::removePath(db_home_path);
                 remove_temp_files(temp_paths);
@@ -209,6 +218,7 @@ namespace server
             }
             // init databaseinfo
             shared_ptr<DatabaseInfo> db_info;
+            apiUtil->trywrlock_databaseinfo(db_info);
             apiUtil->get_databaseinfo(db_name, db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             db_info->initDatabase();
@@ -233,7 +243,8 @@ namespace server
             }
             // remove temp files
             remove_temp_files(temp_paths);
-
+            apiUtil->unlock_databaseinfo(db_info);
+            
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;
             response.StatusMsg = result;

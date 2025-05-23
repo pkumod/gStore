@@ -4,7 +4,7 @@ namespace server
 {
     void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& resquest, MessageDropResponse& response)
     {
-        shared_ptr<Database> db_info;
+        shared_ptr<DatabaseInfo> db_info;
         try
         {
             std::string db_name = resquest.db_name;
@@ -23,7 +23,7 @@ namespace server
                 return;
             }
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->trywrlock_databaseinfo(db_infor, 300) == false)
+            if (apiUtil->trywrlock_databaseinfo(db_info, 300) == false)
             {
                 response.StatusMsg = "unable to drop due to loss of lock.";
                 response.StatusCode = StatusLossOfLock;

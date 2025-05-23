@@ -377,7 +377,7 @@ bool APIUtil::update_database_status(const std::string& db_name, const DatabaseS
     }
 }
 
-bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string msg)
+bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
     if (get_databaseinfo(db_name, db_info) == false) {
