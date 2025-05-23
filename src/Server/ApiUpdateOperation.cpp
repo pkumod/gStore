@@ -4,6 +4,7 @@ namespace server
 {
     void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& resquest, MessageDropResponse& response)
     {
+        shared_ptr<Database> db_info;
         try
         {
             std::string db_name = resquest.db_name;
@@ -21,16 +22,17 @@ namespace server
                 response.StatusCode = StatusParamIsIllegal;
                 return;
             }
+            apiUtil->get_databaseinfo(db_name, db_info);
+            if (apiUtil->trywrlock_databaseinfo(db_infor, 300) == false)
+            {
+                response.StatusMsg = "unable to drop due to loss of lock.";
+                response.StatusCode = StatusLossOfLock;
+                return;
+            }
             if (apiUtil->check_db_loaded(db_name))
             {
                 apiUtil->remove_txn_manager(db_name, false);
                 SLOG_DEBUG("remove " + db_name + " from the txn managers.");
-            }
-            if (apiUtil->remove_databaseinfo(db_name, msg) == false)
-            {
-                response.StatusMsg = msg;
-                response.StatusCode = StatusOperationFailed;
-                return;
             }
             SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             string db_path = GlobalTypedef::db_path(db_name);
@@ -44,6 +46,13 @@ namespace server
                 FileUtil::removePath(db_path);
                 SLOG_DEBUG("remove_path: " + db_path);
             }
+            apiUtil->unlock_databaseinfo(db_info);
+            if (apiUtil->remove_databaseinfo(db_name, msg) == false)
+            {
+                response.StatusMsg = msg;
+                response.StatusCode = StatusOperationFailed;
+                return;
+            }
             string success = "Database " + db_name + " dropped.";
             clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
             clusterManagerPtr->dropDb(db_name);
@@ -52,6 +61,10 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info != nullptr)
+            {
+                apiUtil->unlock_databaseinfo(db_info);
+            }
             response.StatusMsg = "Drop fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
