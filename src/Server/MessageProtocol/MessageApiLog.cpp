@@ -271,6 +271,7 @@ namespace server
         this->pageNo = JsonUtil::jsonParam(json_data, "pageNo", 1);
         this->pageSize = JsonUtil::jsonParam(json_data, "pageSize", 10);
         this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->specOperation = JsonUtil::jsonParam(json_data, "specOperation");
     }
 
     void MessageAccessLogRequest::to_json(std::string& json_str)
