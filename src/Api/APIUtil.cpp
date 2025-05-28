@@ -1821,13 +1821,13 @@ void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
     });
 }
 
-void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name)
+void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name, std::string specOperation)
 {
     string accessLog = APIUtil::access_log_path + date + ".log";
     vector<std::string> lines;
     int total_size = 0;
     int total_page = 0;
-    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock, db_name)) 
+    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock, db_name, specOperation)) 
     {   
         size_t count = lines.size();			
         string line;
@@ -2313,7 +2313,7 @@ APIUtil::check_upload_allow_compress_packages(const string& suffix)
 }
 
 bool 
-APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock, std::string db_name)
+APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock, std::string db_name, std::string specOperation)
 {
     total_size = 0;
     total_page = 0;
@@ -2344,6 +2344,8 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         while (getline(in, line, '\n'))
         {
             if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+                continue;
+            if (!specOperation.empty() && line.find(specOperation) == std::string::npos)
                 continue;
             total_size++;
         }
@@ -2377,6 +2379,8 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         while (startLine < endLine && getline(in, line, '\n'))
         {
             if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+                continue;
+            if (!specOperation.empty() && line.find(specOperation) == std::string::npos)
                 continue;
             lines.push_back(line);
             startLine++;
