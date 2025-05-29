@@ -24,9 +24,9 @@ public:
 	// void generateQueries(int queryType, bool directed, int numQueries, vector<pair<int, int>, int>& queries);
 
 	// Labeled graph interface: edge (u, v, pred)
-
-	int getVertNum();	// Get total number of vertices
-	int getEdgeNum();	// Get total number of edges
+	int getPreNum();	// Get total number of predicate
+	unsigned int getVertNum();	// Get total number of vertices
+	unsigned int getEdgeNum();	// Get total number of edges
     int getSetEdgeNum(const std::vector<int> &pred_set);    // TODO: Get the number of edges labeled by preds in pred_set
 	int getInIndexByID(int vid, int pred);	// Get vertice's index in csr[1] offset_list
 	int getInSize(int vid, int pred);	// Get the number of in-neighbors of vert

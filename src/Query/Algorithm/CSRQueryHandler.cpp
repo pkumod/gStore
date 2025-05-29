@@ -20,7 +20,12 @@ CSRQueryHandler::~CSRQueryHandler()
 {
 }
 
-int CSRQueryHandler::getVertNum()
+int CSRQueryHandler::getPreNum()
+{
+	return csr[1].pre_num;
+}
+
+unsigned int CSRQueryHandler::getVertNum()
 {
 	// if (n != -1)
 	// 	return n; // Only consider static graphs for now
@@ -37,7 +42,7 @@ int CSRQueryHandler::getVertNum()
 	return csr[1].n;
 }
 
-int CSRQueryHandler::getEdgeNum()
+unsigned int CSRQueryHandler::getEdgeNum()
 {
 	// if (m != -1)
 	// 	return m; // Only consider static graphs for now
