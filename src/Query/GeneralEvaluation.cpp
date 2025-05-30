@@ -1525,10 +1525,29 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 				for (int i = 0; i < new_result0_id_cols; i++)
 					new_result0.result.back().id[i] = INVALID;
 
-				// Path functions
-				if (proj[0].aggregate_type != ProjectionVar::PFN_type)
+				prepPathQuery();
+				if (proj[0].aggregate_type == ProjectionVar::PFN_type)
 				{
-					prepPathQuery();
+					new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = pfnQuery(proj[0].path_args.pfn_name, proj[0].path_args.pfn_params, ret_result.getUsername());
+				}
+				else if (proj[0].aggregate_type == ProjectionVar::confidenceDegree_type)
+				{
+					unsigned vert_num = csr[1].n;
+					vector<int> pred_id_set = getPredSetByStringList(proj[0].path_args.pred_set, proj[0].path_args.neg_pred_set);
+					nlohmann::json json_array;
+					for (unsigned k = 0; k < vert_num; k++)
+					{
+						double res = pqHandler->confidenceDegree(k, false, pred_id_set);
+						if (std::isnan(res))
+							continue;
+						std::string str = kvstore->getEntityByID(k);
+						json_array.push_back({str, res});
+					}
+					new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = "pfn_type" + json_array.dump();
+				}
+				else
+				{
+					// Path functions
 					vector<int> uid_ls, vid_ls;
 					vector<vector<int>> uid_ls_ls;
 					uid_ls_ls.push_back(vector<int>());
@@ -1551,7 +1570,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					stringstream ss;
 					bool notFirstOutput = 0;	// For outputting commas
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
-					ss << "\"{\"paths\":[";
+					if (proj[0].aggregate_type != ProjectionVar::confidenceDegree_type)
+						ss << "\"{\"paths\":[";
 					SLOG_CORE("proj[0].aggregate_type :"<<proj[0].aggregate_type);
 					if (proj[0].aggregate_type == ProjectionVar::maximumKplex_type)
 					{
@@ -1933,55 +1953,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								ss << "{\"src\":\"" << kvstore->getStringByID(uid)
 									<< "\", \"dst\":\"" << kvstore->getStringByID(vid)
 									<< "\", \"count\":" << ret << "}";
-							} else if (proj[0].aggregate_type == ProjectionVar::IC14_type) {
-								int knowsPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/directKnows>");
-								int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
-								int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
-								int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
-								int idPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/id>");
-								int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
-								int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
-								auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
-								if (!ret.empty())
-								{
-									size_t pathSz = ret[0].first.size();
-									unsigned* objidlist = nullptr;
-									unsigned list_len = 0;
-									bool invalid = false;
-									vector<int> pathVert;
-									for (const auto &path2W : ret)
-									{
-										if (notFirstOutput)
-											ss << ",";
-										else
-											notFirstOutput = 1;
-										invalid = false;
-										pathVert.clear();
-										for (size_t i = 0; i < pathSz; i += 2) {
-											kvstore->getobjIDlistBysubIDpreID(path2W.first[i], idPred, objidlist, list_len);
-											if (list_len != 1) {
-												invalid = true;
-												break;
-											}
-											pathVert.emplace_back(objidlist[0]);
-											delete []objidlist;
-										}
-										if (invalid)
-											continue;
-										ss << "{\"path\":[";
-										string tmp;
-										size_t lPos = 0, rPos = 0;
-										for (size_t i = 0; i < pathVert.size(); i++) {
-											tmp = kvstore->getStringByID(pathVert[i]);
-											lPos = tmp.find('\"');
-											rPos = tmp.find('\"', lPos + 1);
-											if (i > 0)
-												ss << ",";
-											ss << tmp.substr(lPos + 1, rPos - 1 - lPos);
-										}
-										ss << "],\"weight\":" << path2W.second << "}";
-									}
-								}
 							}
 							else if (proj[0].aggregate_type == ProjectionVar::louvain_type)
 							{
@@ -2055,11 +2026,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = ss.str();
 					}
 				}
-				else if (proj[0].aggregate_type == ProjectionVar::PFN_type)
-				{
-					prepPathQuery();
-					new_result0.result.back().str[proj2new[0] - new_result0_id_cols] = pfnQuery(proj[0].path_args.pfn_name, proj[0].path_args.pfn_params, ret_result.getUsername());
-				}
+				
 			}
 			// Exclusive with the if branch above
 			for (int begin = 0; begin < result0_size;)
@@ -2557,6 +2524,22 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						prepPathQuery();
 						new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = pfnQueryByVar(proj[i].path_args.pfn_name, proj[i].path_args.pfn_params, ret_result.getUsername(), result0, begin, end, result0_id_cols);
 					}
+					else if (proj[i].aggregate_type == ProjectionVar::confidenceDegree_type)
+					{
+						prepPathQuery();
+						vector<int> pred_id_set = getPredSetByStringList(proj[i].path_args.pred_set, proj[i].path_args.neg_pred_set);
+						unsigned vert_num = csr[1].n;
+						nlohmann::json json_array;
+						for (unsigned k = 0; k < vert_num; k++)
+						{
+							double res = pqHandler->confidenceDegree(k, false, pred_id_set);
+							if (std::isnan(res))
+								continue;
+							std::string str = kvstore->getEntityByID(k);
+							json_array.push_back({str, res});
+						}
+						new_result0.result.back().str[proj2new[i] - new_result0_id_cols] = "pfn_type" + json_array.dump();
+					}
 					else	// Path query
 					{
 						prepPathQuery();
@@ -3048,52 +3031,6 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << "{\"src\":\"" << kvstore->getStringByID(uid) 
 										<<"\", \"dst\":\"" << kvstore->getStringByID(vid)
 										<<"\", \"count\":" << ret << "}";
-								} else if (proj[0].aggregate_type == ProjectionVar::IC14_type) {
-									int knowsPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/directKnows>");
-									int hasCreatorPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/hasCreator>");
-									int typePred = kvstore->getIDByPredicate("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>");
-									int replyPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/replyOf>");
-									int idPred = kvstore->getIDByPredicate("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/id>");
-									int postId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Post>");
-									int commentId = kvstore->getIDByString("<http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/Comment>");
-									auto ret = pqHandler->IC14(uid, vid, knowsPred, hasCreatorPred, typePred, replyPred, postId, commentId);
-									size_t pathSz = ret[0].first.size();
-									unsigned* objidlist = nullptr;
-									unsigned list_len = 0;
-									bool invalid = false;
-									vector<int> pathVert;
-									for (const auto &path2W : ret)
-									{
-										if (notFirstOutput)
-											ss << ",";
-										else
-											notFirstOutput = 1;
-										invalid = false;
-										pathVert.clear();
-										for (size_t i = 0; i < pathSz; i += 2) {
-											kvstore->getobjIDlistBysubIDpreID(path2W.first[i], idPred, objidlist, list_len);
-											if (list_len != 1) {
-												invalid = true;
-												break;
-											}
-											pathVert.emplace_back(objidlist[0]);
-											delete []objidlist;
-										}
-										if (invalid)
-											continue;
-										ss << "{\"path\":[";
-										string tmp;
-										size_t lPos = 0, rPos = 0;
-										for (size_t i = 0; i < pathVert.size(); i++) {
-											tmp = kvstore->getStringByID(pathVert[i]);
-											lPos = tmp.find('\"');
-											rPos = tmp.find('\"', lPos + 1);
-											if (i > 0)
-												ss << ",";
-											ss << tmp.substr(lPos + 1, rPos - 1 - lPos);
-										}
-										ss << "],\"weight\":" << path2W.second << "}";
-									}
 								}
 								else if (proj[i].aggregate_type == ProjectionVar::louvain_type)
 								{
@@ -3154,7 +3091,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (earlyBreak)
 								break;
 						}
-						ss << "]}\"";
+						if (proj[i].aggregate_type != ProjectionVar::confidenceDegree_type)
+							ss << "]}\"";
 						if (proj[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)

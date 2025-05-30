@@ -28,8 +28,8 @@ std::string GeneralEvaluation::pfnQuery(const std::string& pfn_name, const std::
     }
     catch (const std::exception &e)
     {
-		string content = "run dynamic function fail: " + string(e.what());
-        SLOG_ERROR(content);
+		string content = string(e.what());
+        SLOG_ERROR("run dynamic function fail: " + content);
 		throw runtime_error(content);
     }
 	catch (...)

@@ -384,6 +384,8 @@ public:
     unsigned int diameterEstimation(const std::vector<int> &pred_sets);
     std::pair<int, int> diameterEstimationByuid(int uid, const std::vector<int> &pred_set);
 	std::string getPathString(std::vector<int> &path_set);
+    // confidenceDegree
+    double confidenceDegree(int uid, bool directed, const std::vector<int> &pred_set);
 private:
     // Helper functions for SSPPR
     void compute_ppr_with_reserve(std::pair<iMap<double>, iMap<double>> &fwd_idx, std::unordered_map<int, double> &v2ppr);

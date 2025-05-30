@@ -401,7 +401,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "BFSCOUNT" || tmp == "PR" || tmp == "SSSP" || tmp == "SSSPLEN" \
 				|| tmp == "LABELPROP" || tmp == "WCC" || tmp == "CLUSTERCOEFF" || tmp == "MAXIMUMKPLEX" \
 				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \
-				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "IC14" \
+				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "CONFIDENCEDEGREE" \
 				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" \
 				|| tmp == "DEGREECORRELATION" || tmp == "KHOPSHORTESTPATHS" || tmp == "KHOPALLNEIGHBORS")	// Path calls
 			{
@@ -458,8 +458,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::shortestPathCount_type;
 				else if (tmp == "LOUVAIN")
 					proj_var.aggregate_type = ProjectionVar::louvain_type;
-				else if (tmp == "IC14")
-					proj_var.aggregate_type = ProjectionVar::IC14_type;
+				else if (tmp == "CONFIDENCEDEGREE")
+					proj_var.aggregate_type = ProjectionVar::confidenceDegree_type;
 				else if (tmp == "DIAMETERESTIMATION")
 					proj_var.aggregate_type = ProjectionVar::diameterEstimation_type;
 				else if (tmp == "BETWEENNESSCENTRALITY")
@@ -565,6 +565,15 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				{
 					if (bicCtx->integerLiteral(0))
 						proj_var.path_args.k = stoi(getTextWithRange(bicCtx->integerLiteral(0)));
+				}
+				else if (tmp == "DEGREE")
+				{
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(0)->getText()));	// w_degree
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(1)->getText()));	// w_relation_type
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(2)->getText()));	// w_in_neighbor
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(3)->getText()));	// w_out_neighbor
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(4)->getText()));	// w_structural
+					proj_var.path_args.misc.push_back(stof(bicCtx->numericLiteral(5)->getText()));	// w_neighbor
 				}
 
 				if (bicCtx->booleanLiteral())
