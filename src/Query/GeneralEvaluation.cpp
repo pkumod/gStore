@@ -1539,7 +1539,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					{
 						double res = pqHandler->confidenceDegree(k, false, pred_id_set);
 						if (std::isnan(res))
-							continue;
+							res = 0.0;
 						std::string str = kvstore->getEntityByID(k);
 						json_array.push_back({str, res});
 					}
@@ -2534,7 +2534,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						{
 							double res = pqHandler->confidenceDegree(k, false, pred_id_set);
 							if (std::isnan(res))
-								continue;
+								res = 0.0;
 							std::string str = kvstore->getEntityByID(k);
 							json_array.push_back({str, res});
 						}
