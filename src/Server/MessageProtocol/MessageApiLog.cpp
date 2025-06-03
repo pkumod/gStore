@@ -420,10 +420,10 @@ namespace server
         {
             rJson["backupfilepath"] = this->backupfilepath;
         }
-        if (this->operation == "query")
-        {
-            rJson["queryfilepath"] = this->queryfilepath;
-        }
+        // if (this->operation == "query")
+        // {
+        //     rJson["queryfilepath"] = this->queryfilepath;
+        // }
         if (this->operation == "build" || this->operation == "batchInsert" || this->operation == "batchRemove")
         {
             rJson["success_num"] = this->success_num;

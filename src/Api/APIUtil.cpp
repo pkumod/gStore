@@ -593,7 +593,7 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         unlock_databaseinfo(db_info);
         // remove old db info
         std::string remove_msg;
-        if(remove_databaseinfo(db_name, remove_msg) == false);
+        if(remove_databaseinfo(db_name, remove_msg) == false)
         {
             SLOG_WARN("remove old db failed: " + remove_msg);
         }

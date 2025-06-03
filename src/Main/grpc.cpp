@@ -2961,11 +2961,7 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 	}
 	else if (response_data.operation == "query")
 	{
-		if (response_data.state == 0)
-		{
-			response->Success("The query task is not complete");
-		} 
-		else
+		if (response_data.state == 1)
 		{
 			ifstream file(response_data.queryfilepath);
 			if (!file.is_open())
@@ -2978,8 +2974,15 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 				nlohmann::json json_result;
 				file >> json_result;
 				file.close();
+				json_result["state"] = 1;
 				response->Json(json_result);
 			}
+		} 
+		else
+		{
+			std::string json_str;
+			response_data.toJsonString(json_str);
+			response->Json(json_str);
 		}
 	} 
 	else
