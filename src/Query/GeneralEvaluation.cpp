@@ -1570,8 +1570,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 					stringstream ss;
 					bool notFirstOutput = 0;	// For outputting commas
 					bool doneOnceOp = 0;	// functions that only need to do once (triangleCounting, pr, labelProp, wcc, clusteringCoeff without source)
-					if (proj[0].aggregate_type != ProjectionVar::confidenceDegree_type)
-						ss << "\"{\"paths\":[";
+					ss << "\"{\"paths\":[";
 					SLOG_CORE("proj[0].aggregate_type :"<<proj[0].aggregate_type);
 					if (proj[0].aggregate_type == ProjectionVar::maximumKplex_type)
 					{
@@ -3091,8 +3090,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							if (earlyBreak)
 								break;
 						}
-						if (proj[i].aggregate_type != ProjectionVar::confidenceDegree_type)
-							ss << "]}\"";
+						ss << "]}\"";
 						if (proj[i].aggregate_type == ProjectionVar::cycleBoolean_type)
 						{
 							if (exist)
