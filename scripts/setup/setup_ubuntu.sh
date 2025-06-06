@@ -8,8 +8,10 @@ sleep 5s
 apt install -y aptitude
 echo -e "aptitude installed to search softwares conveniently \n"
 
-apt install -y gcc g++
-echo -e "g++ installed \n"
+add-apt-repository ppa:ubuntu-toolchain-r/test
+apt-get update
+apt install -y gcc-11 g++-11
+echo -e "gcc g++ installed \n"
 
 apt install -y make
 echo -e "make installed \n"
@@ -23,7 +25,7 @@ echo -e "readline-devel installed \n"
 # install all pacakage, but slowly
 #apt install -y libboost-all-dev
 # only install need package 
-apt install -y libboost-system-dev libboost-regex-dev libboost-thread-dev
+apt install -y libboost-system-dev libboost-regex-dev libboost-thread-dev libboost-filesystem-dev
 echo -e "libboost-all-dev installed \n"
 
 apt install -y curl libcurl4 libcurl4-openssl-dev libssl-dev
@@ -43,7 +45,7 @@ mkdir cmake
 fi
 cd cmake
 if [ ! -e "cmake-3.23.2.tar.gz" ]; then
-wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz 2>&1
+wget --content-disposition https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz 2>&1
 fi
 if [ ! -e "cmake-3.23.2.tar.gz" ]; then
 echo "download cmake-3.23.2.tar.gz fail!"
@@ -54,7 +56,7 @@ echo "decompression cmake-3.23.2.tar.gz"
 tar -xvf cmake-3.23.2.tar.gz
 cd cmake-3.23.2
 ./bootstrap
-make -j4
+make -j$(nproc)
 make install
 echo -e "cmake 3.23.2 installed"
 cd ..
@@ -99,7 +101,3 @@ echo -e "when running program if you get a [can not find -lxxx] prompt, please s
 #logout  # exit from root account
 #exit
 #make
-
-
-# colored output: https://blog.csdn.net/david_dai_1108/article/details/70478826
-

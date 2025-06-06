@@ -43,7 +43,7 @@ cd gcc
 if [ ! -e "gcc-$GCC_VERSION.tar.gz" ]; then
 #download from https://mirror.linux-ia64.org/gnu/gcc/releases/gcc-9.3.0/gcc-9.3.0.tar.gz
 echo "download gcc-$GCC_VERSION.tar.gz ";
-wget $MIRRORS_URL/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz 2>&1
+wget --content-disposition $MIRRORS_URL/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz 2>&1
 fi
 if [ ! -e "gcc-$GCC_VERSION.tar.gz" ]; then
 echo "download gcc-$GCC_VERSION.tar.gz fail! "
@@ -60,7 +60,7 @@ echo "gcc-$GCC_VERSIONdir is not exists "
 exit
 fi
 echo "install gcc gcc-c++ dependence"
-yum install -y gcc-c++ ntpdate m4
+yum install -y ntpdate m4
 ntpdate -u ntp.api.bz
 cd gcc-$GCC_VERSION
 # download configure file
@@ -81,7 +81,7 @@ mkdir gcc-make-tmp
 cd gcc-make-tmp
 echo "../configure --prefix=$INSTALL_BASE$GCC_VERSION $GCC_CONFIGURE_WITH"
 ../configure --prefix=$INSTALL_BASE$GCC_VERSION $GCC_CONFIGURE_WITH 2>&1
-make -j4 2>&1
+make -j$(nproc) 2>&1
 make install 2>&1
 # check install status
 if [ ! -d "$INSTALL_BASE$GCC_VERSION"] || [ -z "`ls $INSTALL_BASE$GCC_VERSION`" ]; then
@@ -102,13 +102,28 @@ done
 if [ -z "`cat /etc/profile|grep 'export PATH=$PATH:'"$INSTALL_BASE$GCC_VERSION/bin"`" ]; then
 echo 'export PATH=$PATH:'"$INSTALL_BASE$GCC_VERSION/bin" >> /etc/profile
 fi
-yum remove -y gcc
-yum remove -y gcc-c++
+#yum remove -y gcc-c++
+#yum remove -y gcc
+if [ -e "/usr/bin/gcc" ]; then
+rm -f /usr/bin/gcc
+fi
+if [ -e "/usr/bin/g++" ]; then
+rm -f /usr/bin/g++
+fi
+if [ -e "/usr/bin/c++" ]; then
+rm -f /usr/bin/c++
+fi
+if [ -e "/usr/lib64/libstdc++.so.6" ]; then
+rm -f /usr/lib64/libstdc++.so.6
+fi
 cd ../..
+ln -s $INSTALL_BASE$GCC_VERSION/bin/gcc /usr/bin/gcc
+ln -s $INSTALL_BASE$GCC_VERSION/bin/g++ /usr/bin/g++
+ln -s $INSTALL_BASE$GCC_VERSION/bin/c++ /usr/bin/c++
 rm -rf gcc-$GCC_VERSION
 ldconfig
 source /etc/profile
-echo -e "gcc-$GCC_VERSION installed"
+echo -e "gcc-$GCC_VERSION g++-$GCC_VERSION installed"
 sleep 5s
 fi
 fi
@@ -149,7 +164,7 @@ mkdir boost
 fi
 cd boost
 if [ ! -e "boost_1_74_0.tar.gz" ]; then
-wget http://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.gz 2>&1
+wget --content-disposition http://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.gz 2>&1
 fi
 if [ ! -e "boost_1_74_0.tar.gz" ]; then
 echo "download boost_1_74_0.tar.gz fail!"
@@ -182,7 +197,7 @@ mkdir cmake
 fi
 cd cmake
 if [ ! -e "cmake-3.23.2.tar.gz" ]; then
-wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz 2>&1
+wget --content-disposition https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz 2>&1
 fi
 if [ ! -e "cmake-3.23.2.tar.gz" ]; then
 echo "download cmake-3.23.2.tar.gz fail!"
@@ -193,7 +208,7 @@ echo "decompression cmake-3.23.2.tar.gz"
 tar -xvf cmake-3.23.2.tar.gz
 cd cmake-3.23.2
 ./bootstrap
-make -j4
+make -j$(nproc)
 make install
 echo -e "cmake 3.23.2 installed"
 cd ..
@@ -219,7 +234,7 @@ mkdir jemalloc
 fi
 cd jemalloc
 if [ ! -e "jemalloc-5.3.0.tar.bz2" ]; then
-wget http://sourceforge.net/projects/jemalloc.mirror/files/5.3.0/jemalloc-5.3.0.tar.bz2 2>&1
+wget --content-disposition http://sourceforge.net/projects/jemalloc.mirror/files/5.3.0/jemalloc-5.3.0.tar.bz2 2>&1
 fi
 if [ ! -e "jemalloc-5.3.0.tar.bz2" ]; then
 echo "download jemalloc-5.3.0.tar.bz2 fail!"
@@ -229,9 +244,8 @@ fi
 echo "decompression jemalloc-5.3.0.tar.bz2"
 tar -jxf jemalloc-5.3.0.tar.bz2
 cd jemalloc-5.3.0
-yum -y install autoconf
-./autogen.sh
-make build_lib_shared
+./configure
+make build_lib_shared -j$(nproc)
 make install_lib_shared
 cd ..
 rm -rf jemalloc-5.3.0
@@ -279,7 +293,3 @@ echo -e "when running program if you get a [can not find -lxxx] prompt, please s
 #logout  # exit from root account
 #exit
 #make
-
-
-# colored output: https://blog.csdn.net/david_dai_1108/article/details/70478826
-
