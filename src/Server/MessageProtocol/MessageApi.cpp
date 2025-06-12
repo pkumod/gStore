@@ -388,6 +388,7 @@ namespace server
         this->predicateNum = 0;
         this->connectionNum = 0;
         this->diskUsed = 0;
+        this->lockNum = 0;
     }
 
     void MessageMonitorResponse::toJsonString(std::string& json_str)
@@ -403,6 +404,7 @@ namespace server
         json["subjectNum"] = this->subjectNum;
         json["predicateNum"] = this->predicateNum;
         json["connectionNum"] = this->connectionNum;
+        json["lockNum"] = this->lockNum;
         json["diskUsed"] = this->diskUsed;
         json["subjectList"] = nlohmann::json::array();
         if (!this->subjectList.empty())

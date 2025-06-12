@@ -172,6 +172,7 @@ namespace server
             response.creator = database_info->getCreator();
             response.builtTime = database_info->getTime();
             response.connectionNum = apiUtil->get_connection_num();
+            response.lockNum = database_info->lock_count;
             response.subjectList = current_database->getStatisticsInfo();
             current_database->getSchemaInfo(response.schema, true);
 

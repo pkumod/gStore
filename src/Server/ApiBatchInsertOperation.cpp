@@ -123,6 +123,7 @@ namespace server
             {
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
+                db_info.reset();
                 throw new std::runtime_error(response.StatusMsg);
             }
             unsigned success_num = 0;
@@ -166,8 +167,7 @@ namespace server
         }
         catch (const std::exception &e)
         {
-            if (db_info)
-                apiUtil->unlock_databaseinfo(db_info);
+            apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
             if (response.StatusMsg.empty())
@@ -217,6 +217,7 @@ namespace server
             {
                 response.StatusCode = StatusLossOfLock;
                 response.StatusMsg = "Unable to batch insert due to loss of lock.";
+                db_info.reset();
                 throw new runtime_error(response.StatusMsg);
             }
             unsigned success_num = 0;
@@ -306,8 +307,7 @@ namespace server
         }
         catch (const std::exception &e)
         {
-            if (db_info)
-                apiUtil->unlock_databaseinfo(db_info);
+            apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
             if (response.StatusMsg.empty())

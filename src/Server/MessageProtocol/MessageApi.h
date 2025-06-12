@@ -210,6 +210,7 @@ namespace server
         uint64_t predicateNum;
         uint32_t connectionNum;
         uint64_t diskUsed;
+        uint32_t lockNum;
         std::unordered_map<std::string, unsigned long long> subjectList;
         nlohmann::json schema;
         MessageMonitorResponse();

@@ -202,11 +202,11 @@ namespace server
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }
+                apiUtil->unlock_databaseinfo(current_db_info);
             }
             catch(const std::exception& e)
             {
-                if (current_db_info != nullptr)
-                    apiUtil->unlock_databaseinfo(current_db_info);
+                apiUtil->unlock_databaseinfo(current_db_info);
                 result = "Import RDF file to database failed:" + string(e.what());
                 FileUtil::removePath(db_home_path);
                 remove_temp_files(temp_paths);
@@ -218,8 +218,8 @@ namespace server
             }
             // init databaseinfo
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->trywrlock_databaseinfo(db_info);
             apiUtil->get_databaseinfo(db_name, db_info);
+            apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             db_info->initDatabase();
             // init user privilege

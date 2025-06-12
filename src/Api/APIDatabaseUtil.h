@@ -36,10 +36,12 @@ private:
 
 public:
     pthread_rwlock_t db_lock;
+    std::atomic<int> lock_count;
 
     DatabaseInfo()
     {
         db_ptr = nullptr;
+        lock_count = 0;
         pthread_rwlock_init(&db_lock, NULL);
     }
     DatabaseInfo(string _name, string _creator, string _time, DatabaseStatus _status)
@@ -52,11 +54,13 @@ public:
             db_ptr = make_shared<Database>(db_name);
         else
             db_ptr = nullptr;
+        lock_count = 0;
         pthread_rwlock_init(&db_lock, NULL);
     }
     ~DatabaseInfo()
     {
         db_ptr.reset();
+        lock_count = 0;
         pthread_rwlock_destroy(&db_lock);
     }
     std::string getName()

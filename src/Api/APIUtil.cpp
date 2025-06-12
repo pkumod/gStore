@@ -688,6 +688,7 @@ bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const tim
     {
         SLOG_DEBUG("try gets database[" + dbinfo->getName() + "] write lock ok.");
         result = true;
+        dbinfo->lock_count++;
     }
     else
     {
@@ -700,6 +701,7 @@ bool APIUtil::trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const tim
         {
             SLOG_DEBUG("gets database[" + dbinfo->getName() + "] write lock ok.");
             result = true;
+            dbinfo->lock_count++;
         }
         else
         {
@@ -717,6 +719,7 @@ bool APIUtil::rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
         // #if defined(DEBUG)
         SLOG_DEBUG("gets database[" + dbinfo->getName() + "] read lock ok");
         // #endif
+        dbinfo->lock_count++;
         return true;
     }
     else
@@ -729,22 +732,16 @@ bool APIUtil::rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
 bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
 {
     
-    if (dbinfo == nullptr || dbinfo == NULL)
+    if (!dbinfo)
     {
         SLOG_ERROR("database info ptr is null");
         return false;
     }
-    int rwlock_code = pthread_rwlock_trywrlock(&(dbinfo->db_lock));
-    if (rwlock_code == 0)
-    {
-        SLOG_DEBUG("database[" + dbinfo->getName() + "] no locks.");
-        pthread_rwlock_unlock(&(dbinfo->db_lock));
-        return true;
-    }
-    rwlock_code = pthread_rwlock_unlock(&(dbinfo->db_lock));
+    int rwlock_code = rwlock_code = pthread_rwlock_unlock(&(dbinfo->db_lock));
     if (rwlock_code == 0)
     {
         SLOG_DEBUG("database[" + dbinfo->getName() + "] unlock ok");
+        dbinfo->lock_count--;
         return true;
     }
     else
