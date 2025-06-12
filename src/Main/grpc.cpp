@@ -484,12 +484,12 @@ int main(int argc, char *argv[])
 	{
 		// server::MessageCheckRequest check_request;
 		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
-		httpentities::CheckRequest check_request;
-		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
-		if(!check_response.success()) {
-			cout << "server is inactive (dead)." << endl;
-			return 0;
-		}
+		// httpentities::CheckRequest check_request;
+		// httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
+		// if(!check_response.success()) {
+		// 	cout << "server is inactive (dead)." << endl;
+		// 	return 0;
+		// }
 		// kill server
 		cout << "The service will be forcibly stopped!" << endl;
 		execl("/usr/bin/killall", "killall", Util::getExactPath(argv[0]).c_str(), NULL);
