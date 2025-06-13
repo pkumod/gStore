@@ -267,9 +267,12 @@ ReasonSparql ReasonHelper::executeReasonRule(const string &rulename, const strin
     if (doc.contains("insert_sparql"))
     {
       doc.at("insert_sparql").get_to(sparql);
-      SLOG_CORE("start loading the database......");
       results.insert_sparql = sparql;
       results.issuccess = 1;
+      if (doc.contains("select_sparql"))
+      {
+        doc.at("select_sparql").get_to(results.select_sparql);
+      }
       return results;
     }
     else

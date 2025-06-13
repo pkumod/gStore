@@ -163,6 +163,7 @@ namespace server
                 }
                 ReasonHelper::updateReasonRuleStatus(rulename, "已执行", _db_path);
                 response.insert_sparql = resultInfo.insert_sparql;
+                response.select_sparql = resultInfo.select_sparql;
                 response.num = ret_val;
                 response.StatusMsg = "ok";
             }

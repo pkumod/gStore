@@ -330,6 +330,7 @@ namespace server
         else if (type == "4")
         {
             json["insert_sparql"] = this->insert_sparql;
+            json["select_sparql"] = this->select_sparql;
             json["AnsNum"] = this->num;
         }
         else if (type == "5")

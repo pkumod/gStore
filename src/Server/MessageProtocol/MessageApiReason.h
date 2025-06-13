@@ -99,6 +99,7 @@ namespace server
         std::string insert_sparql;
         std::string delete_sparql;
         std::string check_sparql;
+        std::string select_sparql;
         nlohmann::json ruleinfo;
         std::string checkMsg;
         MessageReasonManageResponse(){num = 0;}
