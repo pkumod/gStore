@@ -23,16 +23,11 @@ namespace server
                 return;
             }
             apiUtil->get_databaseinfo(db_name, db_info);
-            int try_count = 0;
-            while (apiUtil->trywrlock_databaseinfo(db_info, 3) == false)
+            if (apiUtil->trywrlock_databaseinfo(db_info, 300) == false)
             {
-                apiUtil->unlock_databaseinfo(db_info);
-                if (++try_count >= 10)
-                {
-                    response.StatusMsg = "unable to drop due to loss of lock.";
-                    response.StatusCode = StatusLossOfLock;
-                    return;
-                }
+                response.StatusMsg = "unable to drop due to loss of lock.";
+                response.StatusCode = StatusLossOfLock;
+                return;
             }
             if (apiUtil->check_db_loaded(db_name))
             {
