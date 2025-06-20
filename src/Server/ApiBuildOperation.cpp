@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
     bool ApiHandler::build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response, std::map<std::string, unsigned long long>& file_paths, std::vector<std::string>& temp_paths)
     {

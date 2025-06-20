@@ -1,13 +1,13 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& resquest, MessageDropResponse& response)
+    void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
-            bool is_backup = resquest.is_backup;
+            std::string db_name = request.db_name;
+            bool is_backup = request.is_backup;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
@@ -46,9 +46,9 @@ namespace server
         }
     }
 
-    void ApiHandler::checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& resquest, server::MessageResponse& response)
+    void ApiHandler::checkpoint(shared_ptr<APIUtil>& apiUtil, const gs::MessageCheckPointRequest& request, gs::MessageResponse& response)
     {
-        std::string db_name = resquest.db_name;
+        std::string db_name = request.db_name;
         std::string msg;
         if (apiUtil->check_param_value("db_name", db_name, msg) == false)
         {
@@ -56,8 +56,8 @@ namespace server
             return;
         }
         shared_ptr<DatabaseInfo> db_info;
-        server::StatusCode statusCode;
-        apiUtil->get_databaseinfo(resquest.db_name, db_info);
+        gs::StatusCode statusCode;
+        apiUtil->get_databaseinfo(request.db_name, db_info);
         if (!apiUtil->validate_databaseinfo(db_info,statusCode,msg, true, true, true))
         {
             response.StatusCode = statusCode;

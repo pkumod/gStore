@@ -23,7 +23,7 @@
 #include "APILogQueryUtil.h"
 
 using namespace std;
-using namespace server;
+using namespace gs;
 
 class APIUtil
 {

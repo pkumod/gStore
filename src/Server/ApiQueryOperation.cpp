@@ -1,7 +1,7 @@
 #include "ApiProvider.h"
 #include "../Api/WFHttpUtil.h"
 
-namespace server
+namespace gs
 {
     std::string ApiHandler::repalce_pfn_query(const std::string& sparql, MessageQueryResponse& response)
     {

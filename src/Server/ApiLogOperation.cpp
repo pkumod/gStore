@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::txn_log(shared_ptr<APIUtil>& apiUtil, server::MessageTxnLogRequest& resquest, server::MessageTxnLogResponse& response)
+    void ApiHandler::txn_log(shared_ptr<APIUtil>& apiUtil, gs::MessageTxnLogRequest& request, gs::MessageTxnLogResponse& response)
     {
         try
         {
@@ -13,8 +13,8 @@ namespace server
             // 	response->Error(StatusOperationConditionsAreNotSatisfied, error);
             // 	return;
             // }
-            int page_no = resquest.pageNo;
-            int page_size = resquest.pageSize;
+            int page_no = request.pageNo;
+            int page_size = request.pageSize;
             shared_ptr<struct TransactionLogs> transactionLogsPtr = make_shared<struct TransactionLogs>();
             apiUtil->get_transactionlog(page_no, page_size, transactionLogsPtr);
             vector<struct TransactionLogInfo> logList = transactionLogsPtr->getTransactionLogInfoList();
@@ -40,21 +40,21 @@ namespace server
         }
     }
 
-    void ApiHandler::query_log(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogRequest& resquest, server::MessageQueryLogResponse& response)
+    void ApiHandler::query_log(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogRequest& request, gs::MessageQueryLogResponse& response)
     {
         try
         {
-            std::string date = resquest.date;
+            std::string date = request.date;
             std::string msg;
             if (apiUtil->check_param_value("date", date, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            int page_no = resquest.pageNo;
-            int page_size = resquest.pageSize;
+            int page_no = request.pageNo;
+            int page_size = request.pageSize;
             shared_ptr<struct DBQueryLogs> dbQueryLogsPtr = make_shared<struct DBQueryLogs>();
-            apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr, resquest.db_name);
+            apiUtil->get_query_log(date, page_no, page_size, dbQueryLogsPtr, request.db_name);
             vector<struct DBQueryLogInfo> logList = dbQueryLogsPtr->getQueryLogInfoList();
             size_t count = logList.size();
             nlohmann::json info;
@@ -79,7 +79,7 @@ namespace server
         }
     }
 
-    void ApiHandler::query_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogDateRequest& resquest, server::MessageQueryLogDateResponse& response)
+    void ApiHandler::query_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogDateRequest& request, gs::MessageQueryLogDateResponse& response)
     {
         try
         {
@@ -103,21 +103,21 @@ namespace server
         }
     }
 
-    void ApiHandler::access_log(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogRequest& resquest, server::MessageAccessLogResponse& response)
+    void ApiHandler::access_log(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogRequest& request, gs::MessageAccessLogResponse& response)
     {
         try
         {
-            std::string date = resquest.date;
+            std::string date = request.date;
             std::string msg;
             if (apiUtil->check_param_value("date", date, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            int page_no = resquest.pageNo;
-            int page_size = resquest.pageSize;
+            int page_no = request.pageNo;
+            int page_size = request.pageSize;
             shared_ptr<struct DBAccessLogs> dbAccessLogsPtr = make_shared<struct DBAccessLogs>();
-            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr, resquest.db_name, resquest.db_operation);
+            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr, request.db_name, request.db_operation);
             vector<struct DBAccessLogInfo> logList = dbAccessLogsPtr->getAccessLogInfoList();
             size_t count = logList.size();
             nlohmann::json info;
@@ -142,7 +142,7 @@ namespace server
         }
     }
 
-    void ApiHandler::access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& resquest, server::MessageAccessLogDateResponse& response)
+    void ApiHandler::access_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogDateRequest& request, gs::MessageAccessLogDateResponse& response)
     {
         try
         {
@@ -166,13 +166,13 @@ namespace server
         }
     }
 
-    void ApiHandler::checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& resquest, server::MessageCheckOperationStateResponse& response)
+    void ApiHandler::checkOperationState(shared_ptr<APIUtil>& apiUtil, gs::MessageCheckOperationStateRequest& request, gs::MessageCheckOperationStateResponse& response)
     {
         string msg;
         string operation = "checkOperationState";
         try
         {
-            std::string opt_id = resquest.opt_id;
+            std::string opt_id = request.opt_id;
             if (apiUtil->check_param_value("opt_id", opt_id, msg) == false)
             {
                 response.Error(StatusOperationFailed, msg);

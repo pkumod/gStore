@@ -1,20 +1,20 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {        
-        std::thread([apiUtil, clusterManagerPtr, resquest]()
+        std::thread([apiUtil, clusterManagerPtr, request]()
         {
-            string db_name = resquest.db_name;
+            string db_name = request.db_name;
             if (db_name.empty()) 
                 return;
-            uint32_t leader_term = resquest.term;
+            uint32_t leader_term = request.term;
             uint32_t local_term = clusterManagerPtr->getTerm(); // get local term
-            uint64_t leader_index = resquest.index;
-            uint64_t leader_uid = resquest.uid;
-            std::string follow_ip = resquest.follow_ip;
-            std::string follow_port = resquest.follow_port;
+            uint64_t leader_index = request.index;
+            uint64_t leader_uid = request.uid;
+            std::string follow_ip = request.follow_ip;
+            std::string follow_port = request.follow_port;
 
             // 通过主节点发送的从节点ip和端口号, 来设置从节点(目前从节点恢复数据需要告知主节点自己的ip和端口)
             // ip可能并不是一个ip地址, 也许是一个重定向的服务名称, 或则端口做过映射那么conf.ini的端口号就不是当前从节点的端口号
@@ -37,7 +37,7 @@ namespace server
                 // follower is restoring, please wait
                 result = 3;
                 httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result);
-                check_request.setFollowIpPort(follow_ip, resquest.follow_port);
+                check_request.setFollowIpPort(follow_ip, request.follow_port);
                 HttpUtil::clusterCheck(check_url, check_request, username, password);
                 SLOG_TRACE("heart compare, follower is restoring, please wait......" << db_name);
                 return;
@@ -46,7 +46,7 @@ namespace server
             {
                 result = 2;
                 httpentities::ClusterCheckRequest check_request(local_term, db_name, db_log.index, db_log.nextIndex, leader_uid, result);
-                check_request.setFollowIpPort(follow_ip, resquest.follow_port);
+                check_request.setFollowIpPort(follow_ip, request.follow_port);
                 HttpUtil::clusterCheck(check_url, check_request, username, password);
                 SLOG_TRACE("follower notify leader send data init database");
                 return;
@@ -67,11 +67,11 @@ namespace server
         }).detach();       
     }
 
-    void ApiHandler::cluster_heartbeat_prepare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_prepare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {
-        std::thread([apiUtil, clusterManagerPtr, resquest]()
+        std::thread([apiUtil, clusterManagerPtr, request]()
         {
-            string db_name = resquest.db_name;
+            string db_name = request.db_name;
             if (apiUtil->check_db_built(db_name) == false)
             {
                 SLOG_TRACE("cluster follower not build database, database name:" << db_name);
@@ -83,7 +83,7 @@ namespace server
                 return;
             }
 
-            uint64_t leader_index = resquest.index;
+            uint64_t leader_index = request.index;
             TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
             if (leader_index != db_log.getIndex())
             {
@@ -99,8 +99,8 @@ namespace server
                 SLOG_ERROR(statusMsg);
                 return;
             }
-            uint32_t leader_term = resquest.term;
-            uint64_t leader_nextIndex = resquest.nextIndex;
+            uint32_t leader_term = request.term;
+            uint64_t leader_nextIndex = request.nextIndex;
             ClusterUpdateType update_type = ClusterUpdateType_None;
             // check loaded
             if (apiUtil->check_db_loaded(db_name) == false)
@@ -132,16 +132,16 @@ namespace server
             std::string username = leader_node.getUsername();
             std::string password = leader_node.getPassword();
             std::string reply_operation = ClusterOperationHandle::to_str(ClusterOperation_Prepare);
-            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), leader_nextIndex, db_log.getUid(), reply_operation, resquest.follow_port);
+            httpentities::ReplyRequest reply_request(leader_term, db_name, db_log.getIndex(), leader_nextIndex, db_log.getUid(), reply_operation, request.follow_port);
             HttpUtil::reply(reply_url, reply_request, username, password);
         }).detach();
     }
 
-    void ApiHandler::cluster_heartbeat_commit(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_commit(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {
-        string db_name = resquest.db_name;
-        uint64_t leader_index = resquest.index;
-        uint64_t leader_nextIndex = resquest.nextIndex;
+        string db_name = request.db_name;
+        uint64_t leader_index = request.index;
+        uint64_t leader_nextIndex = request.nextIndex;
         if (!db_name.empty())
         {
             // get current can be committed index， and compare with leader_index
@@ -153,11 +153,11 @@ namespace server
         }
     }
 
-    void ApiHandler::cluster_heartbeat_cancel(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_cancel(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {
-        string db_name = resquest.db_name;
-        uint64_t leader_index = resquest.index;
-        uint64_t leader_nextIndex = resquest.nextIndex;
+        string db_name = request.db_name;
+        uint64_t leader_index = request.index;
+        uint64_t leader_nextIndex = request.nextIndex;
         if (!db_name.empty())
         {
             // get current index， and compare with leader_index
@@ -194,11 +194,11 @@ namespace server
         }
     }
 
-    void ApiHandler::cluster_heartbeat_fail(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_fail(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {
-        string db_name = resquest.db_name;
-        uint64_t leader_index = resquest.index;
-        uint64_t leader_nextIndex = resquest.nextIndex;
+        string db_name = request.db_name;
+        uint64_t leader_index = request.index;
+        uint64_t leader_nextIndex = request.nextIndex;
         if (!db_name.empty())
         {
             shared_ptr<DatabaseInfo> db_info;
@@ -214,11 +214,11 @@ namespace server
         }
     }
 
-    void ApiHandler::cluster_heartbeat_drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& resquest)
+    void ApiHandler::cluster_heartbeat_drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {
-        string db_name = resquest.db_name;
-        uint64_t leader_index = resquest.index;
-        uint64_t leader_nextIndex = resquest.nextIndex;
+        string db_name = request.db_name;
+        uint64_t leader_index = request.index;
+        uint64_t leader_nextIndex = request.nextIndex;
         std::string _db_home = GlobalTypedef::db_home();
         std::string _db_suffix = GlobalTypedef::db_suffix();
         if (!db_name.empty())
@@ -395,23 +395,23 @@ namespace server
         }).detach();
     }
 
-    void ApiHandler::cluster_reply(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterReplyRequest& resquest, const string& remote_ip)
+    void ApiHandler::cluster_reply(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterReplyRequest& request, const string& remote_ip)
     {
-        cluster::ClusterOperation expection_enum = cluster::ClusterOperationHandle::to_enum(resquest.operation);
+        cluster::ClusterOperation expection_enum = cluster::ClusterOperationHandle::to_enum(request.operation);
         // from follower reply, go into leader process 
         if (expection_enum == cluster::ClusterOperation::ClusterOperation_Prepare)
         {
-            clusterManagerPtr->addLogReplyNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.follow_port);
+            clusterManagerPtr->addLogReplyNum(request.db_name, request.nextIndex, remote_ip, request.follow_port);
         } else if (expection_enum == cluster::ClusterOperation::ClusterOperation_Append) {
-            clusterManagerPtr->addLogSyncNum(resquest.db_name, resquest.nextIndex, remote_ip, resquest.follow_port);
+            clusterManagerPtr->addLogSyncNum(request.db_name, request.nextIndex, remote_ip, request.follow_port);
         }
     }
 
-    void ApiHandler::cluster_check(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterCheckRequest& resquest, const string& remote_ip)
+    void ApiHandler::cluster_check(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterCheckRequest& request, const string& remote_ip)
     {
-        uint64_t follower_index = resquest.index;
-        std::string db_name = resquest.db_name;
-        if (resquest.follow_ip.empty())
+        uint64_t follower_index = request.index;
+        std::string db_name = request.db_name;
+        if (request.follow_ip.empty())
         {
             SLOG_TRACE("follower ip do not null");
             return;
@@ -421,7 +421,7 @@ namespace server
             SLOG_TRACE("cluster check, follower is restoring, please wait......" << db_name);
             return;
         }
-        if (resquest.result == 1)
+        if (request.result == 1)
         {
             // add a new task that starting with follower index
             TermDbLog db_info = clusterManagerPtr->getTermInfoDbLog(db_name);
@@ -441,12 +441,12 @@ namespace server
                 }
                 if (restore_index != 0)
                 {
-                    ClusterRecoverInfo task_info(db_name, restore_index, resquest.follow_ip, resquest.follow_port);
+                    ClusterRecoverInfo task_info(db_name, restore_index, request.follow_ip, request.follow_port);
                     clusterManagerPtr->addTask(task_info);
                 }
             }
         }
-        else if (resquest.result == 2)
+        else if (request.result == 2)
         {
             shared_ptr<DatabaseInfo> db_info;
             StatusCode statusCode;
@@ -468,8 +468,8 @@ namespace server
             task_info.db_name = db_name;
             task_info.index = clusterManagerPtr->getDbIndex(db_name);
             task_info.operation = ClusterOperation_Init;
-            task_info.ip = resquest.follow_ip;
-            task_info.port = resquest.follow_port;
+            task_info.ip = request.follow_ip;
+            task_info.port = request.follow_port;
             task_info.zip_path = clusterManagerPtr->compressInitDb(task_info);
             if (!FileUtil::fileExists(task_info.zip_path))
             {

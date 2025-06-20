@@ -1,7 +1,7 @@
 #pragma once
 #include "MessageApi.h"
 
-namespace server
+namespace gs
 {
     // show user list
     struct MessageShowUserRequest : public MessageRequest

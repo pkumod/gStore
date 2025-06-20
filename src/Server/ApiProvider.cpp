@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
     bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::map<std::string, unsigned long long>& uncompress_files, const std::string& uncompress_path, MessageResponse& response)
     {
@@ -54,21 +54,21 @@ namespace server
         return remove_temp_files(parent_paths_vec, remove_parents_if_empty);
     }
 
-    void ApiHandler::load(shared_ptr<APIUtil>& apiUtil, const MessageLoadRequest& resquest, MessageLoadResponse& response)
+    void ApiHandler::load(shared_ptr<APIUtil>& apiUtil, const MessageLoadRequest& request, MessageLoadResponse& response)
     {
         try
         {
             std::string msg;
-            if (apiUtil->check_param_value("db_name", resquest.db_name, msg) == false)
+            if (apiUtil->check_param_value("db_name", request.db_name, msg) == false)
             {
                 response.StatusCode = StatusParamIsIllegal;
                 response.StatusMsg = msg;
                 return;
             }            
             shared_ptr<DatabaseInfo> db_info;
-            server::StatusCode statusCode;
+            gs::StatusCode statusCode;
             std::string statusMsg;
-            apiUtil->get_databaseinfo(resquest.db_name, db_info);
+            apiUtil->get_databaseinfo(request.db_name, db_info);
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, true))
             {
                 response.StatusCode = statusCode;
@@ -87,13 +87,13 @@ namespace server
                 db_info->setStatus(DatabaseStatus::LOADING);
                 SLOG_DEBUG("begin loading...");
                 // progress notification
-                bool rt  = db_info->getDatabase()->load(resquest.Csr());
+                bool rt  = db_info->getDatabase()->load(request.Csr());
                 SLOG_DEBUG("end loading.");
                 if (rt)
                 {
                     db_info->setStatus(DatabaseStatus::LOADED);
                     // insert txn manager
-                    apiUtil->insert_txn_manager(resquest.db_name, db_info);
+                    apiUtil->insert_txn_manager(request.db_name, db_info);
                     if (!db_info->getDatabase()->csr)
                     {
                         response.csr = "1";
@@ -126,12 +126,12 @@ namespace server
         }
     }
 
-    void ApiHandler::monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& resquest, MessageMonitorResponse& response)
+    void ApiHandler::monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
-            std::string disk = resquest.disk;
+            std::string db_name = request.db_name;
+            std::string disk = request.disk;
             string db_path = GlobalTypedef::db_path(db_name);
             // check the param value is legal or not.
             std::string msg;
@@ -142,9 +142,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> database_info;
-            server::StatusCode statusCode;
+            gs::StatusCode statusCode;
             std::string statusMsg;
-            apiUtil->get_databaseinfo(resquest.db_name, database_info);
+            apiUtil->get_databaseinfo(request.db_name, database_info);
             if (!apiUtil->validate_databaseinfo(database_info, statusCode, statusMsg, true, false, false))
             {
                 response.StatusCode = statusCode;

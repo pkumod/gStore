@@ -1,19 +1,19 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::begin(shared_ptr<APIUtil>& apiUtil, const server::MessageBeginRequest& resquest, server::MessageBeginResponse& response)
+    void ApiHandler::begin(shared_ptr<APIUtil>& apiUtil, const gs::MessageBeginRequest& request, gs::MessageBeginResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string isolevel = resquest.isolevel;
+            std::string isolevel = request.isolevel;
             if (apiUtil->check_param_value("isolevel", isolevel, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -38,7 +38,7 @@ namespace server
                 response.Error(StatusOperationConditionsAreNotSatisfied, msg);
                 return;
             }
-            std::string username = resquest.username;
+            std::string username = request.username;
             txn_id_t tid;
             if (apiUtil->begin_process(db_name, level, username, tid) == false)
             {
@@ -56,18 +56,18 @@ namespace server
         }
     }
 
-    void ApiHandler::tquery(shared_ptr<APIUtil>& apiUtil, const server::MessageTqueryRequest& resquest, server::MessageTqueryResponse& response)
+    void ApiHandler::tquery(shared_ptr<APIUtil>& apiUtil, const gs::MessageTqueryRequest& request, gs::MessageTqueryResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string tid_s = resquest.tid;
+            std::string tid_s = request.tid;
             if (apiUtil->check_param_value("tid", tid_s, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -80,7 +80,7 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string sparql = resquest.sparql;
+            std::string sparql = request.sparql;
             if (apiUtil->check_param_value("sparql", sparql, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -158,18 +158,18 @@ namespace server
         }
     }
 
-    void ApiHandler::commit(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& resquest, server::MessageResponse& response)
+    void ApiHandler::commit(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string tid_s = resquest.tid;
+            std::string tid_s = request.tid;
             if (apiUtil->check_param_value("TID", tid_s, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -183,8 +183,8 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(resquest.db_name, db_info);
-            server::StatusCode statusCode;
+            apiUtil->get_databaseinfo(request.db_name, db_info);
+            gs::StatusCode statusCode;
             std::string statusMsg;
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {
@@ -217,18 +217,18 @@ namespace server
         }
     }
 
-    void ApiHandler::rollback(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& resquest, server::MessageResponse& response)
+    void ApiHandler::rollback(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response)
     {
         try
         {
-            std::string db_name = resquest.db_name;
+            std::string db_name = request.db_name;
             std::string msg;
             if (apiUtil->check_param_value("db_name", db_name, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string tid_s = resquest.tid;
+            std::string tid_s = request.tid;
             if (apiUtil->check_param_value("TID", tid_s, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
@@ -242,8 +242,8 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(resquest.db_name, db_info);
-            server::StatusCode statusCode;
+            apiUtil->get_databaseinfo(request.db_name, db_info);
+            gs::StatusCode statusCode;
             std::string statusMsg;
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {

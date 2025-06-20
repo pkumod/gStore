@@ -1,7 +1,7 @@
 #include "MessageApiBackUpRestore.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     MessageBackupRequest::MessageBackupRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip) : MessageRequest(std::string("backup"))
     {

@@ -2,7 +2,7 @@
 #include <memory>
 #include <functional>
 
-namespace server
+namespace gs
 {
     class ApiHandler;
 }

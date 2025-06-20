@@ -1,7 +1,7 @@
 #include "MessageApiTransaction.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     // begin
     MessageBeginRequest::MessageBeginRequest(const nlohmann::json &json_data) : MessageRequest(json_data)

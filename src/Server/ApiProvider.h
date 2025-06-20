@@ -25,7 +25,7 @@
 
 using namespace cluster;
 
-namespace server
+namespace gs
 {
     typedef std::function<void(std::shared_ptr<DBQueryLogInfo>)> query_call;
     class ApiHandler
@@ -37,17 +37,17 @@ namespace server
         ApiHandler(){};
         ~ApiHandler(){};
 
-        static void load(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadRequest& request, server::MessageLoadResponse& response);
+        static void load(shared_ptr<APIUtil>& apiUtil, const gs::MessageLoadRequest& request, gs::MessageLoadResponse& response);
         static void monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response);
         
         // update api
         static void drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response);
-        static void checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& request, server::MessageResponse& response);
+        static void checkpoint(shared_ptr<APIUtil>& apiUtil, const gs::MessageCheckPointRequest& request, gs::MessageResponse& response);
 
         // query
         private:
         static std::string repalce_pfn_query(const std::string& sparql, MessageQueryResponse& response);
-        static bool query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& resquest, MessageQueryResponse& response);
+        static bool query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response);
         static void query_format_response_data(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, ResultSet& rs);
         public:
         static void query_result_notify(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response);
@@ -55,46 +55,46 @@ namespace server
         static void query(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response, const query_call& cb, bool format_check = false);
 
         // user manger api
-        static void show_users(shared_ptr<APIUtil>& apiUtil, server::MessageShowUserResponse& response);
-        static void user_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserManageRequest& request, server::MessageUserManageResponse& response);
-        static void user_privilege_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserPrivilegeManageRequest& request, server::MessageUserPrivilegeManageResponse& response);
-        static void user_passworrd(shared_ptr<APIUtil>& apiUtil, server::MessageUserPasswordRequest& request, server::MessageUserPasswordResponse& response);
+        static void show_users(shared_ptr<APIUtil>& apiUtil, gs::MessageShowUserResponse& response);
+        static void user_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserManageRequest& request, gs::MessageUserManageResponse& response);
+        static void user_privilege_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPrivilegeManageRequest& request, gs::MessageUserPrivilegeManageResponse& response);
+        static void user_passworrd(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPasswordRequest& request, gs::MessageUserPasswordResponse& response);
 
         // transaction
-        static void begin(shared_ptr<APIUtil>& apiUtil, const server::MessageBeginRequest& request, server::MessageBeginResponse& response);
-        static void tquery(shared_ptr<APIUtil>& apiUtil, const server::MessageTqueryRequest& request, server::MessageTqueryResponse& response);
-        static void commit(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response);
-        static void rollback(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response);
+        static void begin(shared_ptr<APIUtil>& apiUtil, const gs::MessageBeginRequest& request, gs::MessageBeginResponse& response);
+        static void tquery(shared_ptr<APIUtil>& apiUtil, const gs::MessageTqueryRequest& request, gs::MessageTqueryResponse& response);
+        static void commit(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response);
+        static void rollback(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response);
 
         //PFN personalize function
-        static void funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryRequest& request, server::MessageFunQueryResponse& response);
-        static void funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbRequest& request, server::MessageFunCudbResponse& response);
-        static void funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunReviewRequest& request, server::MessageFunReviewResponse& response);
+        static void funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunQueryRequest& request, gs::MessageFunQueryResponse& response);
+        static void funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunCudbRequest& request, gs::MessageFunCudbResponse& response);
+        static void funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunReviewRequest& request, gs::MessageFunReviewResponse& response);
 
         // reason
-        static void reason_manage(shared_ptr<APIUtil>& apiUtil, server::MessageReasonManageResponse& response, nlohmann::json& json);
+        static void reason_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageReasonManageResponse& response, nlohmann::json& json);
 
         // log
-        static void txn_log(shared_ptr<APIUtil>& apiUtil, server::MessageTxnLogRequest& request, server::MessageTxnLogResponse& response);
-        static void query_log(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogRequest& request, server::MessageQueryLogResponse& response);
-        static void query_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogDateRequest& request, server::MessageQueryLogDateResponse& response);
-        static void access_log(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogRequest& request, server::MessageAccessLogResponse& response);
-        static void access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& request, server::MessageAccessLogDateResponse& response);
-        static void checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& request, server::MessageCheckOperationStateResponse& response);
+        static void txn_log(shared_ptr<APIUtil>& apiUtil, gs::MessageTxnLogRequest& request, gs::MessageTxnLogResponse& response);
+        static void query_log(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogRequest& request, gs::MessageQueryLogResponse& response);
+        static void query_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogDateRequest& request, gs::MessageQueryLogDateResponse& response);
+        static void access_log(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogRequest& request, gs::MessageAccessLogResponse& response);
+        static void access_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogDateRequest& request, gs::MessageAccessLogDateResponse& response);
+        static void checkOperationState(shared_ptr<APIUtil>& apiUtil, gs::MessageCheckOperationStateRequest& request, gs::MessageCheckOperationStateResponse& response);
 
         // export
-        static void export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& request, server::MessageExportResponse& response);
+        static void export_db(shared_ptr<APIUtil>& apiUtil, const gs::MessageExportRequest& request, gs::MessageExportResponse& response);
 
         // backup
-        static bool backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path);
-        static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
-        static void backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
-        static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response);
+        static bool backup_check(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response, std::string& backup_path);
+        static void backup(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response);
+        static void backup_async(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response);
+        static void backup_path(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupPathRequest& request, gs::MessageBackupPathResponse& response);
 
         // restore
-        static bool restore_check(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
-        static void restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
-        static void restore_async(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response);
+        static bool restore_check(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response);
+        static void restore(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response);
+        static void restore_async(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response);
 
         // build
         private:

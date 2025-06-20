@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryRequest& request, server::MessageFunQueryResponse& response)
+    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunQueryRequest& request, gs::MessageFunQueryResponse& response)
     {
         try
         {
@@ -20,7 +20,7 @@ namespace server
         }
     }
 
-    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbRequest& request, server::MessageFunCudbResponse& response)
+    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunCudbRequest& request, gs::MessageFunCudbResponse& response)
     {
         std::string type = request.type;
         std::string msg;
@@ -103,7 +103,7 @@ namespace server
         }
     }
 
-    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunReviewRequest& request, server::MessageFunReviewResponse& response)
+    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunReviewRequest& request, gs::MessageFunReviewResponse& response)
     {
         try
         {

@@ -1,7 +1,7 @@
 #pragma once
 #include "MessageApi.h"
 
-namespace server
+namespace gs
 {
     // begin
     struct MessageBeginRequest : public MessageRequest

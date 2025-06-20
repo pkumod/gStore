@@ -1,7 +1,7 @@
 #include "MessageApiUpdate.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     // build db
     MessageBuildRequest::MessageBuildRequest(std::string db_name, std::string db_path) : MessageRequest(std::string("build"))

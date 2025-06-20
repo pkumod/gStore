@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::show_users(shared_ptr<APIUtil>& apiUtil, server::MessageShowUserResponse& response)
+    void ApiHandler::show_users(shared_ptr<APIUtil>& apiUtil, gs::MessageShowUserResponse& response)
     {
         try
         {
@@ -40,11 +40,11 @@ namespace server
         }
     }
 
-    void ApiHandler::user_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserManageRequest& resquest, server::MessageUserManageResponse& response)
+    void ApiHandler::user_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserManageRequest& request, gs::MessageUserManageResponse& response)
     {
         try
         {
-            std::string op_username = resquest.op_username;
+            std::string op_username = request.op_username;
             std::string msg;
             if (apiUtil->check_param_value("op_username", op_username, msg) == false)
             {
@@ -52,8 +52,8 @@ namespace server
                 response.StatusCode = StatusParamIsIllegal;
                 return;
             }
-            std::string op_password = resquest.op_password;
-            std::string type = resquest.type;
+            std::string op_password = request.op_password;
+            std::string type = request.type;
             if (type != "2")
             {
                 if (apiUtil->check_param_value("op_password", op_password, msg) == false)
@@ -126,11 +126,11 @@ namespace server
         }
     }
 
-    void ApiHandler::user_privilege_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserPrivilegeManageRequest& resquest, server::MessageUserPrivilegeManageResponse& response)
+    void ApiHandler::user_privilege_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPrivilegeManageRequest& request, gs::MessageUserPrivilegeManageResponse& response)
     {
         try
         {
-            std::string type = resquest.type;
+            std::string type = request.type;
             std::string msg;
             if (apiUtil->check_param_value("type", type, msg) == false)
             {
@@ -144,7 +144,7 @@ namespace server
                 response.StatusCode = StatusParamIsIllegal;
                 return;
             }
-            std::string op_username = resquest.op_username;
+            std::string op_username = request.op_username;
             if (apiUtil->check_param_value("op_username", op_username, msg) == false)
             {
                 response.StatusMsg = msg;
@@ -164,8 +164,8 @@ namespace server
                 return;
             } 
             
-            std::string db_name = resquest.db_name;
-            std::string privileges = resquest.privileges;
+            std::string db_name = request.db_name;
+            std::string privileges = request.privileges;
             // check db_name and built status and privileges if not clear privilege
             if (type != "3")
             {
@@ -314,18 +314,18 @@ namespace server
         }
     }
 
-    void ApiHandler::user_passworrd(shared_ptr<APIUtil>& apiUtil, server::MessageUserPasswordRequest& resquest, server::MessageUserPasswordResponse& response)
+    void ApiHandler::user_passworrd(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPasswordRequest& request, gs::MessageUserPasswordResponse& response)
     {
         try
         {
-            std::string op_password = resquest.op_password;
+            std::string op_password = request.op_password;
             std::string msg;
             if (apiUtil->check_param_value("op_password", op_password, msg) == false)
             {
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            std::string username = resquest.username;
+            std::string username = request.username;
             if (apiUtil->check_user_exist(username) == false)
             {
                 msg =  "Username does not exist.";

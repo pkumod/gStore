@@ -1,7 +1,7 @@
 #include "MessageApiReason.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     MessageReasonManageRequest::MessageReasonManageRequest(std::string db_name, std::string type) : MessageRequest(std::string("reasonManage"))
     {

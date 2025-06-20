@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
-    void ApiHandler::reason_manage(shared_ptr<APIUtil> &apiUtil, server::MessageReasonManageResponse &response, nlohmann::json &json_data)
+    void ApiHandler::reason_manage(shared_ptr<APIUtil> &apiUtil, gs::MessageReasonManageResponse &response, nlohmann::json &json_data)
     {
         try
         {
@@ -108,7 +108,7 @@ namespace server
                     return;
                 }
                 shared_ptr<DatabaseInfo> db_info;
-                server::StatusCode statusCode;
+                gs::StatusCode statusCode;
                 std::string statusMsg;
                 apiUtil->get_databaseinfo(db_name, db_info);
                 if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
@@ -152,7 +152,7 @@ namespace server
                 }
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
-                server::StatusCode statusCode;
+                gs::StatusCode statusCode;
                 std::string statusMsg;
                 if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true))
                 {
@@ -249,7 +249,7 @@ namespace server
                 }
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
-                server::StatusCode statusCode;
+                gs::StatusCode statusCode;
                 std::string statusMsg;
                 if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, false))
                 {

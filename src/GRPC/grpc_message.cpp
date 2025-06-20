@@ -20,7 +20,7 @@
 
 using namespace grpc;
 using namespace protocol;
-using namespace server;
+using namespace gs;
 
 const std::string grpc::string_not_found = "";
 

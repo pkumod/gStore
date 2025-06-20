@@ -1,6 +1,6 @@
 #pragma once
 
-namespace server
+namespace gs
 {
     enum StatusCode
     {

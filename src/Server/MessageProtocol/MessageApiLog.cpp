@@ -1,7 +1,7 @@
 #include "MessageApiLog.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     // txn log
     void TxnLog::to_json(std::string& json_str)

@@ -1,7 +1,7 @@
 #pragma once
 #include "MessageApi.h"
 
-namespace server
+namespace gs
 {
     // build db
     struct MessageBuildRequest : public MessageRequest

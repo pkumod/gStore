@@ -95,7 +95,7 @@ int raw_sparql_handler(string query);
 int unload_handler(const vector<string>&);
 int batchinsert_handler(const vector<string>&);
 int batchremove_handler(const vector<string>&);
-server::MessageReasonManageResponse reason_manage_handler(int, const string&);
+gs::MessageReasonManageResponse reason_manage_handler(int, const string&);
 int addreason_handler(const vector<string>&);
 int listreason_handler(const vector<string>&);
 int compilereason_handler(const vector<string>&);
@@ -940,8 +940,8 @@ int load_history()
 
 bool login(const string& usrname, const string& password)
 {
-	server::MessageLoginRequest login_request(usrname, password);
-	server::MessageResponse login_response = APIConnector::login(API_URL, login_request);
+	gs::MessageLoginRequest login_request(usrname, password);
+	gs::MessageResponse login_response = APIConnector::login(API_URL, login_request);
 	if(login_response.StatusCode == WFT_STATE_SYS_ERROR)
 	{
 		cout << "Could not connect to server. Please check server status" << endl;
@@ -969,8 +969,8 @@ void print_lowbits(unsigned priv, int sz)
 unsigned read_priv(string usr, string db_name)
 {
 	// TODO
-	server::MessageShowUserRequest showuser_request;
-	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);	
+	gs::MessageShowUserRequest showuser_request;
+	gs::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);	
 	int priv = 0;
 	for (const auto &m : showuser_response.ResponseBody)
 	{
@@ -1039,8 +1039,8 @@ int check_priv(string db_name, unsigned request_priv)
 bool check_license()
 {
 
-	server::MessageRequest request;
-	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
+	gs::MessageRequest request;
+	gs::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
 
 	if (response.isvalid)
 	{
@@ -1281,10 +1281,10 @@ int raw_sparql_handler(string sparql)
 	{
 		query_url = API_URL;
 	}
-	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
+	gs::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
 	query_request.username = root_username;
 	query_request.password = root_password;
-	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
+	gs::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
 	if (!query_response.success())
 	{
 		cout << "Query failed: " << query_response.StatusMsg << endl;
@@ -1558,8 +1558,8 @@ int show_handler(const vector<string> &args)
 	}
 
 	// monitor
-	server::MessageMonitorRequest monitor_request(db_name);
-	server::MessageMonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
+	gs::MessageMonitorRequest monitor_request(db_name);
+	gs::MessageMonitorResponse monitor_response = APIConnector::monitor(API_URL, true, monitor_request);
 	if (!monitor_response.success())
 	{
 		cout << "Failed to monitor database: " << monitor_response.StatusMsg << endl;
@@ -1584,8 +1584,8 @@ int show_handler(const vector<string> &args)
 int showdbs_handler(const vector<string> &args)
 {
 	CHECK_ARGC(1, 0)
-	server::MessageShowRequest show_request;
-	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	gs::MessageShowRequest show_request;
+	gs::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
 	if (!show_response.success())
 	{
 		cout << "show databases failed: " << show_response.StatusMsg << endl;
@@ -1628,7 +1628,7 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
-	server::MessageBuildRequest build_request(db_name, db_path);
+	gs::MessageBuildRequest build_request(db_name, db_path);
 	build_request.username = root_username;
 	build_request.password = root_password;	
 	if (StringUtil::start_with(db_path, "http://") || StringUtil::start_with(db_path, "https://"))
@@ -1637,7 +1637,7 @@ int create_handler(const vector<string> &args)
 	}
 	
 	int64_t t1 = gutil::TimeUtil::timestamp();
-	server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
+	gs::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 	int64_t t2 = gutil::TimeUtil::timestamp();
 	if (!build_response.success())
 	{
@@ -1668,10 +1668,10 @@ int drop_handler(const vector<string> &args)
 		cout << "You can NOT drop current database. Please UNLOAD current database through \"UNLOAD <database_name>;\" before you drop it.";
 		return -1;
 	}
-	server::MessageDropRequest drop_request(db_name, false);
+	gs::MessageDropRequest drop_request(db_name, false);
 	drop_request.username = root_username;
 	drop_request.password = root_password;
-	server::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
+	gs::MessageResponse drop_response = APIConnector::drop(API_URL, true, drop_request);
 	if (!drop_response.success())
 	{
 		cout << "Drop database " << db_name << " failed: " << drop_response.StatusMsg << endl;
@@ -1691,10 +1691,10 @@ int export_handler(const vector<string> &args)
 
 	string export_path = GlobalTypedef::export_path;
 	
-	server::MessageExportRequest export_request(_current_database, export_path, false);
+	gs::MessageExportRequest export_request(_current_database, export_path, false);
 	export_request.username = root_username;
 	export_request.password = root_password;
-	server::MessageResponse export_response = APIConnector::exportDb(API_URL, true, export_request);
+	gs::MessageResponse export_response = APIConnector::exportDb(API_URL, true, export_request);
 	if (!export_response.success())
 	{
 		cout << "Database " << _current_database << " exported failed: " << export_response.StatusMsg << endl;
@@ -1720,10 +1720,10 @@ int backup_handler(const vector<string> &args)
 	{
 		backup_path = default_backup_path;
 	}
-	server::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
+	gs::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
 	backup_request.username = root_username;
 	backup_request.password = root_password;
-	server::MessageBackupResponse backup_response = APIConnector::backup(API_URL, true, backup_request);
+	gs::MessageBackupResponse backup_response = APIConnector::backup(API_URL, true, backup_request);
 	if (!backup_response.success())
 	{
 		cout << "Database " << _current_database << " backup failed: " << backup_response.StatusMsg << endl;
@@ -1765,10 +1765,10 @@ int restore_handler(const vector<string> &args)
 	// }
 
 	bool db_exist = false;
-	server::MessageShowRequest show_request;
+	gs::MessageShowRequest show_request;
 	show_request.username = root_username;
 	show_request.password = root_password;
-	server::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
+	gs::MessageShowResponse show_response = APIConnector::show(API_URL, true, show_request);
 	if (!show_response.success())
 	{
 		cout << "failed to get database information: " << show_response.StatusMsg << endl;		
@@ -1781,10 +1781,10 @@ int restore_handler(const vector<string> &args)
 
 	if (!db_exist) {
 		cout << "Database " << db_name << " not exist, Now Rebuild it!" << endl;
-		server::MessageBuildRequest build_request(db_name, "");
+		gs::MessageBuildRequest build_request(db_name, "");
 		build_request.username = root_username;
 		build_request.password = root_password;
-		server::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
+		gs::MessageBuildResponse build_response = APIConnector::build(API_URL, true, build_request);
 		if (!build_response.success())
 		{
 			cout << "Rebuild Error, Restore Failed: " << build_response.StatusMsg << endl;
@@ -1797,10 +1797,10 @@ int restore_handler(const vector<string> &args)
 		Util::add_backuplog(db_name);
 	}
 
-	server::MessageRestoreRequest restore_request(db_name, backup_path, false, "", false);
+	gs::MessageRestoreRequest restore_request(db_name, backup_path, false, "", false);
 	restore_request.username = root_username;
 	restore_request.password = root_password;
-	server::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, restore_request);
+	gs::MessageRestoreResponse restore_response = APIConnector::restore(API_URL, true, restore_request);
 	
 	if (!restore_response.success())
 	{
@@ -1836,8 +1836,8 @@ int use_handler(const vector<string> &args)
 			return -1;
 		}
 	}
-	server::MessageLoadRequest load_request(new_db_name, "0");
-	server::MessageLoadResponse load_response = APIConnector::load(API_URL, true, load_request);
+	gs::MessageLoadRequest load_request(new_db_name, "0");
+	gs::MessageLoadResponse load_response = APIConnector::load(API_URL, true, load_request);
 	if (!load_response.success())
 	{
 		cout << "Load database " << new_db_name << " failed: " << load_response.StatusMsg << endl;
@@ -1859,8 +1859,8 @@ int unload_handler(const vector<string> &args)
 		return -1;
 	}
 
-	server::MessageUnloadRequest unload_request(_current_database);
-	server::MessageResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
+	gs::MessageUnloadRequest unload_request(_current_database);
+	gs::MessageResponse unload_response = APIConnector::unload(API_URL, true, unload_request);
 	if (!unload_response.success())
 	{
 		cout << "Unload database " << _current_database << " failed: " << unload_response.StatusMsg << endl;
@@ -2032,8 +2032,8 @@ int setpswd_handler(const vector<string> &args)
 	
 	if (args.size() == 0)
 	{
-		server::MessageUserPasswordRequest password_request(tar_usr, stdpswd, new_pswd);
-		server::MessageUserPasswordResponse password_response = APIConnector::userPassword(API_URL, true, password_request);
+		gs::MessageUserPasswordRequest password_request(tar_usr, stdpswd, new_pswd);
+		gs::MessageUserPasswordResponse password_response = APIConnector::userPassword(API_URL, true, password_request);
 		if (!password_response.success()) 
 		{
 			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
@@ -2042,10 +2042,10 @@ int setpswd_handler(const vector<string> &args)
 	}
 	else 
 	{
-		server::MessageUserManageRequest password_request(3, tar_usr, new_pswd);
+		gs::MessageUserManageRequest password_request(3, tar_usr, new_pswd);
 		password_request.username = root_username;
 		password_request.password = root_password;
-		server::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
+		gs::MessageResponse password_response = APIConnector::userManage(API_URL, true, password_request);
 		if (!password_response.success()) 
 		{
 			cout << "System db update failed : " + password_response.StatusMsg + ". Password set failed." << endl;
@@ -2133,10 +2133,10 @@ int setpriv_handler(const vector<string> &args)
 	if (!priv_string.empty()) 
 	{
 		priv_string.pop_back();
-		server::MessageUserPrivilegeManageRequest deletepriv_request(2, usr, priv_string, db);
+		gs::MessageUserPrivilegeManageRequest deletepriv_request(2, usr, priv_string, db);
 		deletepriv_request.username = root_username;
 		deletepriv_request.password = root_password;
-		server::MessageUserPrivilegeManageResponse deletepriv_response = APIConnector::userPrivilegeManage(API_URL, true, deletepriv_request);
+		gs::MessageUserPrivilegeManageResponse deletepriv_response = APIConnector::userPrivilegeManage(API_URL, true, deletepriv_request);
 		if (!deletepriv_response.success())
 		{
 			cout << "Privilege set failed " + deletepriv_response.StatusMsg << endl;
@@ -2159,10 +2159,10 @@ int setpriv_handler(const vector<string> &args)
 	if (!addpriv_string.empty())
 	{
 		addpriv_string.pop_back();
-		server::MessageUserPrivilegeManageRequest addpriv_request(1, usr, addpriv_string, db);
+		gs::MessageUserPrivilegeManageRequest addpriv_request(1, usr, addpriv_string, db);
 		addpriv_request.username = root_username;
 		addpriv_request.password = root_password;
-		server::MessageUserPrivilegeManageResponse addpriv_response = APIConnector::userPrivilegeManage(API_URL, true, addpriv_request);
+		gs::MessageUserPrivilegeManageResponse addpriv_response = APIConnector::userPrivilegeManage(API_URL, true, addpriv_request);
 		if (!addpriv_response.success())
 		{
 			cout << "Privilege set failed " + addpriv_response.StatusMsg << endl;
@@ -2193,10 +2193,10 @@ int clearpriv_handler(const vector<string> &args)
 		return -1;
 	}
 
-	server::MessageUserPrivilegeManageRequest clearpriv_request(3, tar_usr, "", "");
+	gs::MessageUserPrivilegeManageRequest clearpriv_request(3, tar_usr, "", "");
 	clearpriv_request.username = root_username;
 	clearpriv_request.password = root_password;
-	server::MessageUserPrivilegeManageResponse clearpriv_response = APIConnector::userPrivilegeManage(API_URL, true, clearpriv_request);
+	gs::MessageUserPrivilegeManageResponse clearpriv_response = APIConnector::userPrivilegeManage(API_URL, true, clearpriv_request);
 
 	if (!clearpriv_response.success())
 	{
@@ -2228,10 +2228,10 @@ int adddelusr_handler(int add, string usr)
 	if (add == 1)
 		enter_pswd("set password for new usr: ");
 	
-	server::MessageUserManageRequest adddeluser_request(add, usr, stdpswd);
+	gs::MessageUserManageRequest adddeluser_request(add, usr, stdpswd);
 	adddeluser_request.username = root_username;
 	adddeluser_request.password = root_password;
-	server::MessageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
+	gs::MessageResponse adddeluser_response = APIConnector::userManage(API_URL, true, adddeluser_request);
 	if (!adddeluser_response.success())
 	{
 		cout << adddeluser_response.StatusMsg << endl;
@@ -2307,10 +2307,10 @@ int pusr_handler(const vector<string> &args)
 		return 0;
 	}
 	
-	server::MessageShowUserRequest showuser_request;
+	gs::MessageShowUserRequest showuser_request;
 	showuser_request.username = root_username;
 	showuser_request.password = root_password;
-	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
+	gs::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
 	if (!showuser_response.success())
 	{
 		cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
@@ -2380,10 +2380,10 @@ int showusrs_handler(const vector<string> &args)
 	vector<vector<string>> rows;
 	rows.push_back({root_username, "all", "all"});
 	
-	server::MessageShowUserRequest showuser_request;
+	gs::MessageShowUserRequest showuser_request;
 	showuser_request.username = root_username;
 	showuser_request.password = root_password;
-	server::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
+	gs::MessageShowUserResponse showuser_response = APIConnector::showUser(API_URL, true, showuser_request);
 	if (!showuser_response.success())
 	{
 		cout << "Users Query failed: " << showuser_response.StatusMsg << endl;
@@ -2446,10 +2446,10 @@ int init_handler(const vector<string> &args)
 		cout << "You can NOT init system database. " << endl;
 		return -1;
 	}
-	server::MessageInitRequest init_request(db_names);
+	gs::MessageInitRequest init_request(db_names);
 	init_request.username = root_username;
 	init_request.password = root_password;
-	server::MessageInitResponse init_response = APIConnector::init(API_URL, true, init_request);
+	gs::MessageInitResponse init_response = APIConnector::init(API_URL, true, init_request);
 	if (!init_response.success())
 	{
 		cout << "Init database " << db_names << " failed: " << init_response.StatusMsg << endl;
@@ -2469,10 +2469,10 @@ int init_handler(const vector<string> &args)
 int refreshconf_handler(const vector<string> &args)
 {
 	Util::configure();
-	server::MessageRefreshconfRequest refresh_request;
+	gs::MessageRefreshconfRequest refresh_request;
 	refresh_request.username = root_username;
 	refresh_request.password = root_password;
-	server::MessageResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
+	gs::MessageResponse refresh_response = APIConnector::refreshConf(API_URL, true, refresh_request);
 	if (!refresh_response.success())
 	{
 		cout << "Refresh config failed: " << refresh_response.StatusMsg << endl;
@@ -2489,7 +2489,7 @@ int batchinsert_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 	string file_path = args[0];
-	server::MessageBatchInsertRequest insert_request(_current_database, file_path);
+	gs::MessageBatchInsertRequest insert_request(_current_database, file_path);
 	insert_request.username = root_username;
 	insert_request.password = root_password;
 	if (StringUtil::start_with(file_path, "http://") || StringUtil::start_with(file_path, "https://"))
@@ -2497,7 +2497,7 @@ int batchinsert_handler(const vector<string> &args)
 		insert_request.remote = true;
 	}
 	long duration_time = gutil::TimeUtil::timestamp();
-	server::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
+	gs::MessageBatchInsertResponse insert_response = APIConnector::batchInsert(API_URL, true, insert_request);
 	duration_time = gutil::TimeUtil::timestamp() - duration_time;
 	if (!insert_response.success())
 	{
@@ -2515,7 +2515,7 @@ int batchremove_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 	string file_path = args[0];
-	server::MessageBatchRemoveRequest remove_request(_current_database, file_path);
+	gs::MessageBatchRemoveRequest remove_request(_current_database, file_path);
 	remove_request.username = root_username;
 	remove_request.password = root_password;
 	if (StringUtil::start_with(file_path, "http://") || StringUtil::start_with(file_path, "https://"))
@@ -2523,7 +2523,7 @@ int batchremove_handler(const vector<string> &args)
 		remove_request.remote = true;
 	}
 	long duration_time = gutil::TimeUtil::timestamp();
-	server::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
+	gs::MessageBatchRemoveResponse remove_response = APIConnector::batchRemove(API_URL, true, remove_request);
 	duration_time = gutil::TimeUtil::timestamp() - duration_time;
 	if (!remove_response.success())
 	{
@@ -2535,9 +2535,9 @@ int batchremove_handler(const vector<string> &args)
 }
 
 
-server::MessageReasonManageResponse reason_manage_handler(int type, const string &arg)
+gs::MessageReasonManageResponse reason_manage_handler(int type, const string &arg)
 {
-	server::MessageReasonManageResponse response;
+	gs::MessageReasonManageResponse response;
 	if (type == 1)
 	{
 
@@ -2551,21 +2551,21 @@ server::MessageReasonManageResponse reason_manage_handler(int type, const string
 		file >> ruleinfo;
 		file.close();
 
-		server::MessageAddReasonRequest request(_current_database, ruleinfo);
+		gs::MessageAddReasonRequest request(_current_database, ruleinfo);
 		request.username = root_username;
 		request.password = root_password;
 		response = APIConnector::addReason(API_URL, true, request);
 	}
 	else if (type == 2)
 	{
-		server::MessageListReasonRequest request(_current_database);
+		gs::MessageListReasonRequest request(_current_database);
 		request.username = root_username;
 		request.password = root_password;
 		response = APIConnector::listReason(API_URL, true, request);
 	} 
 	else
 	{
-		server::MessageCedsdReasonRequest request(_current_database, to_string(type), arg);
+		gs::MessageCedsdReasonRequest request(_current_database, to_string(type), arg);
 		request.username = root_username;
 		request.password = root_password;
 		response = APIConnector::cedsdReason(API_URL, true, request);
@@ -2586,7 +2586,7 @@ int addreason_handler(const vector<string> &args)
 		return -1;
 	}
 
-	server::MessageReasonManageResponse response = reason_manage_handler(1, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(1, args[0]);
 	// if (response.success())
 	// {
 	// 	cout <<  endl; 
@@ -2605,7 +2605,7 @@ int listreason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 0)
 
-	server::MessageReasonManageResponse response = reason_manage_handler(2, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(2, args[0]);
 	vector<string> headers = {"ruleid", "rulename", "description"};
 	vector<vector<string> > rows;
 	int id = 1;
@@ -2637,7 +2637,7 @@ int compilereason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 1)
 
-	server::MessageReasonManageResponse response = reason_manage_handler(3, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(3, args[0]);
 	// if (!ret)
 	// {
 	// 	cout << "COMPILE REASON SUCCESSFULLY!" << endl; 
@@ -2663,7 +2663,7 @@ int executereason_handler(const vector<string> &args)
 	CHECK_ARGC(1, 1)
 
 
-	server::MessageReasonManageResponse response = reason_manage_handler(4, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(4, args[0]);
 	// if (!ret)
 	// {
 	// 	cout << "EXECUTE REASON SUCCESSFULLY!" << endl; 
@@ -2688,7 +2688,7 @@ int disablereason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 1)
 
-	server::MessageReasonManageResponse response = reason_manage_handler(5, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(5, args[0]);
 	// if (!ret)
 	// {
 	// 	cout << "DISABLE REASON SUCCESSFULLY!" << endl; 
@@ -2713,11 +2713,11 @@ int showreason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 1)
 
-	server::MessageReasonManageResponse response = reason_manage_handler(6, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(6, args[0]);
 	vector<string> headers = {"rulename", "description", "patterns", "filters"};
 	vector<vector<string> > rows;
 
-	server::RuleInfo rule_info;
+	gs::RuleInfo rule_info;
 	rule_info.from_json(response.ruleinfo);
 	cout << rule_info.conditions.size() << endl;
 	for (auto &condition : rule_info.conditions)
@@ -2764,7 +2764,7 @@ int deletereason_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_NOT_SYSDB
 	CHECK_ARGC(1, 1)
 
-	server::MessageReasonManageResponse response = reason_manage_handler(7, args[0]);
+	gs::MessageReasonManageResponse response = reason_manage_handler(7, args[0]);
 	// if (!ret)
 	// {
 	// 	cout << "DELETE REASON SUCCESSFULLY!" << endl; 
@@ -2781,11 +2781,11 @@ int funquery_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 0);
 	PFNInfo funInfo;
-	server::MessageFunQueryRequest funquery_request;
+	gs::MessageFunQueryRequest funquery_request;
 	funquery_request.funInfo = funInfo;
 	funquery_request.username = root_username;
 	funquery_request.password = root_password;
-	server::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
+	gs::MessageFunQueryResponse funquery_response = APIConnector::funQuery(API_URL, true, funquery_request);
 	if (!funquery_response.success())
 	{
 		cout << "failed to query custom function: " << funquery_response.StatusMsg << endl;
@@ -2832,11 +2832,11 @@ int funcudb_handler(int type, const string& arg)
 		cout << "invalid type" << endl;
 		return -1;
 	}
-	server::MessageFunCudbRequest funcudb_request(to_string(type));
+	gs::MessageFunCudbRequest funcudb_request(to_string(type));
 	funcudb_request.username = root_username;
 	funcudb_request.password = root_password;
 	funcudb_request.funInfo = funInfo;
-	server::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
+	gs::MessageFunCudbResponse funcudb_response = APIConnector::funCudb(API_URL, true, funcudb_request);
 	if (!funcudb_response.success())
 	{
 		cout << "function operation failed: " << funcudb_response.getStatusMsg() << endl;
@@ -2932,9 +2932,9 @@ int funreview_handler(const vector<string>& args)
 
 	nlohmann::json funInfo;
 	file >> funInfo;
-	server::MessageFunReviewRequest review_request;
+	gs::MessageFunReviewRequest review_request;
 	review_request.funInfo = PFNInfo(funInfo);
-	server::MessageFunReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
+	gs::MessageFunReviewResponse review_response = APIConnector::funReview(API_URL, true, review_request);
 	if (!review_response.success())
 	{
 		cout << "failed to review custom function: " << review_response.getStatusMsg() << endl;
@@ -2965,10 +2965,10 @@ int txnlog_handler(const vector<string>& args)
 
 	int pageNo = stoi(args[0]);
 	int pageSize = stoi(args[1]);
-	server::MessageTxnLogRequest txnlog_request(pageNo, pageSize);
+	gs::MessageTxnLogRequest txnlog_request(pageNo, pageSize);
 	txnlog_request.username = root_username;
 	txnlog_request.password = root_password;
-	server::MessageTxnLogResponse txnlog_response = APIConnector::txnLog(API_URL, true, txnlog_request);
+	gs::MessageTxnLogResponse txnlog_response = APIConnector::txnLog(API_URL, true, txnlog_request);
 	if (!txnlog_response.success())
 	{
 		cout << "Query txnlog failed: " << txnlog_response.StatusMsg << endl;
@@ -2977,7 +2977,7 @@ int txnlog_handler(const vector<string>& args)
 	vector<string> headers = {"dbname", "TID", "user", "state", "begintime", "endtime"};
 	vector<vector<string> > rows;
 	for (auto json : txnlog_response.list) {
-		server::TxnLog txnlog;
+		gs::TxnLog txnlog;
 		txnlog.from_json(json);
 		rows.push_back({txnlog.db_name, txnlog.TID, txnlog.user,
 						txnlog.state, txnlog.begin_time, txnlog.end_time});
@@ -2990,10 +2990,10 @@ int txnlog_handler(const vector<string>& args)
 int querylogdate_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 0)
-	server::MessageQueryLogDateRequest querylogdate_request;
+	gs::MessageQueryLogDateRequest querylogdate_request;
 	querylogdate_request.username = root_username;
 	querylogdate_request.password = root_password;
-	server::MessageQueryLogDateResponse querylogdate_response = APIConnector::queryLogDate(API_URL, true, querylogdate_request);
+	gs::MessageQueryLogDateResponse querylogdate_response = APIConnector::queryLogDate(API_URL, true, querylogdate_request);
 	if (!querylogdate_response.success())
 	{
 		cout << "querylogdate failed: " << querylogdate_response.StatusMsg << endl;
@@ -3021,10 +3021,10 @@ int querylog_handler(const vector<string>& args)
 	int pageNo = stoi(args[1]);
 	int pageSize = stoi(args[2]);
 	
-	server::MessageQueryLogRequest querylog_request(date, pageNo, pageSize);
+	gs::MessageQueryLogRequest querylog_request(date, pageNo, pageSize);
 	querylog_request.username = root_username;
 	querylog_request.password = root_password;
-	server::MessageQueryLogResponse querylog_response = APIConnector::queryLog(API_URL, true, querylog_request);
+	gs::MessageQueryLogResponse querylog_response = APIConnector::queryLog(API_URL, true, querylog_request);
 	if (!querylog_response.success())
 	{
 		cout << "querylog failed: " << querylog_response.StatusMsg << endl;
@@ -3033,7 +3033,7 @@ int querylog_handler(const vector<string>& args)
 	vector<string> headers = {"QueryDateTime", "Sparql", "Format", "RemoteIP", "FileName", "QueryTime", "AnsNum"};
 	vector<vector<string> > rows;
 	for (auto json : querylog_response.list) {
-		server::QueryLog querylog;
+		gs::QueryLog querylog;
 		querylog.from_json(json);
 		rows.push_back({querylog.QueryDateTime, querylog.Sparql, querylog.Format,
 						querylog.RemoteIP, querylog.FileName, to_string(querylog.QueryTime),
@@ -3045,10 +3045,10 @@ int querylog_handler(const vector<string>& args)
 
 int accesslogdate_handler(const vector<string>& args) {
 	CHECK_ARGC(1, 0)
-	server::MessageAccessLogDateRequest accesslogdate_request;
+	gs::MessageAccessLogDateRequest accesslogdate_request;
 	accesslogdate_request.username = root_username;
 	accesslogdate_request.password = root_password;
-	server::MessageAccessLogDateResponse accesslogdate_response = APIConnector::accessLogDate(API_URL, true, accesslogdate_request);
+	gs::MessageAccessLogDateResponse accesslogdate_response = APIConnector::accessLogDate(API_URL, true, accesslogdate_request);
 	if (!accesslogdate_response.success())
 	{
 		cout << "accesslogdate failed: " << accesslogdate_response.StatusMsg << endl;
@@ -3075,10 +3075,10 @@ int accesslog_handler(const vector<string>& args) {
 	int pageNo = stoi(args[1]);
 	int pageSize = stoi(args[2]);
 	
-	server::MessageAccessLogRequest accesslog_request(date, pageNo, pageSize);
+	gs::MessageAccessLogRequest accesslog_request(date, pageNo, pageSize);
 	accesslog_request.username = root_username;
 	accesslog_request.password = root_password;
-	server::MessageAccessLogResponse accesslog_response = APIConnector::accessLog(API_URL, true, accesslog_request);
+	gs::MessageAccessLogResponse accesslog_response = APIConnector::accessLog(API_URL, true, accesslog_request);
 	if (!accesslog_response.success())
 	{
 		cout << "accessLog failed: " << accesslog_response.StatusMsg << endl;
@@ -3087,7 +3087,7 @@ int accesslog_handler(const vector<string>& args) {
 	vector<string> headers = {"ip", "operation", "createtime", "code", "msg"};
 	vector<vector<string> > rows;
 	for (auto json : accesslog_response.list) {
-		server::AccessLog accesslog;
+		gs::AccessLog accesslog;
 		accesslog.from_json(json);
 		rows.push_back({accesslog.ip, accesslog.operation, accesslog.createtime,
 						accesslog.code, accesslog.msg});
@@ -3108,10 +3108,10 @@ int begin_handler(const vector<string>& args)
 
 	string db_name = args[0];
 	string isolevel = args[1];
-	server::MessageBeginRequest begin_request(db_name, isolevel);
+	gs::MessageBeginRequest begin_request(db_name, isolevel);
 	begin_request.username = root_username;
 	begin_request.password = root_password;
-	server::MessageBeginResponse begin_response = APIConnector::begin(API_URL, true, begin_request);
+	gs::MessageBeginResponse begin_response = APIConnector::begin(API_URL, true, begin_request);
 	if (!begin_response.success())
 	{
 		cout << "begin operation failed: " << begin_response.StatusMsg << endl;
@@ -3127,10 +3127,10 @@ int tquery_handler(const vector<string>& args)
 	string db_name = args[0];
 	string tid = args[1];
 	string sparql = args[2];
-	server::MessageTqueryRequest tquery_request(db_name, tid, sparql);
+	gs::MessageTqueryRequest tquery_request(db_name, tid, sparql);
 	tquery_request.username = root_username;
 	tquery_request.password = root_password;
-	server::MessageTqueryResponse tquery_response = APIConnector::tquery(API_URL, true, tquery_request);
+	gs::MessageTqueryResponse tquery_response = APIConnector::tquery(API_URL, true, tquery_request);
 	if (!tquery_response.success())
 	{
 		cout << "tquery failed: " << tquery_response.StatusMsg << endl;
@@ -3146,10 +3146,10 @@ int commit_handler(const vector<string>& args)
 	CHECK_ARGC(1, 2)
 	string db_name = args[0];
 	string tid = args[1];
-	server::MessageCommitRequest commit_request(db_name, tid);
+	gs::MessageCommitRequest commit_request(db_name, tid);
 	commit_request.username = root_username;
 	commit_request.password = root_password;
-	server::MessageCommitResponse commit_response = APIConnector::commit(API_URL, true, commit_request);
+	gs::MessageCommitResponse commit_response = APIConnector::commit(API_URL, true, commit_request);
 	if (!commit_response.success())
 	{
 		cout << "commit failed: " << commit_response.StatusMsg << endl;
@@ -3164,10 +3164,10 @@ int rollback_handler(const vector<string>& args)
 	CHECK_ARGC(1, 2)
 	string db_name = args[0];
 	string tid = args[1];
-	server::MessageRollbackRequest rollback_request(db_name, tid);
+	gs::MessageRollbackRequest rollback_request(db_name, tid);
 	rollback_request.username = root_username;
 	rollback_request.password = root_password;
-	server::MessageRollbackResponse rollback_response = APIConnector::rollBack(API_URL, true, rollback_request);
+	gs::MessageRollbackResponse rollback_response = APIConnector::rollBack(API_URL, true, rollback_request);
 	if (!rollback_response.success())
 	{
 		cout << "rollback failed: " << rollback_response.StatusMsg << endl;
@@ -3181,10 +3181,10 @@ int checkpoint_handler(const vector<string>& args)
 {
 	CHECK_ARGC(1, 1)
 	string db_name = args[0];
-	server::MessageCheckPointRequest checkpoint_request(db_name);
+	gs::MessageCheckPointRequest checkpoint_request(db_name);
 	checkpoint_request.username = root_username;
 	checkpoint_request.password = root_password;
-	server::MessageCheckPointResponse checkpoint_response = APIConnector::checkPoint(API_URL, true, checkpoint_request);
+	gs::MessageCheckPointResponse checkpoint_response = APIConnector::checkPoint(API_URL, true, checkpoint_request);
 	if (!checkpoint_response.success())
 	{
 		cout << "checkpoint failed: " << checkpoint_response.StatusMsg << endl;
@@ -3205,10 +3205,10 @@ int checkpoint_handler(const vector<string>& args)
 // 		return -1;
 // 	}
 
-// 	server::MessageRequest request;
+// 	gs::MessageRequest request;
 // 	request.username = root_username;
 // 	request.password = root_password;
-// 	server::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
+// 	gs::MessageLicenseResponse response = APIConnector::importLicense(BASE_URL, true, request, filepath);
 	
 // 	if (!response.success())
 // 	{
@@ -3228,10 +3228,10 @@ int checkpoint_handler(const vector<string>& args)
 // int licenseinfo_handler(const vector<string>& args)
 // {
 // 	CHECK_ARGC(1, 0)
-// 	server::MessageRequest request;
+// 	gs::MessageRequest request;
 // 	request.username = root_username;
 // 	request.password = root_password;
-// 	server::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
+// 	gs::MessageLicenseResponse response = APIConnector::licenseInfo(BASE_URL, true, request);
 	
 // 	if (!response.success())
 // 	{
@@ -3251,10 +3251,10 @@ int checkpoint_handler(const vector<string>& args)
 // int removelicense_handler(const vector<string>& args)
 // {
 // 	CHECK_ARGC(1, 0)
-// 	server::MessageRequest request;
+// 	gs::MessageRequest request;
 // 	request.username = root_username;
 // 	request.password = root_password;
-// 	server::MessageLicenseResponse response = APIConnector::removeLicense(BASE_URL, true, request);
+// 	gs::MessageLicenseResponse response = APIConnector::removeLicense(BASE_URL, true, request);
 	
 // 	if (!response.success())
 // 	{

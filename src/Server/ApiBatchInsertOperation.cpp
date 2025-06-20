@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace server
+namespace gs
 {
     bool ApiHandler::batch_insert_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths)
     {

@@ -1,7 +1,7 @@
 #include "MessageCluster.h"
 #include "../ApiProvider.h"
 
-namespace server
+namespace gs
 {
     MessageClusterRequest::MessageClusterRequest()
     {

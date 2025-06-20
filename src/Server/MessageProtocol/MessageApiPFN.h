@@ -2,7 +2,7 @@
 #include "MessageApi.h"
 #include "../../Pfn/PFNEntity.h"
 
-namespace server
+namespace gs
 {
 
     // funquery

@@ -263,7 +263,7 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 	// 	if (check_license && apiUtil->check_license(msg) == false)
 	// 	{
 	// 		SLOG_INFO("License is invalid: " << msg);
-	// 		response->Error(server::StatusCode::StatusLicenseInvalid, msg);
+	// 		response->Error(gs::StatusCode::StatusLicenseInvalid, msg);
 	// 		return false;
 	// 	}
 	// }
@@ -412,8 +412,8 @@ int main(int argc, char *argv[])
 	else if ((command == "-s" || command == "--start"))
 	{
 		// check server thread
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if (check_response.success())
@@ -425,8 +425,8 @@ int main(int argc, char *argv[])
 	}
 	else if (command == "-t" || command == "--stop")
 	{
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(!check_response.success()) {
@@ -441,8 +441,8 @@ int main(int argc, char *argv[])
 	else if (command == "-r" || command == "--restart")
 	{
 		bool background = false;
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if(check_response.success()) {
@@ -481,8 +481,8 @@ int main(int argc, char *argv[])
 	}
 	else if (command  == "-k" || command == "--kill")
 	{
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		// httpentities::CheckRequest check_request;
 		// httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		// if(!check_response.success()) {
@@ -499,8 +499,8 @@ int main(int argc, char *argv[])
 	else if (command == "-S" || command == "--status")
 	{
 		// show server status
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		cout << "gStore API Server(gserver)" << endl;
@@ -520,8 +520,8 @@ int main(int argc, char *argv[])
 	else if ((command == "-b" || command == "--background"))
 	{
 		// check server thread
-		// server::MessageCheckRequest check_request;
-		// server::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
+		// gs::MessageCheckRequest check_request;
+		// gs::MessageCheckResponse check_response = APIConnector::check(API_URL, check_request);
 		httpentities::CheckRequest check_request;
 		httpentities::CheckResponse check_response = HttpUtil::check(API_URL, check_request);
 		if (check_response.success())
@@ -852,8 +852,8 @@ bool stopServer()
 	getline(in, system_password, '\n');
 	in.close();
 	SLOG_DEBUG("port: " + _server_port + ", system user: " + system_user + ", password: " + system_password);
-	// server::MessageShutdownRequest shutdown_request(system_user, system_password);
-	// server::MessageShutdownResponse shutdown_response = APIConnector::shutdown(OFF_URL, shutdown_request);
+	// gs::MessageShutdownRequest shutdown_request(system_user, system_password);
+	// gs::MessageShutdownResponse shutdown_response = APIConnector::shutdown(OFF_URL, shutdown_request);
 	httpentities::ShutdownRequest shutdown_request(system_user, system_password);
 	httpentities::ShutdownResponse shutdown_response = HttpUtil::shutdown(OFF_URL, shutdown_request);
 	if (shutdown_response.success())
@@ -1343,7 +1343,7 @@ void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& o
 				json_data["results"].emplace_back(result_data);
 			}
 		}
-		server::MessageQueryResponse resp_data;
+		gs::MessageQueryResponse resp_data;
 		resp_data.query_json = json_data;
 		resp_data.StatusCode = StatusOK;
 		resp_data.StatusMsg = "success";
@@ -1861,10 +1861,10 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
  */
 void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageLoadRequest request_data(json_data);
-	server::MessageLoadResponse response_data; 
-	server::ApiHandler::load(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageLoadRequest request_data(json_data);
+	gs::MessageLoadResponse response_data; 
+	gs::ApiHandler::load(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -1895,7 +1895,7 @@ void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 			return;
 		}
 		shared_ptr<DatabaseInfo> db_info;
-		server::StatusCode statusCode;
+		gs::StatusCode statusCode;
 		std::string statusMsg;
 		apiUtil->get_databaseinfo(db_name, db_info);
 		if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true))
@@ -1926,11 +1926,11 @@ void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
  */
 void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageMonitorRequest request_data(json_data);
-	server::MessageMonitorResponse response_data; 
+	gs::MessageMonitorRequest request_data(json_data);
+	gs::MessageMonitorResponse response_data; 
 	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
-	server::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -1958,8 +1958,8 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		return;
 	}
 
-	server::MessageBuildRequest request_data(json_data);
-	server::MessageBuildResponse response_data; 
+	gs::MessageBuildRequest request_data(json_data);
+	gs::MessageBuildResponse response_data; 
 	if (request_data.async)
 	{
 		grpc::GRPCServerTask* sub_task = task_of(response);
@@ -1970,13 +1970,13 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			server::MessageBuildResponse response_data;
+			gs::MessageBuildResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+				gs::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else
-				server::ApiHandler::build(apiUtil, request_data, response_data);
+				gs::ApiHandler::build(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failed_num);
@@ -1996,14 +1996,14 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	{
 		if (clusterManagerPtr->isEnable())
 		{
-			server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			gs::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 		}
 		else
 		{
-			server::ApiHandler::build(apiUtil, request_data, response_data);
+			gs::ApiHandler::build(apiUtil, request_data, response_data);
 		}
 	}
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2030,10 +2030,10 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, n
 		redirect_handler(request, response, series);
 		return;
 	}
-	server::MessageDropRequest request_data(json_data);
-	server::MessageDropResponse response_data; 
-	server::ApiHandler::drop(apiUtil, clusterManagerPtr, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageDropRequest request_data(json_data);
+	gs::MessageDropResponse response_data; 
+	gs::ApiHandler::drop(apiUtil, clusterManagerPtr, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2053,8 +2053,8 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, n
  */
 void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageBackupRequest request_data(json_data);
-	server::MessageBackupResponse response_data;
+	gs::MessageBackupRequest request_data(json_data);
+	gs::MessageBackupResponse response_data;
 	if (request_data.async)
 	{
 		grpc::GRPCServerTask* sub_task = task_of(response);
@@ -2065,17 +2065,17 @@ void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			server::MessageBackupResponse response_data;
+			gs::MessageBackupResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
-			server::ApiHandler::backup_async(apiUtil, request_data, response_data);
+			gs::ApiHandler::backup_async(apiUtil, request_data, response_data);
 		});
 	}
 	else
 	{
-		server::ApiHandler::backup(apiUtil, request_data, response_data);
+		gs::ApiHandler::backup(apiUtil, request_data, response_data);
 	}
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2096,10 +2096,10 @@ void backup_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
  */
 void backup_path_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageBackupPathRequest request_data(json_data);
-	server::MessageBackupPathResponse response_data;
-	server::ApiHandler::backup_path(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageBackupPathRequest request_data(json_data);
+	gs::MessageBackupPathResponse response_data;
+	gs::ApiHandler::backup_path(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2121,8 +2121,8 @@ void backup_path_task(const GRPCReq *request, GRPCResp *response, nlohmann::json
  */
 void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageRestoreRequest request_data(json_data);
-	server::MessageRestoreResponse response_data;
+	gs::MessageRestoreRequest request_data(json_data);
+	gs::MessageRestoreResponse response_data;
 
 	if (request_data.async)
 	{
@@ -2134,17 +2134,17 @@ void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			server::MessageRestoreResponse response_data;
+			gs::MessageRestoreResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
-			server::ApiHandler::restore_async(apiUtil, request_data, response_data);
+			gs::ApiHandler::restore_async(apiUtil, request_data, response_data);
 		});
 	}
 	else
 	{
-		server::ApiHandler::restore(apiUtil, request_data, response_data);
+		gs::ApiHandler::restore(apiUtil, request_data, response_data);
 	}
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2166,15 +2166,15 @@ void restore_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
  */
 void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	server::MessageQueryRequest request_data(json_data);
-	server::MessageQueryResponse response_data; 
+	gs::MessageQueryRequest request_data(json_data);
+	gs::MessageQueryResponse response_data; 
 	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
 	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	GRPCServerTask *sub_task = task_of(response);
 	bool is_update = false;
 	if (clusterManagerPtr->isEnable())
 	{
-		server::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+		gs::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 		{
 			sub_task->add_callback([query_log_ptr](GRPCTask *t)
 			{	
@@ -2198,19 +2198,19 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			response_data.StatusMsg = "Operation Success.";
 			sub_task->add_callback([request_data, opt_id](GRPCTask *)
 			{
-				server::MessageQueryResponse response;
+				gs::MessageQueryResponse response;
 				response.opt_id = opt_id;
 				apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id, 0, 0, request_data.db_name);
-				server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+				gs::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 				{
 					apiUtil->write_query_log(query_log_ptr);
 				});
-				server::ApiHandler::query_result_notify(apiUtil, request_data, response);
+				gs::ApiHandler::query_result_notify(apiUtil, request_data, response);
 			});
 		}
 		else
 		{
-			server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+			gs::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 			{
 				sub_task->add_callback([query_log_ptr](GRPCTask *)
 				{
@@ -2221,7 +2221,7 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		}
 	}
 	
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2250,10 +2250,10 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
  */
 void export_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageExportRequest request_data(json_data);
-	server::MessageExportResponse response_data;
-	server::ApiHandler::export_db(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageExportRequest request_data(json_data);
+	gs::MessageExportResponse response_data;
+	gs::ApiHandler::export_db(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2275,10 +2275,10 @@ void export_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
  */
 void begin_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageBeginRequest request_data(json_data);
-	server::MessageBeginResponse response_data; 
-	server::ApiHandler::begin(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageBeginRequest request_data(json_data);
+	gs::MessageBeginResponse response_data; 
+	gs::ApiHandler::begin(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2300,10 +2300,10 @@ void begin_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
  */
 void tquery_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageTqueryRequest request_data(json_data);
-	server::MessageTqueryResponse response_data; 
-	server::ApiHandler::tquery(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageTqueryRequest request_data(json_data);
+	gs::MessageTqueryResponse response_data; 
+	gs::ApiHandler::tquery(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2325,10 +2325,10 @@ void tquery_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
  */
 void commit_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageCommitRequest request_data(json_data);
-	server::MessageResponse response_data; 
-	server::ApiHandler::commit(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageCommitRequest request_data(json_data);
+	gs::MessageResponse response_data; 
+	gs::ApiHandler::commit(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2350,10 +2350,10 @@ void commit_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
  */
 void rollback_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageCommitRequest request_data(json_data);
-	server::MessageResponse response_data; 
-	server::ApiHandler::rollback(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageCommitRequest request_data(json_data);
+	gs::MessageResponse response_data; 
+	gs::ApiHandler::rollback(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2374,10 +2374,10 @@ void rollback_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &j
  */
 void checkpoint_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageCheckPointRequest request_data(json_data);
-	server::MessageResponse response_data; 
-	server::ApiHandler::checkpoint(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageCheckPointRequest request_data(json_data);
+	gs::MessageResponse response_data; 
+	gs::ApiHandler::checkpoint(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2405,8 +2405,8 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		return;
 	}
 
-	server::MessageBatchInsertRequest request_data(json_data);
-	server::MessageBatchInsertResponse response_data; 
+	gs::MessageBatchInsertRequest request_data(json_data);
+	gs::MessageBatchInsertResponse response_data; 
 	if (request_data.async)
 	{
 		grpc::GRPCServerTask* sub_task = task_of(response);
@@ -2417,13 +2417,13 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			server::MessageBatchInsertResponse response_data;
+			gs::MessageBatchInsertResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+				gs::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else
-				server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+				gs::ApiHandler::batch_insert(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
@@ -2442,12 +2442,12 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	else
 	{
 		if (clusterManagerPtr->isEnable())
-			server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			gs::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 		else
-			server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+			gs::ApiHandler::batch_insert(apiUtil, request_data, response_data);
 	}
 	
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2475,8 +2475,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		return;
 	}
 
-	server::MessageBatchRemoveRequest request_data(json_data);
-	server::MessageBatchRemoveResponse response_data; 
+	gs::MessageBatchRemoveRequest request_data(json_data);
+	gs::MessageBatchRemoveResponse response_data; 
 	if (request_data.async)
 	{
 		grpc::GRPCServerTask* sub_task = task_of(response);
@@ -2487,13 +2487,13 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 		response_data.StatusMsg = "Operation Success.";
 		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			server::MessageBatchRemoveResponse response_data;
+			gs::MessageBatchRemoveResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
 			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+				gs::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 			else
-				server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+				gs::ApiHandler::batch_remove(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
@@ -2512,11 +2512,11 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	else
 	{
 		if (clusterManagerPtr->isEnable())
-			server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
+			gs::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
 		else
-			server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+			gs::ApiHandler::batch_remove(apiUtil, request_data, response_data);
 	}
-	if (response_data.StatusCode != server::StatusOK)
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2561,9 +2561,9 @@ void rename_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 
 void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageReasonManageResponse response_data; 
-	server::ApiHandler::reason_manage(apiUtil, response_data, json_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageReasonManageResponse response_data; 
+	gs::ApiHandler::reason_manage(apiUtil, response_data, json_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2582,9 +2582,9 @@ void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::js
  */
 void user_show_task(const GRPCReq *request, GRPCResp *response)
 {
-	server::MessageShowUserResponse response_data; 
-	server::ApiHandler::show_users(apiUtil, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageShowUserResponse response_data; 
+	gs::ApiHandler::show_users(apiUtil, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2608,10 +2608,10 @@ void user_show_task(const GRPCReq *request, GRPCResp *response)
  */
 void user_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageUserManageRequest request_data(json_data);
-	server::MessageUserManageResponse response_data; 
-	server::ApiHandler::user_manage(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageUserManageRequest request_data(json_data);
+	gs::MessageUserManageResponse response_data; 
+	gs::ApiHandler::user_manage(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2638,10 +2638,10 @@ void user_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json
  */
 void user_privilege_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageUserPrivilegeManageRequest request_data(json_data);
-	server::MessageUserPrivilegeManageResponse response_data; 
-	server::ApiHandler::user_privilege_manage(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageUserPrivilegeManageRequest request_data(json_data);
+	gs::MessageUserPrivilegeManageResponse response_data; 
+	gs::ApiHandler::user_privilege_manage(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2663,10 +2663,10 @@ void user_privilege_task(const GRPCReq *request, GRPCResp *response, nlohmann::j
  */
 void user_password_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageUserPasswordRequest request_data(json_data);
-	server::MessageUserPasswordResponse response_data; 
-	server::ApiHandler::user_passworrd(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageUserPasswordRequest request_data(json_data);
+	gs::MessageUserPasswordResponse response_data; 
+	gs::ApiHandler::user_passworrd(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2688,10 +2688,10 @@ void user_password_task(const GRPCReq *request, GRPCResp *response, nlohmann::js
  */
 void txn_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageTxnLogRequest request_data(json_data);
-	server::MessageTxnLogResponse response_data; 
-	server::ApiHandler::txn_log(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageTxnLogRequest request_data(json_data);
+	gs::MessageTxnLogResponse response_data; 
+	gs::ApiHandler::txn_log(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2713,10 +2713,10 @@ void txn_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
  */
 void query_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageQueryLogRequest request_data(json_data);
-	server::MessageQueryLogResponse response_data; 
-	server::ApiHandler::query_log(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageQueryLogRequest request_data(json_data);
+	gs::MessageQueryLogResponse response_data; 
+	gs::ApiHandler::query_log(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2736,10 +2736,10 @@ void query_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &
  */
 void query_log_date_task(const GRPCReq *request, GRPCResp *response)
 {
-	server::MessageQueryLogDateRequest request_data;
-	server::MessageQueryLogDateResponse response_data; 
-	server::ApiHandler::query_log_date(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageQueryLogDateRequest request_data;
+	gs::MessageQueryLogDateResponse response_data; 
+	gs::ApiHandler::query_log_date(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2761,10 +2761,10 @@ void query_log_date_task(const GRPCReq *request, GRPCResp *response)
  */
 void access_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageAccessLogRequest request_data(json_data);
-	server::MessageAccessLogResponse response_data; 
-	server::ApiHandler::access_log(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageAccessLogRequest request_data(json_data);
+	gs::MessageAccessLogResponse response_data; 
+	gs::ApiHandler::access_log(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2784,10 +2784,10 @@ void access_log_task(const GRPCReq *request, GRPCResp *response, nlohmann::json 
  */
 void access_log_date_task(const GRPCReq *request, GRPCResp *response)
 {
-	server::MessageAccessLogDateRequest request_data;
-	server::MessageAccessLogDateResponse response_data; 
-	server::ApiHandler::access_log_date(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageAccessLogDateRequest request_data;
+	gs::MessageAccessLogDateResponse response_data; 
+	gs::ApiHandler::access_log_date(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2814,12 +2814,12 @@ void access_log_date_task(const GRPCReq *request, GRPCResp *response)
  */
 void fun_query_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageFunQueryRequest request_data;
-	server::MessageFunQueryResponse response_data;
+	gs::MessageFunQueryRequest request_data;
+	gs::MessageFunQueryResponse response_data;
 	request_data.username = json_data["username"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
-	server::ApiHandler::funquery(apiUtil, pfnUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::ApiHandler::funquery(apiUtil, pfnUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2851,13 +2851,13 @@ void fun_query_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &
  */
 void fun_cudb_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageFunCudbRequest request_data;
-	server::MessageFunCudbResponse response_data;
+	gs::MessageFunCudbRequest request_data;
+	gs::MessageFunCudbResponse response_data;
 	request_data.username = json_data["username"];
 	request_data.type = json_data["type"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
-	server::ApiHandler::funcudb(apiUtil, pfnUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::ApiHandler::funcudb(apiUtil, pfnUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2888,12 +2888,12 @@ void fun_cudb_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &j
  */
 void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageFunReviewRequest request_data;
-	server::MessageFunReviewResponse response_data; 
+	gs::MessageFunReviewRequest request_data;
+	gs::MessageFunReviewResponse response_data; 
 	request_data.username = json_data["username"];
 	request_data.funInfo = PFNInfo(json_data["funInfo"]);
-	server::ApiHandler::funreview(apiUtil, pfnUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::ApiHandler::funreview(apiUtil, pfnUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2937,10 +2937,10 @@ void stat_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 
 void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	server::MessageCheckOperationStateRequest request_data(json_data);
-	server::MessageCheckOperationStateResponse response_data; 
-	server::ApiHandler::checkOperationState(apiUtil, request_data, response_data);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageCheckOperationStateRequest request_data(json_data);
+	gs::MessageCheckOperationStateResponse response_data; 
+	gs::ApiHandler::checkOperationState(apiUtil, request_data, response_data);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -2952,7 +2952,7 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 			if (!file.is_open())
 			{
 				SLOG_ERROR("open result file failed: " + response_data.queryfilepath);
-				response->Error(server::StatusFileReadError, "Read result file failed.");
+				response->Error(gs::StatusFileReadError, "Read result file failed.");
 			}
 			else
 			{
@@ -2984,34 +2984,34 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	std::string expection = JsonUtil::jsonParam(json_data, "operation");
 	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
-	server::MessageClusterRequest request_data(json_data);
+	gs::MessageClusterRequest request_data(json_data);
 	switch (expectionEnum)
 	{
 		case cluster::ClusterOperation_Compare:
 			// compare term and index with leader
-			server::ApiHandler::cluster_heartbeat_compare(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_compare(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Prepare:
 			// prepare for log append
 			// check local db is available
-			server::ApiHandler::cluster_heartbeat_prepare(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_prepare(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Commit:
-			server::ApiHandler::cluster_heartbeat_commit(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_commit(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Cancel:
-			server::ApiHandler::cluster_heartbeat_cancel(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_cancel(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Fail:
-			server::ApiHandler::cluster_heartbeat_fail(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_fail(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		case cluster::ClusterOperation_Drop:
-			server::ApiHandler::cluster_heartbeat_drop(apiUtil, clusterManagerPtr, request_data);
+			gs::ApiHandler::cluster_heartbeat_drop(apiUtil, clusterManagerPtr, request_data);
 			response->Success("ok");
 			break;
 		default:
@@ -3023,9 +3023,9 @@ void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
 void cluster_append_task(const GRPCReq *request, GRPCResp *response)
 {
 	Form &form = request->form();
-	server::MessageResponse response_data;
-	server::ApiHandler::cluster_append(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageResponse response_data;
+	gs::ApiHandler::cluster_append(apiUtil, clusterManagerPtr, form, response_data, _server_port);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -3041,8 +3041,8 @@ void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterReplyRequest resquest_data(json_data);
-	server::ApiHandler::cluster_reply(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
+	gs::MessageClusterReplyRequest resquest_data(json_data);
+	gs::ApiHandler::cluster_reply(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
 	response->Success("ok");
 }
 
@@ -3052,17 +3052,17 @@ void cluster_check_task(const GRPCReq *request, GRPCResp *response)
 	parseRequest(request, json_data);
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterCheckRequest resquest_data(json_data);
-	server::ApiHandler::cluster_check(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
+	gs::MessageClusterCheckRequest resquest_data(json_data);
+	gs::ApiHandler::cluster_check(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
 	response->Success("ok");
 }
 
 void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
 {
 	Form &form = request->form();
-	server::MessageResponse response_data;
-	server::ApiHandler::cluster_recover(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.StatusCode != server::StatusOK)
+	gs::MessageResponse response_data;
+	gs::ApiHandler::cluster_recover(apiUtil, clusterManagerPtr, form, response_data, _server_port);
+	if (response_data.StatusCode != gs::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
@@ -3118,7 +3118,7 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				string msg;
 				if(apiUtil->import_license(file_save_path, msg))
 				{
-					server::MessageLicenseResponse respData(server::StatusCode::StatusOK, msg);
+					gs::MessageLicenseResponse respData(gs::StatusCode::StatusOK, msg);
 					respData.json = apiUtil->get_license();
 					nlohmann::json license_json;
 					respData.toJson(license_json);
@@ -3127,7 +3127,7 @@ void license_import(const GRPCReq *request, GRPCResp *response)
 				else 
 				{
 					FileUtil::removePath(file_save_path);
-					resp->Error(server::StatusCode::StatusLicenseInvalid, msg);
+					resp->Error(gs::StatusCode::StatusLicenseInvalid, msg);
 				}
 			}
 	});
@@ -3146,7 +3146,7 @@ void license_info(const GRPCReq *request, GRPCResp *response)
 		return;
 	}
 	LicenseInfo lic = apiUtil->get_license();
-	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
+	gs::MessageLicenseResponse respData(gs::StatusCode::StatusOK, "success");
 	if (lic.isvalid) 
 	{
 		respData.json = lic;
@@ -3178,7 +3178,7 @@ void license_remove(const GRPCReq *request, GRPCResp *response)
 	}
 	else
 	{
-		response->Error(server::StatusCode::StatusOperationFailed, msg);
+		response->Error(gs::StatusCode::StatusOperationFailed, msg);
 	}
 }
 
@@ -3267,7 +3267,7 @@ void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 		return;
 	}
 	shared_ptr<DatabaseInfo> db_info;
-	server::StatusCode statusCode;
+	gs::StatusCode statusCode;
 	std::string statusMsg;
 	apiUtil->get_databaseinfo(db_name, db_info);
 	if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, false))
