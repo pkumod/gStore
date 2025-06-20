@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <sys/file.h>
 #include "nlohmann/json.hpp"
 using namespace std;
 using namespace nlohmann;
@@ -28,6 +29,7 @@ const std::map<DatabaseStatus, std::string> DatabseStatusMap
 struct DatabaseInfo
 {
 private:
+    std::string db_path;
     std::string db_name;    //! the name of database
     std::string creator;    //! the creator of database
     std::string build_time; //! the built time of database;
@@ -44,8 +46,9 @@ public:
         lock_count = 0;
         pthread_rwlock_init(&db_lock, NULL);
     }
-    DatabaseInfo(string _name, string _creator, string _time, DatabaseStatus _status)
+    DatabaseInfo(string _path, string _name, string _creator, string _time, DatabaseStatus _status)
     {
+        db_path = _path;
         db_name = _name;
         creator = _creator;
         build_time = _time;
@@ -62,6 +65,10 @@ public:
         db_ptr.reset();
         lock_count = 0;
         pthread_rwlock_destroy(&db_lock);
+    }
+    std::string getPath()
+    {
+        return db_path;
     }
     std::string getName()
     {
@@ -114,6 +121,28 @@ public:
             db_ptr = make_shared<Database>(db_name);
         }
     }
+    
+    void success(int64_t cost_time=0L) 
+    {
+        std::string file = db_path + "/success";
+        FILE *fp = fopen(file.c_str(), "wb");
+        fwrite(&cost_time, sizeof(int64_t), 1, fp);
+        fclose(fp);
+    }
+
+    int64_t getCostTime()
+    {
+        std::string file = db_path + "/success";
+        FILE *fp = fopen(file.c_str(), "rb");
+        int64_t cost_time = 0;
+        if (fp != nullptr) {
+            fseek(fp, 0, SEEK_SET);
+            fread(&cost_time, sizeof(int64_t), 1, fp);
+            fclose(fp);
+        }
+        return cost_time;
+    }
+
     bool unloadDatabase()
     {
         if (db_ptr != nullptr) {

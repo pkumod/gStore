@@ -110,11 +110,7 @@ int APIUtil::initialize()
             system_database  = make_shared<Database>(GlobalTypedef::system_db);
             bool _sys_build_rt = system_database->BuildEmptyDB();
             if (_sys_build_rt)
-            {
-                ofstream f;
-                f.open(_sys_db_path + "/success.txt");
-                f.close();
-                
+            {   
                 system_database.reset();
                 // Util::init_backuplog();
                 string version = GlobalTypedef::product_version;
@@ -127,12 +123,12 @@ int APIUtil::initialize()
                 system_database->load();
                 // write system info to init.lock file
                 FILE *fp = fopen(GlobalTypedef::initfile.c_str(), "wb");
-                DatabaseInfo sysInfo(GlobalTypedef::system_db, "root", TimeUtil::today(), DatabaseStatus::NORMAL);
+                DatabaseInfo sysInfo(_sys_db_path, GlobalTypedef::system_db, "root", TimeUtil::today(), DatabaseStatus::NORMAL);
                 fwrite(&sysInfo, sizeof(DatabaseInfo), 1, fp);
                 fclose(fp);
-
                 update_sys_db(update_sparql);
                 refresh_sys_db();
+                sysInfo.success();
             }
             else
             {
@@ -163,7 +159,8 @@ int APIUtil::initialize()
                     string db_name = NodeUtil::clear_angle_brackets(rs.answer[i][0]);
                     std::string creator = NodeUtil::clear_angle_brackets(rs.answer[i][1]);
                     std::string built_time = StringUtil::replace_all(rs.answer[i][2], "\"", "");
-                    shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name, creator, built_time, DatabaseStatus::AREADY_BUILT);
+                    std::string db_path = GlobalTypedef::db_path(db_name);
+                    shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_path, db_name, creator, built_time, DatabaseStatus::AREADY_BUILT);
                     already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(db_name, temp_db));
                 }
                 unlock_already_build_map();
@@ -331,11 +328,12 @@ bool APIUtil::init_databaseinfo(const std::string& db_name, const std::string cr
         {
             current_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
         }
-        shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_name, creator, build_time, status);
+        string db_path = GlobalTypedef::db_path(db_name);
+        shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_path, db_name, creator, current_time, status);
         string update = "INSERT DATA {\
             <" + db_name + "> <database_status> \"already_built\". \
             <" + db_name + "> <built_by> <" + creator + "> . \
-            <" + db_name + "> <built_time> \"" + build_time + "\". \
+            <" + db_name + "> <built_time> \"" + current_time + "\". \
         }";
         bool update_result = update_sys_db(update);
         if (update_result) {
@@ -384,10 +382,15 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
         msg = "can't find [" + db_name + "] database info from already builts list";
         return false;
     }
-    if (trywrlock_databaseinfo(db_info, 600) == false) {
-        msg = "Unable to drop due to loss of lock";
+    StatusCode statusCode;
+    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 180)) {
         return false;
-    } 
+    }
+    if (check_db_loaded(db_name))
+    {
+        remove_txn_manager(db_name, false);
+        SLOG_DEBUG("remove " + db_name + " from the txn managers.");
+    }
     // remove databse info from system.db
     bool update_result = true;
     std::set<std::string> sparqls;
@@ -430,8 +433,8 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
         msg = "can't find [" + db_name + "] database info from already builts list";
         return false;
     }
-    if( trywrlock_databaseinfo(db_info) ==  false) {
-        msg = "Unable to drop due to loss of lock";
+    StatusCode statusCode;
+    if(!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 180)) {
         return false;
     }
     // Delete the oldest backup file
@@ -487,10 +490,11 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         {
             built_time = TimeUtil::now(NORM_DATETIME_PATTERN);
         }
-        db_info = std::make_shared<DatabaseInfo>(db_name, username, built_time, DatabaseStatus::BUILDING);
+        std::string db_path = GlobalTypedef::db_path(db_name);
+        db_info = std::make_shared<DatabaseInfo>(db_path, db_name, username, built_time, DatabaseStatus::BUILDING);
     }
-    if (trywrlock_databaseinfo(db_info) ==  false) {
-        msg = "Unable to restore due to loss of lock";
+    StatusCode statusCode;
+    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true)) {
         return false;
     }
     if (!FileUtil::pathExists(backup_path)) {
@@ -549,9 +553,10 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
 
 bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg)
 {
-    if (check_db_built(db_name) == false)
-    {
-        msg =  "Database not built yet.";
+    shared_ptr<DatabaseInfo> db_info;
+    get_databaseinfo(db_name, db_info);
+    if (db_info == nullptr) {
+        msg = "can't find [" + db_name + "] database info from already builts list";
         return false;
     }
     if (check_db_loaded(db_name))
@@ -572,11 +577,9 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         msg =  "Database path " + db_new_path + " already exists.";
         return false;
     }
-    shared_ptr<DatabaseInfo> db_info;
-    get_databaseinfo(db_name, db_info);
-    if (trywrlock_databaseinfo(db_info) == false)
+    StatusCode statusCode;
+    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 60))
     {
-        msg = "Unable to rename due to loss of lock.";
         return false;
     }
     string db_path = GlobalTypedef::db_path(db_name);
@@ -612,10 +615,11 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
     int rwlock_code = pthread_rwlock_rdlock(&already_build_map_lock);
     if (rwlock_code != 0) 
     {
-        SLOG_ERROR("gets already_build_map read lock error: " + to_string(rwlock_code));
+        SLOG_ERROR("gets already_build_map rdlock error: " + to_string(rwlock_code));
         dbInfo = nullptr;
         return false;
     }
+    SLOG_DEBUG("get already_build_map rdlock ok");
     std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter = already_build.find(db_name);
     if (iter != already_build.end())
     {
@@ -633,7 +637,13 @@ bool APIUtil::get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseIn
 
 void APIUtil::get_databaseinfos(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array)
 {
-    pthread_rwlock_rdlock(&already_build_map_lock);
+    int rwlock_code = pthread_rwlock_rdlock(&already_build_map_lock);
+    if (rwlock_code != 0) 
+    {
+        SLOG_ERROR("gets already_build_map rdlock error: " + to_string(rwlock_code));
+        return;
+    }
+    SLOG_DEBUG("get already_build_map rdlock ok");
     std::map<std::string, shared_ptr<DatabaseInfo>>::iterator iter;
     for (iter = already_build.begin(); iter != already_build.end(); iter++) {
         std::string db_name = iter->first;
@@ -734,7 +744,7 @@ bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     
     if (!dbinfo)
     {
-        SLOG_ERROR("database info ptr is null");
+        SLOG_ERROR("database info is null");
         return false;
     }
     int rwlock_code = rwlock_code = pthread_rwlock_unlock(&(dbinfo->db_lock));
@@ -749,6 +759,51 @@ bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
         SLOG_ERROR("database[" + dbinfo->getName() + "] unlock error: " + strerror(rwlock_code));
         return false;
     }
+}
+
+bool APIUtil::validate_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, StatusCode& statusCode, std::string& statusMsg, bool check_exist, bool check_loaded, bool wrlock, int timeout_s)
+{
+    if (!dbinfo)
+    {
+        statusCode = StatusOperationConditionsAreNotSatisfied;
+        statusMsg = "database info is null";
+        return false;
+    }
+    if (wrlock)
+    {
+        if (trywrlock_databaseinfo(dbinfo, timeout_s) == false)
+        {
+            statusCode = StatusLossOfLock;
+            statusMsg = "database[" + dbinfo->getName() + "] try write lock fail";
+            return false;
+        }
+    } 
+    else
+    {
+        if (rdlock_databaseinfo(dbinfo) == false)
+        {
+            statusCode = StatusLossOfLock;
+            statusMsg = "database[" + dbinfo->getName() + "] get read lock fail";
+            return false;
+        }
+    } 
+    if (check_exist && check_db_built(dbinfo->getName()) == false)
+    {
+        statusCode = StatusOperationFailed;
+        statusMsg = "database[" + dbinfo->getName() + "] is not exist";
+        unlock_databaseinfo(dbinfo);
+        return false;
+    }
+    if (check_loaded && check_db_loaded(dbinfo->getName()) == false)
+    {
+        statusCode = StatusOperationFailed;
+        statusMsg = "database[" + dbinfo->getName() + "] is not loaded";
+        unlock_databaseinfo(dbinfo);
+        return false;
+    }
+    statusCode = StatusOK;
+    statusMsg = "ok";
+    return true;
 }
 
 bool APIUtil::get_txn_manager(const std::string& db_name, shared_ptr<Txn_manager> &txn_manager)
@@ -1818,13 +1873,13 @@ void APIUtil::get_access_log_files(std::vector<std::string> &file_list)
     });
 }
 
-void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name, std::string specOperation)
+void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name, std::string db_operation)
 {
     string accessLog = APIUtil::access_log_path + date + ".log";
     vector<std::string> lines;
     int total_size = 0;
     int total_page = 0;
-    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock, db_name, specOperation)) 
+    if (get_file_lines(lines, accessLog, page_no, page_size, total_size, total_page, &access_log_lock, db_name, db_operation)) 
     {   
         size_t count = lines.size();			
         string line;
@@ -2310,14 +2365,21 @@ APIUtil::check_upload_allow_compress_packages(const string& suffix)
 }
 
 bool 
-APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock, std::string db_name, std::string specOperation)
+APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, int &page_size, int &total_size, int &total_page, pthread_rwlock_t *rw_lock, std::string db_name, std::string db_operation)
 {
     total_size = 0;
     total_page = 0;
-    std::string db_name_str;
+    std::string db_name_key;
+    std::string db_operation_key;
     if (!db_name.empty())
     {
-        db_name_str = "\"dbname\":\"" + db_name + "\"";
+        //"dbname":"lubm"
+        db_name_key = "\"dbname\":\"" + db_name + "\"";
+    }
+    if (!db_operation.empty())
+    {
+        //"operation":"monitor"
+        db_operation_key = "\"operation\":\"" + db_operation + "\"";
     }
     if(FileUtil::fileExists(log_file))
     {
@@ -2340,9 +2402,9 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         //count total
         while (getline(in, line, '\n'))
         {
-            if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+            if (!db_name_key.empty() && line.find(db_name_key) == std::string::npos)
                 continue;
-            if (!specOperation.empty() && line.find(specOperation) == std::string::npos)
+            if (!db_operation_key.empty() && line.find(db_operation_key) == std::string::npos)
                 continue;
             total_size++;
         }
@@ -2375,9 +2437,9 @@ APIUtil::get_file_lines(vector<string> &lines, string &log_file, int &page_no, i
         }
         while (startLine < endLine && getline(in, line, '\n'))
         {
-            if (!db_name_str.empty() && line.find(db_name_str) == std::string::npos)
+            if (!db_name_key.empty() && line.find(db_name_key) == std::string::npos)
                 continue;
-            if (!specOperation.empty() && line.find(specOperation) == std::string::npos)
+            if (!db_operation_key.empty() && line.find(db_operation_key) == std::string::npos)
                 continue;
             lines.push_back(line);
             startLine++;

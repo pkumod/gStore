@@ -115,6 +115,7 @@ namespace server
             std::string db_name = request.db_name;
             std::string username = request.username;
             std::string db_path;
+            int64_t start_time = gutil::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
@@ -222,11 +223,10 @@ namespace server
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             db_info->initDatabase();
+            int64_t cost_time = gutil::TimeUtil::timestamp() - start_time;
+            db_info->success(cost_time);
             // init user privilege
             apiUtil->init_privilege(username, db_name);
-            ofstream f;
-            f.open(db_home_path + "/success.txt");
-            f.close();
             // add backup.log
             // Util::add_backuplog(db_name);
             // build response result
@@ -269,6 +269,7 @@ namespace server
             std::string db_name = request.db_name;
             std::string username = request.username;
             std::string db_path;
+            int64_t start_time = gutil::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
@@ -365,9 +366,8 @@ namespace server
             db_info->initDatabase();
             // init user privilege
             apiUtil->init_privilege(username, db_name);
-            ofstream f;
-            f.open(db_home_path + "/success.txt");
-            f.close();
+            int64_t cost_time = gutil::TimeUtil::timestamp() - start_time;
+            db_info->success(cost_time);
             // add backup.log
             // Util::add_backuplog(db_name);
             // build response result

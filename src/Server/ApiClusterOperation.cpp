@@ -84,25 +84,42 @@ namespace server
             }
 
             uint64_t leader_index = resquest.index;
-            shared_ptr<DatabaseInfo> db_info = nullptr;
-            apiUtil->get_databaseinfo(db_name, db_info);
             TermDbLog db_log = clusterManagerPtr->getTermInfoDbLog(db_name);
             if (leader_index != db_log.getIndex())
             {
                 SLOG_ERROR("check term.json, db name data is different" << db_name);
                 return;
             }
-
+            shared_ptr<DatabaseInfo> db_info;
+            apiUtil->get_databaseinfo(db_name, db_info);
+            StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, false, true))
+            {
+                SLOG_ERROR(statusMsg);
+                return;
+            }
             uint32_t leader_term = resquest.term;
             uint64_t leader_nextIndex = resquest.nextIndex;
             ClusterUpdateType update_type = ClusterUpdateType_None;
             // check loaded
             if (apiUtil->check_db_loaded(db_name) == false)
             {
-                db_info->getDatabase()->load();
-                db_info->setStatus(DatabaseStatus::LOADED);
-                apiUtil->insert_txn_manager(db_name, db_info);
+                db_info->setStatus(DatabaseStatus::LOADING);
+                if (db_info->getDatabase()->load())
+                {
+                    db_info->setStatus(DatabaseStatus::LOADED);
+                    apiUtil->insert_txn_manager(db_name, db_info);
+                }
+                else
+                {
+                    SLOG_ERROR("db[" + db_name + "] load failed");
+                    db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+                    apiUtil->unlock_databaseinfo(db_info);
+                    return;
+                }
             }
+            apiUtil->unlock_databaseinfo(db_info);
             // init cluster db path
             std::string cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
             FileUtil::createDirs(cluster_db_path);
@@ -206,17 +223,6 @@ namespace server
         std::string _db_suffix = GlobalTypedef::db_suffix();
         if (!db_name.empty())
         {
-            if (!apiUtil->check_db_built(db_name))
-            {
-                return;
-            }	
-            if (apiUtil->check_db_loaded(db_name))
-            {
-                apiUtil->remove_txn_manager(db_name, false);
-                SLOG_DEBUG("remove " + db_name + " from the txn managers.");
-            }
-            shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
             std::string msg;
             if (apiUtil->remove_databaseinfo(db_name, msg) == false)
             {
@@ -321,18 +327,32 @@ namespace server
             }
             shared_ptr<DatabaseInfo> db_info = nullptr;
             apiUtil->get_databaseinfo(db_name, db_info);
+            StatusCode statusCode;
+            std::string statusMsg;
+            if(!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, false, true, 180)) {
+                SLOG_WARN(statusMsg);
+                // remove zip file
+                FileUtil::removePath(zip_file_path);
+                return;
+            }
             if(apiUtil->check_db_loaded(db_name) == false) 
             {
                 SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
                 // load db
-                db_info->getDatabase()->load();
-                apiUtil->insert_txn_manager(db_name, db_info);
-            }
-            if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
-                SLOG_WARN("unable to get write lock of " + db_name + ".");
-                // remove zip file
-                FileUtil::removePath(zip_file_path);
-                return;
+                db_info->setStatus(DatabaseStatus::LOADING);
+                if(db_info->getDatabase()->load())
+                {
+                    db_info->setStatus(DatabaseStatus::LOADED);
+                    apiUtil->insert_txn_manager(db_name, db_info);
+                } 
+                else
+                {
+                    SLOG_WARN("db[" + db_name + "] load failed.");
+                    db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+                    apiUtil->unlock_databaseinfo(db_info);
+                    FileUtil::removePath(zip_file_path);
+                    return;
+                }
             }
             std::string log_file_name = FileUtil::fileName(log_files[0]);
             std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
@@ -429,15 +449,12 @@ namespace server
         else if (resquest.result == 2)
         {
             shared_ptr<DatabaseInfo> db_info;
+            StatusCode statusCode;
+            std::string statusMsg;
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (db_info == nullptr)
+            if(!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 1))
             {
-                SLOG_TRACE("can't find [" << db_name << "] database info from already builts list");
-                return;
-            }
-            if (apiUtil->trywrlock_databaseinfo(db_info, 1) ==  false)
-            {
-                SLOG_TRACE("Unable to drop due to loss of lock");
+                SLOG_TRACE(statusMsg);
                 return;
             }
             if (!db_info->getDatabase()->save())
@@ -575,17 +592,11 @@ namespace server
             string db_path = GlobalTypedef::db_home() + db_name + GlobalTypedef::db_suffix();
             if (apiUtil->check_db_built(db_name))
             {
-                if (apiUtil->check_db_loaded(db_name))
-                {
-                    apiUtil->remove_txn_manager(db_name, false);
-                    SLOG_DEBUG("remove " + db_name + " from the txn managers.");
-                }
-                shared_ptr<DatabaseInfo> db_info;
-                apiUtil->get_databaseinfo(db_name, db_info);
                 std::string msg;
                 if (apiUtil->remove_databaseinfo(db_name, msg) == false)
                 {
-                    SLOG_DEBUG("remove " + db_name + " from the already build database list fail: " + msg);
+                    SLOG_WARN("remove " + db_name + " from the already build database list fail: " + msg);
+                    return;
                 }
                 SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             }
@@ -631,6 +642,12 @@ namespace server
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
+            if (apiUtil->check_db_built(db_name) == false) 
+            {
+                SLOG_WARN("db[" + db_name + "] is not built.");
+                clusterManagerPtr->removeRestoringDb(db_name);
+                return;
+            }
             // unzip file
             CompressUtil::UnCompressZip unzip(zip_file_path, cluster_db_path);
             if (unzip.unCompress() != CompressUtil::UnZipOK) 
@@ -651,27 +668,37 @@ namespace server
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false) 
-            {
-                SLOG_WARN("db[" + db_name + "] is not built.");
-                clusterManagerPtr->removeRestoringDb(db_name);
-                return;
-            }
             shared_ptr<DatabaseInfo> db_info = nullptr;
             apiUtil->get_databaseinfo(db_name, db_info);
-            if(apiUtil->check_db_loaded(db_name) == false) 
+            StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
             {
-                SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
-                // load db
-                db_info->getDatabase()->load();
-                apiUtil->insert_txn_manager(db_name, db_info);
-            }
-            if(!apiUtil->trywrlock_databaseinfo(db_info, 600)) {
-                SLOG_WARN("unable to get write lock of " + db_name + ".");
+                SLOG_WARN(statusMsg);
                 // remove zip file
                 FileUtil::removePath(zip_file_path);
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
+            }
+            if (apiUtil->check_db_loaded(db_name) == false) 
+            {
+                SLOG_DEBUG("db[" + db_name + "] is not loaded, now begin loading.");
+                // load db
+                db_info->setStatus(DatabaseStatus::LOADING);
+                if (db_info->getDatabase()->load()) 
+                {
+                    db_info->setStatus(DatabaseStatus::LOADED);
+                    apiUtil->insert_txn_manager(db_name, db_info);
+                }
+                else
+                {
+                    SLOG_WARN("db[" + db_name + "] load fail.");
+                    db_info->setStatus(DatabaseStatus::AREADY_BUILT);
+                    clusterManagerPtr->removeRestoringDb(db_name);
+                    apiUtil->unlock_databaseinfo(db_info);
+                    FileUtil::removePath(zip_file_path);
+                    return;
+                }
             }
             std::string log_file_name = FileUtil::fileName(log_files[0]);
             std::string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
@@ -686,9 +713,9 @@ namespace server
                 db_info->getDatabase()->batch_remove(nt_file_path);
             }
             db_info->getDatabase()->save();
+            apiUtil->unlock_databaseinfo(db_info);
             FileUtil::removePath(zip_file_path);
             FileUtil::removePath(nt_file_path);
-            apiUtil->unlock_databaseinfo(db_info);
 
             // update local log trem and index
             clusterManagerPtr->updateTerm(request->term);
@@ -696,7 +723,7 @@ namespace server
             clusterManagerPtr->removeRestoringDb(db_name);
         });
         std::thread([pwrite_task](){
-            SLOG_DEBUG("saveing recover index log file start...");
+            SLOG_DEBUG("saving recover index log file start...");
             pwrite_task->start();
         }).detach();
     }

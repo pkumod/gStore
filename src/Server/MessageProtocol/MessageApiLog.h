@@ -126,7 +126,7 @@ namespace server
         int pageNo;
         int pageSize;
         std::string db_name;
-        std::string specOperation;
+        std::string db_operation;
         MessageAccessLogRequest(const std::string date, int pageNo, int pageSize) : MessageRequest(std::string("accesslog")), date(date), pageNo(pageNo), pageSize(pageSize) { }
         MessageAccessLogRequest(const nlohmann::json& json_data);
         // gconsole use

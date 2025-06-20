@@ -31,6 +31,8 @@ namespace server
         { StatusTranscationManageFailed, "Transcation manage Failed" },
         { StatusOperationUndefined,   "The operation is not defined" },
         { StatusIPBlocked,            "IP Blocked" },
+        { StatusLicenseExpired, "The license has expired" },
+        { StatusLicenseInvalid, "The license is invalid" },
     };
  
     const char* error_code_to_str(int code)

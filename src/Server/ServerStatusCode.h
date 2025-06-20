@@ -18,6 +18,7 @@ namespace server
         StatusFileRangeInvalid,
         StatusFileReadError,
         StatusFileWriteError,
+        StatusFileNotFound,
 
         // Json
         StatusJsonInvalid,

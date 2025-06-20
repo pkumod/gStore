@@ -144,15 +144,16 @@ namespace server
             std::string username = request.username;
             std::string sparql = repalce_pfn_query(request.sparql, response);
             // check db_name paramter
+            StatusCode statusCode;
             std::string msg;
 
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             // check database read lock
-            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
             {
-                response.StatusMsg = "get current database read lock fail.";
-                response.StatusCode = StatusLossOfLock;
+                response.StatusMsg = msg;
+                response.StatusCode = statusCode;
                 return;
             }
             bool is_update = false;
@@ -273,14 +274,15 @@ namespace server
             std::string username = request.username;
             std::string sparql = repalce_pfn_query(request.sparql, response);
             // check db_name paramter
+            StatusCode statusCode;
             std::string msg;
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             // check database read lock
-            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
             {
-                response.StatusMsg = "get current database read lock fail.";
-                response.StatusCode = StatusLossOfLock;
+                response.StatusMsg = msg;
+                response.StatusCode = statusCode;
                 return;
             }
             QueryTree::UpdateType update_type;
@@ -418,8 +420,8 @@ namespace server
                     {
                         // restore data
                         SLOG_DEBUG("log appendEntities task failed, restore leader data.");
-                        // try get wrlock timeout 600 senconds
-                        if (apiUtil->trywrlock_databaseinfo(db_info, 600))
+                        // try get wrlock timeout 180 senconds
+                        if (apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
                         {
                             string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
                             if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)

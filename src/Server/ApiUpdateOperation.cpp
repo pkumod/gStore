@@ -4,7 +4,6 @@ namespace server
 {
     void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& resquest, MessageDropResponse& response)
     {
-        shared_ptr<DatabaseInfo> db_info;
         try
         {
             std::string db_name = resquest.db_name;
@@ -16,23 +15,11 @@ namespace server
                 response.StatusCode = StatusParamIsIllegal;
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false)
+            if (apiUtil->remove_databaseinfo(db_name, msg) == false)
             {
-                response.StatusMsg = "the database [" + db_name + "] not built yet.";
-                response.StatusCode = StatusParamIsIllegal;
+                response.StatusMsg = msg;
+                response.StatusCode = StatusOperationFailed;
                 return;
-            }
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->trywrlock_databaseinfo(db_info, 300) == false)
-            {
-                response.StatusMsg = "unable to drop due to loss of lock.";
-                response.StatusCode = StatusLossOfLock;
-                return;
-            }
-            if (apiUtil->check_db_loaded(db_name))
-            {
-                apiUtil->remove_txn_manager(db_name, false);
-                SLOG_DEBUG("remove " + db_name + " from the txn managers.");
             }
             SLOG_DEBUG("remove " + db_name + " from the already build database list success.");
             string db_path = GlobalTypedef::db_path(db_name);
@@ -46,13 +33,6 @@ namespace server
                 FileUtil::removePath(db_path);
                 SLOG_DEBUG("remove_path: " + db_path);
             }
-            apiUtil->unlock_databaseinfo(db_info);
-            if (apiUtil->remove_databaseinfo(db_name, msg) == false)
-            {
-                response.StatusMsg = msg;
-                response.StatusCode = StatusOperationFailed;
-                return;
-            }
             string success = "Database " + db_name + " dropped.";
             clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
             clusterManagerPtr->dropDb(db_name);
@@ -61,10 +41,6 @@ namespace server
         }
         catch (const std::exception &e)
         {
-            if (db_info != nullptr)
-            {
-                apiUtil->unlock_databaseinfo(db_info);
-            }
             response.StatusMsg = "Drop fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
@@ -72,56 +48,45 @@ namespace server
 
     void ApiHandler::checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& resquest, server::MessageResponse& response)
     {
+        std::string db_name = resquest.db_name;
+        std::string msg;
+        if (apiUtil->check_param_value("db_name", db_name, msg) == false)
+        {
+            response.Error(StatusParamIsIllegal, msg);
+            return;
+        }
+        shared_ptr<DatabaseInfo> db_info;
+        server::StatusCode statusCode;
+        apiUtil->get_databaseinfo(resquest.db_name, db_info);
+        if (!apiUtil->validate_databaseinfo(db_info,statusCode,msg, true, true, true))
+        {
+            response.StatusCode = statusCode;
+            response.StatusMsg = msg;
+            return;
+        }
+        shared_ptr<Txn_manager> txn_m;
+        if(apiUtil->get_txn_manager(db_name, txn_m) == false)
+        {
+            msg = "Get database transaction manager error.";
+            apiUtil->unlock_databaseinfo(db_info);
+            response.Error(StatusTranscationManageFailed, msg);
+            return;
+        }
         try
         {
-            std::string db_name = resquest.db_name;
-            std::string msg;
-            if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-            {
-                response.Error(StatusParamIsIllegal, msg);
-                return;
-            }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "Database not built yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            if (apiUtil->check_db_loaded(db_name) == false)
-            {
-                msg = "Database not load yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->trywrlock_databaseinfo(db_info) == false)
-            {
-                msg = "Unable to checkpoint due to loss of lock.";
-                response.Error(StatusLossOfLock, msg);
-                return;
-            }
-            shared_ptr<Txn_manager> txn_m;
-            if(apiUtil->get_txn_manager(db_name, txn_m) == false)
-            {
-                msg = "Get database transaction manager error.";
-                apiUtil->unlock_databaseinfo(db_info);
-                response.Error(StatusTranscationManageFailed, msg);
-                return;
-            }
             txn_m->Checkpoint();
             bool is_save = db_info->getDatabase()->save();
             if (!is_save)
             {
-                apiUtil->unlock_databaseinfo(db_info);
-                response.Error(StatusOperationFailed, "disk or memory not enough.");
-                return;
+                msg = "disk or memory not enough.";
+                throw std::runtime_error(msg);
             }
             apiUtil->unlock_databaseinfo(db_info);
             response.StatusMsg = "Database saved successfully.";
         }
         catch (const std::exception &e)
         {
+            apiUtil->unlock_databaseinfo(db_info);
             string error = "Checkpoint fail: " + string(e.what());
             response.Error(StatusOperationFailed, error);
         }

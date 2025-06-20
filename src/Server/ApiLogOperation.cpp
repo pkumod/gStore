@@ -117,7 +117,7 @@ namespace server
             int page_no = resquest.pageNo;
             int page_size = resquest.pageSize;
             shared_ptr<struct DBAccessLogs> dbAccessLogsPtr = make_shared<struct DBAccessLogs>();
-            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr, resquest.db_name, resquest.specOperation);
+            apiUtil->get_access_log(date, page_no, page_size, dbAccessLogsPtr, resquest.db_name, resquest.db_operation);
             vector<struct DBAccessLogInfo> logList = dbAccessLogsPtr->getAccessLogInfoList();
             size_t count = logList.size();
             nlohmann::json info;

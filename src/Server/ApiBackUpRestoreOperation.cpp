@@ -238,24 +238,11 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "Database not build yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            // check if database named [db_name] is already load
-            if (apiUtil->check_db_loaded(db_name) == false)
-            {
-                msg = "Database not load yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->rdlock_databaseinfo(db_info) == false)
+            StatusCode statusCode;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
             {
-                msg = "get current database read lock fail.";
                 response.Error(StatusLossOfLock, msg);
                 return;
             }

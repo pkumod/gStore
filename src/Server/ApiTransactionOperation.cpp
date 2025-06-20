@@ -86,18 +86,6 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "Database not built yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            if (apiUtil->check_db_loaded(db_name) == false)
-            {
-                msg = "Database not load yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
             shared_ptr<Txn_manager> txn_m;
             if (apiUtil->get_txn_manager(db_name, txn_m) == false)
             {
@@ -105,9 +93,18 @@ namespace server
                 response.Error(StatusTranscationManageFailed, msg);
                 return;
             }
+            shared_ptr<DatabaseInfo> db_info;
+            StatusCode statusCode;
+            apiUtil->get_databaseinfo(db_name, db_info);
+            if(!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true))
+            {
+                response.Error(statusCode, msg);
+                return;
+            }
             SLOG_DEBUG("tquery sparql: " + sparql);
             std::string res;
             int ret = txn_m->Query(tid, sparql, res);
+            apiUtil->unlock_databaseinfo(db_info);
             if (ret == -1)
             {
                 msg = "Transaction query failed due to wrong TID";
@@ -185,24 +182,14 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "Database not built yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            if (apiUtil->check_db_loaded(db_name) == false)
-            {
-                msg = "Database not load yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+            apiUtil->get_databaseinfo(resquest.db_name, db_info);
+            server::StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {
-                msg = "Unable to commit due to loss of lock.";
-                response.Error(StatusLossOfLock, msg);
+                response.StatusCode = statusCode;
+                response.StatusMsg = statusMsg;
                 return;
             }
             shared_ptr<Txn_manager> txn_m;
@@ -254,24 +241,14 @@ namespace server
                 response.Error(StatusParamIsIllegal, msg);
                 return;
             }
-            if (apiUtil->check_db_built(db_name) == false)
-            {
-                msg = "Database not built yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
-            if (apiUtil->check_db_loaded(db_name) == false)
-            {
-                msg = "Database not load yet.";
-                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
-                return;
-            }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+            apiUtil->get_databaseinfo(resquest.db_name, db_info);
+            server::StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {
-                msg = "Unable to rollback due to loss of lock.";
-                response.Error(StatusLossOfLock, msg);
+                response.StatusCode = statusCode;
+                response.StatusMsg = statusMsg;
                 return;
             }
             shared_ptr<Txn_manager> txn_m;

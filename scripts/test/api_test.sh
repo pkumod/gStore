@@ -95,7 +95,7 @@ query() {
 }
 
 # 数据库导出
-export() {
+exportDb() {
     echo "数据库导出"
     echo "curl -X POST -H 'Content-Type: application/json' -d '${API_DATA[7]}' $BASE_URL"
     curl -X POST -H 'Content-Type: application/json' -d ${API_DATA[7]} "$BASE_URL"
@@ -245,7 +245,7 @@ drop() {
 }
 
 # 操作数组
-operations=("check" "login" "build" "show" "monitor" "load" "query" "export" "backup" "batchRemove" "batchInsert" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
+operations=("check" "login" "drop" "build" "show" "monitor" "load" "query" "exportDb" "backup" "batchRemove" "batchInsert" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
 # operations=("query")
 
 # 执行所有操作

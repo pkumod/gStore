@@ -109,7 +109,7 @@ namespace server
 
     void ApiHandler::batch_insert(shared_ptr<APIUtil>& apiUtil, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     { 
-        shared_ptr<DatabaseInfo> db_info;
+        shared_ptr<DatabaseInfo> db_info = nullptr;
         int64_t t = gutil::TimeUtil::timestamp();
         std::vector<std::string> file_paths; // local file path
         std::vector<std::string> temp_paths; // download files or uncompress files
@@ -117,19 +117,19 @@ namespace server
         {
             if (!batch_insert_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
-            std::string db_name = request.db_name;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
+            apiUtil->get_databaseinfo(request.db_name, db_info);
+            StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
             {
-                response.StatusCode = StatusLossOfLock;
-                response.StatusMsg = "Unable to batch insert due to loss of lock.";
-                db_info.reset();
-                throw new std::runtime_error(response.StatusMsg);
+                response.StatusCode = statusCode;
+                response.StatusMsg = statusMsg;
+                return;
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
-            string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
+            string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : file_paths)
             {
@@ -149,9 +149,8 @@ namespace server
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    response.StatusCode = StatusOperationFailed;
-                    response.StatusMsg = "disk or memory is not enough";
-                    throw new std::runtime_error(response.StatusMsg);
+                    statusMsg = "disk or memory is not enough";
+                    throw new std::runtime_error(statusMsg);
                 }
                 int64_t t2 = gutil::TimeUtil::timestamp();
                 SLOG_DEBUG("auto checkpoint used: " << t2 - t1);
@@ -170,18 +169,15 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            if (response.StatusMsg.empty())
-            {
-                response.StatusCode = StatusOperationFailed;
-                response.StatusMsg = string(e.what());
-            }
+            response.StatusCode = StatusOperationFailed;
+            response.StatusMsg = string(e.what());
             SLOG_ERROR("Batch insert fail: " << response.StatusMsg << "(code " << response.StatusCode << ")");
         }
     }
 
     void ApiHandler::batch_insert_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchInsertRequest& request, MessageBatchInsertResponse& response)
     {
-        shared_ptr<DatabaseInfo> db_info;
+        shared_ptr<DatabaseInfo> db_info = nullptr;
         std::vector<std::string> file_paths; // local file path
         std::vector<std::string> temp_paths; // download files or uncompress files
         try
@@ -205,7 +201,7 @@ namespace server
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
                 response.StatusCode = StatusOperationFailed;
                 response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
-                throw new runtime_error(response.StatusMsg);
+                return;
             }
             cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
             logpath = cluster_db_path + to_string(log_index) + ".log";
@@ -213,17 +209,18 @@ namespace server
             clusterlog->open(logpath.c_str());
 
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
+            StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
             {
-                response.StatusCode = StatusLossOfLock;
-                response.StatusMsg = "Unable to batch insert due to loss of lock.";
-                db_info.reset();
-                throw new runtime_error(response.StatusMsg);
+                response.StatusCode = statusCode;
+                response.StatusMsg = statusMsg;
+                return;
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
-            string error_log = GlobalTypedef::db_path(db_info->getName()) + "/parse_error.log";
+            string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : file_paths)
             {
@@ -242,9 +239,8 @@ namespace server
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    response.StatusCode = StatusOperationFailed;
-                    response.StatusMsg = "disk or memory is not enough";
-                    throw new runtime_error(response.StatusMsg);
+                    statusMsg = "disk or memory is not enough";
+                    throw new runtime_error(statusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
@@ -271,10 +267,10 @@ namespace server
                 }
                 else
                 {
-                    // restore data
-                    bool lock_status;
-                    // try get wrlock timeout 600 senconds
-                    if (apiUtil->trywrlock_databaseinfo(db_info, 600))
+                    // try get wrlock timeout 180 senconds
+                    StatusCode statusCode;
+                    std::string statusMsg;
+                    if (apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
                     {
                         uint64_t num = 0;
                         for (std::string rdf_file : file_paths)
@@ -310,11 +306,8 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            if (response.StatusMsg.empty())
-            {
-                response.StatusMsg = string(e.what());
-                response.StatusCode = StatusOperationFailed;
-            }
+            response.StatusMsg = string(e.what());
+            response.StatusCode = StatusOperationFailed;
             SLOG_ERROR("Batch insert fail: " << response.StatusMsg);
         }
     }

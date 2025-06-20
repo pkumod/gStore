@@ -94,7 +94,7 @@ namespace server
 
     void ApiHandler::batch_remove(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
-        shared_ptr<DatabaseInfo> db_info;
+        shared_ptr<DatabaseInfo> db_info = nullptr;
         std::vector<std::string> file_paths; // local file path
         std::vector<std::string> temp_paths; // download files or uncompress files
         try
@@ -104,12 +104,13 @@ namespace server
             std::string db_name = request.db_name;
             std::string remote_ip = request.remote_ip;
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
+            StatusCode statusCode;
+            std::string statusMsg;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 300))
             {
-                response.StatusCode = StatusLossOfLock;
-                response.StatusMsg = "Unable to batch remove due to loss of lock.";
-                db_info.reset();
-                throw new std::runtime_error(response.StatusMsg);
+                response.StatusCode = statusCode;
+                response.StatusMsg = statusMsg;
+                return;
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
@@ -128,17 +129,15 @@ namespace server
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    response.StatusCode = StatusOperationFailed;
-                    response.StatusMsg = "disk or memory is not enough";
-                    throw new std::runtime_error(response.StatusMsg);
+                    statusMsg = "disk or memory not enough";
+                    throw std::runtime_error(statusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
-            db_info.reset();
-            // remove temp files
-            remove_temp_files(temp_paths);
+
+            statusMsg = "Batch remove data successfully.";
             response.StatusCode = StatusOK;
-            response.StatusMsg = "Batch remove data successfully.";
+            response.StatusMsg = statusMsg;
             response.successNum = success_num;
             response.failedNum = parse_error_num;
         }
@@ -147,18 +146,14 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            if (response.StatusMsg.empty())
-            {
-                response.StatusCode = StatusOperationFailed;
-                response.StatusMsg = string(e.what());
-            }
-            SLOG_ERROR("Batch remove fail: " << response.StatusMsg << "(code " << response.StatusCode << ")");
+            response.StatusMsg = "Batch remove fail: " + string(e.what());
+            response.StatusCode = StatusOperationFailed;
         }
     }
 
     void ApiHandler::batch_remove_cluster(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response)
     {
-        shared_ptr<DatabaseInfo> db_info;
+        shared_ptr<DatabaseInfo> db_info = nullptr;
         std::vector<std::string> file_paths; // local file path
         std::vector<std::string> temp_paths; // download files or uncompress files
         try
@@ -190,12 +185,12 @@ namespace server
             clusterlog->open(logpath.c_str());
 
             apiUtil->get_databaseinfo(db_name, db_info);
-            if (!apiUtil->trywrlock_databaseinfo(db_info, 300))
+            StatusCode statusCode;
+            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
             {
-                response.StatusCode = StatusLossOfLock;
-                response.StatusMsg = "Unable to batch insert due to loss of lock.";
-                db_info.reset();
-                throw new runtime_error(response.StatusMsg);
+                response.StatusMsg = msg;
+                response.StatusCode = statusCode;
+                return;
             }
             unsigned success_num = 0;
             unsigned total_num = 0;
@@ -214,9 +209,8 @@ namespace server
             {
                 if (!db_info->getDatabase()->save())
                 {
-                    response.StatusCode = StatusOperationFailed;
-                    response.StatusMsg = "disk or memory is not enough";
-                    throw new runtime_error(response.StatusMsg);
+                    msg = "disk or memory not enough";
+                    throw std::runtime_error(msg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
@@ -248,8 +242,8 @@ namespace server
                 else
                 {
                     // restore data
-                    // try get wrlock timeout 600 senconds
-                    if (apiUtil->trywrlock_databaseinfo(db_info, 600))
+                    // try get wrlock timeout 180 senconds
+                    if (apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
                     {
                         uint64_t num = 0;
                         for (std::string rdf_file : file_paths)
@@ -262,7 +256,7 @@ namespace server
                     }
                     else
                     {
-                        SLOG_ERROR("restore " + db_name + " data failed: unable get wrlock, log[" + log_file_name + "], operation[2]");
+                        SLOG_ERROR("restore failed: " + msg + ", log[" + log_file_name + "], operation[2]");
                     }
                     clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Cancel));
                     resp_data.StatusMsg = "Less than half of the cluster nodes reply.";
@@ -286,12 +280,8 @@ namespace server
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            if (response.StatusMsg.empty())
-            {
-                response.StatusMsg = string(e.what());
-                response.StatusCode = StatusOperationFailed;
-            }
-            SLOG_ERROR("Batch remove fail: " << response.StatusMsg);
+            response.StatusMsg = "Batch remove fail: " + string(e.what());
+            response.StatusCode = StatusOperationFailed;
         }
     }
 }

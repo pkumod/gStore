@@ -3,9 +3,11 @@
 
 #include "grpc_router.h"
 #include "grpc_message.h"
-#include "grpc_status_code.h"
+
+#include "../Server/ServerStatusCode.h"
 
 using namespace grpc;
+using namespace server;
 
 void Router::handle(const std::string &route, int compute_queue_id, const WrapHandler &handler, ReqMethod method)
 {

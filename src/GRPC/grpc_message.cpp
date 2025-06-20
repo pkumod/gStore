@@ -13,13 +13,14 @@
 #include "workflow/StringUtil.h"
 
 #include "grpc_message.h"
-#include "grpc_status_code.h"
 #include "grpc_stringpiece.h"
 #include "grpc_server_task.h"
+#include "../Server/ServerStatusCode.h"
 #include "../Util/CompressFileUtil.h"
 
 using namespace grpc;
 using namespace protocol;
+using namespace server;
 
 const std::string grpc::string_not_found = "";
 

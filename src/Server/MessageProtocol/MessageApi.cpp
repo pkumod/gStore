@@ -161,7 +161,7 @@ namespace server
 
     MessageLoadResponse::MessageLoadResponse()
     {
-        this->csr = "";
+        this->csr = "0";
     }
 
     void MessageLoadResponse::toJsonString(std::string& json_str)
@@ -373,6 +373,10 @@ namespace server
                 json.at("connectionNum").get_to(this->connectionNum);
             if (json.contains("diskUsed"))
                 json.at("diskUsed").get_to(this->diskUsed);
+            if (json.contains("lockNum"))
+                json.at("lockNum").get_to(this->lockNum);
+            if (json.contains("costTime"))
+                json.at("costTime").get_to(this->costTime);
         }
     }
 
@@ -389,6 +393,7 @@ namespace server
         this->connectionNum = 0;
         this->diskUsed = 0;
         this->lockNum = 0;
+        this->costTime = 0;
     }
 
     void MessageMonitorResponse::toJsonString(std::string& json_str)
@@ -406,6 +411,7 @@ namespace server
         json["connectionNum"] = this->connectionNum;
         json["lockNum"] = this->lockNum;
         json["diskUsed"] = this->diskUsed;
+        json["costTime"] = this->costTime;
         json["subjectList"] = nlohmann::json::array();
         if (!this->subjectList.empty())
         {

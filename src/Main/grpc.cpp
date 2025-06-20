@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "workflow/WFFacilities.h"
 #include "../GRPC/grpc_server.h"
-#include "../GRPC/grpc_status_code.h"
 #include "../GRPC/grpc_operation.h"
 // #include "../Api/APIConnector.h"
 #include "../Api/APIUtil.h"
@@ -1895,34 +1894,20 @@ void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 			response->Error(StatusOperationFailed, msg);
 			return;
 		}
-		if (apiUtil->check_db_built(db_name) == false)
-		{
-			msg = "the database [" + db_name + "] not built yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
-		if (apiUtil->check_db_loaded(db_name) == false)
-		{
-			msg = "the database not load yet.";
-			response->Error(StatusOperationConditionsAreNotSatisfied, msg);
-			return;
-		}
 		shared_ptr<DatabaseInfo> db_info;
+		server::StatusCode statusCode;
+		std::string statusMsg;
 		apiUtil->get_databaseinfo(db_name, db_info);
-		if (apiUtil->trywrlock_databaseinfo(db_info) == false)
+		if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true))
 		{
-			msg = "Unable to unload due to loss of lock.";
-			response->Error(StatusLossOfLock, msg);
+			response->Error(statusCode, msg);
 			return;
 		}
-		else
-		{
-			apiUtil->remove_txn_manager(db_name, true);
-			db_info->unloadDatabase();
-			apiUtil->unlock_databaseinfo(db_info);
+		apiUtil->remove_txn_manager(db_name, true);
+		db_info->unloadDatabase();
+		apiUtil->unlock_databaseinfo(db_info);
 
-			response->Success("Database unloaded.");
-		}
+		response->Success("Database unloaded.");
 	}
 	catch (const std::exception &e)
 	{
@@ -3281,27 +3266,22 @@ void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 		response->Error(StatusParamIsIllegal, "db_name can't be empty");
 		return;
 	}
-
-	if (apiUtil->check_db_built(db_name) == false)
+	shared_ptr<DatabaseInfo> db_info;
+	server::StatusCode statusCode;
+	std::string statusMsg;
+	apiUtil->get_databaseinfo(db_name, db_info);
+	if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, false))
 	{
-		response->Error(StatusOperationConditionsAreNotSatisfied, "the database [" + db_name + "] not built yet.");
+		response->Error(statusCode, statusMsg);
 		return;
 	}
-
-	shared_ptr<DatabaseInfo> database_info;
-	apiUtil->get_databaseinfo(db_name, database_info);
-	if (apiUtil->rdlock_databaseinfo(database_info) == false)
-	{
-		response->Error(StatusLossOfLock, "Unable to monitor due to loss of lock");
-		return;
-	}
-	shared_ptr<Database> current_database = database_info->getDatabase();
-	apiUtil->unlock_databaseinfo(database_info);
+	shared_ptr<Database> current_database = db_info->getDatabase();
 	nlohmann::json rjson;
 	rjson["StatusCode"]  = 0;
     rjson["StatusMsg"]   = "success";
 	rjson["ResponseBody"] = nlohmann::json::object();
 	current_database->getSchemaInfo(rjson["ResponseBody"], false);
+	apiUtil->unlock_databaseinfo(db_info);
 	std::string json_str = rjson.dump();
 	response->Json(json_str);
 }

@@ -1575,6 +1575,8 @@ int show_handler(const vector<string> &args)
 	rows.push_back({"literalNum", to_string(monitor_response.literalNum)});
 	rows.push_back({"subjectNum", to_string(monitor_response.subjectNum)});
 	rows.push_back({"predicateNum", to_string(monitor_response.predicateNum)});
+	rows.push_back({"size", to_string(monitor_response.diskUsed) + "M"});
+	rows.push_back({"builtCost", to_string(monitor_response.costTime) + "ms"});
 	Util::printConsole(header, rows);
 	return 0;
 }

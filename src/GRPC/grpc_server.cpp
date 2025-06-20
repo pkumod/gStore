@@ -4,9 +4,11 @@
 #include "grpc_server.h"
 #include "grpc_server_task.h"
 #include "grpc_request_handler.h"
-#include "grpc_status_code.h"
+
+#include "../Server/ServerStatusCode.h"
 
 using namespace grpc;
+using namespace server;
 
 void GRPCServer::ROUTE(const std::string &route, const DefaultHandler &handler, ReqMethod method)
 {
