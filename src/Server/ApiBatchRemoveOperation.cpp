@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
     bool ApiHandler::batch_remove_check(shared_ptr<APIUtil>& apiUtil, const MessageBatchRemoveRequest& request, MessageBatchRemoveResponse& response, std::vector<std::string>& file_paths, std::vector<std::string>& temp_paths)
     {
@@ -71,7 +71,7 @@ namespace gs
             {
                 // uncompress zip
                 size_t pos = file_name.size() - file_suffix.size() - 1;
-                std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+                std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now();
                 temp_paths.push_back(uncompress_path);
                 bool unzip = uncompress_zip(apiUtil, local_path, uncompress_files, uncompress_path, response);
                 if (!unzip)
@@ -169,7 +169,7 @@ namespace gs
 
             // send [prepare] heartbeat and wait response
             ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-            log_index = gutil::IdUtil::nextUID();
+            log_index = gs::IdUtil::nextUID();
             clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
             bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
             if (!prepare_result)

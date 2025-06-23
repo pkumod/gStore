@@ -18,7 +18,7 @@ void ResultFilter::addVar(string var)
 
 void ResultFilter::changeResultHashTable(SPARQLquery &query, int value)
 {
-    long tv_begin = gutil::TimeUtil::timestamp();
+    long tv_begin = gs::TimeUtil::timestamp();
 
 	for (int i = 0; i < query.getBasicQueryNum(); i++)
 	{
@@ -44,7 +44,7 @@ void ResultFilter::changeResultHashTable(SPARQLquery &query, int value)
 			}
 	}
 
-    long tv_end = gutil::TimeUtil::timestamp();
+    long tv_end = gs::TimeUtil::timestamp();
 	printf("after ResultFilter::change, used %ld ms.\n", tv_end - tv_begin);
 }
 
@@ -62,7 +62,7 @@ void ResultFilter::candFilterWithResultHashTable(BasicQuery &basicquery)
 
 			printf("candFilter on %s\n", basicquery.getVarName(j).c_str());
 			printf("before candFilter, size = %d\n", idlist.size());
-		    long tv_begin = gutil::TimeUtil::timestamp();
+		    long tv_begin = gs::TimeUtil::timestamp();
 
 			for (unsigned k = 0; k < idlist.size(); k++)
 			{
@@ -74,7 +74,7 @@ void ResultFilter::candFilterWithResultHashTable(BasicQuery &basicquery)
 			}
 			idlist = new_idlist;
 
-		    long tv_end = gutil::TimeUtil::timestamp();
+		    long tv_end = gs::TimeUtil::timestamp();
 			printf("after candFilter, size = %d, used %ld ms.\n", idlist.size(), tv_end - tv_begin);
 		}
 	}

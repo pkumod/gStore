@@ -1,6 +1,6 @@
 #pragma once
 #include "../Database/Database.h"
-#include "../Util/Util.h"
+#include "../Util/SparqlUtil.h"
 
 using namespace std;
 

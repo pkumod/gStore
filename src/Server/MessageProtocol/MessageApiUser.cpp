@@ -1,7 +1,7 @@
 #include "MessageApiUser.h"
 #include "../ApiProvider.h"
 
-namespace gs
+namespace server
 {
     // show user
     void MessageShowUserRequest::to_json(std::string& json_str)

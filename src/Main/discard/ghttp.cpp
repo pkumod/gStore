@@ -878,7 +878,7 @@ void build_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			}
 			std::string file_name = fileName(db_path);
 			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now();
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip upfile(db_path, unz_dir_path);
 			code = upfile.unCompress();
@@ -1836,7 +1836,7 @@ const shared_ptr<HttpServer::Response> &response, int type, string db_name,Docum
 		   }
            Value reasonInfo=document["ruleinfo"].GetObject();
 		   Document::AllocatorType &allocator = document.GetAllocator();
-		   std::string createtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+		   std::string createtime = gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 		   reasonInfo.AddMember("status","新建",allocator);
 		   reasonInfo.AddMember("createtime",StringRef(createtime.c_str()),allocator);
 		   ReasonOperationResult resultInfo= ReasonHelper::saveReasonRuleInfo(reasonInfo,db_name,_db_home,_db_suffix);
@@ -2478,10 +2478,10 @@ void backup_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 				}
 				else
 				{
-					string timestamp = gutil::TimeUtil::timestamp_str();
+					string timestamp = gs::TimeUtil::timestamp_str();
 					string new_folder =  db_name + _db_suffix + "_" + timestamp;
 					string sys_cmd, _path, backup_store_path;
-					gutil::StringUtil::append(path, '/');
+					gs::StringUtil::append(path, '/');
 					_path = path + new_folder;
 					backup_store_path = default_backup_path + "/" + db_name + _db_suffix;
 					if (backup_zip)
@@ -2897,7 +2897,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 
 		ResultSet rs;
 		int ret_val;
-		int query_time = gutil::TimeUtil::timestamp();
+		int query_time = gs::TimeUtil::timestamp();
 
 		// set query_start_time
 		std::string query_start_time;
@@ -2905,12 +2905,12 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 		gettimeofday(&tv, NULL);
 		int s = tv.tv_usec / 1000;
 		int y = tv.tv_usec % 1000;
-		query_start_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN) + ":" + to_string(s) + "ms" + ":" + to_string(y) + "microseconds";
+		query_start_time = gs::TimeUtil::now(NORM_DATETIME_PATTERN) + ":" + to_string(s) + "ms" + ":" + to_string(y) + "microseconds";
 		try
 		{
 			rs.setUsername(username);
 			ret_val = current_database->query(sparql, rs, output, update_flag_bool, false, nullptr);
-			query_time = gutil::TimeUtil::timestamp() - query_time;
+			query_time = gs::TimeUtil::timestamp() - query_time;
 		}
 		catch (string exception_msg)
 		{
@@ -2944,7 +2944,7 @@ void query_thread_new(const shared_ptr<HttpServer::Request> &request, const shar
 			update = true;
 		}
 
-		string filename = thread_id + "_" + gutil::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
+		string filename = thread_id + "_" + gs::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
 		string localname = apiUtil->get_query_result_path() + filename;
 		if (ret)
 		{
@@ -3249,18 +3249,18 @@ void export_thread_new(const shared_ptr<HttpServer::Request> &request, const sha
 			sendResponseMsg(1004, error, operation, request, response);
 			return;
 		}
-		gutil::StringUtil::append(db_path, '/');
+		gs::StringUtil::append(db_path, '/');
 		if (Util::dir_exist(db_path) == false)
 		{
 			Util::create_dirs(db_path);
 		}
 		std::string zip_path;
 		if (compress=="0")
-			db_path = db_path + db_name + "_" + gutil::TimeUtil::timestamp_str() + ".nt";
+			db_path = db_path + db_name + "_" + gs::TimeUtil::timestamp_str() + ".nt";
 		else
 		{
-			zip_path = db_path + db_name + "_" + gutil::TimeUtil::timestamp_str() + ".zip";
-			db_path = db_name + "_" + gutil::TimeUtil::timestamp_str() + ".nt";
+			zip_path = db_path + db_name + "_" + gs::TimeUtil::timestamp_str() + ".zip";
+			db_path = db_name + "_" + gs::TimeUtil::timestamp_str() + ".nt";
 		}
 		apiUtil->rdlock_database(db_name); // lock database
 		SLOG_DEBUG("export_path: " + db_path);
@@ -3976,7 +3976,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			}
 			std::string file_name = fileName(file);
 			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now();
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
 			code = upfile.unCompress();
@@ -4039,7 +4039,7 @@ void batchInsert_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 					{
 						vector<string> files;
 						string dir = _dir;
-						gutil::StringUtil::append(dir, '/');
+						gs::StringUtil::append(dir, '/');
 						Util::dir_files(dir, "", files);
 						total_num = Util::count_lines(error_log);
 						for (string rdf_file : files)
@@ -4172,7 +4172,7 @@ void batchRemove_thread_new(const shared_ptr<HttpServer::Request> &request, cons
 			}
 			std::string file_name = fileName(file);
 			size_t pos = file_name.size() - file_suffix.size() - 1;
-            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+            unz_dir_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now();
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip upfile(file, unz_dir_path);
 			code = upfile.unCompress();
@@ -4368,7 +4368,7 @@ void request_thread(const shared_ptr<HttpServer::Response> &response,
 	ss += "\nmethod: " + request_type;
 	ss += "\nrequest_path: " + request->path;
 	ss += "\nhttp_version: " + request->http_version;
-	ss += "\nrequest_time: " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+	ss += "\nrequest_time: " + gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 	ss += "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss);
 	if (operation == "check")
@@ -5584,7 +5584,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	ss += "\nmethod: POST";
 	ss += "\nrequest_path: " + request->path;
 	ss += "\nhttp_version: " + request->http_version;
-	ss += "\nrequest_time: " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+	ss += "\nrequest_time: " + gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 	ss += "\n----------------------------------------------------------";
 	SLOG_DEBUG(ss);
 	// "Content-Type:multipart/form-data; boundary=--------------------------617568955343916342854790"
@@ -5700,7 +5700,7 @@ void upload_handler(const HttpServer &server, const shared_ptr<HttpServer::Respo
 	// remove path info, only return base filename
 	std::string file_name = fileName(fileinfo.first);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
-	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now() + "." + file_suffix;
+	std::string file_dst = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now() + "." + file_suffix;
 	// write file
 	ofstream fout(file_dst.c_str());
 	if (fout)
@@ -5753,7 +5753,7 @@ void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 		ss += "\nmethod: GET";
 		ss += "\nrequest_path: " + request->path;
 		ss += "\nhttp_version: " + request->http_version;
-		ss += "\nrequest_time: " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+		ss += "\nrequest_time: " + gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 		ss += "\n----------------------------------------------------------";
 		SLOG_DEBUG(ss);
 
@@ -5780,7 +5780,7 @@ void download_handler(const HttpServer &server, const shared_ptr<HttpServer::Res
 		ss += "\nmethod: POST";
 		ss += "\nrequest_path: " + request->path;
 		ss += "\nhttp_version: " + request->http_version;
-		ss += "\nrequest_time: " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+		ss += "\nrequest_time: " + gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 		ss += "\nrequest_body: \n" + strParams;
 		ss += "\n----------------------------------------------------------";
 		SLOG_DEBUG(ss);

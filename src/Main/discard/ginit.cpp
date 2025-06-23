@@ -30,7 +30,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		cout << "Please stop server(use bin/gserver -t) and try again." << endl;
 		return -1;
 	}
-	long tv_begin = gutil::TimeUtil::timestamp();
+	long tv_begin = gs::TimeUtil::timestamp();
 	SLOG_INFO("begin init the system database ....");
 	if (Util::dir_exist(_db_path))
 	{
@@ -64,7 +64,7 @@ int init_system_db(string _db_path, string _db_name, string _db_suffix, Util& ut
 		int ret = _db->query(update_sparql, _rs, ofp);
 		if (ret >= 0)
 		{	
-			long tv_end = gutil::TimeUtil::timestamp();
+			long tv_end = gs::TimeUtil::timestamp();
 			SLOG_INFO("Insert data success, update num : " << ret);
 			SLOG_INFO(_db_name + _db_suffix + " init successfully! Used " << (tv_end - tv_begin) << " ms" << endl);
 		}

@@ -1,7 +1,7 @@
 #include "ServerStatusCode.h"
 #include <map>
 
-namespace gs
+namespace server
 {
     const std::map<int, const char *> error_code_table = {
         { StatusOK,                   "Success" },

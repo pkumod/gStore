@@ -210,10 +210,25 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
       }
 
       delete_sparql = "delete where {?x <Rule:" + label + "> ?y.}";
-      select_sparql = "select ?s ?p ?o where {bind(<Rule:" + label + "> as ?p). ?s ?p ?o.}";
+      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). ?s ?p ?o. }";
     }
-    check_sparql = "select (count(*) as ?result) where { " + wheresparql + " }";
+    check_sparql = "select (count(*) as ?result) where ";
+    if (conditions_length > 1)
+       check_sparql = check_sparql + "{ " + wheresparql + " }";
+    else
+       check_sparql = check_sparql + wheresparql;
 
+    // validate sparql
+    std::string msg;
+    if (!SparqlUtil::validate(insert_sparql, msg) 
+      || !SparqlUtil::validate(delete_sparql, msg) 
+      || !SparqlUtil::validate(select_sparql, msg) 
+      || !SparqlUtil::validate(check_sparql, msg))
+    {
+      results.error_message = msg;
+      results.issuccess = 0;
+      return results;
+    }
     doc["status"] = "已编译";
     doc["checkResult"] = "";
     doc["insert_sparql"] = insert_sparql;

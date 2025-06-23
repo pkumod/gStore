@@ -24,102 +24,102 @@ class APIConnector {
 private:
 
 public:
-	static gs::MessageShutdownResponse shutdown(const std::string& url, gs::MessageShutdownRequest& request);
+	static server::MessageShutdownResponse shutdown(const std::string& url, server::MessageShutdownRequest& request);
 
-	static gs::MessageCheckResponse check(const std::string& url, gs::MessageCheckRequest& request);
+	static server::MessageCheckResponse check(const std::string& url, server::MessageCheckRequest& request);
 
-	static gs::MessageResponse refreshConf(const std::string& url, const bool& inner, gs::MessageRefreshconfRequest& request);
+	static server::MessageResponse refreshConf(const std::string& url, const bool& inner, server::MessageRefreshconfRequest& request);
 
-	static gs::MessageTestConnectionResponse testConnection(const std::string& url, const bool& inner, gs::MessageTestConnectionRequest& request);
+	static server::MessageTestConnectionResponse testConnection(const std::string& url, const bool& inner, server::MessageTestConnectionRequest& request);
 
-	static gs::MessageInitResponse init(const std::string& url, const bool& inner, gs::MessageInitRequest& request);
+	static server::MessageInitResponse init(const std::string& url, const bool& inner, server::MessageInitRequest& request);
 
-	static gs::MessageLoadResponse load(const std::string& url, const bool& inner, gs::MessageLoadRequest& request);
+	static server::MessageLoadResponse load(const std::string& url, const bool& inner, server::MessageLoadRequest& request);
 
-	static gs::MessageResponse login(const std::string& url, gs::MessageLoginRequest& request);
+	static server::MessageResponse login(const std::string& url, server::MessageLoginRequest& request);
 
-	static gs::MessageResponse unload(const std::string& url, const bool& inner, gs::MessageUnloadRequest& request);
+	static server::MessageResponse unload(const std::string& url, const bool& inner, server::MessageUnloadRequest& request);
 
-	static gs::MessageBuildResponse build(const std::string& url, const bool& inner, gs::MessageBuildRequest& request);
+	static server::MessageBuildResponse build(const std::string& url, const bool& inner, server::MessageBuildRequest& request);
 
-	static gs::MessageResponse drop(const std::string& url, const bool& inner, gs::MessageDropRequest& request);
+	static server::MessageResponse drop(const std::string& url, const bool& inner, server::MessageDropRequest& request);
 
-	static gs::MessageShowResponse show(const std::string& url, const bool& inner, gs::MessageShowRequest& request);
+	static server::MessageShowResponse show(const std::string& url, const bool& inner, server::MessageShowRequest& request);
 
-	static gs::MessageMonitorResponse monitor(const std::string& url, const bool& inner, gs::MessageMonitorRequest& request);
+	static server::MessageMonitorResponse monitor(const std::string& url, const bool& inner, server::MessageMonitorRequest& request);
 
-	static gs::MessageQueryResponse query(const std::string& url, const bool& inner, gs::MessageQueryRequest& request);
+	static server::MessageQueryResponse query(const std::string& url, const bool& inner, server::MessageQueryRequest& request);
 
-	static gs::MessageBatchInsertResponse batchInsert(const std::string& url, const bool& inner, gs::MessageBatchInsertRequest& request);
+	static server::MessageBatchInsertResponse batchInsert(const std::string& url, const bool& inner, server::MessageBatchInsertRequest& request);
 
-	static gs::MessageBatchRemoveResponse batchRemove(const std::string& url, const bool& inner, gs::MessageBatchRemoveRequest& request);
+	static server::MessageBatchRemoveResponse batchRemove(const std::string& url, const bool& inner, server::MessageBatchRemoveRequest& request);
 
 	// start
-	// static gs::MessageGetCoreVersionResponse getCoreVersion(const std::string& url, const bool& inner, gs::MessageGetCoreVersionRequest& request);
+	// static server::MessageGetCoreVersionResponse getCoreVersion(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
 
-	// static gs::MessageIpManageResponse ipManage(const std::string& url, const bool& inner, gs::MessageGetCoreVersionRequest& request);
+	// static server::MessageIpManageResponse ipManage(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
 
-	// //  static gs::MessageGetCoreVersionResponse download(const std::string& url, const bool& inner, gs::MessageGetCoreVersionRequest& request);
+	// //  static server::MessageGetCoreVersionResponse download(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
 
-	// static gs::MessageStatResponse stat(const std::string& url, const bool& inner, gs::MessageStatRequest& request);
+	// static server::MessageStatResponse stat(const std::string& url, const bool& inner, server::MessageStatRequest& request);
 
-	static gs::MessageBackupResponse backup(const std::string& url, const bool& inner, gs::MessageBackupRequest& request);
+	static server::MessageBackupResponse backup(const std::string& url, const bool& inner, server::MessageBackupRequest& request);
 
-	// static gs::MessageBackUpPathResponse backUpPath(const std::string& url, const bool& inner, gs::MessageBackUpPathRequest& request);
+	// static server::MessageBackUpPathResponse backUpPath(const std::string& url, const bool& inner, server::MessageBackUpPathRequest& request);
 
-	static gs::MessageRestoreResponse restore(const std::string& url, const bool& inner, gs::MessageRestoreRequest& request);
+	static server::MessageRestoreResponse restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request);
 
-	static gs::MessageExportResponse exportDb(const std::string& url, const bool& inner, gs::MessageExportRequest& request);
+	static server::MessageExportResponse exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request);
 
-	// static gs::MessageRenameResponse rename(const std::string& url, const bool& inner, gs::MessageRenameRequest& request);
+	// static server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request);
 
-	static gs::MessageCheckOperationStateResponse checkOperationState(const std::string& url, const bool& inner, gs::MessageCheckOperationStateRequest& request);
+	static server::MessageCheckOperationStateResponse checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request);
 
-	static gs::MessageBeginResponse begin(const std::string& url, const bool& inner, gs::MessageBeginRequest& request);
+	static server::MessageBeginResponse begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request);
 
-	static gs::MessageTqueryResponse tquery(const std::string& url, const bool& inner, gs::MessageTqueryRequest& request);
+	static server::MessageTqueryResponse tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request);
 
-	static gs::MessageCommitResponse commit(const std::string& url, const bool& inner, gs::MessageCommitRequest& request);
+	static server::MessageCommitResponse commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request);
 
-	static gs::MessageRollbackResponse rollBack(const std::string& url, const bool& inner, gs::MessageRollbackRequest& request);
+	static server::MessageRollbackResponse rollBack(const std::string& url, const bool& inner, server::MessageRollbackRequest& request);
 	
-	static gs::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, gs::MessageCheckPointRequest& request);
+	static server::MessageCheckPointResponse checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request);
 
-	static gs::MessageShowUserResponse showUser(const std::string& url, const bool& inner, gs::MessageShowUserRequest& request);
+	static server::MessageShowUserResponse showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request);
 
-	static gs::MessageResponse userManage(const std::string& url, const bool& inner, gs::MessageUserManageRequest& request);
+	static server::MessageResponse userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request);
 
-	static gs::MessageUserPrivilegeManageResponse userPrivilegeManage(const std::string& url, const bool& inner, gs::MessageUserPrivilegeManageRequest& request);
+	static server::MessageUserPrivilegeManageResponse userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request);
 
-	static gs::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, gs::MessageUserPasswordRequest& request);
+	static server::MessageUserPasswordResponse userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request);
 
-	static gs::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, gs::MessageFunQueryRequest& request);
+	static server::MessageFunQueryResponse funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request);
 
-	static gs::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, gs::MessageFunCudbRequest& request);
+	static server::MessageFunCudbResponse funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request);
 
-	static gs::MessageFunReviewResponse funReview(const std::string& url, const bool& inner, gs::MessageFunReviewRequest& request);
+	static server::MessageFunReviewResponse funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request);
 
-	static gs::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, gs::MessageTxnLogRequest& request);
+	static server::MessageTxnLogResponse txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request);
 
-	static gs::MessageQueryLogDateResponse queryLogDate(const std::string& url, const bool& inner, gs::MessageQueryLogDateRequest& request);
+	static server::MessageQueryLogDateResponse queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request);
 
-	static gs::MessageQueryLogResponse queryLog(const std::string& url, const bool& inner, gs::MessageQueryLogRequest& request);
+	static server::MessageQueryLogResponse queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request);
 
-	static gs::MessageAccessLogDateResponse accessLogDate(const std::string& url, const bool& inner, gs::MessageAccessLogDateRequest& request);
+	static server::MessageAccessLogDateResponse accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request);
 	
-	static gs::MessageAccessLogResponse accessLog(const std::string& url, const bool& inner, gs::MessageAccessLogRequest& request);
+	static server::MessageAccessLogResponse accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request);
 	
-	static gs::MessageReasonManageResponse addReason(const std::string& url, const bool& inner, gs::MessageAddReasonRequest& request);
+	static server::MessageReasonManageResponse addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request);
 
-	static gs::MessageReasonManageResponse listReason(const std::string& url, const bool& inner, gs::MessageListReasonRequest& request);
+	static server::MessageReasonManageResponse listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request);
 	
-	static gs::MessageReasonManageResponse cedsdReason(const std::string& url, const bool& inner, gs::MessageCedsdReasonRequest& request);
+	static server::MessageReasonManageResponse cedsdReason(const std::string& url, const bool& inner, server::MessageCedsdReasonRequest& request);
 
-	static gs::MessageLicenseResponse importLicense(const std::string& url, const bool& inner, gs::MessageRequest& request, std::string filepath);
+	static server::MessageLicenseResponse importLicense(const std::string& url, const bool& inner, server::MessageRequest& request, std::string filepath);
 
-	static gs::MessageLicenseResponse licenseInfo(const std::string& url, const bool& inner, gs::MessageRequest& request);
+	static server::MessageLicenseResponse licenseInfo(const std::string& url, const bool& inner, server::MessageRequest& request);
 	
-	static gs::MessageLicenseResponse removeLicense(const std::string& url, const bool& inner, gs::MessageRequest& request);
+	static server::MessageLicenseResponse removeLicense(const std::string& url, const bool& inner, server::MessageRequest& request);
 	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
 	
 	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);

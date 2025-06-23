@@ -1,7 +1,7 @@
 #include "ApiProvider.h"
 #include "../Api/WFHttpUtil.h"
 
-namespace gs
+namespace server
 {
     std::string ApiHandler::repalce_pfn_query(const std::string& sparql, MessageQueryResponse& response)
     {
@@ -19,7 +19,7 @@ namespace gs
     bool ApiHandler::query_check(shared_ptr<APIUtil>& apiUtil, const MessageQueryRequest& request, MessageQueryResponse& response)
     {
         int32_t min_memory = Util::getConfigureIntValue("min_memory", 512); // MB
-        int32_t memoryLeft = gutil::ResourceUtil::memoryLeft();
+        int32_t memoryLeft = gs::ResourceUtil::memoryLeft();
         if (memoryLeft < (min_memory >> 10))
         {
             response.StatusMsg = "memory not enough, available:" + std::to_string(memoryLeft) + "MB, need minimum:" + std::to_string(min_memory) + "MB";
@@ -74,7 +74,7 @@ namespace gs
         {
             // file format does not limit the number
             rs.output_limit = -1;
-            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".json";
+            string file_name = request.db_name + "_" + response.threadId + "_" + gs::TimeUtil::now() + ".json";
             string file_path = GlobalTypedef::export_path + file_name;
             nlohmann::json json_data;
             rs.to_JSON(json_data);
@@ -86,7 +86,7 @@ namespace gs
         }
         else if (request.format == "n-triple-file")
         {
-            string file_name = request.db_name + "_" + response.threadId + "_" + gutil::TimeUtil::now() + ".txt";
+            string file_name = request.db_name + "_" + response.threadId + "_" + gs::TimeUtil::now() + ".txt";
             string file_path = GlobalTypedef::export_path + file_name;
             FILE* fptr = fopen(file_path.c_str(), "w");
             rs.output_limit = -1;
@@ -174,7 +174,7 @@ namespace gs
             FILE *output = NULL;
             ResultSet rs;
             int ret_val;
-            long query_time = gutil::TimeUtil::timestamp();
+            long query_time = gs::TimeUtil::timestamp();
             std::string query_start_time;
             try
             {
@@ -182,9 +182,9 @@ namespace gs
                     rs.task = Task::TaskManager::addQueryTask(stoull(response.opt_id), "query", db_name, sparql, request.async);
                 SLOG_DEBUG("begin query...\n" + sparql);
                 rs.setUsername(username);
-                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
+                query_start_time = gs::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
                 ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, nullptr);
-                query_time = gutil::TimeUtil::timestamp() - query_time;
+                query_time = gs::TimeUtil::timestamp() - query_time;
                 // unlock rdlock
                 apiUtil->unlock_databaseinfo(db_info);
             } catch (const std::exception &e) {
@@ -195,7 +195,7 @@ namespace gs
             }
             string query_time_s = to_string(query_time);
             long rs_ansNum = 0;
-            response.threadId = gutil::ThreadUtil::getThreadID();
+            response.threadId = gs::ThreadUtil::getThreadID();
 
             if (!is_update && (ret_val == -100))
             {
@@ -309,7 +309,7 @@ namespace gs
             FILE *output = NULL;
             ResultSet rs;
             int ret_val;
-            long query_time = gutil::TimeUtil::timestamp();
+            long query_time = gs::TimeUtil::timestamp();
             shared_ptr<ofstream> clusterlog = nullptr;
             std::string cluster_db_path;
             std::string logpath;
@@ -324,7 +324,7 @@ namespace gs
                     cluster_update_type = ClusterUpdateType::ClusterUpdateType_Insert;
                 else
                     cluster_update_type = ClusterUpdateType::ClusterUpdateType_Delete;
-                log_index = gutil::IdUtil::nextUID();
+                log_index = gs::IdUtil::nextUID();
                 clusterManagerPtr->addLog(db_name, log_index, ClusterOperation_Prepare, cluster_update_type);
                 bool prepare_result = clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Prepare), true);
                 if (!prepare_result)
@@ -345,9 +345,9 @@ namespace gs
             {
                 SLOG_DEBUG("begin query...\n" + sparql);
                 rs.setUsername(username);
-                query_start_time = gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
+                query_start_time = gs::TimeUtil::now(NORM_DATETIME_MS_PATTERN);
                 ret_val = db_info->getDatabase()->query(sparql, rs, output, update_flag_bool, false, nullptr, clusterlog);
-                query_time = gutil::TimeUtil::timestamp() - query_time;
+                query_time = gs::TimeUtil::timestamp() - query_time;
                 if (clusterlog) 
                 {
                     clusterlog->close();
@@ -363,7 +363,7 @@ namespace gs
                     clusterlog->close();
                 return;
             }
-            response.threadId = gutil::ThreadUtil::getThreadID();
+            response.threadId = gs::ThreadUtil::getThreadID();
             string query_time_s = to_string(query_time);
             long rs_ansNum = 0;
             string file_name = "";

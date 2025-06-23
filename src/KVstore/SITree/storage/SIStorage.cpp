@@ -685,7 +685,7 @@ SIStorage::WriteTree(std::shared_ptr<SINode>_np)	//
     bp = bp->next;
   }
 
-  gutil::FileUtil::Csync(this->tree_fp_);
+  gs::FileUtil::Csync(this->tree_fp_);
   //fclose(this->tree_fp_);
 
   return true;

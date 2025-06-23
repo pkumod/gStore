@@ -1,6 +1,6 @@
 #include "JsonUtil.h"
 
-namespace gutil
+namespace gs
 {
 
     JsonUtil::JsonUtil() {}

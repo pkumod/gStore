@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    void ApiHandler::show_users(shared_ptr<APIUtil>& apiUtil, gs::MessageShowUserResponse& response)
+    void ApiHandler::show_users(shared_ptr<APIUtil>& apiUtil, server::MessageShowUserResponse& response)
     {
         try
         {
@@ -40,7 +40,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::user_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserManageRequest& request, gs::MessageUserManageResponse& response)
+    void ApiHandler::user_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserManageRequest& request, server::MessageUserManageResponse& response)
     {
         try
         {
@@ -126,7 +126,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::user_privilege_manage(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPrivilegeManageRequest& request, gs::MessageUserPrivilegeManageResponse& response)
+    void ApiHandler::user_privilege_manage(shared_ptr<APIUtil>& apiUtil, server::MessageUserPrivilegeManageRequest& request, server::MessageUserPrivilegeManageResponse& response)
     {
         try
         {
@@ -314,7 +314,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::user_passworrd(shared_ptr<APIUtil>& apiUtil, gs::MessageUserPasswordRequest& request, gs::MessageUserPasswordResponse& response)
+    void ApiHandler::user_passworrd(shared_ptr<APIUtil>& apiUtil, server::MessageUserPasswordRequest& request, server::MessageUserPasswordResponse& response)
     {
         try
         {

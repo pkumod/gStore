@@ -1,6 +1,6 @@
 #include "ResourceUtil.h"
 
-namespace gutil {
+namespace gs {
     
     ResourceUtil::ResourceUtil() {}
     

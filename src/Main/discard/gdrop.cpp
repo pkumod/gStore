@@ -72,7 +72,7 @@ int main(int argc, char * argv[])
 				return 0;
 			}
 			cout<<"Begin to drop database...."<<endl;
-			long tv_begin = gutil::TimeUtil::timestamp();
+			long tv_begin = gs::TimeUtil::timestamp();
 			Database system_db(GlobalTypedef::system_db);
 			system_db.load();
 			string db_path = _db_home + db_name + _db_suffix;
@@ -102,7 +102,7 @@ int main(int argc, char * argv[])
 				cout << "WARN: Drop info about database " << db_name << " failed! Please check system db." << endl;
 			Util::remove_path(db_path);
 			// Util::delete_backuplog(db_name);
-			long tv_end = gutil::TimeUtil::timestamp();
+			long tv_end = gs::TimeUtil::timestamp();
 			cout << "Database " << db_name << " dropped successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			return 0;
 		}

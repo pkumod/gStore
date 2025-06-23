@@ -110,12 +110,12 @@ main(int argc, char * argv[])
 		bool is_zip = false;
 		if (FileUtil::fileSuffix(filename) == "zip")
 			is_zip = true;
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		if (is_zip)
 		{
 			std::string unz_dir_path;
 			std::vector<std::string> zip_files;
-			unz_dir_path = filename + "_" + gutil::TimeUtil::now();
+			unz_dir_path = filename + "_" + gs::TimeUtil::now();
 			std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip unzip(filename, unz_dir_path);
@@ -136,7 +136,7 @@ main(int argc, char * argv[])
 		}
 		else
 			_db.batch_remove(filename, false, nullptr);
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		cout << "after remove, used " << (tv_end - tv_begin) << " ms" << endl;
 		_db.save();
 	}

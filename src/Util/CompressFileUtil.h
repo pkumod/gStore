@@ -16,7 +16,7 @@
 #define MAXWBITS 15
 #define GZIPENCODING 16
 using namespace std;
-using namespace gutil;
+using namespace gs;
 
 typedef std::function<bool(std::string)> foreach_cb;
 

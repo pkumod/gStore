@@ -301,7 +301,7 @@ void Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
-	gutil::FileUtil::Csync(fp);
+	gs::FileUtil::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -319,7 +319,7 @@ void Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
-	gutil::FileUtil::Csync(fp);
+	gs::FileUtil::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 
@@ -337,7 +337,7 @@ void Database::saveIDinfo()
 		tp = bp->next;
 		bp = tp;
 	}
-	gutil::FileUtil::Csync(fp);
+	gs::FileUtil::Csync(fp);
 	fclose(fp);
 	fp = NULL;
 }
@@ -784,7 +784,7 @@ bool Database::load(bool loadCSR)
 		this->csr[0].init(pre_num);
 		this->csr[1].init(pre_num);
 		SLOG_CORE("pre_num: " << pre_num);
-		long begin_time = gutil::TimeUtil::timestamp();
+		long begin_time = gs::TimeUtil::timestamp();
 
 		// Process out-edges (csr[0])
 		// i: predicate; j: subject; k: object
@@ -907,7 +907,7 @@ bool Database::load(bool loadCSR)
 
 		SLOG_CORE("total vertices " << csr[1].n);
 		SLOG_CORE("total edges " << csr[1].m);
-		long end_time = gutil::TimeUtil::timestamp();
+		long end_time = gs::TimeUtil::timestamp();
 		SLOG_CORE("after creating CSR, used " << (end_time - begin_time) << "ms");
 		SLOG_CORE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
 	}
@@ -1422,7 +1422,7 @@ bool Database::unload()
 {
 	// TODO: do we need to update the pre2num if update queries exist??
 	// or we just neglect this, that is ok because pre2num is just used to count
-	if (!gutil::ResourceUtil::IsEnoughDisk(this->triple_update_num))
+	if (!gs::ResourceUtil::IsEnoughDisk(this->triple_update_num))
 		return false;
 	this->pre2num.reset();
 	this->pre2sub.reset();
@@ -1496,7 +1496,7 @@ bool Database::save()
 {
 	if (if_loaded)
 	{
-		if (!gutil::ResourceUtil::IsEnoughDisk(this->triple_update_num))
+		if (!gs::ResourceUtil::IsEnoughDisk(this->triple_update_num))
 			return false;
 		this->kvstore->flush();
 		this->saveDBInfoFile();
@@ -1609,18 +1609,18 @@ void Database::export_db(FILE *fp)
 	{
 		TYPE_PREDICATE_ID pid = i;
 		string p = this->kvstore->getPredicateByID(pid);
-		string pre = gutil::NodeUtil::node2string(p.c_str());
+		string pre = gs::NodeUtil::node2string(p.c_str());
 		this->kvstore->getsubIDobjIDlistBypreID(pid, id_list, id_list_len, true, nullptr);
 		for (unsigned j = 0; j < id_list_len; j += 2)
 		{
 			string s = this->kvstore->getEntityByID(id_list[j]);
-			string sub = gutil::NodeUtil::node2string(s.c_str());
+			string sub = gs::NodeUtil::node2string(s.c_str());
 			string o;
 			if (id_list[j + 1] >= GlobalTypedef::LITERAL_FIRST_ID)
 				o = this->kvstore->getLiteralByID(id_list[j + 1]);
 			else
 				o = this->kvstore->getEntityByID(id_list[j + 1]);
-			string obj = gutil::NodeUtil::node2string(o.c_str());
+			string obj = gs::NodeUtil::node2string(o.c_str());
 			string record = sub + "\t" + pre + "\t" + obj + ".\n";
 			fprintf(fp, "%s", record.c_str());
 		}
@@ -1640,7 +1640,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 										 this->limitID_predicate, this->limitID_literal, this->limitID_entity, txn, this->getfreelist_entity(), this->getentity_num(), _result_set.task);
 	if (txn != nullptr)
 		SLOG_CORE("query in transaction............................................");
-	long tv_begin = gutil::TimeUtil::timestamp();
+	long tv_begin = gs::TimeUtil::timestamp();
 
 	// this->query_parse_lock.lock();
 	bool parse_ret = false;
@@ -1665,7 +1665,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	// this->query_parse_lock.unlock();
 	if (!parse_ret)
 		return -101;
-	long tv_parse = gutil::TimeUtil::timestamp();
+	long tv_parse = gs::TimeUtil::timestamp();
 	SLOG_CORE("after Parsing, used " << (tv_parse - tv_begin) << "ms.");
 
 	// for select, -100 by default, -101 means error
@@ -1699,11 +1699,11 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 			general_evaluation.export_flag = export_flag;
 		}
 
-		long t1 = gutil::TimeUtil::timestamp();
+		long t1 = gs::TimeUtil::timestamp();
 
 		_result_set.task.checkOpCancel();
 		bool query_ret = general_evaluation.doQuery();
-		long t2 = gutil::TimeUtil::timestamp();
+		long t2 = gs::TimeUtil::timestamp();
 		SLOG_CORE("GeneralEvaluation::doQuery used " << (t2 - t1) << "ms.");
 
 		if (!query_ret)
@@ -1714,13 +1714,13 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 
 		//	this->debug_lock.unlock();
 
-		long tv_bfget = gutil::TimeUtil::timestamp();
+		long tv_bfget = gs::TimeUtil::timestamp();
 		// NOTICE: this lock lock ensures that StringIndex is visited sequentially
 		// this->getFinalResult_lock.lock();
 		_result_set.task.checkOpCancel();
 		general_evaluation.getFinalResult(_result_set);
 		// this->getFinalResult_lock.unlock();
-		long tv_afget = gutil::TimeUtil::timestamp();
+		long tv_afget = gs::TimeUtil::timestamp();
 		SLOG_CORE("during getFinalResult, used " << (tv_afget - tv_bfget) << "ms.");
 
 		if (_fp != NULL)
@@ -1775,11 +1775,11 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 
 			update_triple_num = update_pattern.sub_group_pattern.size();
 			TYPE_TRIPLE_NUM check_triple_num = general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data ? update_triple_num : (update_triple_num / 10);
-			if (!gutil::ResourceUtil::IsEnoughMemory(check_triple_num))
+			if (!gs::ResourceUtil::IsEnoughMemory(check_triple_num))
 			{
 				throw runtime_error("Not enough memory for batch operation");
 			}
-			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data && !gutil::ResourceUtil::IsEnoughDisk(check_triple_num)) 
+			if (general_evaluation.getQueryTree().getUpdateType() == QueryTree::Insert_Data && !gs::ResourceUtil::IsEnoughDisk(check_triple_num)) 
 			{
 				throw runtime_error("Not enough disk space for batch insertion");
 			}
@@ -1891,7 +1891,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 		}
 	}
 
-	long tv_final = gutil::TimeUtil::timestamp();
+	long tv_final = gs::TimeUtil::timestamp();
 	SLOG_CORE("Query time used (minus parsing): " << tv_final - tv_parse << "ms.");
 	SLOG_CORE("Total time used: " << (tv_final - tv_begin) << "ms.");
 	// if (general_evaluation.needOutputAnswer())
@@ -2034,7 +2034,7 @@ bool Database::build(const string &_rdf_file)
 	InitEmptyDB();
 	string error_log = this->store_path + "/parse_error.log";
 	FILE *fp = fopen(error_log.c_str(), "a");
-	string log_msg = "Info " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN) + " build parser info, file path " + ret + "\n";
+	string log_msg = "Info " + gs::TimeUtil::now(NORM_DATETIME_PATTERN) + " build parser info, file path " + ret + "\n";
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
 	SLOG_CORE("Begin encode RDF from : " << ret << " ...");
@@ -2127,7 +2127,7 @@ bool Database::saveDBInfoFile()
 	fwrite(&this->literal_num, sizeof(TYPE_ENTITY_LITERAL_ID), 1, filePtr);
 	fwrite(&this->encode_mode, sizeof(int), 1, filePtr);
 
-	gutil::FileUtil::Csync(filePtr);
+	gs::FileUtil::Csync(filePtr);
 	fclose(filePtr);
 
 	return true;
@@ -2223,7 +2223,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	// std::shared_ptr<ID_TUPLE[]> _p_id_tuples = nullptr;
 	// TYPE_TRIPLE_NUM _id_tuples_max = 0;
 
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	int64_t t1 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Begin to parse triples ......");
 	// NOTICE: in encode process, we should not divide ID of entity and literal totally apart, i.e. entity is a system
 	// while literal is another system
@@ -2242,7 +2242,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	thread build_schema_thread(&Database::buildSchema, this, _rdf_file, id_tuples);
 	build_schema_thread.detach(); 
 
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	// TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset
 	// based on the current available memory(need a memory manager globally)
@@ -2266,12 +2266,12 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	// However, we should read and build otehr indices only after the 6 trees and string index closed
 	//(to save memory)
 
-	t1 = gutil::TimeUtil::timestamp();
+	t1 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Saving StringIndex, used " + to_string(t1 - t2) + "ms.");
 	bar.set_option(indicators::option::PostfixText{"building id2string and string2id 2/5"});
 	bar.set_progress(61);
 	
-	t2 = gutil::TimeUtil::timestamp();
+	t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish saving id2string and string2id, used " + to_string(t2 - t1) + "ms.");
 	bar.set_option(indicators::option::PostfixText{"building spo2values 3/5"});
 	bar.set_progress(80);
@@ -2285,7 +2285,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	// update to the corresponding position in the signature file
 	// However, this may be costly due to frequent read/write
 
-	t1 = gutil::TimeUtil::timestamp();
+	t1 = gs::TimeUtil::timestamp();
 	SLOG_CORE("id tuples read, used " + to_string(t1 - t2) + "ms.");
 
 	// TODO: how to set the buffer of trees is a big question, fully utilize the availiable memory
@@ -2298,7 +2298,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	omp_set_num_threads(thread_num);
 	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
 	#endif
-	t2 = gutil::TimeUtil::timestamp();
+	t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish sorting id tuples, used " + to_string(t2 - t1) + "ms.");
 	TYPE_TRIPLE_NUM j = 1;
 	// TODO: should output triples_num without removing duplicates for reference, or keep a unique_triples_num separately?
@@ -2312,15 +2312,15 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	}
 	if (j < this->triples_num)
 		this->triples_num = j;
-	t1 = gutil::TimeUtil::timestamp();
+	t1 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish removing duplicate tuples, used " + to_string(t1 - t2) + "ms.");
 	if (Util::getConfigureValue("build_multi_thread") == "off")
 	{
-		t2 = gutil::TimeUtil::timestamp();
+		t2 = gs::TimeUtil::timestamp();
 		build_s2xx(_p_id_tuples);
 		build_o2xx(_p_id_tuples);
 		build_p2xx(_p_id_tuples);
-		t1 = gutil::TimeUtil::timestamp();
+		t1 = gs::TimeUtil::timestamp();
 		SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
 		bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
 		bar.set_progress(99);
@@ -2336,7 +2336,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		std::copy(&_p_id_tuples[0], &_p_id_tuples[this->triples_num], tmp_array_2);
 		std::shared_ptr<ID_TUPLE[]> _p_id_tuples_1(tmp_array_1, std::default_delete<ID_TUPLE[]>());
 		std::shared_ptr<ID_TUPLE[]> _p_id_tuples_2(tmp_array_2, std::default_delete<ID_TUPLE[]>());
-		t2 = gutil::TimeUtil::timestamp();
+		t2 = gs::TimeUtil::timestamp();
 		SLOG_CORE("Finish copying id tuples, used " + to_string(t2 - t1) + "ms.");
 
 		thread build_s2value_thread(&Database::build_s2xx, this, _p_id_tuples);
@@ -2345,7 +2345,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		build_s2value_thread.join();
 		build_o2value_thread.join();
 		build_p2value_thread.join();
-		t1 = gutil::TimeUtil::timestamp();
+		t1 = gs::TimeUtil::timestamp();
 		SLOG_CORE("Finish building spo2values, used " + to_string(t1 - t2) + "ms.");
 		bar.set_option(indicators::option::PostfixText{"Saving database info 4/5"});
 		bar.set_progress(99);
@@ -2360,7 +2360,7 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 	{
 		return false;
 	}
-	t2 = gutil::TimeUtil::timestamp();
+	t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish saving DBInfo, used " + to_string(t2 - t1) + "ms.");
 
 	flag = this->saveStatisticsInfoFile();
@@ -2419,16 +2419,16 @@ void Database::readIDTuples(std::shared_ptr<ID_TUPLE[]>& _p_id_tuples)
 void Database::build_s2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 	SLOG_CORE("Begin to build s2values ......");
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	int64_t t1 = gs::TimeUtil::timestamp();
 	this->kvstore->build_subID2values(_p_id_tuples, this->triples_num, this->entity_num);
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish building s2values, used " << (t2 - t1) << "ms.");
 }
 
 void Database::build_o2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 	SLOG_CORE("Begin to build o2values ......");
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	int64_t t1 = gs::TimeUtil::timestamp();
 	#ifndef PARALLEL_SORT
 	std::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
 	#else
@@ -2436,14 +2436,14 @@ void Database::build_o2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 	__gnu_parallel::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::ops_cmp_idtuple);
 	#endif
 	this->kvstore->build_objID2values(_p_id_tuples, this->triples_num, this->entity_num, this->literal_num);
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish building o2values, used " << (t2 - t1) << "ms.");
 }
 
 void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 {
 	SLOG_CORE("Begin to build p2values ......");
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	int64_t t1 = gs::TimeUtil::timestamp();
 	#ifndef PARALLEL_SORT
 	std::sort(_p_id_tuples.get(), _p_id_tuples.get() + this->triples_num, Util::pso_cmp_idtuple);
 	#else
@@ -2452,7 +2452,7 @@ void Database::build_p2xx(std::shared_ptr<ID_TUPLE[]> _p_id_tuples)
 	#endif
 	// qsort(_p_id_tuples, this->triples_num, sizeof(int*), Util::_pso_cmp);
 	this->kvstore->build_preID2values(_p_id_tuples, this->triples_num, this->pre_num);
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish building p2values, used " << (t2 - t1) << "ms.");
 }
 
@@ -2538,7 +2538,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 	{
 		++batch_count;
 		int parse_triple_num = 0;
-		int64_t t1 = gutil::TimeUtil::timestamp();
+		int64_t t1 = gs::TimeUtil::timestamp();
 		// BETTER: support multiple threads to parse triples
 		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, _error_log, num_lines);
 		num_lines = curr_lines;
@@ -2591,7 +2591,7 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const string _rdf_file, con
 			tmp_id_tuples[i] = tmp_id_tuple;
 		}
 		fwrite(tmp_id_tuples.get(), sizeof(ID_TUPLE), parse_triple_num, fp);
-		int64_t t2 = gutil::TimeUtil::timestamp();
+		int64_t t2 = gs::TimeUtil::timestamp();
 		SLOG_CORE("Alloc ID for triple batch " + to_string(batch_count) + ", batch size = " + to_string(parse_triple_num) + ", use " + to_string(t2-t1) + "ms");
 		bar.set_progress(int(batch_count * progress_unit));
 	}
@@ -2678,7 +2678,7 @@ bool Database::insertTriple(const TripleWithObjType &_triple, vector<unsigned> *
 	// cout<<_triple.predicate<<endl;
 	// cout<<_triple.object<<endl;
 
-	// long tv_kv_store_begin = gutil::TimeUtil::timestamp();
+	// long tv_kv_store_begin = gs::TimeUtil::timestamp();
 
 	TYPE_ENTITY_LITERAL_ID _sub_id = (this->kvstore)->getIDByEntity(_triple.subject);
 	// if(txn != nullptr)
@@ -2988,7 +2988,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	}
 	SLOG_CORE("finish loading");
 
-	long tv_load = gutil::TimeUtil::timestamp();
+	long tv_load = gs::TimeUtil::timestamp();
 
 	TYPE_TRIPLE_NUM success_num = 0;
 
@@ -3028,10 +3028,10 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 		}
 
 		// Process the Triple one by one
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		success_num += this->insert(triple_array, parse_triple_num, _is_restore, txn);
 		// success_num += this->batch_insert(triple_array, parse_triple_num, _is_restore, txn);
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 		// some maybe invalid or duplicate
 		// triple_num += parse_triple_num;
@@ -3039,7 +3039,7 @@ bool Database::insert(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 
 	triple_array.reset();
 	triple_array = NULL;
-	long tv_insert = gutil::TimeUtil::timestamp();
+	long tv_insert = gs::TimeUtil::timestamp();
 	SLOG_CORE("after insert, used " << (tv_insert - tv_load) << "ms.");
 	// BETTER:update kvstore and vstree separately, to lower the memory cost
 	// flag = this->vstree->saveTree();
@@ -3070,7 +3070,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	}
 	SLOG_CORE("finish loading");
 
-	long tv_load = gutil::TimeUtil::timestamp();
+	long tv_load = gs::TimeUtil::timestamp();
 	TYPE_TRIPLE_NUM success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
@@ -3105,9 +3105,9 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 			break;
 		}
 
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		success_num += this->remove(triple_array, parse_triple_num, _is_restore, txn);
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 		// some maybe invalid or duplicate
 		// triple_num -= parse_triple_num;
@@ -3118,7 +3118,7 @@ bool Database::remove(std::string _rdf_file, bool _is_restore, shared_ptr<Transa
 	// or reduce the array size
 	triple_array.reset();
 	triple_array = NULL;
-	long tv_remove = gutil::TimeUtil::timestamp();
+	long tv_remove = gs::TimeUtil::timestamp();
 	SLOG_CORE("after remove, used " << (tv_remove - tv_load) << "ms.");
 
 	// flag = this->vstree->saveTree();
@@ -3170,9 +3170,9 @@ Database::insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIP
 		// 		continue;
 		// 	}
 		// 	stringstream ss;
-		// 	ss << "I\t" << gutil::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
-		// 	ss << gutil::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
-		// 	ss << gutil::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gutil::TimeUtil::timestamp() << '.' << endl;
+		// 	ss << "I\t" << gs::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
+		// 	ss << gs::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		// 	ss << gs::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gs::TimeUtil::timestamp() << '.' << endl;
 		// 	out << ss.str();
 		// 	out_all << ss.str();
 		// }
@@ -3223,9 +3223,9 @@ Database::remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYPE_TRIP
 		// 		continue;
 		// 	}
 		// 	stringstream ss;
-		// 	ss << "R\t" << gutil::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
-		// 	ss << gutil::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
-		// 	ss << gutil::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gutil::TimeUtil::timestamp() << '.' << endl;
+		// 	ss << "R\t" << gs::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
+		// 	ss << gs::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		// 	ss << gs::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gs::TimeUtil::timestamp() << '.' << endl;
 		// 	out << ss.str();
 		// 	out_all << ss.str();
 		// }
@@ -3282,12 +3282,12 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		triple_num = triple_num * 3;
 	}
-	if (!gutil::ResourceUtil::IsEnoughMemory(triple_num*3))
+	if (!gs::ResourceUtil::IsEnoughMemory(triple_num*3))
 	{
 		throw runtime_error("Not enough memory for batch insertion");
 	}
 
-	long tv_load = gutil::TimeUtil::timestamp();
+	long tv_load = gs::TimeUtil::timestamp();
 
 	unsigned success_num = 0;
 
@@ -3310,7 +3310,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	SLOG_CORE("parse log file:" << error_log);
 	//write build info to log
 	FILE *fp = fopen(error_log.c_str(), "a");
-	string log_msg = "Info " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN) + " batch insert parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
+	string log_msg = "Info " + gs::TimeUtil::now(NORM_DATETIME_PATTERN) + " batch insert parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
 	// TYPE_TRIPLE_NUM triple_num = 0;
@@ -3323,7 +3323,7 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 		{
 			break;
 		}
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		insert_num = this->batch_insert(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
 		if (insert_num == UINT32_MAX)
 		{
@@ -3331,14 +3331,14 @@ Database::batch_insert(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 			throw runtime_error("batch insert failed: probably out of memory");
 		}
 		success_num += insert_num;
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		SLOG_CORE("batch insert, used " << (tv_end - tv_begin) << " ms");
 	}
 
 	triple_array.reset();
 	triple_array = NULL;
 	this->saveStatisticsInfoFile();
-	long tv_insert = gutil::TimeUtil::timestamp();
+	long tv_insert = gs::TimeUtil::timestamp();
 	SLOG_CORE("after batch insert, used " << (tv_insert - tv_load) << "ms.");
 	SLOG_CORE("insert rdf triples done.");
 	SLOG_CORE("inserted triples num: " << success_num);
@@ -3365,12 +3365,12 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	{
 		triple_num = triple_num * 3;
 	}
-	if (!gutil::ResourceUtil::IsEnoughMemory(triple_num*3))
+	if (!gs::ResourceUtil::IsEnoughMemory(triple_num*3))
 	{
 		throw runtime_error("Not enough memory for batch deletion");
 	}
 
-	long tv_load = gutil::TimeUtil::timestamp();
+	long tv_load = gs::TimeUtil::timestamp();
 	unsigned success_num = 0;
 
 	ifstream _fin(_rdf_file.c_str());
@@ -3388,7 +3388,7 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 	SLOG_CORE("parse log file:" << error_log);
 	//write build info to log
 	FILE *fp = fopen(error_log.c_str(), "a");
-	string log_msg = "Info " + gutil::TimeUtil::now(NORM_DATETIME_PATTERN) + " batch remove parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
+	string log_msg = "Info " + gs::TimeUtil::now(NORM_DATETIME_PATTERN) + " batch remove parser info, file path " + Util::getExactPath(_rdf_file.c_str()) + "\n";
 	fputs(log_msg.c_str(), fp);
 	fclose(fp);
 	while (true)
@@ -3400,15 +3400,15 @@ Database::batch_remove(std::string _rdf_file, bool _is_restore, shared_ptr<Trans
 			break;
 		}
 
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		success_num += this->batch_remove(triple_array, parse_triple_num, _is_restore, txn, cluster_log);
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		SLOG_CORE("batch remove, used " << (tv_end - tv_begin) << " ms");
 	}
 
 	triple_array.reset();
 	this->saveStatisticsInfoFile();
-	long tv_remove = gutil::TimeUtil::timestamp();
+	long tv_remove = gs::TimeUtil::timestamp();
 	SLOG_CORE("after batch remove, used " << (tv_remove - tv_load) << "ms.");
 	SLOG_CORE("remove rdf triples done.");
 	SLOG_CORE("removed triples num: " << success_num);
@@ -3617,7 +3617,7 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 	this->triples_num = this->triples_num + update_num_triple;
 	this->sub_num = this->sub_num + update_num_subject;
 	this->stringindex->change(entitys, literals, predicates, *this->kvstore);
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	
 	this->kvstore->setCSRUpdate(true);
 	this->addTripleUpdateNum(update_num_s);
@@ -4163,14 +4163,14 @@ bool Database::write_update_log(const std::shared_ptr<TripleWithObjType[]>& _tri
 		stringstream ss;
 		if (type == 1)
 		{
-			ss << "I\t" << gutil::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
+			ss << "I\t" << gs::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
 		}
 		else
 		{
-			ss << "R\t" << gutil::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
+			ss << "R\t" << gs::NodeUtil::node2string(_triples[i].getSubject().c_str()) << '\t';
 		}
-		ss << gutil::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
-		ss << gutil::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gutil::TimeUtil::timestamp() << '.' << endl;
+		ss << gs::NodeUtil::node2string(_triples[i].getPredicate().c_str()) << '\t';
+		ss << gs::NodeUtil::node2string(_triples[i].getObject().c_str()) << '\t' << gs::TimeUtil::timestamp() << '.' << endl;
 		out << ss.str();
 		out_all << ss.str();
 	}

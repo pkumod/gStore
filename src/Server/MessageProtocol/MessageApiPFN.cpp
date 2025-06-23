@@ -1,7 +1,7 @@
 #include "MessageApiPFN.h"
 #include "../ApiProvider.h"
 
-namespace gs
+namespace server
 {
     void MessageFunQueryRequest::to_json(std::string& json_str)
     {

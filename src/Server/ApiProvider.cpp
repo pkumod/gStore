@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
     bool ApiHandler::uncompress_zip(shared_ptr<APIUtil>& apiUtil, const std::string& file, std::map<std::string, unsigned long long>& uncompress_files, const std::string& uncompress_path, MessageResponse& response)
     {
@@ -66,7 +66,7 @@ namespace gs
                 return;
             }            
             shared_ptr<DatabaseInfo> db_info;
-            gs::StatusCode statusCode;
+            server::StatusCode statusCode;
             std::string statusMsg;
             apiUtil->get_databaseinfo(request.db_name, db_info);
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, true))
@@ -142,7 +142,7 @@ namespace gs
                 return;
             }
             shared_ptr<DatabaseInfo> database_info;
-            gs::StatusCode statusCode;
+            server::StatusCode statusCode;
             std::string statusMsg;
             apiUtil->get_databaseinfo(request.db_name, database_info);
             if (!apiUtil->validate_databaseinfo(database_info, statusCode, statusMsg, true, false, false))

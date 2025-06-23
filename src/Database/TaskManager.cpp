@@ -8,7 +8,7 @@ namespace Task
     // query task
     void OperationTask::finishTask(const std::string& resultFile)
     {
-        endTime_ = gutil::TimeUtil::timestamp();
+        endTime_ = gs::TimeUtil::timestamp();
         if (status_ == 0)
             status_ = 1;
         resultFile_ = resultFile;
@@ -19,7 +19,7 @@ namespace Task
         cb_ = [this]()
         {
         	SLOG_TRACE("query task opt_id:" << opt_id_);
-            endTime_ = gutil::TimeUtil::timestamp();
+            endTime_ = gs::TimeUtil::timestamp();
             status_ = -1;
             cb_ = nullptr;
         };
@@ -56,7 +56,7 @@ namespace Task
         std::shared_ptr<OperationTask> task = std::make_shared<OperationTask>();
         task->opt_id_ = opt_id;
         task->database_ = database;
-        task->startTime_ = gutil::TimeUtil::timestamp();
+        task->startTime_ = gs::TimeUtil::timestamp();
         task->sparql_ = sparql;
         task->operation_ = operation;
         task->async_ = async;

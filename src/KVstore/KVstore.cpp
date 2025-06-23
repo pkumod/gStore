@@ -788,7 +788,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 			throw runtime_error("validate error: len not equal (_values[0] + 2*_values[1] + 3)");
 		}
 		size_t mem_size = sizeof(unsigned) * len;
-		if (gutil::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
+		if (gs::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
 			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
 			delete [] _tmp;
 			delete [] _values;
@@ -807,7 +807,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		_values_len = _len + 3*n;
 		_values = new unsigned[_values_len];
 		size_t mem_size = sizeof(unsigned)* _values_len;
-		if (gutil::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
+		if (gs::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
 			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
 			delete [] _values;
 			delete [] _tmp;
@@ -991,7 +991,7 @@ KVstore::Insert_s2values(const vector<unsigned> &_pidoidlist, unsigned* _tmp,  u
 		_values[2] = entity_num;
 		//assert(len == _values[0] + 2*_values[1] + 3);
 		mem_size = sizeof(unsigned) * len;
-		if (gutil::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
+		if (gs::ResourceUtil::IsEnoughMemoryMb(mem_size) == false) {
 			SLOG_ERROR("Memory is not enough, need mem_size:" << mem_size << " byte");
 			delete [] _tmp;
 			delete [] _values;

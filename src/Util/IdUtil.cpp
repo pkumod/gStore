@@ -1,6 +1,6 @@
 #include "IdUtil.h"
 
-namespace gutil
+namespace gs
 {
     IdUtil::IdUtil(){}
     

@@ -4,7 +4,7 @@
 #include "PFNEntity.h"
 
 using namespace std;
-using namespace gutil;
+using namespace gs;
 
 #define PFN_HEADER "#include \"../../include/Pfn/GAnalysis.h\"\n\nusing namespace std;\n\n"
 

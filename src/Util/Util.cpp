@@ -163,13 +163,13 @@ Util::configure()
 
     // create db_home
     string temp_str = GlobalTypedef::global_config["db_home"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["db_home"] = temp_str;
     FileUtil::createDirs(temp_str);
     
     // create backup_path
     temp_str = Util::getConfigureValue("backup_path");
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["backup_path"] = temp_str;
     FileUtil::createDirs(temp_str);
 
@@ -179,30 +179,30 @@ Util::configure()
 
     // create pfn_base_path
     temp_str = GlobalTypedef::global_config["pfn_base_path"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["pfn_base_path"] = temp_str;
     FileUtil::createDirs(temp_str + "cpp");
     FileUtil::createDirs(temp_str + "lib");
 
     // create upload_path
     temp_str = GlobalTypedef::global_config["upload_path"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["upload_path"] = temp_str;
     FileUtil::createDirs(temp_str);
 
     // create logs path
     temp_str = GlobalTypedef::global_config["querylog_path"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["querylog_path"] = temp_str;
     FileUtil::createDirs(temp_str);
 
     temp_str = GlobalTypedef::global_config["accesslog_path"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["accesslog_path"] = temp_str;
     FileUtil::createDirs(temp_str);
 
     temp_str = GlobalTypedef::global_config["queryresult_path"];
-    gutil::StringUtil::append(temp_str, '/');
+    gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["queryresult_path"] = temp_str;
     FileUtil::createDirs(temp_str);
     
@@ -210,14 +210,14 @@ Util::configure()
     if (GlobalTypedef::global_config["cluster_on"] == "on")
     {        
         temp_str = GlobalTypedef::global_config["cluster_data_path"];
-        gutil::StringUtil::append(temp_str, '/');
+        gs::StringUtil::append(temp_str, '/');
         GlobalTypedef::global_config["cluster_data_path"] = temp_str;
         FileUtil::createDirs(temp_str);
     }
 
     // init slog
     string log_mode = Util::getConfigureValue("log_mode");
-	if (gutil::FileUtil::fileExists(log_mode))
+	if (gs::FileUtil::fileExists(log_mode))
 	{
 		log4cplus::PropertyConfigurator::doConfigure(LOG4CPLUS_TEXT(log_mode));
 	}
@@ -1647,7 +1647,7 @@ Util::add_backuplog(string db_name)
     // document.SetObject();
     // Document::AllocatorType &allocator = document.GetAllocator();
 
-    // string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+    // string time = gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 
     // document.AddMember("db_name", StringRef(db_name.c_str()), allocator);
     // document.AddMember("backup_interval", DEFALUT_BACKUP_INTERVAL, allocator);

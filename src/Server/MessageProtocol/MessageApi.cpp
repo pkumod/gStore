@@ -1,7 +1,7 @@
 #include "MessageApi.h"
 #include "../ApiProvider.h"
 
-namespace gs
+namespace server
 {
     // base request
     void MessageRequest::init(std::string username, std::string password)

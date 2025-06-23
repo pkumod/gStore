@@ -1,26 +1,26 @@
 #include "APIConnector.h"
 
 
-gs::MessageShutdownResponse APIConnector::shutdown(const std::string& url, gs::MessageShutdownRequest& request)
+server::MessageShutdownResponse APIConnector::shutdown(const std::string& url, server::MessageShutdownRequest& request)
 {
 	std::string body_str;
 	std::map<std::string, std::string> headers;
 	headers.insert(std::pair<std::string, std::string>("username", request.username));
 	headers.insert(std::pair<std::string, std::string>("password", request.password));
 	int status = WFHttpUtil::Post(url, headers, -1, "", body_str);
-	return response_parser<gs::MessageShutdownResponse>(status, body_str);
+	return response_parser<server::MessageShutdownResponse>(status, body_str);
 }
 
-gs::MessageCheckResponse APIConnector::check(const std::string& url, gs::MessageCheckRequest& request)
+server::MessageCheckResponse APIConnector::check(const std::string& url, server::MessageCheckRequest& request)
 {
 	std::string param_str = request.to_params();
 	std::string body_str;
 	std::string strUrl = url + "?" + param_str;
 	int status = WFHttpUtil::Get(strUrl, body_str);
-	return response_parser<gs::MessageCheckResponse>(status, body_str);
+	return response_parser<server::MessageCheckResponse>(status, body_str);
 }
 
-gs::MessageResponse APIConnector::refreshConf(const std::string& url, const bool& inner, gs::MessageRefreshconfRequest& request)
+server::MessageResponse APIConnector::refreshConf(const std::string& url, const bool& inner, server::MessageRefreshconfRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -29,10 +29,10 @@ gs::MessageResponse APIConnector::refreshConf(const std::string& url, const bool
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageResponse>(status, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
 }
 
-gs::MessageTestConnectionResponse APIConnector::testConnection(const std::string& url, const bool& inner, gs::MessageTestConnectionRequest& request)
+server::MessageTestConnectionResponse APIConnector::testConnection(const std::string& url, const bool& inner, server::MessageTestConnectionRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -41,23 +41,10 @@ gs::MessageTestConnectionResponse APIConnector::testConnection(const std::string
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageTestConnectionResponse>(status, body_str);
+	return response_parser<server::MessageTestConnectionResponse>(status, body_str);
 }
 
-gs::MessageInitResponse APIConnector::init(const std::string& url, const bool& inner, gs::MessageInitRequest& request)
-{
-	std::string json_str;
-	if (inner)
-		request.to_inner_json(json_str);
-	else
-		request.to_json(json_str);
-	
-	std::string body_str;
-	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageInitResponse>(status, body_str);
-}
-
-gs::MessageLoadResponse APIConnector::load(const std::string& url, const bool& inner, gs::MessageLoadRequest& request)
+server::MessageInitResponse APIConnector::init(const std::string& url, const bool& inner, server::MessageInitRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -67,19 +54,32 @@ gs::MessageLoadResponse APIConnector::load(const std::string& url, const bool& i
 	
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageLoadResponse>(status, body_str);
+	return response_parser<server::MessageInitResponse>(status, body_str);
 }
 
-gs::MessageResponse APIConnector::login(const std::string& url, gs::MessageLoginRequest& request)
+server::MessageLoadResponse APIConnector::load(const std::string& url, const bool& inner, server::MessageLoadRequest& request)
+{
+	std::string json_str;
+	if (inner)
+		request.to_inner_json(json_str);
+	else
+		request.to_json(json_str);
+	
+	std::string body_str;
+	int status = WFHttpUtil::Post(url, json_str, body_str);
+	return response_parser<server::MessageLoadResponse>(status, body_str);
+}
+
+server::MessageResponse APIConnector::login(const std::string& url, server::MessageLoginRequest& request)
 {
 	std::string json_str;
 	request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageResponse>(status, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
 }
 
-gs::MessageResponse APIConnector::unload(const std::string& url, const bool& inner, gs::MessageUnloadRequest& request)
+server::MessageResponse APIConnector::unload(const std::string& url, const bool& inner, server::MessageUnloadRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -88,10 +88,10 @@ gs::MessageResponse APIConnector::unload(const std::string& url, const bool& inn
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageResponse>(status, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
 }
 
-gs::MessageBuildResponse APIConnector::build(const std::string& url, const bool& inner, gs::MessageBuildRequest& request)
+server::MessageBuildResponse APIConnector::build(const std::string& url, const bool& inner, server::MessageBuildRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -100,10 +100,10 @@ gs::MessageBuildResponse APIConnector::build(const std::string& url, const bool&
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageBuildResponse>(status, body_str);
+	return response_parser<server::MessageBuildResponse>(status, body_str);
 }
 
-gs::MessageResponse APIConnector::drop(const std::string& url, const bool& inner, gs::MessageDropRequest& request)
+server::MessageResponse APIConnector::drop(const std::string& url, const bool& inner, server::MessageDropRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -112,10 +112,10 @@ gs::MessageResponse APIConnector::drop(const std::string& url, const bool& inner
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageResponse>(status, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
 }
 
-gs::MessageShowResponse APIConnector::show(const std::string& url, const bool& inner, gs::MessageShowRequest& request)
+server::MessageShowResponse APIConnector::show(const std::string& url, const bool& inner, server::MessageShowRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -124,10 +124,10 @@ gs::MessageShowResponse APIConnector::show(const std::string& url, const bool& i
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageShowResponse>(status, body_str);
+	return response_parser<server::MessageShowResponse>(status, body_str);
 }
 
-gs::MessageMonitorResponse APIConnector::monitor(const std::string& url, const bool& inner, gs::MessageMonitorRequest& request)
+server::MessageMonitorResponse APIConnector::monitor(const std::string& url, const bool& inner, server::MessageMonitorRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -136,10 +136,10 @@ gs::MessageMonitorResponse APIConnector::monitor(const std::string& url, const b
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageMonitorResponse>(status, body_str);
+	return response_parser<server::MessageMonitorResponse>(status, body_str);
 }
 
-gs::MessageQueryResponse APIConnector::query(const std::string& url, const bool& inner, gs::MessageQueryRequest& request)
+server::MessageQueryResponse APIConnector::query(const std::string& url, const bool& inner, server::MessageQueryRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -148,11 +148,11 @@ gs::MessageQueryResponse APIConnector::query(const std::string& url, const bool&
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageQueryResponse>(status, body_str);
+	return response_parser<server::MessageQueryResponse>(status, body_str);
 }
 
 
-gs::MessageBatchInsertResponse APIConnector::batchInsert(const std::string& url, const bool& inner, gs::MessageBatchInsertRequest& request)
+server::MessageBatchInsertResponse APIConnector::batchInsert(const std::string& url, const bool& inner, server::MessageBatchInsertRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -161,10 +161,10 @@ gs::MessageBatchInsertResponse APIConnector::batchInsert(const std::string& url,
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageBatchInsertResponse>(status, body_str);
+	return response_parser<server::MessageBatchInsertResponse>(status, body_str);
 }
 
-gs::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url, const bool& inner, gs::MessageBatchRemoveRequest& request)
+server::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url, const bool& inner, server::MessageBatchRemoveRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -173,12 +173,12 @@ gs::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url,
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageBatchRemoveResponse>(status, body_str);
+	return response_parser<server::MessageBatchRemoveResponse>(status, body_str);
 }
 
 
 
-// gs::MessageGetCoreVersionResponse APIConnector::getCoreVersion(const std::string& url, const bool& inner, gs::MessageGetCoreVersionRequest& request)
+// server::MessageGetCoreVersionResponse APIConnector::getCoreVersion(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request)
 // {
 // 	std::string json_str;
 // 	if (inner)
@@ -187,10 +187,10 @@ gs::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url,
 // 		request.to_json(json_str);
 // 	std::string body_str;
 // 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<gs::MessageGetCoreVersionResponse>(status, body_str);
+// 	return response_parser<server::MessageGetCoreVersionResponse>(status, body_str);
 // }
 
-// gs::MessageIpManageResponse APIConnector::ipManage(const std::string& url, const bool& inner, gs::MessageGetCoreVersionRequest& request);
+// server::MessageIpManageResponse APIConnector::ipManage(const std::string& url, const bool& inner, server::MessageGetCoreVersionRequest& request);
 // {
 // 	std::string json_str;
 // 	if (inner)
@@ -199,11 +199,11 @@ gs::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url,
 // 		request.to_json(json_str);
 // 	std::string body_str;
 // 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<gs::MessageIpResponse>(status, body_str);
+// 	return response_parser<server::MessageIpResponse>(status, body_str);
 // }
 
 
-// gs::MessageStatResponse APIConnector::stat(const std::string& url, const bool& inner, gs::MessageStatRequest& request)
+// server::MessageStatResponse APIConnector::stat(const std::string& url, const bool& inner, server::MessageStatRequest& request)
 // {
 // 	std::string json_str;
 // 	if (inner)
@@ -212,10 +212,10 @@ gs::MessageBatchRemoveResponse APIConnector::batchRemove(const std::string& url,
 // 		request.to_json(json_str);
 // 	std::string body_str;
 // 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<gs::MessageStatResponse>(status, body_str);
+// 	return response_parser<server::MessageStatResponse>(status, body_str);
 // }
 
-gs::MessageBackupResponse APIConnector::backup(const std::string& url, const bool& inner, gs::MessageBackupRequest& request)
+server::MessageBackupResponse APIConnector::backup(const std::string& url, const bool& inner, server::MessageBackupRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -224,10 +224,10 @@ gs::MessageBackupResponse APIConnector::backup(const std::string& url, const boo
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageBackupResponse>(status, body_str);
+	return response_parser<server::MessageBackupResponse>(status, body_str);
 }
 
-// gs::MessageBackUpPathResponse APIConnector::backUpPath(const std::string& url, const bool& inner, gs::MessageBackUpPathRequest& request)
+// server::MessageBackUpPathResponse APIConnector::backUpPath(const std::string& url, const bool& inner, server::MessageBackUpPathRequest& request)
 // {
 // 	std::string json_str;
 // 	if (inner)
@@ -236,10 +236,10 @@ gs::MessageBackupResponse APIConnector::backup(const std::string& url, const boo
 // 		request.to_json(json_str);
 // 	std::string body_str;
 // 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<gs::MessageBackUpPathResponse>(status, body_str);
+// 	return response_parser<server::MessageBackUpPathResponse>(status, body_str);
 // }
 
-gs::MessageRestoreResponse APIConnector::restore(const std::string& url, const bool& inner, gs::MessageRestoreRequest& request)
+server::MessageRestoreResponse APIConnector::restore(const std::string& url, const bool& inner, server::MessageRestoreRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -248,10 +248,10 @@ gs::MessageRestoreResponse APIConnector::restore(const std::string& url, const b
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageRestoreResponse>(status, body_str);
+	return response_parser<server::MessageRestoreResponse>(status, body_str);
 }
 
-gs::MessageExportResponse APIConnector::exportDb(const std::string& url, const bool& inner, gs::MessageExportRequest& request)
+server::MessageExportResponse APIConnector::exportDb(const std::string& url, const bool& inner, server::MessageExportRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -260,10 +260,10 @@ gs::MessageExportResponse APIConnector::exportDb(const std::string& url, const b
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageExportResponse>(status, body_str);
+	return response_parser<server::MessageExportResponse>(status, body_str);
 }
 
-// gs::MessageRenameResponse rename(const std::string& url, const bool& inner, gs::MessageRenameRequest& request)
+// server::MessageRenameResponse rename(const std::string& url, const bool& inner, server::MessageRenameRequest& request)
 // {
 // 	std::string json_str;
 // 	if (inner)
@@ -272,10 +272,10 @@ gs::MessageExportResponse APIConnector::exportDb(const std::string& url, const b
 // 		request.to_json(json_str);
 // 	std::string body_str;
 // 	int status = WFHttpUtil::Post(url, json_str, body_str);
-// 	return response_parser<gs::MessageRenameResponse>(status, body_str);
+// 	return response_parser<server::MessageRenameResponse>(status, body_str);
 // }
 
-gs::MessageCheckOperationStateResponse APIConnector::checkOperationState(const std::string& url, const bool& inner, gs::MessageCheckOperationStateRequest& request)
+server::MessageCheckOperationStateResponse APIConnector::checkOperationState(const std::string& url, const bool& inner, server::MessageCheckOperationStateRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -284,11 +284,11 @@ gs::MessageCheckOperationStateResponse APIConnector::checkOperationState(const s
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageCheckOperationStateResponse>(status, body_str);
+	return response_parser<server::MessageCheckOperationStateResponse>(status, body_str);
 }
 
 
-gs::MessageBeginResponse APIConnector::begin(const std::string& url, const bool& inner, gs::MessageBeginRequest& request)
+server::MessageBeginResponse APIConnector::begin(const std::string& url, const bool& inner, server::MessageBeginRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -297,10 +297,10 @@ gs::MessageBeginResponse APIConnector::begin(const std::string& url, const bool&
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageBeginResponse>(status, body_str);
+	return response_parser<server::MessageBeginResponse>(status, body_str);
 }
 
-gs::MessageTqueryResponse APIConnector::tquery(const std::string& url, const bool& inner, gs::MessageTqueryRequest& request)
+server::MessageTqueryResponse APIConnector::tquery(const std::string& url, const bool& inner, server::MessageTqueryRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -309,10 +309,10 @@ gs::MessageTqueryResponse APIConnector::tquery(const std::string& url, const boo
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageTqueryResponse>(status, body_str);
+	return response_parser<server::MessageTqueryResponse>(status, body_str);
 }
 
-gs::MessageCommitResponse APIConnector::commit(const std::string& url, const bool& inner, gs::MessageCommitRequest& request)
+server::MessageCommitResponse APIConnector::commit(const std::string& url, const bool& inner, server::MessageCommitRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -321,10 +321,10 @@ gs::MessageCommitResponse APIConnector::commit(const std::string& url, const boo
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageCommitResponse>(status, body_str);
+	return response_parser<server::MessageCommitResponse>(status, body_str);
 }
 
-gs::MessageRollbackResponse APIConnector::rollBack(const std::string& url, const bool& inner, gs::MessageRollbackRequest& request)
+server::MessageRollbackResponse APIConnector::rollBack(const std::string& url, const bool& inner, server::MessageRollbackRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -333,10 +333,10 @@ gs::MessageRollbackResponse APIConnector::rollBack(const std::string& url, const
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageRollbackResponse>(status, body_str);
+	return response_parser<server::MessageRollbackResponse>(status, body_str);
 }
 
-gs::MessageCheckPointResponse APIConnector::checkPoint(const std::string& url, const bool& inner, gs::MessageCheckPointRequest& request)
+server::MessageCheckPointResponse APIConnector::checkPoint(const std::string& url, const bool& inner, server::MessageCheckPointRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -345,10 +345,10 @@ gs::MessageCheckPointResponse APIConnector::checkPoint(const std::string& url, c
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageCheckPointResponse>(status, body_str);
+	return response_parser<server::MessageCheckPointResponse>(status, body_str);
 }
 
-gs::MessageShowUserResponse APIConnector::showUser(const std::string& url, const bool& inner, gs::MessageShowUserRequest& request)
+server::MessageShowUserResponse APIConnector::showUser(const std::string& url, const bool& inner, server::MessageShowUserRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -357,10 +357,10 @@ gs::MessageShowUserResponse APIConnector::showUser(const std::string& url, const
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageShowUserResponse>(status, body_str);
+	return response_parser<server::MessageShowUserResponse>(status, body_str);
 }
 
-gs::MessageResponse APIConnector::userManage(const std::string& url, const bool& inner, gs::MessageUserManageRequest& request)
+server::MessageResponse APIConnector::userManage(const std::string& url, const bool& inner, server::MessageUserManageRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -369,10 +369,10 @@ gs::MessageResponse APIConnector::userManage(const std::string& url, const bool&
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageResponse>(status, body_str);
+	return response_parser<server::MessageResponse>(status, body_str);
 }
 
-gs::MessageUserPrivilegeManageResponse APIConnector::userPrivilegeManage(const std::string& url, const bool& inner, gs::MessageUserPrivilegeManageRequest& request)
+server::MessageUserPrivilegeManageResponse APIConnector::userPrivilegeManage(const std::string& url, const bool& inner, server::MessageUserPrivilegeManageRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -381,10 +381,10 @@ gs::MessageUserPrivilegeManageResponse APIConnector::userPrivilegeManage(const s
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageUserPrivilegeManageResponse>(status, body_str);
+	return response_parser<server::MessageUserPrivilegeManageResponse>(status, body_str);
 }
 
-gs::MessageUserPasswordResponse APIConnector::userPassword(const std::string& url, const bool& inner, gs::MessageUserPasswordRequest& request)
+server::MessageUserPasswordResponse APIConnector::userPassword(const std::string& url, const bool& inner, server::MessageUserPasswordRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -393,10 +393,10 @@ gs::MessageUserPasswordResponse APIConnector::userPassword(const std::string& ur
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageUserPasswordResponse>(status, body_str);
+	return response_parser<server::MessageUserPasswordResponse>(status, body_str);
 }
 
-gs::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const bool& inner, gs::MessageFunQueryRequest& request)
+server::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const bool& inner, server::MessageFunQueryRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -405,10 +405,10 @@ gs::MessageFunQueryResponse APIConnector::funQuery(const std::string& url, const
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageFunQueryResponse>(status, body_str);
+	return response_parser<server::MessageFunQueryResponse>(status, body_str);
 }
 
-gs::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, const bool& inner, gs::MessageFunCudbRequest& request)
+server::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, const bool& inner, server::MessageFunCudbRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -417,10 +417,10 @@ gs::MessageFunCudbResponse APIConnector::funCudb(const std::string& url, const b
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageFunCudbResponse>(status, body_str);
+	return response_parser<server::MessageFunCudbResponse>(status, body_str);
 }
 
-gs::MessageFunReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, gs::MessageFunReviewRequest& request)
+server::MessageFunReviewResponse APIConnector::funReview(const std::string& url, const bool& inner, server::MessageFunReviewRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -429,10 +429,10 @@ gs::MessageFunReviewResponse APIConnector::funReview(const std::string& url, con
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageFunReviewResponse>(status, body_str);
+	return response_parser<server::MessageFunReviewResponse>(status, body_str);
 }
 
-gs::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const bool& inner, gs::MessageTxnLogRequest& request)
+server::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const bool& inner, server::MessageTxnLogRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -441,10 +441,10 @@ gs::MessageTxnLogResponse APIConnector::txnLog(const std::string& url, const boo
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageTxnLogResponse>(status, body_str);
+	return response_parser<server::MessageTxnLogResponse>(status, body_str);
 }
 
-gs::MessageQueryLogDateResponse APIConnector::queryLogDate(const std::string& url, const bool& inner, gs::MessageQueryLogDateRequest& request)
+server::MessageQueryLogDateResponse APIConnector::queryLogDate(const std::string& url, const bool& inner, server::MessageQueryLogDateRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -453,10 +453,10 @@ gs::MessageQueryLogDateResponse APIConnector::queryLogDate(const std::string& ur
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageQueryLogDateResponse>(status, body_str);
+	return response_parser<server::MessageQueryLogDateResponse>(status, body_str);
 }
 
-gs::MessageQueryLogResponse APIConnector::queryLog(const std::string& url, const bool& inner, gs::MessageQueryLogRequest& request)
+server::MessageQueryLogResponse APIConnector::queryLog(const std::string& url, const bool& inner, server::MessageQueryLogRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -465,10 +465,10 @@ gs::MessageQueryLogResponse APIConnector::queryLog(const std::string& url, const
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageQueryLogResponse>(status, body_str);
+	return response_parser<server::MessageQueryLogResponse>(status, body_str);
 }
 
-gs::MessageAccessLogDateResponse APIConnector::accessLogDate(const std::string& url, const bool& inner, gs::MessageAccessLogDateRequest& request)
+server::MessageAccessLogDateResponse APIConnector::accessLogDate(const std::string& url, const bool& inner, server::MessageAccessLogDateRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -477,10 +477,10 @@ gs::MessageAccessLogDateResponse APIConnector::accessLogDate(const std::string& 
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageAccessLogDateResponse>(status, body_str);
+	return response_parser<server::MessageAccessLogDateResponse>(status, body_str);
 }
 
-gs::MessageAccessLogResponse APIConnector::accessLog(const std::string& url, const bool& inner, gs::MessageAccessLogRequest& request)
+server::MessageAccessLogResponse APIConnector::accessLog(const std::string& url, const bool& inner, server::MessageAccessLogRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -489,10 +489,10 @@ gs::MessageAccessLogResponse APIConnector::accessLog(const std::string& url, con
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageAccessLogResponse>(status, body_str);
+	return response_parser<server::MessageAccessLogResponse>(status, body_str);
 }
 
-gs::MessageReasonManageResponse APIConnector::addReason(const std::string& url, const bool& inner, gs::MessageAddReasonRequest& request)
+server::MessageReasonManageResponse APIConnector::addReason(const std::string& url, const bool& inner, server::MessageAddReasonRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -501,11 +501,11 @@ gs::MessageReasonManageResponse APIConnector::addReason(const std::string& url, 
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageReasonManageResponse>(status, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
 }
 
 
-gs::MessageReasonManageResponse APIConnector::listReason(const std::string& url, const bool& inner, gs::MessageListReasonRequest& request)
+server::MessageReasonManageResponse APIConnector::listReason(const std::string& url, const bool& inner, server::MessageListReasonRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -514,11 +514,11 @@ gs::MessageReasonManageResponse APIConnector::listReason(const std::string& url,
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageReasonManageResponse>(status, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
 }
 
 
-gs::MessageReasonManageResponse APIConnector::cedsdReason(const std::string& url, const bool& inner, gs::MessageCedsdReasonRequest& request)
+server::MessageReasonManageResponse APIConnector::cedsdReason(const std::string& url, const bool& inner, server::MessageCedsdReasonRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -527,11 +527,11 @@ gs::MessageReasonManageResponse APIConnector::cedsdReason(const std::string& url
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url, json_str, body_str);
-	return response_parser<gs::MessageReasonManageResponse>(status, body_str);
+	return response_parser<server::MessageReasonManageResponse>(status, body_str);
 }
 
 
-gs::MessageLicenseResponse APIConnector::importLicense(const std::string& url, const bool& inner, gs::MessageRequest& request, std::string filepath)
+server::MessageLicenseResponse APIConnector::importLicense(const std::string& url, const bool& inner, server::MessageRequest& request, std::string filepath)
 {
 	std::string json_str;
 	if (inner)
@@ -547,10 +547,10 @@ gs::MessageLicenseResponse APIConnector::importLicense(const std::string& url, c
 	params["inner"] = inner ? "true" : "false";
 	int status = WFHttpUtil::PostFile(url + "/lic/import", {}, -1, filepath, params, body_str);
 	std::cout << body_str << endl;
-	return response_parser<gs::MessageLicenseResponse>(status, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
 }
 
-gs::MessageLicenseResponse APIConnector::licenseInfo(const std::string& url, const bool& inner, gs::MessageRequest& request)
+server::MessageLicenseResponse APIConnector::licenseInfo(const std::string& url, const bool& inner, server::MessageRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -559,10 +559,10 @@ gs::MessageLicenseResponse APIConnector::licenseInfo(const std::string& url, con
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url + "/lic/info", json_str, body_str);
-	return response_parser<gs::MessageLicenseResponse>(status, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
 }
 
-gs::MessageLicenseResponse APIConnector::removeLicense(const std::string& url, const bool& inner, gs::MessageRequest& request)
+server::MessageLicenseResponse APIConnector::removeLicense(const std::string& url, const bool& inner, server::MessageRequest& request)
 {
 	std::string json_str;
 	if (inner)
@@ -571,7 +571,7 @@ gs::MessageLicenseResponse APIConnector::removeLicense(const std::string& url, c
 		request.to_json(json_str);
 	std::string body_str;
 	int status = WFHttpUtil::Post(url + "/lic/remove", json_str, body_str);
-	return response_parser<gs::MessageLicenseResponse>(status, body_str);
+	return response_parser<server::MessageLicenseResponse>(status, body_str);
 }
 
 httpentities::ClusterResponse APIConnector::reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password)

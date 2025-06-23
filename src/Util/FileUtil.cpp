@@ -1,6 +1,6 @@
 #include "FileUtil.h"
 
-namespace gutil
+namespace gs
 {
     bool FileUtil::readFile(const std::string& path, std::string& content )
     {

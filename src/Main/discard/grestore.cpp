@@ -208,7 +208,7 @@ main(int argc, char * argv[])
 		string sys_cmd = "mv " + _db_home + "/" + folder_name + ' ' + db_path;
 		system(sys_cmd.c_str());
 
-		cout << "Time: " << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << endl;
+		cout << "Time: " << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << endl;
 		cout << "Database " + db_name + " restore done!" << endl;
 
 		return 0;
@@ -297,7 +297,7 @@ main(int argc, char * argv[])
 	// 	cout << "Backup Path Error, Restore Failed!" << endl;
 	// }else{
 	// 	//TODO update the in system.db
-	// 	string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+	// 	string time = gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 	// 	cout << "Time:" + time << endl;
 	// 	cout << "DB:" + db_name + " Restore done!" << endl;
 	// }

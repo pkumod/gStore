@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunQueryRequest& request, gs::MessageFunQueryResponse& response)
+    void ApiHandler::funquery(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunQueryRequest& request, server::MessageFunQueryResponse& response)
     {
         try
         {
@@ -20,7 +20,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunCudbRequest& request, gs::MessageFunCudbResponse& response)
+    void ApiHandler::funcudb(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunCudbRequest& request, server::MessageFunCudbResponse& response)
     {
         std::string type = request.type;
         std::string msg;
@@ -103,7 +103,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, gs::MessageFunReviewRequest& request, gs::MessageFunReviewResponse& response)
+    void ApiHandler::funreview(shared_ptr<APIUtil>& apiUtil, shared_ptr<PFNUtil>& pfnUtil, server::MessageFunReviewRequest& request, server::MessageFunReviewResponse& response)
     {
         try
         {
@@ -118,7 +118,7 @@ namespace gs
             std::string username = request.username;
             pfnUtil->fun_review(username, &pfn_info);
             string content = pfn_info.funBody;
-            gutil::StringUtil::url_encode(content);
+            gs::StringUtil::url_encode(content);
             response.StatusMsg = "success";
             response.body = content;
         }

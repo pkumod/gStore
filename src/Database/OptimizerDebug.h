@@ -25,7 +25,7 @@
 
 inline long GetTimeDebug(){
 #ifdef OPTIMIZER_DEBUG_INFO
-  return gutil::TimeUtil::timestamp();
+  return gs::TimeUtil::timestamp();
 #else
   return 0;
 #endif
@@ -33,7 +33,7 @@ inline long GetTimeDebug(){
 
 inline void PrintTimeDebug(std::string description, long old_time){
 #ifdef OPTIMIZER_DEBUG_INFO
-  long t2 = gutil::TimeUtil::timestamp();
+  long t2 = gs::TimeUtil::timestamp();
   std::cout<<  description << ",  used " << (t2 - old_time) << "ms." <<std::endl;
 #endif
 }

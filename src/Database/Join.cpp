@@ -219,9 +219,9 @@ bool
 Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 {
 	this->init(_basic_query,d_triple);
-	long begin = gutil::TimeUtil::timestamp();
+	long begin = gs::TimeUtil::timestamp();
 	//bool ret1 = this->filter_before_join();
-	//long after_constant_filter = gutil::TimeUtil::timestamp();
+	//long after_constant_filter = gs::TimeUtil::timestamp();
 	////fprintf(stderr, "after filter_before_join: used %ld ms\n", after_filter - begin);
 	//cout << "after filter_before_join: used " << (after_constant_filter - begin) << " ms" << endl;
 	//if (!ret1)
@@ -231,16 +231,16 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	//}
 
 	//this->add_literal_candidate();
-	//long after_add_literal = gutil::TimeUtil::timestamp();
+	//long after_add_literal = gs::TimeUtil::timestamp();
 	//cout << "after add_literal_candidate: used " << (after_add_literal - after_constant_filter) << " ms" << endl;
 
 	//bool ret2 = this->allFilterByPres();
 	////bool ret2 = true;
-	//long after_pre_filter = gutil::TimeUtil::timestamp();
+	//long after_pre_filter = gs::TimeUtil::timestamp();
 	//cout << "after allFilterByPres: used " << (after_pre_filter - after_add_literal) << " ms" << endl;
 	/*
 	bool ret2 = pre_handler();
-	long after_prehandler = gutil::TimeUtil::timestamp();
+	long after_prehandler = gs::TimeUtil::timestamp();
 	cout << "after prehandler: used " << (after_prehandler - begin) << " ms" << endl;
 	
 	if (!ret2)
@@ -250,7 +250,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	}
 	*/
 	bool ret3 = this->join();
-	long after_joinbasic = gutil::TimeUtil::timestamp();
+	long after_joinbasic = gs::TimeUtil::timestamp();
 	SLOG_CORE("during join_basic: used " << (after_joinbasic - begin) << " ms");
 	if (!ret3)
 	{
@@ -262,7 +262,7 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 所有结点都在上面join里面做完，因此不需要判断是否为卫星结点。
 */
 	bool ret4 = this->only_pre_filter_after_join();
-	long after_only_pre_filter = gutil::TimeUtil::timestamp();
+	long after_only_pre_filter = gs::TimeUtil::timestamp();
 	SLOG_CORE("during only pre filter: used " << (after_only_pre_filter - after_joinbasic) << " ms");
 	if (!ret4)
 	{
@@ -278,11 +278,11 @@ Join::join_basic(BasicQuery* _basic_query, bool* d_triple)
 	//the generating process had better been placed at the final, just before copying result
 	this->pre_var_handler();
 	//BETTER:maybe also reduce to empty, return false
-	long after_pre_var = gutil::TimeUtil::timestamp();
+	long after_pre_var = gs::TimeUtil::timestamp();
 	SLOG_CORE("during pre var: used " << (after_pre_var - after_only_pre_filter) << " ms");
 
 	this->copyToResult();
-	long after_copy = gutil::TimeUtil::timestamp();
+	long after_copy = gs::TimeUtil::timestamp();
 	SLOG_CORE("during copy to result list: used " << (after_copy - after_pre_var) << " ms");
 
 	SLOG_CORE("Final result size: " << this->basic_query->getResultList().size());
@@ -1480,12 +1480,12 @@ Join::filter_before_join()
 		//otherwise, use BoolArray for n, only construct a time
 		//NOTICE: for parallelism, use a BoolArray for each BGP(either on join or in Strategy)
 
-		long begin = gutil::TimeUtil::timestamp();
+		long begin = gs::TimeUtil::timestamp();
 		bool ret = this->constant_edge_filter(i);
-		long after_constant_edge_filter = gutil::TimeUtil::timestamp();
+		long after_constant_edge_filter = gs::TimeUtil::timestamp();
 		SLOG_CORE("\t\tconstant_edge_filter: used " << (after_constant_edge_filter - begin) << " ms");
 		//		this->preid_filter(this->basic_query, i);
-		//		long after_preid_filter = gutil::TimeUtil::timestamp();
+		//		long after_preid_filter = gs::TimeUtil::timestamp();
 		//cout << "\t\tafter_preid_filter: used " << (after_preid_filter-after_literal_edge_filter) << " ms" << endl;
 		SLOG_CORE("\t\t[" << i << "] after filter, candidate size= " << can_list.size() << endl << endl);
 

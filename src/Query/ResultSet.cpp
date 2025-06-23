@@ -180,7 +180,7 @@ ResultSet::to_str()
 // 	#if defined(DEBUG)
 // 	Util::create_dirs("logs/result_set");
 // 	ofstream outfile;
-// 	string log_file_name = "logs/result_set/" + gutil::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
+// 	string log_file_name = "logs/result_set/" + gs::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
 // 	outfile.open(log_file_name);
 // 	#endif
 // 	rapidjson::Value head(rapidjson::kObjectType);
@@ -393,7 +393,7 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 		#if defined(DEBUG)
 		Util::create_dirs("logs/result_set");
 		ofstream outfile;
-		string log_file_name = "logs/result_set/" + gutil::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
+		string log_file_name = "logs/result_set/" + gs::TimeUtil::now() + "_" + to_string(Util::getRandNum()) + ".txt";
 		outfile.open(log_file_name);
 		#endif
 		

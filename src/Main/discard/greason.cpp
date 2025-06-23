@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     int _suffix_len = _db_suffix.length();
     // string _db_name = "system";
 
-    long tv_begin = gutil::TimeUtil::timestamp();
+    long tv_begin = gs::TimeUtil::timestamp();
 
     string action = Util::getArgValue(argc, argv, "a", "action");
     string db_namestr = Util::getArgValue(argc, argv, "db", "database");

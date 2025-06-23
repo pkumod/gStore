@@ -285,39 +285,39 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
 	PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
 								 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
-    long t1 =gutil::TimeUtil::timestamp();
+    long t1 =gs::TimeUtil::timestamp();
     auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step : *const_candidates)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
-    long t2 = gutil::TimeUtil::timestamp();
+    long t2 = gs::TimeUtil::timestamp();
     SLOG_CORE("get var cache, used " << (t2 - t1) << "ms.");
     SLOG_CORE("id_list.size = " << var_candidates_cache->size());
     SLOG_CORE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
 
     auto second_run_candidates_plan = plan_generator.CompleteCandidate();
-    long t3 = gutil::TimeUtil::timestamp();
+    long t3 = gs::TimeUtil::timestamp();
     SLOG_CORE("complete candidate done, size = " << second_run_candidates_plan.size());
     for(const auto& constant_generating_step: second_run_candidates_plan)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
-    long t4 = gutil::TimeUtil::timestamp();
+    long t4 = gs::TimeUtil::timestamp();
     std::shared_ptr<PlanTree> best_plan_tree = plan_generator.GetPlan(true);
-    long t5 = gutil::TimeUtil::timestamp();
+    long t5 = gs::TimeUtil::timestamp();
     SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());
     SLOG_CORE("plan print done");
 
-    long t6 = gutil::TimeUtil::timestamp();
+    long t6 = gs::TimeUtil::timestamp();
     auto bfs_result = this->ExecutionBreathFirst(bgp_query,query_info,best_plan_tree->root_node,var_candidates_cache);
-    long t7 = gutil::TimeUtil::timestamp();
+    long t7 = gs::TimeUtil::timestamp();
     SLOG_CORE("execution, used " << (t7 - t6) << "ms.");
 
     auto bfs_table = get<1>(bfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
     auto var_pos_mapping = bfs_table.id_pos_map;
-    long t8 = gutil::TimeUtil::timestamp();
+    long t8 = gs::TimeUtil::timestamp();
     CopyToResult(bgp_query, bfs_table);
-    long t9 = gutil::TimeUtil::timestamp();
+    long t9 = gs::TimeUtil::timestamp();
     SLOG_CORE("copy to result, used " << (t9 - t8) <<"ms.");
     SLOG_CORE("total execution, used " << (t9 - t1) <<"ms.");
   }
@@ -364,41 +364,41 @@ tuple<bool, bool> Optimizer::DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryIn
     PlanGenerator plan_generator(kv_store_, bgp_query.get(), var_candidates_cache, triples_num_,
                                  limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
 
-    long t1 =gutil::TimeUtil::timestamp();
+    long t1 =gs::TimeUtil::timestamp();
     auto const_candidates = FilterPlan::OnlyConstFilter(bgp_query, this->kv_store_);
     for (auto &constant_generating_step : *const_candidates)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
-    long t2 = gutil::TimeUtil::timestamp();
+    long t2 = gs::TimeUtil::timestamp();
     SLOG_CORE("get var cache, used " << (t2 - t1) << "ms.");
     SLOG_CORE("id_list.size = " << var_candidates_cache->size());
     SLOG_CORE("limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_);
 
     auto second_run_candidates_plan = plan_generator.CompleteCandidate();
-    long t3 = gutil::TimeUtil::timestamp();
+    long t3 = gs::TimeUtil::timestamp();
     SLOG_CORE("complete candidate done, size = " << second_run_candidates_plan.size());
     for(const auto& constant_generating_step: second_run_candidates_plan)
       executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
 
-    long t4 = gutil::TimeUtil::timestamp();
+    long t4 = gs::TimeUtil::timestamp();
     std::shared_ptr<PlanTree> best_plan_tree = plan_generator.GetPlan(false);
-    long t5 = gutil::TimeUtil::timestamp();
+    long t5 = gs::TimeUtil::timestamp();
     SLOG_CORE("plan get, used " << (t5 - t4) + (t3 - t2) << "ms.");
     best_plan_tree->print(bgp_query.get());
     SLOG_CORE("plan print done");
 
-    long t6 = gutil::TimeUtil::timestamp();
+    long t6 = gs::TimeUtil::timestamp();
     auto dfs_query_plan = make_shared<DFSPlan>(best_plan_tree->root_node);
     auto dfs_result = this->ExecutionDepthFirst(bgp_query, dfs_query_plan,
                                                 query_info,var_candidates_cache);
-    long t7 = gutil::TimeUtil::timestamp();
+    long t7 = gs::TimeUtil::timestamp();
     SLOG_CORE("execution, used " << (t7 - t6) << "ms.");
 
     auto bfs_table = get<1>(dfs_result);
     auto pos_var_mapping = bfs_table.pos_id_map;
     auto var_pos_mapping = bfs_table.id_pos_map;
-    long t8 = gutil::TimeUtil::timestamp();
+    long t8 = gs::TimeUtil::timestamp();
     CopyToResult(bgp_query, bfs_table);
-    long t9 = gutil::TimeUtil::timestamp();
+    long t9 = gs::TimeUtil::timestamp();
     SLOG_CORE("copy to result, used " << (t9 - t8) <<"ms.");
     SLOG_CORE("total execution, used " << (t9 - t1) <<"ms.");
   }

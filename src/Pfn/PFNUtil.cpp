@@ -190,7 +190,7 @@ string PFNUtil::fun_build(const std::string &username, const std::string fun_nam
     PFNUtil::fun_parse_from_name(username, fun_name, fun_info);
 
     //create a tmp file
-    string last_time = gutil::TimeUtil::now();
+    string last_time = TimeUtil::now();
     string md5str = Util::md5(last_time);
     string targetDir = lib_path + "/.tmp";
     FileUtil::createDirs(targetDir);
@@ -267,9 +267,9 @@ std::string PFNUtil::fun_build_source_data(struct PFNInfo * fun_info, bool has_h
 {
     const string fun_name = fun_info->funName;
     string fun_subs = fun_info->funSubs;
-    gutil::StringUtil::url_decode(fun_subs);
+    StringUtil::url_decode(fun_subs);
     string fun_body = fun_info->funBody;
-    gutil::StringUtil::url_decode(fun_body);
+    StringUtil::url_decode(fun_body);
     char *fun_body_o = (char *)calloc(fun_body.length() + 1, sizeof(char));
     if(fun_body_o != NULL) 
     {

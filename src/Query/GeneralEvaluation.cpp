@@ -148,7 +148,7 @@ GeneralEvaluation::loadCSR()
 	csr[1].init(pre_num);	
 	SLOG_CORE("pre_num: " << pre_num);
 
-	long begin_time = gutil::TimeUtil::timestamp();
+	long begin_time = gs::TimeUtil::timestamp();
 
 	// Process out-edges (csr[0])
 	// i: predicate; j: subject; k: object
@@ -249,7 +249,7 @@ GeneralEvaluation::loadCSR()
 		ret += csr[1].adjacency_list[i].size();
 	csr[1].m = ret;
 
-	long end_time = gutil::TimeUtil::timestamp();
+	long end_time = gs::TimeUtil::timestamp();
 	SLOG_CORE("Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms");
 	this->kvstore->setCSRUpdate(false);
 }
@@ -587,7 +587,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 							}
 						}
 
-					long tv_begin = gutil::TimeUtil::timestamp();
+					long tv_begin = gs::TimeUtil::timestamp();
 					#ifndef TEST_BGPQUERY
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
@@ -599,7 +599,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						encode_constant_exist[k] = curr_exist;
 					}
 					#endif
-					long tv_encode = gutil::TimeUtil::timestamp();
+					long tv_encode = gs::TimeUtil::timestamp();
 					SLOG_CORE("during Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// TODO: refine the fillcand strategy regarding the same layer
@@ -618,7 +618,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 							fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
 					// }
-					long tv_fillcand = gutil::TimeUtil::timestamp();
+					long tv_fillcand = gs::TimeUtil::timestamp();
 					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					#ifndef TEST_BGPQUERY
@@ -637,7 +637,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 
-					long tv_handle = gutil::TimeUtil::timestamp();
+					long tv_handle = gs::TimeUtil::timestamp();
 					SLOG_CORE("during Handle, used "<<(tv_handle - tv_encode)<<" ms.");
 
 					//collect and join the result of each BGP
@@ -662,12 +662,12 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 							//if unconnected, time is incorrect
 							// int time = tv_handle - tv_begin;
 
-							long tv_bftry = gutil::TimeUtil::timestamp();
+							long tv_bftry = gs::TimeUtil::timestamp();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
 							if (success)	SLOG_CORE("QueryCache cached");
 							else			SLOG_CORE("QueryCache didn't cache");
-							long tv_aftry = gutil::TimeUtil::timestamp();
+							long tv_aftry = gs::TimeUtil::timestamp();
 							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
@@ -880,7 +880,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						}
 
 					// Encode BGPs //
-					long tv_begin = gutil::TimeUtil::timestamp();
+					long tv_begin = gs::TimeUtil::timestamp();
 					#ifndef TEST_BGPQUERY
 					sparql_query.encodeQuery(this->kvstore, encode_varset);
 					#else
@@ -894,7 +894,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						encode_constant_exist[k] = curr_exist;
 					}
 					#endif
-					long tv_encode = gutil::TimeUtil::timestamp();
+					long tv_encode = gs::TimeUtil::timestamp();
 					SLOG_CORE("after Encode, used "<<(tv_encode - tv_begin)<<" ms.");
 
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
@@ -907,7 +907,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 						fillCandList(bgp_query_vec, dep, encode_varset);
 						#endif
 					}
-					long tv_fillcand = gutil::TimeUtil::timestamp();
+					long tv_fillcand = gs::TimeUtil::timestamp();
 					SLOG_CORE("after FillCand, used "<<(tv_fillcand - tv_encode)<<" ms.");
 
 					/* PLEASE REPLACE WITH OPTIMIZER */
@@ -942,7 +942,7 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 					}
 					#endif
 
-					long tv_handle = gutil::TimeUtil::timestamp();
+					long tv_handle = gs::TimeUtil::timestamp();
 					SLOG_CORE("after Handle, used "<< (tv_handle - tv_fillcand) <<  " ms.");
 
 					// Collect and join the result of each BasicQuery //
@@ -969,12 +969,12 @@ std::shared_ptr<TempResultSet> GeneralEvaluation::queryEvaluation(int dep)
 							//if unconnected, time is incorrect
 							// int time = tv_handle - tv_begin;
 
-							long tv_bftry = gutil::TimeUtil::timestamp();
+							long tv_bftry = gs::TimeUtil::timestamp();
 							// bool success = this->query_cache->tryCaching(basic_query_handle[0], temp->results[0], time);
 							bool success = false;
 							if (success)	SLOG_CORE("QueryCache cached");
 							else			SLOG_CORE("QueryCache didn't cache");
-							long tv_aftry = gutil::TimeUtil::timestamp();
+							long tv_aftry = gs::TimeUtil::timestamp();
 							SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 						}
 
@@ -1380,7 +1380,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 	unsigned string_index_buffer_size = 0;
 	if (this->query_tree.getQueryForm() == QueryTree::Select_Query)
 	{
-		// long t0 = gutil::TimeUtil::timestamp();
+		// long t0 = gs::TimeUtil::timestamp();
 
 		if (this->temp_result->results.empty())
 		{
@@ -3158,7 +3158,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 
 #ifdef STREAM_ON
 		long long ret_result_size = (long long)ret_result.ansNum * (long long)ret_result.select_var_num * 100 / GlobalTypedef::MB;
-		if (gutil::ResourceUtil::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
+		if (gs::ResourceUtil::memoryLeft() < ret_result_size || !this->query_tree.getOrderVarVector().empty())
 		{
 			ret_result.setUseStream();
 			SLOG_CORE("set use Stream");
@@ -3506,9 +3506,9 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<GroupPattern::Pattern>& basi
 	{
 		std::shared_ptr<TempResultSet> temp = std::make_shared<TempResultSet>(task_event);
 		temp->results.push_back(TempResult());
-		long tv_bfcheck = gutil::TimeUtil::timestamp();
+		long tv_bfcheck = gs::TimeUtil::timestamp();
 		success = this->query_cache->checkCached(basic_query, useful, temp->results[0]);
-		long tv_afcheck = gutil::TimeUtil::timestamp();
+		long tv_afcheck = gs::TimeUtil::timestamp();
 		SLOG_CORE("after checkCache, used "<<(tv_afcheck - tv_bfcheck)<<" ms.");
 
 		// If query cache hit, save partial result //
@@ -3673,12 +3673,12 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, std::sha
 			//if unconnected, time is incorrect
 			// int time = tv_handle - tv_begin;
 
-			long tv_bftry = gutil::TimeUtil::timestamp();
+			long tv_bftry = gs::TimeUtil::timestamp();
 			// bool success = this->query_cache->tryCaching(basic_query_handle[j], temp->results[0], time);
 			bool success = false;
 			if (success)	SLOG_CORE("QueryCache cached");
 			else			SLOG_CORE("QueryCache didn't cache");
-			long tv_aftry = gutil::TimeUtil::timestamp();
+			long tv_aftry = gs::TimeUtil::timestamp();
 			SLOG_CORE("during tryCache, used " << (tv_aftry - tv_bftry) << " ms.");
 		}
 

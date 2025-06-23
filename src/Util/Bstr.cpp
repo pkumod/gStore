@@ -69,7 +69,7 @@ void Bstr::assignCopy(const Bstr& _bstr)
 bool 
 Bstr::operator > (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == 1)
 		return true;
 	else
@@ -79,7 +79,7 @@ Bstr::operator > (const Bstr& _bstr)
 bool 
 Bstr::operator < (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == -1)
 		return true;
 	else
@@ -89,7 +89,7 @@ Bstr::operator < (const Bstr& _bstr)
 bool
 Bstr::operator == (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res == 0)
 		return true;
 	else
@@ -99,7 +99,7 @@ Bstr::operator == (const Bstr& _bstr)
 bool
 Bstr::operator <= (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res <= 0)
 		return true;
 	else
@@ -109,7 +109,7 @@ Bstr::operator <= (const Bstr& _bstr)
 bool
 Bstr::operator >= (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res >= 0)
 		return true;
 	else
@@ -119,7 +119,7 @@ Bstr::operator >= (const Bstr& _bstr)
 bool
 Bstr::operator != (const Bstr& _bstr)
 {
-	int res = gutil::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
+	int res = gs::StringUtil::compare(this->str, this->length, _bstr.str, _bstr.length);
 	if(res != 0)
 		return true;
 	else

@@ -3,7 +3,7 @@
 #include "GlobalTypedef.h"
 #include "../Util/Util.h"
 
-namespace gutil
+namespace gs
 {
     class ResourceUtil
     {

@@ -14,7 +14,7 @@
 #include "../Util/JsonUtil.h"
 #include "../Database/TaskManager.h"
 
-using namespace gutil;
+using namespace gs;
 class ResultSet
 {
 private:

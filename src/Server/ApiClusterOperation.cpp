@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
     void ApiHandler::cluster_heartbeat_compare(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageClusterRequest& request)
     {        
@@ -605,7 +605,7 @@ namespace gs
             clusterManagerPtr->dropDb(db_name);
 
             FileUtil::movePath(db_dir, db_path);
-            if(!apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::AREADY_BUILT))
+            if(!apiUtil->init_databaseinfo(db_name, GlobalTypedef::root_uname(), gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::AREADY_BUILT))
             {
                 SLOG_ERROR("cluster recover database " + db_name + " fail" << " ,zip name:" << zip_file_path);
                 FileUtil::removePath(db_path);

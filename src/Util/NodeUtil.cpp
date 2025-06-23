@@ -1,6 +1,6 @@
 #include "NodeUtil.h"
 
-namespace gutil
+namespace gs
 {
 
     NodeUtil::NodeUtil()

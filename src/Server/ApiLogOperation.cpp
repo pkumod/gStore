@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    void ApiHandler::txn_log(shared_ptr<APIUtil>& apiUtil, gs::MessageTxnLogRequest& request, gs::MessageTxnLogResponse& response)
+    void ApiHandler::txn_log(shared_ptr<APIUtil>& apiUtil, server::MessageTxnLogRequest& request, server::MessageTxnLogResponse& response)
     {
         try
         {
@@ -40,7 +40,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::query_log(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogRequest& request, gs::MessageQueryLogResponse& response)
+    void ApiHandler::query_log(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogRequest& request, server::MessageQueryLogResponse& response)
     {
         try
         {
@@ -79,7 +79,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::query_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageQueryLogDateRequest& request, gs::MessageQueryLogDateResponse& response)
+    void ApiHandler::query_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageQueryLogDateRequest& request, server::MessageQueryLogDateResponse& response)
     {
         try
         {
@@ -103,7 +103,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::access_log(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogRequest& request, gs::MessageAccessLogResponse& response)
+    void ApiHandler::access_log(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogRequest& request, server::MessageAccessLogResponse& response)
     {
         try
         {
@@ -142,7 +142,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::access_log_date(shared_ptr<APIUtil>& apiUtil, gs::MessageAccessLogDateRequest& request, gs::MessageAccessLogDateResponse& response)
+    void ApiHandler::access_log_date(shared_ptr<APIUtil>& apiUtil, server::MessageAccessLogDateRequest& request, server::MessageAccessLogDateResponse& response)
     {
         try
         {
@@ -166,7 +166,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::checkOperationState(shared_ptr<APIUtil>& apiUtil, gs::MessageCheckOperationStateRequest& request, gs::MessageCheckOperationStateResponse& response)
+    void ApiHandler::checkOperationState(shared_ptr<APIUtil>& apiUtil, server::MessageCheckOperationStateRequest& request, server::MessageCheckOperationStateResponse& response)
     {
         string msg;
         string operation = "checkOperationState";

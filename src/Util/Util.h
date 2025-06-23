@@ -28,7 +28,7 @@ in the sparql query can point to the same node in data graph)
 #include "Latch.h"
 #include "MD5.h"
 #include "PrettyPrint.h"
-using namespace gutil;
+using namespace gs;
 
 
 //===================================================================================================================

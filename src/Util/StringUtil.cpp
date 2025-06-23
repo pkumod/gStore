@@ -1,6 +1,6 @@
 #include "StringUtil.h"
 
-namespace gutil
+namespace gs
 {
     StringUtil::StringUtil() {};
     StringUtil::~StringUtil() {};

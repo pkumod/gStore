@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				long tv_begin = gutil::TimeUtil::timestamp();
+				long tv_begin = gs::TimeUtil::timestamp();
 
 				_db.load();
 				// cout << "finish loading" << endl;
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 					}
 				}
 
-				long tv_end = gutil::TimeUtil::timestamp();
+				long tv_end = gs::TimeUtil::timestamp();
 				// stringstream ss;
 				cout << "query database successfully, Used " << (tv_end - tv_begin) << " ms" << endl;
 				// Log.Info(ss.str().c_str());

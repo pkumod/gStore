@@ -72,8 +72,8 @@ main(int argc, char * argv[])
 		std:string zip = Util::getArgValue(argc, argv, "z", "zip", "0");
 		if (filepath.empty())
 		{
-			filepath = db_name + "_" + gutil::TimeUtil::timestamp_str() + ".nt";
-			zip_path = db_name + "_" + gutil::TimeUtil::timestamp_str() + ".zip";
+			filepath = db_name + "_" + gs::TimeUtil::timestamp_str() + ".nt";
+			zip_path = db_name + "_" + gs::TimeUtil::timestamp_str() + ".zip";
 		}
 		else
 		{
@@ -81,11 +81,11 @@ main(int argc, char * argv[])
 				filepath = filepath + "/";
 			if (!Util::dir_exist(filepath))
 				Util::create_dirs(filepath);
-			zip_path = filepath + db_name  + "_" + gutil::TimeUtil::timestamp_str() +  ".zip";
+			zip_path = filepath + db_name  + "_" + gs::TimeUtil::timestamp_str() +  ".zip";
 			if (zip == "0")
-				filepath = filepath + db_name  + "_" + gutil::TimeUtil::timestamp_str() +  ".nt";
+				filepath = filepath + db_name  + "_" + gs::TimeUtil::timestamp_str() +  ".nt";
 			else
-				filepath = db_name  + "_" + gutil::TimeUtil::timestamp_str() +  ".nt";
+				filepath = db_name  + "_" + gs::TimeUtil::timestamp_str() +  ".nt";
 		}
 		cout << "gexport..." << endl;
 
@@ -103,7 +103,7 @@ main(int argc, char * argv[])
 			cout<<"The database does not exist."<<endl;
 			return 0;
 		}
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 
 		cout<<"start exporting the database......"<<endl;
 		Database _db(db_name);
@@ -117,7 +117,7 @@ main(int argc, char * argv[])
 		// fflush(ofp);
 		// fclose(ofp);
 		// ofp = NULL;
-		// long tv_end = gutil::TimeUtil::timestamp();
+		// long tv_end = gs::TimeUtil::timestamp();
 		// /*stringstream ss;*/
 		// cout << db_name << ".db exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 		// cout << db_name << ".db export path: " << filepath << endl;
@@ -130,7 +130,7 @@ main(int argc, char * argv[])
 		ofp = NULL;
 		if (zip == "0")
 		{
-			long tv_end = gutil::TimeUtil::timestamp();
+			long tv_end = gs::TimeUtil::timestamp();
 			cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			cout << db_name << _db_suffix + " export path: " << filepath << endl;
 		}
@@ -142,7 +142,7 @@ main(int argc, char * argv[])
 				Util::remove_path(zip_path);
 				return -1;
 			}
-			long tv_end = gutil::TimeUtil::timestamp();
+			long tv_end = gs::TimeUtil::timestamp();
 			cout << db_name << _db_suffix + " exported successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 			cout << db_name << _db_suffix + " export path: " << zip_path << endl;
 			Util::remove_path(filepath);

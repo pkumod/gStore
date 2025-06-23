@@ -8,7 +8,7 @@
 #include "../Server/ServerStatusCode.h"
 
 using namespace grpc;
-using namespace gs;
+using namespace server;
 
 void GRPCServer::ROUTE(const std::string &route, const DefaultHandler &handler, ReqMethod method)
 {

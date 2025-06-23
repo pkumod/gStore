@@ -2,7 +2,7 @@
 #include "MessageApi.h"
 #include "../../Cluster/ClusterDefined.h"
 
-namespace gs
+namespace server
 {
     // cluster api
     struct MessageClusterRequest

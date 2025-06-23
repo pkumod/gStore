@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    bool ApiHandler::backup_check(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response, std::string& backup_path)
+    bool ApiHandler::backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path)
     {
         std::string _db_home = GlobalTypedef::db_home();
         std::string db_name = request.db_name;
@@ -34,7 +34,7 @@ namespace gs
         return true;
     }
 
-    void ApiHandler::backup(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response)
+    void ApiHandler::backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
         try
         {
@@ -63,7 +63,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::backup_async(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupRequest& request, gs::MessageBackupResponse& response)
+    void ApiHandler::backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
         try
         {
@@ -107,7 +107,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::backup_path(shared_ptr<APIUtil>& apiUtil, const gs::MessageBackupPathRequest& request, gs::MessageBackupPathResponse& response)
+    void ApiHandler::backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response)
     {
         try
         {
@@ -135,7 +135,7 @@ namespace gs
         }
     }
 
-    bool ApiHandler::restore_check(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response)
+    bool ApiHandler::restore_check(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
     {
         std::string msg;
         std::string backup_path = request.backup_path;
@@ -165,7 +165,7 @@ namespace gs
         return true;
     }
 
-    void ApiHandler::restore(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response)
+    void ApiHandler::restore(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
     {
         try
         {
@@ -191,7 +191,7 @@ namespace gs
             response.Error(StatusOperationFailed, error);
         }
     }
-    void ApiHandler::restore_async(shared_ptr<APIUtil>& apiUtil, const gs::MessageRestoreRequest& request, gs::MessageRestoreResponse& response)
+    void ApiHandler::restore_async(shared_ptr<APIUtil>& apiUtil, const server::MessageRestoreRequest& request, server::MessageRestoreResponse& response)
     {
         std::string opt_id = response.opt_id;
         if (!restore_check(apiUtil, request, response))
@@ -227,7 +227,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::export_db(shared_ptr<APIUtil>& apiUtil, const gs::MessageExportRequest& request, gs::MessageExportResponse& response)
+    void ApiHandler::export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& request, server::MessageExportResponse& response)
     {
         try
         {
@@ -247,7 +247,7 @@ namespace gs
                 return;
             }
             std::string db_path = GlobalTypedef::export_path;
-            std::string export_name =  db_name + "_" + gutil::TimeUtil::now() + ".nt";
+            std::string export_name =  db_name + "_" + gs::TimeUtil::now() + ".nt";
             std::string export_path = db_path + export_name;
             bool compress = request.compress;
             SLOG_DEBUG("export_path:" << export_path << ", compress:" << compress);
@@ -260,7 +260,7 @@ namespace gs
             apiUtil->unlock_databaseinfo(db_info);
             if (compress)
             {
-                export_name = db_name + "_" + gutil::TimeUtil::now() + ".zip";
+                export_name = db_name + "_" + gs::TimeUtil::now() + ".zip";
                 std::string zip_path = db_path + export_name;
                 if (!CompressUtil::FileHelper::compressExportZip(export_path, zip_path, false))
                 {

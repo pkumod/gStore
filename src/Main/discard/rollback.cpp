@@ -172,8 +172,8 @@ main(int argc, char * argv[])
         cout << "Backups Folder Empty, Please check " + _default_backup_path << endl;
         return 0;
     }
-    time_t timestamp = gutil::TimeUtil::parse(restore_time);
-    time_t cur_time = gutil::TimeUtil::timestamp() / 1000l;
+    time_t timestamp = gs::TimeUtil::parse(restore_time);
+    time_t cur_time = gs::TimeUtil::timestamp() / 1000l;
     if(timestamp >  cur_time){
         cout << "Restore Time Error, Rollback Failed." << endl;
         return 0;
@@ -308,7 +308,7 @@ main(int argc, char * argv[])
     delete current_database;
     //undo updates according to log
     if(flag == 1)
-        SLOG_INFO("Database " + db_name + " has restored to time: " << gutil::TimeUtil::format(undo_point));
+        SLOG_INFO("Database " + db_name + " has restored to time: " << gs::TimeUtil::format(undo_point));
     else
         SLOG_INFO("Database " + db_name + " has restored to time: " << folders[inx]);
     return 0;

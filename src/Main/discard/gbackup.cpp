@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		// we can get the build_path as database_path should write the backup_path when we finish the backup
 		// query database_name build_path
 		// insert database_name backup_path
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		Database system_db(GlobalTypedef::system_db);
 		system_db.load();
 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		// create it if backup path does not exist
-		gutil::StringUtil::append(backup_path, '/');
+		gs::StringUtil::append(backup_path, '/');
 		if (!Util::dir_exist(backup_path))
 		{
 			cout << "Backup path " + backup_path + " is not exist, create it now..." << endl;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			cout << "Database " <<db_name << " backup failed." << endl;
 			return 0;
 		}
-		string timestamp = gutil::TimeUtil::timestamp_str();
+		string timestamp = gs::TimeUtil::timestamp_str();
 		string new_folder =  db_name + _db_suffix + "_" + timestamp;
 		string _path = backup_path + new_folder;
 		string backup_store_path = default_backup_path + db_name + _db_suffix;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 			cmd = "mv " + backup_store_path + " " + _path;
 			system(cmd.c_str());
 		}
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		cout << "Backup path: " << backup_path << endl;
 		cout << "Backup successfully! Used " << (tv_end - tv_begin) << " ms" << endl;
 		return 0;

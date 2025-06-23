@@ -3,7 +3,7 @@
 #include "GlobalTypedef.h"
 
 using namespace std;
-namespace gutil {
+namespace gs {
 
     class StringUtil 
     {

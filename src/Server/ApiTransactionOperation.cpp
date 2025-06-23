@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    void ApiHandler::begin(shared_ptr<APIUtil>& apiUtil, const gs::MessageBeginRequest& request, gs::MessageBeginResponse& response)
+    void ApiHandler::begin(shared_ptr<APIUtil>& apiUtil, const server::MessageBeginRequest& request, server::MessageBeginResponse& response)
     {
         try
         {
@@ -56,7 +56,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::tquery(shared_ptr<APIUtil>& apiUtil, const gs::MessageTqueryRequest& request, gs::MessageTqueryResponse& response)
+    void ApiHandler::tquery(shared_ptr<APIUtil>& apiUtil, const server::MessageTqueryRequest& request, server::MessageTqueryResponse& response)
     {
         try
         {
@@ -158,7 +158,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::commit(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response)
+    void ApiHandler::commit(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response)
     {
         try
         {
@@ -184,7 +184,7 @@ namespace gs
             }
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(request.db_name, db_info);
-            gs::StatusCode statusCode;
+            server::StatusCode statusCode;
             std::string statusMsg;
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {
@@ -217,7 +217,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::rollback(shared_ptr<APIUtil>& apiUtil, const gs::MessageCommitRequest& request, gs::MessageResponse& response)
+    void ApiHandler::rollback(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response)
     {
         try
         {
@@ -243,7 +243,7 @@ namespace gs
             }
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(request.db_name, db_info);
-            gs::StatusCode statusCode;
+            server::StatusCode statusCode;
             std::string statusMsg;
             if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
             {

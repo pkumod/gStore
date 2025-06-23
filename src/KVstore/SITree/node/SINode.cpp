@@ -194,7 +194,7 @@ SINode::getKey(int _index) const
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		//print(string("error in getKey: Invalid index ") + gutil::StringUtil::int2string(_index));    
+		//print(string("error in getKey: Invalid index ") + gs::StringUtil::int2string(_index));    
 		printf("error in getKey: Invalid index\n");
 		return NULL;
 	}
@@ -374,7 +374,7 @@ SINode::searchKey_less(const char* _str, unsigned _len) const
   while (low <= high)
   {
     mid = (low + high) / 2;
-    if (gutil::StringUtil::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
+    if (gs::StringUtil::compare(this->keys[mid].getStr(), this->keys[mid].getLen(), _str, _len) > 0)
     {
       if (low == mid)
         break;
@@ -414,7 +414,7 @@ SINode::searchKey_equal(const char* _str, unsigned _len) const
 
 	int ret = this->searchKey_less(_str, _len);
 	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && gutil::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+	if (ret > 0 && gs::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
 		return ret - 1;
 	else
 		return num;
@@ -425,7 +425,7 @@ SINode::searchKey_lessEqual(const char* _str, unsigned _len) const
 {
 	int ret = this->searchKey_less(_str, _len);
 	//if (ret > 0 && this->keys[ret - 1] == _bstr)
-	if (ret > 0 && gutil::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
+	if (ret > 0 && gs::StringUtil::compare(this->keys[ret-1].getStr(), this->keys[ret-1].getLen(), _str, _len) == 0)
 		return ret - 1;
 	else
 		return ret;

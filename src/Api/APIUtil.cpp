@@ -223,7 +223,7 @@ int APIUtil::initialize()
         init_transactionlog();
         // create system password file
         fstream ofp;
-        system_password = to_string(gutil::IdUtil::randNum());
+        system_password = to_string(IdUtil::randNum());
         ofp.open(GlobalTypedef::pid_path.c_str(), ios::out);
         ofp << getpid();
         ofp << '\n';
@@ -326,7 +326,7 @@ bool APIUtil::init_databaseinfo(const std::string& db_name, const std::string cr
         string current_time = build_time; 
         if (current_time.empty())
         {
-            current_time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+            current_time = TimeUtil::now(NORM_DATETIME_PATTERN);
         }
         string db_path = GlobalTypedef::db_path(db_name);
         shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_path, db_name, creator, current_time, status);
@@ -503,7 +503,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         return false;
     }
     std::string db_name_path = GlobalTypedef::db_path(db_name);
-    std::string db_name_bak = db_name_path + gutil::TimeUtil::now(NORM_DATETIME_MS_PATTERN) + ".bak";
+    std::string db_name_bak = db_name_path + TimeUtil::now(NORM_DATETIME_MS_PATTERN) + ".bak";
     bool restore_bool = false;
     // mv db_home to db_home.bak
     if (FileUtil::dirExists(db_name_path)) 
@@ -1904,7 +1904,7 @@ const string &optId, unsigned num, unsigned fail_num, std::string dbname)
     {
         return;
     }
-    string iplog_name = gutil::TimeUtil::today();
+    string iplog_name = TimeUtil::today();
     string iplog_file = access_log_path + iplog_name + ".log";
     if (FileUtil::fileExists(iplog_file) == false)
     {
@@ -1932,7 +1932,7 @@ const string &optId, unsigned num, unsigned fail_num, std::string dbname)
     // Another way to locka many: lock(lk1, lk2...)
     pthread_rwlock_wrlock(&access_log_lock);
     // build json
-    string createTime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+    string createTime = TimeUtil::now(NORM_DATETIME_PATTERN);
     string status_msg = StringUtil::clear_linebreak(statusMsg);
     status_msg = StringUtil::replace_all(status_msg, "    ", "");
     struct DBAccessLogInfo dbAccessLogInfo(remoteIP, operation);
@@ -1959,7 +1959,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
     if (opt_id.empty())
         return;
     pthread_rwlock_wrlock(&access_log_lock);
-    string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
+    string iplog_name = IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     string file_temp_name = access_log_path + iplog_name + "temp.log";
     if (FileUtil::fileExists(filename) == false)
@@ -1984,7 +1984,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
                 {
                     logInfo.code = statusCode;
                     logInfo.msg = statusMsg;
-                    logInfo.endtime = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+                    logInfo.endtime = TimeUtil::now(NORM_DATETIME_PATTERN);
                     logInfo.state = state;
                     logInfo.num = num;
                     logInfo.fail_num = failnum;
@@ -2020,7 +2020,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
 bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
 {
     pthread_rwlock_wrlock(&access_log_lock);
-    string iplog_name = gutil::IdUtil::getConvertTimeById(opt_id);
+    string iplog_name = IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     std::fstream file;
     file.open(filename, std::ios::in);
@@ -2088,7 +2088,7 @@ void APIUtil::write_query_log(std::shared_ptr<DBQueryLogInfo> log)
     {
         return;
     }
-    std::string queyrlog_name = gutil::TimeUtil::today();
+    std::string queyrlog_name = TimeUtil::today();
     std::string querylog_file = query_log_path + queyrlog_name + ".log";
     if (FileUtil::fileExists(querylog_file) == false)
     {

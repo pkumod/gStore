@@ -7,7 +7,7 @@
 #include "../Server/ServerStatusCode.h"
 
 using namespace grpc;
-using namespace gs;
+using namespace server;
 
 void Router::handle(const std::string &route, int compute_queue_id, const WrapHandler &handler, ReqMethod method)
 {

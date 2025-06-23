@@ -112,7 +112,7 @@ SITree::Search(const char* _str, unsigned _len, unsigned* _val)
     return false;
   }
   const Bstr* tmp = ret->getKey(store);
-  if (gutil::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
+  if (gs::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -199,7 +199,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
       this->tsm_->updateHeap(q, q->getRank(), true);
       this->tsm_->updateHeap(p, p->getRank(), true);
       const Bstr* tmp = p->getKey(i);
-      int cmp_res = gutil::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
+      int cmp_res = gs::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
       if (cmp_res < 0)
         p = q;
       else
@@ -221,7 +221,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   if (i > 0)
   {
     const Bstr* tmp = p->getKey(i-1);
-    int cmp_res = gutil::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
+    int cmp_res = gs::StringUtil::compare(str, len, tmp->getStr(), tmp->getLen());
     if(cmp_res == 0)
     {
       ifexist = true;
@@ -272,7 +272,7 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
     return false;
   }
   const Bstr* tmp = ret->getKey(store);
-  if (gutil::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
+  if (gs::StringUtil::compare(_str, _len, tmp->getStr(), tmp->getLen()) != 0)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;

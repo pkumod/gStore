@@ -171,7 +171,7 @@ namespace cluster
         log.setIndex(index);
         log.setOperation(operation);
         log.setUpdateType(update_type);
-        log.setCreateTime(gutil::TimeUtil::now(NORM_DATETIME_PATTERN));
+        log.setCreateTime(gs::TimeUtil::now(NORM_DATETIME_PATTERN));
         log.setFileName(file_name);
         logs_[index] = log;
 
@@ -199,7 +199,7 @@ namespace cluster
         }
         if (operation == ClusterOperation_Commit)
         {
-            it->second.setCommitTime(gutil::TimeUtil::now(NORM_DATETIME_PATTERN));
+            it->second.setCommitTime(gs::TimeUtil::now(NORM_DATETIME_PATTERN));
         }
         it->second.setOperation(operation);
     }

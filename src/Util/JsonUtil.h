@@ -2,7 +2,7 @@
 #include "GlobalTypedef.h"
 #include "nlohmann/json.hpp"
 
-namespace gutil
+namespace gs
 {
     class JsonUtil
     {

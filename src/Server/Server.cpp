@@ -34,21 +34,21 @@ Server::createConnection()
 	flag = this->socket.create();
 	if (!flag)
 	{
-		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot create socket. @Server::createConnection" << endl;
+		cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot create socket. @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.bind(this->connectionPort);
 	if (!flag)
 	{
-		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot bind to port " << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
 	flag = this->socket.listen();
 	if (!flag)
 	{
-		cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
+		cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Cannot listen to port" << this->connectionPort << ". @Server::createConnection" << endl;
 		return false;
 	}
 
@@ -122,7 +122,7 @@ int sockThread::GetThreadID()
 }
 void sockThread::run()
 {
-	cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Thread:" << tid << " run\n";
+	cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Thread:" << tid << " run\n";
 	server->handler(socket);
 }
 void sockThread::start()
@@ -147,22 +147,22 @@ Server::handler(Socket& _socket)
 		bool recv_return = _socket.recv(recv_cmd);
 		if (!recv_return)
 		{
-			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Receive command from client error. @Server::listen" << endl;
+			cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Receive command from client error. @Server::listen" << endl;
 			repeated_num++;
 			continue;
 		}
 
-		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Received msg: " << recv_cmd << endl;
+		cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Received msg: " << recv_cmd << endl;
 
 		/**
 		* @brief Parse the command message and construct an operation.
 		*/
 		Operation operation;
 		bool parser_return = this->parser(recv_cmd, operation);
-		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser_return=" << parser_return << endl; //debug
+		cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser_return=" << parser_return << endl; //debug
 		if (!parser_return)
 		{
-			cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser command error. @Server::listen" << endl;
+			cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Parser command error. @Server::listen" << endl;
 			std::string error = "Invalid command.";
 			this->response(1001, error, _socket);
 			repeated_num++;
@@ -252,11 +252,11 @@ Server::handler(Socket& _socket)
 
 			pthread_t timer = Server::start_timer();
 			if (timer == 0) {
-				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to start timer." << endl;
+				cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to start timer." << endl;
 			}
 			this->query(db_name, sparql, format, _socket);
 			if (timer != 0 && !Server::stop_timer(timer)) {
-				cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to stop timer." << endl;
+				cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Failed to stop timer." << endl;
 			}
 			break;
 		}
@@ -282,7 +282,7 @@ Server::handler(Socket& _socket)
 
 		default:
 		{
-			cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "This command is not supported by now. @Server::listen" << endl;
+			cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "This command is not supported by now. @Server::listen" << endl;
 			std::string error = "Invalid command.";
 			this->response(1001, error, _socket);
 		}
@@ -326,11 +326,11 @@ Server::listen()
 		*/
 		signal(SIGTERM, Server::stop_sigterm_handler);
 
-		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Wait for connection..." << endl;
+		cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Wait for connection..." << endl;
 
 		this->socket.accept(new_server_socket);
 
-		cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Accept a new socket connection." << endl;
+		cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Accept a new socket connection." << endl;
 
 		/**
 		* @brief Create a thread for a client socket.
@@ -684,7 +684,7 @@ void* Server::timer(void* _args) {
 	*/
 	signal(SIGTERM, Server::timer_sigterm_handler);
 	sleep(Util::gserver_query_timeout);
-	cerr << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Query out of time." << endl;
+	cerr << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Query out of time." << endl;
 	abort();
 }
 
@@ -693,7 +693,7 @@ void Server::timer_sigterm_handler(int _signal_num) {
 }
 
 void Server::stop_sigterm_handler(int _signal_num) {
-	cout << gutil::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server stopped." << endl;
+	cout << gs::TimeUtil::now(NORM_DATETIME_PATTERN) << "Server stopped." << endl;
 	exit(_signal_num);
 }
 

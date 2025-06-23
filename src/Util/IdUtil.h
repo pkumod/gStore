@@ -1,7 +1,7 @@
 #pragma once
 #include "GlobalTypedef.h"
 
-namespace gutil
+namespace gs
 {
     class IdUtil
     {

@@ -1,6 +1,6 @@
 #include "TimeUtil.h"
 
-namespace gutil 
+namespace gs 
 {
     int64_t TimeUtil::timestamp()
     {

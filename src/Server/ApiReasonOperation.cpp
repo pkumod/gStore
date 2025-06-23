@@ -1,8 +1,8 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
-    void ApiHandler::reason_manage(shared_ptr<APIUtil> &apiUtil, gs::MessageReasonManageResponse &response, nlohmann::json &json_data)
+    void ApiHandler::reason_manage(shared_ptr<APIUtil> &apiUtil, server::MessageReasonManageResponse &response, nlohmann::json &json_data)
     {
         try
         {
@@ -36,7 +36,7 @@ namespace gs
                 }
                 nlohmann::json reasonInfo = json_data["ruleinfo"];
                 reasonInfo["status"] = "新建";
-                reasonInfo["createtime"] = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+                reasonInfo["createtime"] = gs::TimeUtil::now(NORM_DATETIME_PATTERN);
                 ReasonOperationResult resultInfo = ReasonHelper::saveReasonRuleInfo(reasonInfo, _db_path);
                 if (resultInfo.issuccess == 1)
                 {
@@ -108,7 +108,7 @@ namespace gs
                     return;
                 }
                 shared_ptr<DatabaseInfo> db_info;
-                gs::StatusCode statusCode;
+                server::StatusCode statusCode;
                 std::string statusMsg;
                 apiUtil->get_databaseinfo(db_name, db_info);
                 if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
@@ -152,7 +152,7 @@ namespace gs
                 }
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
-                gs::StatusCode statusCode;
+                server::StatusCode statusCode;
                 std::string statusMsg;
                 if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true))
                 {
@@ -249,7 +249,7 @@ namespace gs
                 }
                 shared_ptr<DatabaseInfo> db_info;
                 apiUtil->get_databaseinfo(db_name, db_info);
-                gs::StatusCode statusCode;
+                server::StatusCode statusCode;
                 std::string statusMsg;
                 if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, false))
                 {

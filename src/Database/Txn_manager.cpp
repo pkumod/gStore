@@ -123,7 +123,7 @@ inline txn_id_t Txn_manager::ArrangeTID()
 {
 	srand(time(NULL));
 	cnt++;
-	return stod(gutil::TimeUtil::timestamp_str()) * 10000 + (rand() + cnt) % 10000 ;
+	return stod(gs::TimeUtil::timestamp_str()) * 10000 + (rand() + cnt) % 10000 ;
 }
 */
 
@@ -152,7 +152,7 @@ txn_id_t Txn_manager::Begin(IsolationLevelType isolationlevel)
 		checkpoint_lock.unlock();
 		return TID;
 	}
-	shared_ptr<Transaction> txn = make_shared<Transaction>(this->db_name, gutil::TimeUtil::timestamp(), TID, isolationlevel);
+	shared_ptr<Transaction> txn = make_shared<Transaction>(this->db_name, gs::TimeUtil::timestamp(), TID, isolationlevel);
 	txn->SetCommitID(TID);
 	add_transaction(TID, txn);
 	string log_str = "Begin " + to_string(TID);
@@ -187,7 +187,7 @@ int Txn_manager::Commit(txn_id_t TID)
 	}
 	//writelog(log_str);
 	txn->SetState(TransactionState::COMMITTED);
-	txn->SetEndTime(gutil::TimeUtil::timestamp());
+	txn->SetEndTime(gs::TimeUtil::timestamp());
 	add_dirty_keys(txn);
 	checkpoint_lock.unlock();
 	committed_num++;
@@ -216,7 +216,7 @@ int Txn_manager::Abort(txn_id_t TID)
 	}
 	//writelog(log_str);
 	txn->SetState(TransactionState::ABORTED);
-	txn->SetEndTime(gutil::TimeUtil::timestamp());
+	txn->SetEndTime(gs::TimeUtil::timestamp());
 	checkpoint_lock.unlock();
 	//add_dirty_keys(txn);
 	return 0;

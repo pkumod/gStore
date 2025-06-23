@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
     bool ApiHandler::build_check(shared_ptr<APIUtil>& apiUtil, const MessageBuildRequest& request, MessageBuildResponse& response, std::map<std::string, unsigned long long>& file_paths, std::vector<std::string>& temp_paths)
     {
@@ -49,7 +49,7 @@ namespace gs
                 {
                     // uncompress zip
                     size_t pos = file_name.size() - file_suffix.size() - 1;
-                    std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gutil::TimeUtil::now();
+                    std::string uncompress_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now();
                     temp_paths.push_back(uncompress_path);
                     bool unzip = uncompress_zip(apiUtil, local_path, file_paths, uncompress_path, response);
                     if (!unzip)
@@ -115,7 +115,7 @@ namespace gs
             std::string db_name = request.db_name;
             std::string username = request.username;
             std::string db_path;
-            int64_t start_time = gutil::TimeUtil::timestamp();
+            int64_t start_time = gs::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
@@ -134,7 +134,7 @@ namespace gs
                         nt_files.push_back(pair.first);
                 }
             }
-            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+            apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
@@ -223,7 +223,7 @@ namespace gs
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             db_info->initDatabase();
-            int64_t cost_time = gutil::TimeUtil::timestamp() - start_time;
+            int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
             db_info->success(cost_time);
             // init user privilege
             apiUtil->init_privilege(username, db_name);
@@ -269,7 +269,7 @@ namespace gs
             std::string db_name = request.db_name;
             std::string username = request.username;
             std::string db_path;
-            int64_t start_time = gutil::TimeUtil::timestamp();
+            int64_t start_time = gs::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
@@ -288,7 +288,7 @@ namespace gs
                         nt_files.push_back(pair.first);
                 }
             }
-            apiUtil->init_databaseinfo(db_name, username, gutil::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
+            apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
@@ -366,7 +366,7 @@ namespace gs
             db_info->initDatabase();
             // init user privilege
             apiUtil->init_privilege(username, db_name);
-            int64_t cost_time = gutil::TimeUtil::timestamp() - start_time;
+            int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
             db_info->success(cost_time);
             // add backup.log
             // Util::add_backuplog(db_name);
@@ -394,7 +394,7 @@ namespace gs
             // build follower database
             ClusterOperation cluster_operation = ClusterOperation_Build;
             ClusterUpdateType cluster_update_type = ClusterUpdateType::ClusterUpdateType_Build;
-            uint64 log_index = gutil::IdUtil::nextUID();
+            uint64 log_index = gs::IdUtil::nextUID();
             clusterManagerPtr->addLog(db_name, log_index, cluster_operation, cluster_update_type);
             clusterManagerPtr->addCommitLog(db_name, log_index, cluster_update_type, "");
         }

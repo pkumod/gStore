@@ -1,7 +1,7 @@
 #pragma once
 #include "GlobalTypedef.h"
 #include <filesystem>
-namespace gutil
+namespace gs
 {
     class FileUtil
     {

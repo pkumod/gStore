@@ -242,7 +242,7 @@ tuple<bool,IntermediateResult> gstore::Executor::JoinTable(const shared_ptr<Join
 
   IntermediateResult result_table;
 
-  // long t1 = gutil::TimeUtil::timestamp();
+  // long t1 = gs::TimeUtil::timestamp();
   auto new_position_id_mapping = make_shared<PositionValue>();
 
   auto join_nodes = join_plan->public_variables_;

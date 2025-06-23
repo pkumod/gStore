@@ -159,7 +159,8 @@ public:
             {"database", db_name},
             {"creator", creator},
             {"built_time", build_time},
-            {"status", getStatusStr()}
+            {"status", getStatusStr()},
+            {"cost_time", getCostTime()}
         };
         return json;
     }

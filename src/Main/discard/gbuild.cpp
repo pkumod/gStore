@@ -21,7 +21,7 @@ bool save_db_info(const std::string& _db_name, const std::string& _db_path)
 	Database system_db(GlobalTypedef::system_db);
 	system_db.load();
 	// add database information to system.db
-	string time = gutil::TimeUtil::now(NORM_DATETIME_PATTERN);
+	string time = gs::TimeUtil::now(NORM_DATETIME_PATTERN);
 	string sparql = "INSERT DATA {<" + _db_name + "> <database_status> \"already_built\"; <built_by> <root>; <built_time> \"" + time + "\".}";
 	ResultSet _rs;
 	int ret = system_db.query(sparql, _rs, nullptr);
@@ -136,7 +136,7 @@ main(int argc, char * argv[])
 			is_zip = true;
 		if (is_zip)
 		{
-			unz_dir_path = _rdf + "_" + gutil::TimeUtil::now();
+			unz_dir_path = _rdf + "_" + gs::TimeUtil::now();
 			std::cout<<"unz_dir_path:"<<unz_dir_path<<std::endl;
 			mkdir(unz_dir_path.c_str(), 0775);
 			CompressUtil::UnCompressZip unzip(_rdf, unz_dir_path);
@@ -151,7 +151,7 @@ main(int argc, char * argv[])
 				unzip.getFileList(zip_files, "");
 			}
 		}
-		long tv_begin = gutil::TimeUtil::timestamp();
+		long tv_begin = gs::TimeUtil::timestamp();
 		do
 		{
 			Database _db(db_name);
@@ -198,7 +198,7 @@ main(int argc, char * argv[])
 			cout<< "RDF parse error num " << parse_error_num - 1 << endl;
 			cout<< "See log file for details " << error_log << endl;
 		}
-		long tv_end = gutil::TimeUtil::timestamp();
+		long tv_end = gs::TimeUtil::timestamp();
 		//stringstream ss;
 		cout << "Build RDF database " << db_name << " successfully! Used " << (tv_end - tv_begin) << " ms"<<endl;
 		return 0;

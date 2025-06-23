@@ -15,7 +15,7 @@ void Database::buildSchema(const string _rdf_file, const std::map<string, std::s
 		SLOG_ERROR("buildSchema: Fail to rdf open : " << _rdf_file);
 		return;
 	}
-	int64_t t1 = gutil::TimeUtil::timestamp();
+	int64_t t1 = gs::TimeUtil::timestamp();
 	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	RDFParser _parser(_fin);
 	int num_lines = 0;
@@ -81,7 +81,7 @@ void Database::buildSchema(const string _rdf_file, const std::map<string, std::s
 	}
 	_fin.close();
 	createSchema(relationList, propertyMap);
-	int64_t t2 = gutil::TimeUtil::timestamp();
+	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish building schema, used " + to_string(t2 - t1) + "ms.");
 }
 

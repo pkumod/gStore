@@ -1,6 +1,6 @@
 #include "ApiProvider.h"
 
-namespace gs
+namespace server
 {
     void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response)
     {
@@ -46,7 +46,7 @@ namespace gs
         }
     }
 
-    void ApiHandler::checkpoint(shared_ptr<APIUtil>& apiUtil, const gs::MessageCheckPointRequest& request, gs::MessageResponse& response)
+    void ApiHandler::checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& request, server::MessageResponse& response)
     {
         std::string db_name = request.db_name;
         std::string msg;
@@ -56,7 +56,7 @@ namespace gs
             return;
         }
         shared_ptr<DatabaseInfo> db_info;
-        gs::StatusCode statusCode;
+        server::StatusCode statusCode;
         apiUtil->get_databaseinfo(request.db_name, db_info);
         if (!apiUtil->validate_databaseinfo(db_info,statusCode,msg, true, true, true))
         {

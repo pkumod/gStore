@@ -97,7 +97,7 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
 
     long long size = (long long)_rownum * (long long)_colnum * 100 / GlobalTypedef::MB;
 	//TODO: get this arg from memory manager
-    if(gutil::ResourceUtil::memoryLeft() < size)
+    if(gs::ResourceUtil::memoryLeft() < size)
     {
         this->inMem = false;
         fprintf(stderr, "Stream: memory is not enough!\n");
@@ -142,7 +142,7 @@ Stream::Stream(std::vector<TYPE_ENTITY_LITERAL_ID>& _keys, std::vector<bool>& _d
     //below are for disk
     if(!this->needSort)	   // in disk and need sort
     {
-        string file_name = GlobalTypedef::tmp_path + "thread_" + gutil::ThreadUtil::getThreadID() + "_"+ gutil::TimeUtil::timestamp_str();
+        string file_name = GlobalTypedef::tmp_path + "thread_" + gs::ThreadUtil::getThreadID() + "_"+ gs::TimeUtil::timestamp_str();
         file_name += ".dat";
 #ifdef DEBUG_STREAM
         fprintf(stderr, "%s\n", file_name.c_str());
@@ -271,7 +271,7 @@ Stream::write(const Bstr* _bp)
     {
         if(this->tempfp == NULL)
         {
-            string name = GlobalTypedef::tmp_path + "thread_" + gutil::ThreadUtil::getThreadID() + "_stream_" + gutil::TimeUtil::timestamp_str();
+            string name = GlobalTypedef::tmp_path + "thread_" + gs::ThreadUtil::getThreadID() + "_stream_" + gs::TimeUtil::timestamp_str();
             name += ".dat";
 #ifdef DEBUG_STREAM
             fprintf(stderr, "%s\n", name.c_str());
@@ -390,7 +390,7 @@ Stream::isEnd()
 void
 Stream::mergeSort()
 {
-    string file_name = GlobalTypedef::tmp_path + gutil::TimeUtil::timestamp_str();
+    string file_name = GlobalTypedef::tmp_path + gs::TimeUtil::timestamp_str();
     file_name += ".dat";
 #ifdef DEBUG_STREAM
     fprintf(stderr, "%s\n", file_name.c_str());

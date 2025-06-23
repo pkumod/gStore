@@ -4,7 +4,7 @@
 #include "../ApiTypedef.h"
 #include "../../Util/JsonUtil.h"
 
-namespace gs
+namespace server
 {
     struct MessageRequest
     {

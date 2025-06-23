@@ -4,7 +4,7 @@
 #include <chrono>
 #include <ctime>
 
-namespace gutil 
+namespace gs 
 {
     #define NORM_DATE_PATTERN "%Y-%m-%d"
     #define NORM_DATETIME_PATTERN "%Y-%m-%d %H:%M:%S"
