@@ -63,9 +63,10 @@ Database::Database()
 	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
-Database::Database(string _name)
+Database::Database(string _name, bool _schema_flag)
 {
 	this->name = _name;
+	this->schema_flag = _schema_flag;
 	size_t found = this->name.find_last_not_of('/');
 	if (found != string::npos)
 	{
@@ -2239,9 +2240,11 @@ bool Database::encodeRDF_new(const string _rdf_file, const string _error_log)
 		return false;
 	}
 	// build schema in background
-	thread build_schema_thread(&Database::buildSchema, this, _rdf_file, id_tuples);
-	build_schema_thread.detach(); 
-
+	if (this->schema_flag)
+	{
+		thread build_schema_thread(&Database::buildSchema, this, _rdf_file, id_tuples);
+		build_schema_thread.detach(); 
+	}
 	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	// TODO+BETTER:after encode, we can know the exact entity num, so we can decide if our system can run this dataset

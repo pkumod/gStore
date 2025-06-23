@@ -127,6 +127,7 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "system", "resource_check", "off");
     Util::setGlobalConfig(ini_parser, "system", "check_point", "on");
     Util::setGlobalConfig(ini_parser, "system", "build_multi_thread", "on");
+    Util::setGlobalConfig(ini_parser, "system", "build_schema", "off");
     // server
     Util::setGlobalConfig(ini_parser, "server", "deamon", "off");
     Util::setGlobalConfig(ini_parser, "server", "port", "9000");

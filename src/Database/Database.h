@@ -94,7 +94,7 @@ public:
 	std::shared_ptr<CSR[]> csr;
 	TYPE_TRIPLE_NUM triple_update_num;
 	Database();
-	Database(std::string _name);
+	Database(std::string _name, bool _schema_flag=true);
 	~Database();
 
 	bool save();
@@ -211,6 +211,7 @@ private:
 	mutex umap_lock;
 	// for schema_lock;
 	mutex schema_lock;
+	bool schema_flag;
 
 	std::shared_ptr<KVstore> kvstore;
 	std::shared_ptr<StringIndex> stringindex;
@@ -433,6 +434,7 @@ private:
 	void createSchema(const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
 	void buildSchema(const std::string _rdf_file, const std::map<std::string, std::set<std::string>>& id_tuples);
 public:
+	void setSchemaFlag(bool _schema_flag);
 	void updateSchema();
 	void getSchemaInfo(nlohmann::json& schema, bool all);
 };

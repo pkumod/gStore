@@ -5,9 +5,14 @@ string Database::getSchemaPath()
 	return this->store_path + "/schema.json";
 }
 
+void Database::setSchemaFlag(bool _schema_flag)
+{
+	this->schema_flag = _schema_flag;
+}
+
 void Database::buildSchema(const string _rdf_file, const std::map<string, std::set<std::string>>& id_tuples)
 {
-	if (this->name == GlobalTypedef::system_db)
+	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
 		return;
 	ifstream _fin(_rdf_file.c_str());
 	if (!_fin)
@@ -138,7 +143,7 @@ void Database::createSchema(const std::set<struct RelationInfo>& relationList, c
 
 void Database::updateSchema()
 {
-	if (this->name == GlobalTypedef::system_db)
+	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
 		return;
 	schema_lock.lock();
 	nlohmann::json scheam = nlohmann::json::object();
@@ -220,6 +225,8 @@ void Database::updateSchema()
 
 void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 {
+	if (!this->schema_flag)
+		return;
 	std::ifstream file(getSchemaPath());
 	if (!file.is_open())
 	{

@@ -138,7 +138,7 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(db_name);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
@@ -176,7 +176,7 @@ namespace server
                 // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
-                    current_database = make_shared<Database>(db_name);
+                    current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {
@@ -292,7 +292,7 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(db_name);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
@@ -323,7 +323,7 @@ namespace server
                 // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
-                    current_database = make_shared<Database>(db_name);
+                    current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {

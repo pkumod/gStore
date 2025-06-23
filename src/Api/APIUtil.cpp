@@ -154,6 +154,7 @@ int APIUtil::initialize()
                 {
                     return -1;
                 }
+                bool schema_flag = GlobalTypedef::build_schema();
                 for (unsigned int i = 0; i < rs.ansNum; i++)
                 {
                     string db_name = NodeUtil::clear_angle_brackets(rs.answer[i][0]);
@@ -161,6 +162,7 @@ int APIUtil::initialize()
                     std::string built_time = StringUtil::replace_all(rs.answer[i][2], "\"", "");
                     std::string db_path = GlobalTypedef::db_path(db_name);
                     shared_ptr<DatabaseInfo> temp_db = make_shared<DatabaseInfo>(db_path, db_name, creator, built_time, DatabaseStatus::AREADY_BUILT);
+                    temp_db->getDatabase()->setSchemaFlag(schema_flag);
                     already_build.insert(pair<std::string, shared_ptr<DatabaseInfo>>(db_name, temp_db));
                 }
                 unlock_already_build_map();

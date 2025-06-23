@@ -73,6 +73,12 @@ int32_t GlobalTypedef::accesslog_days()
     return atoi(log_num.c_str());
 }
 
+bool GlobalTypedef::build_schema()
+{
+    std::string build_schema = global_config["build_schema"];
+    return build_schema == "on";
+}
+
 void GlobalTypedef::upload_allow_extensions(std::set<std::string>& allow_extensions)
 {
     std::string allow_ext = global_config["upload_allow_extensions"];

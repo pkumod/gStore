@@ -1062,11 +1062,11 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 						nextP++;
 					}
 					string sub_value =  contentStr.substr(p, nextP - p + 1);
-					std::cout << i << " -> "<< p << "," << nextP << "," << sub_value << endl;
+					//std::cout << i << " -> "<< p << "," << nextP << "," << sub_value << endl;
 					// fix bug: if nextP == p substr is empty, stof will throw invalid_argument
 					if (nextP <= p) 
 						break;
-					std::cout << stof(sub_value) << endl;
+					//std::cout << stof(sub_value) << endl;
 					date.emplace_back(stof(contentStr.substr(p, nextP - p + 1)));
 					p = nextP;
 					if (p >= contentLen && i < 5)
