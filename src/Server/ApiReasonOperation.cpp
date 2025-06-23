@@ -265,6 +265,7 @@ namespace server
                 {
                     rs.setUsername(username);
                     ret_val = db_info->getDatabase()->query(sparql, rs, output, false, false, nullptr);
+                    SLOG_TRACE("query return: " << ret_val);
                     apiUtil->unlock_databaseinfo(db_info);
                 }
                 catch (const std::exception &e)
@@ -274,18 +275,27 @@ namespace server
                     response.Error(StatusOperationFailed, content);
                     return;
                 }
+                if (ret_val != -100) 
+                {
+                    string content = "query error(code=" + to_string(ret_val) + ")!";
+                    response.Error(StatusOperationFailed, content);
+                    return;
+                }
                 int effectNum = 0;
                 string checkMsg = "ok";
                 try
                 {
-                    std::string countNum = rs.answer[0][0];
-                    SLOG_TRACE("countNum: " + countNum);
-                    size_t pos = countNum.find("\"^^<");
-                    if (pos != string::npos) 
+                    if (rs.ansNum > 0)
                     {
-                        countNum = countNum.substr(1, pos - 1);
+                        std::string countNum = rs.answer[0][0];
+                        SLOG_TRACE("countNum: " + countNum);
+                        size_t pos = countNum.find("\"^^<");
+                        if (pos != string::npos) 
+                        {
+                            countNum = countNum.substr(1, pos - 1);
+                        }
+                        effectNum = std::stoi(countNum);
                     }
-                    effectNum = std::stoi(countNum);
                 }
                 catch(const std::exception& e)
                 {
