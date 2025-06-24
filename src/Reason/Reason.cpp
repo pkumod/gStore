@@ -192,7 +192,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
         insert_sparql = "insert {" + source + " <Rule:" + label + "> " + value + ". } where " + wheresparql;
       }
       delete_sparql = "delete where {?x <Rule:" + label + "> " + value + ".}";
-      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). bind(" + value + " as ?o). ?s ?p ?o. }";
+      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). bind(" + value + " as ?o). ?s <Rule:" + label + "> " + value + ". }";
     }
     else
     {
@@ -210,7 +210,7 @@ ReasonSparql ReasonHelper::compileReasonRule(const string &rulename, const strin
       }
 
       delete_sparql = "delete where {?x <Rule:" + label + "> ?y.}";
-      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). ?s ?p ?o. }";
+      select_sparql = "select ?s ?p ?o where { bind(<Rule:" + label + "> as ?p). ?s <Rule:" + label + "> ?o. }";
     }
     check_sparql = "select (count(*) as ?result) where ";
     if (conditions_length > 1)
