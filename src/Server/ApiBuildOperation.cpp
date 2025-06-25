@@ -138,7 +138,8 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
+            bool schema_flag = GlobalTypedef::build_schema();
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
@@ -176,7 +177,7 @@ namespace server
                 // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
-                    current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
+                    current_database = make_shared<Database>(db_name, schema_flag);
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {
@@ -197,7 +198,7 @@ namespace server
                     }
                     if (total_update_num > 0)
                     {
-                        SLOG_DEBUG("update schema");
+                        SLOG_DEBUG("update schema: " << schema_flag);
                         current_database->updateSchema();
                     }
                     success_num = current_database->getTripleNum();
@@ -222,7 +223,7 @@ namespace server
             apiUtil->get_databaseinfo(db_name, db_info);
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-            db_info->initDatabase();
+            db_info->initDatabase(schema_flag);
             int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
             db_info->success(cost_time);
             // init user privilege
@@ -292,7 +293,8 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
+            bool schema_flag = GlobalTypedef::build_schema();
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
@@ -323,7 +325,7 @@ namespace server
                 // if multi files then excuse batchInsert
                 if (nt_files.size() > 0)
                 {
-                    current_database = make_shared<Database>(db_name, GlobalTypedef::build_schema());
+                    current_database = make_shared<Database>(db_name, schema_flag);
                     bool rt  = current_database->load(false);
                     if (!rt)
                     {
@@ -343,7 +345,7 @@ namespace server
                     }
                     if (total_update_num > 0)
                     {
-                        SLOG_DEBUG("update schema");
+                        SLOG_DEBUG("update schema: " << schema_flag);
                         current_database->updateSchema();
                     }
                     success_num = current_database->getTripleNum();
@@ -363,7 +365,7 @@ namespace server
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-            db_info->initDatabase();
+            db_info->initDatabase(schema_flag);
             // init user privilege
             apiUtil->init_privilege(username, db_name);
             int64_t cost_time = gs::TimeUtil::timestamp() - start_time;

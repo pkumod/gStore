@@ -243,7 +243,7 @@ namespace server
             StatusCode statusCode;
             if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
             {
-                response.Error(StatusLossOfLock, msg);
+                response.Error(statusCode, msg);
                 return;
             }
             std::string db_path = GlobalTypedef::export_path;

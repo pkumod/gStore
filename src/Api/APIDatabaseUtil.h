@@ -115,10 +115,10 @@ public:
         return db_ptr;
     }
     void setDatabase(shared_ptr<Database> db){ db_ptr = db; }
-    void initDatabase()
+    void initDatabase(bool schema_flag)
     {
         if (db_ptr == nullptr) {
-            db_ptr = make_shared<Database>(db_name);
+            db_ptr = make_shared<Database>(db_name, schema_flag);
         }
     }
     
