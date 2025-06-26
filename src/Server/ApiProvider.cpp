@@ -68,8 +68,7 @@ namespace server
             shared_ptr<DatabaseInfo> db_info;
             server::StatusCode statusCode;
             std::string statusMsg;
-            apiUtil->get_databaseinfo(request.db_name, db_info);
-            if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, true))
+            if (!apiUtil->validate_databaseinfo(request.db_name, db_info,statusCode, statusMsg, false, DatabaseLock::W))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
@@ -146,8 +145,7 @@ namespace server
             shared_ptr<DatabaseInfo> database_info;
             server::StatusCode statusCode;
             std::string statusMsg;
-            apiUtil->get_databaseinfo(request.db_name, database_info);
-            if (!apiUtil->validate_databaseinfo(database_info, statusCode, statusMsg, true, false, false))
+            if (!apiUtil->validate_databaseinfo(request.db_name, database_info, statusCode, statusMsg, false))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;

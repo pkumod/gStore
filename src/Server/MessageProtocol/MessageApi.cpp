@@ -112,18 +112,21 @@ namespace server
     {
         this->db_name = JsonUtil::jsonParam(json_data, "db_name");
         this->csr = JsonUtil::jsonParam(json_data, "csr");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
     }
 
-    MessageLoadRequest::MessageLoadRequest(std::string db_name, std::string csr) : MessageRequest(std::string("load"))
+    MessageLoadRequest::MessageLoadRequest(std::string db_name, std::string csr, bool async) : MessageRequest(std::string("load"))
     {
         this->db_name = db_name;
         this->csr = csr;
+        this->async = async;
     }
 
-    MessageLoadRequest::MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr) : MessageRequest("load", username, password)
+    MessageLoadRequest::MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr, bool async) : MessageRequest("load", username, password)
     {
         this->db_name = db_name;
         this->csr = csr;
+        this->async = async;
     }
 
     void MessageLoadRequest::to_json(std::string& json_str)
@@ -132,6 +135,7 @@ namespace server
         toJson(json);
         json["db_name"] = this->db_name,
         json["csr"] = this->csr;
+        json["async"] = this->async;
         json_str = json.dump();
     }
 

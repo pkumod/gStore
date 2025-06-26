@@ -123,7 +123,7 @@ int APIUtil::initialize()
                 system_database->load();
                 // write system info to init.lock file
                 FILE *fp = fopen(GlobalTypedef::initfile.c_str(), "wb");
-                DatabaseInfo sysInfo(_sys_db_path, GlobalTypedef::system_db, "root", TimeUtil::today(), DatabaseStatus::NORMAL);
+                DatabaseInfo sysInfo(_sys_db_path, GlobalTypedef::system_db, "root", TimeUtil::today(), DatabaseStatus::LOADED);
                 fwrite(&sysInfo, sizeof(DatabaseInfo), 1, fp);
                 fclose(fp);
                 update_sys_db(update_sparql);
@@ -380,12 +380,8 @@ bool APIUtil::update_database_status(const std::string& db_name, const DatabaseS
 bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
-    if (get_databaseinfo(db_name, db_info) == false) {
-        msg = "database[" + db_name + "] is not exist";
-        return false;
-    }
     StatusCode statusCode;
-    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 180)) {
+    if (!validate_databaseinfo(db_name, db_info, statusCode, msg, false, DatabaseLock::W, 180)) {
         return false;
     }
     if (check_db_loaded(db_name))
@@ -430,12 +426,8 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
 bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compress, std::string& backup_path, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
-    if (get_databaseinfo(db_name, db_info) == false) {
-        msg = "database[" + db_name + "] is not exist";
-        return false;
-    }
     StatusCode statusCode;
-    if(!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 180)) {
+    if(!validate_databaseinfo(db_name, db_info, statusCode, msg, false, DatabaseLock::W, 180)) {
         return false;
     }
     // Delete the oldest backup file
@@ -484,17 +476,18 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             return false;
         }
     } else {
-        // restore for null
+        // db not exist
         std::string built_time = Util::get_backup_time(backup_path);
         if (built_time.empty()) 
         {
             built_time = TimeUtil::now(NORM_DATETIME_PATTERN);
         }
         std::string db_path = GlobalTypedef::db_path(db_name);
-        db_info = std::make_shared<DatabaseInfo>(db_path, db_name, username, built_time, DatabaseStatus::BUILDING);
+        db_info = std::make_shared<DatabaseInfo>(db_path, db_name, username, built_time, DatabaseStatus::RESTOREING);
     }
-    StatusCode statusCode;
-    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true)) {
+    if (trywrlock_databaseinfo(db_info, 30) == false)
+    {
+        msg = "database[" + db_name + "] try write lock fail";
         return false;
     }
     if (!FileUtil::pathExists(backup_path)) {
@@ -530,10 +523,9 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         restore_bool = FileUtil::copyDir(backup_path, db_name_path);
     }
     if (restore_bool) {
-        if (db_info->getStatus() == DatabaseStatus::BUILDING) {
+        if (db_info->getStatus() == DatabaseStatus::RESTOREING) {
             init_databaseinfo(db_name, username, db_info->getTime(), DatabaseStatus::AREADY_BUILT);
             init_privilege(username, db_name);
-            // Util::add_backuplog(db_name);
         }
         // remove old db_home
         FileUtil::removePath(db_name_bak);
@@ -553,8 +545,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
 
 bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg)
 {
-    shared_ptr<DatabaseInfo> db_info;
-    if (get_databaseinfo(db_name, db_info) == false) {
+    if (!check_db_built(db_name)) {
         msg = "database[" + db_name + "] is not exist";
         return false;
     }
@@ -576,8 +567,9 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
         msg =  "Database path " + db_new_path + " already exists.";
         return false;
     }
+    shared_ptr<DatabaseInfo> db_info;
     StatusCode statusCode;
-    if (!validate_databaseinfo(db_info, statusCode, msg, true, false, true, 60))
+    if (!validate_databaseinfo(db_name, db_info, statusCode, msg, false, DatabaseLock::W, 60))
     {
         return false;
     }
@@ -760,20 +752,21 @@ bool APIUtil::unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo)
     }
 }
 
-bool APIUtil::validate_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, StatusCode& statusCode, std::string& statusMsg, bool check_exist, bool check_loaded, bool wrlock, int timeout_s)
+bool APIUtil::validate_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbinfo, 
+    StatusCode& statusCode, std::string& statusMsg, bool check_loaded, DatabaseLock db_lock, int timeout_s)
 {
-    if (!dbinfo)
+    if (!get_databaseinfo(db_name, dbinfo))
     {
-        statusCode = StatusOperationConditionsAreNotSatisfied;
-        statusMsg = "database info is null";
+        statusCode = StatusOperationFailed;
+        statusMsg = "database["+db_name+"] is not exist";
         return false;
     }
-    if (wrlock)
+    if (db_lock == DatabaseLock::W)
     {
         if (trywrlock_databaseinfo(dbinfo, timeout_s) == false)
         {
             statusCode = StatusLossOfLock;
-            statusMsg = "database[" + dbinfo->getName() + "] try write lock fail";
+            statusMsg = "database[" + db_name + "] try write lock fail";
             return false;
         }
     } 
@@ -782,21 +775,14 @@ bool APIUtil::validate_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, StatusCode
         if (rdlock_databaseinfo(dbinfo) == false)
         {
             statusCode = StatusLossOfLock;
-            statusMsg = "database[" + dbinfo->getName() + "] get read lock fail";
+            statusMsg = "database[" + db_name + "] get read lock fail";
             return false;
         }
-    } 
-    if (check_exist && check_db_built(dbinfo->getName()) == false)
-    {
-        statusCode = StatusOperationFailed;
-        statusMsg = "database[" + dbinfo->getName() + "] is not exist";
-        unlock_databaseinfo(dbinfo);
-        return false;
     }
-    if (check_loaded && check_db_loaded(dbinfo->getName()) == false)
+    if (check_loaded && dbinfo->getStatus() != DatabaseStatus::LOADED)
     {
         statusCode = StatusOperationFailed;
-        statusMsg = "database[" + dbinfo->getName() + "] is not loaded";
+        statusMsg = "database[" + db_name + "] is not loaded";
         unlock_databaseinfo(dbinfo);
         return false;
     }

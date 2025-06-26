@@ -57,8 +57,7 @@ namespace server
         }
         shared_ptr<DatabaseInfo> db_info;
         server::StatusCode statusCode;
-        apiUtil->get_databaseinfo(request.db_name, db_info);
-        if (!apiUtil->validate_databaseinfo(db_info,statusCode,msg, true, true, true))
+        if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, msg, true, DatabaseLock::W))
         {
             response.StatusCode = statusCode;
             response.StatusMsg = msg;

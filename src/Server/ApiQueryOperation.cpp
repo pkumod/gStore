@@ -148,9 +148,8 @@ namespace server
             std::string msg;
 
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
             // check database read lock
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true))
             {
                 response.StatusMsg = msg;
                 response.StatusCode = statusCode;
@@ -277,9 +276,8 @@ namespace server
             StatusCode statusCode;
             std::string msg;
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
             // check database read lock
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true))
             {
                 response.StatusMsg = msg;
                 response.StatusCode = statusCode;
@@ -355,6 +353,7 @@ namespace server
                 }
                 // unlock rdlock
                 apiUtil->unlock_databaseinfo(db_info);
+                db_info.reset();
             } catch (const std::exception &e) {
                 apiUtil->unlock_databaseinfo(db_info);
                 response.StatusMsg = "Query fail: " + string(e.what());
@@ -421,7 +420,7 @@ namespace server
                         // restore data
                         SLOG_DEBUG("log appendEntities task failed, restore leader data.");
                         // try get wrlock timeout 180 senconds
-                        if (apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
+                        if (apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true, DatabaseLock::W, 180))
                         {
                             string nt_file_path = clusterManagerPtr->getNtFilePath(db_name, log_file_name);
                             if (cluster_update_type == ClusterUpdateType::ClusterUpdateType_Delete)

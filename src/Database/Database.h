@@ -434,6 +434,7 @@ private:
 	void createSchema(const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
 	void buildSchema(const std::string _rdf_file, const std::map<std::string, std::set<std::string>>& id_tuples);
 public:
+	bool getSchemaFlag();
 	void setSchemaFlag(bool _schema_flag);
 	void updateSchema();
 	void getSchemaInfo(nlohmann::json& schema, bool all);

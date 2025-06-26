@@ -10,6 +10,11 @@ void Database::setSchemaFlag(bool _schema_flag)
 	this->schema_flag = _schema_flag;
 }
 
+bool Database::getSchemaFlag() 
+{
+	return this->schema_flag;
+}
+
 void Database::buildSchema(const string _rdf_file, const std::map<string, std::set<std::string>>& id_tuples)
 {
 	if (this->name == GlobalTypedef::system_db || !this->schema_flag)

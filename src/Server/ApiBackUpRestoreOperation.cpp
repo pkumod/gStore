@@ -239,9 +239,8 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, false))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true))
             {
                 response.Error(statusCode, msg);
                 return;

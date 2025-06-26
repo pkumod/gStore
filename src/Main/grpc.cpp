@@ -1900,8 +1900,7 @@ void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 		shared_ptr<DatabaseInfo> db_info;
 		server::StatusCode statusCode;
 		std::string statusMsg;
-		apiUtil->get_databaseinfo(db_name, db_info);
-		if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true))
+		if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W))
 		{
 			response->Error(statusCode, msg);
 			return;
@@ -3272,8 +3271,7 @@ void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 	shared_ptr<DatabaseInfo> db_info;
 	server::StatusCode statusCode;
 	std::string statusMsg;
-	apiUtil->get_databaseinfo(db_name, db_info);
-	if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, false, false))
+	if (!apiUtil->validate_databaseinfo(db_name, db_info,statusCode,statusMsg, false))
 	{
 		response->Error(statusCode, statusMsg);
 		return;

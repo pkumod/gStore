@@ -95,8 +95,7 @@ namespace server
             }
             shared_ptr<DatabaseInfo> db_info;
             StatusCode statusCode;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if(!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true))
+            if(!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true, DatabaseLock::W))
             {
                 response.Error(statusCode, msg);
                 return;
@@ -183,10 +182,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(request.db_name, db_info);
             server::StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
+            if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
@@ -242,10 +240,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(request.db_name, db_info);
             server::StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info,statusCode,statusMsg, true, true, true))
+            if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;

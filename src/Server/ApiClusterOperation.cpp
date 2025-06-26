@@ -91,10 +91,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info;
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, false, true))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, false, DatabaseLock::W))
             {
                 SLOG_ERROR(statusMsg);
                 return;
@@ -326,10 +325,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info = nullptr;
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if(!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, false, true, 180)) {
+            if(!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, false, DatabaseLock::W, 180)) {
                 SLOG_WARN(statusMsg);
                 // remove zip file
                 FileUtil::removePath(zip_file_path);
@@ -451,16 +449,15 @@ namespace server
             shared_ptr<DatabaseInfo> db_info;
             StatusCode statusCode;
             std::string statusMsg;
-            apiUtil->get_databaseinfo(db_name, db_info);
-            if(!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 1))
+            if(!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 1))
             {
-                SLOG_TRACE(statusMsg);
+                SLOG_WARN(statusMsg);
                 return;
             }
             if (!db_info->getDatabase()->save())
             {
                 apiUtil->unlock_databaseinfo(db_info);
-                SLOG_TRACE("disk or memory not enough");
+                SLOG_WARN("disk or memory not enough");
                 return;
             }
 
@@ -471,14 +468,15 @@ namespace server
             task_info.ip = request.follow_ip;
             task_info.port = request.follow_port;
             task_info.zip_path = clusterManagerPtr->compressInitDb(task_info);
-            if (!FileUtil::fileExists(task_info.zip_path))
+            if (FileUtil::fileExists(task_info.zip_path))
             {
-                SLOG_TRACE("leader database dir compress not exist:" << db_name);
-                apiUtil->unlock_databaseinfo(db_info);
-                return;
+                clusterManagerPtr->addTask(task_info);
+            }
+            else
+            {
+                SLOG_WARN("leader database dir compress not exist:" << db_name);
             }
             apiUtil->unlock_databaseinfo(db_info);
-            clusterManagerPtr->addTask(task_info);
         }
     }
 
@@ -669,10 +667,9 @@ namespace server
                 return;
             }
             shared_ptr<DatabaseInfo> db_info = nullptr;
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 180))
             {
                 SLOG_WARN(statusMsg);
                 // remove zip file

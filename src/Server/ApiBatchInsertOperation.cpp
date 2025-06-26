@@ -117,10 +117,9 @@ namespace server
         {
             if (!batch_insert_check(apiUtil, request, response, file_paths, temp_paths))
                 return;
-            apiUtil->get_databaseinfo(request.db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
+            if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 180))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
@@ -131,15 +130,16 @@ namespace server
             unsigned parse_error_num = 0;
             string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
+            shared_ptr<Database> db_ptr = db_info->getDatabase();
             for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
-                success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr);
+                success_num += db_ptr->batch_insert(rdf_file, false, nullptr);
             }
             if (success_num > 0)
             {
-                SLOG_DEBUG("update schema");
-                db_info->getDatabase()->updateSchema();
+                SLOG_DEBUG("update schema: " << db_ptr->getSchemaFlag());
+                db_ptr->updateSchema();
             }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
@@ -147,7 +147,7 @@ namespace server
             int64_t t1 = gs::TimeUtil::timestamp();
             if (Util::getConfigureValue("check_point") == "on")
             {
-                if (!db_info->getDatabase()->save())
+                if (!db_ptr->save())
                 {
                     statusMsg = "disk or memory is not enough";
                     throw new std::runtime_error(statusMsg);
@@ -156,6 +156,7 @@ namespace server
                 SLOG_DEBUG("auto checkpoint used: " << t2 - t1);
             }
             apiUtil->unlock_databaseinfo(db_info);
+            db_ptr.reset();
             db_info.reset();
             // remove temp files
             remove_temp_files(temp_paths);
@@ -208,10 +209,9 @@ namespace server
             clusterlog = make_shared<ofstream>();
             clusterlog->open(logpath.c_str());
 
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 180))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
@@ -220,30 +220,33 @@ namespace server
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
+            shared_ptr<Database> db_ptr = db_info->getDatabase();
             string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin insert data from " + rdf_file);
-                success_num += db_info->getDatabase()->batch_insert(rdf_file, false, nullptr, clusterlog);
+                success_num += db_ptr->batch_insert(rdf_file, false, nullptr, clusterlog);
             }
             if (success_num > 0)
             {
-                SLOG_DEBUG("update schema");
-                db_info->getDatabase()->updateSchema();
+                SLOG_DEBUG("update schema: " << db_ptr->getSchemaFlag());
+                db_ptr->updateSchema();
             }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
-                if (!db_info->getDatabase()->save())
+                if (!db_ptr->save())
                 {
                     statusMsg = "disk or memory is not enough";
                     throw new runtime_error(statusMsg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
+            db_ptr.reset();
+            db_info.reset();
             clusterlog->close();
 
             // respnse data
@@ -270,15 +273,18 @@ namespace server
                     // try get wrlock timeout 180 senconds
                     StatusCode statusCode;
                     std::string statusMsg;
-                    if (apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 180))
+                    if (apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 180))
                     {
                         uint64_t num = 0;
+                        db_ptr = db_info->getDatabase();
                         for (std::string rdf_file : file_paths)
                         {
-                            num += db_info->getDatabase()->batch_remove(rdf_file);
+                            num += db_ptr->batch_remove(rdf_file);
                         }
                         SLOG_INFO("restore " + db_name + " data: batch_remove num " << num);
                         apiUtil->unlock_databaseinfo(db_info);
+                        db_ptr.reset();
+                        db_info.reset();
                     }
                     else
                     {

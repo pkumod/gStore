@@ -103,10 +103,9 @@ namespace server
                 return;
             std::string db_name = request.db_name;
             std::string remote_ip = request.remote_ip;
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, statusMsg, true, true, true, 300))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W, 180))
             {
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
@@ -115,19 +114,20 @@ namespace server
             unsigned success_num = 0;
             unsigned total_num = 0;
             size_t parse_error_num = 0;
+            shared_ptr<Database> db_ptr = db_info->getDatabase();
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
-                success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr);
+                success_num += db_ptr->batch_remove(rdf_file, false, nullptr);
             }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
-                if (!db_info->getDatabase()->save())
+                if (!db_ptr->save())
                 {
                     statusMsg = "disk or memory not enough";
                     throw std::runtime_error(statusMsg);
@@ -184,9 +184,8 @@ namespace server
             shared_ptr<ofstream> clusterlog = make_shared<ofstream>();
             clusterlog->open(logpath.c_str());
 
-            apiUtil->get_databaseinfo(db_name, db_info);
             StatusCode statusCode;
-            if (!apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
+            if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true, DatabaseLock::W, 180))
             {
                 response.StatusMsg = msg;
                 response.StatusCode = statusCode;
@@ -195,25 +194,27 @@ namespace server
             unsigned success_num = 0;
             unsigned total_num = 0;
             size_t parse_error_num = 0;
+            shared_ptr<Database> db_ptr = db_info->getDatabase();
             string error_log = GlobalTypedef::db_path(db_name) + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
             for (std::string rdf_file : file_paths)
             {
                 SLOG_DEBUG("begin remove data from " + rdf_file);
-                success_num += db_info->getDatabase()->batch_remove(rdf_file, false, nullptr, clusterlog);
+                success_num += db_ptr->batch_remove(rdf_file, false, nullptr, clusterlog);
             }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock
             if (Util::getConfigureValue("check_point") == "on")
             {
-                if (!db_info->getDatabase()->save())
+                if (!db_ptr->save())
                 {
                     msg = "disk or memory not enough";
                     throw std::runtime_error(msg);
                 }
             }
             apiUtil->unlock_databaseinfo(db_info);
+            db_ptr.reset();
             db_info.reset();
             // close cluster log
             clusterlog->close();
@@ -243,15 +244,17 @@ namespace server
                 {
                     // restore data
                     // try get wrlock timeout 180 senconds
-                    if (apiUtil->validate_databaseinfo(db_info, statusCode, msg, true, true, true, 180))
+                    if (apiUtil->validate_databaseinfo(db_name, db_info, statusCode, msg, true, DatabaseLock::W, 180))
                     {
                         uint64_t num = 0;
+                        db_ptr = db_info->getDatabase();
                         for (std::string rdf_file : file_paths)
                         {
-                            num += db_info->getDatabase()->batch_insert(rdf_file);
+                            num += db_ptr->batch_insert(rdf_file);
                         }
                         SLOG_INFO("restore " + db_name + " data: batch_insert num " << num);
                         apiUtil->unlock_databaseinfo(db_info);
+                        db_ptr.reset();
                         db_info.reset();
                     }
                     else

@@ -113,7 +113,7 @@ public:
     bool trywrlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, const time_t& timeout_s);
     bool rdlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
     bool unlock_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo);
-    bool validate_databaseinfo(shared_ptr<DatabaseInfo> &dbinfo, StatusCode& statusCode, std::string& statusMsg, bool check_exist=true, bool check_loaded=true, bool wrlock=false, int timeout_s=30);
+    bool validate_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbinfo, StatusCode& statusCode, std::string& statusMsg, bool check_loaded=true, DatabaseLock db_lock=DatabaseLock::R, int timeout_s=30);
 
     bool get_txn_manager(const std::string& db_name, shared_ptr<Txn_manager> &txn_manager);
     bool insert_txn_manager(const std::string& db_name, shared_ptr<DatabaseInfo> &dbinfo);

@@ -8,26 +8,30 @@ using namespace nlohmann;
 
 enum DatabaseStatus 
 {
-    NORMAL = 0,
+    RESTOREING = 0,
     BUILDING = 1,
     AREADY_BUILT = 2,
     LOADING = 3,
     LOADED = 4,
     UNLOADING = 5,
-    BACKUPING = 6,
-    RESTOREING = 7
+    BACKUPING = 6
+};
+
+enum DatabaseLock
+{
+    R = 0,
+    W = 1
 };
 
 const std::map<DatabaseStatus, std::string> DatabseStatusMap
 {
-    {NORMAL,       "unknown"},
+    {RESTOREING,   "restoreing"},
     {BUILDING,     "building"},
     {AREADY_BUILT, "already_built"},
     {LOADING,      "loading"},
     {LOADED,       "loaded"},
     {UNLOADING,    "unloading"},
-    {BACKUPING,    "backuping"},
-    {RESTOREING,   "restoreing"}
+    {BACKUPING,    "backuping"}
 };
 
 struct DatabaseInfo
