@@ -1133,7 +1133,10 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	if (grpc::UrlEncode::is_url_encode(path)) {
 		gs::StringUtil::url_decode(path);
 	}
-	string full_path = GlobalTypedef::export_path + path;
+	string full_path = path;
+	if (!gs::StringUtil::start_with(full_path, GlobalTypedef::export_path)) {
+		full_path = GlobalTypedef::export_path + full_path;
+	}
 	SLOG_DEBUG("full path: " << full_path);
 	full_path = Util::getExactPath(full_path.c_str());
 	if (FileUtil::fileExists(full_path)) {
@@ -2948,10 +2951,10 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 	{
 		if (response_data.state == 1)
 		{
-			ifstream file(response_data.queryfilepath);
+			ifstream file(response_data.filepath);
 			if (!file.is_open())
 			{
-				SLOG_ERROR("open result file failed: " + response_data.queryfilepath);
+				SLOG_ERROR("open result file failed: " + response_data.filepath);
 				response->Error(server::StatusFileReadError, "Read result file failed.");
 			}
 			else

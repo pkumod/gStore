@@ -3,8 +3,11 @@ param=$1
 # API基础URL
 PORT=$(grep -m 1 'port=' ./conf/conf.ini)
 BASE_URL=http://127.0.0.1:"${PORT:5:${#PORT}-5}"/api
+FILE_URL=http://127.0.0.1:"${PORT:5:${#PORT}-5}"/file
 # 备份路径
 BACKUP_PATH=""
+# 导出路径
+EXPORT_PATH=""
 # 数据库
 DB_NAME=lubm
 if [ -n "$param" ]; then
@@ -43,6 +46,7 @@ API_DATA=(
     '{"operation":"usermanage","username":"root","password":"123456","type":"2","op_username":"test"}' 
     '{"operation":"rename","username":"root","password":"123456","db_name":"'"$DB_NAME"'","new_name":"new'"$DB_NAME"'"}' 
     '{"operation":"drop","username":"root","password":"123456","db_name":"new'"$DB_NAME"'","is_backup":"false"}' 
+    '{"operation":"drop","username":"root","password":"123456","db_name":"'"$DB_NAME"'","is_backup":"false"}' 
     )
 
 # 心跳检测
@@ -98,7 +102,17 @@ query() {
 exportDb() {
     echo "数据库导出"
     echo "curl -X POST -H 'Content-Type: application/json' -d '${API_DATA[7]}' $BASE_URL"
-    curl -X POST -H 'Content-Type: application/json' -d ${API_DATA[7]} "$BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d ${API_DATA[7]} "$BASE_URL" > "rt.txt" 2>&1
+    EXPORT_PATH=$(awk -F '"' '/filepath/ {print$10}' "rt.txt")
+    rm "rt.txt"
+    echo "filepath：$EXPORT_PATH"
+}
+
+# 下载文件
+download() {
+    echo "下载文件"
+    echo "wget --content-disposition $FILE_URL/download/$EXPORT_PATH"
+    wget --content-disposition "$FILE_URL/download/$EXPORT_PATH"
 }
 
 # 数据库备份
@@ -244,8 +258,14 @@ drop() {
     rm -rf export/"$DB_NAME"*
 }
 
+drop2() {
+    echo "删除数据库"
+    echo "curl -X POST -H 'Content-Type: application/json' -d '${API_DATA[26]}' $BASE_URL"
+    curl -X POST -H 'Content-Type: application/json' -d ${API_DATA[26]} "$BASE_URL"
+}
+
 # 操作数组
-operations=("check" "login" "drop" "build" "show" "monitor" "load" "query" "exportDb" "backup" "batchRemove" "batchInsert" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
+operations=("check" "login" "drop2" "build" "show" "monitor" "load" "query" "exportDb" "download" "backup" "batchRemove" "batchInsert" "unload" "restore" "begin" "execute" "commit" "rollback" "checkpoint" "add_user" "set_user_permission" "show_users" "clear_user_permission" "change_password" "delete_user" "rename" "drop")
 # operations=("query")
 
 # 执行所有操作

@@ -161,8 +161,9 @@ public:
     void get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name = "", std::string specOperation = "");
     void write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, 
     const string &optId = "", unsigned num = 0, unsigned fail_num = 0, std::string dbname = "");
-    void update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath = "");
+    void update_access_log(int statusCode, std::string statusMsg, std::string opt_id, int state, int num, int failnum, std::string filepath = "");
     bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
+    void cancel_running_task(const string &date);
 
     // for query log
     void get_query_log_files(std::vector<std::string> &file_list);

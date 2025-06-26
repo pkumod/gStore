@@ -13,7 +13,9 @@ enum DatabaseStatus
     AREADY_BUILT = 2,
     LOADING = 3,
     LOADED = 4,
-    UNLOADED = 5
+    UNLOADING = 5,
+    BACKUPING = 6,
+    RESTOREING = 7
 };
 
 const std::map<DatabaseStatus, std::string> DatabseStatusMap
@@ -23,7 +25,9 @@ const std::map<DatabaseStatus, std::string> DatabseStatusMap
     {AREADY_BUILT, "already_built"},
     {LOADING,      "loading"},
     {LOADED,       "loaded"},
-    {UNLOADED,     "unloaded"}
+    {UNLOADING,    "unloading"},
+    {BACKUPING,    "backuping"},
+    {RESTOREING,   "restoreing"}
 };
 
 struct DatabaseInfo

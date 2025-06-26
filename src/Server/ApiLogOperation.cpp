@@ -189,8 +189,7 @@ namespace server
             response.StatusMsg = log.msg;
             response.state = log.state;
             response.operation = log.operation;
-            response.backupfilepath = log.backupfilepath;
-            response.queryfilepath = log.queryfilepath;
+            response.filepath = log.filepath;
             response.success_num = log.num;
             response.failed_num = log.fail_num;
             if (response.operation == "build" && log.state == 0)

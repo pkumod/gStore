@@ -271,11 +271,12 @@ namespace server
                     return;
                 }
                 FileUtil::removePath(export_path);
+                export_path = zip_path;
             }
             msg = "Export the database successfully.";
             response.StatusCode = 0;
             response.StatusMsg = msg;
-            response.filepath = export_name;
+            response.filepath = export_path;
         }
         catch (const std::exception &e)
         {

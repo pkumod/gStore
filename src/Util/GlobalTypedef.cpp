@@ -5,13 +5,13 @@ std::string GlobalTypedef::product_version = "1.4";
 std::string GlobalTypedef::product_website = "https://www.gstore.cn";
 std::string GlobalTypedef::tmp_path = ".tmp/";
 std::string GlobalTypedef::debug_path = ".tmp/";
-std::string GlobalTypedef::pid_path = "./conf/gstore.pid";
-std::string GlobalTypedef::profile = "./conf/conf.ini";
-std::string GlobalTypedef::initfile = "./conf/init.lock";
+std::string GlobalTypedef::pid_path = "conf/gstore.pid";
+std::string GlobalTypedef::profile = "conf/conf.ini";
+std::string GlobalTypedef::initfile = "conf/init.lock";
 std::string GlobalTypedef::system_db = "system";
-std::string GlobalTypedef::transaction_log_path = "./logs/transaction.json";
-std::string GlobalTypedef::backup_log_path = "./logs/backup.json";
-std::string GlobalTypedef::export_path = "./export/";
+std::string GlobalTypedef::transaction_log_path = "logs/transaction.json";
+std::string GlobalTypedef::backup_log_path = "logs/backup.json";
+std::string GlobalTypedef::export_path = "export/";
 std::map<std::string, std::string> GlobalTypedef::global_config = {};
 
 std::string GlobalTypedef::db_home()

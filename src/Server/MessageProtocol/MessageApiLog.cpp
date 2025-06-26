@@ -418,7 +418,7 @@ namespace server
         toJson(rJson);
         if (this->operation == "backup")
         {
-            rJson["backupfilepath"] = this->backupfilepath;
+            rJson["backupfilepath"] = this->filepath;
         }
         // if (this->operation == "query")
         // {

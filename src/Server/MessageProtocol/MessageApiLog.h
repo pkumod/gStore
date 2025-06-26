@@ -186,8 +186,7 @@ namespace server
         int state;
         unsigned long long success_num;
         int failed_num;
-        std::string backupfilepath;
-        std::string queryfilepath;
+        std::string filepath;
         void toJsonString(std::string& json_str) override;
 
         MessageCheckOperationStateResponse() { }

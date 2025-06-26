@@ -124,8 +124,7 @@ public:
     int state = 1;
     unsigned long long num = 0;
     int fail_num = 0;
-    std::string backupfilepath;
-    std::string queryfilepath;
+    std::string filepath;
     std::string dbname;
 public:
     DBAccessLogInfo() {}
@@ -157,13 +156,9 @@ public:
             doc["num"] = num;
             doc["fail_num"] = fail_num;
         }
-        if (operation == "backup" && !backupfilepath.empty())
+        if ((operation == "backup" || operation == "query" ) && !filepath.empty())
         {
-            doc["backupfilepath"] = backupfilepath;
-        }
-        if (operation == "query")
-        {
-            doc["queryfilepath"] = queryfilepath;
+            doc["filepath"] = filepath;
         }
     }
     static bool fromJSON(const string& json_str, DBAccessLogInfo& item)
@@ -192,10 +187,8 @@ public:
                 doc["num"].get_to(item.num);
             if (doc.contains("fail_num"))
                 doc["fail_num"].get_to(item.fail_num);
-            if (doc.contains("backupfilepath"))
-                doc["backupfilepath"].get_to(item.backupfilepath);
-            if (doc.contains("queryfilepath"))
-                doc["queryfilepath"].get_to(item.queryfilepath);
+            if (doc.contains("filepath"))
+                doc["filepath"].get_to(item.filepath);
         }
         return true;
     }

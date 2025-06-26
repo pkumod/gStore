@@ -381,7 +381,7 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
     if (get_databaseinfo(db_name, db_info) == false) {
-        msg = "can't find [" + db_name + "] database info from already builts list";
+        msg = "database[" + db_name + "] is not exist";
         return false;
     }
     StatusCode statusCode;
@@ -430,9 +430,8 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
 bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compress, std::string& backup_path, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
-    get_databaseinfo(db_name, db_info);
-    if (db_info == nullptr) {
-        msg = "can't find [" + db_name + "] database info from already builts list";
+    if (get_databaseinfo(db_name, db_info) == false) {
+        msg = "database[" + db_name + "] is not exist";
         return false;
     }
     StatusCode statusCode;
@@ -479,8 +478,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
 bool APIUtil::restore_databaseinfo(const std::string& username, const std::string& db_name, std::string& backup_path, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
-    get_databaseinfo(db_name, db_info);
-    if (db_info != nullptr) {
+    if (get_databaseinfo(db_name, db_info)) {
         if (db_info->getStatus() != DatabaseStatus::AREADY_BUILT) {
             msg = "Database alreay load, need unload it first.";
             return false;
@@ -556,9 +554,8 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
 bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg)
 {
     shared_ptr<DatabaseInfo> db_info;
-    get_databaseinfo(db_name, db_info);
-    if (db_info == nullptr) {
-        msg = "can't find [" + db_name + "] database info from already builts list";
+    if (get_databaseinfo(db_name, db_info) == false) {
+        msg = "database[" + db_name + "] is not exist";
         return false;
     }
     if (check_db_loaded(db_name))
@@ -1899,8 +1896,8 @@ void APIUtil::get_access_log(const string &date, int &page_no, int &page_size, s
     logPtr->setTotalPage(total_page);
 }
 
-void APIUtil::write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, 
-const string &optId, unsigned num, unsigned fail_num, std::string dbname)
+void APIUtil::write_access_log(const std::string &operation, const std::string &remoteIP, const int statusCode, const std::string &statusMsg, 
+const std::string &optId, unsigned num, unsigned fail_num, std::string dbname)
 {
     if (access_log_mode == "0")
     {
@@ -1956,11 +1953,10 @@ const string &optId, unsigned num, unsigned fail_num, std::string dbname)
     pthread_rwlock_unlock(&access_log_lock);
 }
 
-void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id, int state, int num, int failnum, string backupfilepath)
+void APIUtil::update_access_log(int statusCode, std::string statusMsg, std::string opt_id, int state, int num, int failnum, std::string filepath)
 {
     if (opt_id.empty())
         return;
-    pthread_rwlock_wrlock(&access_log_lock);
     string iplog_name = IdUtil::getConvertTimeById(opt_id);
     string filename = access_log_path + iplog_name + ".log";
     string file_temp_name = access_log_path + iplog_name + "temp.log";
@@ -1969,6 +1965,7 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
         SLOG_DEBUG("error ip access log file is not exist");
         return;
     }
+    pthread_rwlock_wrlock(&access_log_lock);
     FILE* file = fopen(filename.c_str(), "r");
     FILE* temp_file = fopen(file_temp_name.c_str(), "w");
     char readBuffer[0xffff];
@@ -1990,10 +1987,8 @@ void APIUtil::update_access_log(int statusCode, string statusMsg, string opt_id,
                     logInfo.state = state;
                     logInfo.num = num;
                     logInfo.fail_num = failnum;
-                    if (logInfo.operation == "backup")
-                        logInfo.backupfilepath = backupfilepath;
-                    else if(logInfo.operation == "query")
-                        logInfo.queryfilepath = backupfilepath;
+                    if (logInfo.operation == "backup" || logInfo.operation == "query")
+                        logInfo.filepath = filepath;
                     nlohmann::json json_data;
                     logInfo.toJSON(json_data);
                     line = json_data.dump();
@@ -2049,6 +2044,47 @@ bool APIUtil::getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log)
     file.close();
     pthread_rwlock_unlock(&access_log_lock);
     return found;
+}
+
+void APIUtil::cancel_running_task(const string &date)
+{
+    string filename = access_log_path + date + ".log";
+    if (FileUtil::fileExists(filename) == false)
+        return;
+    pthread_rwlock_wrlock(&access_log_lock);
+    FILE* file = fopen(filename.c_str(), "r");
+    char readBuffer[0xffff];
+    string match_key = "\"state\":0";
+    std::vector<std::string> lines;
+    bool match_flag = false;
+    while (fgets(readBuffer, 1024, file))
+    {
+        string line = readBuffer;
+        if (line.find(match_key) != string::npos)
+        {
+            match_flag = true;
+            json json_data = json::parse(line);
+            json_data["state"] = -1;
+            line = json_data.dump();
+            line.push_back('\n');
+        }
+        lines.push_back(line);
+    }
+    fclose(file);
+    if (match_flag) 
+    {
+        string file_temp_name = filename + ".temp";
+        FILE* temp_file = fopen(file_temp_name.c_str(), "w");
+        size_t count = lines.size();
+        for (size_t i = 0; i < count; i++)
+        {
+            fputs(lines[i].c_str(), temp_file);
+        }
+        fclose(temp_file);
+        // FileUtil::removePath(filename);
+        // FileUtil::movePath(file_temp_name, filename);
+    }
+    pthread_rwlock_unlock(&access_log_lock);
 }
 
 void APIUtil::get_query_log_files(std::vector<std::string> &file_list)
