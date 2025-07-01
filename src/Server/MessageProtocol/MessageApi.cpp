@@ -154,13 +154,10 @@ namespace server
     {
         if (this->csr.empty())
             return false;
-        else if (this->csr == "1")
+        else if (this->csr == "1" || this->csr == "true")
             return true;
-        else if (this->csr == "true")
-            return true;
-        else if (this->csr == "bool")
-            return true;
-        return false;
+        else
+            return false;
     }
 
     MessageLoadResponse::MessageLoadResponse()
@@ -173,8 +170,9 @@ namespace server
         nlohmann::json json;
         toJson(json);
         json["csr"] = this->csr;
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
         json_str = json.dump();
-        SLOG_TRACE("MessageLoadResponse:" << json_str);
     }
 
     // login
@@ -381,6 +379,8 @@ namespace server
                 json.at("lockNum").get_to(this->lockNum);
             if (json.contains("costTime"))
                 json.at("costTime").get_to(this->costTime);
+            if (json.contains("status"))
+                json.at("status").get_to(this->status);
         }
     }
 
@@ -398,6 +398,7 @@ namespace server
         this->diskUsed = 0;
         this->lockNum = 0;
         this->costTime = 0;
+        this->status = "";
     }
 
     void MessageMonitorResponse::toJsonString(std::string& json_str)
@@ -416,6 +417,7 @@ namespace server
         json["lockNum"] = this->lockNum;
         json["diskUsed"] = this->diskUsed;
         json["costTime"] = this->costTime;
+        json["status"] = this->status;
         json["subjectList"] = nlohmann::json::array();
         if (!this->subjectList.empty())
         {

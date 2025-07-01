@@ -8,13 +8,14 @@ using namespace nlohmann;
 
 enum DatabaseStatus 
 {
-    RESTOREING = 0,
+    RESTORING = 0,
     BUILDING = 1,
-    AREADY_BUILT = 2,
-    LOADING = 3,
-    LOADED = 4,
-    UNLOADING = 5,
-    BACKUPING = 6
+    LOADING = 2,
+    UNLOADING = 3,
+    BACKUPING = 4,
+    INSERTING = 5,
+    AREADY_BUILT = 6,
+    LOADED = 7
 };
 
 enum DatabaseLock
@@ -25,13 +26,14 @@ enum DatabaseLock
 
 const std::map<DatabaseStatus, std::string> DatabseStatusMap
 {
-    {RESTOREING,   "restoreing"},
+    {RESTORING,   "restoring"},
     {BUILDING,     "building"},
-    {AREADY_BUILT, "already_built"},
     {LOADING,      "loading"},
-    {LOADED,       "loaded"},
     {UNLOADING,    "unloading"},
-    {BACKUPING,    "backuping"}
+    {BACKUPING,    "backuping"},
+    {INSERTING,    "inserting"},
+    {AREADY_BUILT, "already_built"},
+    {LOADED,       "loaded"}
 };
 
 struct DatabaseInfo
@@ -118,6 +120,35 @@ public:
             return "";
         }
     }
+    std::string getStatusDesc()
+    {
+        std::string statusStr;
+        switch (status)
+        {
+        case RESTORING:
+            statusStr = "restored";
+            break;
+        case BUILDING:
+            statusStr = "built";
+            break;
+        case LOADING:
+            statusStr = "loaded";
+            break;
+        case UNLOADING:
+            statusStr = "unloaded";
+            break;
+        case BACKUPING:
+            statusStr = "backed up";
+            break;
+        case INSERTING:
+            statusStr = "inserted";
+            break;
+        default:
+            statusStr = "unknown";
+            break;
+        }
+        return statusStr;
+    }
     shared_ptr<Database>& getDatabase()
     {
         return db_ptr;
@@ -153,13 +184,13 @@ public:
 
     bool unloadDatabase()
     {
+        status = DatabaseStatus::UNLOADING;
         if (db_ptr != nullptr) {
             db_ptr.reset();
-            status = DatabaseStatus::AREADY_BUILT;
             db_ptr = make_shared<Database>(db_name);
-            return true;
         }
-        return false;
+        status = DatabaseStatus::AREADY_BUILT;
+        return true;
     }
     nlohmann::json toJSON()
     {

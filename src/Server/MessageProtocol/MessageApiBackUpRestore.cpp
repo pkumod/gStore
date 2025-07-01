@@ -3,20 +3,18 @@
 
 namespace server
 {
-    MessageBackupRequest::MessageBackupRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip) : MessageRequest(std::string("backup"))
+    MessageBackupRequest::MessageBackupRequest(std::string db_name, bool compress, bool async, std::string callback) : MessageRequest(std::string("backup"))
     {
         this->db_name = db_name;
-        this->backup_path = backup_path;
+        this->compress = compress;
         this->async = async;
         this->callback = callback;
-        this->backup_zip = backup_zip;
     }
 
     MessageBackupRequest::MessageBackupRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
         this->db_name     = JsonUtil::jsonParam(json_data, "db_name");
-		this->backup_path = JsonUtil::jsonParam(json_data, "backup_path");
-        this->backup_zip  = JsonUtil::jsonBoolParam(json_data, "backup_zip", false);
+        this->compress  = JsonUtil::jsonBoolParam(json_data, "compress", false);
         this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
         this->callback = JsonUtil::jsonParam(json_data, "callback");
     }
@@ -28,8 +26,7 @@ namespace server
             {"username", this->username},
             {"password", this->password},
             {"db_name", this->db_name},
-            {"backup_path", this->backup_path},
-            {"backup_zip", "false"},
+            {"compress", this->compress},
             {"async", false},
             {"callback", this->callback}};
         json_str = json.dump();
@@ -42,8 +39,7 @@ namespace server
             {"username", this->username},
             {"password", this->password},
             {"db_name", this->db_name},
-            {"backup_path", this->backup_path},
-            {"backup_zip", "false"},
+            {"compress", false},
             {"async", false},
             {"callback", this->callback},
             {"inner", "true"}};

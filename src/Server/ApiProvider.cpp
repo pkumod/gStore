@@ -68,8 +68,12 @@ namespace server
             shared_ptr<DatabaseInfo> db_info;
             server::StatusCode statusCode;
             std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(request.db_name, db_info,statusCode, statusMsg, false, DatabaseLock::W))
+            if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, statusMsg, false, DatabaseLock::W))
             {
+                if (statusCode == StatusLossOfLock)
+                {
+                    statusMsg = statusMsg + " as it is currently being " + db_info->getStatusDesc();
+                }
                 response.StatusCode = statusCode;
                 response.StatusMsg = statusMsg;
                 return;
@@ -84,7 +88,7 @@ namespace server
             if (db_info->getStatus() != DatabaseStatus::LOADED)
             {
                 db_info->setStatus(DatabaseStatus::LOADING);
-                SLOG_DEBUG("begin loading...");
+                SLOG_DEBUG("begin loading with csr: " << request.Csr());
                 // progress notification
                 bool rt  = db_info->getDatabase()->load(request.Csr());
                 SLOG_DEBUG("end loading.");
@@ -95,7 +99,7 @@ namespace server
                     db_info->setStatus(DatabaseStatus::LOADED);
                     // insert txn manager
                     apiUtil->insert_txn_manager(request.db_name, db_info);
-                    if (!db_info->getDatabase()->csr)
+                    if (db_info->getDatabase()->csr)
                     {
                         response.csr = "1";
                     }
@@ -111,7 +115,7 @@ namespace server
             }
             else
             {
-                if (!db_info->getDatabase()->csr)
+                if (db_info->getDatabase()->csr)
                 {
                     response.csr = "1";
                 }
@@ -175,6 +179,7 @@ namespace server
             response.predicateNum = predicateNum;
             response.literalNum = literalNum;
             response.costTime = database_info->getCostTime();
+            response.status = database_info->getStatusStr();
             
             apiUtil->unlock_databaseinfo(database_info);
             unsigned diskUsed = 0;

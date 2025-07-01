@@ -430,7 +430,10 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
     if(!validate_databaseinfo(db_name, db_info, statusCode, msg, false, DatabaseLock::W, 180)) {
         return false;
     }
+    DatabaseStatus db_status = db_info->getStatus();
+    db_info->setStatus(DatabaseStatus::BACKUPING);
     // Delete the oldest backup file
+    backup_path = GlobalTypedef::backup_path();
     std::string db_name_suffix = db_name + GlobalTypedef::db_suffix();
     vector<std::string> backup_files;
     FileUtil::dir_filenames(backup_path, backup_files, db_name_suffix);
@@ -464,6 +467,7 @@ bool APIUtil::backup_databaseinfo(const std::string& db_name, const bool& compre
         }
         backup_path = zip_file_path;
     }
+    db_info->setStatus(db_status);
     return backup_rt;
 }
 
@@ -475,7 +479,10 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             msg = "Database alreay load, need unload it first.";
             return false;
         }
-    } else {
+        db_info->setStatus(DatabaseStatus::RESTORING);
+    } 
+    else 
+    {
         // db not exist
         std::string built_time = Util::get_backup_time(backup_path);
         if (built_time.empty()) 
@@ -483,20 +490,22 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
             built_time = TimeUtil::now(NORM_DATETIME_PATTERN);
         }
         std::string db_path = GlobalTypedef::db_path(db_name);
-        db_info = std::make_shared<DatabaseInfo>(db_path, db_name, username, built_time, DatabaseStatus::RESTOREING);
+        db_info = std::make_shared<DatabaseInfo>(db_path, db_name, username, built_time, DatabaseStatus::BUILDING);
     }
     if (trywrlock_databaseinfo(db_info, 30) == false)
     {
         msg = "database[" + db_name + "] try write lock fail";
+        db_info->setStatus(DatabaseStatus::AREADY_BUILT);
         return false;
     }
     if (!FileUtil::pathExists(backup_path)) {
         msg = "backup path is not exist";
         unlock_databaseinfo(db_info);
+        db_info->setStatus(DatabaseStatus::AREADY_BUILT);
         return false;
     }
     std::string db_name_path = GlobalTypedef::db_path(db_name);
-    std::string db_name_bak = db_name_path + TimeUtil::now(NORM_DATETIME_MS_PATTERN) + ".bak";
+    std::string db_name_bak = db_name_path + TimeUtil::now(PURE_DATETIME_MS_PATTERN) + ".bak";
     bool restore_bool = false;
     // mv db_home to db_home.bak
     if (FileUtil::dirExists(db_name_path)) 
@@ -505,16 +514,20 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         {
             msg = "rename origin name to .bak fail";
             unlock_databaseinfo(db_info);
+            db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             return false;
         }
     }
     // is zip file
     if (FileUtil::is_file(backup_path)) {
         // unzip to db_home
-        CompressUtil::UnCompressZip unzip(backup_path, GlobalTypedef::db_home());
+        CompressUtil::UnCompressZip unzip(backup_path, db_name_path);
         if (unzip.unCompress() != CompressUtil::UnZipOK) {
-            msg = "backup compress fail";
+            msg = "backup uncompress fail";
+            // mv db_home.bak to db_home
+            FileUtil::movePath(db_name_bak, db_name_path);
             unlock_databaseinfo(db_info);
+            db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             return false;
         }
         restore_bool = true;
@@ -523,7 +536,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         restore_bool = FileUtil::copyDir(backup_path, db_name_path);
     }
     if (restore_bool) {
-        if (db_info->getStatus() == DatabaseStatus::RESTOREING) {
+        if (db_info->getStatus() == DatabaseStatus::BUILDING) {
             init_databaseinfo(db_name, username, db_info->getTime(), DatabaseStatus::AREADY_BUILT);
             init_privilege(username, db_name);
         }
@@ -540,6 +553,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
         }
     }
     unlock_databaseinfo(db_info);
+    db_info->setStatus(DatabaseStatus::AREADY_BUILT);
     return restore_bool;
 }
 
@@ -931,7 +945,7 @@ bool APIUtil::rollback_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, st
     }
 }
 
-bool APIUtil::aborted_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid, std::string& msg)
+bool APIUtil::aborted_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid)
 {
     string begin_time = to_string(txn_m->Get_Transaction(tid)->GetStartTime());
     string time_tid = begin_time + "_" + to_string(tid);
@@ -1553,7 +1567,7 @@ bool APIUtil::update_sys_db(const std::set<string>& sparqls)
                 ret = txn_m->Query(tid, sparql, _rs);
                 if (ret < 0)
                 {
-                    SLOG_ERROR("update sparql error: " + sparql + ", error code: " + to_string(ret));
+                    SLOG_ERROR("update sparql error: " + sparql + ", error reason: " + _rs);
                     ret_bool = false;
                     break;
                 }

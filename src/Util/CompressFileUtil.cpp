@@ -164,6 +164,10 @@ namespace CompressUtil
     UnCompressZip::UnCompressZip(const std::string& zip_path, const std::string& dir_path)
         :m_zip_path_(zip_path), m_dirpath_(dir_path)
     {
+        if (!FileUtil::dirExists(dir_path))
+        {
+            FileUtil::createDirs(dir_path);
+        }
     }
 
     UnCompressZip::~UnCompressZip()
@@ -479,17 +483,17 @@ namespace CompressUtil
                 zip_path = rdf_file.substr(pos2+1);
             if (FileUtil::dirExists(rdf_file))
             {
-                SLOG_ERROR("compress dir:" << rdf_file);
+                SLOG_CORE("compress dir:" << rdf_file);
                 AddDirToZip(zf, zip_path);
             }
             else
             {
-                SLOG_ERROR("compress file:" << rdf_file);
+                SLOG_CORE("compress file:" << rdf_file);
                 AddFileToZip(zf, zip_path, rdf_file);
             }
         }
         ret = zipClose(zf, NULL);
-        SLOG_CORE("compressFile dir ->end:"<< zipPath << "error:" << ret);
+        SLOG_CORE("compress end: " << zipPath << ", zip close stsatus: " << ret);
         return ZIP_OK == ret;
     }
 }

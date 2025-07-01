@@ -97,8 +97,8 @@ namespace server
         bool async;
         MessageLoadRequest()=delete;
         MessageLoadRequest(const nlohmann::json& json_data);
-        MessageLoadRequest(std::string db_name, std::string csr, bool async = false);
-        MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr, bool async = false);
+        MessageLoadRequest(std::string db_name, std::string csr = "0", bool async = false);
+        MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr = "0", bool async = false);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
         bool Csr()const;
@@ -107,6 +107,7 @@ namespace server
     struct MessageLoadResponse : public MessageResponse
     {
         std::string csr;
+        std::string opt_id;
         MessageLoadResponse();
         void toJsonString(std::string& json_str);
         MessageLoadResponse(int code, std::string msg) : MessageResponse(code, msg) {}
@@ -213,6 +214,7 @@ namespace server
         uint64_t diskUsed;
         int64_t costTime;
         uint32_t lockNum;
+        std::string status;
         std::unordered_map<std::string, unsigned long long> subjectList;
         nlohmann::json schema;
         MessageMonitorResponse();

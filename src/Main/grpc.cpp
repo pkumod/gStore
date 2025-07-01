@@ -1829,6 +1829,11 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 	try
 	{
 		std::string username = json_data["username"];
+		std::string db_name = "";
+		if (json_data.contains("db_name"))
+		{
+			db_name = json_data["db_name"];
+		}
 
 		vector<shared_ptr<DatabaseInfo>> array;
 		apiUtil->get_databaseinfos(username, array);
@@ -1842,7 +1847,14 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 		for (size_t i = 0; i < count; i++)
 		{
 			shared_ptr<DatabaseInfo> dbInfo = array[i];
-			resp_data["ResponseBody"].push_back(dbInfo->toJSON());
+			if (db_name.empty())
+			{
+				resp_data["ResponseBody"].push_back(dbInfo->toJSON());
+			} 
+			else if (db_name == dbInfo->getName())
+			{
+				resp_data["ResponseBody"].push_back(dbInfo->toJSON());
+			}
 		}
 		// set response status and message
 		response->Json(resp_data);
@@ -1865,8 +1877,35 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	server::MessageLoadRequest request_data(json_data);
-	server::MessageLoadResponse response_data; 
-	server::ApiHandler::load(apiUtil, request_data, response_data);
+	server::MessageLoadResponse response_data;
+	if (request_data.async)
+	{
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gs::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			server::MessageLoadResponse _response_data;
+			_response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
+			server::ApiHandler::load(apiUtil, request_data, _response_data);
+			if (_response_data.StatusCode == server::StatusOK)
+			{
+			    apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, 1, 0, 0);
+			}
+			else
+			{
+				apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, -1, 0, 0);
+			}
+		});
+	}
+	else
+	{
+		server::ApiHandler::load(apiUtil, request_data, response_data);
+	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);

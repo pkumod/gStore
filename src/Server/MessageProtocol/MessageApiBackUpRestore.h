@@ -7,11 +7,10 @@ namespace server
     struct MessageBackupRequest : public MessageRequest
     {
         std::string db_name;
-        std::string backup_path;
+        bool compress;
         bool async;
         std::string callback;
-        bool backup_zip;
-        MessageBackupRequest(std::string db_name, std::string backup_path, bool async, std::string callback, bool backup_zip);
+        MessageBackupRequest(std::string db_name, bool compress, bool async, std::string callback);
         MessageBackupRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;

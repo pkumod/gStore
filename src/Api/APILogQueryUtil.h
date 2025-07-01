@@ -131,7 +131,7 @@ public:
     DBAccessLogInfo(const string &_ip, const string &_operation): ip(_ip), operation(_operation){}
     bool checkOperation()
     {
-        if (operation == "build" || operation == "batchInsert" || operation == "batchRemove" 
+        if (operation == "load" || operation == "build" || operation == "batchInsert" || operation == "batchRemove" 
             || operation == "backup" || operation == "restore" || operation == "query")
             return true;
         return false;

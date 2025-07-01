@@ -61,6 +61,7 @@ namespace server
         static void user_passworrd(shared_ptr<APIUtil>& apiUtil, server::MessageUserPasswordRequest& request, server::MessageUserPasswordResponse& response);
 
         // transaction
+        static bool transaction_check(shared_ptr<APIUtil>& apiUtil, const std::string& db_name, const std::string& tid_s, txn_id_t& tid, server::MessageResponse& response);
         static void begin(shared_ptr<APIUtil>& apiUtil, const server::MessageBeginRequest& request, server::MessageBeginResponse& response);
         static void tquery(shared_ptr<APIUtil>& apiUtil, const server::MessageTqueryRequest& request, server::MessageTqueryResponse& response);
         static void commit(shared_ptr<APIUtil>& apiUtil, const server::MessageCommitRequest& request, server::MessageResponse& response);
@@ -86,7 +87,7 @@ namespace server
         static void export_db(shared_ptr<APIUtil>& apiUtil, const server::MessageExportRequest& request, server::MessageExportResponse& response);
 
         // backup
-        static bool backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path);
+        static bool backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
         static void backup(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
         static void backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response);
         static void backup_path(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupPathRequest& request, server::MessageBackupPathResponse& response);

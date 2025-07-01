@@ -2,7 +2,7 @@
 
 namespace server
 {
-    bool ApiHandler::backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response, std::string& backup_path)
+    bool ApiHandler::backup_check(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
         std::string _db_home = GlobalTypedef::db_home();
         std::string db_name = request.db_name;
@@ -18,19 +18,6 @@ namespace server
             response.Error(StatusOperationConditionsAreNotSatisfied, msg);
             return false;
         }
-        // check backup path
-        if (backup_path.empty())
-        {
-            backup_path = GlobalTypedef::backup_path();
-            SLOG_DEBUG("backup_path is empty, set to default path: " + backup_path);
-        }
-        if (backup_path == "." || backup_path == "./" || Util::getExactPath(backup_path.c_str()) == Util::getExactPath(_db_home.c_str()))
-        {
-            msg = "Backup path can not be root or \"" + _db_home + "\" .";
-            response.Error(StatusParamIsIllegal, msg);
-            return false;
-        }
-
         return true;
     }
 
@@ -38,12 +25,12 @@ namespace server
     {
         try
         {
-            std::string backup_path = request.backup_path;
-            if (!backup_check(apiUtil, request, response, backup_path))
+            if (!backup_check(apiUtil, request, response))
                 return;
 
             std::string msg;
-            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.backup_zip, backup_path, msg);
+            std::string backup_path;
+            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.compress, backup_path, msg);
             if (backup_rt)
             {
                 msg = "Database backup successfully.";
@@ -65,18 +52,18 @@ namespace server
 
     void ApiHandler::backup_async(shared_ptr<APIUtil>& apiUtil, const server::MessageBackupRequest& request, server::MessageBackupResponse& response)
     {
+        std::string opt_id = response.opt_id;
         try
         {
-            std::string opt_id = response.opt_id;
-            std::string backup_path = request.backup_path;
-            if (!backup_check(apiUtil, request, response, backup_path))
+            if (!backup_check(apiUtil, request, response))
             {
-                apiUtil->update_access_log(StatusOK, response.StatusMsg, opt_id, -1, 0, 0, backup_path);
+                apiUtil->update_access_log(response.StatusCode, response.StatusMsg, opt_id, -1, 0, 0);
                 return;
             }
 
             std::string msg;
-            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.backup_zip, backup_path, msg);
+            std::string backup_path;
+            bool backup_rt = apiUtil->backup_databaseinfo(request.db_name, request.compress, backup_path, msg);
             nlohmann::json j = {
                 {"opt_id", opt_id}
             };
@@ -104,6 +91,7 @@ namespace server
         {
             std::string error = "Backup fail: " + string(e.what());
             response.Error(StatusOperationFailed, error);
+            apiUtil->update_access_log(response.StatusCode, response.StatusMsg, opt_id, -1, 0, 0);
         }
     }
 

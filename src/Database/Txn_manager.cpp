@@ -241,11 +241,11 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	shared_ptr<Transaction> txn = get_transaction(TID);
 	if(txn == nullptr)
 	{
-		SLOG_ERROR("wrong transaction ID!");
+		results ="wrong transaction ID!";
 		return -1;
 	}
 	if (txn->GetState() != TransactionState::RUNNING) {
-		SLOG_ERROR("transaction not in running state! Query failed" <<  " " << (int)txn->GetState() );
+		results = "transaction not in running state!";
 		return -99;
 	}
 	int ret_val;
@@ -254,12 +254,12 @@ int Txn_manager::Query(txn_id_t TID, string sparql, string& results)
 	if(db != nullptr)
 		ret_val = this->db->query(sparql, rs, output , true, false, txn);
 	else{
-		SLOG_CORE("error! database has been flushed or removed");
+		results = "database has been flushed or removed!";
 		return -10;
 	}
 	if(txn->GetState() == TransactionState::ABORTED)
 	{
-		SLOG_CORE("Transaction Abort due to Query failed. TID:" << TID);
+		results = "transaction in aborted state!";
 		Abort(TID);
 		return -20;
 	}

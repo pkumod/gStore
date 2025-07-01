@@ -130,6 +130,7 @@ namespace server
             unsigned parse_error_num = 0;
             string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
+            db_info->setStatus(DatabaseStatus::INSERTING);
             shared_ptr<Database> db_ptr = db_info->getDatabase();
             for (std::string rdf_file : file_paths)
             {
@@ -155,6 +156,7 @@ namespace server
                 int64_t t2 = gs::TimeUtil::timestamp();
                 SLOG_DEBUG("auto checkpoint used: " << t2 - t1);
             }
+            db_info->setStatus(DatabaseStatus::LOADED);
             apiUtil->unlock_databaseinfo(db_info);
             db_ptr.reset();
             db_info.reset();
@@ -167,6 +169,8 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                db_info->setStatus(DatabaseStatus::LOADED);
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
@@ -220,6 +224,7 @@ namespace server
             unsigned success_num = 0;
             unsigned total_num = 0;
             unsigned parse_error_num = 0;
+            db_info->setStatus(DatabaseStatus::INSERTING);
             shared_ptr<Database> db_ptr = db_info->getDatabase();
             string error_log = db_info->getPath() + "/parse_error.log";
             total_num = FileUtil::fileLines(error_log);
@@ -244,6 +249,7 @@ namespace server
                     throw new runtime_error(statusMsg);
                 }
             }
+            db_info->setStatus(DatabaseStatus::LOADED);
             apiUtil->unlock_databaseinfo(db_info);
             db_ptr.reset();
             db_info.reset();
@@ -309,6 +315,8 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            if (db_info)
+                db_info->setStatus(DatabaseStatus::LOADED);
             apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);

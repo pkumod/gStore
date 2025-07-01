@@ -209,9 +209,10 @@ namespace server
             catch(const std::exception& e)
             {
                 apiUtil->unlock_databaseinfo(current_db_info);
-                result = "Import RDF file to database failed:" + string(e.what());
+                apiUtil->remove_databaseinfo(db_name, result);
                 FileUtil::removePath(db_home_path);
                 remove_temp_files(temp_paths);
+                result = "Import RDF file to database failed:" + string(e.what());
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
                 current_database.reset();
@@ -254,6 +255,9 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            std::string msg;
+            if (apiUtil->check_db_built(request.db_name))
+                apiUtil->remove_databaseinfo(request.db_name, msg);
             response.StatusMsg = "Build fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
@@ -298,7 +302,14 @@ namespace server
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
-            // build empty database
+            if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
+            {
+                response.StatusMsg = "unable to build due to loss of lock.";
+                response.StatusCode = StatusLossOfLock;
+                apiUtil->remove_databaseinfo(db_name, result);
+                return;
+            }
+            current_db_info->setDatabase(current_database);
             bool flag = true;
             int nt_file_num = 0;
             int success_num = 0 ;
@@ -313,6 +324,7 @@ namespace server
                 }
                 else
                 {
+                    // build empty database
                     flag = current_database->BuildEmptyDB();
                 }    
                 current_db_info->setDatabase(nullptr);
@@ -351,19 +363,25 @@ namespace server
                     success_num = current_database->getTripleNum();
                     current_database.reset();
                 }
+                apiUtil->unlock_databaseinfo(current_db_info);
             } 
             catch (const std::exception &e)
             {
-                result = "Import RDF file to database failed: " + string(e.what());
+                apiUtil->unlock_databaseinfo(current_db_info);
+                apiUtil->remove_databaseinfo(db_name, result);
                 FileUtil::removePath(db_home_path);
                 remove_temp_files(temp_paths);
+                result = "Import RDF file to database failed: " + string(e.what());
                 response.StatusMsg = result;
                 response.StatusCode = StatusOperationFailed;
+                current_database.reset();
+                SLOG_ERROR(result);
                 return;
             }
             // init databaseinfo
             shared_ptr<DatabaseInfo> db_info;
             apiUtil->get_databaseinfo(db_name, db_info);
+            apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
             db_info->initDatabase(schema_flag);
             // init user privilege
@@ -386,6 +404,7 @@ namespace server
             }
             // remove temp files
             remove_temp_files(temp_paths);
+            apiUtil->unlock_databaseinfo(db_info);
 
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;
@@ -402,6 +421,9 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            std::string msg;
+            if (apiUtil->check_db_built(request.db_name))
+                apiUtil->remove_databaseinfo(request.db_name, msg);
             response.StatusMsg = "Build fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }

@@ -323,7 +323,7 @@ unsigned current_privilege_bitset = 0;	 // when no current_database: 0, i.e. no 
 int current_cmd_offset = -1;			 // current_cmd offset in commands
 unordered_map<string, unsigned> db2priv; // for current usr, cache in memory, avoiding fetch from sysdb everytime
 
-string _db_home, _db_suffix, default_backup_path;
+string _db_home, _db_suffix;
 string product_name, product_name_lower, product_version;
 string current_year;
 string root_username, root_password;
@@ -340,7 +340,6 @@ int main(int argc, char **argv)
 	_db_suffix = GlobalTypedef::db_suffix();
 	_website = GlobalTypedef::product_website;
 	
-	default_backup_path = GlobalTypedef::backup_path();
 	root_username = GlobalTypedef::root_uname();
 	product_version = GlobalTypedef::product_version;
 	product_name = GlobalTypedef::product_name;
@@ -1710,17 +1709,7 @@ int backup_handler(const vector<string> &args)
 	CHECK_CURRENT_DB_LOADED
 	CHECK_CURRENT_DB_NOT_SYSDB
 	check_priv(_current_database, BACKUP_PRIVILEGE_BIT);
-	// TODO
-	string backup_path;
-	if (!args.empty()) 
-	{
-		backup_path = args[0];
-	} 
-	else 
-	{
-		backup_path = default_backup_path;
-	}
-	server::MessageBackupRequest backup_request(_current_database, backup_path, false, "", false);
+	server::MessageBackupRequest backup_request(_current_database, false, false, "");
 	backup_request.username = root_username;
 	backup_request.password = root_password;
 	server::MessageBackupResponse backup_response = APIConnector::backup(API_URL, true, backup_request);

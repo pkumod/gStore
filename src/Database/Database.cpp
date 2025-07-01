@@ -1654,7 +1654,7 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	catch (const std::runtime_error &e2)
 	{
 		SLOG_ERROR("catch run_time error exception");
-		SLOG_ERROR(e2.what() << "\n");
+		SLOG_ERROR(e2.what());
 		throw std::runtime_error(e2.what());
 		
 	}
