@@ -361,12 +361,26 @@ int WFHttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath)
             SLOG_CORE(name + ": " + value);
             if (name == "Content-Disposition")
             {
-                std::regex pattern(R"(filename=(.*?)(;|$))");
-                std::smatch matches;
-                if (std::regex_search(value, matches, pattern)) {
-                    filename = matches[1];
-                    filename.erase(remove(filename.begin(), filename.end(), '"'), filename.end());
+                std::regex pattern1(R"((filename=)["]?([^";]+)["]?)");
+	            std::regex pattern2(R"((filename\*=UTF-8'')([^';]+))");
+                std::smatch match;
+                if (std::regex_search(value, match, pattern1)) {
+                    filename = match[2].str();
+                    std::string::size_type last = filename.find_last_not_of(" \t\n\r\f\v");
+                    if (last != std::string::npos)
+                    {
+                        filename = filename.substr(0, (last + 1));
+                    }
+                    SLOG_CORE("match1: " << match[2]);
                     break;
+                } else if (std::regex_search(value, match, pattern2)) {
+                    filename = match[2];
+                    std::string::size_type last = filename.find_last_not_of(" \t\n\r\f\v");
+                    if (last != std::string::npos)
+                    {
+                        filename = filename.substr(0, (last + 1));
+                    }
+                    SLOG_CORE("match2: " << match[2]);
                 }
             }
         }

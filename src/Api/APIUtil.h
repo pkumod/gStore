@@ -105,6 +105,7 @@ public:
     bool backup_databaseinfo(const std::string& db_name, const bool& compress, std::string& backup_path, std::string& msg);
     bool restore_databaseinfo(const std::string& username, const std::string& db_name, std::string& backup_path, std::string& msg);
     bool rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg);
+    bool unload_databaseinfo(const std::string& db_name, server::StatusCode& statusCode, std::string& msg);
     bool get_databaseinfo(const std::string& db_name, shared_ptr<DatabaseInfo> &dbInfo);
     void get_databaseinfos(const std::string& username, vector<shared_ptr<DatabaseInfo>> &array);
     bool erase_databaseinfo(const std::string& username);
@@ -161,7 +162,7 @@ public:
     void get_access_log(const string &date, int &page_no, int &page_size, shared_ptr<struct DBAccessLogs> logPtr, std::string db_name = "", std::string specOperation = "");
     void write_access_log(const string &operation, const string &remoteIP, const int statusCode, const string &statusMsg, 
     const string &optId = "", unsigned num = 0, unsigned fail_num = 0, std::string dbname = "");
-    void update_access_log(int statusCode, std::string statusMsg, std::string opt_id, int state, int num, int failnum, std::string filepath = "");
+    void update_access_log(int statusCode, std::string statusMsg, std::string opt_id, int state, int num = 0, int failnum = 0, std::string filepath = "");
     bool getAccessLogByOptId(string opt_id, struct DBAccessLogInfo& log);
     void cancel_running_task(const string &date);
 

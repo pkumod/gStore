@@ -182,10 +182,21 @@ namespace server
     struct MessageUnloadRequest : public MessageRequest
     {
         std::string db_name;
-        MessageUnloadRequest(std::string db_name);
-        MessageUnloadRequest(std::string username, std::string password, std::string db_name);
+        bool async;
+        MessageUnloadRequest(const nlohmann::json& json_data);
+        MessageUnloadRequest(std::string db_name, bool async = false);
+        MessageUnloadRequest(std::string username, std::string password, std::string db_name, bool async = false);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
+    };
+
+    struct MessageUnloadResponse : public MessageResponse
+    {
+        std::string opt_id;
+        MessageUnloadResponse(): opt_id("") {};
+        void toJsonString(std::string& json_str);
+        MessageUnloadResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageUnloadResponse(std::string body) : MessageResponse(body) {}
     };
 
     // monitor

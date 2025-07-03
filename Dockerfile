@@ -35,14 +35,15 @@ RUN wget https://cmake.org/files/v3.23/cmake-3.23.2.tar.gz \
     && make install \
     && cd ..
 
-RUN mkdir -p /src
+RUN mkdir -p /usr/src/gstore
 
 WORKDIR /usr/src/gstore
 
 RUN mkdir .tmp 
 
 # Copy gStore source code; run `make tarball` or bash scripts/tarball.sh to generate this file
-ADD gstore.tar.gz /usr/src/gstore
+COPY gstore.tar.gz /usr/src/gstore
+RUN tar -zxf gstore.tar.gz && rm -f gstore.tar.gz
 
 RUN mkdir -p build
 

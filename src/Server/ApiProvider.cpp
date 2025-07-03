@@ -64,36 +64,46 @@ namespace server
                 response.StatusCode = StatusParamIsIllegal;
                 response.StatusMsg = msg;
                 return;
-            }            
+            }
             shared_ptr<DatabaseInfo> db_info;
-            server::StatusCode statusCode;
-            std::string statusMsg;
-            if (!apiUtil->validate_databaseinfo(request.db_name, db_info, statusCode, statusMsg, false, DatabaseLock::W))
+            if (!apiUtil->get_databaseinfo(request.db_name, db_info))
             {
-                if (statusCode == StatusLossOfLock)
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = "database[" + request.db_name + "] does not exist.";
+                return;
+            }
+            if (db_info->getStatus() <= DatabaseStatus::LOADING)
+            {
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = "database[" + request.db_name + "] is currently being " + db_info->getStatusDesc();
+            }
+            else if (db_info->isLoaded()) 
+            {
+                if (db_info->getDatabase()->csr)
                 {
-                    statusMsg = statusMsg + " as it is currently being " + db_info->getStatusDesc();
+                    response.csr = "1";
                 }
-                response.StatusCode = statusCode;
-                response.StatusMsg = statusMsg;
-                return;
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "The database already load yet.";
             }
-            if (db_info->getStatus() == DatabaseStatus::BUILDING)
+            else
             {
-                response.StatusCode = StatusOperationConditionsAreNotSatisfied;
-                response.StatusMsg = "Please waiting, The database is building ...";
-                apiUtil->unlock_databaseinfo(db_info);
-                return;
-            }
-            if (db_info->getStatus() != DatabaseStatus::LOADED)
-            {
-                db_info->setStatus(DatabaseStatus::LOADING);
-                SLOG_DEBUG("begin loading with csr: " << request.Csr());
-                // progress notification
-                bool rt  = db_info->getDatabase()->load(request.Csr());
-                SLOG_DEBUG("end loading.");
-                if (rt)
+                server::StatusCode statusCode;
+                std::string statusMsg;
+                if (!apiUtil->trywrlock_databaseinfo(db_info, 30))
                 {
+                    response.StatusCode = StatusLossOfLock;
+                    response.StatusMsg = "database[" + request.db_name + "] try write lock fail";
+                    SLOG_DEBUG(response.StatusMsg + " as it is currently being " + db_info->getStatusDesc());
+                    return;
+                }
+                db_info->setStatus(DatabaseStatus::LOADING);
+                // progress notification
+                shared_ptr<Database> db_ptr =  db_info->getDatabase();
+                SLOG_DEBUG("begin loading with csr: " << request.Csr());
+                if (db_ptr && db_ptr->load(request.Csr()))
+                {
+                    SLOG_DEBUG("end loading.");
                     bool schema_flag = GlobalTypedef::build_schema();
                     db_info->getDatabase()->setSchemaFlag(schema_flag);
                     db_info->setStatus(DatabaseStatus::LOADED);
@@ -112,17 +122,8 @@ namespace server
                     response.StatusCode = StatusOperationFailed;
                     response.StatusMsg = "load failed.";
                 }
+                apiUtil->unlock_databaseinfo(db_info);
             }
-            else
-            {
-                if (db_info->getDatabase()->csr)
-                {
-                    response.csr = "1";
-                }
-                response.StatusCode = StatusOK;
-                response.StatusMsg = "The database already load yet.";
-            }
-            apiUtil->unlock_databaseinfo(db_info);
         }
         catch (const std::exception &e)
         {
@@ -163,7 +164,6 @@ namespace server
             response.creator = database_info->getCreator();
             response.builtTime = database_info->getTime();
             response.connectionNum = apiUtil->get_connection_num();
-            response.lockNum = database_info->lock_count;
             response.subjectList = current_database->getStatisticsInfo();
             current_database->getSchemaInfo(response.schema, true);
 
@@ -182,6 +182,7 @@ namespace server
             response.status = database_info->getStatusStr();
             
             apiUtil->unlock_databaseinfo(database_info);
+            response.lockNum = database_info->lock_count.load();
             unsigned diskUsed = 0;
             if (disk != "0") 
             {

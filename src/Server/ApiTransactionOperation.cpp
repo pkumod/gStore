@@ -50,13 +50,13 @@ namespace server
             }
             if (apiUtil->check_db_built(db_name) == false)
             {
-                msg = "Database not built yet.";
+                msg = "Database["+db_name+"] does not exist.";
                 response.Error(StatusOperationConditionsAreNotSatisfied, msg);
                 return;
             }
             if (apiUtil->check_db_loaded(db_name) == false)
             {
-                msg = "Database not load yet.";
+                msg = "Database is not loaded yet.";
                 response.Error(StatusOperationConditionsAreNotSatisfied, msg);
                 return;
             }

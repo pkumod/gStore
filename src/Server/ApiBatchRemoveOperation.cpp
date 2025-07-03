@@ -13,13 +13,13 @@ namespace server
         }
         if (apiUtil->check_db_built(request.db_name) == false)
         {
-            response.StatusMsg = "Database not built yet.";
+            response.StatusMsg = "Database[" + request.db_name + "] does not exist.";
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }
         if (apiUtil->check_db_loaded(request.db_name) == false)
         {
-            response.StatusMsg = "Database not load yet.";
+            response.StatusMsg = "Database is not loaded yet.";
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }

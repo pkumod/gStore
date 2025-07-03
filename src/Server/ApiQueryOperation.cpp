@@ -47,15 +47,7 @@ namespace server
         // check database exist
         if (apiUtil->check_db_built(request.db_name) == false)
         {
-            response.StatusMsg = "Database not build yet.";
-            response.StatusCode = StatusOperationConditionsAreNotSatisfied;
-            return false;
-        }
-
-        // check database load status
-        if (apiUtil->check_db_loaded(request.db_name) == false)
-        {
-            response.StatusMsg = "Database not load yet.";
+            response.StatusMsg = "Database does not exist.";
             response.StatusCode = StatusOperationConditionsAreNotSatisfied;
             return false;
         }

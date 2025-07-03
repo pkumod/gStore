@@ -14,7 +14,7 @@ namespace server
         }
         if (apiUtil->check_db_built(db_name) == false)
         {
-            msg = "the database [" + db_name + "] not built yet.";
+            msg = "Database[" + db_name + "] does not exist.";
             response.Error(StatusOperationConditionsAreNotSatisfied, msg);
             return false;
         }

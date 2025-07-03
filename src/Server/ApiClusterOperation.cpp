@@ -321,7 +321,7 @@ namespace server
             }
             if (apiUtil->check_db_built(db_name) == false) 
             {
-                SLOG_WARN("db[" + db_name + "] is not built.");
+                SLOG_WARN("database[" + db_name + "] dose not exist.");
                 return;
             }
             shared_ptr<DatabaseInfo> db_info = nullptr;
@@ -642,7 +642,7 @@ namespace server
             }
             if (apiUtil->check_db_built(db_name) == false) 
             {
-                SLOG_WARN("db[" + db_name + "] is not built.");
+                SLOG_WARN("database[" + db_name + "] does not exist.");
                 clusterManagerPtr->removeRestoringDb(db_name);
                 return;
             }

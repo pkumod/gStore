@@ -38,7 +38,7 @@ APIUtil::~APIUtil()
         // warning: this is going to be blocked, if the time of the system changes
         // default timeout 60 seconds
         shared_ptr<DatabaseInfo> db_info_ptr = iter->second;
-        if (db_info_ptr->getStatus() == DatabaseStatus::LOADED)
+        if (db_info_ptr->isLoaded())
         {
             if (!trywrlock_databaseinfo(db_info_ptr, 60))
             {
@@ -384,7 +384,7 @@ bool APIUtil::remove_databaseinfo(const std::string& db_name, std::string& msg)
     if (!validate_databaseinfo(db_name, db_info, statusCode, msg, false, DatabaseLock::W, 180)) {
         return false;
     }
-    if (check_db_loaded(db_name))
+    if (db_info->isLoaded())
     {
         remove_txn_manager(db_name, false);
         SLOG_DEBUG("remove " + db_name + " from the txn managers.");
@@ -560,7 +560,7 @@ bool APIUtil::restore_databaseinfo(const std::string& username, const std::strin
 bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string& new_db_name, std::string& msg)
 {
     if (!check_db_built(db_name)) {
-        msg = "database[" + db_name + "] is not exist";
+        msg = "Database[" + db_name + "] does not exist";
         return false;
     }
     if (check_db_loaded(db_name))
@@ -610,6 +610,23 @@ bool APIUtil::rename_databaseinfo(const std::string& db_name, const std::string&
     else
     {
         msg = "Rename fail.";
+        return false;
+    }
+}
+
+bool APIUtil::unload_databaseinfo(const std::string& db_name, server::StatusCode& statusCode, std::string& msg)
+{
+    shared_ptr<DatabaseInfo> db_info;
+    if (validate_databaseinfo(db_name, db_info, statusCode, msg, true, DatabaseLock::W, 180))
+    {
+        remove_txn_manager(db_name, true);
+        db_info->unloadDatabase();
+        unlock_databaseinfo(db_info);
+        msg = "Database unloaded.";
+        return true;
+    }
+    else
+    {
         return false;
     }
 }
@@ -772,7 +789,7 @@ bool APIUtil::validate_databaseinfo(const std::string& db_name, shared_ptr<Datab
     if (!get_databaseinfo(db_name, dbinfo))
     {
         statusCode = StatusOperationFailed;
-        statusMsg = "database["+db_name+"] is not exist";
+        statusMsg = "database["+db_name+"] does not exist";
         return false;
     }
     if (db_lock == DatabaseLock::W)
@@ -793,10 +810,10 @@ bool APIUtil::validate_databaseinfo(const std::string& db_name, shared_ptr<Datab
             return false;
         }
     }
-    if (check_loaded && dbinfo->getStatus() != DatabaseStatus::LOADED)
+    if (check_loaded && !dbinfo->isLoaded())
     {
         statusCode = StatusOperationFailed;
-        statusMsg = "database[" + db_name + "] is not loaded";
+        statusMsg = "database[" + db_name + "] is not loaded yet";
         unlock_databaseinfo(dbinfo);
         return false;
     }
@@ -975,9 +992,8 @@ bool APIUtil::check_txn_id(const string& tid_s, txn_id_t& tid)
 bool APIUtil::check_db_loaded(const std::string &db_name)
 {
     shared_ptr<DatabaseInfo> dbinfo;
-    bool rt = get_databaseinfo(db_name, dbinfo);
-    if (rt && dbinfo != nullptr) {
-        return dbinfo->getStatus() == DatabaseStatus::LOADED;
+    if (get_databaseinfo(db_name, dbinfo)) {
+        return dbinfo->isLoaded();
     } else {
         return false;
     }

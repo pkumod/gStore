@@ -284,14 +284,21 @@ namespace server
     }
 
     // unload db
-    MessageUnloadRequest::MessageUnloadRequest(std::string db_name) : MessageRequest(std::string("unload"))
+    MessageUnloadRequest::MessageUnloadRequest(const nlohmann::json& json_data): MessageRequest(json_data)
+    {
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+    }
+    MessageUnloadRequest::MessageUnloadRequest(std::string db_name, bool async) : MessageRequest(std::string("unload"))
     {
         this->db_name = db_name;
+        this->async = async;
     }
 
-    MessageUnloadRequest::MessageUnloadRequest(std::string username, std::string password, std::string db_name) : MessageRequest("unload", username, password)
+    MessageUnloadRequest::MessageUnloadRequest(std::string username, std::string password, std::string db_name, bool async) : MessageRequest("unload", username, password)
     {
         this->db_name = db_name;
+        this->async = async;
     }
 
     void MessageUnloadRequest::to_json(std::string& json_str)
@@ -299,6 +306,7 @@ namespace server
         nlohmann::json json;
         toJson(json);
         json["db_name"] = this->db_name;
+        json["async"] = this->async;
         json_str = json.dump();
     }
 
@@ -309,7 +317,17 @@ namespace server
             {"username", "root"},
             {"password", ""},
             {"db_name", this->db_name},
+            {"async", false},
             {"inner", "true"}};
+        json_str = json.dump();
+    }
+
+    void MessageUnloadResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
         json_str = json.dump();
     }
 

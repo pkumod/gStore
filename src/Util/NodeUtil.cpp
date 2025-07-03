@@ -84,7 +84,7 @@ namespace gs
         if (!result.empty() && result[result.size() - 1] == '>') {
             result.erase(result.end() - 1);
         }
-        if (!result.empty() && result.find('http') != string::npos) {
+        if (!result.empty() && result.find("http") != string::npos) {
             size_t start = result.find("http");
             if (result.find("#") != string::npos)
             {

@@ -44,6 +44,7 @@ private:
     std::string creator;    //! the creator of database
     std::string build_time; //! the built time of database;
     DatabaseStatus status;
+    bool loaded;            //! whether the database is loaded
     shared_ptr<Database> db_ptr;
 
 public:
@@ -54,6 +55,7 @@ public:
     {
         db_ptr = nullptr;
         lock_count = 0;
+        loaded = false;
         pthread_rwlock_init(&db_lock, NULL);
     }
     DatabaseInfo(string _path, string _name, string _creator, string _time, DatabaseStatus _status)
@@ -67,6 +69,7 @@ public:
             db_ptr = make_shared<Database>(db_name);
         else
             db_ptr = nullptr;
+        loaded = false;
         lock_count = 0;
         pthread_rwlock_init(&db_lock, NULL);
     }
@@ -107,6 +110,12 @@ public:
     void setStatus(DatabaseStatus _status)
     {
         status = _status;
+        if (_status == DatabaseStatus::LOADED)
+            loaded = true;
+    }
+    bool isLoaded()
+    {
+        return loaded;
     }
     std::string getStatusStr()
     {
@@ -190,16 +199,19 @@ public:
             db_ptr = make_shared<Database>(db_name);
         }
         status = DatabaseStatus::AREADY_BUILT;
+        loaded = false;
         return true;
     }
     nlohmann::json toJSON()
     {
+        int lockCount = lock_count.load();
         nlohmann::json json = {
             {"database", db_name},
             {"creator", creator},
             {"built_time", build_time},
+            {"lockCount", lockCount},
             {"status", getStatusStr()},
-            {"cost_time", getCostTime()}
+            {"costTime", getCostTime()}
         };
         return json;
     }

@@ -178,7 +178,7 @@ namespace server
                 // check database exist
                 if (apiUtil->check_db_built(db_name) == false)
                 {
-                    response.StatusMsg =  "Database not build yet.";
+                    response.StatusMsg =  "Database["+db_name+"] does not exist.";
                     response.StatusCode = StatusOperationConditionsAreNotSatisfied;
                     return;
                 }

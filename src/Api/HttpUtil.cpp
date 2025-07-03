@@ -136,12 +136,12 @@ std::string HttpUtil::get_file_ext(const std::string& filename)
         pos1 = 0;
     else
         pos1++;
-    std::string file = filename.substr(pos1, -1);
+    std::string file = filename.substr(pos1);
     std::string::size_type pos2 = file.find_last_of(".");
     if (pos2 == std::string::npos)
         return "";
     else
-        return file.substr(pos2 + 1, -1);
+        return file.substr(pos2 + 1);
 }
 
 CURLcode HttpUtil::Get(const std::string& strUrl, std::string& strResponse)
@@ -521,15 +521,30 @@ CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath
 	// 	return res;
 	// }
 	std::stringstream sshb(headerBuffer);
+	std::regex pattern1(R"((filename=)["]?([^";]+)["]?)");
+	std::regex pattern2(R"((filename\*=UTF-8'')([^';]+))");
+	std::smatch match;
 	std::string item;
 	std::string filename;
-	std::string pattern = "filename=\"(.*?)\"";
-	std::regex regex = std::regex(pattern);
-	std::smatch match;
 	while (std::getline(sshb, item, '\n')) {
 		SLOG_CORE(item);
-		if (std::regex_search(item, match, regex)) {
-			filename = match[1];
+		if (std::regex_search(item, match, pattern1)) {
+			filename = match[2].str();
+			std::string::size_type last = filename.find_last_not_of(" \t\n\r\f\v");
+			if (last != std::string::npos)
+			{
+				filename = filename.substr(0, (last + 1));
+			}
+			SLOG_CORE("match1: " << filename);
+			break;
+		} else if (std::regex_search(item, match, pattern2)) {
+			filename = match[2].str();
+			std::string::size_type last = filename.find_last_not_of(" \t\n\r\f\v");
+			if (last != std::string::npos)
+			{
+				filename = filename.substr(0, (last + 1));
+			}
+			SLOG_CORE("match2: " << filename);
 			break;
 		}
 	}
@@ -543,7 +558,7 @@ CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath
 		url_decode(filename);
 	}
 	std::string file_suffix = get_file_ext(filename);
-	SLOG_CORE("filename: " + filename + ", extname: " + file_suffix);
+	SLOG_CORE("extname: " << file_suffix);
 	// 获取允许的文件格式
 	std::set<std::string> extensions;
 	GlobalTypedef::upload_allow_extensions(extensions);

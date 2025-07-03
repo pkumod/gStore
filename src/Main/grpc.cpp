@@ -1836,7 +1836,18 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 		}
 
 		vector<shared_ptr<DatabaseInfo>> array;
-		apiUtil->get_databaseinfos(username, array);
+		if (db_name.empty())
+		{
+			apiUtil->get_databaseinfos(username, array);
+		}
+		else
+		{
+			shared_ptr<DatabaseInfo> db_info;
+			if(apiUtil->get_databaseinfo(db_name, db_info))
+			{
+				array.push_back(db_info);
+			}
+		}
 
 		nlohmann::json resp_data = nlohmann::json{
 			{"StatusCode", 0},
@@ -1846,15 +1857,7 @@ void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 		size_t count = array.size();
 		for (size_t i = 0; i < count; i++)
 		{
-			shared_ptr<DatabaseInfo> dbInfo = array[i];
-			if (db_name.empty())
-			{
-				resp_data["ResponseBody"].push_back(dbInfo->toJSON());
-			} 
-			else if (db_name == dbInfo->getName())
-			{
-				resp_data["ResponseBody"].push_back(dbInfo->toJSON());
-			}
+			resp_data["ResponseBody"].push_back(array[i]->toJSON());
 		}
 		// set response status and message
 		response->Json(resp_data);
@@ -1894,11 +1897,11 @@ void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 			server::ApiHandler::load(apiUtil, request_data, _response_data);
 			if (_response_data.StatusCode == server::StatusOK)
 			{
-			    apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, 1, 0, 0);
+			    apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, 1);
 			}
 			else
 			{
-				apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, -1, 0, 0);
+				apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, -1);
 			}
 		});
 	}
@@ -1929,26 +1932,56 @@ void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 {
 	try
 	{
-		std::string db_name = JsonUtil::jsonParam(json_data, "db_name");
-		std::string msg;
-		if (apiUtil->check_param_value("db_name", db_name, msg) == false)
-		{
-			response->Error(StatusOperationFailed, msg);
-			return;
-		}
-		shared_ptr<DatabaseInfo> db_info;
-		server::StatusCode statusCode;
+		server::MessageUnloadRequest request_data(json_data);
+		server::MessageUnloadResponse response_data;
 		std::string statusMsg;
-		if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, true, DatabaseLock::W))
+		if (apiUtil->check_param_value("db_name", request_data.db_name, statusMsg) == false)
 		{
-			response->Error(statusCode, msg);
+			response->Error(StatusOperationFailed, statusMsg);
 			return;
 		}
-		apiUtil->remove_txn_manager(db_name, true);
-		db_info->unloadDatabase();
-		apiUtil->unlock_databaseinfo(db_info);
-
-		response->Success("Database unloaded.");
+		if (request_data.async) 
+		{
+			grpc::GRPCServerTask* sub_task = task_of(response);
+			std::string opt_id;
+			gs::IdUtil::nextUID(opt_id);
+			response_data.opt_id = opt_id;
+			response_data.StatusCode = StatusOK;
+			response_data.StatusMsg = "Operation Success.";
+			sub_task->add_callback([request_data, opt_id](GRPCTask *)
+			{
+				server::StatusCode _statusCode;
+				std::string _statusMsg;
+				apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);			
+				apiUtil->unload_databaseinfo(request_data.db_name, _statusCode, _statusMsg);
+				if (_statusCode == server::StatusOK)
+				{
+					apiUtil->update_access_log(_statusCode, _statusMsg, opt_id, 1);
+				}
+				else
+				{
+					apiUtil->update_access_log(_statusCode, _statusMsg, opt_id, -1);
+				}
+			});
+		}
+		else
+		{
+			server::StatusCode statusCode;
+			std::string statusMsg;
+			apiUtil->unload_databaseinfo(request_data.db_name, statusCode, statusMsg);
+			response_data.StatusCode = statusCode;
+			response_data.StatusMsg = statusMsg;
+		}
+		if (response_data.StatusCode != StatusOK)
+		{
+			response->Error(response_data.StatusCode, response_data.StatusMsg);
+		}	
+		else
+		{
+			std::string json_str;
+			response_data.toJsonString(json_str);
+			response->Json(json_str);
+		}	
 	}
 	catch (const std::exception &e)
 	{
@@ -2022,7 +2055,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failed_num);
 			else
-				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1);
 			std::string callback = request_data.callback;
             if (!callback.empty())
             {
@@ -2469,7 +2502,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
 			else
-				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1);
 			std::string callback = request_data.callback;
 			if (!callback.empty())
 			{
@@ -2539,7 +2572,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
 			else
-				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1, 0, 0);
+				apiUtil->update_access_log(response_data.StatusCode, response_data.StatusMsg, response_data.opt_id, -1);
 			std::string callback = request_data.callback;
             if (!callback.empty())
             {
