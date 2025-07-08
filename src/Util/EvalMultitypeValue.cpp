@@ -1061,7 +1061,7 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 							decimal = true;
 						nextP++;
 					}
-					string sub_value =  contentStr.substr(p, nextP - p + 1);
+					//string sub_value =  contentStr.substr(p, nextP - p + 1);
 					//std::cout << i << " -> "<< p << "," << nextP << "," << sub_value << endl;
 					// fix bug: if nextP == p substr is empty, stof will throw invalid_argument
 					if (nextP <= p) 
@@ -1072,7 +1072,10 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 					if (p >= contentLen && i < 5)
 						return;
 				}
-				dt_value = EvalMultitypeValue::DateTime(date);
+				if (date.size() >= 6)
+				{
+					dt_value = EvalMultitypeValue::DateTime(date);
+				}
 			} else {
 				contentStr = contentStr.substr(1, contentLen - 2);
 				if (sufStr == "integer") {
