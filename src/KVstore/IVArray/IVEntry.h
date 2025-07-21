@@ -91,6 +91,9 @@ public:
 
 	bool ReadVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn, bool &latched, bool first_read = false ); //read
 	int  WriteVersion(VDataSet &AddSet, VDataSet &DelSet, shared_ptr<Transaction> txn);
+
+	// record transation version
+	void allocVersionTransation();
 	
 	void CleanAllVersion();
 	~IVEntry();

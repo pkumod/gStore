@@ -5,6 +5,12 @@ namespace server
     bool  ApiHandler::transaction_check(shared_ptr<APIUtil>& apiUtil, const std::string& db_name, const std::string& tid_s, txn_id_t& tid, server::MessageResponse& response)
     {
         std::string msg;
+        if (apiUtil->check_db_loadTxn(db_name) == false)
+        {
+            msg = "Database txn is not loaded yet.";
+            response.Error(StatusOperationConditionsAreNotSatisfied, msg);
+            return false;
+        }
         if (apiUtil->check_param_value("db_name", db_name, msg) == false)
         {
             response.Error(StatusParamIsIllegal, msg);
@@ -57,6 +63,12 @@ namespace server
             if (apiUtil->check_db_loaded(db_name) == false)
             {
                 msg = "Database is not loaded yet.";
+                response.Error(StatusOperationConditionsAreNotSatisfied, msg);
+                return;
+            }
+            if (apiUtil->check_db_loadTxn(db_name) == false)
+            {
+                msg = "Database txn is not loaded yet.";
                 response.Error(StatusOperationConditionsAreNotSatisfied, msg);
                 return;
             }

@@ -64,7 +64,7 @@ private:
 	//inline void ArrayExclusiveUnLock(){ArrayLock.unlock(true);}
 public:
 	IVArray();
-	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0);
+	IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num = 0, bool txnFlag = true);
 	~IVArray();
 
 	bool search(unsigned _key, char *& _str, unsigned long & _len);

@@ -36,7 +36,7 @@ IVArray::~IVArray()
 	//time_index_map.clear();
 }
 
-IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num)
+IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long long buffer_size, unsigned _key_num, bool txnFlag)
 {
 //	cout << "Initialize " << _filename << "..." << endl;
 	dir_path = _dir_path;
@@ -51,6 +51,8 @@ IVArray::IVArray(string _dir_path, string _filename, string mode, unsigned long 
 	cache_tail_id = -1;
 
 	unsigned SETKEYNUM = 1 << 10;
+
+	array_.setLoadTxnFlag(txnFlag);
 
 	if (mode == "build")
 	{

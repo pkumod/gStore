@@ -4863,7 +4863,7 @@ KVstore::open(std::shared_ptr<IVArray>& _array, string _name, int _mode, unsigne
 		SLOG_ERROR("Invalid open mode of: " << _name << " mode = " << _mode);
 		return false;
 	}
-	_array = std::make_shared<IVArray>(this->store_path, _name, smode, _buffer_size, _key_num);
+	_array = std::make_shared<IVArray>(this->store_path, _name, smode, _buffer_size, _key_num, this->loadTxnFlag);
 
 	return true;
 }
@@ -6062,4 +6062,9 @@ void KVstore::batchSetLiteralByID(const std::unordered_map<std::string, TYPE_ENT
 {
 	for (const auto& m: triples)
 		setLiteralByID(m.second, m.first);
+}
+
+void KVstore::setLoadTxnFlag(bool flag)
+{
+	loadTxnFlag = flag;
 }

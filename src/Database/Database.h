@@ -98,7 +98,7 @@ public:
 	~Database();
 
 	bool save();
-	bool load(bool loadCSR = false);
+	bool load(bool loadCSR = false, bool loadTxnFlag = true);
 	bool unload();
 	void clear();
 	void releaseIDBlock();
@@ -271,6 +271,8 @@ private:
 
 	// the unordered_map for store the statistic data of entitys
 	unordered_map<string, unsigned long long> umap;
+    // load transation for alloc memory
+	bool loadTxnFlag;
 
 	// Trie *trie;
 
@@ -438,6 +440,8 @@ public:
 	void setSchemaFlag(bool _schema_flag);
 	void updateSchema();
 	void getSchemaInfo(nlohmann::json& schema, bool all);
+	void setLoadTxnFlag(bool flag);
+	bool isLoadTxn(){ return loadTxnFlag; }
 };
 
 #endif //_DATABASE_DATABASE_H

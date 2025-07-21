@@ -51,6 +51,7 @@ public:
 	int getPrev() const;
 	void setNext(int ID);
 	int getNext() const;
+	void allocVersionTransation(){}
 
 	~ISEntry();
 };

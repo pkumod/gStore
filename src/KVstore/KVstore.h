@@ -273,6 +273,8 @@ private:
 	// csr update (insert, remove)
 	bool csr_update;
 
+	bool loadTxnFlag;
+
 	//===============================================================================
 
 	bool open(std::shared_ptr<SITree>& _p_btree, std::string _tree_name, int _mode, unsigned long long _buffer_size);
@@ -348,6 +350,9 @@ public:
 
 	void batchSetIDByLiteral(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
 	void batchSetLiteralByID(const std::unordered_map<std::string, TYPE_ENTITY_LITERAL_ID>& triples);
+
+	//load transation flag
+	void setLoadTxnFlag(bool flag);
 };
 
 #endif //_KVSTORE_KVSTORE_H

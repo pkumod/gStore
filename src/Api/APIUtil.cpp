@@ -1014,6 +1014,16 @@ bool APIUtil::check_db_built(const std::string &db_name)
     }
 }
 
+bool APIUtil::check_db_loadTxn(const std::string &db_name)
+{
+    shared_ptr<DatabaseInfo> dbinfo;
+    if (get_databaseinfo(db_name, dbinfo)) {
+        return dbinfo->getDatabase()->isLoadTxn();
+    } else {
+        return false;
+    }
+}
+
 bool APIUtil::check_db_count()
 {
     return already_build.size() < max_database_num;

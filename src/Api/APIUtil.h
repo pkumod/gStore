@@ -127,6 +127,7 @@ public:
     bool aborted_process(shared_ptr<Txn_manager>& txn_m, txn_id_t& tid);
 
     bool check_db_loaded(const std::string& db_name);
+    bool check_db_loadTxn(const std::string &db_name);
     bool check_db_built(const std::string& db_name);
     bool check_db_count();
 

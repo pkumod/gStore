@@ -95,10 +95,11 @@ namespace server
         std::string db_name;
         std::string csr;
         bool async;
+        bool txn;
         MessageLoadRequest()=delete;
         MessageLoadRequest(const nlohmann::json& json_data);
-        MessageLoadRequest(std::string db_name, std::string csr = "0", bool async = false);
-        MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr = "0", bool async = false);
+        MessageLoadRequest(std::string db_name, std::string csr = "0", bool async = false, bool txn = true);
+        MessageLoadRequest(std::string username, std::string password, std::string db_name, std::string csr = "0", bool async = false, bool txn = true);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
         bool Csr()const;

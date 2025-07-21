@@ -101,7 +101,7 @@ namespace server
                 // progress notification
                 shared_ptr<Database> db_ptr =  db_info->getDatabase();
                 SLOG_DEBUG("begin loading with csr: " << request.Csr());
-                if (db_ptr && db_ptr->load(request.Csr()))
+                if (db_ptr && db_ptr->load(request.Csr(), request.txn))
                 {
                     SLOG_DEBUG("end loading.");
                     bool schema_flag = GlobalTypedef::build_schema();

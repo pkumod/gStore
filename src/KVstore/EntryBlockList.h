@@ -41,6 +41,17 @@ class EntryBlock
         array_ = new_ptr;
     }
 
+    void allocEntry(bool loadTxnFlag)
+    {
+        std::shared_ptr<Ttype []> new_ptr(new Ttype[ENTRY_BLOCK_SIZE], [](Ttype *p){ delete [] p; });
+        if (loadTxnFlag)
+        {
+            for (int i = 0; i < ENTRY_BLOCK_SIZE; i++)
+                new_ptr[i].allocVersionTransation();
+        }
+        array_ = new_ptr;
+    }
+
     Ttype* key(int id)
     {
         return &array_[id];
@@ -53,14 +64,18 @@ class EntryBlockList
 {
     private:
     std::vector<std::shared_ptr<EntryBlock<Ttype>>> vBlock_;
+    bool loadTxnFlag_;
     
     size_t block_num_;
     public:
     EntryBlockList()
     {
         block_num_ = 0;
+        loadTxnFlag_ = true;
     }
     ~EntryBlockList(){}
+
+    void setLoadTxnFlag(bool flag){ loadTxnFlag_ = flag; }
 
     void allocBlock(int key)
     {
@@ -69,7 +84,7 @@ class EntryBlockList
         {
             // SLOG_TRACE("add allocBlock key:" << key << "cur num:" << block_num_ << " ,need num:" << belong_block);
             std::shared_ptr<EntryBlock<Ttype>> new_ptr = std::make_shared<EntryBlock<Ttype>>();
-            new_ptr->allocEntry();
+            new_ptr->allocEntry(loadTxnFlag_);
             vBlock_.push_back(new_ptr);
             block_num_++;
         }

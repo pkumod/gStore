@@ -650,7 +650,7 @@ void Database::warmUp()
 }
 
 
-bool Database::load(bool loadCSR)
+bool Database::load(bool loadCSR, bool loadTxnFlag)
 {
 
 	if (this->if_loaded)
@@ -658,6 +658,7 @@ bool Database::load(bool loadCSR)
 		return true;
 	}
 
+	setLoadTxnFlag(loadTxnFlag);
 	// TODO: acquire this arg from memory manager
 	// BETTER: get return value from subthread(using ref or file as hub)
 	//  unsigned vstree_cache = gstore::LRUCache::DEFAULT_CAPACITY;
@@ -4614,4 +4615,10 @@ void Database::updateUmap(UPDATE_TYPE type, const std::vector<unsigned>& _sidoid
 		}
 	}
 	umap_lock.unlock();
+}
+
+void Database::setLoadTxnFlag(bool flag)
+{
+	loadTxnFlag = flag;
+	this->kvstore->setLoadTxnFlag(flag);
 }
