@@ -114,29 +114,17 @@ namespace server
                 return;
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string db_path;
             int64_t start_time = gs::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
-                auto maxIter = std::max_element(
-                    file_paths.begin(),
-                    file_paths.end(),
-                    [](const std::pair<std::string, unsigned long long>& a, const std::pair<std::string, unsigned long long>& b) {
-                        return a.second < b.second;
-                    }
-                );
-                db_path = maxIter->first;
                 nt_files.reserve(file_paths.size());
                 for (const auto& pair : file_paths)
-                {
-                    if (pair.first != db_path)
-                        nt_files.push_back(pair.first);
-                }
+                    nt_files.push_back(pair.first);
             }
             apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
             bool schema_flag = GlobalTypedef::build_schema();
             shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
@@ -156,11 +144,11 @@ namespace server
             std::string db_home_path = GlobalTypedef::db_path(db_name);
             try
             {
-                if (!db_path.empty())
+                if (!nt_files.empty())
                 {
-                    flag = current_database->build(db_path);
+                    flag = current_database->build(nt_files);
                     success_num = current_database->getTripleNum();
-                    nt_file_num = 1;
+                    nt_file_num = nt_files.size();
                 }
                 else
                 {
@@ -173,36 +161,6 @@ namespace server
                 {
                     result = "build failed.";
                     throw std::runtime_error(result);
-                }
-                // if multi files then excuse batchInsert
-                if (nt_files.size() > 0)
-                {
-                    current_database = make_shared<Database>(db_name, schema_flag);
-                    bool rt  = current_database->load(false);
-                    if (!rt)
-                    {
-                        result = "unable to load database.";
-                        throw std::runtime_error(result);
-                    }
-                    uint64_t total_update_num = 0;
-                    for (std::string rdf_file : nt_files)
-                    {
-                        SLOG_DEBUG("batch insert rdf file: " + rdf_file);
-                        total_update_num = total_update_num + current_database->batch_insert(rdf_file, false, nullptr);
-                    }
-                    nt_file_num += nt_files.size();
-                    if (!current_database->save())
-                    {
-                        result = "disk or memory is not enough.";
-                        throw std::runtime_error(result);
-                    }
-                    if (total_update_num > 0)
-                    {
-                        SLOG_DEBUG("update schema: " << schema_flag);
-                        current_database->updateSchema();
-                    }
-                    success_num = current_database->getTripleNum();
-                    current_database.reset();
                 }
                 apiUtil->unlock_databaseinfo(current_db_info);
             }
@@ -273,29 +231,17 @@ namespace server
                 return;
             std::string db_name = request.db_name;
             std::string username = request.username;
-            std::string db_path;
             int64_t start_time = gs::TimeUtil::timestamp();
             std::vector<std::string> nt_files;
             if (!file_paths.empty()) 
             {
-                auto maxIter = std::max_element(
-                    file_paths.begin(),
-                    file_paths.end(),
-                    [](const std::pair<std::string, unsigned long long>& a, const std::pair<std::string, unsigned long long>& b) {
-                        return a.second < b.second;
-                    }
-                );
-                db_path = maxIter->first;
                 nt_files.reserve(file_paths.size());
                 for (const auto& pair : file_paths)
-                {
-                    if (pair.first != db_path)
-                        nt_files.push_back(pair.first);
-                }
+                    nt_files.push_back(pair.first);
             }
             apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data: " + db_path);
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
             bool schema_flag = GlobalTypedef::build_schema();
             shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
@@ -316,11 +262,11 @@ namespace server
             std::string db_home_path = GlobalTypedef::db_path(db_name);
             try
             {
-                if (!db_path.empty())
+                if (!nt_files.empty())
                 {
-                    flag = current_database->build(db_path);
+                    flag = current_database->build(nt_files);
                     success_num = current_database->getTripleNum();
-                    nt_file_num = 1;
+                    nt_file_num = nt_files.size();
                 }
                 else
                 {
@@ -333,35 +279,6 @@ namespace server
                 {
                     result = "build failed.";
                     throw std::runtime_error(result);
-                }
-                // if multi files then excuse batchInsert
-                if (nt_files.size() > 0)
-                {
-                    current_database = make_shared<Database>(db_name, schema_flag);
-                    bool rt  = current_database->load(false);
-                    if (!rt)
-                    {
-                        result = "unable to load database.";
-                        throw std::runtime_error(result);
-                    }
-                    uint64_t total_update_num = 0;
-                    for (std::string rdf_zip : nt_files)
-                    {
-                        total_update_num = total_update_num + current_database->batch_insert(rdf_zip, false, nullptr);
-                    }
-                    nt_file_num += nt_files.size();
-                    if (!current_database->save())
-                    {
-                        result = "disk or memory is not enough.";
-                        throw std::runtime_error(result);
-                    }
-                    if (total_update_num > 0)
-                    {
-                        SLOG_DEBUG("update schema: " << schema_flag);
-                        current_database->updateSchema();
-                    }
-                    success_num = current_database->getTripleNum();
-                    current_database.reset();
                 }
                 apiUtil->unlock_databaseinfo(current_db_info);
             } 

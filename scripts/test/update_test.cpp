@@ -188,7 +188,9 @@ int main(int argc, char * argv[])
 	
 	std::cout << "db_name:" << db_name << std::endl;
 	std::cout << "db_path:" << db_path << std::endl;
-	bool flag = db->build(db_path);
+	std::vector<std::string> nt_files;
+	nt_files.push_back(db_path);
+	bool flag = db->build(nt_files);
 	string _db_path = _db_home + "/" + db_name + _db_suffix;
 	if (flag)
 	{

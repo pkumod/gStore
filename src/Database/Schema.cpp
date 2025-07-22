@@ -15,16 +15,108 @@ bool Database::getSchemaFlag()
 	return this->schema_flag;
 }
 
-void Database::buildSchema(const string _rdf_file, const std::map<string, std::set<std::string>>& id_tuples)
+// void Database::buildSchema(const string _rdf_file, const std::map<string, std::set<std::string>>& id_tuples)
+// {
+// 	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
+// 		return;
+// 	ifstream _fin(_rdf_file.c_str());
+// 	if (!_fin)
+// 	{
+// 		SLOG_ERROR("buildSchema: Fail to rdf open : " << _rdf_file);
+// 		return;
+// 	}
+// 	int64_t t1 = gs::TimeUtil::timestamp();
+// 	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
+// 	RDFParser _parser(_fin);
+// 	int num_lines = 0;
+// 	// edges 实体属性映射
+// 	std::map<std::string, std::set<std::string>> propertyMap;
+// 	// 初始化所有的实体类型：避免忽略没有任何属性的实体
+// 	for (const auto& entityL : id_tuples)
+// 	{
+// 		propertyMap[entityL.first] = std::set<std::string>();
+// 	}
+// 	// 实体关系集合
+// 	std::set<struct RelationInfo> relationList;
+// 	while (true)
+// 	{
+// 		int parse_triple_num = 0;
+// 		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "", num_lines);
+// 		num_lines = curr_lines;
+
+// 		if (parse_triple_num == 0)
+// 			break;
+
+// 		for (int i = 0; i < parse_triple_num; i++)
+// 		{
+// 			TripleWithObjType triple_for_spo = triple_array[i];
+// 			string _sub = triple_for_spo.getSubject();
+// 			string _pre = triple_for_spo.getPredicate();
+// 			string _obj = triple_for_spo.getObject();
+//             if (_sub.empty() || _pre.empty() || _obj.empty())
+//                 continue;
+// 			if (triple_for_spo.isObjEntity() && !this->checkIsTypePredicate(_pre))
+// 			{
+// 				// 实体-关系-实体
+// 				struct RelationInfo info;
+// 				info.label = _pre;
+// 				for (const auto& entityL : id_tuples)
+// 				{
+// 					if (!info.empty())
+// 						break;
+// 					auto sub_it = entityL.second.find(_sub);
+// 					if (sub_it != entityL.second.end())
+// 						info.source = entityL.first; // entityName;
+// 					auto obj_it = entityL.second.find(_obj);
+// 					if (obj_it != entityL.second.end())
+// 						info.target = entityL.first; // entityName;
+// 				}
+// 				if (!info.empty())
+// 					relationList.insert(info);
+// 			}
+// 			else if (triple_for_spo.isObjLiteral())
+// 			{
+// 				// 实体-属性
+// 				for (const auto& entityL : id_tuples)
+// 				{
+// 					auto sub_it = entityL.second.find(_sub);
+// 					if (sub_it != entityL.second.end())
+// 					{
+// 						propertyMap[entityL.first].insert(_pre);
+// 						break;
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	_fin.close();
+// 	createSchema(relationList, propertyMap);
+// 	int64_t t2 = gs::TimeUtil::timestamp();
+// 	SLOG_CORE("Finish building schema, used " + to_string(t2 - t1) + "ms.");
+// }
+
+void Database::buildSchema(const std::vector<std::string> &_rdf_files, const std::map<std::string, std::set<std::string>>& id_tuples)
 {
 	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
 		return;
-	ifstream _fin(_rdf_file.c_str());
-	if (!_fin)
+	unsigned cur_file = 0;
+	unsigned file_count = _rdf_files.size();
+	ifstream _fin;
+	for (unsigned int i = 0; i<file_count; i++)
 	{
-		SLOG_ERROR("buildSchema: Fail to rdf open : " << _rdf_file);
-		return;
+		_fin.open(_rdf_files[i].c_str());
+		if (_fin)
+		{
+			cur_file = i;
+			break;
+		}
+		if (i == file_count-1)
+		{
+			SLOG_ERROR("buildSchema: Fail to rdf open : " << _rdf_files[cur_file]);
+			return;
+		}
 	}
+
 	int64_t t1 = gs::TimeUtil::timestamp();
 	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
 	RDFParser _parser(_fin);
@@ -45,7 +137,26 @@ void Database::buildSchema(const string _rdf_file, const std::map<string, std::s
 		num_lines = curr_lines;
 
 		if (parse_triple_num == 0)
-			break;
+		{
+			if (cur_file >= file_count -1 )
+			{
+				_fin.close();
+				break;
+			}
+			cur_file++;
+			for (unsigned int i = cur_file; i<file_count; i++)
+			{
+                _fin.close();
+				_fin.open(_rdf_files[i].c_str());
+				if (_fin)
+				{
+                    num_lines = 0;
+					cur_file = i;
+					break;
+				}
+			}
+			continue;
+		}
 
 		for (int i = 0; i < parse_triple_num; i++)
 		{
@@ -89,7 +200,6 @@ void Database::buildSchema(const string _rdf_file, const std::map<string, std::s
 			}
 		}
 	}
-	_fin.close();
 	createSchema(relationList, propertyMap);
 	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish building schema, used " + to_string(t2 - t1) + "ms.");
