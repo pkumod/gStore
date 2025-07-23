@@ -16,13 +16,13 @@
  * using an array to implement a heap.
  * Structure: heap[i] is the parent of heap[2i+1] and heap[2i+2], heap[0] is the top
  * heap[i]'s rank <= (heap[2i+1] and heap[2i+2])'s rank
- * traverse this heap, we can get std::shared_ptr<SINode> by ranks descending
+ * traverse this heap, we can get SINode* by ranks descending
  */
 class SIHeap
 {
 private:
   //dynamic array
-  std::vector<std::shared_ptr<SINode>> heap;
+  SINode** heap;
   //valid elements num
   unsigned length;
   //max-size of heap
@@ -30,13 +30,13 @@ private:
  public:
   SIHeap();
   SIHeap(unsigned _size);
-  std::shared_ptr<SINode> getTop() const;			//return the top element
+  SINode* getTop() const;			//return the top element
   unsigned getLen() const;
   unsigned getSize() const;
   bool isEmpty() const;
-  bool Insert(std::shared_ptr<SINode> _np);	//insert and adjust
+  bool Insert(SINode* _np);	//insert and adjust
   bool RemoveTop();			//remove top and adjust
-  bool modify(std::shared_ptr<SINode> _np, bool _flag);			//searech modified element and adjust
+  bool modify(SINode* _np, bool _flag);			//searech modified element and adjust
   ~SIHeap();
   void print(std::string s);			//DEBUG
 };

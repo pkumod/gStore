@@ -29,7 +29,7 @@
  * You should do a binary search in si_node's keys and find a keys[i] <= t with keys[i+1] > t
  * Then t is in subtree rooted at child[i+1].
  */
-class SINode : public std::enable_shared_from_this<SINode>       				//abstract basic class 
+class SINode       				//abstract basic class 
 {
  public:
   static const unsigned DEGREE = 2 * 63;	//the degree of B+ tree
@@ -53,7 +53,7 @@ class SINode : public std::enable_shared_from_this<SINode>       				//abstract 
   //store address, the Block index
   unsigned store;
   unsigned node_flag_;			//NF_RK, NF_IL,NF_ID, NF_IV, propety
-  std::shared_ptr<Bstr[]> keys;
+  Bstr* keys;
   void AllocKeys();
  public:
   SINode();
@@ -99,7 +99,7 @@ class SINode : public std::enable_shared_from_this<SINode>       				//abstract 
 
   //virtual functions: polymorphic
   //NOTICE: not pure-virtual, not required to be implemented again, can be used now
-  virtual std::shared_ptr<SINode> GetChild(int _index) const { return nullptr; };
+  virtual SINode* GetChild(int _index) const { return NULL; };
 
   /**
    * set this one's child
@@ -107,7 +107,7 @@ class SINode : public std::enable_shared_from_this<SINode>       				//abstract 
    * @param _index the position it will be placed
    * @return
    */
-  virtual bool setChild(std::shared_ptr<SINode> _child, int _index) { return true; };
+  virtual bool setChild(SINode* _child, int _index) { return true; };
 
   /**
    * add SINode into key[_index] in this node.
@@ -116,16 +116,16 @@ class SINode : public std::enable_shared_from_this<SINode>       				//abstract 
    * @param _index the inserted position
    * @return bool
    */
-  virtual bool AddChild(std::shared_ptr<SINode> _child, int _index) { return true; };
+  virtual bool AddChild(SINode* _child, int _index) { return true; };
   virtual bool subChild(int _index) { return true; };
-  virtual std::shared_ptr<SINode> GetPrev() const { return nullptr; };
-  virtual std::shared_ptr<SINode> GetNext() const { return nullptr; };
+  virtual SINode* GetPrev() const { return NULL; };
+  virtual SINode* GetNext() const { return NULL; };
   virtual unsigned GetValue(int _index) const { return -1; };
   virtual bool SetValue(unsigned _val, int _index) { return true; };
   virtual bool AddValue(unsigned _val, int _index) { return true; };
   virtual bool SubValue(int _index) { return true; };
-  virtual void setPrev(std::shared_ptr<SINode> _prev) {};
-  virtual void SetNext(std::shared_ptr<SINode> _next) {};
+  virtual void setPrev(SINode* _prev) {};
+  virtual void SetNext(SINode* _next) {};
 
   /** let the node has no keys nor values in memory*/
   virtual void Virtual() = 0;
@@ -143,9 +143,9 @@ class SINode : public std::enable_shared_from_this<SINode>       				//abstract 
    * @param _index the position of this node in parent node
    * @return
    */
-  virtual std::shared_ptr<SINode> Split(std::shared_ptr<SINode> _parent, int _index) = 0;
+  virtual SINode* Split(SINode* _parent, int _index) = 0;
 
-  virtual std::shared_ptr<SINode> Coalesce(std::shared_ptr<SINode> _father, int _index) = 0;
+  virtual SINode* Coalesce(SINode* _father, int _index) = 0;
 
   /**
   * release the node, only remain necessary information.

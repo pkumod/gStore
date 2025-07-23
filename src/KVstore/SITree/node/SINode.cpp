@@ -16,7 +16,7 @@ using namespace std;
 void
 SINode::AllocKeys()
 {
-	keys = std::shared_ptr<Bstr[]>(new Bstr[MAX_KEY_NUM], std::default_delete<Bstr[]>());
+	keys = new Bstr[MAX_KEY_NUM];
 }
 
 /**
@@ -199,7 +199,7 @@ SINode::getKey(int _index) const
 		return NULL;
 	}
 	else
-		return this->keys.get() + _index;
+		return this->keys + _index;
 }
 
 bool
@@ -286,7 +286,7 @@ SINode::subKey(int _index, bool ifdel)
 	int num = this->GetKeyNum();
 	if (_index < 0 || _index >= num)
 	{
-		SLOG_ERROR("error sub keys _index >= num :" << _index << " num:" << num);
+		SLOG_ERROR("error sub keys _index >= num :" << _index << "num:" << num);
 		return false;
 	}
 	int i;

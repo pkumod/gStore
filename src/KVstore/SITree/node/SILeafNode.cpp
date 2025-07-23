@@ -13,7 +13,7 @@ using namespace std;
 void
 SILeafNode::AllocValues()
 {
-  values = std::shared_ptr<unsigned[]>(new unsigned[MAX_KEY_NUM], std::default_delete<unsigned[]>());
+  values = new unsigned[MAX_KEY_NUM];
 }
 
 SILeafNode::SILeafNode():SINode()
@@ -47,13 +47,13 @@ SILeafNode::Normal()
   this->SetInMem();
 }
 
-std::shared_ptr<SINode>
+SINode*
 SILeafNode::GetPrev() const
 {
   return prev;
 }
 
-std::shared_ptr<SINode>
+SINode*
 SILeafNode::GetNext() const
 {
   return next;
@@ -70,7 +70,7 @@ SILeafNode::GetValue(int _index) const
   int num = this->GetKeyNum();
   if (_index < 0 || _index >= num)
   {
-    //print(string("error in GetValue: Invalid index ") + to_string(_index));
+    //print(string("error in GetValue: Invalid index ") + Util::int2string(_index));
     SLOG_ERROR("error GetValue:" << _index);
     return 0;
   }
@@ -142,13 +142,13 @@ SILeafNode::SubValue(int _index)
 }
 
 void
-SILeafNode::setPrev(std::shared_ptr<SINode> _prev)
+SILeafNode::setPrev(SINode* _prev)
 {
   this->prev = _prev;
 }
 
 void
-SILeafNode::SetNext(std::shared_ptr<SINode> _next)
+SILeafNode::SetNext(SINode* _next)
 {
   this->next = _next;
 }
@@ -172,11 +172,11 @@ SILeafNode::GetSize() const
  * @param _index this node's position in parent node
  * @return the new created node
  */
-std::shared_ptr<SINode>
-SILeafNode::Split(std::shared_ptr<SINode> _parent, int _index)
+SINode*
+SILeafNode::Split(SINode* _parent, int _index)
 {
   int num = this->GetKeyNum();
-  std::shared_ptr<SINode> p = std::make_shared<SILeafNode>();		//right child
+  SINode* p = new SILeafNode;		//right child
 
   // NOTICE: assign height for new node
   p->setHeight(this->getHeight());
@@ -187,16 +187,16 @@ SILeafNode::Split(std::shared_ptr<SINode> _parent, int _index)
     p->SetNext(this->next);
   }
   this->SetNext(p);
-  p->setPrev(shared_from_this());
+  p->setPrev(this);
 
   int i, k;
   for (i = MIN_KEY_NUM, k = 0; i < num; ++i, ++k)
   {
-    p->addKey(this->keys.get() + i, k);
+    p->addKey(this->keys + i, k);
     p->AddValue(this->values[i], k);
     p->AddKeyNum();
   }
-  const Bstr* tp = this->keys.get() + MIN_KEY_NUM;
+  const Bstr* tp = this->keys + MIN_KEY_NUM;
   this->SetKeyNum(MIN_KEY_NUM);
   _parent->addKey(tp, _index, true);
   // from these code , we can assure k[i] is value[i+1]'s min-value
@@ -221,12 +221,12 @@ SILeafNode::Split(std::shared_ptr<SINode> _parent, int _index)
  * @param _index which position this node is in parent's child
  * @return  neighbour SINode in case 1/3, NULL case 2/4.
  */
-std::shared_ptr<SINode>
-SILeafNode::Coalesce(std::shared_ptr<SINode> _parent, int _index)
+SINode*
+SILeafNode::Coalesce(SINode* _parent, int _index)
 {
   int i, parent_key_num = _parent->GetKeyNum();
   unsigned int neighbour_key_num;
-  std::shared_ptr<SINode> neighbour;
+  SINode* neighbour = nullptr;
 
   // 1:union right to this
   // 2:move one from right
@@ -249,7 +249,7 @@ SILeafNode::Coalesce(std::shared_ptr<SINode> _parent, int _index)
   //it has a left neighbor
   if (_index > 0)
   {
-    std::shared_ptr<SINode> left_neighbour = _parent->GetChild(_index - 1);
+    SINode* left_neighbour = _parent->GetChild(_index - 1);
     unsigned tk = left_neighbour->GetKeyNum();
     if (coalesce_method < 2)
     {
@@ -286,7 +286,7 @@ SILeafNode::Coalesce(std::shared_ptr<SINode> _parent, int _index)
       _parent->SubKeyNum();
       this->next = neighbour->GetNext();
       if (this->next != nullptr)
-        this->next->setPrev(shared_from_this());
+        this->next->setPrev(this);
       neighbour->SetKeyNum(0);
       break;
 
@@ -317,7 +317,7 @@ SILeafNode::Coalesce(std::shared_ptr<SINode> _parent, int _index)
       _parent->SubKeyNum();
       this->prev = neighbour->GetPrev();
       if (this->prev != nullptr)
-        this->prev->SetNext(shared_from_this());
+        this->prev->SetNext(this);
       neighbour->SetKeyNum(0);
       break;
 
@@ -355,8 +355,8 @@ SILeafNode::Release()
   {
     keys[i].clear();
   }
-  keys.reset();
-  values.reset();
+  delete[] keys;
+  delete[] values;
   keys = nullptr;
   values = nullptr;
 }

@@ -14,10 +14,10 @@ SITree::SITree()
 {
   height_ = 0;
   mode_ = "";
-  root_ = nullptr;
-  leaves_head_ = nullptr;
-  leaves_tail_ = nullptr;
-  tsm_ = nullptr;
+  root_ = NULL;
+  leaves_head_ = NULL;
+  leaves_tail_ = NULL;
+  tsm_ = NULL;
   store_path_ = "";
   filename_ = "";
   this->request_ = 0;
@@ -41,7 +41,7 @@ SITree::SITree(string store_path, string _filename, string _mode, unsigned long 
   this->height_ = 0;
   this->mode_ = string(_mode);
   string filepath = this->GetFilePath();
-  tsm_ = std::make_shared<SIStorage>(filepath, this->mode_, &this->height_, _buffer_size);
+  tsm_ = new SIStorage(filepath, this->mode_, &this->height_, _buffer_size);
   if (this->mode_ == "open") {
     // load the entire SITree
     this->tsm_->PreRead(this->root_, this->leaves_head_, this->leaves_tail_);
@@ -69,14 +69,14 @@ SITree::SetHeight(unsigned _h)
   this->height_ = _h;
 }
 
-std::shared_ptr<SINode>
+SINode*
 SITree::GetRoot() const
 {
   return this->root_;
 }
 
 void
-SITree::Prepare(std::shared_ptr<SINode> _np)
+SITree::Prepare(SINode* _np)
 {
   bool flag = _np->inMem();
   if (!flag)
@@ -105,8 +105,8 @@ SITree::Search(const char* _str, unsigned _len, unsigned* _val)
 
   request_ = 0;
   int store;
-  std::shared_ptr<SINode> ret = this->Find(_str, _len, &store, false);
-  if (ret == nullptr || store == -1)	//tree is empty or not found
+  SINode* ret = this->Find(_str, _len, &store, false);
+  if (ret == NULL || store == -1)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -145,10 +145,10 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   }
 
   this->request_ = 0;
-  std::shared_ptr<SINode> ret;
-  if (!this->root_)	//tree is empty
+  SINode* ret;
+  if (this->root_ == NULL)	//tree is empty
   {
-    leaves_tail_ = leaves_head_ = root_ = std::make_shared<SILeafNode>();
+    leaves_tail_ = leaves_head_ = root_ = new SILeafNode;
     request_ += SINode::LEAF_SIZE;
     this->height_ = 1;
     root_->setHeight(1);	//add to heap later
@@ -158,11 +158,11 @@ SITree::Insert(char* str, unsigned len, unsigned val)
   //  split the root SINode
   if (root_->GetKeyNum() == SINode::MAX_KEY_NUM)
   {
-    std::shared_ptr<SINode> father = std::make_shared<SIIntlNode>();
+    SINode* father = new SIIntlNode;
     request_ += SINode::INTL_SIZE;
     father->AddChild(root_, 0);
     ret = root_->Split(father, 0);
-    if (ret->isLeaf() && ret->GetNext() == nullptr)
+    if (ret->isLeaf() && ret->GetNext() == NULL)
       this->leaves_tail_ = ret;
     if (ret->isLeaf())
       request_ += SINode::LEAF_SIZE;
@@ -177,8 +177,8 @@ SITree::Insert(char* str, unsigned len, unsigned val)
       root_->heapId = 0;
   }
 
-  std::shared_ptr<SINode> p = this->root_;
-  std::shared_ptr<SINode> q;
+  SINode* p = this->root_;
+  SINode* q;
   int i = 0;
   while (!p->isLeaf())
   {
@@ -188,7 +188,7 @@ SITree::Insert(char* str, unsigned len, unsigned val)
     if (q->GetKeyNum() == SINode::MAX_KEY_NUM)
     {
       ret = q->Split(p, i);
-      if (ret->isLeaf() && ret->GetNext() == nullptr)
+      if (ret->isLeaf() && ret->GetNext() == NULL)
         this->leaves_tail_ = ret;
       if (ret->isLeaf())
         request_ += SINode::LEAF_SIZE;
@@ -265,8 +265,8 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
   }
   this->request_ = 0;
   int store;
-  std::shared_ptr<SINode> ret = this->Find(_str, _len, &store, true);
-  if (!ret || store == -1)	//tree is empty or not found
+  SINode* ret = this->Find(_str, _len, &store, true);
+  if (ret == NULL || store == -1)	//tree is empty or not found
   {
     this->access_lock_.unlock();
     return false;
@@ -294,13 +294,13 @@ SITree::Modify(const char* _str, unsigned _len, unsigned _val)
  * changed, set if_modify = true
  * @return the leaf node
  */
-std::shared_ptr<SINode>
+SINode*
 SITree::Find(const char* _str, unsigned _len, int* _store, bool if_modify)
 {											//to assign value for this->bstr, function shouldn't be const!
-  if (this->root_ == nullptr)
-    return nullptr;						//SITree Is Empty
+  if (this->root_ == NULL)
+    return NULL;						//SITree Is Empty
 
-  std::shared_ptr<SINode> p = root_;
+  SINode* p = root_;
   int i, j;//local Bstr: multiple delete
 
   while (!p->isLeaf())
@@ -342,14 +342,14 @@ SITree::Remove(const char* _str, unsigned _len)
     return false;
   }
   request_ = 0;
-  std::shared_ptr<SINode> ret;
+  SINode* ret;
   if (this->root_ == NULL)	//tree is empty
   {
     this->access_lock_.unlock();
     return false;
   }
-  std::shared_ptr<SINode> p = this->root_;
-  std::shared_ptr<SINode> q;
+  SINode* p = this->root_;
+  SINode* q;
   int i, j;
   while (!p->isLeaf())
   {
@@ -366,13 +366,13 @@ SITree::Remove(const char* _str, unsigned _len)
         this->Prepare(p->GetChild(i - 1));
       if (i < j)
         this->Prepare(p->GetChild(i + 1));
-      // if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
-      // {
-      //   SLOG_ERROR("error remove str:" << _str << " key num:" << j << " query node pos:" << i);
-      //   break;
-      // }
+      if (!dynamic_cast<SILeafNode *>(q) && !dynamic_cast<SIIntlNode *>(q))
+      {
+        SLOG_ERROR("error remove str:" << _str << " key num:" << j << " query node pos:" << i);
+        break;
+      }
       ret = q->Coalesce(p, i);
-      if (ret != nullptr)
+      if (ret != NULL)
       {
         this->tsm_->updateHeap(ret, 0, true);//non-sense node
         ret->setPrev(nullptr);
@@ -415,9 +415,9 @@ SITree::Remove(const char* _str, unsigned _len)
     p->setDirty();
     if (p->GetKeyNum() == 0)	//root leaf 0 key
     {
-      this->root_ = nullptr;
-      this->leaves_head_ = nullptr;
-      this->leaves_tail_ = nullptr;
+      this->root_ = NULL;
+      this->leaves_head_ = NULL;
+      this->leaves_tail_ = NULL;
       this->height_ = 0;
       this->tsm_->updateHeap(p, 0, true);	//instead of delete p
       p->setPrev(nullptr);
@@ -461,25 +461,25 @@ SITree::Save()
  * @param _np
  */
 void
-SITree::Release(std::shared_ptr<SINode> _np) const
+SITree::Release(SINode* _np) const
 {
-  if (!_np)	return;
+  if (_np == NULL)	return;
   if (_np->isLeaf())
   {
-    _np.reset();
+    delete _np;
     _np = nullptr;
     return;
   }
   int cnt = _np->GetKeyNum();
   for (; cnt >= 0; --cnt)
     Release(_np->GetChild(cnt));
-  _np.reset();
+  delete _np;
   _np = nullptr;
 }
 
 SITree::~SITree()
 {
-  tsm_.reset();
+  delete tsm_;
   tsm_ = nullptr;
 #ifdef DEBUG_KVSTORE
   //printf("already empty the buffer, now to delete all nodes in tree!\n");
@@ -490,10 +490,10 @@ SITree::~SITree()
   //cout << "~SITree done" << endl;
 }
 
-void SITree::PrintTree(std::shared_ptr<SINode> _np)
+void SITree::PrintTree(SINode* _np)
 {
   //foreach all keys
-  if (_np == nullptr)	return;
+  if (_np == NULL)	return;
 
   if (_np->isLeaf())
   {
@@ -513,7 +513,7 @@ void SITree::PrintTree(std::shared_ptr<SINode> _np)
 	for (unsigned i = 0; i < num; ++i)
     SLOG_CORE("debug PrintTree Int:" << "   len:" << _np->getKey(i)->getLen());
 
-  // std::shared_ptr<SINode>np = nullptr;
+  // SINode* np = nullptr;
   // for (np = this->leaves_head_; np != NULL; np = np->GetNext())
   // {
   //   unsigned num = np->GetKeyNum();
@@ -527,69 +527,71 @@ void SITree::PrintTree(std::shared_ptr<SINode> _np)
 void
 SITree::Print(string s)
 {
-  // fputs(Util::showtime().c_str(), Util::debug_kvstore);
-	// fputs("Class SITree\n", Util::debug_kvstore);
-	// fputs("Message: ", Util::debug_kvstore);
-	// fputs(s.c_str(), Util::debug_kvstore);
-	// fputs("\n", Util::debug_kvstore);
-	// fprintf(Util::debug_kvstore, "Height: %d\n", this->height);
-	// if (s == "tree" || s == "TREE")
-	// {
-	// 	if (this->root == NULL)
-	// 	{
-	// 		fputs("Null SITree\n", Util::debug_kvstore);
-	// 		return;
-	// 	}
-	// 	std::shared_ptr<SINode>* ns = new std::shared_ptr<SINode>[this->height];
-	// 	int* ni = new int[this->height];
-	// 	std::shared_ptr<SINode>np;
-	// 	int i, pos = 0;
-	// 	ns[pos] = this->root;
-	// 	ni[pos] = this->root->getNum();
-	// 	pos++;
-	// 	while (pos > 0)
-	// 	{
-	// 		np = ns[pos - 1];
-	// 		i = ni[pos - 1];
-	// 		this->prepare(np);
-	// 		if (np->isLeaf() || i < 0)	//LeafSINode or ready IntlNode
-	// 		{							//child-num ranges: 0~num
-	// 			if (s == "tree")
-	// 				np->print("node");
-	// 			else
-	// 				np->print("NODE");	//print full node-information
-	// 			pos--;
-	// 			continue;
-	// 		}
-	// 		else
-	// 		{
-	// 			ns[pos] = np->getChild(i);
-	// 			ni[pos - 1]--;
-	// 			ni[pos] = ns[pos]->getNum();
-	// 			pos++;
-	// 		}
-	// 	}
-	// 	delete[] ns;
-	// 	delete[] ni;
-	// }
-	// else if (s == "LEAVES" || s == "leaves")
-	// {
-	// 	std::shared_ptr<SINode>np;
-	// 	for (np = this->leaves_head_; np != NULL; np = np->getNext())
-	// 	{
-	// 		this->prepare(np);
-	// 		if (s == "leaves")
-	// 			np->print("node");
-	// 		else
-	// 			np->print("NODE");
-	// 	}
-	// }
-	// else if (s == "check tree")
-	// {
-	// 	//check the tree, if satisfy B+ definition
-	// 	//TODO	
-	// }
-	// else;
+#ifdef DEBUG_KVSTORE
+  fputs(Util::showtime().c_str(), Util::debug_kvstore);
+	fputs("Class SITree\n", Util::debug_kvstore);
+	fputs("Message: ", Util::debug_kvstore);
+	fputs(s.c_str(), Util::debug_kvstore);
+	fputs("\n", Util::debug_kvstore);
+	fprintf(Util::debug_kvstore, "Height: %d\n", this->height);
+	if (s == "tree" || s == "TREE")
+	{
+		if (this->root == NULL)
+		{
+			fputs("Null SITree\n", Util::debug_kvstore);
+			return;
+		}
+		SINode** ns = new SINode*[this->height];
+		int* ni = new int[this->height];
+		SINode* np;
+		int i, pos = 0;
+		ns[pos] = this->root;
+		ni[pos] = this->root->getNum();
+		pos++;
+		while (pos > 0)
+		{
+			np = ns[pos - 1];
+			i = ni[pos - 1];
+			this->prepare(np);
+			if (np->isLeaf() || i < 0)	//LeafSINode or ready IntlNode
+			{							//child-num ranges: 0~num
+				if (s == "tree")
+					np->print("node");
+				else
+					np->print("NODE");	//print full node-information
+				pos--;
+				continue;
+			}
+			else
+			{
+				ns[pos] = np->getChild(i);
+				ni[pos - 1]--;
+				ni[pos] = ns[pos]->getNum();
+				pos++;
+			}
+		}
+		delete[] ns;
+		delete[] ni;
+	}
+	else if (s == "LEAVES" || s == "leaves")
+	{
+		SINode* np;
+		for (np = this->leaves_head_; np != NULL; np = np->getNext())
+		{
+			this->prepare(np);
+			if (s == "leaves")
+				np->print("node");
+			else
+				np->print("NODE");
+		}
+	}
+	else if (s == "check tree")
+	{
+		//check the tree, if satisfy B+ definition
+		//TODO	
+	}
+	else;
+#endif
 }
 void
 SITree::SetSingleThread(bool _single)

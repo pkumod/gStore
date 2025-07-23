@@ -41,12 +41,11 @@ class SITree
 {					
 private:
 	unsigned height_;		//0 indicates an empty tree
-	// std::shared_ptr<SINode>root_;
-	std::shared_ptr<SINode> root_;
-	std::shared_ptr<SINode> leaves_head_;			//the head of LeafNode-list
-	std::shared_ptr<SINode> leaves_tail_;			//the tail of LeafNode-list
+	SINode* root_;
+	SINode* leaves_head_;			//the head of LeafNode-list
+	SINode* leaves_tail_;			//the tail of LeafNode-list
 	std::string mode_;           //BETTER(to use enum)
-	std::shared_ptr<SIStorage> tsm_;           	//Tree-Storage-Manage
+	SIStorage* tsm_;           	//Tree-Storage-Manage
 	bool if_single_thread; 
 	//always alloc one more byte than length, then user can add a '\0'
 	//to get a real string, instead of new and copy
@@ -69,20 +68,20 @@ private:
 
 
 	std::string GetFilePath();	//in UNIX system
-	void Release(std::shared_ptr<SINode> _np) const;
+	void Release(SINode* _np) const;
 
 	//tree's operations should be atom(if read nodes)
 	//sum the request and send to Storage at last
 	//ensure that all nodes operated are in memory
 	long long request_;
-	void Prepare(std::shared_ptr<SINode> _np);
+	void Prepare(SINode* _np);
 
 	std::mutex access_lock_;
 
 	unsigned GetHeight() const;
 	void SetHeight(unsigned _h);
-	std::shared_ptr<SINode> GetRoot() const;
-	std::shared_ptr<SINode> Find(const char* _key, unsigned _len, int* store, bool if_modify);
+	SINode* GetRoot() const;
+	SINode* Find(const char* _key, unsigned _len, int* store, bool if_modify);
 
 public:
 	SITree();				//always need to initial transfer
@@ -100,7 +99,7 @@ public:
 	~SITree();
 	void Print(std::string s);			//DEBUG(print the tree)
 	void SetSingleThread(bool _single);
-	void PrintTree(std::shared_ptr<SINode> _np);
+	void PrintTree(SINode* _np);
 };
 
 

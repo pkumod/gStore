@@ -13,16 +13,22 @@ using namespace std;
 SIHeap::SIHeap()
 {
   this->length = this->size = 0;
+  this->heap = NULL;
 }
 
 SIHeap::SIHeap(unsigned _size)
 {
   this->length = 0;
   this->size = _size;
-  this->heap.reserve(_size);
+  this->heap = (SINode**)malloc(this->size * sizeof(SINode*));	//not use 4 or 8
+  if (this->heap == NULL)
+  {
+    this->print("error in SIHeap: Allocation fail!");
+    exit(1);
+  }
 }
 
-std::shared_ptr<SINode>
+SINode*
 SIHeap::getTop() const
 {
   if (this->length > 0)
@@ -55,12 +61,17 @@ SIHeap::isEmpty() const
  * @param _np the inserted node
  */
 bool
-SIHeap::Insert(std::shared_ptr<SINode> _np)
+SIHeap::Insert(SINode* _np)
 {
   if (this->length == this->size)	//when full, reallocate
   {
     SLOG_CORE("check: double the heap");
-    this->heap.reserve(2 * this->size);
+    this->heap = (SINode**)realloc(this->heap, 2 * this->size * sizeof(SINode*));
+    if (this->heap == NULL)
+    {
+      print("error in isert: Reallocation fail!");
+      return false;
+    }
     this->size = 2 * this->size;
   }
   // the inserted position
@@ -103,7 +114,7 @@ SIHeap::RemoveTop()
   this->heap[0]->heapId = -1;
   if (this->length == 0)
     return true;
-  std::shared_ptr<SINode> xp = this->heap[this->length];
+  SINode* xp = this->heap[this->length];
 
   // the most right leaf node's NEW position
   unsigned int i = 0;
@@ -136,7 +147,7 @@ SIHeap::RemoveTop()
  * @param move_up move _np up
  */
 bool
-SIHeap::modify(std::shared_ptr<SINode> _np, bool _flag)
+SIHeap::modify(SINode* _np, bool _flag)
 {
   //Search and adjust
   if (_np->heapId < 0)
@@ -186,6 +197,9 @@ SIHeap::modify(std::shared_ptr<SINode> _np, bool _flag)
 
 SIHeap::~SIHeap()
 {
+  //delete[] this->heap;
+  free(this->heap);
+  this->heap = NULL;
   this->length = this->size = 0;
 }
 

@@ -18,30 +18,30 @@
 class SILeafNode : public SINode
 {
  protected:
-  std::shared_ptr<SINode> prev;	//LeafNode
-  std::shared_ptr<SINode> next;
-  std::shared_ptr<unsigned[]> values;
+  SINode* prev;	//LeafNode
+  SINode* next;
+  unsigned* values;
   void AllocValues();
  public:
   SILeafNode();
   SILeafNode(bool isVirtual);
   void Virtual();
   void Normal();
-  std::shared_ptr<SINode> GetPrev() const;
-  std::shared_ptr<SINode> GetNext() const;
+  SINode* GetPrev() const;
+  SINode* GetNext() const;
   unsigned GetValue(int _index) const;
   bool SetValue(unsigned _val, int _index);
   bool AddValue(unsigned _val, int _index);
 
   bool SubValue(int _index);
 
-  void setPrev(std::shared_ptr<SINode> _prev);
-  void SetNext(std::shared_ptr<SINode> _next);
+  void setPrev(SINode* _prev);
+  void SetNext(SINode* _next);
 
   unsigned GetSize() const;
 
-  std::shared_ptr<SINode> Split(std::shared_ptr<SINode> _parent, int _index);
-  std::shared_ptr<SINode> Coalesce(std::shared_ptr<SINode> _parent, int _index);
+  SINode* Split(SINode* _parent, int _index);
+  SINode* Coalesce(SINode* _parent, int _index);
 
   void Release();
   ~SILeafNode();
