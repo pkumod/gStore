@@ -1014,11 +1014,9 @@ void restart_task(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusIPBlocked, msg);
 		return;
 	}
-	// check ip address
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
 	SLOG_INFO("receive [restart] request from " << ip_addr);
-	// bool flag = apiUtil->db_checkpoint_all();
 	rpc_task->add_callback([](GRPCTask *grpcTask){
 		// free apiUtil
 		_is_server_running = false;
