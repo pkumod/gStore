@@ -68,8 +68,7 @@ namespace grpc
     OP(OP_LICENSE_REMOVE,              removeLicense) \
     OP(OP_OPERATIONTASKCANCEL,   operationTaskCancel) \
     OP(OP_OPERATIONTASKLIST,       operationTaskList) \
-    OP(OP_SCHEMA,                             schema) \
-    OP(OP_RESTART,                           restart)
+    OP(OP_SCHEMA,                             schema)
 }
 
 enum operation_type

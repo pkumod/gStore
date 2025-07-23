@@ -49,7 +49,7 @@ void register_service(GRPCServer &grpcServer);
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data);
 bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data, bool check_license=true);
 
-void restart_task(const GRPCReq *request, GRPCResp *response);
+void restart(const GRPCReq *request, GRPCResp *response);
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
@@ -879,7 +879,12 @@ void register_service(GRPCServer &svr)
 			shutdown(request, response);
 		},
 		methods);
-
+	svr.ROUTE(
+		"/restart", [](const GRPCReq *request, GRPCResp *response)
+		{ 
+			restart(request, response);
+		},
+		methods);
 	svr.ROUTE(
 		"/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
 		{ 
@@ -1004,7 +1009,7 @@ void register_service(GRPCServer &svr)
 		ReqMethod::POST);
 }
 
-void restart_task(const GRPCReq *request, GRPCResp *response)
+void restart(const GRPCReq *request, GRPCResp *response)
 {
 	std::string msg;
 	if (!_is_server_running || !apiUtil)
@@ -1014,8 +1019,31 @@ void restart_task(const GRPCReq *request, GRPCResp *response)
 		response->Error(StatusIPBlocked, msg);
 		return;
 	}
+
+	nlohmann::json json_data = nlohmann::json::object();
+	parseRequest(request, json_data);
+	std::string username = JsonUtil::jsonParam(json_data, "username");
+	std::string password = JsonUtil::jsonParam(json_data, "password");
 	auto *rpc_task = task_of(response);
 	std::string ip_addr = rpc_task->peer_addr();
+	if (apiUtil->check_param_value("username", username, msg) == false)
+	{
+		response->Error(StatusParamIsIllegal, msg);
+		return;
+	}
+	if (apiUtil->check_param_value("password", password, msg) == false)
+	{
+		response->Error(StatusParamIsIllegal, msg);
+		return;
+	}
+	std::string checkidentityresult;
+	if (apiUtil->check_indentity(username, password, "", checkidentityresult) == false)
+	{
+		apiUtil->update_access_ip_error_num(ip_addr);
+		response->Error(StatusAuthenticationFailed, msg);
+		return;
+	}
+
 	SLOG_INFO("receive [restart] request from " << ip_addr);
 	rpc_task->add_callback([](GRPCTask *grpcTask){
 		// free apiUtil
@@ -1535,9 +1563,6 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		break;
 	case OP_SCHEMA:
 		schema_task(request, response, json_data);
-		break;
-	case OP_RESTART:
-		restart_task(request, response);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
