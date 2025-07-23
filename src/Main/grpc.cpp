@@ -49,6 +49,7 @@ void register_service(GRPCServer &grpcServer);
 void parseRequest(const GRPCReq *request, nlohmann::json &json_data);
 bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op_type, nlohmann::json &json_data, bool check_license=true);
 
+void restart_task(const GRPCReq *request, GRPCResp *response);
 void shutdown(const GRPCReq *request, GRPCResp *response);
 void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
@@ -1003,6 +1004,33 @@ void register_service(GRPCServer &svr)
 		ReqMethod::POST);
 }
 
+void restart_task(const GRPCReq *request, GRPCResp *response)
+{
+	std::string msg;
+	if (!_is_server_running || !apiUtil)
+	{
+		msg = "server is stopping, please waitting !";
+		SLOG_DEBUG(msg);
+		response->Error(StatusIPBlocked, msg);
+		return;
+	}
+	// check ip address
+	auto *rpc_task = task_of(response);
+	std::string ip_addr = rpc_task->peer_addr();
+	SLOG_INFO("receive [restart] request from " << ip_addr);
+	// bool flag = apiUtil->db_checkpoint_all();
+	rpc_task->add_callback([](GRPCTask *grpcTask){
+		// free apiUtil
+		_is_server_running = false;
+		releaseGlobalPtr(false);
+		std::cout.flush();
+		_exit(EXIT_SUCCESS);
+	});
+	msg = "Server stopped successfully.";
+	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
+	response->Success(msg);
+}
+
 void shutdown(const GRPCReq *request, GRPCResp *response)
 {
 	if (!_is_server_running)
@@ -1509,6 +1537,9 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		break;
 	case OP_SCHEMA:
 		schema_task(request, response, json_data);
+		break;
+	case OP_RESTART:
+		restart_task(request, response);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
