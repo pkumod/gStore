@@ -71,6 +71,8 @@ bool Database::encodeRDF_new(const std::vector<std::string> &_rdf_files, const s
 		thread build_schema_thread(&Database::buildSchema, this, _rdf_files, id_tuples);
 		build_schema_thread.detach(); 
 	}
+	else
+		id_tuples.clear();
 	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	
@@ -87,6 +89,7 @@ bool Database::encodeRDF_new(const std::vector<std::string> &_rdf_files, const s
 	SLOG_CORE("Saving StringIndex, used " + to_string(t1 - t2) + "ms.");
 	bar.set_option(indicators::option::PostfixText{"building id2string and string2id 2/5"});
 	bar.set_progress(61);
+	buildCloseToSaveMemory();
 	
 	t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish saving id2string and string2id, used " + to_string(t2 - t1) + "ms.");
@@ -185,7 +188,6 @@ bool Database::encodeRDF_new(const std::vector<std::string> &_rdf_files, const s
 	{
 		SLOG_ERROR("the statistics info file of db saved failure!");
 	}
-	buildCloseToSaveMemory();
 	bar.set_option(indicators::option::PostfixText{"Build RDF database done 5/5"});
 	bar.set_progress(100);
 	return true;
