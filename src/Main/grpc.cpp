@@ -632,6 +632,7 @@ bool startServer(bool background)
 					waitpid(fpid, &status, 0);
 					if (WIFEXITED(status))
 					{
+						SLOG_INFO("Server stopped normally.");
 						return true;
 					}
 					else
@@ -1052,8 +1053,8 @@ void restart(const GRPCReq *request, GRPCResp *response)
 		std::cout.flush();
 		_exit(EXIT_SUCCESS);
 	});
-	msg = "Server stopped successfully.";
-	apiUtil->write_access_log("shutdown", ip_addr, StatusOK, msg);
+	msg = "Server restarted successfully.";
+	apiUtil->write_access_log("restart", ip_addr, StatusOK, msg);
 	response->Success(msg);
 }
 
