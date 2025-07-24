@@ -14,15 +14,26 @@ namespace server
         }
     }
 
-    MessageBuildRequest::MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path) : MessageRequest("build", username, password)
+    MessageBuildRequest::MessageBuildRequest(std::string db_name, std::vector<std::string> files, std::string build_schema) : MessageRequest(std::string("build"))
     {
         this->db_name = db_name;
         this->async = false;
         this->remote = false;
+        this->build_schema = build_schema;
+        this->db_path = files;
+    }
+
+    MessageBuildRequest::MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path, std::string build_schema) : MessageRequest("build", username, password)
+    {
+        this->db_name = db_name;
+        this->async = false;
+        this->remote = false;
+        this->build_schema = build_schema;
         if (!db_path.empty()) {
             this->db_path.push_back(db_path);
         }
     }
+
 
     MessageBuildRequest::MessageBuildRequest(const nlohmann::json& json_data) : MessageRequest(json_data)
     {
@@ -41,6 +52,7 @@ namespace server
         this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
         this->remote = JsonUtil::jsonBoolParam(json_data, "remote", false);
         this->callback = JsonUtil::jsonParam(json_data, "callback");
+        this->build_schema = JsonUtil::jsonParam(json_data, "build_schema");
     }
 
     void MessageBuildRequest::to_json(std::string& json_str)
@@ -51,7 +63,8 @@ namespace server
             {"password", this->password},
             {"db_name", this->db_name},
             {"remote", this->remote},
-            {"db_path", this->db_path}};
+            {"db_path", this->db_path},
+            {"build_schema", this->build_schema}};
         json_str = json.dump();
     }
 
@@ -64,7 +77,8 @@ namespace server
             {"db_name", this->db_name},
             {"db_path", this->db_path},
             {"remote", this->remote},
-            {"inner", "true"}};
+            {"inner", "true"},
+            {"build_schema", this->build_schema}};
         json_str = json.dump();
     }
 

@@ -127,6 +127,13 @@ namespace server
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
             bool schema_flag = GlobalTypedef::build_schema();
+            if (!request.build_schema.empty())
+            {
+                if (request.build_schema == "off")
+                    schema_flag = false;
+                else if(request.build_schema == "on")
+                    schema_flag = true;
+            }
             shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);

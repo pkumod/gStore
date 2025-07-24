@@ -1604,10 +1604,12 @@ int showdbs_handler(const vector<string> &args)
 
 int create_handler(const vector<string> &args)
 {
-	CHECK_ARGC(2, 1, 2)
+	CHECK_ARGC(3, 1, 2, 3)
 
 	string db_name = "";
 	string db_path = "";
+	string build_schema = ""; 
+	std::vector<string> files;
 	if (args.size() < 1 || args[0].size() < 3)
 	{
 		cout << "build param error, need param num at least 1 or database name need at least 3 character" << endl;
@@ -1621,13 +1623,19 @@ int create_handler(const vector<string> &args)
 	{
 		db_name = args[0];
 		db_path = args[1];
+		if (args.size() == 3)
+			build_schema = args[2];
+		if (FileUtil::is_dir(db_path))
+			FileUtil::dir_filepaths(db_path, files);
+		else
+			files.push_back(db_path);
 	}
 	if (db_name == GlobalTypedef::system_db)
 	{
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
-	server::MessageBuildRequest build_request(db_name, db_path);
+	server::MessageBuildRequest build_request(db_name, files, build_schema);
 	build_request.username = root_username;
 	build_request.password = root_password;	
 	if (StringUtil::start_with(db_path, "http://") || StringUtil::start_with(db_path, "https://"))
