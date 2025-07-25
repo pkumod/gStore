@@ -126,15 +126,7 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
-            bool schema_flag = GlobalTypedef::build_schema();
-            if (!request.build_schema.empty())
-            {
-                if (request.build_schema == "off")
-                    schema_flag = false;
-                else if(request.build_schema == "on")
-                    schema_flag = true;
-            }
-            shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, request.schema);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
@@ -189,7 +181,7 @@ namespace server
             apiUtil->get_databaseinfo(db_name, db_info);
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-            db_info->initDatabase(schema_flag);
+            db_info->initDatabase(request.schema);
             int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
             db_info->success(cost_time);
             // init user privilege
@@ -250,8 +242,7 @@ namespace server
             SLOG_DEBUG("Import dataset to build database...");
             SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
-            bool schema_flag = GlobalTypedef::build_schema();
-            shared_ptr<Database> current_database = make_shared<Database>(db_name, schema_flag);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name, request.schema);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             current_db_info->setDatabase(current_database);
@@ -307,7 +298,7 @@ namespace server
             apiUtil->get_databaseinfo(db_name, db_info);
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-            db_info->initDatabase(schema_flag);
+            db_info->initDatabase(request.schema);
             // init user privilege
             apiUtil->init_privilege(username, db_name);
             int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
