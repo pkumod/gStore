@@ -213,6 +213,14 @@ public:
             {"status", getStatusStr()},
             {"costTime", getCostTime()}
         };
+        if (db_ptr) 
+        {
+            if (db_ptr->csr)
+                json["csr"] = true;
+            else
+                json["csr"] = false;
+            json["txn"] = db_ptr->isLoadTxn();
+        }
         return json;
     }
 };
