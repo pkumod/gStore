@@ -34,11 +34,13 @@ struct GRPCReqData
     nlohmann::json json = NULL;
 };
 
-
 struct SaveFileContext 
 {
-    std::string content;
+    std::string file_path;
+    std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content;
     std::string notify_msg;
+    size_t offset;  // 当前写入位置
+    GRPCResp *resp;
 };
 
 void pread_callback(WFFileIOTask *pread_task)
@@ -72,27 +74,52 @@ void pread_callback(WFFileIOTask *pread_task)
 
 void pwrite_callback(WFFileIOTask *pwrite_task)
 {
-    long ret = pwrite_task->get_retval();
+    ssize_t ret = pwrite_task->get_retval();
     GRPCServerTask *server_task = task_of(pwrite_task);
     GRPCResp *resp = server_task->get_resp();
     auto *save_context = static_cast<SaveFileContext *>(pwrite_task->user_data);
     resp->headers["Access-Control-Allow-Origin"] = "*";
+
     if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
     {
         resp->Error(StatusFileWriteError);
-    } 
+        delete save_context;
+    }
     else
     {
-        if(!save_context->notify_msg.empty() && nlohmann::json::accept(save_context->notify_msg))
+        save_context->offset += ret;
+        size_t total_size = save_context->content->size();
+        
+        // 检查是否还有数据需要写入
+        if (save_context->offset < total_size)
         {
-            resp->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+            size_t remaining = total_size - save_context->offset;
+            size_t block_size = std::min(remaining, static_cast<size_t>(1 << 30));
+            
+            WFFileIOTask *next_task = WFTaskFactory::create_pwrite_task(
+                save_context->file_path,
+                save_context->content->data() + save_context->offset,
+                block_size,
+                save_context->offset,
+                pwrite_callback);
+            
+            next_task->user_data = save_context;
+            **server_task << next_task;
         }
         else
         {
-            save_context->notify_msg = "Upload file success";
-            resp->headers["Content-Type"] = ContentType::to_str(TEXT_PLAIN);
+            if (!save_context->notify_msg.empty() && nlohmann::json::accept(save_context->notify_msg))
+            {
+                resp->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
+            }
+            else
+            {
+                save_context->notify_msg = "Upload file success";
+                resp->headers["Content-Type"] = ContentType::to_str(TEXT_PLAIN);
+            }
+            resp->String(save_context->notify_msg);
+            delete save_context;
         }
-        resp->String(save_context->notify_msg);
     }
 }
 
@@ -751,21 +778,29 @@ int GRPCUtil::send_file(const std::string &path, size_t file_start, size_t file_
     return StatusOK;
 }
 
-void GRPCUtil::saveFile(const std::string &dst_path, std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, GRPCResp *resp, const std::string &notify_msg)
+void GRPCUtil::saveFile(const std::string &dst_path, 
+                        std::shared_ptr<nlohmann::byte_container_with_subtype<std::vector<uint8_t>>> content, 
+                        GRPCResp *resp, 
+                        const std::string &notify_msg)
 {
     GRPCServerTask *server_task = task_of(resp);
 
     auto *save_context = new SaveFileContext;
-    save_context->notify_msg = notify_msg;  // copy
+    save_context->file_path = dst_path;
+    save_context->content = content;
+    save_context->notify_msg = notify_msg;
+    save_context->offset = 0;
+    save_context->resp = resp;
 
-    WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(dst_path,
-                                                                  static_cast<const void *>(content->data()),
-                                                                  content->size(),
-                                                                  0,
-                                                                  pwrite_callback);
-    **server_task << pwrite_task;
-    server_task->add_callback([content, save_context](GRPCTask *) {
-        delete save_context;
-    });
+    // 分块写入，每次写入1GB
+    size_t block_size = std::min(content->size(), static_cast<size_t>(1 << 30));
+    WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
+        dst_path,
+        content->data(),
+        block_size,
+        0,
+        pwrite_callback);
+    
     pwrite_task->user_data = save_context;
+    **server_task << pwrite_task;
 }
