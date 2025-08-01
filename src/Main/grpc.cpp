@@ -3408,7 +3408,7 @@ void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 	rjson["StatusCode"]  = 0;
     rjson["StatusMsg"]   = "success";
 	rjson["ResponseBody"] = nlohmann::json::object();
-	current_database->getSchemaInfo(rjson["ResponseBody"], false);
+	current_database->getSchemaInfo(rjson["ResponseBody"], true);
 	apiUtil->unlock_databaseinfo(db_info);
 	std::string json_str = rjson.dump();
 	response->Json(json_str);

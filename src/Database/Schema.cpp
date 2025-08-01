@@ -293,8 +293,8 @@ void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 					}
 					if (m.contains("label"))
 						item["label"] = NodeUtil::clear_angle_brackets_and_prefix(m.at("label"));
-					if (all)
-						item["color"] = "#FA8C16";
+					if (all) 
+						item["type"] = 0;
 				}
 				else if ( m["type"] == 1 && all)
 				{
@@ -305,7 +305,7 @@ void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 						if (m.contains("label"))
 							item["label"] = NodeUtil::clear_angle_brackets_and_prefix(m.at("label"));
 					}
-					item["color"] = "#5CDBD3";
+					item["type"] = 1;
 				}
 				else
 					continue;
