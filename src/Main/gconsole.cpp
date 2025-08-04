@@ -1571,6 +1571,7 @@ int show_handler(const vector<string> &args)
 	rows.push_back({"creator", monitor_response.creator});
 	rows.push_back({"builtTime", monitor_response.builtTime});  
 	rows.push_back({"triple_num", monitor_response.tripleNum});
+	rows.push_back({"entityNum", to_string(monitor_response.entityNum)});
 	rows.push_back({"literalNum", to_string(monitor_response.literalNum)});
 	rows.push_back({"subjectNum", to_string(monitor_response.subjectNum)});
 	rows.push_back({"predicateNum", to_string(monitor_response.predicateNum)});
