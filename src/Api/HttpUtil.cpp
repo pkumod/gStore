@@ -481,6 +481,12 @@ CURLcode HttpUtil::DownloadFile(const std::string& strUrl, std::string& filePath
 	{
 		url_encode(encode_url);
 	}
+
+	if (std::filesystem::is_directory(filePath) && !std::filesystem::exists(filePath))
+	{
+		std::filesystem::create_directories(filePath);
+	}
+
 	SLOG_CORE("url: " + encode_url + ", savePath: " + filePath);
 	CURLcode res;
 	CURL* curl = curl_easy_init();
