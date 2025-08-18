@@ -69,7 +69,8 @@ namespace server
                 // delete temp files: uncompress_path and download_path
                 for (auto& path : temp_paths)
                 {
-                    FileUtil::removePath(path);
+                    if (path != GlobalTypedef::upload_path())
+                        FileUtil::removePath(path);
                 }
                 return false;
             }
