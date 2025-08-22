@@ -201,9 +201,9 @@ namespace server
                 SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
                 SLOG_ERROR("See log file for details " + error_log);
             }
+            apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            apiUtil->unlock_databaseinfo(db_info);
             
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;
@@ -318,9 +318,9 @@ namespace server
                 SLOG_ERROR("RDF parse error num " + to_string(parse_error_num));
                 SLOG_ERROR("See log file for details " + error_log);
             }
+            apiUtil->unlock_databaseinfo(db_info);
             // remove temp files
             remove_temp_files(temp_paths);
-            apiUtil->unlock_databaseinfo(db_info);
 
             // Util::add_backuplog(db_name);
             response.StatusCode = StatusOK;
