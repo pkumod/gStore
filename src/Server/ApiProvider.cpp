@@ -37,12 +37,14 @@ namespace server
         std::set<std::string> parent_paths;
         for (auto& temp_path : temp_paths)
         {
-            if (FileUtil::pathExists(temp_path) && temp_path != GlobalTypedef::upload_path())
-                FileUtil::removePath(temp_path);
+            if (FileUtil::pathExists(temp_path) && !FileUtil::isSameDir(temp_path, GlobalTypedef::upload_path()))
+            {
+                 FileUtil::removePath(temp_path);
+            }
             if (remove_parents_if_empty)
             {
                 string parent_path = FileUtil::parentPath(temp_path);
-                if (FileUtil::isEmptyDir(parent_path))
+                if (FileUtil::isEmptyDir(parent_path) && !FileUtil::isSameDir(temp_path, GlobalTypedef::upload_path()))
                     parent_paths.insert(parent_path);
             }
         }
