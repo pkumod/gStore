@@ -32,5 +32,7 @@ namespace gs
         static std::uint64_t dirSize(const std::string& path);
         static std::uint64_t fileLines(const std::string& file_path);
         static bool isEmptyDir(const std::string& dir_path);
+        static std::string getExactPath(const char *str);
+        static bool isSameDir(const std::string& s, const std::string& t);
     };
 }

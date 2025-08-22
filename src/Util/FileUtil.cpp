@@ -387,4 +387,57 @@ namespace gs
     {
         return std::filesystem::is_empty(dir_path);
     }
+
+    // Get the exact file path from given string: ~, ., symbol links
+    std::string FileUtil::getExactPath(const char *str)
+    {
+        // string cmd = "realpath ";
+        // cmd += string(str);
+
+        // return getSystemOutput(cmd);
+        struct stat st;    
+        if (lstat(str, &st) == -1)
+        {
+            return "";
+        }
+        char real_path[PATH_MAX];
+        if (S_ISLNK(st.st_mode))
+        {
+            ssize_t num_bytes = readlink(str, real_path, PATH_MAX - 1);
+            if (num_bytes == -1)
+            {
+                return "";
+            }
+            real_path[num_bytes] = '\0';
+        }
+        if (realpath(str, real_path) == nullptr)
+        {
+            return "";
+        }
+        return real_path;
+    }
+
+    bool FileUtil::isSameDir(const std::string& s, const std::string& t)
+    {
+        if (!dirExists(s) || !dirExists(t))
+            return false;
+    
+        std::string s_path = s;
+        std::string t_path = t;
+        if (s_path == t_path)
+            return true;
+
+        if (s_path.back() != '/')
+            s_path += "/";
+        if (t_path.back() != '/')
+            t_path += "/";
+        if (s_path == t_path)
+            return true;
+
+        s_path = getExactPath(s_path.c_str());
+        t_path = getExactPath(t_path.c_str());
+        if (s_path == t_path)
+            return true;
+        return false;
+    }
 }
