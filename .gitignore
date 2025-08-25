@@ -47,7 +47,8 @@ conf/*.pid
 *.n3
 
 #databases
-*.db
+*/*.db
+*/*.bak
 
 #pictures
 *.jpg
@@ -108,7 +109,6 @@ tags
 # queries
 *.sql
 *.sh
-scripts/!docker-entrypoint.sh
 
 # modules
 node_modules
