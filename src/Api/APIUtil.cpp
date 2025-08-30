@@ -2301,6 +2301,7 @@ void APIUtil::init_license()
     }
     else
     {
+        license_info.type = "0";
         license_info.isvalid = false;
         license_info.desc = "Please import the license first";
         SLOG_DEBUG("license not found");
