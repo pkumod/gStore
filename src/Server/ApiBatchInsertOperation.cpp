@@ -151,7 +151,7 @@ namespace server
                 if (!db_ptr->save())
                 {
                     statusMsg = "disk or memory is not enough";
-                    throw new std::runtime_error(statusMsg);
+                    throw std::runtime_error(statusMsg);
                 }
                 int64_t t2 = gs::TimeUtil::timestamp();
                 SLOG_DEBUG("auto checkpoint used: " << t2 - t1);

@@ -118,7 +118,7 @@ namespace server
             if (apiUtil->get_txn_manager(db_name, txn_m) == false)
             {
                 msg = "Get database transaction manager error.";
-                throw new std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
             SLOG_DEBUG("tquery sparql: " + sparql);
             std::string res;
@@ -184,11 +184,11 @@ namespace server
             if (apiUtil->get_txn_manager(db_name, txn_m) == false)
             {
                 msg = "Get database transaction manager error.";
-                throw new std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
             if (apiUtil->commit_process(txn_m, tid, msg) == false)
             {
-                throw new std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
             apiUtil->unlock_databaseinfo(db_info);
             db_info.reset();
@@ -225,11 +225,11 @@ namespace server
             if (apiUtil->get_txn_manager(db_name, txn_m) == false)
             {
                 msg = "Get database transaction manager error.";
-                throw new std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
             if (apiUtil->rollback_process(txn_m, tid, msg) == false)
             {
-                throw new std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
             apiUtil->unlock_databaseinfo(db_info);
             response.StatusMsg = "Transaction rollback success.";
