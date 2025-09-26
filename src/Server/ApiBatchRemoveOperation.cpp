@@ -177,7 +177,7 @@ namespace server
                 clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Fail));
                 response.StatusCode = StatusOperationFailed;
                 response.StatusMsg = "Less than half of the cluster nodes are confirmed.";
-                throw new runtime_error(response.StatusMsg);
+                throw std::runtime_error(response.StatusMsg);
             }
             cluster_db_path = clusterManagerPtr->getDbDirPath(db_name);
             logpath = cluster_db_path + to_string(log_index) + ".log";

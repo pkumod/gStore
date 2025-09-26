@@ -178,6 +178,43 @@ namespace server
         json_str = json.dump();
     }
 
+    // load csr
+    MessageLoadCSRRequest::MessageLoadCSRRequest(const nlohmann::json& json_data): MessageRequest(json_data)
+    {
+        this->db_name = JsonUtil::jsonParam(json_data, "db_name");
+        this->async = JsonUtil::jsonBoolParam(json_data, "async", false);
+    }
+
+    void MessageLoadCSRRequest::to_json(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        json["db_name"] = this->db_name;
+        json_str = json.dump();
+    }
+
+    void MessageLoadCSRRequest::to_inner_json(std::string& json_str)
+    {
+        nlohmann::json json = nlohmann::json{
+            {"operation", this->op},
+            {"username", "root"},
+            {"password", ""},
+            {"db_name", this->db_name},
+            {"inner", "true"}};
+        json_str = json.dump();
+    }
+
+    MessageLoadCSRResponse::MessageLoadCSRResponse() {}
+    
+    void MessageLoadCSRResponse::toJsonString(std::string& json_str)
+    {
+        nlohmann::json json;
+        toJson(json);
+        if (!this->opt_id.empty())
+            json["opt_id"] = this->opt_id;
+        json_str = json.dump();
+    }
+
     // login
     void MessageLoginRequest::to_json(std::string& json_str)
     {

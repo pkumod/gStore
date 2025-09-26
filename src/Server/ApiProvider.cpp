@@ -102,7 +102,7 @@ namespace server
                 db_info->setStatus(DatabaseStatus::LOADING);
                 // progress notification
                 shared_ptr<Database> db_ptr =  db_info->getDatabase();
-                SLOG_DEBUG("begin loading with csr: " << request.Csr());
+                SLOG_DEBUG("begin loading with csr: " << request.Csr() << " txn: " << request.txn);
                 if (db_ptr && db_ptr->load(request.Csr(), request.txn))
                 {
                     SLOG_DEBUG("end loading.");
@@ -131,6 +131,48 @@ namespace server
         {
             response.StatusCode = StatusOperationFailed;
             response.StatusMsg = "load fail: " + string(e.what());
+        }
+    }
+
+    void ApiHandler::loadCSR(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadCSRRequest& request, server::MessageLoadCSRResponse& response)
+    {
+        try
+        {
+            std::string msg;
+            if (apiUtil->check_param_value("db_name", request.db_name, msg) == false)
+            {
+                response.StatusCode = StatusParamIsIllegal;
+                response.StatusMsg = msg;
+                return;
+            }
+            shared_ptr<DatabaseInfo> db_info;
+            if (!apiUtil->get_databaseinfo(request.db_name, db_info))
+            {
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = "database[" + request.db_name + "] does not exist.";
+                return;
+            }
+            if (db_info->getStatus() != DatabaseStatus::LOADED)
+            {
+                response.StatusCode = StatusOperationFailed;
+                response.StatusMsg = "database[" + request.db_name + "] is currently being " + db_info->getStatusDesc();
+            }
+            else if (db_info->getDatabase()->csr) 
+            {
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "CSR already loaded.";
+            }
+            else
+            {
+                db_info->getDatabase()->loadCSR();
+                response.StatusCode = StatusOK;
+                response.StatusMsg = "CSR loaded successfully.";
+            }
+        }
+        catch (const std::exception &e)
+        {
+            response.StatusCode = StatusOperationFailed;
+            response.StatusMsg = "load csr fail: " + string(e.what());
         }
     }
 

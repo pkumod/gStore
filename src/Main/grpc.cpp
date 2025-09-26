@@ -56,6 +56,7 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation);
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void download_file(const GRPCReq *request, GRPCResp *response);
+void download_file_post(const GRPCReq *request, GRPCResp *response);
 void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout);
 // for server
@@ -69,6 +70,7 @@ void refresh_conf_task(const GRPCReq *request, GRPCResp *response, nlohmann::jso
 void init_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void show_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
+void load_csr_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void unload_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data);
@@ -983,6 +985,13 @@ void register_service(GRPCServer &svr)
 		ReqMethod::OPTIONS);
 
 	svr.ROUTE(
+		"/file/download", [](const GRPCReq *request, GRPCResp *response)
+		{
+			download_file_post(request, response);
+		},
+		ReqMethod::POST);
+
+	svr.ROUTE(
 		"/lic/import", [](const GRPCReq *request, GRPCResp *response)
 		{
 			license_import(request, response);
@@ -1192,8 +1201,40 @@ void download_file(const GRPCReq *request, GRPCResp *response)
 	if (!gs::StringUtil::start_with(full_path, GlobalTypedef::export_path)) {
 		full_path = GlobalTypedef::export_path + full_path;
 	}
-	SLOG_DEBUG("full path: " << full_path);
 	full_path = Util::getExactPath(full_path.c_str());
+	SLOG_DEBUG("full path: " << full_path);
+	if (FileUtil::fileExists(full_path)) {
+		response->File(full_path);
+	} else {
+		response->Error(StatusFileNotFound);
+	}
+}
+
+void download_file_post(const GRPCReq *request, GRPCResp *response)
+{
+	operation_type op_type;
+	nlohmann::json json_data = nlohmann::json{
+		{"operation", "downloadfile"}
+	};
+	if (checkRequest(request, response, op_type, json_data) == false)
+	{
+		return;
+	}
+	// filename : filecontent
+	std::string filepath = JsonUtil::jsonParam(json_data, "filepath");
+	string msg;
+	if(filepath.empty())
+	{
+		msg = "Download filepath can not be empty!";
+		response->Error(StatusParamIsIllegal, msg);
+		return;
+	}
+	string full_path = filepath;
+	if (!gs::StringUtil::start_with(full_path, GlobalTypedef::export_path)) {
+		full_path = GlobalTypedef::export_path + full_path;
+	}
+	full_path = Util::getExactPath(full_path.c_str());
+	SLOG_DEBUG("full path: " << full_path);
 	if (FileUtil::fileExists(full_path)) {
 		response->File(full_path);
 	} else {
@@ -1564,6 +1605,9 @@ void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		break;
 	case OP_SCHEMA:
 		schema_task(request, response, json_data);
+		break;
+	case OP_LOADCSR:
+		load_csr_task(request, response, json_data);
 		break;
 	default:
 		SLOG_ERROR("Unkown operation, request body:\n" + request->body());
@@ -1975,6 +2019,51 @@ void load_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_
 		response->Json(json_str);
 	}
 }
+
+void load_csr_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
+{
+	server::MessageLoadCSRRequest request_data(json_data);
+	server::MessageLoadCSRResponse response_data;
+	if (request_data.async)
+	{
+		grpc::GRPCServerTask* sub_task = task_of(response);
+		std::string opt_id;
+        gs::IdUtil::nextUID(opt_id);
+		response_data.opt_id = opt_id;
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
+		{
+			server::MessageLoadCSRResponse _response_data;
+			_response_data.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
+			server::ApiHandler::loadCSR(apiUtil, request_data, _response_data);
+			if (_response_data.StatusCode == server::StatusOK)
+			{
+			    apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, 1);
+			}
+			else
+			{
+				apiUtil->update_access_log(_response_data.StatusCode, _response_data.StatusMsg, opt_id, -1);
+			}
+		});
+	}
+	else
+	{
+		server::ApiHandler::loadCSR(apiUtil, request_data, response_data);
+	}
+	if (response_data.StatusCode != server::StatusOK)
+	{
+		response->Error(response_data.StatusCode, response_data.StatusMsg);
+	}
+	else
+	{
+		std::string json_str;
+		response_data.toJsonString(json_str);
+		response->Json(json_str);
+	}
+}
+
 /**
  * unload a database from memory
  * 
@@ -2086,7 +2175,10 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 		redirect_handler(request, response, series);
 		return;
 	}
-
+	if (!json_data.contains("schema")) 
+	{
+		json_data["schema"] = GlobalTypedef::build_schema();
+	}
 	server::MessageBuildRequest request_data(json_data);
 	server::MessageBuildResponse response_data; 
 	if (request_data.async)

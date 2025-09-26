@@ -99,6 +99,7 @@ public:
 
 	bool save();
 	bool load(bool loadCSR = false, bool loadTxnFlag = true);
+	bool loadCSR();
 	bool unload();
 	void clear();
 	void releaseIDBlock();
@@ -211,11 +212,13 @@ private:
 	mutex allocPredicateID_lock;
 	// for log file
 	mutex log_lock;
-	//for umap
+	// for umap
 	mutex umap_lock;
 	// for schema_lock;
 	mutex schema_lock;
 	bool schema_flag;
+	// for csr
+	mutex csr_lock;
 
 	std::shared_ptr<KVstore> kvstore;
 	std::shared_ptr<StringIndex> stringindex;

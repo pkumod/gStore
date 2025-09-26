@@ -125,7 +125,7 @@ namespace server
             }
             apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size() << "\tschema: " << request.schema);
             string result;
             shared_ptr<Database> current_database = make_shared<Database>(db_name, request.schema);
             shared_ptr<DatabaseInfo> current_db_info;

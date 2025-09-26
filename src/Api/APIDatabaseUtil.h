@@ -144,6 +144,7 @@ public:
             statusStr = "loaded";
             break;
         case UNLOADING:
+        case AREADY_BUILT:
             statusStr = "unloaded";
             break;
         case BACKUPING:
@@ -198,6 +199,7 @@ public:
             db_ptr.reset();
             db_ptr = make_shared<Database>(db_name);
         }
+        db_ptr->setLoadTxnFlag(false);
         status = DatabaseStatus::AREADY_BUILT;
         loaded = false;
         return true;

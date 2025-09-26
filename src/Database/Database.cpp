@@ -781,139 +781,126 @@ bool Database::load(bool loadCSR, bool loadTxnFlag)
 
 	if (loadCSR)
 	{
-		this->csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
-		unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
-		this->csr[0].init(pre_num);
-		this->csr[1].init(pre_num);
-		SLOG_CORE("pre_num: " << pre_num);
-		long begin_time = gs::TimeUtil::timestamp();
+		this->loadCSR();
+	}	
 
-		// Process out-edges (csr[0])
-		// i: predicate; j: subject; k: object
-		for (unsigned i = 0; i < pre_num; i++)
-		{
-			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CORE("pid: " << i << "    pre: " << pre);
-			unsigned *sublist = NULL;
-			unsigned sublist_len = 0;
-			// todo: check return value
-			(this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
-			// bool ret = (this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
-			unsigned offset = 0;
-			unsigned index = 0;
-			for (unsigned j = 0; j < sublist_len; j++)
-			{
-				string sub = (this->getKVstore())->getEntityByID(sublist[j]);
-				unsigned *objlist = NULL;
-				unsigned objlist_len = 0;
-				// todo: check return value
-				(this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len);
-				// bool ret = (this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len);
-				unsigned len = objlist_len; // the real object list length
-				for (unsigned k = 0; k < objlist_len; k++)
-				{
-					if (objlist[k] >= 2000000000)
-					{
-						--len;
-						continue;
-					}
-					string obj = (this->getKVstore())->getEntityByID(objlist[k]);
-					this->csr[0].adjacency_list[i].push_back(objlist[k]);
-				}
-				if (len > 0)
-				{
-					this->csr[0].id2vid[i].push_back(sublist[j]);
-					this->csr[0].vid2id[i].insert(pair<unsigned, unsigned>(sublist[j], index));
-					this->csr[0].offset_list[i].push_back(offset);
-					index++;
-					offset += len;
-				}
-				delete [] objlist;
-				objlist = nullptr;
-			}
-			// if(this->csr[0].offset_list[i].size() == 0)
-			// 	this->csr[0].valid[i] = false;
-			// else
-			// {
-			// 	if((i==3)||(i==4))
-			// 		this->csr[0].valid[i] = true;
-			// 	else
-			// 		this->csr[0].valid[i] = false;
-			// }
-			SLOG_CORE(this->csr[0].offset_list[i].size());
-			SLOG_CORE(this->csr[0].adjacency_list[i].size());
-			delete [] sublist;
-			sublist = nullptr;
-		}
+	return true;
+}
 
-		// Process out-edges (csr[1])
-		// i: predicate; j: object; k: subject
-		for (unsigned i = 0; i < pre_num; i++)
+bool Database::loadCSR()
+{
+	csr_lock.lock();
+	if (this->csr) {
+		this->csr.reset();
+		SLOG_CORE("CSR has been loaded, reset it.");
+	}
+	this->csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
+	unsigned pre_num = this->getStringIndex()->getNum(StringIndexFile::Predicate);
+	this->csr[0].init(pre_num);
+	this->csr[1].init(pre_num);
+	SLOG_CORE("pre_num: " << pre_num);
+	long begin_time = gs::TimeUtil::timestamp();
+
+	// Process out-edges (csr[0])
+	// i: predicate; j: subject; k: object
+	for (unsigned i = 0; i < pre_num; i++)
+	{
+		string pre = (this->getKVstore())->getPredicateByID(i);
+		SLOG_CORE("pid: " << i << "    pre: " << pre);
+		unsigned *sublist = NULL;
+		unsigned sublist_len = 0;
+		// todo: check return value
+		(this->getKVstore())->getsubIDlistBypreID(i, sublist, sublist_len, true);
+		unsigned offset = 0;
+		unsigned index = 0;
+		for (unsigned j = 0; j < sublist_len; j++)
 		{
-			string pre = (this->getKVstore())->getPredicateByID(i);
-			SLOG_CORE("pid: " << i << "    pre: " << pre);
+			//string sub = (this->getKVstore())->getEntityByID(sublist[j]);
 			unsigned *objlist = NULL;
 			unsigned objlist_len = 0;
 			// todo: check return value
-			(this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
-			// bool ret = (this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
-			unsigned offset = 0;
-			unsigned index = 0;
-			for (unsigned j = 0; j < objlist_len; j++)
+			(this->getKVstore())->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len);
+			unsigned len = objlist_len; // the real object list length
+			for (unsigned k = 0; k < objlist_len; k++)
 			{
-				if (objlist[j] >= 2000000000)
+				if (objlist[k] >= GlobalTypedef::LITERAL_FIRST_ID)
+				{
+					--len;
 					continue;
-				string obj = (this->getKVstore())->getEntityByID(objlist[j]);
-				unsigned *sublist = NULL;
-				unsigned sublist_len = 0;
-				// todo: check return value
-				(this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len);
-				// bool ret = (this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len);
-				unsigned len = sublist_len;
-				for (unsigned k = 0; k < sublist_len; k++)
-				{
-					string sub = (this->getKVstore())->getEntityByID(sublist[k]);
-					this->csr[1].adjacency_list[i].push_back(sublist[k]);
 				}
-				if (len > 0)
-				{
-					this->csr[1].id2vid[i].push_back(objlist[j]);
-					this->csr[1].vid2id[i].insert(pair<unsigned, unsigned>(objlist[j], index));
-					this->csr[1].offset_list[i].push_back(offset);
-					index++;
-					offset += len;
-				}
-				delete [] sublist;
-				sublist = nullptr;
+				// string obj = (this->getKVstore())->getEntityByID(objlist[k]);
+				this->csr[0].adjacency_list[i].push_back(objlist[k]);
 			}
-			// if(this->csr[1].offset_list[i].size() == 0)
-			// 	this->csr[1].valid[i] = false;
-			// else
-			// {
-			// 	if((i==5)||(i==13)||(i==14)||(i==15))
-			// 		this->csr[1].valid[i] = true;
-			// 	else
-			// 		this->csr[1].valid[i] = false;
-			// }
-			SLOG_CORE(this->csr[1].offset_list[i].size());
-			SLOG_CORE(this->csr[1].adjacency_list[i].size());
+			if (len > 0)
+			{
+				this->csr[0].id2vid[i].push_back(sublist[j]);
+				this->csr[0].vid2id[i].insert(pair<unsigned, unsigned>(sublist[j], index));
+				this->csr[0].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
 			delete [] objlist;
 			objlist = nullptr;
 		}
-		csr[1].n = this->entity_num;
-
-		unsigned ret = 0;
-		for (auto i = 0; i < csr[1].pre_num; i++)	// Same as summing that of csr[0]
-			ret += csr[1].adjacency_list[i].size();
-		csr[1].m = ret;
-
-		SLOG_CORE("total vertices " << csr[1].n);
-		SLOG_CORE("total edges " << csr[1].m);
-		long end_time = gs::TimeUtil::timestamp();
-		SLOG_CORE("after creating CSR, used " << (end_time - begin_time) << "ms");
-		SLOG_CORE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
+		SLOG_CORE(this->csr[0].offset_list[i].size());
+		SLOG_CORE(this->csr[0].adjacency_list[i].size());
+		delete [] sublist;
+		sublist = nullptr;
 	}
 
+	// Process out-edges (csr[1])
+	// i: predicate; j: object; k: subject
+	unsigned total_edges = 0;
+	for (unsigned i = 0; i < pre_num; i++)
+	{
+		string pre = (this->getKVstore())->getPredicateByID(i);
+		SLOG_CORE("pid: " << i << "    pre: " << pre);
+		unsigned *objlist = NULL;
+		unsigned objlist_len = 0;
+		// todo: check return value
+		(this->getKVstore())->getobjIDlistBypreID(i, objlist, objlist_len, true);
+		unsigned offset = 0;
+		unsigned index = 0;
+		for (unsigned j = 0; j < objlist_len; j++)
+		{
+			if (objlist[j] >= GlobalTypedef::LITERAL_FIRST_ID)
+				continue;
+			// string obj = (this->getKVstore())->getEntityByID(objlist[j]);
+			unsigned *sublist = NULL;
+			unsigned sublist_len = 0;
+			// todo: check return value
+			(this->getKVstore())->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len);
+			unsigned len = sublist_len;
+			for (unsigned k = 0; k < sublist_len; k++)
+			{
+				this->csr[1].adjacency_list[i].push_back(sublist[k]);
+			}
+			if (len > 0)
+			{
+				this->csr[1].id2vid[i].push_back(objlist[j]);
+				this->csr[1].vid2id[i].insert(pair<unsigned, unsigned>(objlist[j], index));
+				this->csr[1].offset_list[i].push_back(offset);
+				index++;
+				offset += len;
+			}
+			delete[] sublist;
+			sublist = nullptr;
+		}
+		SLOG_CORE(this->csr[1].offset_list[i].size());
+		SLOG_CORE(this->csr[1].adjacency_list[i].size());
+		total_edges += this->csr[1].adjacency_list[i].size();
+		delete [] objlist;
+		objlist = nullptr;
+	}
+	csr[1].n = this->entity_num;
+	csr[1].m = total_edges;
+
+	SLOG_CORE("total vertices " << csr[1].n);
+	SLOG_CORE("total edges " << csr[1].m);
+	long end_time = gs::TimeUtil::timestamp();
+	SLOG_CORE("after creating CSR, used " << (end_time - begin_time) << "ms");
+	SLOG_CORE("CSR size = " << csr[0].sizeInBytes() + csr[1].sizeInBytes() << " (bytes)");
+	csr_lock.unlock();
 	return true;
 }
 

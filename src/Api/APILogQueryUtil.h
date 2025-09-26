@@ -132,7 +132,8 @@ public:
     bool checkOperation()
     {
         if (operation == "load" || operation == "unload" || operation == "build" || operation == "batchInsert" 
-            || operation == "batchRemove" || operation == "backup" || operation == "restore" || operation == "query")
+            || operation == "batchRemove" || operation == "backup" || operation == "restore" || operation == "query"
+            || operation == "loadcsr")
             return true;
         return false;
     }

@@ -115,6 +115,27 @@ namespace server
         MessageLoadResponse(std::string body) : MessageResponse(body) {}
     };
 
+    struct MessageLoadCSRRequest : public MessageRequest
+    {
+        std::string db_name;
+        bool async;
+        MessageLoadCSRRequest()=delete;
+        MessageLoadCSRRequest(const nlohmann::json& json_data);
+        // MessageLoadCSRRequest(std::string db_name);
+        // MessageLoadCSRRequest(std::string username, std::string password, std::string db_name);
+        void to_json(std::string& json_str) override;
+        void to_inner_json(std::string& json_str) override;
+    };
+
+    struct MessageLoadCSRResponse : public MessageResponse
+    {
+        std::string opt_id;
+        MessageLoadCSRResponse();
+        void toJsonString(std::string& json_str);
+        MessageLoadCSRResponse(int code, std::string msg) : MessageResponse(code, msg) {}
+        MessageLoadCSRResponse(std::string body) : MessageResponse(body) {}
+    };
+
     // login
     struct MessageLoginRequest : public MessageRequest
     {

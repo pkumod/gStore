@@ -163,7 +163,7 @@ GeneralEvaluation::loadCSR()
 		unsigned index = 0;
 		for(unsigned j=0;j<sublist_len;j++)
 		{
-			string sub = kvstore->getEntityByID(sublist[j]);
+			//string sub = kvstore->getEntityByID(sublist[j]);
 			unsigned* objlist = NULL;
 			unsigned objlist_len = 0;
 			kvstore->getobjIDlistBysubIDpreID(sublist[j], i, objlist, objlist_len); 
@@ -209,14 +209,14 @@ GeneralEvaluation::loadCSR()
 		{
 			if(objlist[j]>=GlobalTypedef::LITERAL_FIRST_ID)
 				continue;
-			string obj = kvstore->getEntityByID(objlist[j]);
+			//string obj = kvstore->getEntityByID(objlist[j]);
 			unsigned* sublist = NULL;
 			unsigned sublist_len = 0;
 			kvstore->getsubIDlistByobjIDpreID(objlist[j], i, sublist, sublist_len); 
 			unsigned len = sublist_len;
 			for(unsigned k=0;k<sublist_len;k++)
 			{
-				string sub = kvstore->getEntityByID(sublist[k]);
+				//string sub = kvstore->getEntityByID(sublist[k]);
 				csr[1].adjacency_list[i].push_back(sublist[k]);
 			}
 			if(len > 0)

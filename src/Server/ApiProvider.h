@@ -38,6 +38,7 @@ namespace server
         ~ApiHandler(){};
 
         static void load(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadRequest& request, server::MessageLoadResponse& response);
+        static void loadCSR(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadCSRRequest& request, server::MessageLoadCSRResponse& response);
         static void monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response);
         
         // update api

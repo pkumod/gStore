@@ -30,7 +30,7 @@ std::string PFNUtil::fun_cppcheck(std::string username, struct PFNInfo *fun_info
         fout << content;
         fout.close();
     } else {
-        throw new runtime_error("cannot write to file " + check_file_path);
+        throw runtime_error("cannot write to file " + check_file_path);
     }
     system(lookAtfile.c_str());
     system(cppcheck.c_str());
@@ -112,7 +112,7 @@ void PFNUtil::fun_create(const string &username, struct PFNInfo *pfn_info)
         else 
         {
             SLOG_ERROR("open file error: " + file_path);
-            throw new runtime_error("cannot write to file " + file_path);
+            throw runtime_error("cannot write to file " + file_path);
         }
         // save method info to json file
         pfn_info->funStatus = "1";
@@ -155,7 +155,7 @@ void PFNUtil::fun_update(const std::string &username, struct PFNInfo *pfn_info)
         else 
         {
             SLOG_ERROR("open file error: " + file_path);
-            throw new runtime_error("cannot write to file " + file_path);
+            throw runtime_error("cannot write to file " + file_path);
         }
         // save method info to json file
         pfn_info->funStatus = "1";

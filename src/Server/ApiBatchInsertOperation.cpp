@@ -246,7 +246,7 @@ namespace server
                 if (!db_ptr->save())
                 {
                     statusMsg = "disk or memory is not enough";
-                    throw new runtime_error(statusMsg);
+                    throw std::runtime_error(statusMsg);
                 }
             }
             db_info->setStatus(DatabaseStatus::LOADED);
