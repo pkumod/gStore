@@ -1264,72 +1264,80 @@ int flushpriv_handler(const vector<string> &args)
 // ofp is set to output, and output need to be closed outer
 // query success:return 0; failed:return -1
 int raw_sparql_handler(string sparql)
-{
-	CHECK_CURRENT_DB_LOADED
-	string sparql_head;
-	for (int i = 0; i < 6; ++i) {
-		sparql_head += tolower(sparql[i]);
-	}
-	check_priv(_current_database, sparql_head == "select" ? QUERY_PRIVILEGE_BIT : UPDATE_PRIVILEGE_BIT);
-	string query_url;
-	if (_current_database == GlobalTypedef::system_db)
+{	
+	try
 	{
-		query_url = BASE_URL + "/sys/query";
-	}
-	else
-	{
-		query_url = API_URL;
-	}
-	server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
-	query_request.username = root_username;
-	query_request.password = root_password;
-	server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
-	if (!query_response.success())
-	{
-		cout << "Query failed: " << query_response.StatusMsg << endl;
-		return 1;
-	}
-	else if (!query_response.head.empty())
-	{
-		if (query_response.results.size() == 1 && query_response.results[0].size() == 1)
-		{
-		    string str = query_response.results[0][0];
-		    size_t str_size = str.size();
-		    // start with "{ and end with }"
-		    if (str.find("\"{") == 0 && str.find_last_of("}\"") == str_size-1 )
-		    {
-		        str = str.substr(1, str_size - 2);
-		        str = StringUtil::replace_all(str, "\\\"", "\"");
-		        if (nlohmann::json::accept(str))
-		        {
-		            try
-		            {
-		                nlohmann::json doc = nlohmann::json::parse(str);
-		                std::cout << doc.dump(4) << std::endl;
-						cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
-						return 0;
-		            }
-		            catch(const nlohmann::json::parse_error &e) 
-					{
-						SLOG_ERROR("JSON parse error: " << e.what());
-					}
-		        }
-		    }
-			else if (str.size() >= 8 && str.substr(0, 8) == "pfn_type")
-			{
-				std::cout << str.substr(8, -1) << std::endl;
-				cout << "pfn query use " << query_response.queryTime << " ms." << endl;
-				return 0;
-			}
+		CHECK_CURRENT_DB_LOADED
+		string sparql_head;
+		for (int i = 0; i < 6; ++i) {
+			sparql_head += tolower(sparql[i]);
 		}
-		Util::printConsole(query_response.head, query_response.results);
-		cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
-	} 
-	else
-	{
-		cout << "Update ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
+		check_priv(_current_database, sparql_head == "select" ? QUERY_PRIVILEGE_BIT : UPDATE_PRIVILEGE_BIT);
+		string query_url;
+		if (_current_database == GlobalTypedef::system_db)
+		{
+			query_url = BASE_URL + "/sys/query";
+		}
+		else
+		{
+			query_url = API_URL;
+		}
+		server::MessageQueryRequest query_request(_current_database, sparql, "n-triple");
+		query_request.username = root_username;
+		query_request.password = root_password;
+		server::MessageQueryResponse query_response = APIConnector::query(query_url, true, query_request);
+		if (!query_response.success())
+		{
+			cout << "Query failed: " << query_response.StatusMsg << endl;
+			return 1;
+		}
+		else if (!query_response.head.empty())
+		{
+			if (query_response.results.size() == 1 && query_response.results[0].size() == 1)
+			{
+				string str = query_response.results[0][0];
+				size_t str_size = str.size();
+				// start with "{ and end with }"
+				if (str.find("\"{") == 0 && str.find_last_of("}\"") == str_size-1 )
+				{
+					str = str.substr(1, str_size - 2);
+					str = StringUtil::replace_all(str, "\\\"", "\"");
+					if (nlohmann::json::accept(str))
+					{
+						try
+						{
+							nlohmann::json doc = nlohmann::json::parse(str);
+							std::cout << doc.dump(4) << std::endl;
+							cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
+							return 0;
+						}
+						catch(const nlohmann::json::parse_error &e) 
+						{
+							SLOG_ERROR("JSON parse error: " << e.what());
+						}
+					}
+				}
+				else if (str.size() >= 8 && str.substr(0, 8) == "pfn_type")
+				{
+					std::cout << str.substr(8, -1) << std::endl;
+					cout << "pfn query use " << query_response.queryTime << " ms." << endl;
+					return 0;
+				}
+			}
+			Util::printConsole(query_response.head, query_response.results);
+			cout << "Query ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
+		} 
+		else
+		{
+			cout << "Update ans num " << query_response.ansNum << ", use " << query_response.queryTime << " ms." << endl;
+		}
+		return 0;
 	}
-	return 0;
+	catch (const std::exception &e)
+	{
+		cout << "query fail: " + string(e.what()) << endl;
+		return 0;
+	}
 }
 
 string stripwhite(const string &s)
