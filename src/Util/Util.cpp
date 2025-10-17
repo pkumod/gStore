@@ -154,13 +154,6 @@ Util::configure()
     Util::setGlobalConfig(ini_parser, "upload", "upload_max_body_size", "1073741824");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_extensions", "nt|ttl|n3|rdf|txt");
     Util::setGlobalConfig(ini_parser, "upload", "upload_allow_compress_packages", "zip");
-    // cluster
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_on", "off");
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_role");
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_node"); 
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_heartbeat", "3"); 
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_relpy_timeout", "5"); 
-    Util::setGlobalConfig(ini_parser, "cluster", "cluster_data_path", "cluster/"); 
 
     // create db_home
     string temp_str = GlobalTypedef::global_config["db_home"];
@@ -206,15 +199,6 @@ Util::configure()
     gs::StringUtil::append(temp_str, '/');
     GlobalTypedef::global_config["queryresult_path"] = temp_str;
     FileUtil::createDirs(temp_str);
-    
-    // create cluster path
-    if (GlobalTypedef::global_config["cluster_on"] == "on")
-    {        
-        temp_str = GlobalTypedef::global_config["cluster_data_path"];
-        gs::StringUtil::append(temp_str, '/');
-        GlobalTypedef::global_config["cluster_data_path"] = temp_str;
-        FileUtil::createDirs(temp_str);
-    }
 
     // init slog
     string log_mode = Util::getConfigureValue("log_mode");
