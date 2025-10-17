@@ -8,8 +8,6 @@
 #include "../Pfn/PFNUtil.h"
 #include "../Util/CompressFileUtil.h"
 #include "../Reason/Reason.h"
-#include "../Cluster/ClusterManager.h"
-#include "../Cluster/ClusterDefined.h"
 #include "../Server/ApiProvider.h"
 
 #define HTTP_TYPE "http"
@@ -19,7 +17,6 @@
 
 using namespace std;
 using namespace grpc;
-using namespace cluster;
 typedef unsigned short uint8;
 
 static WFFacilities::WaitGroup wait_group(1);
@@ -27,8 +24,6 @@ static WFFacilities::WaitGroup wait_group(1);
 shared_ptr<APIUtil> apiUtil = nullptr;
 
 shared_ptr<PFNUtil> pfnUtil = nullptr;
-
-std::shared_ptr<cluster::ClusterManager> clusterManagerPtr =  nullptr;
 
 Latch latch;
 
@@ -51,13 +46,11 @@ bool checkRequest(const GRPCReq *request, GRPCResp *response, operation_type& op
 
 void restart(const GRPCReq *request, GRPCResp *response);
 void shutdown(const GRPCReq *request, GRPCResp *response);
-void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation);
 void api(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void sys_api(const GRPCReq *request, GRPCResp *response, const operation_type& operation);
 void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void download_file(const GRPCReq *request, GRPCResp *response);
 void download_file_post(const GRPCReq *request, GRPCResp *response);
-void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *series);
 void waiting_handler(const useconds_t microseconds, uint16_t &sync_status, const std::string& msg, useconds_t max_wait_timeout);
 // for server
 void check_task(const GRPCReq *request, GRPCResp *response);
@@ -108,12 +101,6 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json 
 void stat_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for reason engine
 void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
-// for cluster
-void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response);
-void cluster_append_task(const GRPCReq *request, GRPCResp *response);
-void cluster_reply_task(const GRPCReq *request, GRPCResp *response);
-void cluster_check_task(const GRPCReq *request, GRPCResp *response);
-void cluster_recover_task(const GRPCReq *request, GRPCResp *response);
 // for license
 void license_import(const GRPCReq *request, GRPCResp *response);
 void license_info(const GRPCReq *request, GRPCResp *response);
@@ -710,7 +697,6 @@ void initialServer(uint16_t port, bool background)
 {
 	apiUtil = make_shared<APIUtil>();
 	pfnUtil = make_shared<PFNUtil>();
-	clusterManagerPtr = make_shared<ClusterManager>();
 	// init config
 	int rt = apiUtil->initialize();			
 	if (rt == -1)
@@ -726,29 +712,6 @@ void initialServer(uint16_t port, bool background)
 	ofp.flush();
 	ofp.close();
 	sleep(1);
-	if (clusterManagerPtr->isEnable()) {
-		SLOG_DEBUG("cluster status on");
-		clusterManagerPtr->init();
-		std::vector<std::string> headers = {"name", "value"};
-		std::vector<std::vector<std::string>> rows;
-		std::string role = clusterManagerPtr->getCluterRole() == ClusterRoleType_Leader ? "leader" : "follower";
-		rows.push_back({"role", role});
-		rows.push_back({"heartbeat", Util::getConfigureValue("cluster_heartbeat") + " s"});
-		rows.push_back({"relpy_timeout", Util::getConfigureValue("cluster_relpy_timeout") + " s"});
-		rows.push_back({"data_path", Util::getConfigureValue("cluster_data_path")});
-		if (clusterManagerPtr->isLeader()) {
-			uint16_t node_idx = 1;
-			for (auto& follower : clusterManagerPtr->getFollowrUrlArray()) {		    
-				rows.push_back({"node" + to_string(node_idx), follower});
-				node_idx++ ;
-			}
-		} else {
-			rows.push_back({"node", clusterManagerPtr->getLeaderUrl()});
-		}
-		Util::printConsole(headers, rows);
-	} else {
-		SLOG_DEBUG("cluster status off");
-	}
 	GRPCServer grpcServer;
 	// grpc server global setting
 	const int32_t thread_num = GlobalTypedef::thread_num();
@@ -804,7 +767,6 @@ void initialServer(uint16_t port, bool background)
 	grpcServer.stop();
 	// apiUtil.reset();
 	// pfnUtil.reset();
-	// clusterManagerPtr.reset();
 	SLOG_INFO("Server stoped.");
 	std::cout.flush();
 	exit(EXIT_SUCCESS);
@@ -825,14 +787,6 @@ void releaseGlobalPtr(bool renew)
 		pfnUtil.reset();
 		if(renew) {
 			pfnUtil = make_shared<PFNUtil>();
-		}
-	}
-	if (clusterManagerPtr)
-	{
-		clusterManagerPtr->stopServer();
-		clusterManagerPtr.reset();
-		if(renew) {
-			clusterManagerPtr = make_shared<ClusterManager>();
 		}
 	}
 	latch.unlock();
@@ -888,48 +842,6 @@ void register_service(GRPCServer &svr)
 			restart(request, response);
 		},
 		methods);
-	svr.ROUTE(
-		"/cluster/heartbeat", [](const GRPCReq *request, GRPCResp *response)
-		{ 
-			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_HeartBeat);
-		},
-		ReqMethod::POST);
-
-	svr.ROUTE(
-		"/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
-		{ 
-			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Append);
-		},
-		ReqMethod::POST);
-
-	svr.ROUTE(
-		"/cluster/appendEntries", [](const GRPCReq *request, GRPCResp *response)
-		{
-			response->add_header_pair("Access-Control-Allow-Origin", "*");
-			response->add_header_pair("Access-Control-Allow-Methods", "POST");
-			response->String("ok");
-		},
-		ReqMethod::OPTIONS);
-
-	svr.ROUTE(
-		"/cluster/reply", [](const GRPCReq *request, GRPCResp *response)
-		{ 
-			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Replly);
-		},
-		ReqMethod::POST);
-
-	svr.ROUTE(
-		"/cluster/check", [](const GRPCReq *request, GRPCResp *response)
-		{ 
-			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Check);
-		},
-		ReqMethod::POST);
-	svr.ROUTE(
-		"/cluster/recover", [](const GRPCReq *request, GRPCResp *response)
-		{ 
-			cluster_api(request, response, cluster::ClusterOperation::ClusterOperation_Recover);
-		},
-		ReqMethod::POST);
 
 	svr.ROUTE(
 		"/sys/query", [](const GRPCReq *request, GRPCResp *response)
@@ -1164,12 +1076,6 @@ void upload_file(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
 		response->Error(StatusOperationFailed, msg);
 		return;
 	}
-	// redirect to cluster
-	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-	{
-		redirect_handler(request, response, series);
-		return;
-	}
 	// remove path info, only return base filename
 	std::string file_name = FileUtil::fileName(filename);
 	size_t pos = file_name.size() - file_suffix.size() - 1;
@@ -1239,142 +1145,6 @@ void download_file_post(const GRPCReq *request, GRPCResp *response)
 		response->File(full_path);
 	} else {
 		response->Error(StatusFileNotFound);
-	}
-}
-
-void redirect_handler(const GRPCReq *request, GRPCResp *response, SeriesWork *series)
-{
-	// redirect to leader
-	WFHttpTask *leader_task;
-	string leader_url =  clusterManagerPtr->getLeaderUrl();
-	const string redirect_url = leader_url + request->get_request_uri() ;
-	SLOG_DEBUG("cluster follower redirect to: " + redirect_url);
-	leader_task = WFTaskFactory::create_http_task(redirect_url, 0, 0, [response](WFHttpTask *task) {
-		int state = task->get_state();
-		if (state == WFT_STATE_SUCCESS)
-		{
-			const void *body;
-			size_t len;
-			task->get_resp()->get_parsed_body(&body, &len);
-			char* null_terminated_string = new char[len + 1];
-			std::memcpy(null_terminated_string, body, len);
-			null_terminated_string[len] = '\0';
-			SLOG_DEBUG("leader response body: " << null_terminated_string);
-			response->headers["Content-Type"] = ContentType::to_str(APPLICATION_JSON);
-			response->String(null_terminated_string);
-			task_of(response)->add_callback([null_terminated_string](GRPCTask *_task){
-				delete []null_terminated_string;
-			});
-		}
-		else
-		{
-			response->Error(StatusProxyError);
-		}
-	});
-	// copy client request to the leader_task request
-	const void *body;
-	size_t len;
-	request->get_parsed_body(&body, &len);
-
-	auto *leader_req = leader_task->get_req();
-	leader_req->set_method(request->get_method());
-	// copy client request header
-	protocol::HttpHeaderCursor req_cursor(request);
-	std::vector<std::string> headerNames = {"Content-Type", "Accept-Encoding", "Accept", "Content-Length", "Connection", "Cache-Control"};
-	std::string header_name;
-	std::string header_value;
-	while (req_cursor.next(header_name, header_value))
-	{
-		SLOG_DEBUG(header_name + ": " + header_value);
-		if (std::find(headerNames.begin(), headerNames.end(), header_name) != headerNames.end())
-		{
-			leader_req->set_header_pair(header_name.c_str(), header_value.c_str());
-		}
-	}
-	leader_req->append_output_body_nocopy(body, len);
-	*series << leader_task;
-}
-
-void cluster_api(const GRPCReq *request, GRPCResp *response, const cluster::ClusterOperation& operation)
-{
-	if (!clusterManagerPtr) {
-		response->Error(StatusOperationFailed, "The cluster is nullptr");
-		return;
-	}
-	if (!clusterManagerPtr->isEnable()) {
-		response->Error(StatusOperationFailed, "The cluster config is turned off");
-		return;
-	}
-	// check ip address
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	// check cluster ip
-	string cluster_ip_check = Util::getConfigureValue("cluster_ip_check", "off");
-	if (cluster_ip_check == "on")
-	{
-		bool ipCheckResult;
-		if (clusterManagerPtr->isLeader())
-			ipCheckResult = clusterManagerPtr->fromFollowerIp(ip_addr);
-		else
-			ipCheckResult = clusterManagerPtr->fromLeader(ip_addr);
-		if (ipCheckResult == false)
-		{
-			SLOG_DEBUG(ip_addr + " does not belong to the cluster whitelist");
-			response->Error(StatusIPBlocked, "The ip address does not belong to the cluster whitelist");
-			return;
-		}
-	}
-	std::string op_str = cluster::ClusterOperationHandle::to_str(operation);
-	grpc::content_type content_type = request->contentType();
-	SLOG_INFO("receive [" << op_str << "] request from " << ip_addr);
-	std::string ss;
-	ss += "\n==================== cluster-api ====================";
-	ss += "\n  Content-Type: " + ContentType::to_str(content_type);
-	ss += "\n  Accept-Encoding: " + request->header("Accept-Encoding");
-	ss += "\n  method: " +  string(request->get_method());
-	ss += "\n  httpVersion: " +  string(request->get_http_version());
-	ss += "\n  requestUri: " +  string(request->get_request_uri());
-	if (content_type != MULTIPART_FORM_DATA && !request->body().empty())
-	{
-		ss += "\n  request_body: " + request->body();
-	}
-	ss += "\n==================================================";
-	SLOG_DEBUG(ss);
-	std::string username = request->header("username");
-	std::string password = request->header("password");
-	// check username and password
-	std::string checkidentityresult;
-	std::string encryption = "0";
-	if (apiUtil->check_indentity(username, password, encryption, checkidentityresult) == false)
-	{
-		response->Error(StatusAuthenticationFailed, checkidentityresult);
-		return;
-	}
-	// operation
-	switch (operation)
-	{
-	case cluster::ClusterOperation_HeartBeat:
-		// from leader heartbeat
-		cluster_heartbeat_task(request, response);
-		break;
-	case cluster::ClusterOperation_Append:
-		// from leader append entries
-		cluster_append_task(request, response);
-		break;
-	case cluster::ClusterOperation_Replly:
-		// from follower reply
-		cluster_reply_task(request, response);
-		break;
-	case cluster::ClusterOperation_Check:
-		cluster_check_task(request, response);
-		break;
-	case cluster::ClusterOperation_Recover:
-		cluster_recover_task(request, response);
-		break;
-	default:
-		SLOG_ERROR("Unkown operation:" + op_str);
-		response->Error(StatusOperationUndefined);
-		break;
 	}
 }
 
@@ -1851,7 +1621,6 @@ void ip_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &
 void refresh_conf_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
 	apiUtil->refresh_conf();
-	clusterManagerPtr->refresh();
 	response->Success("refreshing configuration success");
 }
 
@@ -2170,11 +1939,6 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
  */
 void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-	{
-		redirect_handler(request, response, series);
-		return;
-	}
 	if (!json_data.contains("schema")) 
 	{
 		json_data["schema"] = GlobalTypedef::build_schema();
@@ -2194,9 +1958,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 			server::MessageBuildResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
-			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-			else
 				server::ApiHandler::build(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
@@ -2215,14 +1976,7 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	}
 	else
 	{
-		if (clusterManagerPtr->isEnable())
-		{
-			server::ApiHandler::build_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-		}
-		else
-		{
-			server::ApiHandler::build(apiUtil, request_data, response_data);
-		}
+		server::ApiHandler::build(apiUtil, request_data, response_data);
 	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -2246,11 +2000,6 @@ void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
  */
 void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	if(clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-	{
-		redirect_handler(request, response, series);
-		return;
-	}
 	server::MessageDropRequest request_data(json_data);
 	server::MessageDropResponse response_data; 
 	server::ApiHandler::drop(apiUtil, request_data, response_data);
@@ -2260,8 +2009,6 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, n
 	}
 	else
 	{
-		clusterManagerPtr->addTask(ClusterTaskInfo(request_data.db_name, ClusterOperation_Drop));
-        clusterManagerPtr->dropDb(request_data.db_name);
 		response->Success(response_data.StatusMsg);
 	}
 }
@@ -2395,55 +2142,37 @@ void query_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, 
 	bool async = JsonUtil::jsonBoolParam(json_data, "async", false);
 	GRPCServerTask *sub_task = task_of(response);
 	bool is_update = false;
-	if (clusterManagerPtr->isEnable())
+	std::string opt_id;
+	gs::IdUtil::nextUID(opt_id);
+	response_data.opt_id = opt_id;
+	if (async)
 	{
-		server::ApiHandler::query_cluster(apiUtil, clusterManagerPtr, request_data, response_data, is_update, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+		response_data.StatusCode = StatusOK;
+		response_data.StatusMsg = "Operation Success.";
+		sub_task->add_callback([request_data, opt_id](GRPCTask *)
 		{
-			sub_task->add_callback([query_log_ptr](GRPCTask *t)
-			{	
+			server::MessageQueryResponse response;
+			response.opt_id = opt_id;
+			apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id, 0, 0, request_data.db_name);
+			server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
+			{
 				apiUtil->write_query_log(query_log_ptr);
 			});
+			server::ApiHandler::query_result_notify(apiUtil, request_data, response);
 		});
-		if (response_data.StatusCode == StatusOK && clusterManagerPtr->isFollower() && is_update)
-		{
-			redirect_handler(request, response, series);
-			return;
-		}
 	}
 	else
 	{
-		std::string opt_id;
-		gs::IdUtil::nextUID(opt_id);
-		response_data.opt_id = opt_id;
-		if (async)
+		server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
 		{
-			response_data.StatusCode = StatusOK;
-			response_data.StatusMsg = "Operation Success.";
-			sub_task->add_callback([request_data, opt_id](GRPCTask *)
+			sub_task->add_callback([query_log_ptr](GRPCTask *)
 			{
-				server::MessageQueryResponse response;
-				response.opt_id = opt_id;
-				apiUtil->write_access_log(request_data.op, request_data.remote_ip, StatusOK, "Operation Success.", opt_id, 0, 0, request_data.db_name);
-				server::ApiHandler::query(apiUtil, request_data, response, [](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
-				{
-					apiUtil->write_query_log(query_log_ptr);
-				});
-				server::ApiHandler::query_result_notify(apiUtil, request_data, response);
+				apiUtil->write_query_log(query_log_ptr);
 			});
-		}
-		else
-		{
-			server::ApiHandler::query(apiUtil, request_data, response_data, [sub_task](std::shared_ptr<DBQueryLogInfo> query_log_ptr)
-			{
-				sub_task->add_callback([query_log_ptr](GRPCTask *)
-				{
-					apiUtil->write_query_log(query_log_ptr);
-				});
-			}, true);
-			Task::TaskManager::finishTask(stoull(opt_id));
-		}
+		}, true);
+		Task::TaskManager::finishTask(stoull(opt_id));
 	}
-	
+
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
@@ -2622,12 +2351,6 @@ void checkpoint_task(const GRPCReq *request, GRPCResp *response, nlohmann::json 
  */
 void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-	{
-		redirect_handler(request, response, series);
-		return;
-	}
-
 	server::MessageBatchInsertRequest request_data(json_data);
 	server::MessageBatchInsertResponse response_data; 
 	if (request_data.async)
@@ -2643,10 +2366,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			server::MessageBatchInsertResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
-			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-			else
-				server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+			server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
@@ -2664,10 +2384,7 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	}
 	else
 	{
-		if (clusterManagerPtr->isEnable())
-			server::ApiHandler::batch_insert_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-		else
-			server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
+		server::ApiHandler::batch_insert(apiUtil, request_data, response_data);
 	}
 	
 	if (response_data.StatusCode != server::StatusOK)
@@ -2692,12 +2409,6 @@ void batch_insert_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
  */
 void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	if (clusterManagerPtr->isEnable() && clusterManagerPtr->isFollower())
-	{
-		redirect_handler(request, response, series);
-		return;
-	}
-
 	server::MessageBatchRemoveRequest request_data(json_data);
 	server::MessageBatchRemoveResponse response_data; 
 	if (request_data.async)
@@ -2713,10 +2424,8 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 			server::MessageBatchRemoveResponse response_data;
 			response_data.opt_id = opt_id;
 			apiUtil->write_access_log(request_data.op, request_data.remote_ip, 0, "Operation success", opt_id, 0, 0, request_data.db_name);
-			if (clusterManagerPtr->isEnable())
-				server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-			else
-				server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+			
+			server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
 
 			if (response_data.StatusCode == StatusOK)
 				apiUtil->update_access_log(0, response_data.StatusMsg, response_data.opt_id, 1, response_data.successNum, response_data.failedNum);
@@ -2734,10 +2443,7 @@ void batch_remove_task(const GRPCReq *request, GRPCResp *response, SeriesWork *s
 	}
 	else
 	{
-		if (clusterManagerPtr->isEnable())
-			server::ApiHandler::batch_remove_cluster(apiUtil, clusterManagerPtr, request_data, response_data);
-		else
-			server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
+		server::ApiHandler::batch_remove(apiUtil, request_data, response_data);
 	}
 	if (response_data.StatusCode != server::StatusOK)
 	{
@@ -3198,100 +2904,6 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 		std::string json_str;
 		response_data.toJsonString(json_str);
 		response->Json(json_str);
-	}
-}
-
-void cluster_heartbeat_task(const GRPCReq *request, GRPCResp *response)
-{
-	nlohmann::json json_data;
-	parseRequest(request, json_data);
-	std::string expection = JsonUtil::jsonParam(json_data, "operation");
-	const cluster::ClusterOperation expectionEnum = cluster::ClusterOperationHandle::to_enum(expection);
-	server::MessageClusterRequest request_data(json_data);
-	switch (expectionEnum)
-	{
-		case cluster::ClusterOperation_Compare:
-			// compare term and index with leader
-			server::ApiHandler::cluster_heartbeat_compare(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		case cluster::ClusterOperation_Prepare:
-			// prepare for log append
-			// check local db is available
-			server::ApiHandler::cluster_heartbeat_prepare(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		case cluster::ClusterOperation_Commit:
-			server::ApiHandler::cluster_heartbeat_commit(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		case cluster::ClusterOperation_Cancel:
-			server::ApiHandler::cluster_heartbeat_cancel(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		case cluster::ClusterOperation_Fail:
-			server::ApiHandler::cluster_heartbeat_fail(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		case cluster::ClusterOperation_Drop:
-			server::ApiHandler::cluster_heartbeat_drop(apiUtil, clusterManagerPtr, request_data);
-			response->Success("ok");
-			break;
-		default:
-			response->Success("ok");
-			break;
-	}
-}
-
-void cluster_append_task(const GRPCReq *request, GRPCResp *response)
-{
-	Form &form = request->form();
-	server::MessageResponse response_data;
-	server::ApiHandler::cluster_append(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.StatusCode != server::StatusOK)
-	{
-		response->Error(response_data.StatusCode, response_data.StatusMsg);
-	}
-	else
-	{
-		response->Success("ok");
-	}
-}
-
-void cluster_reply_task(const GRPCReq *request, GRPCResp *response)
-{
-	nlohmann::json json_data;
-	parseRequest(request, json_data);
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterReplyRequest resquest_data(json_data);
-	server::ApiHandler::cluster_reply(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
-	response->Success("ok");
-}
-
-void cluster_check_task(const GRPCReq *request, GRPCResp *response)
-{
-	nlohmann::json json_data;
-	parseRequest(request, json_data);
-	auto *rpc_task = task_of(response);
-	std::string ip_addr = rpc_task->peer_addr();
-	server::MessageClusterCheckRequest resquest_data(json_data);
-	server::ApiHandler::cluster_check(apiUtil, clusterManagerPtr, resquest_data, ip_addr);
-	response->Success("ok");
-}
-
-void cluster_recover_task(const GRPCReq *request, GRPCResp *response)
-{
-	Form &form = request->form();
-	server::MessageResponse response_data;
-	server::ApiHandler::cluster_recover(apiUtil, clusterManagerPtr, form, response_data, _server_port);
-	if (response_data.StatusCode != server::StatusOK)
-	{
-		response->Error(response_data.StatusCode, response_data.StatusMsg);
-	}
-	else
-	{
-		response->Success("ok");
 	}
 }
 
