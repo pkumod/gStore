@@ -3242,8 +3242,6 @@ Database::batch_remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 		write_update_log(_triples, _triple_num, 0, txn);
 	}
 
-	std::string split_str = cluster::TripleInfo::getSplitStr();
-	cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Delete;
 	vector<ID_TUPLE> id_tuples(_triple_num);
 	for (unsigned i = 0; i < _triple_num; ++i)
 	{
