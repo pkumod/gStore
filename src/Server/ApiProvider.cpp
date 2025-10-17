@@ -81,12 +81,19 @@ namespace server
             }
             else if (db_info->isLoaded()) 
             {
-                if (db_info->getDatabase()->csr)
+                if (apiUtil->trywrlock_databaseinfo(db_info, 10))
                 {
-                    response.csr = "1";
+                    if (db_info->getDatabase()->csr)
+                        response.csr = "1";
+                    response.StatusCode = StatusOK;
+                    response.StatusMsg = "The database already load yet.";
+                    apiUtil->unlock_databaseinfo(db_info);
                 }
-                response.StatusCode = StatusOK;
-                response.StatusMsg = "The database already load yet.";
+                else
+                {
+                    response.StatusCode = StatusOperationFailed;
+                    response.StatusMsg = "database[" + request.db_name + "] is currently being " + db_info->getStatusDesc();
+                }
             }
             else
             {
