@@ -3187,19 +3187,6 @@ Database::batch_insert(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 			return -1;
 		}
 	}
-	else if (cluster_log)
-	{
-		cluster::ClusterUpdateType operation = cluster::ClusterUpdateType::ClusterUpdateType_Insert;
-		std::string split_str = cluster::TripleInfo::getSplitStr();
-		for (auto tuple : id_tuples)
-		{
-			bool is_obj_entity = Util::is_entity_ele(tuple.objid);
-			if (is_obj_entity)
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getEntityByID(tuple.objid) << split_str << operation << std::endl;
-			else
-				*cluster_log << this->kvstore->getEntityByID(tuple.subid) << split_str << this->kvstore->getPredicateByID(tuple.preid) << split_str << this->kvstore->getLiteralByID(tuple.objid) << split_str << operation << std::endl;
-		}
-	}
 	// po inserts
 	// sub_batch_update(id_tuples, valid_num, update_num_s, UPDATE_TYPE::SUBJECT_INSERT, txn);
 	thread sub_t = thread(&Database::sub_batch_update, this, id_tuples, valid_num, ref(update_num_s), UPDATE_TYPE::SUBJECT_INSERT, txn);
@@ -3288,10 +3275,6 @@ Database::batch_remove(const std::shared_ptr<TripleWithObjType[]>& _triples, TYP
 		sub_ids.insert(_sub_id);
 		pre_ids.insert(_pre_id);
 		obj_ids.insert(_obj_id);
-		if (cluster_log)
-		{
-			*cluster_log << _triple.subject << split_str << _triple.predicate << split_str << _triple.object << split_str << operation << std::endl;
-		}
 	}
 
 	sort(id_tuples.begin(), id_tuples.end(), Util::spo_cmp_idtuple);
