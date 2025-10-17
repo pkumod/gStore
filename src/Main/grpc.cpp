@@ -2253,13 +2253,15 @@ void drop_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, n
 	}
 	server::MessageDropRequest request_data(json_data);
 	server::MessageDropResponse response_data; 
-	server::ApiHandler::drop(apiUtil, clusterManagerPtr, request_data, response_data);
+	server::ApiHandler::drop(apiUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
 	}
 	else
 	{
+		clusterManagerPtr->addTask(ClusterTaskInfo(request_data.db_name, ClusterOperation_Drop));
+        clusterManagerPtr->dropDb(request_data.db_name);
 		response->Success(response_data.StatusMsg);
 	}
 }

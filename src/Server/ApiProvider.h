@@ -42,7 +42,7 @@ namespace server
         static void monitor(shared_ptr<APIUtil>& apiUtil, const MessageMonitorRequest& request, MessageMonitorResponse& response);
         
         // update api
-        static void drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response);
+        static void drop(shared_ptr<APIUtil>& apiUtil, const MessageDropRequest& request, MessageDropResponse& response);
         static void checkpoint(shared_ptr<APIUtil>& apiUtil, const server::MessageCheckPointRequest& request, server::MessageResponse& response);
 
         // query

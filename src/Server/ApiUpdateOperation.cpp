@@ -2,7 +2,7 @@
 
 namespace server
 {
-    void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response)
+    void ApiHandler::drop(shared_ptr<APIUtil>& apiUtil, const MessageDropRequest& request, MessageDropResponse& response)
     {
         try
         {
@@ -34,8 +34,6 @@ namespace server
                 SLOG_DEBUG("remove_path: " + db_path);
             }
             string success = "Database " + db_name + " dropped.";
-            clusterManagerPtr->addTask(ClusterTaskInfo(db_name, ClusterOperation_Drop));
-            clusterManagerPtr->dropDb(db_name);
             response.StatusMsg = success;
             response.StatusCode = StatusOK;
         }
