@@ -39,7 +39,7 @@ namespace server
 
         static void load(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadRequest& request, server::MessageLoadResponse& response);
         static void loadCSR(shared_ptr<APIUtil>& apiUtil, const server::MessageLoadCSRRequest& request, server::MessageLoadCSRResponse& response);
-        static void monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response);
+        static void monitor(shared_ptr<APIUtil>& apiUtil, const MessageMonitorRequest& request, MessageMonitorResponse& response);
         
         // update api
         static void drop(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageDropRequest& request, MessageDropResponse& response);

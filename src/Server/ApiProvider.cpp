@@ -183,7 +183,7 @@ namespace server
         }
     }
 
-    void ApiHandler::monitor(shared_ptr<APIUtil>& apiUtil, std::shared_ptr<cluster::ClusterManager>& clusterManagerPtr, const MessageMonitorRequest& request, MessageMonitorResponse& response)
+    void ApiHandler::monitor(shared_ptr<APIUtil>& apiUtil, const MessageMonitorRequest& request, MessageMonitorResponse& response)
     {
         try
         {

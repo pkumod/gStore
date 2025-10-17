@@ -2147,7 +2147,7 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
 	server::MessageMonitorRequest request_data(json_data);
 	server::MessageMonitorResponse response_data; 
 	string remote_ip = JsonUtil::jsonParam(json_data, "remote_ip");
-	server::ApiHandler::monitor(apiUtil, clusterManagerPtr, request_data, response_data);
+	server::ApiHandler::monitor(apiUtil, request_data, response_data);
 	if (response_data.StatusCode != server::StatusOK)
 	{
 		response->Error(response_data.StatusCode, response_data.StatusMsg);
