@@ -7,7 +7,6 @@
 #include "../Server/MessageProtocol/MessageApiPFN.h"
 #include "../Server/MessageProtocol/MessageApiLog.h"
 #include "../Server/MessageProtocol/MessageApiReason.h"
-#include "../Server/MessageProtocol/MessageCluster.h"
 #include "../Server/MessageProtocol/MessageApiTransaction.h"
 #include "WFHttpUtil.h"
 #include "HttpEntities.h"
@@ -120,16 +119,4 @@ public:
 	static server::MessageLicenseResponse licenseInfo(const std::string& url, const bool& inner, server::MessageRequest& request);
 	
 	static server::MessageLicenseResponse removeLicense(const std::string& url, const bool& inner, server::MessageRequest& request);
-	// static httpentities::ClusterResponse cancel(const std::string& url, httpentities::CancelRequest& request, const std::string& username, const std::string& password);
-	
-	static httpentities::ClusterResponse reply(const std::string& url, httpentities::ReplyRequest& request, const std::string& username, const std::string& password);
-
-	static httpentities::ClusterResponse appendEntries(const std::string& url, httpentities::AppenEntriesRequest& request, const std::string& username, const std::string& password);
-
-	static httpentities::ClusterResponse heartBeat(const std::string& url, httpentities::HeartBeatRequest& request, const std::string& username, const std::string& password);
-
-	static httpentities::ClusterResponse clusterCheck(const std::string& url, httpentities::ClusterCheckRequest& request, const std::string& username, const std::string& password);
-
-	static httpentities::ClusterResponse recoverFollower(const std::string& url, httpentities::RecoverRequest& request, const std::string& username, const std::string& password);
-
 };
