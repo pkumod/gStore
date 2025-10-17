@@ -67,7 +67,6 @@ set( LIB_GSTROE_DEP
         gcov
         reason
         pfn
-        cluster
         httputil
 )
 set( BIN_LIST
