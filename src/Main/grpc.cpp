@@ -101,10 +101,6 @@ void fun_review_task(const GRPCReq *request, GRPCResp *response, nlohmann::json 
 void stat_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 // for reason engine
 void reason_manage_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
-// for license
-void license_import(const GRPCReq *request, GRPCResp *response);
-void license_info(const GRPCReq *request, GRPCResp *response);
-void license_remove(const GRPCReq *request, GRPCResp *response);
 //task manager
 void operation_task_cancel(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
 void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data);
@@ -902,33 +898,6 @@ void register_service(GRPCServer &svr)
 			download_file_post(request, response);
 		},
 		ReqMethod::POST);
-
-	svr.ROUTE(
-		"/lic/import", [](const GRPCReq *request, GRPCResp *response)
-		{
-			license_import(request, response);
-		},
-		ReqMethod::POST);
-	svr.ROUTE(
-		"/lic/import", [](const GRPCReq *request, GRPCResp *response)
-		{
-			response->add_header_pair("Access-Control-Allow-Origin", "*");
-			response->add_header_pair("Access-Control-Allow-Methods", "POST");
-			response->String("ok");
-		},
-		ReqMethod::OPTIONS);
-	svr.ROUTE(
-		"/lic/info", [](const GRPCReq *request, GRPCResp *response)
-		{
-			license_info(request, response);
-		},
-		methods);
-	svr.ROUTE(
-		"/lic/remove", [](const GRPCReq *request, GRPCResp *response)
-		{
-			license_remove(request, response);
-		},
-		ReqMethod::POST);
 }
 
 void restart(const GRPCReq *request, GRPCResp *response)
@@ -1413,19 +1382,7 @@ void login_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &json
 			{"StatusCode", 0},
 			{"StatusMsg", "login successfully"}
 		};
-		string licensetype = apiUtil->get_license().type;
-		if (licensetype == "0") 
-		{
-			licensetype = "trial";
-		}
-		else if(licensetype == "1")
-		{
-			licensetype = "official";
-		} 
-		else 
-		{
-			licensetype = "opensource";
-		}
+		string licensetype = "opensource";
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		// resp_data["RootPath"] = Util::currentPath();
@@ -1455,19 +1412,7 @@ void test_connect_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
-		string licensetype = apiUtil->get_license().type;
-		if (licensetype == "0") 
-		{
-			licensetype = "trial";
-		}
-		else if(licensetype == "1")
-		{
-			licensetype = "official";
-		} 
-		else 
-		{
-			licensetype = "opensource";
-		}
+		string licensetype = "opensource";
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["type"] = HTTP_TYPE;
@@ -1493,19 +1438,7 @@ void core_version_task(const GRPCReq *request, GRPCResp *response)
 			{"StatusCode", 0},
 			{"StatusMsg", "success"}
 		};
-		string licensetype = apiUtil->get_license().type;
-		if (licensetype == "0") 
-		{
-			licensetype = "trial";
-		}
-		else if(licensetype == "1")
-		{
-			licensetype = "official";
-		} 
-		else 
-		{
-			licensetype = "opensource";
-		}
+		string licensetype = "opensource";
 		resp_data["licensetype"] = licensetype;
 		resp_data["CoreVersion"] = GlobalTypedef::product_version;
 		resp_data["type"] = HTTP_TYPE;
@@ -2904,116 +2837,6 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 		std::string json_str;
 		response_data.toJsonString(json_str);
 		response->Json(json_str);
-	}
-}
-
-void license_import(const GRPCReq *request, GRPCResp *response)
-{
-	operation_type op_type;
-	nlohmann::json json_data = nlohmann::json {
-		{"operation", "importLicense"}
-	};
-	if (checkRequest(request, response, op_type, json_data, false) == false)
-	{
-		return;
-	}
-	// filename : filecontent
-	std::string filename = JsonUtil::jsonParam(json_data, "filename");
-	std::string msg;
-	if(filename.empty() || JsonUtil::hasJsonParam(json_data, "file") == false)
-	{
-		msg = "Upload file can not be empty!";
-		response->Error(StatusParamIsIllegal, msg);
-		return;
-	}
-	std::string file_suffix = GRPCUtil::fileSuffix(filename);
-	if (file_suffix != "lic")
-	{
-		msg = "The type of license file is not supported!";
-		response->Error(StatusOperationFailed, msg);
-		return;
-	}
-	nlohmann::byte_container_with_subtype<std::vector<uint8_t>> file_binary =  json_data["file"].get_binary();
-	// remove path info, only return base filename
-	std::string file_name = GRPCUtil::fileName(filename);
-	size_t pos = file_name.size() - file_suffix.size() - 1;
-	std::string file_save_path = GlobalTypedef::upload_path() + file_name.substr(0, pos) + "_" + gs::TimeUtil::now() + "." + file_suffix;
-    WFFileIOTask *pwrite_task = WFTaskFactory::create_pwrite_task(
-		file_save_path, static_cast<const void *>(file_binary.data()), file_binary.size(), 0, [file_save_path](WFFileIOTask *pwrite_task){
-			long ret = pwrite_task->get_retval();
-			GRPCServerTask *server_task = task_of(pwrite_task);
-			GRPCResp *resp = server_task->get_resp();
-			resp->headers["Access-Control-Allow-Origin"] = "*";
-			if (pwrite_task->get_state() != WFT_STATE_SUCCESS || ret < 0)
-			{
-				resp->Error(StatusFileWriteError);
-			} 
-			else
-			{
-				string msg;
-				if(apiUtil->import_license(file_save_path, msg))
-				{
-					server::MessageLicenseResponse respData(server::StatusCode::StatusOK, msg);
-					respData.json = apiUtil->get_license();
-					nlohmann::json license_json;
-					respData.toJson(license_json);
-					resp->Json(license_json);
-				}
-				else 
-				{
-					FileUtil::removePath(file_save_path);
-					resp->Error(server::StatusCode::StatusLicenseInvalid, msg);
-				}
-			}
-	});
-	auto* rpc_task = task_of(response);
-    **rpc_task << pwrite_task;
-}
-
-void license_info(const GRPCReq *request, GRPCResp *response)
-{
-	operation_type op_type;
-	nlohmann::json json_data = nlohmann::json {
-		{"operation", "queryLicense"}
-	};
-	if (checkRequest(request, response, op_type, json_data, false) == false)
-	{
-		return;
-	}
-	LicenseInfo lic = apiUtil->get_license();
-	server::MessageLicenseResponse respData(server::StatusCode::StatusOK, "success");
-	if (lic.isvalid) 
-	{
-		respData.json = lic;
-	}
-	else
-	{
-		respData.json["isvalid"] = lic.isvalid;
-		respData.json["desc"] = lic.desc;
-	}
-	nlohmann::json respJson;
-	respData.toJson(respJson);
-	response->Json(respJson);
-}
-
-void license_remove(const GRPCReq *request, GRPCResp *response)
-{
-	operation_type op_type;
-	nlohmann::json json_data = nlohmann::json {
-		{"operation", "removeLicense"}
-	};
-	if (checkRequest(request, response, op_type, json_data, false) == false)
-	{
-		return;
-	}
-	std::string msg;
-	if(apiUtil->remove_license(msg))
-	{
-		response->Success(msg);
-	}
-	else
-	{
-		response->Error(server::StatusCode::StatusOperationFailed, msg);
 	}
 }
 

@@ -20,8 +20,6 @@ APIUtil::APIUtil()
     pthread_rwlock_init(&transactionlog_lock, NULL);
     ipWhiteList = std::unique_ptr<IPWhiteList>(new IPWhiteList());
     ipBlackList = std::unique_ptr<IPBlackList>(new IPBlackList());
-    license_info.product = GlobalTypedef::product_name;
-    license_info.version = GlobalTypedef::product_version;
     privileges = {"query", "update", "load", "unload", "restore", "backup", "export"};
 }
 
@@ -2278,112 +2276,6 @@ void APIUtil::get_transactionlog(int &page_no, int &page_size, shared_ptr<struct
     }
     logPtr->setTotalSize(total_size);
     logPtr->setTotalPage(total_page);
-}
-
-void APIUtil::init_license()
-{
-    std::string sparql = "SELECT ?x ?y WHERE {<system> <license_type> ?x; <license_content> ?y.}";
-    ResultSet _rs;
-    if (query_sys_db(sparql, _rs) && _rs.ansNum == 1) 
-    {
-        std::string license_type = _rs.answer[0][0];
-        std::string license_content = _rs.answer[0][1];
-        if(license_content.size() > 2) 
-        {
-            LicenseHelper licenseHelper;
-            licenseHelper.validLicense(license_info, license_content.substr(1, license_content.size() - 2).c_str());
-            SLOG_DEBUG("license info: " + license_info.desc);
-        }
-        else
-        {
-            SLOG_DEBUG("invalid license: " + license_content);
-        }
-    }
-    else
-    {
-        license_info.type = "0";
-        license_info.isvalid = false;
-        license_info.desc = "Please import the license first";
-        SLOG_DEBUG("license not found");
-    }
-    _rs.release();
-}
-
-bool APIUtil::check_license(std::string& msg)
-{
-    if (license_info.validDate())
-    {
-        msg = license_info.desc;
-        return true;
-    } 
-    else
-    {
-        msg = license_info.desc;
-        return false;
-    }
-}
-
-bool APIUtil::import_license(const string& license_file, std::string& msg)
-{
-    std::string sparql = "ASK WHERE {<system> <license_content> ?x}";
-    if(ask_sys_db(sparql))
-    {
-        msg = "License already exists, please remove it first";
-        return false;
-    }
-    LicenseHelper licenseHelper;
-    license_info.product = GlobalTypedef::product_name;
-    license_info.version = GlobalTypedef::product_version;
-    bool result = licenseHelper.validLicense(license_info, license_file);
-    if (!result) {
-        msg = std::move(license_info.desc);
-        license_info.reset();
-        return false;
-    }
-    sparql = "INSERT DATA {<system> <license_type> \""+license_info.type+"\". <system> <license_content> \""+license_info.content+"\"}";
-    if(update_sys_db(sparql))
-    {
-        refresh_sys_db();
-        msg = "License imported successfully";
-        return true;
-    } 
-    else
-    {
-        license_info.reset();
-        msg = "Failed to import license";
-        return false;
-    }
-}
-
-bool APIUtil::remove_license(std::string& msg)
-{
-    bool update_rt;
-    std::set<std::string> sparqls;
-    sparqls.insert("DELETE WHERE {<system> <license_type> ?x}");
-    sparqls.insert("DELETE WHERE {<system> <license_content> ?x}");
-    update_rt = update_sys_db(sparqls);
-    if (update_rt)
-    {
-        msg = "License removed successfully";
-        license_info.reset();
-        refresh_sys_db();
-    }
-    else
-    {
-        msg = "Failed to remove license";
-    }
-    return update_rt;
-}
-
-void APIUtil::print_license()
-{
-    SLOG_INFO("Licensed to " + license_info.company);
-    SLOG_INFO("Active until " + license_info.enddate);
-}
-
-LicenseInfo APIUtil::get_license()
-{
-    return license_info;
 }
 
 int APIUtil::get_thread_pool_num() 

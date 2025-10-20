@@ -16,7 +16,6 @@
 #include "../Util/IPWhiteList.h"
 #include "../Util/IPBlackList.h"
 #include "../Util/CompressFileUtil.h"
-#include "../Util/License.h"
 #include "../Server/ServerStatusCode.h"
 #include "APIUserUtil.h"
 #include "APIDatabaseUtil.h"
@@ -69,8 +68,6 @@ private:
     pthread_rwlock_t access_log_lock;
     pthread_rwlock_t transactionlog_lock;
 
-    //license info
-    struct LicenseInfo license_info;
     //user privileges
     std::vector<std::string> privileges;
 
@@ -177,14 +174,6 @@ public:
 	int add_transactionlog(std::string db_name, std::string user, std::string TID,  std::string begin_time, std::string status = "RUNNING",  std::string end_time = "INF");
 	int update_transactionlog(std::string db_name, std::string status, std::string end_time);
 	void get_transactionlog(int &page_no, int &page_size, shared_ptr<struct TransactionLogs> logPtr);
-
-    // for license
-    void init_license();
-    bool check_license(std::string& msg);
-    bool import_license(const string& license_file, std::string& msg);
-    bool remove_license(std::string& msg);
-    LicenseInfo get_license();
-    void print_license();
 
     // for data get
     int get_thread_pool_num();
