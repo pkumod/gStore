@@ -2000,7 +2000,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 							{
 								degreeCorrelation(ss, uid, proj[0].path_args.k, pred_id_set);
 							}
-							else if (proj[0].aggregate_type == ProjectionVar::kHopShortestPaths_type)
+							else if (proj[0].aggregate_type == ProjectionVar::ShortestPaths_type)
 							{
 								kHopShortestPaths(ss, uid, vid, proj[0].path_args.directed, pred_id_set, notFirstOutput);
 							}
@@ -3078,7 +3078,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 								{
 									degreeCorrelation(ss, uid, proj[i].path_args.k, pred_id_set);
 								}
-								else if (proj[i].aggregate_type == ProjectionVar::kHopShortestPaths_type)
+								else if (proj[i].aggregate_type == ProjectionVar::ShortestPaths_type)
 								{
 									kHopShortestPaths(ss, uid, vid, proj[i].path_args.directed, pred_id_set, notFirstOutput);
 								}

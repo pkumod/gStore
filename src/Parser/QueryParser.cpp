@@ -403,7 +403,7 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 				|| tmp == "CORETRUSS" || tmp == "KHOPCOUNT" || tmp == "KHOPNEIGHBOR" \
 				|| tmp == "SHORTESTPATHCOUNT" || tmp == "LOUVAIN" || tmp == "CONFIDENCEDEGREE" \
 				|| tmp == "DIAMETERESTIMATION" || tmp == "BETWEENNESSCENTRALITY" || tmp == "JACCARDSIMILARITY" \
-				|| tmp == "DEGREECORRELATION" || tmp == "KHOPSHORTESTPATHS" || tmp == "KHOPALLNEIGHBORS")	// Path calls
+				|| tmp == "DEGREECORRELATION" || tmp == "SHORTESTPATHS" || tmp == "KHOPALLNEIGHBORS")	// Path calls
 			{
 				query_tree_ptr->addProjectionVar();
 				ProjectionVar &proj_var = query_tree_ptr->getLastProjectionVar();
@@ -468,8 +468,8 @@ void QueryParser::parseSelectAggregateFunction(SPARQLParser::ExpressionContext *
 					proj_var.aggregate_type = ProjectionVar::JaccardSimilarity_type;
 				else if (tmp == "DEGREECORRELATION")
 					proj_var.aggregate_type = ProjectionVar::degreeCorrelation_type;
-				else if (tmp == "KHOPSHORTESTPATHS")
-					proj_var.aggregate_type = ProjectionVar::kHopShortestPaths_type;
+				else if (tmp == "SHORTESTPATHS")
+					proj_var.aggregate_type = ProjectionVar::ShortestPaths_type;
 				else if (tmp == "KHOPALLNEIGHBORS")
 					proj_var.aggregate_type = ProjectionVar::kHopAllNeighbors_type;
 

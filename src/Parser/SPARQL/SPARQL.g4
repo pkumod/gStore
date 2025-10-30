@@ -225,7 +225,7 @@ builtInCall : aggregate|	K_STR '(' expression ')'
 |   K_BETWEENNESSCENTRALITY '(' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_JACCARDSIMILARITY '(' varOrIri ',' predSet ',' integerLiteral ',' integerLiteral ')'
 |   K_DEGREECORRELATION '(' varOrIri ',' integerLiteral ',' predSet ')'
-|   K_KHOPSHORTESTPATHS '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
+|   SHORTESTPATHS '(' varOrIri ',' varOrIri ',' booleanLiteral ',' predSet ')'
 |   K_KHOPALLNEIGHBORS '(' varOrIri ',' booleanLiteral ',' integerLiteral ',' predSet (',' integerLiteral)? ')'
  ;
 regexexpression : K_REGEX '(' expression ',' expression ( ',' expression )? ')' ;
@@ -406,7 +406,7 @@ K_DIAMETERESTIMATION : D I A M E T E R E S T I M A T I O N ;
 K_BETWEENNESSCENTRALITY : B E T W E E N N E S S C E N T R A L I T Y ;
 K_JACCARDSIMILARITY : J A C C A R D S I M I L A R I T Y ;
 K_DEGREECORRELATION : D E G R E E C O R R E L A T I O N ;
-K_KHOPSHORTESTPATHS : K H O P S H O R T E S T P A T H S ;
+SHORTESTPATHS : S H O R T E S T P A T H S ;
 K_KHOPALLNEIGHBORS : K H O P A L L N E I G H B O R S ;
 K_INCREASE : I N C R E A S E ;
 KK_INSERTDATA : I N S E R T ' ' D A T A ;
