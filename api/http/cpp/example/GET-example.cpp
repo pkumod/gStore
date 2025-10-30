@@ -1,7 +1,7 @@
 /*=============================================================================
 # Filename: GET-example.cpp
-# Author: suxunbin
-# Last Modified: 2021-07-20 20:51
+# Author: hexuejiang
+# Last Modified: 2025-10-29 20:51
 # Description: a simple GET-example of C++ API
 =============================================================================*/
 
@@ -55,6 +55,12 @@ int main(int argc, char* argv[])
 
 	// check server
 	std::string res = gc.check();
+	if (res.empty())
+	{
+		cout << "Please check whether the service is started or if the port configuration is correct" << endl;
+		cout << "The port configuration is in the file conf.ini" << endl;
+		return 0;
+	}
 	cout << res << endl;
 
 	// login server
