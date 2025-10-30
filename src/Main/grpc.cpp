@@ -891,6 +891,13 @@ void register_service(GRPCServer &svr)
 			response->String("ok");
 		},
 		ReqMethod::OPTIONS);
+
+	svr.ROUTE(
+		"/file/download", [](const GRPCReq *request, GRPCResp *response)
+		{
+			download_file_post(request, response);
+		},
+		ReqMethod::POST);
 }
 
 void restart(const GRPCReq *request, GRPCResp *response)
