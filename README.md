@@ -141,6 +141,46 @@ Or cite this repository:
 
 
 ## Change log
+
+**1.4(stable):2025-12-01**
+
+New features in gStore 1.4 are listed as follows:
+
+  - **Reconstructing the bin directory structure**: Retain only the gserver service and gconsole operation modes.
+  - **Added Task operation management module:** Support to cancel time-consuming query operations
+  -  **Reconstruct the memory management mechanism:** By adopting an on-demand memory block application mechanism, the memory copying process is reduced, and the efficiency of batch addition is increased by more than **100%**
+  - **Refactoring the custom function module:** Added the built-in function pfn.fun_name, supporting select calls
+- **Added static gcc installation package:** Supports the use of custom functions
+  - **Added rpm and deb packages:** Support the rpm and dpkg commands to install gstore
+- **Optimize data update logic :** By using multi-threading to handle the mapping between id2string and string2id, as well as the reconstruction of StringIndex, the update efficiency has been doubled
+  - **Optimize database construction logic :** Adopt a parallel processing mechanism to increase efficiency by **30%**
+- **Optimize subquery doJoin operations :** Use cached data operations to reduce I/O
+  - **Added built-in advanced functions :** Added two advanced functions, namely: All shortest paths (shortestPaths), all K-hop neighbors (kHopAllNeighbors)，Text SIMILARITY（SIMILARITY）
+- **Several new API interfaces have been added**:such as loading CSR resources (loadcsr) and obtaining Schema information (schema)
+  - **Optimize API interfaces :** Build, load, unload, backup, restore and other interfaces support asynchronous mode
+  - **Support for generating schema:** Supports building interfaces and batch insertion of data interfaces, and building to generate schema information
+  - **Support controllable loading of transaction memory:** Support the selection and loading of transaction initialization memory by passing parameters
+  - **Bug Fixes**: Fixed a series of bugs,Frequent addition or deletion of the same batch of data can cause the problem of continuous expansion of disk space
+
+**1.3(stable):2024-08-30**
+
+New features in gStore 1.3 are listed as follows:
+
+  - **Directory Structure Refactoring**: Refactored the directory structure and optimized the compilation method, improving compilation efficiency by 30%.
+  - **New Inference Engine Module**: Supports dynamic management and real-time invocation of inference rules, and supports property inference and relationship inference based on ontology models.
+  - **New Built-in Advanced Functions**: Added four advanced functions: Diameter Estimation (diameterEstimation), Betweenness Centrality (betweennessCentrality), Jaccard Similarity (JaccardSimilarity), and Degree Correlation (degreeCorrelation).
+  - **New Aggregate Function SAMPLE**: Supports calling in SELECT queries.
+  - **New API Interfaces**: Added `checkOperationState` and `reasonManage` interfaces.
+  - **Kernel Logging Refactor**: Supports configuration of five logging levels and expression-based logging content configuration.
+  - **Optimization of CSR Resource Update Mechanism**: CSR resources are dynamically updated based on query needs after data updates.
+  - **Cache Management Optimization**: Optimized the issue where system caches were not being actively released, leading to excessive server memory consumption.
+  - **Data Update Logic Optimization**: Improved the logic for batch addition and deletion of data, increasing execution efficiency by more than 40%.
+  - **Added Data Compression Mechanism**: The HTTP API now supports gzip compression, reducing data transfer size to within 20% of the original data, and shortening data transmission time.
+  - **API Interface Optimization**: Added asynchronous mode and callback mode to some time-consuming interfaces.
+  - **Local Command Optimization**: Optimized local commands, such as build, batch add, and delete, with support for zip file types.
+  - **Bug Fixes**: Fixed a series of bugs.
+
+
 **1.2(stable):2023-11-11**
 
 New features in gStore 1.2 are listed as follows:
