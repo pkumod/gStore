@@ -1072,6 +1072,11 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 					if (p >= contentLen && i < 5)
 						return;
 				}
+				if (sufStr == "dateTime" && date.size() < 6)
+				{
+					for (int i = date.size(); i < 6; i++)
+						date.emplace_back(0);
+				}
 				if (date.size() >= 6)
 				{
 					dt_value = EvalMultitypeValue::DateTime(date);
