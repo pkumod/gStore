@@ -216,6 +216,7 @@ namespace server
             response.builtTime = database_info->getTime();
             response.connectionNum = apiUtil->get_connection_num();
             response.subjectList = current_database->getStatisticsInfo();
+            response.schema = nlohmann::json::object();
             current_database->getSchemaInfo(response.schema, true);
 
             unsigned long long triple_num = 0;

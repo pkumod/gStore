@@ -260,17 +260,24 @@ void Database::updateSchema()
 
 void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 {
-	if (!this->schema_flag)
-		return;
 	std::ifstream file(getSchemaPath());
 	if (!file.is_open())
 	{
-		SLOG_ERROR(getSchemaPath() << " is open fail");
+		SLOG_ERROR(getSchemaPath() << " is open fail, please check schema file is exist");
 		return;
 	}
 	nlohmann::json info;
-	file >> info;
-	file.close();
+	try
+	{
+		file >> info;
+		file.close();
+	}
+	catch (nlohmann::json::exception& e)
+	{
+		file.close();
+		SLOG_ERROR("schema format is error, message:" << e.what() << ", exception id: " << e.id );
+		return;
+	}
 
 	// entity "#FA8C16"
 	// proprey "#5CDBD3"
