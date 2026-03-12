@@ -2842,33 +2842,48 @@ void checkOperationState_task(const GRPCReq *request, GRPCResp *response, nlohma
 
 void operation_task_cancel(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
 {
-	uint64_t opt_id = JsonUtil::jsonParam(json_data, "opt_id", 0ul);
-	auto task = Task::TaskManager::findTask(opt_id);
-	if (!task)
+	try
 	{
-		response->Error(StatusOperationFailed, "opt_id not found");
-		return;
+		uint64_t opt_id = JsonUtil::jsonParam(json_data, "opt_id", 0ul);
+		auto task = Task::TaskManager::findTask(opt_id);
+		if (!task)
+		{
+			response->Error(StatusOperationFailed, "opt_id not found");
+			return;
+		}
+		if (task->status_ == -1)
+		{
+			response->Error(StatusOperationFailed, "task already cancel");
+			return;
+		}
+		if (task->status_ == 1)
+		{
+			response->Error(StatusOperationFailed, "task already finish, do not cancel");
+			return;
+		}
+		if (task->cb_)
+		{
+			response->Error(StatusOperationFailed, "task being cancel, please do not repeat");
+			return;
+		}
+		task->cancelTask();
+		if (task->status_ == -1)
+			response->Success("query cancel successfully");
+		else
+			response->Success("task already finish, do not cancel");
 	}
-	if (task->status_ == -1)
-	{
-		response->Error(StatusOperationFailed, "task already cancel");
-		return;
-	}
-	if (task->status_ == 1)
-	{
-		response->Error(StatusOperationFailed, "task already finish, do not cancel");
-		return;
-	}
-	if (task->cb_)
-	{
-		response->Error(StatusOperationFailed, "task being cancel, please do not repeat");
-		return;
-	}
-	task->cancelTask();
-	if (task->status_ == -1)
-		response->Success("query cancel successfully");
-	else
-		response->Success("task already finish, do not cancel");
+	catch (const std::exception& e)
+    {
+        std::string msg = "task cancel error: " + std::string(e.what());
+        response->Error(StatusOperationFailed, msg);
+        return;
+    }
+    catch (...)
+    {
+        std::string msg = "task cancel error, unknown error!";
+        response->Error(StatusOperationFailed, msg);
+        return;
+    }
 }
 
 void operation_task_list(const GRPCReq *request, GRPCResp *response, nlohmann::json &json_data)
