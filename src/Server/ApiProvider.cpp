@@ -185,6 +185,7 @@ namespace server
 
     void ApiHandler::monitor(shared_ptr<APIUtil>& apiUtil, const MessageMonitorRequest& request, MessageMonitorResponse& response)
     {
+        shared_ptr<DatabaseInfo> database_info;
         try
         {
             std::string db_name = request.db_name;
@@ -198,7 +199,6 @@ namespace server
                 response.StatusCode = StatusOperationFailed;
                 return;
             }
-            shared_ptr<DatabaseInfo> database_info;
             server::StatusCode statusCode;
             std::string statusMsg;
             if (!apiUtil->validate_databaseinfo(request.db_name, database_info, statusCode, statusMsg, false))
@@ -248,6 +248,7 @@ namespace server
         }
         catch (const std::exception &e)
         {
+            apiUtil->unlock_databaseinfo(database_info);
             response.StatusMsg = "Monitor fail: " + string(e.what());
             response.StatusCode = StatusOperationFailed;
         }
