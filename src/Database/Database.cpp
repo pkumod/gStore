@@ -1641,14 +1641,15 @@ int Database::query(const string _query, ResultSet &_result_set, FILE *_fp, bool
 	}
 	catch (const std::runtime_error &e2)
 	{
-		SLOG_ERROR("catch run_time error exception");
-		SLOG_ERROR(e2.what());
-		throw std::runtime_error(e2.what());
-		
+		std::string error = "catch run_time error exception: " + std::string(e2.what());
+		SLOG_ERROR(error);
+		throw std::runtime_error(error);
 	}
 	catch (const std::exception &e)
 	{
-		SLOG_ERROR(e.what() << '\n');
+		std::string error = "catch query error exception: " + std::string(e.what());
+		SLOG_ERROR(error);
+		throw std::runtime_error(error);
 	}
 
 	// this->query_parse_lock.unlock();
