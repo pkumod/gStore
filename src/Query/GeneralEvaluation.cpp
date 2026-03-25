@@ -249,8 +249,13 @@ GeneralEvaluation::loadCSR()
 		ret += csr[1].adjacency_list[i].size();
 	csr[1].m = ret;
 
+	SLOG_CORE("total vertices " << csr[1].n);
+	SLOG_CORE("total edges " << csr[1].m);
+
 	long end_time = gs::TimeUtil::timestamp();
 	SLOG_CORE("Loading CSR in GeneralEvaluation takes " << (end_time - begin_time) << "ms");
+	if (pqHandler)
+		pqHandler->updateCsr(csr);
 	this->kvstore->setCSRUpdate(false);
 }
 

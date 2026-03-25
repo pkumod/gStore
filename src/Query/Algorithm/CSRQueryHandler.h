@@ -13,6 +13,7 @@ class CSRQueryHandler
 	int cacheMaxSize;
 	int n, m;	// #vertices, #edges
 public:
+	void updateCsr(std::shared_ptr<CSR[]>& _csr);
 	CSRQueryHandler(std::shared_ptr<CSR[]>& _csr);
 	
 	~CSRQueryHandler();

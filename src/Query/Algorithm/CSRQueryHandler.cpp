@@ -16,6 +16,20 @@ CSRQueryHandler::CSRQueryHandler(std::shared_ptr<CSR[]>& _csr)
 	srand(time(NULL));
 }
 
+void CSRQueryHandler::updateCsr(std::shared_ptr<CSR[]>& _csr)
+{
+	if (_csr)
+		csr = _csr;
+	else
+    {
+        csr = std::shared_ptr<CSR[]>(new CSR[2], std::default_delete<CSR[]>());
+    }
+	cacheMaxSize = 10000;
+	n = -1;
+	m = -1;
+	srand(time(NULL));
+}
+
 CSRQueryHandler::~CSRQueryHandler()
 {
 }

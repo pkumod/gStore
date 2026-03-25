@@ -8,6 +8,11 @@ PathQueryHandler::PathQueryHandler(std::shared_ptr<CSR[]>& _csr)
 	srand(time(NULL));
 }
 
+void PathQueryHandler::updateCsr(std::shared_ptr<CSR[]>& _csr)
+{
+    csrHandler->updateCsr(_csr);
+}
+
 PathQueryHandler::~PathQueryHandler()
 {
 }

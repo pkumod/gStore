@@ -332,6 +332,7 @@ public:
 	void dfs(std::map<int, std::vector<int> > &route, std::map<int, bool> &vis, int q, int v, const std::vector<int> pred_set, std::vector<int> &ans, bool &finished);
 
     std::shared_ptr<CSRQueryHandler> getCSRHandler(){ return csrHandler; }
+    void updateCsr(std::shared_ptr<CSR[]>& _csr);
 
 	// Path query evaluation functions
 	
