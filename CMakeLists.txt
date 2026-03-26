@@ -47,8 +47,6 @@ endif()
 set( GSTORE_3RDINCLUDE_DIR ${GSTORE_ROOT_DIR}/include )
 set( GSTORE_3RDLIB_DIR ${GSTORE_ROOT_DIR}/lib )
 set( GSTORE_PFNLIB_DIR ${GSTORE_ROOT_DIR}/pfn/lib )
-# scripts test
-set( GSTORE_TEST_DIR ${GSTORE_ROOT_DIR}/scripts/test )
 
 set( INCLUDE_3RD_PATH
         ${GSTORE_ROOT_DIR}/src
@@ -61,7 +59,6 @@ set( INCLUDE_3RD_PATH
 )
 
 add_subdirectory( src )
-add_subdirectory( ${GSTORE_TEST_DIR} )
 
 # init system.db
 # add_custom_command( OUTPUT INIT
