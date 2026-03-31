@@ -74,29 +74,46 @@ N-triple通常采用W3C定义的NT文件格式存储，如下表示了3条RDF数
 
 ​      关于N-Triple文件更详细的描述请参考[N-Triple](https://www.w3.org/TR/n-triples/)。并非SPARQL1.1中的所有语法都是在gStore中解析和回答的，例如，属性路径超出了gStore系统的能力。Turtle家族中的Turtle和TriG的用法类似，文件描述参考[Turtle](https://www.w3.org/TR/turtle/)和[TriG](https://www.w3.org/TR/trig/)
 
-**初始化系统数据库**
+**启动服务**
 
 ```shell
-bin/ginit
+# -b 在后台运行
+bin/gserver -b
+```
+
+**登录控制台**
+
+```shell
+# 默认用户名/密码为root/123456
+bin/gconsole -u root
 ```
 
 **创建数据库**
 
 ```shell
-bin/gbuild -db lubm -f data/lubm/lubm.nt 
+gStore[no database]> create lubm data/lubm/lubm.nt; 
 ```
 
 **展示数据库列表**
 
 ```shell
-bin/gshow
+gStore[no database]> showdbs;
 ```
 
 **数据库数据查询**
 
 ```shell
-bin/gquery -db lubm -q data/lubm/lubm_q0.sql
+gStore[no database]> use lubm;
+
+gStore[lubm]> sparql data/lubm/lubm_q1.rq;
 ```
+
+**退出控制台**
+
+```shell
+gStore[lubm]> quit;
+```
+
 
 完整的说明文档在 [快速开始](docs/zh-cn/QUICK_START.md).
 

@@ -79,28 +79,44 @@ Triples are typically stored in the W3C-defined NT file format and represent thr
 
 ​    More specific information about N-Triple please check [N-Triple](https://www.w3.org/TR/n-triples/). Not all syntax in [SPARQL1.1](https://www.w3.org/TR/sparql11-query/) is parsed and answered in gStore; for example, property paths are beyond the capabilities of the gStore system.
 
-**Initialize the system database**
+**Start gstore server**
 
 ```shell
-bin/ginit
+# -b running in the background
+bin/gserver -b
+```
+
+**Login console client**
+
+```shell
+# default username is root, password is 123456
+bin/gconsole -u root
 ```
 
 **Create database**
 
 ```shell
-bin/gbuild -db lubm -f data/lubm/lubm.nt 
+gStore[no database]> create lubm data/lubm/lubm.nt; 
 ```
 
 **Database list**
 
 ```shell
-bin/gshow
+gStore[no database]> showdbs;
 ```
 
 **Database query**
 
 ```shell
-bin/gquery -db lubm -q data/lubm/lubm_q0.sql 
+gStore[no database]> use lubm;
+
+gStore[lubm]> sparql data/lubm/lubm_q1.rq;
+```
+
+**Exit console client**
+
+```shell
+gStore[lubm]> quit;
 ```
 
 Complete instruction documentation is on the [Quick Start](docs/en-us/QUICK_START.md).
