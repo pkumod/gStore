@@ -5,254 +5,153 @@ string Database::getSchemaPath()
 	return this->store_path + "/schema.json";
 }
 
-void Database::setSchemaFlag(bool _schema_flag)
-{
-	this->schema_flag = _schema_flag;
+
+nlohmann::json Database::processSchemaNode(const unsigned int& nodeIndex, const std::string& label) {
+    nlohmann::json nodeItem;
+    
+    // 处理主节点
+	nodeItem["id"] = nodeIndex;
+	nodeItem["label"] = label;
+	nodeItem["type"] = 0;
+	nodeItem["properties"] = nlohmann::json::array();
+    
+    // 查询属性
+    ResultSet property_rs;
+    std::string query_sparql = "select distinct ?p where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " + label 
+							 + ". ?s ?p ?o . filter(isLiteral(?o))}";
+    
+    bool suc = this->query(query_sparql, property_rs, nullptr);
+    if (suc && property_rs.ansNum > 0) 
+	{
+		nodeItem["properties"].get_ref<nlohmann::json::array_t&>().reserve(property_rs.ansNum);
+        for (unsigned int j = 0; j < property_rs.ansNum; j++) 
+		{
+			nlohmann::json propertyItem;
+			propertyItem["label"] = property_rs.answer[j][0];
+			propertyItem["type"] = 1;
+			nodeItem["properties"].push_back(propertyItem);
+        }
+    }
+	return nodeItem;
 }
 
-bool Database::getSchemaFlag() 
-{
-	return this->schema_flag;
-}
-
-void Database::buildSchema(const std::vector<std::string> &_rdf_files, const std::map<std::string, std::set<std::string>>& id_tuples)
-{
-	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
-		return;
-	unsigned cur_file = 0;
-	unsigned file_count = _rdf_files.size();
-	ifstream _fin;
-	for (unsigned int i = 0; i<file_count; i++)
+nlohmann::json Database::processSchemaEdge(const std::string& label) {
+    std::string query_sparql = "select distinct ?p ?o_label where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> " + label 
+									 + ". ?s ?p ?o . ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o_label . "
+									 + "filter(?p != <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>) }";
+	ResultSet relation_rs;
+	bool suc = this->query(query_sparql, relation_rs, nullptr);
+	nlohmann::json poItems = nlohmann::json::array();
+	if (suc && relation_rs.ansNum > 0)
 	{
-		_fin.open(_rdf_files[i].c_str());
-		if (_fin)
+		for (unsigned int j = 0; j < relation_rs.ansNum; j++)
 		{
-			cur_file = i;
-			break;
-		}
-		if (i == file_count-1)
-		{
-			SLOG_ERROR("buildSchema: Fail to rdf open : " << _rdf_files[cur_file]);
-			return;
+			nlohmann::json edgeItem;
+			edgeItem["source"] = label;
+			edgeItem["label"] = relation_rs.answer[j][0];
+			edgeItem["target"] = relation_rs.answer[j][1];
+			poItems.push_back(edgeItem);
 		}
 	}
-
-	int64_t t1 = gs::TimeUtil::timestamp();
-	std::shared_ptr<TripleWithObjType[]> triple_array(new TripleWithObjType[RDFParser::TRIPLE_NUM_PER_GROUP], std::default_delete<TripleWithObjType[]>());
-	RDFParser _parser(_fin);
-	int num_lines = 0;
-	// edges 实体属性映射
-	std::map<std::string, std::set<std::string>> propertyMap;
-	// 初始化所有的实体类型：避免忽略没有任何属性的实体
-	for (const auto& entityL : id_tuples)
-	{
-		propertyMap[entityL.first] = std::set<std::string>();
-	}
-	// 实体关系集合
-	std::set<struct RelationInfo> relationList;
-	while (true)
-	{
-		int parse_triple_num = 0;
-		int curr_lines = _parser.parseFile(triple_array, parse_triple_num, "", num_lines);
-		num_lines = curr_lines;
-
-		if (parse_triple_num == 0)
-		{
-			if (cur_file >= file_count -1 )
-			{
-				_fin.close();
-				break;
-			}
-			cur_file++;
-			for (unsigned int i = cur_file; i<file_count; i++)
-			{
-                _fin.close();
-				_fin.open(_rdf_files[i].c_str());
-				if (_fin)
-				{
-                    num_lines = 0;
-					cur_file = i;
-					break;
-				}
-			}
-			continue;
-		}
-
-		for (int i = 0; i < parse_triple_num; i++)
-		{
-			TripleWithObjType triple_for_spo = triple_array[i];
-			string _sub = triple_for_spo.getSubject();
-			string _pre = triple_for_spo.getPredicate();
-			string _obj = triple_for_spo.getObject();
-            if (_sub.empty() || _pre.empty() || _obj.empty())
-                continue;
-			if (triple_for_spo.isObjEntity() && !this->checkIsTypePredicate(_pre))
-			{
-				// 实体-关系-实体
-				struct RelationInfo info;
-				info.label = _pre;
-				for (const auto& entityL : id_tuples)
-				{
-					if (!info.empty())
-						break;
-					auto sub_it = entityL.second.find(_sub);
-					if (sub_it != entityL.second.end())
-						info.source = entityL.first; // entityName;
-					auto obj_it = entityL.second.find(_obj);
-					if (obj_it != entityL.second.end())
-						info.target = entityL.first; // entityName;
-				}
-				if (!info.empty())
-					relationList.insert(info);
-			}
-			else if (triple_for_spo.isObjLiteral())
-			{
-				// 实体-属性
-				for (const auto& entityL : id_tuples)
-				{
-					auto sub_it = entityL.second.find(_sub);
-					if (sub_it != entityL.second.end())
-					{
-						propertyMap[entityL.first].insert(_pre);
-						break;
-					}
-				}
-			}
-		}
-	}
-	createSchema(relationList, propertyMap);
-	int64_t t2 = gs::TimeUtil::timestamp();
-	SLOG_CORE("Finish building schema, used " + to_string(t2 - t1) + "ms.");
-}
-
-void Database::createSchema(const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap)
-{
-	nlohmann::json scheam = nlohmann::json::object();
-	scheam["nodes"] = nlohmann::json::array();
-	scheam["edges"] = nlohmann::json::array();
-	nlohmann::json item = nlohmann::json::object();
-	// 实体id与生成index的映射关系
-	std::map<std::string, int> node_index_map;
-	// type 0:实体, 1:属性
-	int nodeIndex = 1;
-	for (const auto& m : propertyMap)
-	{
-		item.clear();
-		item["id"] = nodeIndex;
-		item["label"] = m.first;
-		item["type"] = 0;
-		scheam["nodes"] .push_back(item);
-		node_index_map[m.first] = nodeIndex;
-		nodeIndex++;
-		for (const auto& n : m.second)
-		{
-			item.clear();
-			item["id"] = nodeIndex;
-			item["label"] = n;
-			item["type"] = 1;
-			scheam["nodes"] .push_back(item);
-			// 生成实体-属性
-			item.clear();
-			item["source"] = node_index_map[m.first];
-			item["target"] = nodeIndex;
-			scheam["edges"] .push_back(item);
-			nodeIndex++;
-		}
-	}
-
-	// 生成实体-关系-实体
-	for (const auto& m : relationList)
-	{
-		item.clear();
-		item["source"] = node_index_map[m.source];
-		item["label"] = m.label;
-		item["target"] = node_index_map[m.target];
-		scheam["edges"] .push_back(item);
-	}
-	
-	ofstream file;
-	file.open(getSchemaPath());
-	file << scheam.dump();
-	file.close();
+	return poItems;
 }
 
 void Database::updateSchema()
 {
-	if (this->name == GlobalTypedef::system_db || !this->schema_flag)
-		return;
+	if (!this->if_loaded) {
+	    throw std::runtime_error("Database is not loaded, can't update schema.");
+	}
 	schema_lock.lock();
 	nlohmann::json scheam = nlohmann::json::object();
 	scheam["nodes"] = nlohmann::json::array();
 	scheam["edges"] = nlohmann::json::array();
-	nlohmann::json item = nlohmann::json::object();
-	std::string rdf_type = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
-	// 实体id与生成index的映射关系
-	std::map<std::string, int> node_index_map;
-	// type 0:实体, 1:属性
-	do
-	{   //所有实体类型
-		ResultSet rs;
-		int nodeIndex = 1;
-		string query_sparql = "select distinct ?o where {?s " + rdf_type + " ?o}";
-		bool suc = this->query(query_sparql, rs, nullptr);
-		if (suc && rs.ansNum > 0)
+	unsigned int nodeIndex = 1;
+	std::unordered_map<std::string, unsigned int> node_index_map;
+	ResultSet rs;
+	string query_sparql = "select distinct ?o where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o}";
+	bool suc = this->query(query_sparql, rs, nullptr);
+	if (suc && rs.ansNum > 0)
+	{
+		// use multi-thread to process nodes
+		std::vector<std::future<nlohmann::json>> futures(rs.ansNum);
+		std::vector<std::future<nlohmann::json>> edge_futures(rs.ansNum);
+		std::vector<nlohmann::json> node_items(rs.ansNum);
+		std::vector<nlohmann::json> edge_items(rs.ansNum);
+		for (unsigned int i = 0; i < rs.ansNum; i++) 
 		{
-			for (unsigned int i = 0; i < rs.ansNum; i++)
+			futures[i] = std::async(std::launch::async, [this, i, &rs]() {
+				return this->processSchemaNode(i, rs.answer[i][0]);
+			});
+			edge_futures[i] = std::async(std::launch::async, [this, i, &rs]() {
+				return this->processSchemaEdge(rs.answer[i][0]);
+			});
+		}
+		for (unsigned int i = 0; i < rs.ansNum; i++) 
+		{
+			SLOG_INFO("processing futures " << i + 1 << "/" << rs.ansNum);
+			node_items[i] = futures[i].get();
+			edge_items[i] = edge_futures[i].get();
+		}
+		nodeIndex = rs.ansNum + 1;
+		for (nlohmann::json item : node_items)
+		{
+			node_index_map[item["label"].get<std::string>()] = item["id"].get<unsigned int>();
+			nlohmann::json properties = item["properties"];
+			// remove properties from entity node
+			item.erase("properties");
+			scheam["nodes"] .push_back(item);
+			for (nlohmann::json property : properties)
 			{
-				item.clear();
-				item["id"] = nodeIndex;
-				item["label"] = rs.answer[i][0];
-				item["type"] = 0;
-				scheam["nodes"] .push_back(item);
-				node_index_map[rs.answer[i][0]] = nodeIndex;
+				// property node
+				property["id"] = nodeIndex;
+				scheam["nodes"] .push_back(property);
+
+				// entity-property edge
+				nlohmann::json edgeItem;
+				edgeItem["source"] = item["id"];
+				edgeItem["target"] = nodeIndex;
+				scheam["edges"] .push_back(edgeItem);
 				nodeIndex++;
-				// 所有实体属性
-				ResultSet property_rs;
-				query_sparql = "select distinct ?p where {?s " + rdf_type + " " + rs.answer[i][0] + ". ?s ?p ?o . filter(isLiteral(?o))}";
-				suc = this->query(query_sparql, property_rs, nullptr);
-				if (suc && property_rs.ansNum > 0)
+			}
+		}
+
+		for (nlohmann::json items: edge_items)
+		{
+			for (nlohmann::json item : items)
+			{
+				// edge between entity nodes
+				if (node_index_map.find(item["source"].get<std::string>()) != node_index_map.end() 
+					&& node_index_map.find(item["target"].get<std::string>()) != node_index_map.end())
 				{
-					for (unsigned int j = 0; j < property_rs.ansNum; j++)
-					{
-						item.clear();
-						item["id"] = nodeIndex;
-						item["label"] = property_rs.answer[j][0];
-						item["type"] = 1;
-						scheam["nodes"] .push_back(item);
-						// 生成实体-属性
-						item.clear();
-						item["source"] = node_index_map[rs.answer[i][0]];
-						item["target"] = nodeIndex;
-						scheam["edges"] .push_back(item);
-						nodeIndex++;
-					}
+					nlohmann::json edgeItem;
+					edgeItem["source"] = node_index_map[item["source"].get<std::string>()];
+					edgeItem["label"] = item["label"];
+					edgeItem["target"] = node_index_map[item["target"].get<std::string>()];
+					scheam["edges"] .push_back(edgeItem);
 				}
 			}
 		}
-	} while(0);
+	}
 
-	do
+	// first time generate schema, or the schema file is missing, then create it
+	if (!gs::FileUtil::fileExists(getSchemaPath()))
 	{
-		// 所有边关系
-		ResultSet rs;
-		string query_sparql = "select distinct ?source_type ?p ?target_type where {?s " 
-							+ rdf_type + " ?source_type. ?s ?p ?o. ?o " + rdf_type + " ?target_type filter(isIRI(?o))}";
-		bool suc = this->query(query_sparql, rs, nullptr);
-		if (suc && rs.ansNum > 0)
-		{
-			for (unsigned int i = 0; i < rs.ansNum; i++)
-			{
-				item.clear();
-				item["source"] = node_index_map[rs.answer[i][0]];
-				item["label"] = rs.answer[i][1];
-				item["target"] = node_index_map[rs.answer[i][2]];
-				scheam["edges"] .push_back(item);
-			}
-		}
-	} while (0);
-	
+		gs::FileUtil::createFile(getSchemaPath());	
+	}
 	ofstream file;
 	file.open(getSchemaPath());
+	if (!file.is_open())
+	{
+		SLOG_WARN("open file " << getSchemaPath() << " failed, create a new one.");
+		gs::FileUtil::removeFile(getSchemaPath());
+		gs::FileUtil::createFile(getSchemaPath());
+		file.open(getSchemaPath());
+		if(!file.is_open()) 
+		{
+			schema_lock.unlock();
+			throw std::runtime_error("open schema file failed, please check the file path and permission.");
+		}
+	}
 	file << scheam.dump();
 	file.close();
 	schema_lock.unlock();
@@ -263,7 +162,7 @@ void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 	std::ifstream file(getSchemaPath());
 	if (!file.is_open())
 	{
-		SLOG_ERROR(getSchemaPath() << " is open fail, please check schema file is exist");
+		SLOG_WARN(getSchemaPath() << " is not exist, please generate it first.");
 		return;
 	}
 	nlohmann::json info;
@@ -279,8 +178,6 @@ void Database::getSchemaInfo(nlohmann::json& schema, bool all)
 		return;
 	}
 
-	// entity "#FA8C16"
-	// proprey "#5CDBD3"
 	schema["nodes"] = nlohmann::json::array();
 	schema["edges"] = nlohmann::json::array();
 	nlohmann::json item;

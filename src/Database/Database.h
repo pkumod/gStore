@@ -93,7 +93,7 @@ public:
 	std::shared_ptr<CSR[]> csr;
 	TYPE_TRIPLE_NUM triple_update_num;
 	Database();
-	Database(std::string _name, bool _schema_flag=true);
+	Database(std::string _name);
 	~Database();
 
 	bool save();
@@ -215,7 +215,6 @@ private:
 	mutex umap_lock;
 	// for schema_lock;
 	mutex schema_lock;
-	bool schema_flag;
 	// for csr
 	mutex csr_lock;
 
@@ -437,11 +436,9 @@ private:
 	void buildCloseToSaveMemory();
 	// schema
 	string getSchemaPath();
-	void createSchema(const std::set<struct RelationInfo>& relationList, const std::map<std::string, std::set<std::string>>& propertyMap);
-	void buildSchema(const std::vector<std::string> &_rdf_files, const std::map<std::string, std::set<std::string>>& id_tuples);
+	nlohmann::json processSchemaNode(const unsigned int& nodeIndex, const std::string& label);
+	nlohmann::json processSchemaEdge(const std::string& label);
 public:
-	bool getSchemaFlag();
-	void setSchemaFlag(bool _schema_flag);
 	void updateSchema();
 	void getSchemaInfo(nlohmann::json& schema, bool all);
 	void setLoadTxnFlag(bool flag);

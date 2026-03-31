@@ -113,8 +113,6 @@ namespace server
                 if (db_ptr && db_ptr->load(request.Csr(), request.txn))
                 {
                     SLOG_DEBUG("end loading.");
-                    bool schema_flag = GlobalTypedef::build_schema();
-                    db_info->getDatabase()->setSchemaFlag(schema_flag);
                     db_info->setStatus(DatabaseStatus::LOADED);
                     // insert txn manager
                     apiUtil->insert_txn_manager(request.db_name, db_info);

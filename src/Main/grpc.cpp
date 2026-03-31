@@ -1872,10 +1872,6 @@ void monitor_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &js
  */
 void build_task(const GRPCReq *request, GRPCResp *response, SeriesWork *series, nlohmann::json &json_data)
 {
-	if (!json_data.contains("schema")) 
-	{
-		json_data["schema"] = GlobalTypedef::build_schema();
-	}
 	server::MessageBuildRequest request_data(json_data);
 	server::MessageBuildResponse response_data; 
 	if (request_data.async)
@@ -2942,12 +2938,29 @@ void schema_task(const GRPCReq *request, GRPCResp *response, nlohmann::json &jso
 	shared_ptr<DatabaseInfo> db_info;
 	server::StatusCode statusCode;
 	std::string statusMsg;
-	if (!apiUtil->validate_databaseinfo(db_name, db_info,statusCode,statusMsg, false))
+	if (!apiUtil->validate_databaseinfo(db_name, db_info, statusCode, statusMsg, false))
 	{
 		response->Error(statusCode, statusMsg);
 		return;
 	}
+	bool refresh = JsonUtil::jsonBoolParam(json_data, "refresh", false);
 	shared_ptr<Database> current_database = db_info->getDatabase();
+	if (refresh)
+	{
+		try
+		{			
+			int64_t start_time = gs::TimeUtil::timestamp();
+			current_database->updateSchema();
+			int64_t end_time = gs::TimeUtil::timestamp();
+			SLOG_INFO("Refresh database schema cost " + std::to_string(end_time - start_time) + " ms.");
+		}
+		catch(const std::exception& e)
+		{
+			apiUtil->unlock_databaseinfo(db_info);
+			response->Error(StatusOperationFailed, string(e.what()));
+			return;
+		}
+	}
 	nlohmann::json rjson;
 	rjson["StatusCode"]  = 0;
     rjson["StatusMsg"]   = "success";

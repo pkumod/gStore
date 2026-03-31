@@ -137,11 +137,6 @@ namespace server
                 SLOG_DEBUG("begin insert data from " + rdf_file);
                 success_num += db_ptr->batch_insert(rdf_file, false, nullptr);
             }
-            if (success_num > 0)
-            {
-                SLOG_DEBUG("update schema: " << db_ptr->getSchemaFlag());
-                db_ptr->updateSchema();
-            }
             // exclude Info line
             parse_error_num = FileUtil::fileLines(error_log) - total_num - file_paths.size();
             // save data and unlock

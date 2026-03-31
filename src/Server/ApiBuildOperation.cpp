@@ -125,9 +125,9 @@ namespace server
             }
             apiUtil->init_databaseinfo(db_name, username, gs::TimeUtil::now(NORM_DATETIME_PATTERN), DatabaseStatus::BUILDING);
             SLOG_DEBUG("Import dataset to build database...");
-            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size() << "\tschema: " << request.schema);
+            SLOG_DEBUG("db_name: " + db_name + "\tRDF_data file size: " << nt_files.size());
             string result;
-            shared_ptr<Database> current_database = make_shared<Database>(db_name, request.schema);
+            shared_ptr<Database> current_database = make_shared<Database>(db_name);
             shared_ptr<DatabaseInfo> current_db_info;
             apiUtil->get_databaseinfo(db_name, current_db_info);
             if(apiUtil->trywrlock_databaseinfo(current_db_info) == false)
@@ -182,7 +182,7 @@ namespace server
             apiUtil->get_databaseinfo(db_name, db_info);
             apiUtil->trywrlock_databaseinfo(db_info);
             db_info->setStatus(DatabaseStatus::AREADY_BUILT);
-            db_info->initDatabase(request.schema);
+            db_info->initDatabase();
             int64_t cost_time = gs::TimeUtil::timestamp() - start_time;
             db_info->success(cost_time);
             // init user privilege

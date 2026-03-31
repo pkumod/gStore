@@ -63,10 +63,9 @@ Database::Database()
 	pthread_rwlock_init(&(this->update_lock), NULL);
 }
 
-Database::Database(string _name, bool _schema_flag)
+Database::Database(string _name)
 {
 	this->name = _name;
-	this->schema_flag = _schema_flag;
 	size_t found = this->name.find_last_not_of('/');
 	if (found != string::npos)
 	{

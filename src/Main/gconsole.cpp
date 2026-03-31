@@ -157,7 +157,7 @@ COMMAND commands[] =
 		// database op
 		{"init", init_handler, "Initializes the existing database to the system library.", "init <database_name>[,anothers];", 0},
 		{"sparql", sparql_handler, "Answer SPARQL query(s) in file.", "sparql <sparql_file_path>;", QUERY_PRIVILEGE_BIT}, // file query
-		{"create", create_handler, "Build a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>] <schema>;", 0},
+		{"create", create_handler, "Build a database from a dataset or create an empty database.", "create <database_name> [<nt_file_path>];", 0},
 		{"use", use_handler, "Set current database.", "use <database_name>;", LOAD_PRIVILEGE_BIT | UNLOAD_PRIVILEGE_BIT},
 		{"drop", drop_handler, "Drop a database.", "drop <database_name>;", ALL_PRIVILEGE_BIT},
 		{"show", show_handler, "Show info and specified number of triples of current database or other database.", "show [<database_name>];", QUERY_PRIVILEGE_BIT},
@@ -1587,11 +1587,10 @@ int showdbs_handler(const vector<string> &args)
 
 int create_handler(const vector<string> &args)
 {
-	CHECK_ARGC(3, 1, 2, 3)
+	CHECK_ARGC(3, 1, 2, 2)
 
 	string db_name = "";
 	string db_path = "";
-	bool schema = true; 
 	std::vector<string> files;
 	if (args.size() < 1 || args[0].size() < 3)
 	{
@@ -1606,8 +1605,6 @@ int create_handler(const vector<string> &args)
 	{
 		db_name = args[0];
 		db_path = args[1];
-		if (args.size() == 3)
-			schema = (args[2] != "false") && (args[2] != "0");
 		if (FileUtil::is_dir(db_path))
 			FileUtil::dir_filepaths(db_path, files);
 		else
@@ -1618,7 +1615,7 @@ int create_handler(const vector<string> &args)
 		cout << "Your db name can NOT be \"system\"." << endl;
 		return -1;
 	}
-	server::MessageBuildRequest build_request(db_name, files, schema);
+	server::MessageBuildRequest build_request(db_name, files);
 	build_request.username = root_username;
 	build_request.password = root_password;	
 	if (StringUtil::start_with(db_path, "http://") || StringUtil::start_with(db_path, "https://"))

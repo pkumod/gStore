@@ -66,13 +66,7 @@ bool Database::encodeRDF_new(const std::vector<std::string> &_rdf_files, const s
 	{
 		return false;
 	}
-	if (this->schema_flag)
-	{
-		thread build_schema_thread(&Database::buildSchema, this, _rdf_files, id_tuples);
-		build_schema_thread.detach(); 
-	}
-	else
-		id_tuples.clear();
+	id_tuples.clear();
 	int64_t t2 = gs::TimeUtil::timestamp();
 	SLOG_CORE("Finish parsing, used " + to_string(t2 - t1) + "ms.");
 	

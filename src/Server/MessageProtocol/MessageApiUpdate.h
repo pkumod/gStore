@@ -11,10 +11,9 @@ namespace server
         bool remote; 
         bool async;
         std::string callback;
-        bool schema;
         MessageBuildRequest(std::string db_name, std::string db_path);
-        MessageBuildRequest(std::string db_name, std::vector<std::string> files, bool build_schema = true);
-        MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path, bool build_schema = true);
+        MessageBuildRequest(std::string db_name, std::vector<std::string> files);
+        MessageBuildRequest(std::string username, std::string password, std::string db_name, std::string db_path);
         MessageBuildRequest(const nlohmann::json& json_data);
         void to_json(std::string& json_str) override;
         void to_inner_json(std::string& json_str) override;
