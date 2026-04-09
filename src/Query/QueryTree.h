@@ -177,6 +177,7 @@ private:
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
 
 	UpdateType update_type;
+	bool modify_delete;
 
 	//only use patterns
 	GroupPattern insert_patterns, delete_patterns;
@@ -196,6 +197,7 @@ public:
 		group_pattern = _qt.group_pattern;
 		insert_patterns = _qt.insert_patterns;
 		delete_patterns = _qt.delete_patterns;
+		modify_delete = false;
 	}
 	QueryTree& operator =(const QueryTree& _qt)
 	{
@@ -214,6 +216,7 @@ public:
 		insert_patterns = _qt.insert_patterns;
 		delete_patterns = _qt.delete_patterns;
 		var2type = _qt.var2type;
+		modify_delete = false;
 
 		return *this;
 	}
@@ -269,6 +272,8 @@ public:
 	void setSingleBGP(bool val);
 	bool getSingleBGP();
 	CompTreeNode& getHaving();
+	void setModifyType(bool type){ modify_delete = type; }
+	bool getModifyType(){ return modify_delete;}
 };
 
 class GroupPattern::Pattern

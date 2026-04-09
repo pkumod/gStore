@@ -1571,8 +1571,11 @@ antlrcpp::Any QueryParser::visitModify(SPARQLParser::ModifyContext *ctx)
 	if (ctx->deleteClause() && ctx->insertClause())
 	{
 		query_tree_ptr->setUpdateType(QueryTree::Modify_Clause);
-		visit(ctx->deleteClause());
-		visit(ctx->insertClause());
+		query_tree_ptr->setModifyType(true);
+
+        visit(ctx->deleteClause());
+		query_tree_ptr->setModifyType(false);
+        visit(ctx->insertClause());
 	}
 	else if (ctx->deleteClause())
 	{
@@ -1648,9 +1651,17 @@ antlrcpp::Any QueryParser::visitTriplesSameSubject(SPARQLParser::TriplesSameSubj
 			if (query_tree_ptr->getUpdateType() == QueryTree::Delete_Data
 				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Where
 				|| query_tree_ptr->getUpdateType() == QueryTree::Delete_Clause)
+			{
 				addTriple(subject, predicate, object, false, group_pattern_delete);
+			}
+			else if (query_tree_ptr->getUpdateType() == QueryTree::Modify_Clause && query_tree_ptr->getModifyType())
+			{
+				addTriple(subject, predicate, object, false, group_pattern_delete);
+			}
 			else
+			{
 				addTriple(subject, predicate, object, false, group_pattern_insert);
+			}
 		}
 	}
 
