@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.9
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -354,6 +354,9 @@ public:
 
   virtual void enterGraphTerm(SPARQLParser::GraphTermContext * /*ctx*/) override { }
   virtual void exitGraphTerm(SPARQLParser::GraphTermContext * /*ctx*/) override { }
+
+  virtual void enterTripleTerm(SPARQLParser::TripleTermContext * /*ctx*/) override { }
+  virtual void exitTripleTerm(SPARQLParser::TripleTermContext * /*ctx*/) override { }
 
   virtual void enterExpression(SPARQLParser::ExpressionContext * /*ctx*/) override { }
   virtual void exitExpression(SPARQLParser::ExpressionContext * /*ctx*/) override { }

@@ -77,6 +77,9 @@ public:
 	antlrcpp::Any visitBind(SPARQLParser::BindContext *ctx, GroupPattern &group_pattern);
 	antlrcpp::Any visitTriplesSameSubjectpath(SPARQLParser::TriplesSameSubjectpathContext *ctx, \
 		GroupPattern &group_pattern);
+	antlrcpp::Any visitTripleTerm(SPARQLParser::TripleTermContext *ctx) override;
+	// Overload: extracts components and writes placeholder into out_subject
+	void visitTripleTerm(SPARQLParser::TripleTermContext *ctx, std::string& out_placeholder);
 	antlrcpp::Any visitGroupClause(SPARQLParser::GroupClauseContext *ctx);
 	antlrcpp::Any visitOrderClause(SPARQLParser::OrderClauseContext *ctx);
 

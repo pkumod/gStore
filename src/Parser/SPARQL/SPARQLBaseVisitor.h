@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.9
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -464,6 +464,10 @@ public:
   }
 
   virtual antlrcpp::Any visitGraphTerm(SPARQLParser::GraphTermContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitTripleTerm(SPARQLParser::TripleTermContext *ctx) override {
     return visitChildren(ctx);
   }
 
