@@ -244,6 +244,16 @@ bool Database::sub2id_pre2id_obj2id_RDFintoSignature(const std::vector<std::stri
 	SLOG_CORE("Begin to build Trie ......");
 	int num_lines = 0;
 	RDFParser _parser(_fin); // RDFParser is actually invoked twice, see above
+	// Enable strict N-Triples mode for .nt files:
+	// reject <<...>> without () and reject triple terms as subject
+	{
+		std::string fpath = _rdf_files[cur_file];
+		if (fpath.length() >= 3) {
+			std::string ext = fpath.substr(fpath.length() - 3);
+			if (ext == ".nt" || ext == ".NT")
+				_parser.setNTriplesMode(true);
+		}
+	}
 
 	num_lines = 0;
 	SLOG_CORE("this type predicate name is " << StringUtil::join(this->type_predicate_name, "@@"));

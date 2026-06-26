@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "TempResult.h"
+#include "../Util/Triple.h"
 
 using namespace std;
 
@@ -1478,6 +1479,43 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 			else
 				ret_femv.bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
 		}
+		return ret_femv;
+	}
+
+	else if (root.oprt == "triple")
+	{
+		// TRIPLE() built-in: constructs a triple term from s, p, o components
+		if (root.children.size() != 3)
+			return ret_femv;
+		EvalMultitypeValue s_val = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel);
+		EvalMultitypeValue p_val = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
+		EvalMultitypeValue o_val = doComp(root.children[2], row, id_cols, kvstore, this_varset, isel);
+
+		string s_str, p_str, o_str;
+		if (s_val.datatype == EvalMultitypeValue::rdf_term)
+			s_str = s_val.term_value;
+		else if (s_val.datatype == EvalMultitypeValue::literal || s_val.datatype == EvalMultitypeValue::xsd_string)
+			s_str = s_val.str_value;
+		else
+			return ret_femv;
+
+		if (p_val.datatype == EvalMultitypeValue::rdf_term)
+			p_str = p_val.term_value;
+		else if (p_val.datatype == EvalMultitypeValue::literal || p_val.datatype == EvalMultitypeValue::xsd_string)
+			p_str = p_val.str_value;
+		else
+			return ret_femv;
+
+		if (o_val.datatype == EvalMultitypeValue::rdf_term)
+			o_str = o_val.term_value;
+		else if (o_val.datatype == EvalMultitypeValue::literal || o_val.datatype == EvalMultitypeValue::xsd_string)
+			o_str = o_val.str_value;
+		else
+			return ret_femv;
+
+		// Build canonical triple term string
+		ret_femv.datatype = EvalMultitypeValue::rdf_term;
+		ret_femv.term_value = makeTripleTermString(s_str, p_str, o_str);
 		return ret_femv;
 	}
 

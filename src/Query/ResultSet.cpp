@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "ResultSet.h"
+#include "../Util/Triple.h"
 #include <regex>
 
 using namespace std;
@@ -451,7 +452,73 @@ bool ResultSet::to_JSON(nlohmann::json& json)
 					outfile << ans_str + "\n";
 					#endif
 					ans_key = this->var_name[j].substr(1);
-					if (ans_str[0] == '<')
+					if (ans_str.length() >= 3 && ans_str[0] == '<' && ans_str[1] == '<' && ans_str[2] == '(')
+					{
+						// Triple term: serialize as nested JSON
+						// Format: <<( <subject> <predicate> <object> )>>
+						string tt_subject, tt_predicate, tt_object;
+						if (parseTripleTermString(ans_str, tt_subject, tt_predicate, tt_object))
+						{
+							nlohmann::json value_wrapper;
+							nlohmann::json tt_subj_json, tt_pred_json, tt_obj_json;
+
+							// Serialize subject
+							if (tt_subject[0] == '<')
+							{
+								tt_subj_json["type"] = "uri";
+								tt_subj_json["value"] = tt_subject.substr(1, tt_subject.length() - 2);
+							}
+							else if (tt_subject[0] == '"')
+							{
+								tt_subj_json["type"] = "literal";
+								tt_subj_json["value"] = tt_subject.substr(1, tt_subject.rfind("\"") - 1);
+							}
+							else
+							{
+								tt_subj_json["type"] = "bnode";
+								tt_subj_json["value"] = tt_subject;
+							}
+
+							// Serialize predicate
+							if (tt_predicate[0] == '<')
+							{
+								tt_pred_json["type"] = "uri";
+								tt_pred_json["value"] = tt_predicate.substr(1, tt_predicate.length() - 2);
+							}
+
+							// Serialize object
+							if (tt_object[0] == '<' && tt_object.length() >= 3 && tt_object[1] == '<' && tt_object[2] == '(')
+							{
+								// Nested triple term - recursive
+								tt_obj_json["type"] = "triple";
+								tt_obj_json["value"] = tt_object;
+							}
+							else if (tt_object[0] == '<')
+							{
+								tt_obj_json["type"] = "uri";
+								tt_obj_json["value"] = tt_object.substr(1, tt_object.length() - 2);
+							}
+							else if (tt_object[0] == '"')
+							{
+								tt_obj_json["type"] = "literal";
+								tt_obj_json["value"] = tt_object.substr(1, tt_object.rfind("\"") - 1);
+							}
+							else
+							{
+								tt_obj_json["type"] = "bnode";
+								tt_obj_json["value"] = tt_object;
+							}
+
+							value_wrapper["subject"] = tt_subj_json;
+							value_wrapper["predicate"] = tt_pred_json;
+							value_wrapper["object"] = tt_obj_json;
+
+							json_var[ans_key]["value"] = value_wrapper;
+							json_var[ans_key]["type"] = "triple";
+							continue;
+						}
+					}
+					else if (ans_str[0] == '<')
 					{
 						ans_type = "uri";
 						ans_str = NodeUtil::clear_angle_brackets(ans_str);

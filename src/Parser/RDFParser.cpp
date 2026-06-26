@@ -93,13 +93,21 @@ int RDFParser::parseFile(std::shared_ptr<TripleWithObjType[]>& _triple_array, in
 			continue;
 		}
 
-		_subject = "<" + rawSubject + ">";
+		// Check if subject is already a triple term (starts with <<()
+		if (rawSubject.length() >= 3 && rawSubject[0] == '<' && rawSubject[1] == '<' && rawSubject[2] == '(')
+			_subject = rawSubject;
+		else
+			_subject = "<" + rawSubject + ">";
 		_predicate = "<" + rawPredicate + ">";
 
 		TripleWithObjType::ObjectType _object_type = TripleWithObjType::None;
 		if (_objectType == Type::URI)
 		{
-			_object = "<" + rawObject + ">";
+			// Check if object is already a triple term
+			if (rawObject.length() >= 3 && rawObject[0] == '<' && rawObject[1] == '<' && rawObject[2] == '(')
+				_object = rawObject;
+			else
+				_object = "<" + rawObject + ">";
 			_object_type = TripleWithObjType::Entity;
 		}
 		else

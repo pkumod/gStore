@@ -9,6 +9,7 @@
 #pragma once
 
 #include <typeinfo>
+#include <vector>
 
 #include "antlr4-runtime.h"
 #include "SPARQL/SPARQLLexer.h"
@@ -29,12 +30,24 @@ private:
 	QueryTree *query_tree_ptr;
 	std::map<std::string, std::string> prefix_map;
 	bool firstVisitGroupGraphPatternSub;
+	// triple term placeholder to original content mapping
+	// key: placeholder (e.g. "urn:gstore:tt:0")
+	// value: canonical string (e.g. "<<( <iri> <iri> <iri> )>>")
+	std::map<std::string, std::string> triple_term_map;
+	// Individual components [subject, predicate, object] for variable matching
+	std::map<std::string, std::vector<std::string>> triple_term_components;
+	int triple_term_counter;
 
 public:
-	QueryParser(): firstVisitGroupGraphPatternSub(true) {}
-	QueryParser(QueryTree *qtp): query_tree_ptr(qtp), firstVisitGroupGraphPatternSub(true) {}
+	QueryParser(): firstVisitGroupGraphPatternSub(true), triple_term_counter(0) {}
+	QueryParser(QueryTree *qtp): query_tree_ptr(qtp), firstVisitGroupGraphPatternSub(true), triple_term_counter(0) {}
 	void setQueryTree(QueryTree *qtp) { query_tree_ptr = qtp; }
 	void SPARQLParse(const std::string &query);	// Overall driver function
+
+	// Triple term helper methods
+	std::string preprocessTripleTerms(const std::string &query);
+	bool isTripleTermPlaceholder(const std::string &str) const;
+	std::string resolveTripleTermPlaceholder(const std::string &placeholder) const;
 
 	antlrcpp::Any visitQuery(SPARQLParser::QueryContext *ctx);
 	antlrcpp::Any visitSelectquery(SPARQLParser::SelectqueryContext *ctx);
@@ -66,7 +79,7 @@ public:
 		GroupPattern &group_pattern);
 	antlrcpp::Any visitGroupClause(SPARQLParser::GroupClauseContext *ctx);
 	antlrcpp::Any visitOrderClause(SPARQLParser::OrderClauseContext *ctx);
-	
+
 	antlrcpp::Any visitInsertData(SPARQLParser::InsertDataContext *ctx);
 	antlrcpp::Any visitDeleteData(SPARQLParser::DeleteDataContext *ctx);
 	antlrcpp::Any visitDeleteWhere(SPARQLParser::DeleteWhereContext *ctx);
@@ -90,7 +103,7 @@ public:
 };
 
 /**
-	Listener for errors during SPARQL query parsing, which throws a 
+	Listener for errors during SPARQL query parsing, which throws a
 	corresponding exception when an error arises.
 */
 class SPARQLErrorListener: public antlr4::BaseErrorListener
