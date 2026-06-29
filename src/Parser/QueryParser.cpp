@@ -133,76 +133,121 @@ void QueryParser::printQueryTree()
 */
 std::string QueryParser::preprocessTripleTerms(const std::string &query)
 {
-	// Canonical <<(...)>> format is used as literal values in SPARQL queries
-	// (e.g., as the object of rdf:reifies).  These must pass through unchanged
-	// since ANTLR cannot parse them as tripleTerm (the '(' breaks varOrTerm).
-	// Turtle-style << ... >> is now handled by the ANTLR grammar directly.
+	// The ANTLR grammar handles Turtle-style << ... >> (without parentheses)
+	// via the tripleTerm rule and visitTripleTerm.  Canonical <<(...)>>
+	// (with parentheses) is used as literal triple-term values in SPARQL
+	// (e.g., rdf:reifies objects) and cannot be parsed by ANTLR because
+	// '(' is not a valid varOrTerm.  This method replaces <<(...)>> blocks
+	// with placeholder IRIs <urn:gstore:tt:N> before ANTLR sees them.
 	//
-	// This method only needs to skip string literals and SPARQL comments
-	// to avoid false << matches, and copy everything else verbatim.
-
-	std::string result;
-	result.reserve(query.size() + 64);
-	size_t i = 0;
-	size_t n = query.size();
-
-	while (i < n)
-	{
-		// Skip SPARQL line comments (# ... \n)
-		if (query[i] == '#')
-		{
-			result += query[i++];
-			while (i < n && query[i] != '\n' && query[i] != '\r')
-				result += query[i++];
-			continue;
-		}
-
-		// Skip string literals to avoid false << matches inside strings
-		if (query[i] == '\'' || query[i] == '"')
-		{
-			char quote = query[i];
-			result += query[i++];
-			while (i < n)
-			{
-				if (query[i] == '\\' && i + 1 < n) { result += query[i++]; result += query[i++]; }
-				else if (query[i] == quote)
-				{
-					// Check for triple-quote
-					if (i + 2 < n && query[i+1] == quote && query[i+2] == quote)
-					{
-						result += query[i++]; result += query[i++]; result += query[i++];
-						while (i < n) {
-							if (query[i] == '\\' && i + 1 < n) { result += query[i++]; result += query[i++]; }
-							else if (query[i] == quote && i+2<n && query[i+1]==quote && query[i+2]==quote)
-							{ result += query[i++]; result += query[i++]; result += query[i++]; break; }
-							else { result += query[i++]; }
-						}
-						break;
-					}
-					else { result += query[i++]; break; }
-				}
-				else { result += query[i++]; }
-			}
-			continue;
-		}
-
-		// Skip single IRIs (not <<) -- << inside an IRI is not a triple term
-		if (query[i] == '<' && (i + 1 >= n || query[i + 1] != '<'))
-		{
-			result += query[i++];
-			int depth = 1;
-			while (i < n && depth > 0) {
-				if (query[i] == '<') depth++;
-				else if (query[i] == '>') depth--;
-				result += query[i++];
-			}
-			continue;
-		}
-
-		// Everything else (including <<...>> now handled by ANTLR) passes through
-		result += query[i++];
+	// String literals and SPARQL comments are skipped to avoid false matches.
+	std::map<std::string, std::string> localPrefixMap;
+	static const std::regex prefixRe(R"(PREFIX\s+(\S*):\s*<([^>]+)>)",
+	                                  std::regex::icase | std::regex::optimize);
+	std::sregex_iterator piter(query.begin(), query.end(), prefixRe);
+	std::sregex_iterator pend;
+	for (; piter != pend; ++piter) {
+		std::string key = (*piter)[1].str() + ":";
+		localPrefixMap[key] = (*piter)[2].str();
 	}
 
+	auto expand_prefixed = [&](const std::string &token) -> std::string {
+		if (token.empty()) return token;
+		if (token[0] == '<' || token[0] == '"' || token[0] == '?' || token[0] == '$')
+			return token;
+		if (token[0] == '_' && token.length() > 1 && token[1] == ':')
+			return token;
+		size_t sep = token.find(':');
+		if (sep == std::string::npos) return token;
+		auto it = localPrefixMap.find(token.substr(0, sep + 1));
+		if (it != localPrefixMap.end())
+			return "<" + it->second + token.substr(sep + 1) + ">";
+		return token;
+	};
+
+	// Helper: read an IRI <...>, literal "...", variable ?x, or prefixed name :x
+	auto readComponent = [&](size_t &i, size_t n, const std::string &q) -> std::string {
+		while (i < n && (q[i] == ' ' || q[i] == '\t' || q[i] == '\n' || q[i] == '\r')) i++;
+		if (i >= n) return "";
+		size_t start = i;
+		if (q[i] == '<') {
+			int d = 1; i++; while (i < n && d > 0) { if (q[i]=='<') d++; else if (q[i]=='>') d--; i++; }
+		} else if (q[i] == '"') {
+			char qt = q[i]; i++; while (i<n && q[i]!=qt) { if (q[i]=='\\') i++; i++; }
+			if (i < n) i++;
+			if (i<n && q[i]=='^' && i+1<n && q[i+1]=='^') { i+=2; if (i<n && q[i]=='<') { i++; while (i<n && q[i]!='>') i++; i++; } }
+			else if (i<n && q[i]=='@') { i++; while (i<n && !isspace((unsigned char)q[i]) && q[i]!='>' && q[i]!=')') i++; }
+		} else if (q[i] == '?' || q[i] == '$') { i++; while (i<n && (isalnum((unsigned char)q[i]) || q[i]=='_' || q[i]=='-')) i++; }
+		else if (q[i] == '_' && i+1<n && q[i+1]==':') { i+=2; while (i<n && (isalnum((unsigned char)q[i]) || q[i]=='_' || q[i]=='-')) i++; }
+		else { while (i<n && !isspace((unsigned char)q[i]) && q[i]!='>' && q[i]!=')') i++; }
+		return expand_prefixed(q.substr(start, i - start));
+	};
+
+	std::string result;
+	result.reserve(query.size() + 256);
+	size_t i = 0, n = query.size();
+
+	while (i < n) {
+		// Skip SPARQL comments
+		if (query[i] == '#') {
+			result += query[i++];
+			while (i < n && query[i] != '\n' && query[i] != '\r') result += query[i++];
+			continue;
+		}
+		// Skip string literals
+		if (query[i] == '\'' || query[i] == '"') {
+			char quote = query[i]; result += query[i++];
+			while (i < n) {
+				if (query[i]=='\\' && i+1<n) { result+=query[i++]; result+=query[i++]; }
+				else if (query[i] == quote) {
+					if (i+2<n && query[i+1]==quote && query[i+2]==quote) {
+						result+=query[i++]; result+=query[i++]; result+=query[i++];
+						while (i<n) { if (query[i]=='\\'&&i+1<n) { result+=query[i++]; result+=query[i++]; }
+							else if (query[i]==quote&&i+2<n&&query[i+1]==quote&&query[i+2]==quote)
+							{ result+=query[i++]; result+=query[i++]; result+=query[i++]; break; }
+							else result+=query[i++]; }
+						break;
+					} else { result+=query[i++]; break; }
+				} else result+=query[i++];
+			}
+			continue;
+		}
+		// Skip single IRIs (not <<)
+		if (query[i] == '<' && (i+1 >= n || query[i+1] != '<')) {
+			result += query[i++]; int d = 1;
+			while (i<n && d>0) { if (query[i]=='<') d++; else if (query[i]=='>') d--; result+=query[i++]; }
+			continue;
+		}
+
+		// Detect <<( ... )>> — canonical format, replace with placeholder
+		if (query[i] == '<' && i+1 < n && query[i+1] == '<') {
+			size_t peek = i + 2;
+			while (peek < n && (query[peek]==' ' || query[peek]=='\t' || query[peek]=='\n' || query[peek]=='\r')) peek++;
+			if (peek < n && query[peek] == '(') {
+				i += 2; // skip <<
+				while (i<n && (query[i]==' '||query[i]=='\t'||query[i]=='\n'||query[i]=='\r')) i++;
+				if (i<n && query[i]=='(') i++;
+				std::string s = readComponent(i, n, query);
+				std::string p = readComponent(i, n, query);
+				std::string o = readComponent(i, n, query);
+				while (i<n && (query[i]==' '||query[i]=='\t'||query[i]=='\n'||query[i]=='\r')) i++;
+				if (i<n && query[i]==')') i++;
+				while (i<n && (query[i]==' '||query[i]=='\t'||query[i]=='\n'||query[i]=='\r')) i++;
+				if (i+1<n && query[i]=='>' && query[i+1]=='>') i+=2;
+
+				std::string canonical = "<<( " + s + " " + p + " " + o + " )>>";
+				std::string placeholder = "urn:gstore:tt:" + std::to_string(triple_term_counter);
+				triple_term_map[placeholder] = canonical;
+				triple_term_components[placeholder] = {s, p, o};
+				triple_term_counter++;
+				result += "<" + placeholder + ">";
+				continue;
+			}
+		}
+
+		// Everything else (including Turtle <<...>> for ANTLR) passes through
+		result += query[i++];
+	}
 	return result;
 }
 
@@ -1499,14 +1544,11 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 void QueryParser::visitTripleTerm(SPARQLParser::TripleTermContext *ctx, std::string& out_placeholder)
 {
 	std::string s, p, o;
-	// Extract subject from the triple term's varOrTerm
 	s = getTextWithRange(ctx->varOrTerm());
 	replacePrefix(s);
-	// Extract predicate from verb
 	p = ctx->verb()->getText();
 	if (p == "a") p = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
 	replacePrefix(p);
-	// Extract object from objectList -> object -> graphNode -> varOrTerm
 	if (ctx->objectList()->object().size() > 0) {
 		auto objNode = ctx->objectList()->object(0)->graphNode();
 		if (objNode && objNode->varOrTerm()) {
@@ -1514,7 +1556,9 @@ void QueryParser::visitTripleTerm(SPARQLParser::TripleTermContext *ctx, std::str
 			replacePrefix(o);
 		}
 	}
-	// Build canonical string and create placeholder
+	// Turtle-style << ... >> — create placeholder for decomposition in addTriple.
+	// Canonical <<(...)>> is handled by preprocessTripleTerms (replaced with
+	// placeholder before ANTLR sees it).
 	std::string canonical = "<<( " + s + " " + p + " " + o + " )>>";
 	std::string placeholder = "urn:gstore:tt:" + std::to_string(triple_term_counter);
 	triple_term_map[placeholder] = canonical;
@@ -1522,7 +1566,6 @@ void QueryParser::visitTripleTerm(SPARQLParser::TripleTermContext *ctx, std::str
 	triple_term_counter++;
 	out_placeholder = "<" + placeholder + ">";
 }
-
 antlrcpp::Any QueryParser::visitTripleTerm(SPARQLParser::TripleTermContext *ctx)
 {
 	// Default: return the text of the triple term
@@ -1613,7 +1656,19 @@ void QueryParser::addTriple(string subject, string predicate, string object, boo
 
 	if (isTripleTermPlaceholder(object))
 	{
-		decompose_triple_term(object, object);
+		// Canonical <<(...)>> appears as rdf:reifies object — use the
+		// raw canonical string directly as a literal value.
+		// For all other predicates, decompose into reification join.
+		if (predicate == "<http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies>")
+		{
+			std::string canonical = resolveTripleTermPlaceholder(object);
+			if (!canonical.empty())
+				object = canonical;
+		}
+		else
+		{
+			decompose_triple_term(object, object);
+		}
 	}
 
 	// Add the (possibly rewritten) pattern

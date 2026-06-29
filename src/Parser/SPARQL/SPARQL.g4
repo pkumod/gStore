@@ -121,7 +121,10 @@ varOrIri : var | iri ;
 varOrIriSet : '{' varOrIri ( ',' varOrIri )* '}' ;
 var : VAR1 | VAR2 ;
 graphTerm : iri | rDFLiteral | numericLiteral | booleanLiteral | blankNode | NIL | tripleTerm ;
-tripleTerm : TRIPLE_TERM_OPEN varOrTerm verb objectList TRIPLE_TERM_CLOSE ;
+tripleTerm
+    : TRIPLE_TERM_OPEN '(' varOrTerm verb objectList ')' TRIPLE_TERM_CLOSE   // <<(...)>>
+    | TRIPLE_TERM_OPEN varOrTerm verb objectList TRIPLE_TERM_CLOSE           // << ... >>
+    ;
 expression : conditionalOrexpression ;
 conditionalOrexpression : conditionalAndexpression ( '||' conditionalAndexpression )* ;
 conditionalAndexpression : valueLogical ( '&&' valueLogical )* ;
