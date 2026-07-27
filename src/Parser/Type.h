@@ -16,7 +16,8 @@ class Type {
    /// Different literal types
    enum ID {
       URI, Literal, CustomLanguage, CustomType,
-      String, Integer, Decimal, Double, Boolean
+      String, Integer, Decimal, Double, Boolean,
+      TripleTerm
    };
    /// Does the type have a sub-type?
    static inline bool hasSubType(ID t) { return (t==CustomLanguage)||(t==CustomType); }

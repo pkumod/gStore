@@ -68,7 +68,7 @@ run_test() {
 
 # ===================== 主流程 =====================
 divider
-echo -e "${PURPLE}          🚀 自动执行全部 5 个测试脚本${NC}"
+echo -e "${PURPLE}          🚀 自动执行全部 6 个测试脚本${NC}"
 divider
 
 # 1. 检查服务
@@ -82,15 +82,16 @@ divider
 echo -e "${YELLOW}📌 开始执行所有测试...${NC}"
 divider
 
-# 2. 依次执行 5 个脚本
+# 2. 依次执行 6 个脚本
 run_test "scripts/test/gtest.sh"
 run_test "scripts/test/basic_test.sh"
 run_test "scripts/test/parser_test.sh"
+run_test "scripts/test/triple_term_test.sh"
 run_test "scripts/test/update_test.sh"
 run_test "scripts/test/transaction_test.sh"
 
 divider
-echo -e "${GREEN}🎉 所有 5 个测试脚本全部执行完毕！${NC}"
+echo -e "${GREEN}🎉 所有 6 个测试脚本全部执行完毕！${NC}"
 divider
 
 # 3. 如果是脚本启动的服务，自动停止

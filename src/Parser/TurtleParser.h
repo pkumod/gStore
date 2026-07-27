@@ -39,7 +39,7 @@ class TurtleParser
    class Lexer {
       public:
       /// Possible tokens
-      enum Token { Eof, Dot, Colon, Comma, Semicolon, LBracket, RBracket, LParen, RParen, At, Type, Integer, Decimal, Double, Name, A, True, False, String, URI };
+      enum Token { Eof, Dot, Colon, Comma, Semicolon, LBracket, RBracket, LParen, RParen, At, Type, Integer, Decimal, Double, Name, A, True, False, String, URI, TripleTermOpen, TripleTermClose, ReifierMark };
 
       private:
       /// The input
@@ -146,6 +146,10 @@ class TurtleParser
    void parseDirective();
    /// Parse a new triple
    void parseTriple(Lexer::Token token,std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType);
+   /// Parse a triple term content between << and >>
+   void parseTripleTermContent(std::string& termStr, bool& needsReification, std::string& outReifier);
+   /// Emit helper component triples for a triple term to enable variable matching in SPARQL
+   void emitTripleTermComponents(const std::string& canonicalTT);
 
    public:
    /// Constructor
@@ -157,6 +161,12 @@ class TurtleParser
    bool parse(std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType);
 
    void discardLine() { lexer.discardLine(); }
+
+   /// Enable strict N-Triples mode: rejects <<...>> without parentheses
+   /// and rejects triple terms in subject position (N-Triples only allows
+   /// <<(...)>> in object position).
+   void setNTriplesMode(bool strict) { strictNTriples = strict; }
+   bool strictNTriples = false;
 };
 //---------------------------------------------------------------------------
 #endif

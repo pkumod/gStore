@@ -31,5 +31,6 @@ public:
     RDFParser(ifstream& _fin);
     int parseFile(std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num, string _error_log="", int init_line=0);
     void parseString(string _str, std::shared_ptr<TripleWithObjType[]>& _triple_array, int& _triple_num);
+    void setNTriplesMode(bool strict) { _TurtleParser.setNTriplesMode(strict); }
 };
 #endif

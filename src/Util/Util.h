@@ -75,8 +75,10 @@ public:
 
 	static bool is_literal_ele(TYPE_ENTITY_LITERAL_ID id);
 	static bool is_entity_ele(TYPE_ENTITY_LITERAL_ID id);
+	static bool is_triple_term_ele(TYPE_ENTITY_LITERAL_ID id);
 	static bool isEntity(const std::string& _str);
 	static bool isLiteral(const std::string& _str);
+	static bool isTripleTerm(const std::string& _str);
 
 	static unsigned removeDuplicate(unsigned*, unsigned);
 

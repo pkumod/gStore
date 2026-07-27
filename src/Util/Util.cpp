@@ -323,7 +323,7 @@ Util::~Util()
 bool
 Util::is_literal_ele(TYPE_ENTITY_LITERAL_ID _id)
 {
-    return _id >= GlobalTypedef::LITERAL_FIRST_ID;
+    return _id >= GlobalTypedef::LITERAL_FIRST_ID && _id < GlobalTypedef::TRIPLE_TERM_ID_START;
 }
 
 bool 
@@ -358,6 +358,21 @@ Util::isLiteral(const std::string& _str)
 	}
 }
 
+bool
+Util::is_triple_term_ele(TYPE_ENTITY_LITERAL_ID id)
+{
+	return id >= GlobalTypedef::TRIPLE_TERM_ID_START && id < GlobalTypedef::INVALID_TRIPLE_TERM_ID;
+}
+
+bool
+Util::isTripleTerm(const std::string& _str)
+{
+	if(_str.length() >= 3 && _str[0] == '<' && _str[1] == '<' && _str[2] == '(')
+	{
+		return true;
+	}
+	return false;
+}
 
 //NOTICE: require that the list is ordered
 unsigned

@@ -299,10 +299,15 @@ public:
 	static const char EDGE_OUT= 'o';
 
 	//In order to differentiate the sub-part and literal-part of object
-	//let subid begin with 0, while literalid begins with LITERAL_FIRST_ID 
+	//let subid begin with 0, while literalid begins with LITERAL_FIRST_ID
 	//used in Database and Join
 	static const unsigned LITERAL_FIRST_ID = 2 * 1000*1000*1000;
 	//static const int LITERAL_FIRST_ID = 2 * 1000*1000*1000;
+
+	// TripleTerm ID space: reserved high-range region for triple term identifiers
+	// Triple terms get IDs starting from TRIPLE_TERM_ID_START to avoid collision with entity/literal IDs
+	static const unsigned TRIPLE_TERM_ID_START = 3500000000u;
+	static const TYPE_ENTITY_LITERAL_ID INVALID_TRIPLE_TERM_ID = UINT_MAX;
 
 	//initial transfer buffer size in Tree/ and Stream/
 	static const unsigned TRANSFER_SIZE = 1 << 20;	//1M

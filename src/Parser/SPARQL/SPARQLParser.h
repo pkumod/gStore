@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.9
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -49,16 +49,16 @@ public:
     K_DEGREECORRELATION = 168, SHORTESTPATHS = 169, K_KHOPALLNEIGHBORS = 170, 
     K_INCREASE = 171, KK_INSERTDATA = 172, KK_DELETEDATA = 173, KK_DELETEWHERE = 174, 
     KK_ENCODE_FOR_URI = 175, KK_MD5 = 176, KK_SHA1 = 177, KK_SHA256 = 178, 
-    KK_SHA384 = 179, KK_SHA512 = 180, KK_GROUP_CONCAT = 181, IRIREF = 182, 
-    PNAME_NS = 183, PNAME_LN = 184, BLANK_NODE_LABEL = 185, VAR1 = 186, 
-    VAR2 = 187, LANGTAG = 188, INTEGER = 189, DECIMAL = 190, DOUBLE = 191, 
-    INTEGER_POSITIVE = 192, DECIMAL_POSITIVE = 193, DOUBLE_POSITIVE = 194, 
-    INTEGER_NEGATIVE = 195, DECIMAL_NEGATIVE = 196, DOUBLE_NEGATIVE = 197, 
-    EXPONENT = 198, STRING_LITERAL1 = 199, STRING_LITERAL2 = 200, STRING_LITERAL_LONG1 = 201, 
-    STRING_LITERAL_LONG2 = 202, ECHAR = 203, NIL = 204, WS = 205, ANON = 206, 
-    PN_CHARS_BASE = 207, PN_CHARS_U = 208, VARNAME = 209, PN_CHARS = 210, 
-    PN_PREFIX = 211, PN_LOCAL = 212, PLX = 213, PERCENT = 214, HEX = 215, 
-    PN_LOCAL_ESC = 216, COMMENT = 217
+    KK_SHA384 = 179, KK_SHA512 = 180, KK_GROUP_CONCAT = 181, TRIPLE_TERM_OPEN = 182, 
+    TRIPLE_TERM_CLOSE = 183, IRIREF = 184, PNAME_NS = 185, PNAME_LN = 186, 
+    BLANK_NODE_LABEL = 187, VAR1 = 188, VAR2 = 189, LANGTAG = 190, INTEGER = 191, 
+    DECIMAL = 192, DOUBLE = 193, INTEGER_POSITIVE = 194, DECIMAL_POSITIVE = 195, 
+    DOUBLE_POSITIVE = 196, INTEGER_NEGATIVE = 197, DECIMAL_NEGATIVE = 198, 
+    DOUBLE_NEGATIVE = 199, EXPONENT = 200, STRING_LITERAL1 = 201, STRING_LITERAL2 = 202, 
+    STRING_LITERAL_LONG1 = 203, STRING_LITERAL_LONG2 = 204, ECHAR = 205, 
+    NIL = 206, WS = 207, ANON = 208, PN_CHARS_BASE = 209, PN_CHARS_U = 210, 
+    VARNAME = 211, PN_CHARS = 212, PN_PREFIX = 213, PN_LOCAL = 214, PLX = 215, 
+    PERCENT = 216, HEX = 217, PN_LOCAL_ESC = 218, COMMENT = 219
   };
 
   enum {
@@ -93,24 +93,25 @@ public:
     RuleBlankNodepropertyList = 101, RuleTriplesNodepath = 102, RuleBlankNodepropertyListpath = 103, 
     RuleCollection = 104, RuleCollectionpath = 105, RuleGraphNode = 106, 
     RuleGraphNodepath = 107, RuleVarOrTerm = 108, RuleVarOrIri = 109, RuleVarOrIriSet = 110, 
-    RuleVar = 111, RuleGraphTerm = 112, RuleExpression = 113, RuleConditionalOrexpression = 114, 
-    RuleConditionalAndexpression = 115, RuleValueLogical = 116, RuleRelationalexpression = 117, 
-    RuleNumericexpression = 118, RuleAdditiveexpression = 119, RuleMultiplicativeexpression = 120, 
-    RuleUnaryexpression = 121, RulePrimaryexpression = 122, RuleBrackettedexpression = 123, 
-    RuleIriOrNegIri = 124, RulePredSet = 125, RuleBuiltInCall = 126, RuleRegexexpression = 127, 
-    RuleSubstringexpression = 128, RuleStrReplaceexpression = 129, RuleExistsFunc = 130, 
-    RuleNotexistsFunc = 131, RuleAggregate = 132, RuleIriOrFunction = 133, 
-    RuleRDFLiteral = 134, RuleNumericLiteral = 135, RuleNumericLiteralUnsigned = 136, 
-    RuleNumericLiteralPositive = 137, RuleNumericLiteralNegative = 138, 
-    RuleIntegerLiteral = 139, RuleNum_integer = 140, RuleNum_decimal = 141, 
-    RuleNum_double = 142, RuleInteger_positive = 143, RuleDecimal_positive = 144, 
-    RuleDouble_positive = 145, RuleInteger_negative = 146, RuleDecimal_negative = 147, 
-    RuleDouble_negative = 148, RuleBooleanLiteral = 149, RuleString = 150, 
-    RuleIri = 151, RuleNegIri = 152, RulePrefixedName = 153, RuleBlankNode = 154, 
-    RuleJsonVar = 155, RuleJsonVars = 156
+    RuleVar = 111, RuleGraphTerm = 112, RuleTripleTerm = 113, RuleExpression = 114, 
+    RuleConditionalOrexpression = 115, RuleConditionalAndexpression = 116, 
+    RuleValueLogical = 117, RuleRelationalexpression = 118, RuleNumericexpression = 119, 
+    RuleAdditiveexpression = 120, RuleMultiplicativeexpression = 121, RuleUnaryexpression = 122, 
+    RulePrimaryexpression = 123, RuleBrackettedexpression = 124, RuleIriOrNegIri = 125, 
+    RulePredSet = 126, RuleBuiltInCall = 127, RuleRegexexpression = 128, 
+    RuleSubstringexpression = 129, RuleStrReplaceexpression = 130, RuleExistsFunc = 131, 
+    RuleNotexistsFunc = 132, RuleAggregate = 133, RuleIriOrFunction = 134, 
+    RuleRDFLiteral = 135, RuleNumericLiteral = 136, RuleNumericLiteralUnsigned = 137, 
+    RuleNumericLiteralPositive = 138, RuleNumericLiteralNegative = 139, 
+    RuleIntegerLiteral = 140, RuleNum_integer = 141, RuleNum_decimal = 142, 
+    RuleNum_double = 143, RuleInteger_positive = 144, RuleDecimal_positive = 145, 
+    RuleDouble_positive = 146, RuleInteger_negative = 147, RuleDecimal_negative = 148, 
+    RuleDouble_negative = 149, RuleBooleanLiteral = 150, RuleString = 151, 
+    RuleIri = 152, RuleNegIri = 153, RulePrefixedName = 154, RuleBlankNode = 155, 
+    RuleJsonVar = 156, RuleJsonVars = 157
   };
 
-  explicit SPARQLParser(antlr4::TokenStream *input);
+  SPARQLParser(antlr4::TokenStream *input);
   ~SPARQLParser();
 
   virtual std::string getGrammarFileName() const override;
@@ -233,6 +234,7 @@ public:
   class VarOrIriSetContext;
   class VarContext;
   class GraphTermContext;
+  class TripleTermContext;
   class ExpressionContext;
   class ConditionalOrexpressionContext;
   class ConditionalAndexpressionContext;
@@ -2179,6 +2181,7 @@ public:
     BooleanLiteralContext *booleanLiteral();
     BlankNodeContext *blankNode();
     antlr4::tree::TerminalNode *NIL();
+    TripleTermContext *tripleTerm();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -2188,6 +2191,25 @@ public:
   };
 
   GraphTermContext* graphTerm();
+
+  class  TripleTermContext : public antlr4::ParserRuleContext {
+  public:
+    TripleTermContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *TRIPLE_TERM_OPEN();
+    VarOrTermContext *varOrTerm();
+    VerbContext *verb();
+    ObjectListContext *objectList();
+    antlr4::tree::TerminalNode *TRIPLE_TERM_CLOSE();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TripleTermContext* tripleTerm();
 
   class  ExpressionContext : public antlr4::ParserRuleContext {
   public:

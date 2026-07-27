@@ -1,5 +1,5 @@
 
-// Generated from ./SPARQL.g4 by ANTLR 4.9
+// Generated from ./SPARQL.g4 by ANTLR 4.7.2
 
 #pragma once
 
@@ -244,6 +244,8 @@ public:
     virtual antlrcpp::Any visitVar(SPARQLParser::VarContext *context) = 0;
 
     virtual antlrcpp::Any visitGraphTerm(SPARQLParser::GraphTermContext *context) = 0;
+
+    virtual antlrcpp::Any visitTripleTerm(SPARQLParser::TripleTermContext *context) = 0;
 
     virtual antlrcpp::Any visitExpression(SPARQLParser::ExpressionContext *context) = 0;
 

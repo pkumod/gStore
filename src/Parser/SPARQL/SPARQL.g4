@@ -120,7 +120,11 @@ varOrTerm : var | graphTerm ;
 varOrIri : var | iri ;
 varOrIriSet : '{' varOrIri ( ',' varOrIri )* '}' ;
 var : VAR1 | VAR2 ;
-graphTerm : iri | rDFLiteral | numericLiteral | booleanLiteral | blankNode | NIL ;
+graphTerm : iri | rDFLiteral | numericLiteral | booleanLiteral | blankNode | NIL | tripleTerm ;
+tripleTerm
+    : TRIPLE_TERM_OPEN '(' varOrTerm verb objectList ')' TRIPLE_TERM_CLOSE   // <<(...)>>
+    | TRIPLE_TERM_OPEN varOrTerm verb objectList TRIPLE_TERM_CLOSE           // << ... >>
+    ;
 expression : conditionalOrexpression ;
 conditionalOrexpression : conditionalAndexpression ( '||' conditionalAndexpression )* ;
 conditionalAndexpression : valueLogical ( '&&' valueLogical )* ;
@@ -419,6 +423,9 @@ KK_SHA256 : S H A '256' ;
 KK_SHA384 : S H A '384' ;
 KK_SHA512 : S H A '512' ;
 KK_GROUP_CONCAT : G R O U P '_' C O N C A T ;
+
+TRIPLE_TERM_OPEN  : '<<' ;
+TRIPLE_TERM_CLOSE : '>>' ;
 
 IRIREF
 : '<' ( ~('<' | '>' | '"' | '{' | '}' | '|' | '^' | '\\' | '`' | '\u0000'..'\u0020' ) )* '>'

@@ -1,5 +1,6 @@
 #include "TurtleParser.h"
 #include <sstream>
+#include "../Util/Triple.h"
 //---------------------------------------------------------------------------
 // RDF-3X
 // (c) 2008 Thomas Neumann. Web site: http://www.mpi-inf.mpg.de/~neumann/rdf3x
@@ -57,7 +58,7 @@ bool TurtleParser::Lexer::doRead(char& c)
    return false;
 }
 //---------------------------------------------------------------------------
-static bool issep(char c) { return (c==' ')||(c=='\t')||(c=='\n')||(c=='\r')||(c=='[')||(c==']')||(c=='(')||(c==')')||(c==',')||(c==';')||(c==':')||(c=='.'); }
+static bool issep(char c) { return (c==' ')||(c=='\t')||(c=='\n')||(c=='\r')||(c=='[')||(c==']')||(c=='(')||(c==')')||(c==',')||(c==';')||(c==':')||(c=='.')||(c=='>'); }
 //---------------------------------------------------------------------------
 TurtleParser::Lexer::Token TurtleParser::Lexer::lexNumber(std::string& token,char c)
    // Lex a number
@@ -336,7 +337,28 @@ TurtleParser::Lexer::Token TurtleParser::Lexer::next(std::string& token)
             }
             return Type;
          case '\"': return lexString(token,c);
-         case '<': return lexURI(token,c);
+         case '<':
+         {
+            char next_c;
+            if (read(next_c) && next_c == '<')
+               return TripleTermOpen;
+            // Not <<, so next_c is the first content char of a URI
+            unread();  // put back next_c
+            return lexURI(token, c);
+         }
+         case '>':
+         {
+            char next_c;
+            if (read(next_c) && next_c == '>')
+               return TripleTermClose;
+            // single > is an error
+            unread();
+            stringstream msg;
+            msg << "lexer error in line " << line << ": unexpected '>'";
+            throw Exception(msg.str());
+         }
+
+         case '~': return ReifierMark;
          default:
             if (((c>='A')&&(c<='Z'))||((c>='a')&&(c<='z'))||(c=='_')) { // XXX unicode!
                token=c;
@@ -418,10 +440,10 @@ void TurtleParser::parseDirective()
    if (lexer.next(value)!=Lexer::Name)
       parseError("directive name expected after '@'");
 
-   if (value=="base") {
+   if (value=="base" || value=="BASE") {
       if (lexer.next(base)!=Lexer::URI)
-         parseError("URI expected after @base");
-   } else if (value=="prefix") {
+         parseError("URI expected after @base or BASE");
+   } else if (value=="prefix" || value=="PREFIX") {
       std::string prefixName;
       Lexer::Token token=lexer.next(prefixName);
       // A prefix name?
@@ -537,6 +559,34 @@ void TurtleParser::parseSubject(Lexer::Token token,std::string& subject)
    // Parse a subject
 {
    switch (token) {
+      case Lexer::TripleTermOpen:
+         // Triple term as subject
+         {
+            // N-Triples strict mode: triple terms in subject position are not allowed
+            if (strictNTriples)
+               parseError("triple term not allowed as subject in N-Triples; use RDF reification instead");
+
+            bool needsReif = false;
+            std::string explicitReifier;
+            parseTripleTermContent(subject, needsReif, explicitReifier);
+            if (needsReif) {
+               std::string reifier;
+               if (!explicitReifier.empty()) {
+                  reifier = explicitReifier;
+               } else {
+                  std::stringstream reif_id;
+                  reif_id << "urn:gstore:reifier:" << (nextBlank++);
+                  reifier = reif_id.str();
+               }
+               triples.push_back(Triple(reifier,
+                  "http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies",
+                  subject, Type::URI, ""));
+               // Emit component triples for variable triple term matching in SPARQL
+               emitTripleTermComponents(subject);
+               subject = reifier;
+            }
+            return;
+         }
       case Lexer::URI:
          // URI
          constructAbsoluteURI(subject);
@@ -573,6 +623,38 @@ void TurtleParser::parseObject(std::string& object,Type::ID& objectType,std::str
    Lexer::Token token=lexer.next(object);
    objectSubType="";
    switch (token) {
+      case Lexer::TripleTermOpen:
+         // Triple term as object
+         {
+            // N-Triples strict mode: only <<(...)>> (with parentheses) is allowed
+            if (strictNTriples) {
+               Lexer::Token peek = lexer.next();
+               if (peek != Lexer::LParen)
+                  parseError("Turtle-style <<...>> not allowed in N-Triples; use <<(...)>> with parentheses");
+               lexer.ungetIgnored(peek);
+            }
+            bool needsReif = false;
+            std::string explicitReifier;
+            parseTripleTermContent(object, needsReif, explicitReifier);
+            objectType=Type::URI;
+            if (needsReif) {
+               std::string reifier;
+               if (!explicitReifier.empty()) {
+                  reifier = explicitReifier;
+               } else {
+                  std::stringstream reif_id;
+                  reif_id << "urn:gstore:reifier:" << (nextBlank++);
+                  reifier = reif_id.str();
+               }
+               triples.push_back(Triple(reifier,
+                  "http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies",
+                  object, Type::URI, ""));
+               // Emit component triples for variable triple term matching in SPARQL
+               emitTripleTermComponents(object);
+               object = reifier;
+            }
+            return;
+         }
       case Lexer::URI:
          // URI
          constructAbsoluteURI(object);
@@ -725,10 +807,252 @@ void TurtleParser::parsePredicateObjectList(const string& subject,string& predic
    lexer.ungetIgnored(token);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void TurtleParser::parseTripleTermContent(std::string& termStr, bool& needsReification, std::string& outReifier)
+   // Parse a triple term content between << and >>
+   // Handles both N-Triples style <<( ... )>> and Turtle style << ... >>
+{
+   // Check for optional LParen (N-Triples format)
+   Lexer::Token token = lexer.next();
+   bool hasParen = false;
+   if (token == Lexer::LParen)
+   {
+      hasParen = true;
+   }
+   else
+   {
+      lexer.ungetIgnored(token);
+   }
+
+   // Parse the three components: subject, predicate, object
+   std::string s, p, o;
+   Type::ID oType;
+   std::string oSubType;
+
+   // Parse subject
+   token = lexer.next(s);
+   parseSubject(token, s);
+
+   // Parse predicate - must be URI, 'a', or qualified name
+   std::string pred;
+   token = lexer.next(pred);
+   switch (token) {
+      case Lexer::URI:
+         constructAbsoluteURI(pred);
+         break;
+      case Lexer::A:
+         pred = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+         break;
+      case Lexer::Colon:
+         lexer.unget(token, pred);
+         parseQualifiedName("", pred);
+         break;
+      case Lexer::Name:
+         if (pred == "_")
+            parseError("blank nodes not allowed as predicate in triple term");
+         parseQualifiedName(pred, pred);
+         break;
+      default:
+         parseError("invalid predicate in triple term");
+   }
+   p = pred;
+
+   // Parse object
+   parseObject(o, oType, oSubType);
+
+   // Check for optional ~ reifier (Turtle explicit reifier syntax)
+   // e.g., << :s :p :o ~ :iri >>
+   std::string explicitReifier;
+   bool hasExplicitReifier = false;
+   token = lexer.next();
+   if (token == Lexer::ReifierMark)
+   {
+      hasExplicitReifier = true;
+      Lexer::Token reifToken = lexer.next(explicitReifier);
+      if (reifToken == Lexer::URI)
+      {
+         constructAbsoluteURI(explicitReifier);
+      }
+      else if (reifToken == Lexer::Colon)
+      {
+         lexer.unget(reifToken, explicitReifier);
+         parseQualifiedName("", explicitReifier);
+      }
+      else if (reifToken == Lexer::Name)
+      {
+         if (explicitReifier == "_")
+         {
+            // Blank node reifier: _:label
+            if (lexer.next() != Lexer::Colon || !isName(lexer.next(explicitReifier)))
+               parseError("blank node reifier must be _:label");
+            explicitReifier = "_:" + explicitReifier;
+         }
+         else
+            parseQualifiedName(explicitReifier, explicitReifier);
+      }
+      else if (reifToken == Lexer::A)
+      {
+         explicitReifier = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+      }
+      else
+      {
+         // Anonymous reifier (just ~ without a reifier name)
+         lexer.unget(reifToken, explicitReifier);
+         hasExplicitReifier = false;
+      }
+   }
+   else
+   {
+      lexer.ungetIgnored(token);
+   }
+
+      // Expect closing
+   if (hasParen)
+   {
+      token = lexer.next();
+      if (token != Lexer::RParen)
+         parseError("')' expected in triple term");
+   }
+
+   token = lexer.next();
+   if (token != Lexer::TripleTermClose)
+      parseError("'>>' expected to close triple term");
+
+   // Build canonical string: <<( <subject> <predicate> <object> )>>
+   // Subject: wrap in <> for URIs, keep triple terms and blank nodes as-is
+   if (s.length() > 0 && s[0] != '<' && s[0] != '_')
+      s = "<" + s + ">";
+   // Predicate: always wrap in <>
+   if (p.length() > 0 && p[0] != '<')
+      p = "<" + p + ">";
+   // Object: wrap based on type
+   if (oType == Type::String)
+      o = "\"" + o + "\"^^<http://www.w3.org/2001/XMLSchema#string>";
+   else if (oType == Type::Integer)
+      o = "\"" + o + "\"^^<http://www.w3.org/2001/XMLSchema#integer>";
+   else if (oType == Type::Decimal)
+      o = "\"" + o + "\"^^<http://www.w3.org/2001/XMLSchema#decimal>";
+   else if (oType == Type::Double)
+      o = "\"" + o + "\"^^<http://www.w3.org/2001/XMLSchema#double>";
+   else if (oType == Type::Boolean)
+      o = "\"" + o + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
+   else if (oType == Type::CustomLanguage)
+      o = "\"" + o + "\"@" + oSubType;
+   else if (oType == Type::CustomType)
+      o = "\"" + o + "\"^^" + oSubType;
+   else if (oType == Type::Literal)
+      o = "\"" + o + "\"";
+   else if (o.length() > 0 && o[0] != '<' && o[0] != '_')
+   {
+      // URI entity - wrap in <>
+      o = "<" + o + ">";
+   }
+   // Triple terms and blank nodes are kept as-is
+
+   termStr = "<<( " + s + " " + p + " " + o + " )>>";
+
+   // Turtle-style <<...>> (no parens) needs reification
+   // N-Triples style <<(...)>> (with parens) does not
+   needsReification = !hasParen;
+   outReifier = hasExplicitReifier ? explicitReifier : "";
+}
+
+/**
+   Emit helper triples that link a triple term's canonical string to its
+   individual subject, predicate, and object components.  This enables
+   SPARQL queries to match variables inside triple terms by joining on
+   the components rather than the monolithic string.
+
+   @param canonicalTT the canonical triple term string <<( s p o )>>
+*/
+void TurtleParser::emitTripleTermComponents(const std::string& canonicalTT)
+{
+   std::string s, p, o;
+   if (!isTripleTermString(canonicalTT)) return;
+   if (!parseTripleTermString(canonicalTT, s, p, o)) return;
+
+   // Helper to determine object type from a component string
+   // (canonical form: URIs are <...>, literals start with ", blank nodes start with _:)
+   auto determine_component_type = [](const std::string& val) -> Type::ID {
+      if (val.empty()) return Type::URI;
+      if (val[0] == '"') {
+         // Check for ^^type or @lang suffix
+         if (val.find("^^") != std::string::npos) return Type::CustomType;
+         if (val.find('@') != std::string::npos) return Type::CustomLanguage;
+         return Type::Literal;
+      }
+      if (val.length() >= 2 && val[0] == '_' && val[1] == ':')
+         return Type::URI; // blank node stored as URI in gStore
+      if (val.length() >= 4 && val[0] == '<' && val[1] == '<')
+         return Type::URI; // nested triple term stored as URI
+      return Type::URI; // default: IRI or qualified name
+   };
+
+   // Strip angle brackets from URI components (RDFParser will add them)
+   // to avoid double-wrapping: the canonical string stores URIs as <...>
+   // Blank nodes (starting with _:), literals (starting with "), and
+   // nested triple terms (starting with <<() should NOT be stripped.
+   auto strip_angle_brackets = [](std::string& val) {
+      // Only strip if it looks like a plain URI: starts with <, ends with >
+      // and is not a triple term (<<(...)>>)
+      if (val.length() >= 2 && val[0] == '<' && val.back() == '>' &&
+          !(val.length() >= 3 && val[1] == '<'))
+         val = val.substr(1, val.length() - 2);
+   };
+   // Strip literal quotes from object components (RDFParser will re-add them
+   // based on the Type::ID). The canonical string stores literals as "value"^^<type>
+   // or "value"@lang, but RDFParser expects the raw value.
+   auto strip_literal_quotes = [](std::string& val, std::string& sub_type, Type::ID& o_type) {
+      if (val.empty() || val[0] != '"') return;
+      // Find the closing quote (handle \" escapes)
+      size_t endQuote = 1;
+      while (endQuote < val.length()) {
+         if (val[endQuote] == '\\') { endQuote += 2; continue; }
+         if (val[endQuote] == '"') break;
+         endQuote++;
+      }
+      if (endQuote >= val.length()) return;
+      std::string inner = val.substr(1, endQuote - 1);
+      std::string suffix = val.substr(endQuote + 1);
+      if (!suffix.empty() && suffix[0] == '@') {
+         o_type = Type::CustomLanguage;
+         sub_type = suffix.substr(1);
+         val = inner;
+      } else if (suffix.length() >= 4 && suffix.substr(0, 4) == "^^<") {
+         o_type = Type::CustomType;
+         sub_type = suffix.substr(3, suffix.length() - 4);
+         val = inner;
+      } else {
+         o_type = Type::Literal;
+         val = inner;
+      }
+   };
+
+   strip_angle_brackets(s);
+   strip_angle_brackets(p);
+
+   // Determine object type and strip wrapping from object component
+   Type::ID o_type = determine_component_type(o);
+   std::string o_sub_type = "";
+   if (o_type != Type::URI)
+      strip_literal_quotes(o, o_sub_type, o_type);
+   else
+      strip_angle_brackets(o);
+
+   static const std::string subj_pred = "urn:gstore:tripleTermSubject";
+   static const std::string pred_pred = "urn:gstore:tripleTermPredicate";
+   static const std::string obj_pred  = "urn:gstore:tripleTermObject";
+
+   triples.push_back(Triple(canonicalTT, subj_pred, s, Type::URI, ""));
+   triples.push_back(Triple(canonicalTT, pred_pred, p, Type::URI, ""));
+   triples.push_back(Triple(canonicalTT, obj_pred,  o, o_type, o_sub_type));
+}
+
 void TurtleParser::parseTriple(Lexer::Token token,std::string& subject,std::string& predicate,std::string& object,Type::ID& objectType,std::string& objectSubType)
    // Parse a triple
 {
    parseSubject(token,subject);
+   // Reification for triple term subjects is handled inside parseSubject
    parsePredicateObjectList(subject,predicate,object,objectType,objectSubType);
    if (lexer.next()!=Lexer::Dot)
       parseError("'.' expected after triple");
@@ -757,9 +1081,28 @@ bool TurtleParser::parse(std::string& subject,std::string& predicate,std::string
       token=lexer.next(subject);
       if (token==Lexer::Eof) return false;
 
-      // A directive?
+      // A directive? Handle both @prefix/@base and PREFIX/BASE (without @)
       if (token==Lexer::At) {
          parseDirective();
+         continue;
+      } else if (token==Lexer::Name && (subject=="PREFIX" || subject=="prefix" || subject=="BASE" || subject=="base")) {
+         // Handle PREFIX/BASE directive without @ (no trailing dot required)
+         if (subject=="BASE" || subject=="base") {
+            if (lexer.next(base)!=Lexer::URI)
+               parseError("URI expected after BASE");
+         } else {
+            std::string prefixName;
+            Lexer::Token t=lexer.next(prefixName);
+            if (t==Lexer::Name) {
+               t=lexer.next();
+            } else prefixName.resize(0);
+            if (t!=Lexer::Colon)
+               parseError("':' expected after PREFIX");
+            std::string uri;
+            if (lexer.next(uri)!=Lexer::URI)
+               parseError("URI expected after PREFIX");
+            prefixes[prefixName]=uri;
+         }
          continue;
       } else break;
    }
