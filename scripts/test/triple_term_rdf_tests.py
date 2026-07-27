@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Test harness for gStore RDF 1.2 TripleTerm against rdf-tests suite."""
+"""Test for gStore RDF 1.2 TripleTerm against rdf-tests suite."""
+
+"""
+Prelimirary: Please frist clone the rdf-tests (https://github.com/w3c/rdf-tests/) to the corresponding path
+"""
 import subprocess, json, time, os, sys, urllib.request, glob, uuid, re
 
 GSTORE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
