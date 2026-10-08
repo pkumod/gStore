@@ -1076,7 +1076,21 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 			if (p != -1)
 				ret_femv.str_value = "\"" + x.str_value.substr(p + 1) + "\"";
 			else
-				ret_femv.str_value = "";
+				ret_femv.str_value = "\"\"";
+			return ret_femv;
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_string ||
+				 x.datatype == EvalMultitypeValue::xsd_integer ||
+				 x.datatype == EvalMultitypeValue::xsd_decimal ||
+				 x.datatype == EvalMultitypeValue::xsd_float ||
+				 x.datatype == EvalMultitypeValue::xsd_long ||
+				 x.datatype == EvalMultitypeValue::xsd_double ||
+				 x.datatype == EvalMultitypeValue::xsd_datetime)
+		{
+			// typed literals have no language tag either
+			// (xsd_boolean is not listed: it also carries the error value)
+			ret_femv.datatype = EvalMultitypeValue::literal;
+			ret_femv.str_value = "\"\"";
 			return ret_femv;
 		}
 		else
