@@ -1038,9 +1038,10 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 			}
 			else if (sufStr == "boolean")
 			{
-				if (contentStr == "\"true\"")
+				//XSD 1.1: the lexical space of xsd:boolean is {true, false, 1, 0}
+				if (contentStr == "\"true\"" || contentStr == "\"1\"")
 					bool_value = EvalMultitypeValue::EffectiveBooleanValue::true_value;
-				else if (contentStr == "\"false\"")
+				else if (contentStr == "\"false\"" || contentStr == "\"0\"")
 					bool_value = EvalMultitypeValue::EffectiveBooleanValue::false_value;
 			}
 			else if (sufStr == "dateTime" || sufStr == "date")
