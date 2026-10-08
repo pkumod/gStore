@@ -718,7 +718,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 			curr_node.oprt = "";
 			// curr_node.lchild = NULL;
 			// curr_node.rchild = NULL;
-			curr_node.val = root->getText();
+			curr_node.val = normalizeQuotes(root->getText());
 		}
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
 		{
@@ -1747,6 +1747,43 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 }
 
 /**
+	Helper function that rewrites a string literal in the double-quoted form.
+	A single-quoted literal (STRING_LITERAL1, STRING_LITERAL_LONG1) denotes the
+	same value as its double-quoted counterpart, since the quoting style is not
+	part of the literal.
+
+	@param str the raw text of a string literal, possibly followed by a language
+	tag or a datatype.
+	@return string of the literal in the double-quoted form.
+*/
+string QueryParser::normalizeQuotes(const string &str)
+{
+	if (str.empty() || str[0] != '\'')	return str;
+
+	size_t quoteNum = 1, begin = 1, end = 1;
+	if (str.length() > 2 && str[1] == '\'' && str[2] == '\'')
+	{
+		// long string literal, delimited by '''
+		quoteNum = 3;
+		begin = 3;
+		end = str.find("'''", begin);
+	}
+	else
+	{
+		// the literal ends at the first single quote that is not escaped by '\'
+		while (end < str.length())
+		{
+			if (str[end] == '\\')	end++;
+			else if (str[end] == '\'')	break;
+			end++;
+		}
+	}
+	if (end >= str.length())	return str;
+
+	return '"' + str.substr(begin, end - begin) + '"' + str.substr(end + quoteNum);
+}
+
+/**
 	Helper function that checks ranges for integer types, and get rids of NaN for float types.
 	Wrapper of getText.
 
@@ -1756,7 +1793,7 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 
 string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 {
-	string baseText = ctx->getText(), suffix, val;
+	string baseText = normalizeQuotes(ctx->getText()), suffix, val;
 	size_t sufIdx = baseText.find("^^");
 	if (baseText.empty() || baseText[0] != '"' || sufIdx == string::npos)
 		return baseText;

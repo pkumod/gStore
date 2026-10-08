@@ -83,6 +83,7 @@ public:
 	void replacePrefix(std::string &str);
 	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);
 	std::string getTextWithRange(antlr4::tree::ParseTree *ctx);
+	std::string normalizeQuotes(const std::string &str);
 
 	void printNode(antlr4::ParserRuleContext *ctx, const char *nodeTypeName);
 	void printTree(antlr4::tree::ParseTree *root, int dep);
