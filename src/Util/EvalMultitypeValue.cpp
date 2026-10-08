@@ -923,8 +923,9 @@ EvalMultitypeValue
 	this->getSameNumericType(x);
 	if (datatype == xsd_integer)
 	{
-		ret_femv.datatype = xsd_integer;
-		ret_femv.int_value = int_value / x.int_value;
+		// Op:numeric-divide of two xsd:integer operands returns xsd:decimal (SPARQL 1.1 §17.3)
+		ret_femv.datatype = xsd_decimal;
+		ret_femv.flt_value = (float)int_value / x.int_value;
 	}
 	else if (datatype == xsd_decimal)
 	{
