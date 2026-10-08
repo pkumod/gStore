@@ -910,7 +910,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		if (lRes.datatype == EvalMultitypeValue::xsd_boolean) {
 			if ((root.oprt == "||" && lRes.bool_value.getValue() == 1) || (root.oprt == "&&" && lRes.bool_value.getValue() != 1))
 				return lRes;
-		} else if (root.oprt == "&&")
+		} else if (root.oprt == "&&" && lRes.getEBV().getValue() != 1)
 			return lRes;
 		rRes = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
 
@@ -1390,10 +1390,9 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		EvalMultitypeValue x, y, z;
 
 		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel);
-		if ((x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
-			|| x.datatype != EvalMultitypeValue::xsd_boolean)
+		if (x.getEBV().value == EvalMultitypeValue::EffectiveBooleanValue::error_value)
 			return ret_femv;
-		if (x.datatype == EvalMultitypeValue::xsd_boolean && x.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+		if (x.getEBV().value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 			ret_femv = doComp(root.children[1], row, id_cols, kvstore, this_varset, isel);
 		else
 			ret_femv = doComp(root.children[2], row, id_cols, kvstore, this_varset, isel);
@@ -1498,7 +1497,7 @@ void TempResult::doFilter(const CompTreeNode &filter, std::shared_ptr<KVstore> k
 		if (!filter.varset.vars.empty())
 			isel = entity_literal_varset.findVar(filter.varset.vars[0]);
         EvalMultitypeValue ret_femv = doComp(filter, this->result[i], this_id_cols, kvstore, this_varset, isel);
-        if (ret_femv.datatype == EvalMultitypeValue::xsd_boolean && ret_femv.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
+        if (ret_femv.getEBV().value == EvalMultitypeValue::EffectiveBooleanValue::true_value) {
             ++i;
             ++save_num;
         } else {
