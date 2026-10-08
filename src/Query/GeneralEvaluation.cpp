@@ -2107,8 +2107,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						string sample_result;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_sum.int_value = 0;
-						numeric_min.datatype = EvalMultitypeValue::xsd_integer;
-						numeric_min.int_value = INT_MAX;
+						// The first numeric value is assigned directly: a sentinel such as
+						// INT_MAX is not smaller than every decimal/float/double/long value
+						bool numeric_min_initialized = false;
 						numeric_max.datatype = EvalMultitypeValue::xsd_integer;
 						numeric_max.int_value = INT_MIN;
 						datetime_min.datatype = EvalMultitypeValue::xsd_datetime;
@@ -2177,9 +2178,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									{
 										if (numeric)
 										{
-											res = numeric_min > tmp;
-											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+											if (!numeric_min_initialized)
+											{
 												numeric_min = tmp;
+												numeric_min_initialized = true;
+											}
+											else
+											{
+												res = numeric_min > tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													numeric_min = tmp;
+											}
 										}
 										else if (datetime)
 										{
@@ -2310,9 +2319,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									{
 										if (numeric)
 										{
-											res = numeric_min > tmp;
-											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+											if (!numeric_min_initialized)
+											{
 												numeric_min = tmp;
+												numeric_min_initialized = true;
+											}
+											else
+											{
+												res = numeric_min > tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													numeric_min = tmp;
+											}
 										}
 										else if (datetime)
 										{
