@@ -266,6 +266,27 @@ EvalMultitypeValue
 	return ret_femv;
 }
 
+// Language tags are case-insensitive by definition (RFC 5646 2.1.1)
+static bool equalLangTag(const string &x, const string &y)
+{
+	string xLower = x, yLower = y;
+	gs::StringUtil::lower_case(xLower);
+	gs::StringUtil::lower_case(yLower);
+	return xLower == yLower;
+}
+
+// Compare two literal values as RDF terms: the string content is compared
+// case-sensitively, while the language tag is compared case-insensitively
+static bool equalLiteralValue(const string &x, const string &y)
+{
+	size_t xPos = x.rfind('"'), yPos = y.rfind('"');
+	if (xPos == string::npos || yPos == string::npos)
+		return x == y;
+	if (x.compare(0, xPos, y, 0, yPos) != 0)
+		return false;
+	return equalLangTag(x.substr(xPos + 1), y.substr(yPos + 1));
+}
+
 EvalMultitypeValue
 	EvalMultitypeValue::operator == (EvalMultitypeValue &x)
 {
@@ -317,7 +338,7 @@ EvalMultitypeValue
 	if (this->datatype == literal && x.datatype == literal)
 	{
 		// Include those with lang tags; require lang tags to be equal
-		ret_femv.bool_value = (this->str_value == x.str_value);
+		ret_femv.bool_value = equalLiteralValue(this->str_value, x.str_value);
 
 		ret_femv.deduceTermValue();
 		return ret_femv;
@@ -392,9 +413,10 @@ EvalMultitypeValue
 		return ret_femv;
 	}
 
-	if (this->isSimpleLiteral() && x.isSimpleLiteral())
+	if (this->datatype == literal && x.datatype == literal)
 	{
-		ret_femv.bool_value = (this->str_value != x.str_value);
+		// Include those with lang tags; require lang tags to be equal
+		ret_femv.bool_value = !equalLiteralValue(this->str_value, x.str_value);
 
 		ret_femv.deduceTermValue();
 		return ret_femv;
@@ -1130,7 +1152,7 @@ bool EvalMultitypeValue::argCompatible(EvalMultitypeValue &x)
 		if (x.datatype == EvalMultitypeValue::xsd_string)
 			return true;
 		else if (x.datatype == EvalMultitypeValue::literal \
-			&& (x.isSimpleLiteral() || getLangTag() == x.getLangTag()))
+			&& (x.isSimpleLiteral() || equalLangTag(getLangTag(), x.getLangTag())))
 			return true;
 	}
 
