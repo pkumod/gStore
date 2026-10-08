@@ -11,6 +11,63 @@
 using namespace std;
 
 /**
+	Decode the escape sequences (ECHAR, see SPARQL 1.1 sec 19.2) of a string
+	literal. The RDF data parser decodes them before the data is stored, so the
+	literals of a query must be decoded the same way, otherwise two literals
+	written identically are compared as different strings on the two sides.
+
+	@param str the literal as written in the query, e.g. "a\"b" .
+	@return the literal with its escape sequences decoded, e.g. "a"b" . Strings
+	that are not a double-quoted literal (including the long string form, which
+	is not handled here), and the parts following the literal (datatype IRI,
+	language tag), are kept unchanged.
+*/
+static string decodeEchar(string str)
+{
+	if (str.length() < 2 || str[0] != '\"' || str[1] == '\"')
+		return str;
+
+	// Find the closing quote of the literal, skipping the escaped characters
+	size_t literalEnd = 1;
+	while (literalEnd < str.length() && str[literalEnd] != '\"')
+	{
+		if (str[literalEnd] == '\\')
+			literalEnd += 2;
+		else
+			literalEnd++;
+	}
+	if (literalEnd >= str.length())
+		return str;
+
+	string result = str.substr(0, 1);
+	for (size_t i = 1; i < literalEnd; i++)
+	{
+		if (str[i] != '\\')
+		{
+			result += str[i];
+			continue;
+		}
+		switch (str[++i])
+		{
+			case 't':	result += '\t';	break;
+			case 'b':	result += '\b';	break;
+			case 'n':	result += '\n';	break;
+			case 'r':	result += '\r';	break;
+			case 'f':	result += '\f';	break;
+			case '\"':	result += '\"';	break;
+			case '\'':	result += '\'';	break;
+			default:	// not an ECHAR, keep the two characters as they are
+				result += '\\';
+				result += str[i];
+				break;
+		}
+	}
+	result += str.substr(literalEnd);
+
+	return result;
+}
+
+/**
 	Throw a runtime error when lexical and syntactic errors are detected in the query.
 */
 void SPARQLErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
@@ -718,7 +775,7 @@ void QueryParser::buildCompTree(antlr4::tree::ParseTree *root, int oper_pos, Com
 			curr_node.oprt = "";
 			// curr_node.lchild = NULL;
 			// curr_node.rchild = NULL;
-			curr_node.val = root->getText();
+			curr_node.val = decodeEchar(root->getText());
 		}
 		else if (((SPARQLParser::PrimaryexpressionContext *)root)->numericLiteral())
 		{
@@ -1756,7 +1813,7 @@ string QueryParser::getNumeric(SPARQLParser::NumericLiteralContext *ctx)
 
 string QueryParser::getTextWithRange(antlr4::tree::ParseTree *ctx)
 {
-	string baseText = ctx->getText(), suffix, val;
+	string baseText = decodeEchar(ctx->getText()), suffix, val;
 	size_t sufIdx = baseText.find("^^");
 	if (baseText.empty() || baseText[0] != '"' || sufIdx == string::npos)
 		return baseText;
