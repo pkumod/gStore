@@ -7,6 +7,7 @@
 #include <sstream>
 #include <sys/time.h>
 #include <chrono>
+#include <cmath>
 #include "Util.h"
 class EvalMultitypeValue
 {
@@ -86,6 +87,7 @@ class EvalMultitypeValue
 		std::vector<std::string> list_value;
 
 		bool isSimpleLiteral();
+		EffectiveBooleanValue getEBV();	// Effective boolean value, SPARQL 1.1 17.2.2
 		void convert2Type(EvalMultitypeValue::DataType to_type);
 		void getSameNumericType (EvalMultitypeValue &x);
 		EvalMultitypeValue operator !();

@@ -218,6 +218,32 @@ void EvalMultitypeValue::getSameNumericType (EvalMultitypeValue &x)
 		x.convert2Type(to_type);
 }
 
+EvalMultitypeValue::EffectiveBooleanValue
+	EvalMultitypeValue::getEBV()
+{
+	if (this->datatype == xsd_boolean)
+		return this->bool_value;
+
+	// numeric types: false if NaN or equal to zero, true otherwise
+	if (xsd_integer <= this->datatype && this->datatype <= xsd_double)
+	{
+		if (this->datatype == xsd_integer)
+			return this->int_value != 0;
+		else if (this->datatype == xsd_long)
+			return this->long_value != 0;
+		else if (this->datatype == xsd_decimal || this->datatype == xsd_float)
+			return !isnan(this->flt_value) && this->flt_value != 0;
+		else	// xsd_double
+			return !isnan(this->dbl_value) && this->dbl_value != 0;
+	}
+
+	// plain literal or xsd:string: false if the value has zero length, true otherwise
+	if (this->datatype == literal || this->datatype == xsd_string)
+		return this->getStrContent().length() != 0;
+
+	return EffectiveBooleanValue::error_value;
+}
+
 EvalMultitypeValue
 	EvalMultitypeValue::operator !()
 {
@@ -225,10 +251,7 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (this->datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = !this->bool_value;
+	ret_femv.bool_value = !this->getEBV();
 
 	ret_femv.deduceTermValue();
 	return ret_femv;
@@ -241,10 +264,7 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (this->datatype != xsd_boolean && x.datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = (this->bool_value || x.bool_value);
+	ret_femv.bool_value = (this->getEBV() || x.getEBV());
 
 	ret_femv.deduceTermValue();
 	return ret_femv;
@@ -257,10 +277,7 @@ EvalMultitypeValue
 	ret_femv.datatype = xsd_boolean;
 	ret_femv.bool_value = EffectiveBooleanValue::error_value;
 
-	if (this->datatype != xsd_boolean && x.datatype != xsd_boolean)
-		return ret_femv;
-
-	ret_femv.bool_value = (this->bool_value && x.bool_value);
+	ret_femv.bool_value = (this->getEBV() && x.getEBV());
 
 	ret_femv.deduceTermValue();
 	return ret_femv;
