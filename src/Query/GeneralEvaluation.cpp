@@ -2101,8 +2101,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 						|| proj[i].aggregate_type == ProjectionVar::Sample_type)
 					{
 						int count = 0;
-						bool numeric = false, datetime = false, succ = true;
-						EvalMultitypeValue numeric_sum, numeric_min, numeric_max, datetime_min, datetime_max, tmp, res;
+						bool numeric = false, datetime = false, str = false, succ = true;
+						EvalMultitypeValue numeric_sum, numeric_min, numeric_max, datetime_min, datetime_max, str_min, str_max, tmp, res;
 						string groupconcat;
 						string sample_result;
 						numeric_sum.datatype = EvalMultitypeValue::xsd_integer;
@@ -2129,6 +2129,7 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										continue;
 									numeric = false;
 									datetime = false;
+									str = false;
 									if (tmp.datatype != EvalMultitypeValue::xsd_integer && tmp.datatype != EvalMultitypeValue::xsd_decimal
 										&& tmp.datatype != EvalMultitypeValue::xsd_float && tmp.datatype != EvalMultitypeValue::xsd_double
 										&& tmp.datatype != EvalMultitypeValue::xsd_long)
@@ -2141,7 +2142,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										}
 										else if ((proj[i].aggregate_type == ProjectionVar::Min_type
 											|| proj[i].aggregate_type == ProjectionVar::Max_type)
-											&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+											&& tmp.datatype != EvalMultitypeValue::xsd_datetime
+											&& tmp.datatype != EvalMultitypeValue::literal
+											&& tmp.datatype != EvalMultitypeValue::xsd_string)
 										{
 											SLOG_ERROR("[ERROR] Invalid type for MIN or MAX.");
 											continue; 
@@ -2157,7 +2160,13 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										if (!datetime)
 											datetime = true;
 									}
-									if (!datetime && !numeric && proj[i].aggregate_type != ProjectionVar::Count_type \
+									else if (tmp.datatype == EvalMultitypeValue::literal
+										|| tmp.datatype == EvalMultitypeValue::xsd_string)
+									{
+										if (!str)
+											str = true;
+									}
+									if (!datetime && !numeric && !str && proj[i].aggregate_type != ProjectionVar::Count_type \
 										&& proj[i].aggregate_type != ProjectionVar::Groupconcat_type \
 										&& proj[i].aggregate_type != ProjectionVar::Sample_type)
 									{
@@ -2187,6 +2196,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 												datetime_min = tmp;
 										}
+										else if (str)
+										{
+											if (str_min.term_value.empty())
+												str_min = tmp;
+											else
+											{
+												res = str_min > tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													str_min = tmp;
+											}
+										}
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 									{
@@ -2201,6 +2221,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											res = datetime_max < tmp;
 											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 												datetime_max = tmp;
+										}
+										else if (str)
+										{
+											if (str_max.term_value.empty())
+												str_max = tmp;
+											else
+											{
+												res = str_max < tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													str_max = tmp;
+											}
 										}
 									}
 								}
@@ -2266,7 +2297,9 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 										}
 										else if ((proj[i].aggregate_type == ProjectionVar::Min_type
 											|| proj[i].aggregate_type == ProjectionVar::Max_type)
-											&& tmp.datatype != EvalMultitypeValue::xsd_datetime)
+											&& tmp.datatype != EvalMultitypeValue::xsd_datetime
+											&& tmp.datatype != EvalMultitypeValue::literal
+											&& tmp.datatype != EvalMultitypeValue::xsd_string)
 										{
 											SLOG_ERROR("[ERROR] Invalid type for MIN or MAX.");
 											continue; 
@@ -2276,6 +2309,12 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									{
 										if (!datetime)
 											datetime = true;
+									}
+									else if (tmp.datatype == EvalMultitypeValue::literal
+										|| tmp.datatype == EvalMultitypeValue::xsd_string)
+									{
+										if (!str)
+											str = true;
 									}
 									else
 									{
@@ -2320,6 +2359,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 												datetime_min = tmp;
 										}
+										else if (str)
+										{
+											if (str_min.term_value.empty())
+												str_min = tmp;
+											else
+											{
+												res = str_min > tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													str_min = tmp;
+											}
+										}
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 									{
@@ -2334,6 +2384,17 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 											res = datetime_max < tmp;
 											if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
 												datetime_max = tmp;
+										}
+										else if (str)
+										{
+											if (str_max.term_value.empty())
+												str_max = tmp;
+											else
+											{
+												res = str_max < tmp;
+												if (res.bool_value.value == EvalMultitypeValue::EffectiveBooleanValue::true_value)
+													str_max = tmp;
+											}
 										}
 									}
 									else if (proj[i].aggregate_type == ProjectionVar::Sample_type)
@@ -2391,6 +2452,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << numeric_min.term_value;
 								else if (datetime)
 									ss << datetime_min.term_value;
+								else if (str)
+									ss << str_min.term_value;
 							}
 							else if (proj[i].aggregate_type == ProjectionVar::Max_type)
 							{
@@ -2398,6 +2461,8 @@ void GeneralEvaluation::getFinalResult(ResultSet &ret_result)
 									ss << numeric_max.term_value;
 								else if (datetime)
 									ss << datetime_max.term_value;
+								else if (str)
+									ss << str_max.term_value;
 							}
 							else if (proj[i].aggregate_type == ProjectionVar::Sample_type)
 							{
