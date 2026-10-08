@@ -1041,6 +1041,8 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		EvalMultitypeValue x;
 
 		x = doComp(root.children[0], row, id_cols, kvstore, this_varset, isel);
+		// a literal with a custom (non-XSD) datatype IRI is decoded as rdf_term,
+		// but any term with a datatype IRI is still a literal (RDF 1.1 Concepts 3.3)
 		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::literal ||
 							   x.datatype == EvalMultitypeValue::xsd_string ||
 							   x.datatype == EvalMultitypeValue::xsd_boolean ||
@@ -1048,7 +1050,9 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 							   x.datatype == EvalMultitypeValue::xsd_decimal ||
 							   x.datatype == EvalMultitypeValue::xsd_float ||
 							   x.datatype == EvalMultitypeValue::xsd_double ||
-							   x.datatype == EvalMultitypeValue::xsd_datetime);
+							   x.datatype == EvalMultitypeValue::xsd_datetime ||
+							   (x.datatype == EvalMultitypeValue::rdf_term &&
+								!x.term_value.empty() && x.term_value[0] == '"'));
 
 		return ret_femv;
 	}
