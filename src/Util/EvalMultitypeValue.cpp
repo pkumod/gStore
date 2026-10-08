@@ -1086,7 +1086,11 @@ void EvalMultitypeValue::deduceTypeValue(std::string sep)
 				if (sufStr == "integer") {
 					datatype = EvalMultitypeValue::xsd_integer;
 					int_value = stoi(contentStr);
-				} else if (sufStr == "long") {
+				} else if (sufStr == "long" || sufStr == "int" || sufStr == "short" || sufStr == "byte"
+					|| sufStr == "unsignedLong" || sufStr == "unsignedInt" || sufStr == "unsignedShort"
+					|| sufStr == "unsignedByte") {
+					// Derived integer types share the 64-bit integer value space.
+					// term_value keeps the datatype IRI they are typed with, for DATATYPE().
 					datatype = EvalMultitypeValue::xsd_long;
 					long_value = stoll(contentStr);
 				} else if (sufStr == "decimal") {

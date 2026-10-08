@@ -1047,6 +1047,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 							   x.datatype == EvalMultitypeValue::xsd_integer ||
 							   x.datatype == EvalMultitypeValue::xsd_decimal ||
 							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_long ||
 							   x.datatype == EvalMultitypeValue::xsd_double ||
 							   x.datatype == EvalMultitypeValue::xsd_datetime);
 
@@ -1060,6 +1061,7 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		ret_femv.bool_value = (x.datatype == EvalMultitypeValue::xsd_integer ||
 							   x.datatype == EvalMultitypeValue::xsd_decimal ||
 							   x.datatype == EvalMultitypeValue::xsd_float ||
+							   x.datatype == EvalMultitypeValue::xsd_long ||
 							   x.datatype == EvalMultitypeValue::xsd_double);
 
 		return ret_femv;
@@ -1138,6 +1140,17 @@ TempResult::doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::
 		{
 			ret_femv.datatype = EvalMultitypeValue::iri;
 			ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#float>";
+		}
+		else if (x.datatype == EvalMultitypeValue::xsd_long)
+		{
+			// Derived integer types are 64-bit integers, term_value keeps the datatype
+			// IRI they are typed with, e.g. "2"^^<http://www.w3.org/2001/XMLSchema#int>
+			ret_femv.datatype = EvalMultitypeValue::iri;
+			size_t p = x.term_value.rfind("^^");
+			if (p != string::npos)
+				ret_femv.term_value = x.term_value.substr(p + 2);
+			else
+				ret_femv.term_value = "<http://www.w3.org/2001/XMLSchema#long>";
 		}
 		else if (x.datatype == EvalMultitypeValue::xsd_double)
 		{
