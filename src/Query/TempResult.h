@@ -62,7 +62,7 @@ class TempResult
 		void doBind(const GroupPattern::Bind &bind, std::shared_ptr<KVstore> kvstore, Varset &entity_literal_varset);
 		float doSimilarity(const std::string& s, const std::string& t);
 
-		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, bool isel = true, std::string sep = ",");
+		EvalMultitypeValue doComp(const CompTreeNode &root, ResultPair &row, int id_cols, std::shared_ptr<KVstore> kvstore, Varset &this_varset, Varset *entity_literal_varset = NULL, std::string sep = ",");
 		static EvalMultitypeValue doCompareValue(EvalMultitypeValue& lRes, EvalMultitypeValue& rRes, std::string& oprt);
 
 		void print(int no=-1);
