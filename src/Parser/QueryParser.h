@@ -29,6 +29,8 @@ private:
 	QueryTree *query_tree_ptr;
 	std::map<std::string, std::string> prefix_map;
 	bool firstVisitGroupGraphPatternSub;
+	// Map from a blank node label in a graph pattern to the variable standing for it
+	std::map<std::string, std::string> blank_node_label_map;
 
 public:
 	QueryParser(): firstVisitGroupGraphPatternSub(true) {}
@@ -81,6 +83,7 @@ public:
 	void addTriple(std::string subject, std::string predicate, std::string object, bool kleene, \
 		GroupPattern &group_pattern);
 	void replacePrefix(std::string &str);
+	std::string getBlankNodeVar(SPARQLParser::BlankNodeContext *ctx);
 	std::string getNumeric(SPARQLParser::NumericLiteralContext *ctx);
 	std::string getTextWithRange(antlr4::tree::ParseTree *ctx);
 

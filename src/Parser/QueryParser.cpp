@@ -1231,7 +1231,8 @@ antlrcpp::Any QueryParser::visitBind(SPARQLParser::BindContext *ctx, \
 	1) No triplesNodepath in triplesSameSubjectpath;
 	2) The child of verbpathOrSimple is verbSimple (no property path, only simple predicate);
 	3) The descendant of objectListpath/objectList is varOrTerm (only simple object).
-	1) and 3) means that currently we cannot handle blank nodes in queries.
+	1) and 3) means that currently we cannot handle blank node property lists
+	(such as [ :p :o ]) and collections in queries.
 
 	@param ctx pointer to triplesSameSubjectpath's context.
 	@param group_pattern a group graph pattern.
@@ -1243,9 +1244,10 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 	string subject, predicate, object;
 	bool kleene = false;
 
-	subject = ctx->varOrTerm()->getText();
 	if (ctx->varOrTerm()->graphTerm() && ctx->varOrTerm()->graphTerm()->blankNode())
-		subject = "<" + subject + ">";
+		subject = getBlankNodeVar(ctx->varOrTerm()->graphTerm()->blankNode());
+	else
+		subject = ctx->varOrTerm()->getText();
 	replacePrefix(subject);
 
 	// Assume triplesSameSubjectpath : varOrTerm propertyListpathNotEmpty ;
@@ -1304,7 +1306,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				else if (objectpath->graphNodepath()->varOrTerm() \
 					&& objectpath->graphNodepath()->varOrTerm()->graphTerm() \
 					&& objectpath->graphNodepath()->varOrTerm()->graphTerm()->blankNode())
-					object = "<" + objectpath->getText() + ">";
+					object = getBlankNodeVar(objectpath->graphNodepath()->varOrTerm()->graphTerm()->blankNode());
 				else
 					object = getTextWithRange(objectpath);
 				replacePrefix(object);
@@ -1327,7 +1329,7 @@ antlrcpp::Any QueryParser::visitTriplesSameSubjectpath(SPARQLParser::TriplesSame
 				else if (object_ptr->graphNode()->varOrTerm() \
 					&& object_ptr->graphNode()->varOrTerm()->graphTerm() \
 					&& object_ptr->graphNode()->varOrTerm()->graphTerm()->blankNode())
-					object = "<" + object_ptr->getText() + ">";
+					object = getBlankNodeVar(object_ptr->graphNode()->varOrTerm()->graphTerm()->blankNode());
 				else
 					object = getTextWithRange(object_ptr);
 				replacePrefix(object);
@@ -1490,6 +1492,31 @@ void QueryParser::replacePrefix(string &str)
 			throw runtime_error("[ERROR]	Prefix is not found, please define it before use.");
 		}
 	}
+}
+
+/**
+	Helper function that translates a blank node in a graph pattern into a variable,
+	because blank nodes in graph patterns act as variables rather than as references
+	to blank nodes in the data being queried (SPARQL 1.1 Query §4.1.4). Each [] stands
+	for a fresh variable, while the same blank node label always refers to the same
+	variable. The generated variable name contains brackets, which cannot occur in a
+	variable name in a query, so that it never clashes with the query's variables.
+
+	@param ctx pointer to blankNode's context.
+	@return the name of the variable standing for the blank node.
+*/
+string QueryParser::getBlankNodeVar(SPARQLParser::BlankNodeContext *ctx)
+{
+	if (ctx->BLANK_NODE_LABEL())
+	{
+		string label = ctx->getText();
+		if (blank_node_label_map.find(label) == blank_node_label_map.end())
+			blank_node_label_map[label] = "?[]" + to_string(ctx->getStart()->getTokenIndex());
+		return blank_node_label_map[label];
+	}
+
+	// An anonymous blank node [] is used in only one place in the query
+	return "?[]" + to_string(ctx->getStart()->getTokenIndex());
 }
 
 //------------------------------------------------------------------------------------------
